@@ -1,0 +1,111 @@
+The JobRunner Acquisition Playbook:
+Zero to 20 Customers
+Prepared by: Manus AI Date: March 29, 2026
+Getting the first 20 paying customers is the hardest part of building any B2B SaaS. You
+cannot rely on SEO, paid ads, or organic virality at this stage. Your first 20 customers
+will come from hand-to-hand combat—direct outreach, personal networks, and
+solving acute, immediate pain points for individual business owners [1].
+This playbook provides a step-by-step strategy tailored specifically for the Australian
+trades market.
+1. The Core Strategy: Why Tradies Switch
+Australian tradies are generally time-poor and hesitant to adopt new technology
+unless the immediate benefit significantly outweighs the learning curve [2]. They do
+not switch software because of “better UI” or “cleaner code.”
+They switch because of acute pain:
+Lost Revenue: Forgetting to invoice for a job or losing track of a quote.
+Wasted Time: Spending hours every night doing admin instead of being with
+family [3].
+Complexity: Existing software (like ServiceM8 or Tradify) becoming too bloated,
+expensive, or difficult for their subcontractors to use [4].
+The JobRunner Wedge
+Your competitive advantage is not just price; it is the AI Receptionist and the Free
+Tier. No other platform offers a dedicated Australian phone number with an AI that
+answers calls
+24
+⁄7 and books jobs directly into the system. This is a massive hook.
+2. The 30-Day Execution Plan
+Week 1: Fix the Blockers & Tap Your Immediate Network
+Before you pitch a single stranger, you must ensure the product is ready for a real
+business to rely on it.
+Action Items:
+1. Publish the Mobile Apps: As identified in the technical audit, the App Store and
+Google Play links currently 404. Tradies live on their phones; without a mobile
+app, your conversion rate will be near zero.
+2. The “Friends and Family” Launch: Find 3-5 tradies in your immediate network
+(friends, family, or tradespeople who have recently worked on your house).
+3. The Pitch: Do not ask them to buy. Ask them to test. > “Hey [Name], I’ve spent
+the last year building a new app to help tradies manage jobs and get rid of nighttime admin. I’m looking for 5 brutal, honest testers to try it out for free and tell
+me what sucks. Can I buy you a beer/coffee and show you how it works?”
+Week 2: Community-Led Growth (Facebook Groups)
+Australian tradies are highly active in specific Facebook groups. However, these groups
+are aggressively moderated against spam and self-promotion [5]. You must lead with
+value, not a sales pitch.
+Target Groups:
+Tradies in Australia (Large, active community)
+Sydney Local Tradies & Small Business (Or your local equivalent)
+Small Business Support Group Australia
+The “Trojan Horse” Strategy: Do not post a link to JobRunner. Instead, post a highly
+relatable question or a free resource.
+Post Template 1 (The Pain Point):
+“Question for the solo operators here: How many hours a week are you losing to
+quoting and invoicing at night? I’m an Aussie dev building a simpler alternative to
+Tradify/ServiceM8 because my mates were complaining about the cost. What’s the
+one feature you wish your current software actually did well?”
+Post Template 2 (The Free Value):
+“Hey everyone, I noticed a lot of guys struggling with missed calls while on the
+tools. I built an AI receptionist tool that answers calls with an Aussie accent and
+texts you the lead details. I’m looking for 3 businesses to test it for free this month.
+Drop a comment if you want to try it.”
+When people comment, move to Direct Messages (DMs). Set up a 15-minute Zoom or
+phone call.
+Week 3: Highly Targeted Direct Outreach
+Once you have 3-5 beta users from your network and Facebook, start direct outbound.
+The Target: Look for small trade businesses (1-5 staff) on Google Maps or local
+directories that have good reviews but terrible websites (indicating they are busy but
+lack modern tech).
+The Channel: SMS or WhatsApp. Tradies rarely check cold emails.
+The Script (Keep it under 3 sentences):
+“Hey [Name], saw your great reviews on Google. I’m a local Aussie dev who just built
+JobRunner—a simpler, cheaper alternative to ServiceM8. I’m giving lifetime free
+access to my first 10 users in exchange for feedback. Worth a 5-min chat?”
+Week 4: The “Do It For Them” Onboarding
+When a tradie says “yes” to a trial, do not just send them a link and expect them to
+set it up. They will not do it.
+You must offer White-Glove Onboarding:
+1. Ask them to export their client list from Xero/MYOB or their current software.
+2. You import the data into JobRunner for them.
+3. You set up their logo and quote templates.
+4. Hand them an account that is 100% ready to use on day one.
+This removes the single biggest barrier to software adoption: the setup friction [6].
+3. Pricing Strategy for the First 20
+Your goal right now is not to maximize revenue; it is to maximize usage and
+testimonials.
+1. Customers 1-5 (The Beta Cohort): Free for life. In exchange, they must agree to
+a 15-minute feedback call every two weeks, and provide a video testimonial once
+they love the product.
+2. Customers 6-20 (The Early Adopters): Offer them the Pro Plan at a heavily
+discounted rate (e.g., 39/month).
+3. The AI Upsell: For any customer, offer the Vapi AI Receptionist at cost (e.g.,
+$30/month) just to get them hooked on the magic of the feature.
+4. Key Metrics to Track
+Do not track website visitors or page views. At this stage, only three numbers matter:
+1. Conversations Started: How many tradies did you speak to this week? (Target:
+20/week)
+2. Demos Booked: How many agreed to let you show them the app? (Target:
+5/week)
+3. Active Workspaces: How many accounts actually created a job or sent an invoice
+this week? (Target: 2 new active accounts/week)
+Summary
+Winning your first 20 B2B customers requires doing things that do not scale [1]. You
+must be the sales rep, the onboarding specialist, and the customer support team. By
+leveraging the AI Receptionist as a unique hook, targeting active Facebook
+communities, and doing the heavy lifting of data migration for your early users, you
+can bypass the noise and establish a solid foundational user base.
+19/monthlockedinforlife,insteadof
+References
+[1] How to find and win your first 10 B2B customers. Lenny’s Newsletter (Sep 2023). [2]
+Digital Technology Transforming Tradie Industry Australia. On Time Tradie (Feb 2026).
+[3] Aussie Tradies/Blue-Collar Workers: What’s the one pain point you wish software
+would fix? Reddit r/AskAnAustralian. [4] Tradify Reviews. Capterra. [5] Tradies in
+Australia Facebook Group. Facebook. [6] Software Recommendations & Setup For
+Tradies. TradiePad.

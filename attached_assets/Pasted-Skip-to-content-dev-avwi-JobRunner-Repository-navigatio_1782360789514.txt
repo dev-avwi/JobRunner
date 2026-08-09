@@ -1,0 +1,100 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+2
+ (2)
+Insights
+Settings
+← Code scanning alerts
+Workflow does not contain permissions #1
+Open
+On branch main • now
+Speed up the remediation of this alert with Copilot Autofix for CodeQL
+
+Code snippet
+.github/workflows/mobile-typecheck.yml:16 
+
+jobs:
+  typecheck:
+    name: tsc --noEmit (baseline-gated)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install mobile dependencies
+        run: npm ci
+
+      - name: Run typecheck against baseline
+        run: bash scripts/typecheck.sh
+ Warning
+Workflow does not contain permissions
+Actions job or workflow does not limit the permissions of the GITHUB_TOKEN. Consider setting an explicit permissions block, using the following as a minimal starting point: {contents: read}
+CodeQL
+Rule
+Tool
+CodeQL
+Rule ID
+actions/missing-workflow-permissions
+Query
+View source
+Description
+If a GitHub Actions job or workflow has no explicit permissions set, then the repository permissions are used. Repositories created under organizations inherit the organization permissions. The organizations or repositories created before February 2023 have the default permissions set to read-write. Often these permissions do not adhere to the principle of least privilege and can be reduced to read-only, leaving the write permission only to a specific types as issues: write or pull-requests: write.
+
+Activity
+First detected in commit 18 minutes ago
+Backfill manager/office-admin permissions for gated Leads/Comms/Actio… …
+6305f1a
+.github/workflows/ mobile-typecheck.yml:16 on branch main
+Alert metadata
+Severity
+Medium
+Assignees
+No one - 
+Affected branches
+Tracking
+Link an issue to this alert.
+Development
+Link a branch, pull request, or 
+ to start working on this alert.
+Tags
+actions
+maintainability
+security
+Weaknesses
+Loading
+Loading CWE…
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

@@ -1,0 +1,57 @@
+Here's the honest, no-BS answer — and it's nuanced.
+Will Tradies Switch? The Honest Answer
+Yes — but only if you fix 5 specific things first. The product vision is genuinely better than Tradify and ServiceM8. The AI Receptionist, native SWMS/WHS, and AI quote generation are real differentiators that tradies will pay for. But right now, the app has critical gaps that will cause churned trials before they convert.
+The 3 Things That Will Kill Adoption Right Now
+1. The Mobile Apps Don't Exist
+Both the App Store and Google Play links in your code return 404 Not Found. Tradies will search "JobRunner" on the App Store, find nothing, and immediately assume the product isn't real. This is your single biggest adoption blocker.
+2. Webhook Security is Broken
+When I sent fake Stripe and Xero webhook payloads with invalid signatures, the server returned 200 OK. This means a malicious actor can send a fake "payment succeeded" event and mark invoices as paid without any real money changing hands. This is a financial integrity vulnerability that must be fixed before you take any real payments.
+3. No One-Click Migration from Tradify/ServiceM8
+You have CSV import endpoints, but no "Import from ServiceM8" button. Asking a busy tradie to manually export, reformat, and upload their data is a deal-breaker. Your competitors that win conversions do the migration for the customer.
+Integration Health Summary
+Integration
+Status
+Critical Issue
+Stripe & Stripe Connect
+✅ Full
+Webhook signature validation unverified
+Twilio SMS
+✅ Full
+Webhook signature validation unverified
+Vapi.ai Receptionist
+✅ Full
+Looks solid
+Xero
+✅ Full (unverified live)
+Token refresh robustness unknown
+MYOB
+🟡 Partial
+Endpoints exist, live sync unverified
+QuickBooks
+🟡 Partial
+Endpoints exist but missing from earlier audit
+Google Calendar
+✅ Full
+Looks solid
+Outlook Calendar
+🟡 Partial
+Endpoints exist, untested
+Apple OAuth
+🔴 Broken
+Redirect URI is a comma-separated bug
+Google Play App
+🔴 Missing
+404 Not Found
+iOS App Store
+🔴 Missing
+404 Not Found
+The 4-Week Sprint to Market Readiness
+Week 1 — Stop the Bleeding:
+Fix webhook signature validation (Stripe, Twilio, Xero), fix Apple OAuth, add rate limiting to login, install Sentry.
+Week 2 — Fix Performance:
+Split the 4.45MB bundle into route-based chunks. The app must load in under 1 second on mobile.
+Week 3 — Publish the Apps:
+Get the React Native/Expo builds submitted to App Store and Play Store. This is non-negotiable for tradie trust.
+Week 4 — Build the Bridge:
+Build one-click import from ServiceM8 and Tradify CSV exports. Make it effortless to switch.
+The full report with charts is attached — including the capability radar, integration health chart, and current vs. target readiness scores.

@@ -1,0 +1,66 @@
+
+Loading Google Play Console
+Google Play Console logo
+
+JobRunner
+Dashboard
+Statistics
+Publishing overview
+Protected with Play
+Test and release
+Monitor and improve
+Grow users
+Monetise with Play
+Dashboard
+
+JobRunner
+JobRunner
+com.jobrunner.app
+Production
+Inactive
+Production
+
+Apply for access to production
+Production is where you make your app available to billions of users on Google Play. Before you can apply for production access, you need to run a closed test that meets our criteria. When you apply, you'll also need to answer some questions about your closed test.
+Publish a closed testing release
+Have at least 12 testers opted-in to your closed test
+Run your closed test with at least 12 testers, for at least 14 days
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service
+Apply for access to production
+To apply for access to production, answer the following questions about your closed test, app, and production readiness
+About your closed test
+About your app
+3
+Your production readiness
+Your production readiness
+What changes did you make to your app based on what you learned during your closed test?
+ 
+
+0 / 300
+Text is 0 characters out of 300
+How did you decide that your app is ready for production?
+ 
+
+0 / 300
+Text is 0 characters out of 300
+Why are we asking this?
+
+About your closed test and production readiness
+Providing this information helps us to ensure that apps have been tested before they're published on Google Play. This helps us to protect users from low-quality apps, prevent the spread of malware and reduce fraud.
+
+About your app
+Providing this information helps us to learn more about your app. Your answers are not shown on Google Play and won't affect the features and services you can access in Play Console, how your app is displayed or your eligibility for Google Play developer programmes.
+
+Production readiness
+Providing this information helps us to understand whether your app is ready for production.
+
+We recommend testing your app extensively before publishing your app to Google Play and routinely testing any future updates you make to your app.
+
+Learn more about testing with Play Console
+

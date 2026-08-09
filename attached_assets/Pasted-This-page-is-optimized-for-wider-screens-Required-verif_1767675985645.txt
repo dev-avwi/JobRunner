@@ -1,0 +1,102 @@
+This page is optimized for wider screens.
+Required verification information
+Identify current and future information requirements that connected accounts must provide based on their business, location, and requested capabilities.
+See the Connect integration guide to learn more about the setup types.
+View upcoming changes needed in Europe
+Configure Setup A to your current setup for accounts in Europe. Then repeat for Setup B, selecting Europe in the Requirement update field. Use the Compare setups toggle to view differences.
+Updates for Europe are subject to change. Learn more about upcoming changes in Europe.
+Setup A
+Setup B
+Accounts API
+v1
+Platform country
+Australia (AU)
+Account country
+Australia (AU)
+Dashboard type
+none
+Service agreement
+Learn more about service agreement types
+full
+Business type
+individual
+Requirement update
+Learn more about upcoming requirements updates
+Select…
+Capabilities
+card_payments, transfers
+The transfers capability is required when the card_payments capability is requested.
+
+
+Table
+
+JSON
+Compare setups
+
+
+Account
+View API docs
+Requirement	Verification	Enforcement action	Testing
+Merchant category code	
+business_profile.mcc
+—	
+Capability and payments will be paused immediately if not provided.
+—
+URL	
+business_profile.url
+—	
+Capability, payments, and payouts will be paused immediately if not provided.
+View test tokens
+Terms of service	
+tos_acceptance.date
+tos_acceptance.ip
+—	
+Capability and payments will be paused immediately if not provided.
+—
+External account	
+external_account
+—	
+Capability and payouts will be paused immediately if not provided.
+—
+
+Individual
+View API docs
+Requirement	Verification	Enforcement action	Testing
+Name	
+individual.first_name
+individual.last_name
+—	
+Capability, payments, and payouts will be paused immediately if not provided.
+—
+Date of birth	
+individual.dob.day
+individual.dob.month
+individual.dob.year
+—	
+Capability, payments, and payouts will be paused immediately if not provided.
+View test tokens
+Address	
+individual.address.city
+individual.address.line1
+individual.address.postal_code
+individual.address.state
+—	
+Capability, payments, and payouts will be paused immediately if not provided.
+View test tokens
+Email	
+individual.email
+—	
+Capability and payments will be paused immediately if not provided.
+—
+Phone	
+individual.phone
+—	
+Capability and payments will be paused immediately if not provided.
+View test tokens
+Additional information
+Additional information on the individual
+Depending on the situation, you might need to collect a scan of an ID document to enable payouts. That can happen if Stripe can’t verify the individual or if there are possible concerns about sanctions.
+Collect ID information using:
+individual.verification.document.front
+individual.verification.document.back
+Setup A: 2 sections · 16 requirements

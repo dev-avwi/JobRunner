@@ -1,0 +1,59 @@
+Here’s the prompt — paste this directly into Replit Agent:
+
+Look at the existing onboarding flow in SimpleOnboarding.tsx and the post-wizard routing in App.tsx. I want you to add a premium “Setting up your workspace” loading screen that fires immediately after the wizard completes, before the user lands on the dashboard.
+
+This screen needs to match the premium quality of the Dashboard screen — the same design language, same card style, same typography weight and hierarchy that makes the dashboard feel polished and considered. Do not invent a new design system. Use what already exists in the codebase.
+
+What the screen must do:
+
+After the wizard’s final step completes and before routing to the dashboard, intercept navigation and show this full-screen loading experience for approximately 4-5 seconds.
+
+Visual design:
+
+Full bleed background — use a dark overlay (#1C1C1E at 85% opacity) over a high quality unsplash photo of an Australian tradie at work (use a real URL from unsplash, something like a plumber, electrician or builder on site). Do not use a gradient or solid colour background.
+
+Bottom third of screen contains the text content:
+
+	•	“Welcome, [First Name]!” in bold white, large (~32pt weight 700)
+	•	“[Business Name] is ready to go” in white at ~18pt weight 400 below it
+	•	A thin animated progress bar in #2B7DE9 (JobRunner blue) that fills from 0% to 100% over 4 seconds, sitting below the text
+	•	The JobRunner logo (blue running J figure with orange hard hat) at top left, same as it appears in the main app header
+
+While the bar animates, cycle through 3 social proof messages that fade in and out in the text area. Each shows for ~1.3 seconds:
+
+Message 1: “Setting up your job templates…”
+Message 2: “Configuring your trade settings…”Message 3: “Getting everything ready for you…”
+
+These messages sit between the welcome text and the progress bar in a smaller muted white (~14pt, 60% opacity).
+
+What happens during this time:
+
+Fire the existing POST /api/onboarding/seed-demo-data endpoint in the background while the animation plays. This seeds real sample data (jobs, clients, quotes) so when the user lands on the dashboard it is not empty. Do not wait for this to complete before advancing — advance after 4.5 seconds regardless, the seeding happens async.
+
+Also trigger the existing trade template seeding that happens on trade selection — make sure it ran during the wizard, if not run it now.
+
+After 4.5 seconds:
+
+Transition to the dashboard with a smooth fade (not a hard cut). The dashboard should now have sample data visible.
+
+After the loading screen, before full dashboard access:
+
+Show a notifications permission screen. Full white background, JobRunner logo centred at top. A phone mockup image in the centre showing 3 sample push notifications:
+
+	•	“New booking request from Sarah Mitchell”
+	•	“Quote #4 viewed by James Cooper”
+	•	“Payment received — $480.00”
+
+Below the mockup: bold heading “Stay on top of every job”, body text “Get notified the moment clients view quotes, make bookings, or send messages.” in grey.
+
+Two buttons pinned to bottom — primary blue “Enable Notifications” that triggers the iOS/Android permission request, and plain text grey “Not right now” below it.
+
+This notifications screen should only show once ever, gated by a hasSeenNotificationPrompt flag in the user’s settings or AsyncStorage.
+
+Quality bar:
+
+The loading screen and notifications screen must feel as premium as the Dashboard. No raw alerts. No placeholder colours. No hardcoded strings that aren’t using the existing design tokens. Rounded corners consistent with the card radius used elsewhere. SF Pro font weights matching the rest of the app. Test it looks right on iPhone 15 Pro screen dimensions.
+
+Do not touch any existing onboarding wizard steps. Only add what comes after the final step completes.
+
+That should get you exactly what Jobber has. The key instruction is “match the dashboard quality” — Replit knows what that looks like in your codebase already.

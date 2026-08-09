@@ -1,0 +1,455 @@
+You’re so close with this thing, it’s kinda wild. 🔥
+
+I can’t literally click around or create users inside your app (no real browser / no direct access to your Replit project), but I *can*:
+
+* Simulate exactly how an owner + manager + tradies should use it
+* Give you a **step-by-step test script** you can run on your phone/laptop
+* Give you a **Replit master prompt** that tells Replit AI to check team management, roles, map, and dispatch logic in the *code*, not just the UI
+
+I’ll do both.
+
+---
+
+## 1️⃣ Real-world test script – “Owner + Manager + 2 Tradies + Map + Dispatch”
+
+Run this yourself in the browser, like a real business.
+
+### 👤 Step 1: Create the OWNER account (new business)
+
+1. Go to your sign-up page.
+2. Sign up as:
+
+   * Name: **James Weber**
+   * Business: **Weber Plumbing & Gas**
+   * Email: your real email or +alias (e.g. `yourgmail+owner@gmail.com`)
+   * Role: **Owner**
+3. Complete onboarding:
+
+   * Trade type: Plumbing
+   * City: Cairns
+   * Team size: 3–5
+   * Choose “I have a team” (so it gives you owner dashboard, not solo view).
+
+✅ Check:
+
+* You land on **Owner dashboard**, not a generic one.
+* You can see **billing**, **team**, **map**, **dispatch board**, **settings**.
+
+---
+
+### 👥 Step 2: Add a MANAGER + 2 TRADIES
+
+From the Owner account, go to **Team / Users**:
+
+Create 3 users:
+
+1. **Manager**
+
+   * Name: *Emily Ross*
+   * Role: **Manager**
+   * Email: `yourgmail+manager@gmail.com`
+
+2. **Tradie 1**
+
+   * Name: *Liam Harris*
+   * Role: **Tradie**
+   * Email: `yourgmail+tradie1@gmail.com`
+
+3. **Tradie 2**
+
+   * Name: *Noah Clark*
+   * Role: **Tradie**
+   * Email: `yourgmail+tradie2@gmail.com`
+
+✅ Check:
+
+* Each invite/link works.
+* They can log in.
+* Their dashboards look different (Owner vs Manager vs Tradie).
+
+---
+
+### 🧪 Step 3: Test **permissions per role**
+
+Open 3 browser windows or devices:
+
+* Window 1: Owner (James)
+* Window 2: Manager (Emily)
+* Window 3: Tradie 1 (Liam)
+
+Test this table:
+
+| Action                               | Owner |  Manager |               Tradie              |
+| ------------------------------------ | :---: | :------: | :-------------------------------: |
+| See ALL jobs                         |   ✅   |     ✅    |            ❌ (only own)           |
+| Edit business settings               |   ✅   | ⚠️ maybe |                 ❌                 |
+| Manage billing/subscription          |   ✅   |     ❌    |                 ❌                 |
+| Add/remove team members              |   ✅   | ⚠️ maybe |                 ❌                 |
+| Create jobs                          |   ✅   |     ✅    | ❌ or ✅ (depending on your design) |
+| Assign jobs to tradies               |   ✅   |     ✅    |                 ❌                 |
+| Change job status (for any job)      |   ✅   |     ✅    |       ✅ (only assigned jobs)      |
+| See dispatch/map with all jobs       |   ✅   |     ✅    |           ❌ or only own           |
+| Send messages in **team chat**       |   ✅   |     ✅    |                 ✅                 |
+| DM a tradie (owner/manager → tradie) |   ✅   |     ✅    |      ⚠️ maybe no DM to owner      |
+
+If anything doesn’t match how you *want* it to behave, write that down.
+
+---
+
+### 🗺️ Step 4: Map + Dispatch – jobs across Cairns
+
+As the **Owner**:
+
+1. Create 4 jobs in different suburbs:
+
+   * Job 1: “Hot water issue” – **Edge Hill**
+   * Job 2: “Blocked drain” – **Earlville**
+   * Job 3: “Bathroom reno quote” – **Redlynch**
+   * Job 4: “Leaking kitchen sink” – **Trinity Beach**
+
+2. Assign:
+
+   * Job 1 → **Liam (Tradie 1)**
+   * Job 2 → **Liam**
+   * Job 3 → **Noah (Tradie 2)**
+   * Job 4 → **Noah**
+
+3. Go to the **Map / Dispatch** page.
+
+✅ Check (Owner view):
+
+* All 4 jobs show as pins across a Cairns-style map.
+* Clicking a pin shows:
+
+  * Job title
+  * Status (New / Scheduled / In progress / Complete)
+  * Assigned tradie
+
+Then log in as:
+
+* Manager: should see same map + jobs.
+* Tradie 1: should see only **their jobs** (Job 1 & 2).
+* Tradie 2: only **theirs** (Job 3 & 4).
+
+Change statuses:
+
+* Owner / Manager:
+
+  * Drag jobs on the dispatch board to different times/days (if you have drag+drop).
+  * Change Job 1 → **In Progress**, Job 2 → **Completed**.
+* Tradie 1:
+
+  * On their phone, open Job 2 and mark as **Completed**.
+  * Add photos and time tracking.
+
+✅ Map should update pin color / status badge for those jobs for *all* roles.
+
+---
+
+### ⏱️ Step 5: Time tracking + location per job
+
+For **Job 1 – Hot water issue**:
+
+As **Tradie 1 (Liam)** on your phone:
+
+1. Open Job 1.
+2. Tap **“Start time tracking”** when you “arrive”.
+3. If you have a **“Use current location”** button:
+
+   * Tap it to capture GPS → job location.
+4. Do a fake workflow:
+
+   * Add 2–3 notes (“Customer said hot water intermittent”, etc.).
+   * Add 1–2 photos.
+   * After a couple of minutes, tap **“Stop time tracking”**.
+
+✅ Then as Owner:
+
+* Check Job 1 detail:
+
+  * Time entries show up (start/end/duration).
+  * Location appears (address / map link).
+  * Notes & photos are visible.
+* On **Map / Dispatch**:
+
+  * Job 1 pin location matches the address.
+  * If you show “Last known tradie location”, check it updates.
+
+---
+
+### 💬 Step 6: Team chat + job chat
+
+1. As Owner, open **Team Chat**:
+
+   * Send: “Morning team, today’s jobs are live in TradieTrack 👍”
+2. As Manager: reply.
+3. As each tradie: reply with a quick “Seen 👍”.
+
+✅ Check:
+
+* Messages show in correct order.
+* Names/avatars/roles look right.
+* No one sees chats they shouldn’t (e.g. private owner/manager discussion).
+
+4. Now test **Job chat**:
+
+   * On Job 3, send a message as Owner:
+
+     > “Noah, make sure to take before/after photos for this reno quote.”
+   * As **Noah (Tradie 2)**, reply in the job chat.
+
+✅ Check:
+
+* Job chat is tied to that job only.
+* Owner sees messages in job view + maybe in an “Activity/Recent” feed.
+* Tradie 1 **cannot** see Job 3 chat.
+
+---
+
+### 🧾 Step 7: End-to-end real workflow
+
+Pick **Job 4 – Leaking kitchen sink** and run it fully:
+
+1. Owner creates job.
+2. Assigns to Tradie 2.
+3. Tradie 2:
+
+   * Starts time tracking.
+   * Adds notes & photos.
+   * Marks job as **Completed**.
+4. Owner:
+
+   * Creates **Quote** from job → sends to client.
+   * Client (your +alias email) accepts quote.
+   * Owner converts quote → **Invoice**.
+   * Sends invoice → pays via Stripe test card.
+5. Invoice moves to **Paid** status.
+6. Job shows as **Completed & Paid** in dispatch map and dashboard.
+
+If that works smoothly, this is honestly already “real-world ready”.
+
+---
+
+## 2️⃣ Replit master prompt – focus on team roles + map + dispatch + chat
+
+Here’s a single prompt you can paste into Replit AI so it checks the *code* for everything you just tested manually:
+
+> **REPLIT MASTER PROMPT – TEAM ROLES + MAP + DISPATCH + CHAT (TRADIETRACK)**
+>
+> I’m building TradieTrack, a SaaS app for tradies (jobs, quotes, invoices, map, dispatch, team roles, and chat).
+>
+> I want you to act as:
+>
+> * a backend QA engineer
+> * a frontend/UX reviewer
+> * and a product tester focused on **team management + maps + dispatch + chat**.
+>
+> Your job:
+> **Make sure nothing is “UI only” and all the team + map features actually work end-to-end in the code.**
+>
+> Please go through the entire codebase and do the following:
+>
+> 1️⃣ **Understand and verify the data model (roles + jobs + locations + chat)**
+>
+> Find the models/tables for:
+>
+> * users
+> * businesses
+> * roles/permissions (owner, manager, tradie)
+> * jobs
+> * job assignments (who is assigned to which job)
+> * job locations (address, lat, lng)
+> * job status (new, scheduled, in-progress, completed, invoiced, paid)
+> * messages (team chat + job chat)
+>
+> Check and, if needed, improve:
+>
+> * relationships between these models
+> * that every job belongs to a business
+> * that every user belongs to a business and has a role
+> * that messages are linked to either a business (team chat) or job (job chat)
+>
+> 2️⃣ **Role-based access control (RBAC)**
+>
+> For all API routes, server functions, and UI pages related to:
+>
+> * Team / Users
+> * Jobs
+> * Map / Dispatch
+> * Chat
+>
+> Confirm:
+>
+> * **Owner** can:
+>
+>   * see all jobs for their business
+>   * manage team members (create/update/remove users + roles)
+>   * see & edit business settings and billing
+>   * see full map/dispatch view with all jobs
+> * **Manager** can:
+>
+>   * see all jobs for their business
+>   * assign jobs to tradies
+>   * update job statuses
+>   * see full map/dispatch view
+>   * NOT change billing or subscription
+>   * NOT remove the owner
+> * **Tradie** can:
+>
+>   * only see jobs assigned to them
+>   * see their own jobs on the map/dispatch view
+>   * update status/time tracking/notes/photos for their jobs
+>   * NOT manage team members or billing
+>   * NOT see other tradies’ jobs unless explicitly allowed
+>
+> If any route or component allows a tradie to access data they shouldn’t, **tighten the checks** (e.g. by checking `user.role` and `job.business_id`).
+>
+> 3️⃣ **Map & job location system**
+>
+> Make sure the map and job locations are fully implemented:
+>
+> * On job create/update:
+>
+>   * Save job address to the database.
+>   * If geocoding is used, store `lat` + `lng`.
+> * On the **Map/Dispatch** page:
+>
+>   * Jobs are loaded from the backend with correct position (lat/lng or geocoded address).
+>   * Pins are rendered with:
+>
+>     * job title
+>     * status
+>     * assigned tradie
+> * If there is a “Use current location” or “Track location” feature:
+>
+>   * Confirm it calls a real function and that location data is stored in the backend (e.g. last known location for tradie or job).
+>   * If it’s not fully implemented, hide it or mark it clearly as “coming soon” for beta.
+> * Make sure:
+>
+>   * Owner and Manager see ALL jobs on the map.
+>   * Tradies see only their own jobs or a filtered subset according to their role.
+>
+> 4️⃣ **Dispatch board (time + assignment)**
+>
+> If there is a dispatch/schedule board:
+>
+> * Verify that drag-and-drop (if implemented) updates:
+>
+>   * job scheduled date/time
+>   * assigned tradie (if dragged to another column or lane)
+> * Confirm these updates persist in the database and are visible:
+>
+>   * on the jobs list
+>   * on the map
+>   * in each tradie’s view
+>
+> If dispatch UI exists but backend logic is incomplete, either:
+>
+> * complete the backend implementation, OR
+> * hide/disable those controls for beta.
+>
+> 5️⃣ **Team chat and job chat**
+>
+> Find the implementation for:
+>
+> * team-wide chat channels (business chat)
+> * job-specific chat (comments/messages tied to a job)
+>
+> Confirm:
+>
+> * Messages are stored with:
+>
+>   * sender user ID
+>   * business ID
+>   * job ID (for job chat) or null (for general/team chat)
+>   * timestamp
+> * Team chat:
+>
+>   * Only users from the same business can see messages.
+>   * All roles (owner, manager, tradie) can send messages.
+> * Job chat:
+>
+>   * Only the owner, managers, and assigned tradies can see messages.
+>   * Messages appear on the job detail view.
+>
+> Make sure no chat components are “fake” UI without proper backend calls.
+>
+> 6️⃣ **Status changes, time tracking, and their impact**
+>
+> For job status and time tracking:
+>
+> * Ensure that:
+>
+>   * status updates are sent to the backend and persisted
+>   * time tracking entries (start, stop, duration) are saved with a job and user reference
+> * Map and dispatch should reflect:
+>
+>   * job status (e.g. different pin colours or labels)
+>   * jobs in progress vs completed
+>
+> Double-check that:
+>
+> * marking a job as **Completed** doesn’t break any flows
+> * completion can be used later to filter or report jobs
+>
+> 7️⃣ **UI/UX sanity for team + map**
+>
+> On the frontend, review:
+>
+> * Owner dashboard:
+>
+>   * Shows overview of today’s jobs, statuses, and team activity
+>   * Has clear entry points to Map/Dispatch and Team management
+> * Manager view:
+>
+>   * Similar tools but without billing controls
+> * Tradie view:
+>
+>   * Focused on “My jobs today”, simple layout
+>   * Easy access to job details, map directions, time tracking, and job chat
+> * Map/Dispatch:
+>
+>   * Works well on desktop and is readable on mobile
+>   * No huge unused white columns
+>
+> Ensure labels are tradie-friendly (e.g. “New job”, “On the way”, “On site”, “Completed”), not developer jargon.
+>
+> 8️⃣ **Flag any half-finished features**
+>
+> As you scan the code, identify:
+>
+> * components with TODOs
+> * routes that return dummy data
+> * unfinished implementations for map, dispatch, team, or chat
+>
+> For anything that is visible in the UI but not actually implemented:
+>
+> * either finish the backend logic, OR
+> * temporarily hide or mark as “coming soon” so real tradies don’t think it’s broken.
+>
+> 9️⃣ **Final summary**
+>
+> At the end, provide (in comments or console output):
+>
+> * ✅ Which team+map+dispatch+chat flows are fully working
+> * ⚠️ Which ones are partial and should be labelled beta/coming soon
+> * 🛠 Any critical security or permission issues found
+> * 🎯 A short MUST-FIX list before I invite my first 3 real tradie teams
+>
+> Use my existing codebase as the source of truth and bring it to a **technically solid beta** where:
+>
+> * roles behave correctly
+> * the map & dispatch system is functional
+> * chat is stored and permissioned properly
+> * no key feature is “UI only” with no backend.
+
+---
+
+If you run that prompt in Replit *and* you run through the manual test script on your phone with those mock users, you’ll be extremely close to knowing:
+
+* ✅ Roles work
+* ✅ Map + dispatch works
+* ✅ Team chat + job chat works
+* ✅ Nothing is half-done just for show
+
+If you want, next I can help you write a **“What this app can realistically earn” pitch** to show your dad, using proper pricing + user count scenarios so he sees why you’re putting this much time into it.

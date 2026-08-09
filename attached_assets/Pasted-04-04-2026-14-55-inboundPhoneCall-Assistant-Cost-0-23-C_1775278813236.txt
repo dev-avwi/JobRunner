@@ -1,0 +1,90 @@
+04/04/2026 14:55 inboundPhoneCall
+Assistant
+Cost: $0.23
+Customer: +61 (458) 300 051
+Ended: Customer Ended Call
+Duration: 2m 1s
+019d56d8-3e3...
+View detailed logs for this call session
+Recording
+02:01
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+0 of 17 messages selected
+
+Assistant
+Good day. Thanks for calling Mike's Plumbing Services. How can I help you today?
+2:55:07 PM(+00:01.62)
+User
+How do you work?
+
+2:55:14 PM(+00:08.04)
+
+Assistant
+Good day. At Mike's Plumbing Services, we offer a range of trade services, including plumbing repairs, installations, waterproofing, tiling, painting, pergola construction, and more. If you've got a job you'd like done or need a quote, you can tell me a bit about the work you need. Where it's located, and when you'd like it done. Then I'll make sure our team gets back to you with the next steps. How can I assist you with your project today?
+2:55:16 PM(+00:10.12)
+User
+I've got a bathroom renovation.
+
+2:55:45 PM(+00:38.98)
+
+Assistant
+That sounds great. To help you further, may I please have your name and phone number? Also, could you tell me the address or suburb where the bathroom renovation will take place? And if there's a preferred timing or urgency for the work? Any specific details you want to mention about the renovation would be helpful too.
+2:55:48 PM(+00:42.66)
+User
+My name is John Smith, and I live at 16 Greenfield Court.
+
+2:56:09 PM(+01:03.27)
+
+Assistant
+Thanks, John. Could you please provide your phone number as well? And let me know if you have a preferred timing or urgency for your bathroom renovation. Any specific details about the work would be great to know too.
+2:56:16 PM(+01:10.31)
+User
+Oman. Phone number is 0 4 5 8 3 0 0 0. 5 1. And it's just a repair, to be honest.
+
+2:56:30 PM(+01:24.82)
+
+Capture Lead
+Completed successfully
+02:56 PM
+2:56:39 PM(+01:33.80)
+
+Check Availability
+Completed successfully
+02:56 PM
+2:56:39 PM(+01:33.80)
+
+Assistant
+1 moment. Thanks for that, John. Just to confirm, you've got a bathroom renovation repair at 16 Greenfield Court. And timing is flexible. I've got your phone number as 0
+2:56:40 PM(+01:34.91)
+User
+Yeah. Whatever.
+
+2:56:51 PM(+01:45.11)
+
+Assistant
+Thanks for confirming, John. I'll make sure the team gets back to you soon to discuss your bathroom repair. If you have any other questions or need
+2:56:53 PM(+01:47.61)
+User
+Eva again.
+
+2:57:00 PM(+01:54.23)
+
+Assistant
+Good day, Eva.
+2:57:02 PM(+01:56.28)
+User
+Testing.
+
+2:57:02 PM(+01:56.46)
+
+Assistant
+Good day. Thanks for calling Mike's Plumbing Services. Can I help you today?
+2:57:04 PM(+01:58.20)
+Customer ended the call
+02:57 PM

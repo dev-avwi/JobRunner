@@ -1,0 +1,72 @@
+he API HTML response issue was a testing environment quirk (Vite dev overlay), not a real bug. Let me run a focused test on the Payment settings:
+
+
+Tested your app and sent results to Agent
+
+User Login and Stripe Payment Settings
+
+Watch replay
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+There's a snag when trying to set up Stripe for Australian users. When the system tries to connect to Stripe to get things ready for payments, it hits an error because it's missing some required information for Australian accounts. This stops Australian users from completing their Stripe setup, but everything else, like logging in, navigating the dashboard, and viewing invoices, seems to be working fine.
+
+Restarted Start application
+
+Restarted Start application
+
+Decided on Stripe platform configuration (6 seconds)
+This is a Stripe platform configuration issue, not a code bug. The error says:
+
+"You can enable AU in your Country and Capabilities settings at https://dashboard.stripe.com/settings/applications/express"
+
+The TradieTrack Stripe platform account needs to have Australia (AU) enabled for Stripe Express accounts. This is a one-time configuration in the Stripe Dashboard.
+
+Let me add better error handling to show a clearer message to users:
+
+
+Show 2 more
+
+Opened server/stripeConnect.ts
+
+Decided on Stripe configuration diagnosis (4 seconds)
+The code is correct - this is a Stripe Dashboard configuration issue. The platform account needs to enable Australia. Let me improve the error handling to give users a clearer message:
+
+
+Show 2 more
+
+Restarted Start application
+
+Decided on Stripe configuration adjustment
+The test revealed a Stripe platform configuration issue. The error message clearly states:
+
+"You can enable AU in your Country and Capabilities settings at https://dashboard.stripe.com/settings/applications/express"
+
+This is NOT a code bug - the code is correctly implemented. The issue is that the TradieTrack Stripe platform account needs to have Australia (AU) enabled for Express accounts.
+
+To fix this (one-time setup in Stripe Dashboard):
+Go to https://dashboard.stripe.com/settings/applications/express
+In the Countries section, enable Australia (AU)
+Configure the required capabilities (card payments, transfers)
+Save the settings
+Once Australia is enabled, the Stripe Connect flow will work:
+
+Users can complete Stripe verification
+Payment controls will appear on invoices
+Payment links will work
+Webhooks will mark invoices as paid

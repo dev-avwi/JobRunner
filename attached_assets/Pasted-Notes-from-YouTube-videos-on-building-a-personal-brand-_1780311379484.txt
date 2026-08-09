@@ -1,0 +1,113 @@
+Notes from YouTube videos on building a personal brand, content strategy, audience growth, and marketing systems that generate leads and revenue.
+
+---
+
+# 🎥 Video 1 — How to Build a 7-Figure Personal Brand Before AI Closes the Window (Daniel Priestley)
+
+**Channel:** Daniel Priestley | **Focus:** Story-based personal brand strategy, content flywheel, AIO (AI optimisation), closing window for AI ads
+
+https://www.youtube.com/watch?v=D8RFe2_kOlA
+
+## The Core Thesis
+
+The window for building a personal brand with meaningful cut-through is closing — AI-generated content is improving fast. But there is one thing AI will never be able to replicate: your lived experience. AI has read everything but lived nothing. That asymmetry is your competitive advantage, and the time to use it is now.
+
+> "AI has never lived one day in its life. It's never had a unique experience. The thing that makes you valuable is finding stories that only you could say."
+> 
+
+---
+
+## The Algorithm Shift: From Social to Algorithmic Media
+
+Social media used to show you what your friends were doing. Algorithmic media shows you content on topics you're interested in — regardless of who posted it.
+
+This is a massive unlock for new creators. You no longer need to win people over one at a time or have an existing following. You need to talk about topics people care about, and the algorithm finds your audience for you.
+
+> Daniel built 20,000 followers in the social media era with enormous effort. He got 100,000+ subscribers far faster in the algorithmic era.
+> 
+
+**Implication**: don't use lack of followers as a reason not to start. The algorithm is the distribution mechanism now.
+
+---
+
+## The SEO → AIO Shift
+
+SEO is already saturated. Catching up to competitors takes months or years.
+
+AI optimisation (AIO) is wide open. If you publish quality content consistently over the next 1–2 years, AI algorithms will start recommending your content inside chatbot responses. Daniel's content is already being recommended by ChatGPT, Claude, Perplexity, and Google Gemini — and it's driving direct business results, not just vanity metrics.
+
+> "Can you imagine a perfect customer going to ChatGPT, asking a question, and it recommends your piece of content? That really happens in real time every single day."
+> 
+
+**The opportunity**: AI ads are coming. Sam Altman has confirmed this. 800M people per week use ChatGPT. You'll be able to advertise at the exact moment someone is engaged in a relevant conversation. Big corporations take 12+ months to adopt new ad platforms. Small businesses that move in the first 1–2 years win — this is the same window that existed with Google Ads and Facebook Ads when they launched.
+
+---
+
+## Step 1 — Discover Your Story (Pause, Reflect, Document)
+
+**The method**: go for a walk, find a quiet spot, open your photos app set to month-by-month view. Go through the last 60 months. For every month, find one story you lived that contains a lesson valuable to someone else.
+
+Examples:
+
+- Won an award → what did the process teach you?
+- Difficult hire that worked out → what made the difference?
+- Client problem that took 2 years to solve → what was the insight?
+
+**The question to ask**: "When was the last time I did something special — got a remarkable result — that I can explain step by step?"
+
+Goal: find at least 10 stories. For each, write: what was the story, and what was the lesson?
+
+**The Steven Bartlett principle**: "Relatable beats impressive."
+
+Daniel went on Diary of a CEO alongside founders of unicorn businesses. His episode got 2M+ views. Theirs got 300–400K. Why? Relatable stories travel further than impressive ones.
+
+> Stop waiting until you cure cancer or launch a rocket. Look for the next step in people's evolution, not the final step.
+> 
+
+**AI prompt to use**: *"I want to share a powerful story of mine with an audience of [type of person]. The story will be unique to me but contain a powerful lesson for others. Ask me questions and help me refine my story and distill the lessons."*
+
+---
+
+## Step 2 — Test and Get Traction (Content Strategy)
+
+**Short-form content** (under 3 minutes, 3x per week minimum): break your stories into hooks using three frames:
+
+- **Pain** — a problem your audience experiences
+- **Prize** — an outcome they want
+- **News** — a public event or figure that illustrates your point
+
+Suggested cadence: Pain on Monday, News on Wednesday, Prize on Friday.
+
+**Long-form content** (10–15 min video, 1,500-word blog, 1–2 hour podcast): each short-form piece sends people to a long-form piece that explains the *process* behind the pain/prize/news. The long-form is the substance.
+
+**Call to action (early stage)**: "Drop me a message if you're interested in knowing more."
+
+Every social platform has a message button. This is the most powerful early CTA because it creates real conversations. Aim for 30 conversations with potential customers — learn what resonates, what questions they have, what they're actually trying to solve.
+
+**Why this works**: content marketing produces leads at half the price of advertising, and those leads convert at twice the rate. And if your content is strong, it reduces your ad costs by 10–30%.
+
+---
+
+## Step 3 — Scale to 7–8 Figures
+
+**The full flywheel**:
+
+- Short-form posts (daily) on personal brand channels → drive traffic to
+- Long-form signature content (YouTube, podcast, newsletter, blog, book) → drive traffic to
+- Call to action (waiting list, assessment, webinar, mini-course) → captures name + email + phone → leads into
+- Sales calls or follow-up sequences or special offers → revenue
+
+**Personal brand vs business brand**: personal brands get 20x the cut-through of business brands. Social media was built for people, not companies. Use your personal brand for short-form and long-form content. Transition people to your business brand at the CTA stage.
+
+**The 7-figure math**: $25K/week = $1.3M/year. 85 sales/month at $10K/sale = $10M/year. Neither of these requires millions of followers. They require a consistent pipeline of warm leads turning hot.
+
+---
+
+## Apply to Your Projects
+
+- **The pause-reflect-document exercise** — worth doing for each of your apps. What are the stories from building Kindred, Criti, and JobRunner? The late-night breakthroughs, the user interviews that changed your direction, the moments of doubt and what pushed you through. These are your content for the next 12 months.
+- **AIO over SEO** — publishing consistent, specific content about your app's domain (job seeking, design critique, emotional connection) now is building AIO authority that will compound. Start before competitors think to.
+- **The algorithmic media insight** — you don't need an existing audience. You need to talk about the right topics. Even a small account posting consistently about the problem your app solves will find its audience.
+- **Pain/Prize/News as your content structure** — for each app, map out: what is the pain? What is the prize? What news/trends in that space can you reference? That's 3 posts per week per app, all pre-structured.
+- **The DM CTA** — for early-stage apps, "drop me a message if you're interested" is the right CTA before you have a polished funnel. Get 30 conversations. Learn what resonates. Then build the long-form content and landing pages around what you discover.
+- **AI ads window** — if/when ChatGPT ads launch, being already present in that ecosystem (through AIO content) means you're advertising to a pre-warmed audience. Worth monitoring closely.

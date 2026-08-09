@@ -1,0 +1,321 @@
+Here's the complete revised presentation — every word, every slide.
+
+---
+
+**THE OPENING — Before Any Slides**
+
+Walk in. Stand still. Make eye contact with a few people. Then say:
+
+*"Hi everyone. My name is Ayden Vogler. I'm 15 years old, I'm in Year 10 here in Cairns, and over the last year I've built a software platform for Australian trade businesses from scratch.*
+
+*I want to show you something before I explain what it does."*
+
+Pick up your phone. Call the Vapi number. Put it on speaker.
+
+Let the room hear it answer professionally.
+
+Let it run 20-30 seconds. Then hang up.
+
+*"That call just created a lead automatically in an app on my phone. The tradie gets a notification when he's free. The job gets booked. No missed opportunity.*
+
+*But that's not actually the impressive part. Let me show you what happens next."*
+
+Now go to Slide 1.
+
+---
+
+**SLIDE 1 — THE PROBLEM**
+
+**What's on the screen:**
+
+Bold headline:
+*"400,000 trade businesses in Australia. Most of them running on software built in 2012."*
+
+Three lines underneath:
+- Missed calls on the job site = missed work
+- Invoices that never get sent = unpaid revenue  
+- Payments that take 60+ days = cashflow problems
+
+**What you say:**
+
+*"There are 400,000 trade businesses in Australia. Plumbers, electricians, builders, HVAC. Most of them are running their business from a combination of paper job sheets, WhatsApp group chats, and gut feel.*
+
+*The average trade business loses between $30,000 and $50,000 a year to three things — missed calls that turn into missed jobs, invoices that never get sent because the tradie is too busy, and payments that take months to collect because nobody wants to chase them manually.*
+
+*The software that exists to fix this was built over a decade ago. Tradify. ServiceM8. They haven't kept up with how businesses actually run today.*
+
+*I decided to build something that has."*
+
+---
+
+**SLIDE 2 — THE MARKET**
+
+**What's on the screen:**
+
+Four facts. Large and clean:
+
+- Tradify sold for **$100M NZD**
+- FieldPulse raised **$79M USD** at a $300M valuation
+- Australian FSM market growing at **10.7% annually**
+- No modern competitor built for today exists in Australia
+
+**What you say:**
+
+*"The market is proven. Tradify — one of the main competitors — was acquired for $100 million New Zealand dollars. FieldPulse in the US raised $79 million. The field service management market in Australia is growing at over 10% a year.*
+
+*But every existing product in this market was designed before modern technology was a practical tool. Nobody has rebuilt this from scratch with what's available today.*
+
+*That's the gap. And that's what JobRunner fills."*
+
+---
+
+**SLIDE 3 — THE PRODUCT**
+
+**What's on the screen:**
+
+JobRunner logo centred at the top.
+
+One sentence:
+*"A complete field service platform built with the technology that exists today — not the technology of 2012."*
+
+Two columns of features:
+
+Left:
+- Phone answering that creates leads automatically
+- Live GPS team tracking and dispatch
+- Quotes, invoices and payments in one connected flow
+
+Right:
+- Two-way SMS client communication
+- Safety and compliance built in
+- Full iOS and Android apps with offline support
+
+**What you say:**
+
+*"JobRunner is a complete operating system for trade businesses. Not individual features bolted together — one connected system where everything flows into everything else.*
+
+*The phone call becomes a lead. The lead becomes a job. The job assigns to a worker. The worker completes it. The invoice creates itself from the time tracking data. The client pays from their phone.*
+
+*Every step connected. Nothing falls through the cracks.*
+
+*Let me show you how it actually works."*
+
+---
+
+**SLIDE 4 — THE DEMO**
+
+**What's on the screen:**
+
+Simple heading: *"The complete workflow — live."*
+
+Subheading: *"From missed call to payment collected."*
+
+Nothing else on this slide while you demo.
+
+**What you do and say:**
+
+*"That call we heard at the start — here's the lead it created."*
+
+Open the app. Show the lead with the caller details auto-filled.
+
+*"Name, phone number, what they need, how urgent — all captured automatically. The tradie gets a notification. He calls back. Books the job.*
+
+*Now watch what happens when the job gets assigned."*
+
+Open the dispatch board. Assign the job to a worker on your phone.
+
+Have someone hold the second phone facing the room.
+
+*"Watch the worker's phone."*
+
+Notification fires on the second phone.
+
+*"Assigned instantly. No phone call. No WhatsApp message. The worker accepts and they're on their way.*
+
+*The tradie can now see exactly where every worker is."*
+
+Open the GPS map. Show the live marker.
+
+*"Every worker. Every job. Real time. If someone's running late the system detects it and notifies the client automatically.*
+
+*Job's done. Here's what happens next."*
+
+Mark the job complete.
+
+*"The app flags it immediately — completed job, not yet invoiced. One tap to create the invoice from the time tracking data. The client gets an SMS with a payment link.*"
+
+Show the SMS firing. Show the payment portal.
+
+*"Client pays from their phone. Invoice marked paid. Receipt generated. The whole cycle — completely connected.*
+
+*That's what I mean by built with better technology. Not individual features. One system that runs the whole day."*
+
+---
+
+**SLIDE 5 — THE NUMBERS**
+
+**What's on the screen:**
+
+Six numbers. Large font. Lots of white space:
+
+**158** database tables
+**364** features built and verified  
+**98.6%** feature completion
+**14** integrations
+**12** months to build
+**1** developer
+
+Underneath in smaller text:
+*Stripe — Twilio — Vapi — OpenAI — Xero — SendGrid — Google Calendar — Sentry*
+
+**What you say:**
+
+*"For context on what's actually been built — 158 database tables, 364 features, 14 integrations. Stripe for payments including contactless Tap to Pay. Twilio for two-way SMS. Real-time location tracking. Offline mode with sync queue for when workers are in areas with no signal. Xero integration for accounting.*
+
+*12 months to build. One developer.*
+
+*While going to school full time.*
+
+*First pilot customers are starting this week."*
+
+Pause. Let that land.
+
+---
+
+**SLIDE 6 — THE COMPETITION**
+
+**What's on the screen:**
+
+Clean comparison table:
+
+| Feature | JobRunner | Tradify | ServiceM8 |
+|---------|-----------|---------|-----------|
+| Calls answered automatically | ✅ | ❌ | ❌ |
+| Live GPS team tracking | ✅ | ❌ | ❌ |
+| Full Android app | ✅ | ✅ | ❌ |
+| Native WHS and safety | ✅ | Basic | Basic |
+| Connected call to cash flow | ✅ | ❌ | ❌ |
+| Subcontractor network | ✅ | Basic | Basic |
+| Price solo tradie | $49/mo | $49/mo | $29-149/mo |
+
+**What you say:**
+
+*"Against the two main competitors JobRunner wins on GPS tracking, safety compliance, Android support, and the connected workflow.*
+
+*Tradify has no live GPS. ServiceM8 has no Android app — which is a serious problem in Australia where roughly half the market uses Android phones.*
+
+*Neither of them has a connected call to cash workflow. Both of them were built feature by feature over a decade. JobRunner was designed as one system from the start.*
+
+*At the same price point for a solo tradie. Significantly cheaper for teams — $99 a month for up to five workers versus Tradify charging $35 per person per month, which is $175 for five people."*
+
+---
+
+**SLIDE 7 — THE NETWORK EFFECT**
+
+**What's on the screen:**
+
+Simple diagram — three business logos connected by lines to a central subcontractor figure.
+
+Heading: *"Every subcontractor who joins becomes a gateway to the next business."*
+
+**What you say:**
+
+*"This is the part I'm most proud of from a product design perspective.*
+
+*A subcontractor in the construction industry typically works for three or four different builders. Not full time for any of them — project by project.*
+
+*When one builder puts their subbies on JobRunner, those subbies now have the app. Their schedule, their jobs, their earnings — all in one place across every business they work for.*
+
+*When they go to work for the next builder and that builder isn't on JobRunner — the subbie asks why. That builder signs up.*
+
+*Every subcontractor who joins through one business becomes a natural entry point for every other business they work for. Growth compounds without paid acquisition.*
+
+*That's not a feature. That's a distribution mechanic built into the product itself."*
+
+---
+
+**SLIDE 8 — TRACTION AND PLAN**
+
+**What's on the screen:**
+
+**This week:**
+Thirkell Engineering and Granite Fabricating onboarding as founding members — Cairns
+
+**90 days:**
+10 paying customers from direct Cairns outreach
+
+**6 months:**
+50 customers across FNQ through word of mouth and subcontractor network
+
+**What you say:**
+
+*"We're not in the idea stage. The product is built, tested, and integrated. This week two local Cairns businesses are onboarding.*
+
+*The 90 day goal is 10 paying customers from direct outreach here in Cairns. The advantage I have over any competitor is that I'm local. I can sit with a tradie in person, help them set up their first job, and be there the following week to make sure it's working.*
+
+*No company based in Auckland or Sydney can do that in Cairns."*
+
+---
+
+**SLIDE 9 — WHAT I'M LOOKING FOR**
+
+**What's on the screen:**
+
+Three clear asks. Nothing else:
+
+**1. Connections**
+Trade business owners in FNQ who are frustrated with their current software
+
+**2. Advice**
+From founders who have scaled a product before — what to prioritise in the first 90 days
+
+**3. Direction**
+What funding pathways exist in Queensland for an early stage product ready to launch
+
+**What you say:**
+
+*"I'm not here to pitch and disappear. I'm here because this room has people who have built things before.*
+
+*Three things would genuinely help me right now.*
+
+*First — introductions. If anyone here knows a tradie or trade business owner who is frustrated with what they're currently using, that introduction is worth more to me than anything else.*
+
+*Second — advice. I know how to build software. I'm still learning how to sell it and scale it. If anyone has been through the early customer acquisition stage and is willing to share what actually worked — I want to hear that.*
+
+*Third — direction on funding. I don't know what's available in Queensland for something at this stage. Grants, accelerators, angels — I'd love to understand the landscape.*
+
+*My name is Ayden Vogler. I'm 15 and I'm from Cairns. I built this because I saw a real problem and figured someone should fix it.*
+
+*Happy to take any questions."*
+
+Step back. Done.
+
+---
+
+**Full Timing**
+
+| Section | Time |
+|---------|------|
+| Opening and live call | 1 min |
+| Slide 1 — Problem | 1 min |
+| Slide 2 — Market | 45 sec |
+| Slide 3 — Product | 45 sec |
+| Slide 4 — Live demo | 3 min |
+| Slide 5 — Numbers | 45 sec |
+| Slide 6 — Competition | 45 sec |
+| Slide 7 — Network effect | 1 min |
+| Slide 8 — Traction | 45 sec |
+| Slide 9 — Ask | 1 min |
+| **Total** | **~11 minutes** |
+
+---
+
+**The Three Things To Do Tonight**
+
+Build the slides. Canva or Google Slides. Clean white or dark background. Big text. Minimal design. The content does the work not the colours.
+
+Save the Vapi number in your contacts as JobRunner Demo so you're not searching for it on the day.
+
+Read the opening out loud three times before you sleep. Just the first 60 seconds. Get it completely natural so you're not thinking about words when you walk in that room.
+
+Everything else you already know. It's your product. Own it.

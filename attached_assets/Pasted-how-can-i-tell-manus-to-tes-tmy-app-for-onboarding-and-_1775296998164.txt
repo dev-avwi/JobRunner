@@ -1,0 +1,54 @@
+how can i tell manus to tes tmy app for onboarding and rate it and tell me anything a tradie would stumble across, also after that, check how the twilio phione nunbers, work, dont actually buy any but make sure they work. and yeah make sure that all integratiosn are working, and overall check all pages and give the app a total rating
+
+8:02 PM
+Tell Manus exactly this:
+
+"I need you to do a complete independent audit of JobRunner at jobrunner.com.au. This is a SaaS platform for Australian trade businesses. Test everything as if you are a real user — not a developer reviewing code.
+
+PART 1 — ONBOARDING AUDIT
+
+Create three separate fresh accounts and go through each onboarding path completely:
+
+Account 1 — Business owner who is a plumber with 3 workers Go through the full owner onboarding. Rate every screen on how clear it is for a non-technical tradie. Tell me exactly what questions are asked, whether they make sense for a real plumber, whether anything is confusing or unnecessary, and whether the demo jobs that appear afterwards are actually plumbing-relevant. Rate the owner onboarding experience out of 10 and list the top 5 things that would make a real tradie give up.
+
+Account 2 — Worker joining via invite code First generate an invite code from Account 1. Then create a fresh account, select I was invited to a team, and enter the code. Rate the worker onboarding experience. Is it fast enough? Is it clear what to do? Does the worker dashboard make sense for someone who just needs to see their jobs for the day?
+
+Account 3 — Subcontractor Go through the subbie onboarding. Is the privacy explanation screen clear and reassuring? Does the subbie dashboard feel purpose-built or like a cut-down owner dashboard? Rate out of 10.
+
+For each account tell me: screenshot of every step, exact wording shown, pass or fail on clarity, and what a real tradie would think at each moment.
+
+PART 2 — TWILIO PHONE NUMBER AUDIT
+
+Check how Twilio phone numbers work throughout the app without actually purchasing any new numbers. Specifically:
+
+- Go to Settings and find where phone numbers are configured. Is it clear to a tradie what this does and why they need it? - Check the Chat Hub — does it show the connected number clearly? Is the SMS feature obviously functional? - Check the AI Receptionist settings — is it clear how a phone number connects to the AI receptionist? - Look at the Twilio configuration in settings — is anything broken, confusing, or missing? - Check what happens when a business tries to use SMS features without a number configured — is the error helpful or cryptic? - Verify the shared platform number is working for businesses on base plans
+
+Tell me everything that looks broken, confusing, or missing around phone number configuration.
+
+PART 3 — INTEGRATION HEALTH CHECK
+
+Test every integration visible in the app and tell me if each one looks correctly set up, broken, or incomplete:
+
+- Xero — does the connect flow look correct? Does it show the right scopes and branding? - MYOB — same check - Google Calendar — does the connect and sync flow work? - Stripe — does the billing page load correctly? Are all plan options showing? - SendGrid — send a test action that triggers an email and check if it arrives - Vapi AI Receptionist — does the configuration page load? Can settings be changed? - Sentry — check if error tracking appears to be active
+
+For each integration: working, partially working, or broken. And what specifically is wrong.
+
+PART 4 — FULL APP PAGE AUDIT
+
+Go through every single page in the app as a logged-in business owner using the demo account demo@jobrunner.com.au password demo123. For each page tell me:
+
+- Does it load without errors - Does the data look realistic and professional or does it look like test data - Is anything obviously broken or missing - Would a real tradie understand what this page is for
+
+Pages to check: Dashboard, Jobs list, Job detail, Create job, Quotes, Invoices, Payment Hub, Action Centre, Chase Queue, Schedule, Dispatch Board, Map, Chat Hub, Team Management, GPS tracking, Timesheets, WHS Safety, SWMS, Incidents, Client list, Client portal, Autopilot, Reports, Settings, Billing, Integrations, AI Receptionist, Website addon, More menu on mobile.
+
+PART 5 — OVERALL RATING
+
+After testing everything give me:
+
+- Onboarding rating out of 10 for each user type - Integration health rating out of 10 - Overall app quality rating out of 10 - The single most important thing to fix before showing this to a paying customer - The three biggest strengths that would make a tradie choose JobRunner over Tradify or ServiceM8 - Anything that would make a tradie uninstall the app in the first 5 minutes - A launch readiness verdict — is this ready for real paying customers or not
+
+Be completely honest. Do not give diplomatic answers. I need to know about real problems before real customers find them."
+
+That brief covers everything you asked for — onboarding rating, Twilio check without buying numbers, integration health, full page audit, and an overall score.
+
+Manus will take a while on this one — it's a thorough audit. Let it run and come back with the results. Whatever it finds, bring back here and we'll prioritise the fixes.

@@ -1,0 +1,455 @@
+Nice, this is the fun part — “is this thing actually ready to ship?” 😄
+Here’s a single **Replit master testing prompt** you can paste straight into Replit AI for **TradieTrack**.
+
+---
+
+### 🧠 REPLIT MASTER TESTING PROMPT — FULL DEEP DIVE FOR TRADIETRACK
+
+I want you to act as:
+
+* Senior full-stack engineer
+* QA engineer
+* SaaS product tester
+* UX reviewer (iOS/ServiceM8 style)
+
+The project is **TradieTrack** — a job / quote / invoice / payments / team app for tradies.
+
+Your job:
+**Do a full deep breakdown of the entire app and turn it into a technically solid, production-ready beta.**
+No feature should be “UI only”. Every main flow must actually work end-to-end.
+
+---
+
+## 1. First: Understand the codebase
+
+1. Scan the whole project and identify:
+
+   * Tech stack (frontend, backend, DB, auth, email, payments)
+   * Main modules / folders (auth, dashboard, jobs, clients, quotes, invoices, calendar, files, chat, map, settings, etc.)
+   * Data models (User, Business, TeamMember, Client, Job, Quote, Invoice, Message, Notification, Subscription, etc.)
+
+2. Produce an internal map (in your reasoning) of:
+
+   * Routes / API endpoints
+   * Core React/JS/TS components / pages
+   * Services (Stripe, SendGrid, maps, storage, etc.)
+
+Use this as the base for all checks below.
+
+---
+
+## 2. Expected feature set (check each one exists & actually works)
+
+Treat these as **must-check** items. For each, verify:
+
+* Is there a UI for this?
+* Is there working backend logic?
+* Is data correctly saved/loaded from the DB?
+* Are errors handled?
+
+### A) Auth, onboarding & roles
+
+**Flows to verify:**
+
+* Sign up / login / logout
+* Forgot/reset password (or label clearly “coming soon”)
+* Onboarding wizard that collects:
+
+  * Business/trade type (plumbing, electrical, etc.)
+  * Business name, ABN, phone, address
+  * Solo tradie vs team/owner choice
+  * Subscription tier (Free vs Pro, even if Stripe is test mode)
+
+**Roles to support:**
+
+* **Owner/Admin** – full access, team management, billing
+* **Tradie/Team member** – can see assigned jobs, job chat, time tracking, map, but limited settings
+* Make sure permissions are enforced in backend (not just hidden buttons in UI).
+
+---
+
+### B) Dashboards (Owner vs Tradie)
+
+**Owner/Admin dashboard should show:**
+
+* Today’s jobs / upcoming jobs
+* Overdue invoices & quotes awaiting acceptance
+* Revenue summary for this month
+* Quick actions: New Job, New Quote, New Invoice
+* “Getting started” / onboarding checklist (if implemented)
+
+**Tradie dashboard should show:**
+
+* Today’s jobs (assigned to that tradie)
+* Simple status: Scheduled, On the way, In progress, Complete
+* Access to job details, map, time tracking, job chat
+
+Check that:
+
+* Different dashboards actually render based on role.
+* Routes & permissions match the role (e.g., tradie cannot see billing or team management pages).
+
+---
+
+### C) Clients module
+
+* Add / edit / archive client
+* Required fields validated (name, email or phone, address)
+* Linking:
+
+  * Jobs, quotes, invoices correctly reference the client
+* List & detail views:
+
+  * Show recent jobs, quotes, invoices for that client
+
+---
+
+### D) Jobs module (core of the app)
+
+Check **CRUD + workflow**:
+
+* Create job:
+
+  * Client selection
+  * Job title + description
+  * Address / location
+  * Due date / time window
+  * Assigned tradie(s) / team
+* Status pipeline:
+
+  * New → Scheduled → On the way → In progress → Completed (or your version)
+  * Status is stored and reflected correctly in UI.
+* Attachments:
+
+  * Before/after photos, PDFs, files – check upload, storage & retrieval.
+* Job history:
+
+  * Changes in status, notes, time logs are stored.
+
+---
+
+### E) Quotes module (with live paper-style preview)
+
+You should treat Quotes as **serious business documents**, like ServiceM8.
+
+Verify:
+
+* Can create a Quote **from**:
+
+  * A job
+  * Or directly from a client
+* Line items:
+
+  * Description, quantity, unit price, line total
+  * GST calculation (if applicable)
+  * Subtotal, GST, Total
+* Auto numbers: Q-1001, Q-1002, etc. (no duplicates).
+* Live preview:
+
+  * Editing fields updates preview immediately.
+  * Long descriptions don’t break layout.
+* Statuses:
+
+  * Draft / Sent / Accepted / Declined
+  * Status changes reflect correctly when quote is sent/accepted.
+
+---
+
+### F) Invoices module
+
+Check:
+
+* Can convert Quote → Invoice:
+
+  * All items and totals copied correctly.
+  * Uses new invoice number INV-1001, INV-1002…
+* Can also create invoice directly from job/client.
+* Statuses:
+
+  * Draft / Sent / Part-paid (if supported) / Paid / Overdue
+* Correct totals & GST.
+* Mark as paid manually **and** via Stripe (if invoice payments are implemented).
+
+---
+
+### G) Email + PDF (SendGrid integration)
+
+**Email flows to check:**
+
+* “Send Quote” → sends email to client
+* “Send Invoice” → sends email to client
+* “Payment receipt” email (if implemented)
+* **From**: verified sender (e.g. [no-reply@tradietrack.app](mailto:no-reply@tradietrack.app))
+* **Reply-To**: tradie’s business email
+
+**PDF/Template checks:**
+
+For both quotes and invoices, PDFs must include:
+
+* Business name, logo (Pro), ABN, contact details
+* Client name & address
+* Quote/Invoice number
+* Dates (issued, due if invoice)
+* Line items, GST, totals
+* Optional notes/terms
+* “Powered by TradieTrack” where appropriate
+
+Check PDF generation code and confirm it is actually called when sending.
+
+---
+
+### H) Stripe integration
+
+You likely use Stripe for:
+
+1. **TradieTrack subscriptions (Free vs Pro)**
+2. (Optional) Clients paying invoices online
+
+Check:
+
+* API keys are in env vars.
+* Test mode is correctly enabled.
+* Creating/Updating subscriptions:
+
+  * On success: update Business.subscription_tier and status.
+  * On failure: errors handled, no half-created subs.
+* Webhooks:
+
+  * Update subscription when payment succeeds/expires.
+* If invoice payments exist:
+
+  * PaymentIntent created per invoice
+  * Success → marks invoice as Paid.
+
+---
+
+### I) Map & location tracking (Owner map view + job locations + team)
+
+This is important:
+
+* Jobs must store:
+
+  * Address text
+  * Lat/Lng (from geocoding/autocomplete or manual)
+* Map page for Owner/Manager:
+
+Verify:
+
+* Shows all jobs as pins in their region.
+* Pin colour or label reflects status (Scheduled / In progress / Completed).
+* Clicking a pin opens job summary (client, description, status, link to full job).
+* Filter by:
+
+  * Status
+  * Date
+  * Assigned tradie
+
+**Team location:**
+
+* If there is “track team locations” or “current position”:
+
+  * Confirm that a tradie’s app can send their location.
+  * Owner map page shows last known location per tradie.
+  * Location data stored sensibly (and not visible to wrong users).
+
+If location tracking is not fully wired, either:
+
+* Finish wiring it, or
+* Hide it / mark as “coming soon” for beta.
+
+---
+
+### J) Time tracking
+
+For each job, check:
+
+* Tradie can start/stop a timer or log hours.
+* Time entries are saved per job per tradie.
+* Totals can be seen by owner (e.g., total hours on job).
+* Optionally, can convert time logs into invoice line items (if implemented).
+
+---
+
+### K) Chat & collaboration
+
+There should be **three kinds** of chat:
+
+1. **Job chat** – conversation about a specific job (tradie + owner + office)
+2. **Team group chat** – whole team channel
+3. **Direct chat** – owner/manager ↔ specific tradie
+
+Check:
+
+* Data model associates messages with:
+
+  * job_id (for job chat)
+  * channel_id/team
+  * sender_id
+  * timestamps
+* Sending/receiving:
+
+  * Messages save to DB.
+  * UI updates on send.
+* Permissions:
+
+  * Client cannot see internal team chat (unless there’s a separate client portal).
+* Notifications:
+
+  * At least basic unread indication per chat/job.
+
+If any chat UI is present but not functional → implement or hide.
+
+---
+
+### L) Calendar & schedule
+
+* Jobs and appointments appear in a calendar view.
+* Filtering by:
+
+  * Tradie
+  * Day/week
+* Clicking a calendar entry opens job details.
+
+---
+
+### M) Files / attachments
+
+* Upload flow:
+
+  * File is uploaded to storage (not just kept in memory).
+  * DB stores reference (URL, metadata).
+* Attachments can be viewed/downloaded from job.
+
+---
+
+### N) Settings & templates
+
+Check **Business Settings** allows:
+
+* Business details (name, ABN, contact info)
+* Logo upload (for Pro)
+* Default terms for quotes/invoices
+* Email template settings (headers/footers, reply-to)
+* Timezone & currency
+
+Check **Quote/Invoice Template Settings** (if present):
+
+* Default expiry days for quotes.
+* Default payment terms (e.g., 7 days).
+* Whether “Powered by TradieTrack” is shown.
+
+Ensure all of these settings are actually used in the generated emails/PDFs.
+
+---
+
+### O) Free vs Pro behaviour
+
+Verify in code:
+
+* Free plan:
+
+  * Limited features (e.g., no branding, maybe limit on jobs/clients)
+  * “Powered by TradieTrack” visible
+* Pro plan:
+
+  * Logo, custom footer, maybe priority support
+  * Removal/minimisation of “Powered by TradieTrack”
+* UI should not show Pro-only actions as clickable if user is Free (either lock them with upsell or hide).
+
+---
+
+### P) UX & visual polish (ServiceM8 / iOS-level feel)
+
+Review the UI like a picky iOS user:
+
+* Typography consistent (same font family, heading sizes).
+* Buttons consistent (primary vs secondary styles).
+* Mobile layout:
+
+  * Bottom nav usable with thumb.
+  * No awkward empty column (like old scrollbar gap).
+  * No horizontal scrolling unless intentional.
+* Screen-by-screen:
+
+  * Dashboard: clear hierarchy, cards not cramped.
+  * Jobs list: easy scan, status and time obvious.
+  * Job detail: everything needed above the fold (client, address, actions, chat, map).
+  * Quotes/Invoices: editing vs preview is intuitive.
+  * Map view: not cluttered; pins readable.
+
+Fix any obvious layout bugs, alignment issues, or inconsistent spacing.
+
+---
+
+### Q) Error handling & edge cases
+
+For each main flow:
+
+* Missing/invalid fields → show clear validation messages.
+* Network/API errors → show friendly error, not silent failure.
+* Protect against:
+
+  * Creating quote without client
+  * Converting to invoice when totals invalid
+  * Deleting client with existing jobs/quotes/invoices (either prevent or cascade safely).
+
+---
+
+## 3. Run full end-to-end scenarios (mock users)
+
+Simulate in code (and through reasoning) two “users”:
+
+### Scenario 1 – Solo tradie on Free plan
+
+* Onboard as solo tradie.
+* Add one client.
+* Create a job.
+* Create and send a quote.
+* Accept quote (simulate client).
+* Convert to invoice, send, mark paid.
+* Track time & location on the job.
+* Use job chat for notes.
+* Verify everything appears in history.
+
+### Scenario 2 – Owner with a team on Pro plan
+
+* Onboard as owner of “Cairns Coast Plumbing” on Pro.
+* Add 2 team members.
+* Assign different jobs.
+* Use map view to see jobs + tradies.
+* Use team chat + job chat.
+* Use branded emails/PDFs.
+* Test Stripe subscription/payment flows.
+
+Document any breakages or incomplete flows.
+
+---
+
+## 4. Comparison against ServiceM8 (high-level)
+
+Without copying, loosely compare:
+
+* Do we support the same **core day-to-day flows**?
+* Are any big gaps obvious? (e.g., job checklist items, job photos, signatures, etc.)
+* List them as:
+
+  * “Nice to have later”
+  * vs “Must have for competitive beta”
+
+---
+
+## 5. Final output: Is TradieTrack ready for a real beta?
+
+At the end, produce a **clear, concise summary** (in comments or console):
+
+* ✅ Fully working flows (end-to-end)
+* ⚠️ Partially implemented features (should be hidden or marked “coming soon”)
+* 🛠 Critical bugs / missing logic (must fix before real tradies)
+* 🎯 A short “MUST FIX BEFORE LAUNCH” checklist
+
+Make actual code changes where safe and obvious (wiring buttons to routes, fixing bugs, tightening validation), and clearly mark anything that still needs manual work.
+
+---
+
+That’s the full prompt.
+Just copy–paste this into Replit AI on your TradieTrack project and let it chew through everything. Then you and I can go over what it finds and decide what to polish before you show it to real tradies.

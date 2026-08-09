@@ -1,0 +1,106 @@
+JobRunner Legal & Compliance Audit
+Report
+Date: March 30, 2026 Auditor: Manus AI
+Executive Summary
+JobRunner’s legal foundation is surprisingly robust for an Early Access platform. The
+documents correctly reference the Privacy Act 1988, the Australian Consumer Law
+(ACL), and specifically address modern edge cases like GPS tracking, AI-generated
+content, and SMS compliance.
+However, because JobRunner operates as a B2B2C platform (handling data and
+payments on behalf of other businesses), there are a few critical gaps related to thirdparty provider agreements (specifically Stripe Connect) and Australian
+Telecommunications law that need to be closed to ensure you are fully protected from
+liability.
+Here is the detailed breakdown of what is solid, what is missing, and the exact text you
+need to add to fix it.
+1. Terms of Service Audit
+What You Did Right
+Australian Consumer Law (ACL): Section 20 perfectly handles the mandatory
+ACL guarantees. You cannot contract out of these, and your phrasing correctly
+acknowledges them while limiting liability elsewhere.
+AI & SMS Disclaimers: Sections 24A and 24B correctly shift the liability for AI
+miscommunications and Spam Act 2003 (Cth) compliance onto the tradie. This is
+crucial.
+Limitation of Liability: Capping liability to the amount paid in the preceding 12
+months is standard SaaS best practice.
+Critical Gaps to Fix
+Gap 1: Stripe Connect Mandatory Boilerplate Because you are using Stripe Connect
+(where tradies accept payments from clients), Stripe legally requires you to include
+specific boilerplate text in your Terms of Service binding the tradie to the Stripe
+Connected Account Agreement. Simply saying “Stripe’s terms apply” is not enough to
+protect you if a tradie commits fraud.
+The Fix: Add the following exact text to Section 10 (Payment Processing): >
+“Payment processing services for users on JobRunner are provided by Stripe and
+are subject to the Stripe Connected Account Agreement, which includes the
+Stripe Terms of Service (collectively, the “Stripe Services Agreement”). By
+agreeing to these terms or continuing to operate as a user on JobRunner, you
+agree to be bound by the Stripe Services Agreement, as the same may be
+modified by Stripe from time to time. As a condition of JobRunner enabling
+payment processing services through Stripe, you agree to provide JobRunner
+accurate and complete information about you and your business, and you
+authorize JobRunner to share it and transaction information related to your use
+of the payment processing services provided by Stripe.”
+Gap 2: Call Recording Consent (Telecommunications Act) Under the
+Telecommunications (Interception and Access) Act 1979 (Cth), recording or
+transcribing phone calls without the knowledge of the caller is illegal. Your AI
+Receptionist (Vapi.ai) transcribes these calls. Your Terms state that customers will be
+informed it’s an “automated system,” but it must explicitly state that calls are
+recorded/transcribed.
+The Fix: Update Section 24A, bullet point 4 to read: > “You agree that the AI
+Receptionist must play an automated greeting informing callers that they are
+interacting with an AI system and that the call is being recorded and transcribed
+for quality and business purposes, in compliance with Australian
+telecommunications laws.”
+2. Privacy Policy Audit
+What You Did Right
+GPS & Location Data: Section 5A is excellent. Explicitly stating the retention
+period (12 months) and access controls protects you against surveillance
+complaints.
+Notifiable Data Breaches (NDB): Section 6A correctly references the OAIC and
+the mandatory NDB scheme.
+Employee Records Exemption: Section 7A correctly notes that the standard
+Australian employee records exemption does not apply to your handling of the
+tradies’ employees’ data. This is a common trap, and you avoided it.
+Critical Gaps to Fix
+Gap 1: Subcontractor Data The policy frequently mentions “employees” and “team
+members,” but JobRunner also has a Subcontractor portal. Subcontractors are legally
+distinct from employees in Australia.
+The Fix: Update the “Information We Collect” and “Employee Records
+Exemption” sections to explicitly include “subcontractors and independent
+contractors.”
+Gap 2: The “Controller vs. Processor” Distinction for Client Data JobRunner holds
+data about the tradies’ clients (homeowners). Under privacy principles, the tradie is
+the data “Controller” and JobRunner is the data “Processor.” If a homeowner emails
+JobRunner asking to delete their data, JobRunner legally shouldn’t do it directly—you
+must route that request to the tradie.
+The Fix: Add a new section under “Your Rights” (Section 7): > “Data of Our
+Customers’ Clients” > “JobRunner processes the personal information of our
+customers’ clients (e.g., homeowners) solely on behalf of our customers. If you
+are a client of a business that uses JobRunner and you wish to access, correct, or
+delete your personal information, please contact that business directly. If we
+receive such a request, we will forward it to the relevant business for them to
+action.”
+Gap 3: APP 5 Collection Notice at Signup While the Privacy Policy is comprehensive,
+Australian Privacy Principle (APP) 5 requires you to notify users at the time of
+collection (e.g., on the signup page).
+The Fix: You don’t need to change the policy document, but on your /auth?
+mode=signup page, right above the “Create Free Account” button, add a small
+disclaimer: > “By creating an account, you agree to our [Terms of Service] and
+acknowledge our [Privacy Policy].” (Make sure these are clickable links).
+3. Support & Deletion Flows
+Account Deletion: You have a /delete-account route, which complies with
+Apple App Store and Google Play Store mandatory requirements (both stores
+now require a clear, accessible way for users to delete their accounts and data
+from within the app and via a web link).
+Support Links: As previously verified, the footer and support pages now
+correctly route to the legal documents.
+Summary of Action Items
+1. Update Terms of Service: Copy-paste the mandatory Stripe Connect boilerplate
+into Section 10.
+2. Update Terms of Service: Add the call recording consent requirement to the AI
+Receptionist section.
+3. Update Privacy Policy: Add the “Data of Our Customers’ Clients” clause to clarify
+that homeowners must ask their tradie to delete their data, not you.
+4. Update Signup UI: Ensure there is a small “By signing up you agree to our Terms
+and Privacy Policy” text block with links on the registration form.
+Once these four minor text additions are made, JobRunner’s legal framework will be
+bulletproof for scaling in the Australian market.

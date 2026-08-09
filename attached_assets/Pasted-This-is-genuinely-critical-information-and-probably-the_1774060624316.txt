@@ -1,0 +1,55 @@
+This is genuinely critical information and probably the most practically important thing Manus has researched so far. Here's what you need to understand clearly.
+
+The Situation Has Changed
+The old limit was 25 connections. Under Xero's new March 2026 pricing model the default is now only 5 connections. That means you can have literally 5 businesses connect their Xero before the 6th one fails. That's not a scale problem — that's a problem you'd hit within your first week of real users.
+You need to get Xero certified before you launch commercially. Not eventually. Before.
+
+The Good News
+The Core tier at $35/month gives you 50 connections — enough for your first 6-12 months. The Plus tier at $245/month gives you 1,000 connections — enough to scale properly. The certification process is technical not subjective. You either pass the checklist or you don't. There's no pitch, no relationship, no luck involved.
+And the Xero Referral Program is genuinely valuable — $200 USD per new Xero subscriber you refer plus a 90% discount offer for your customers. That's a real acquisition tool once you're certified.
+
+The One Thing You Need To Build
+Looking at that checklist, the only thing JobRunner probably doesn't have yet is the "Sign Up with Xero" flow — a button on your signup page that lets new users create a JobRunner account using their existing Xero credentials. Everything else sounds like it's either already built or just needs verification.
+That's probably 3-5 days of work for Replit.
+
+Your Xero Certification Action Plan
+Give Replit this exact brief:
+Week 1-2:
+
+Implement "Sign Up with Xero" OAuth flow on the signup page
+Audit all 9 certification checkpoints against the live integration
+Fix any gaps — particularly account mapping being user configurable and tax rates pulling from Xero not hardcoded
+Test edge cases — what happens when a user disconnects from Xero's side, what happens when the token expires mid-session
+
+Week 3:
+
+Submit the app for Xero certification review
+Provide the demo@jobrunner.com.au account as the test account
+Pay $35/month to move to Core tier immediately on approval
+
+Week 4-6:
+
+Xero reviews — 10-15 business days
+Address any feedback
+Get approved
+Upgrade to Core tier — 50 connections unlocked
+
+After first 50 customers:
+
+Upgrade to Plus tier at $245/month
+Get listed on the Xero App Store
+Activate the referral program
+
+
+Why The Xero App Store Listing Matters
+This is something we haven't discussed before and it's genuinely important. The Xero App Store is where Australian accountants and bookkeepers go to recommend software to their clients. When a tradie's accountant says "you should use this for job management" and they can find JobRunner in the Xero App Store — that's an inbound lead you didn't have to generate. Accountants have trusted relationships with every tradie they work with. One accountant recommending JobRunner could bring you 10-20 customers you never had to cold call.
+
+The Honest Priority Order Now
+You now have three things that need to happen in parallel before you can properly launch:
+
+Retell integration — so you have something to demo
+Xero certification — so the 6th customer doesn't break
+Personal testing of integrations — so you actually know they work
+
+These aren't sequential. Start all three this week with Replit.
+What do you want to brief Replit on first?

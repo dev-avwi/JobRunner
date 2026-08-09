@@ -1,0 +1,47 @@
+Great audit. Here's the priority breakdown and the Replit prompt to fix everything:
+
+## What actually matters here
+
+**🔴 Fix before charging anyone**
+- **Call recording** — this is genuine legal exposure. AU states like NSW and VIC require all-party consent. If a caller isn't told they're being recorded, you could be breaching the Surveillance Devices Act.
+- **Spam Act compliance** — you're already sending marketing-style SMS/email. Without a documented unsubscribe mechanism you're technically non-compliant right now.
+- **Contact email** — `admin@avwebinnovation.com` on legal docs for a product called JobRunner looks unprofessional and inconsistent. Easy fix.
+
+**🟡 Fix soon**
+- Photos/audio disclosure (App Store will flag this eventually)
+- AI accuracy disclaimer
+- SWMS disclaimer
+
+---
+
+## Replit Prompt
+
+Paste this:
+
+---
+
+> Update both the web and mobile Terms of Service and Privacy Policy to close these gaps. Match the existing writing style, AU legal language, and document structure exactly — don't rewrite sections that are already fine, just add what's missing.
+>
+> **1 — Call recording consent**
+> Add a section to both the Privacy Policy and Terms of Service stating that the AI Receptionist feature records and transcribes calls, that callers are notified of recording at the start of each call, and that by using the AI Receptionist feature the business owner (subscriber) is responsible for ensuring their callers are informed. Reference compliance with relevant Australian Surveillance Devices legislation.
+>
+> **2 — Spam Act 2003 compliance**
+> Add a section to the Terms of Service covering commercial electronic messages. State that JobRunner sends automated SMS and email communications (booking confirmations, payment reminders, review requests, follow-ups) on behalf of subscribers, that subscribers are responsible for ensuring they have consent from their customers to receive these messages, and that all automated messages include an unsubscribe mechanism. Reference the Spam Act 2003.
+>
+> **3 — Photos, images and audio recordings**
+> In the Privacy Policy under the data collection section, add photos/images taken in the app, audio recordings, voice notes, receipt scans, and GPS-stamped photo metadata to the list of data types collected. Explain these are used for job documentation and are stored securely.
+>
+> **4 — SWMS/WHS disclaimer**
+> Add a disclaimer to the Terms of Service stating that JobRunner's safety and WHS tools (including SWMS templates and hazard scanning) are provided as tools only, that the subscriber remains solely responsible for compliance with all applicable Work Health and Safety legislation, and that JobRunner makes no warranty that documents generated meet any specific legal or regulatory standard.
+>
+> **5 — AI output accuracy disclaimer**
+> Add a section to the Terms of Service stating that AI-generated content (including quotes, hazard detection, receipt scanning, and job summaries) may contain errors, that users must review all AI output before relying on it, and that JobRunner accepts no liability for decisions made based on AI-generated content.
+>
+> **6 — Contact email**
+> Replace all instances of admin@avwebinnovation.com in the Terms of Service and Privacy Policy with admin@jobrunner.com.au. Make sure this email actually exists or is forwarded — check if there's a SendGrid or email config that needs updating too.
+>
+> Apply all changes to both web and mobile versions. After completing, confirm exactly which files were changed and what was added to each.
+
+---
+
+One thing to do yourself after this: forward `admin@jobrunner.com.au` to wherever you actually check email. And once you have a paying customer or two, send these updated docs to Sprintlaw for a quick review — the call recording point especially is worth $300 of lawyer time.

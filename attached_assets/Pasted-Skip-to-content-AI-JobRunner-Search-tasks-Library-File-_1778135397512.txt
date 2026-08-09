@@ -1,0 +1,771 @@
+Skip to content
+
+AI
+
+JobRunner
+Search tasks…
+
+
+
+
+Library
+
+File tree
+Search
+
+New
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+JobRunner — Complete Application Deep Brief
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+Feature Graphic (1024x500) - With your logo and branding
+Feature Graphic (1024x500) - With your logo and branding
+Image
+
+JobRunner Play Store feature graphic
+JobRunner Play Store feature graphic
+Image
+
+JobRunner Play Store icon
+JobRunner Play Store icon
+Image
+
+Videos
+
+Overview
+
+Logs
+
+Analytics
+
+Resources
+
+Domains
+
+Manage
+
+Republish
+
+Adjust settings
+
+Run security scan
+Production
+Status
+Ayden published 5 days ago
+
+Uptime
+100.0% uptime
+
+1 day ago
+Now
+Visibility
+Public
+Domain
+https://TradieTrack.replit.app
+
+
+https://jobrunner.com.au
+
+
+https://jobrunner.org
+
+
+
+Buy a new domain
+Beta
+Geography
+North America
+Type
+Autoscale
+(4 vCPU / 8 GiB RAM / 3 Max)
+See all usage
+Database
+Production database connected
+ef8ea7d3
+AV
+admin3404
+Ayden
+published 7 days ago
+bf6a65ce
+AV
+admin3404
+Ayden
+failed to publish 7 days ago
+5dc4768a
+AV
+admin3404
+Ayden
+published 14 days ago
+d10e74b1
+AV
+admin3404
+Ayden
+failed to publish 14 days ago
+33b0b4a7
+AV
+admin3404
+Ayden
+failed to publish 14 days ago
+ac75e601
+AV
+admin3404
+Ayden
+published 17 days ago
+96b9a851
+AV
+admin3404
+Ayden
+published 17 days ago
+50da86af
+AV
+admin3404
+Ayden
+published 18 days ago
+8edabc81
+AV
+admin3404
+Ayden
+published 23 days ago
+e8dedba6
+AV
+admin3404
+Ayden
+published 23 days ago
+95bd0d62
+AV
+admin3404
+Ayden
+published 23 days ago
+e04315fa
+AV
+admin3404
+Ayden
+published 24 days ago
+e0eea0fa
+AV
+admin3404
+Ayden
+published 24 days ago
+304d29bc
+AV
+admin3404
+Ayden
+published 24 days ago
+d7926f40
+AV
+admin3404
+Ayden
+published 24 days ago
+9fd44eb2
+AV
+admin3404
+Ayden
+failed to publish 24 days ago
+68c10bfd
+AV
+admin3404
+Ayden
+published about 1 month ago
+14ebdb9a
+AV
+admin3404
+Ayden
+published about 1 month ago
+4e91e32c
+AV
+admin3404
+Ayden
+published about 1 month ago
+
+Make taps feel native on the rest of the mobile app (Round 11).
+
+
+
+Show previous messages
+Completed: Android Round 3 — Layout Polish & Deep Links
+Updated environment
+
+Checkpoint made
+2 days ago
+
+Pasted-Here-s-exactly-what-to-send-to-Replit-copy-this-across-_1777980528112.txt
+2 days ago
+
+3 messages & 12 actions
+
+Worked for 1 minute
+yes plan out the tasks for round 4
+
+2 days ago
+
+5 actions
+
+Proposed 1 task
+
+Worked for 50 seconds
+Ayden Vogler completed: Android Round 4 — Bottom Padding & Dark Mode Sweep
+Updated environment
+
+Checkpoint made
+2 days ago
+
+Pasted-Here-s-exactly-what-to-send-to-Replit-copy-this-across-_1777984618618.txt
+now lets get working on round 5 and any extras you come across on another scan
+
+🟡 Round 5 — Android back button on modals (medium impact)
+C. Modals missing onRequestClose — Hardware back closes the screen instead of the modal. Found in:
+
+dispatch-board.tsx (assign modal)
+create-job.tsx — 6 modals (priority, team, quick-add client, recurrence, etc.)
+team-management.tsx — 5 modals (invite, detail, edit, permissions, assign-job)
+job/[id].tsx — ~20 modals (FAB voice, materials, cost prompt, assign, rename, notes, photos, annotations, etc.)
+SubcontractorDashboard.tsx (3), AIPhotoAnalysis.tsx (2), leads.tsx (2), compliance.tsx, collect-payment.tsx (8), time-tracking.tsx (2)
+
+2 days ago
+
+2 messages & 8 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+Ayden Vogler completed: Android Round 5 — Modal Back-Button & FAB Polish Sweep
+Updated environment
+
+Checkpoint made
+2 days ago
+
+Pasted-Here-s-exactly-what-to-send-to-Replit-copy-this-across-_1777985632118.txt
+2 days ago
+
+2 messages & 6 actions
+
+Worked for 1 minute
+yes please
+
+2 days ago
+
+3 actions
+
+Proposed 1 task
+
+Worked for 39 seconds
+Ayden Vogler completed: Android Round 6 — Final Polish (Colors, Forms, FABs)
+Updated environment
+
+Checkpoint made
+2 days ago
+
+Pasted-Here-s-exactly-what-to-send-to-Replit-copy-this-across-_1777988015374.txt
+2 days ago
+
+2 messages & 4 actions
+
+Worked for 42 seconds
+yep lets work it all out
+
+2 days ago
+
+4 actions
+
+Proposed 1 task
+
+Worked for 40 seconds
+Ayden Vogler completed: Android Round 7 — True Final Sweep (Colors, Time-Tracking Palette, Misc)
+Updated environment
+
+Checkpoint made
+2 days ago
+
+Pasted-Here-s-exactly-what-to-send-to-Replit-copy-this-across-_1777992315983.txt
+last final checks liek are we sure android version is just as good as ios version
+
+2 days ago
+
+2 messages & 4 actions
+
+Worked for 49 seconds
+
+Pasted-Good-news-the-technical-Android-parity-is-solid-Now-let_1778061930275.txt
+20 hours ago
+
+2 messages & 9 actions
+
+Worked for 1 minute
+yep lets get round 8 done
+
+20 hours ago
+
+7 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+Ayden Vogler completed: Mobile Round 8 — Premium Foundation (Toast system + Button adoption on top 5 screens)
+Updated environment
+
+Checkpoint made
+17 hours ago
+
+Pasted-Good-news-the-technical-Android-parity-is-solid-Now-let_1778076659508.txt
+16 hours ago
+
+1 message & 1 action
+yep lets get round 9 all dones
+
+16 hours ago
+
+5 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+Ayden Vogler completed: Mobile Round 9 — Bottom Sheet Migration (top 20 modals)
+Updated environment
+
+Checkpoint made
+16 hours ago
+Anything else we need to look at between android and iOS
+I feel we gotta focus more on making sure android is ready for production cause it's not that good yet
+
+15 hours ago
+
+2 messages & 5 actions
+
+Worked for 1 minute
+Yes let's get part A plus part B done
+
+9 hours ago
+
+7 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+
+2 tasks started, 1 completed
+Updated environment
+
+Checkpoint made
+8 hours ago
+
+2 tasks started, 1 completed
+Updated environment
+
+Checkpoint made
+58 minutes ago
+Ayden Vogler completed: Verify Android 13+ themed icon & edge-to-edge layout in a real build
+Updated environment
+
+Checkpoint made
+just now
+Ayden Vogler completed: Make taps feel native on the rest of the mobile app
+Updated environment
+
+Checkpoint made
+just now
+
+Scroll to latest
+Suggested next tasks
+
+Make taps feel native on the rest of the mobile app has been applied to main. What's next?
+Give modal close buttons the same native feel as the rest of the app
+
+
+Start
+
+View more in the task board
+
+Queue
+
+are we sure all the things weve done work well and its all vertfieid and alls creens work great both ios and android
+
+Next
+
+Make, test, iterate…
+
+
+
+Power
+
+
+
+Drafts
+13
+Suggested
+
+Show less
+
+Edit
+Give modal close buttons the same native feel as the rest of the app
+Planned by Agent - #69 ·
+50m
+
+
+Start
+
+View plan
+Set up an automated Android build for testing on real phones
+Planned by Agent - #68 ·
+58m
+
+
+Start
+
+View plan
+Adopt the shared button style across remaining mobile screens
+Planned by Agent - #59 ·
+17h
+
+
+Start
+
+View plan
+Replace remaining info-style alerts with the new toast system
+Planned by Agent - #60 ·
+17h
+
+
+Start
+
+View plan
+Fix long-standing type errors in mobile job and dashboard screens
+Planned by Agent - #61 ·
+17h
+
+
+Start
+
+View plan
+Make WHS hub colors fully accessible in dark mode
+Planned by Agent - #56 ·
+2d
+
+
+Start
+
+View plan
+Audit other screens for hardcoded white text colors
+Planned by Agent - #53 ·
+2d
+
+
+Start
+
+View plan
+Polish remaining bottom padding edge cases on tablets
+Planned by Agent - #52 ·
+2d
+
+
+Start
+
+View plan
+Apply consistent bottom-nav padding to remaining More screens
+Planned by Agent - #50 ·
+2d
+
+
+Start
+
+View plan
+Alert the team when a forged webhook hits production
+Planned by Agent - #45 ·
+4d
+
+
+Start
+
+View plan
+Add automated nightly check that webhook secrets are configured
+Planned by Agent - #46 ·
+4d
+
+
+Start
+
+View plan
+Test the rating prompt and subscription links work in production builds
+Planned by Agent - #44 ·
+4d
+
+
+Start
+
+View plan
+Tell users about new app updates after install
+Planned by Agent - #43 ·
+4d
+
+
+Start
+
+View plan
+
+Show less
+Active
+0
+No tasks
+Ready
+0
+No tasks
+Done
+63
+Make taps feel native on the rest of the mobile app
+Done - #66 ·
+now
+
+Verify Android 13+ themed icon & edge-to-edge layout in a real build
+Done - #67 ·
+now
+
+Polish migrated sheets so the dark backdrop and inner spacing feel native
+Done - #64 ·
+58m
+
+Mobile Round 10 — Android Production Hardening (config + material ripple)
+Done - #65 ·
+8h
+
+Mobile Round 9 — Bottom Sheet Migration (top 20 modals)
+Done - #62 ·
+16h
+
+Mobile Round 8 — Premium Foundation (Toast system + Button adoption on top 5 screens)
+Done - #58 ·
+17h
+
+Android Round 7 — True Final Sweep (Colors, Time-Tracking Palette, Misc)
+Done - #57 ·
+2d
+
+Android Round 6 — Final Polish (Colors, Forms, FABs)
+Done - #55 ·
+2d
+
+Android Round 5 — Modal Back-Button & FAB Polish Sweep
+Done - #54 ·
+2d
+
+Android Round 4 — Bottom Padding & Dark Mode Sweep
+Done - #51 ·
+2d
+
+Android Round 3 — Layout Polish & Deep Links
+Done - #49 ·
+2d
+
+Android Round 2 — Dark Mode & Modal Cleanup
+Done - #48 ·
+2d
+
+Android Round 1 Critical Fixes
+Done - #47 ·
+2d
+
+Mobile submission blockers (API host + IAP guards)
+Done - #40 ·
+4d
+
+Today dashboard aggregate endpoint
+Done - #42 ·
+4d
+
+Webhook signature audit (SendGrid, Apple IAP, Xero)
+Done - #41 ·
+4d
+
+Team flows audit & fix (owner / worker / subcontractor)
+Done - #37 ·
+1w
+
+Multi-Number Support (Multiple Dedicated Numbers Per Business)
+Done - #36 ·
+3w
+
+Website Addon — Click-to-Call, AI Chat Widget & Booking Form
+Done - #34 ·
+3w
+
+Number Porting (Bring Your Own Number)
+Done - #35 ·
+3w
+
+Call Recording Playback & Caller Sentiment Scoring
+Done - #32 ·
+3w
+
+Auto-SMS After AI Calls & Push Notifications
+Done - #31 ·
+3w
+
+Smart Call Routing (Per-Day Hours, Breaks, Holidays)
+Done - #33 ·
+3w
+
+Unified Number Purchase & AI Receptionist Flow
+Done - #30 ·
+3w
+
+Smart Operational Action Center (real-time alerts for managers)
+Done - #28 ·
+3w
+
+Job Transition Flow Enhancement (wrap-up prompts + seamless next-job flow)
+Done - #29 ·
+3w
+
+Worker State System (Available / On Job / Travelling / Delayed / Needs Help)
+Done - #27 ·
+3w
+
+Subcontractor Invoicing System
+Done - #24 ·
+4w
+
+Timesheet Dispute Workflow
+Done - #26 ·
+4w
+
+Client Deposit Payment in Portal
+Done - #25 ·
+4w
+
+Quick Fixes — Guided Journey, Duplicate Job, Helmet CSP
+Done - #23 ·
+4w
+
+Subcontractor purpose-built dashboard
+Done - #22 ·
+4w
+
+Onboarding role split & invite code system
+Done - #21 ·
+4w
+
+Magic link assign & one-off subcontractor portal
+Done - #18 ·
+4w
+
+Subcontractor mobile role & restricted view
+Done - #17 ·
+4w
+
+Privacy-aware location tracking for subcontractors
+Done - #19 ·
+4w
+
+Multi-business workspace switching for subcontractors
+Done - #20 ·
+4w
+
+App Store Review Compliance Audit & Fix
+Done - #16 ·
+4w
+
+Xero Marketplace certification prep
+Done - #15 ·
+4w
+
+Add-on Plan Gating & Security Fixes (Pre-Launch)
+Done - #14 ·
+4w
+
+Trade-Aware Onboarding & Demo Job Experience
+Done - #13 ·
+4w
+
+AI Receptionist Enhancement (Knowledge Bank, Voice Requests, Add-ons)
+Done - #12 ·
+4w
+
+AI Receptionist Auto-Provisioning (Stripe → Twilio → Vapi Pipeline)
+Done - #11 ·
+4w
+
+Website Add-on (Preview, Domain Status, Change Requests)
+Done - #10 ·
+4w
+
+Admin Super-Dashboard (Shadow Mode, Kanban, Health, AI Approval Queue)
+Done - #9 ·
+4w
+
+Production-Ready Polish & Family Launch
+Done - #8 ·
+4w
+
+Offline Sync Engine Hardening
+Done - #6 ·
+4w
+
+Collaborative Job Editing
+Done - #7 ·
+4w
+
+Polling to WebSocket Migration
+Done - #4 ·
+4w
+
+Tradify & ServiceM8 CSV Import Tool
+Done - #3 ·
+4w
+
+Mobile App Store Submission Prep
+Done - #5 ·
+4w
+
+AI Receptionist — Settings UI & Call Logs
+Done - #2 ·
+4w
+
+AI Receptionist — Backend Foundation (Vapi Integration)
+Done - #1 ·
+4w
+
+
+Archived
+
+Cancelled
+
+Plan a new task...
+
+
+JobRunner - Replit

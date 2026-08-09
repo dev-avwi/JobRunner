@@ -1,0 +1,106 @@
+Twilio SendGrid Logo
+My SendGrid Account
+
+Friendly Name
+Trial:
+
+MC
+Upgrade
+
+
+Switch products
+
+ Dashboard
+ Email API
+ Marketing
+ Design Library
+ Stats
+ Activity
+ Validation
+ Suppressions
+ Settings
+Account Details
+Alert Settings
+API Keys
+Data Residency - EU
+Inbound Parse
+IP Access Management
+IP Addresses
+Mail Settings
+Sender Authentication
+Subuser Management
+Teammates
+Tracking
+Reputation84%
+Emails this month
+2
+What happened to that email? Putting out fires 🔥 is fast with our new email logs feed! 
+Edit your event webhook
+
+close
+Send event data like bounces, clicks, and opens to a URL of your choice.
+
+Enable endpoint
+Friendly Name
+JobRunner Activity Hook
+Post URL
+https://jobrunner.com.au/api/webhooks/sendgrid
+Requires https://
+Actions to be posted
+
+Engagement data
+Opened
+Clicked
+Unsubscribed
+Spam Reports
+Group Unsubscribes
+Group Resubscribes
+
+Deliverability Data
+Processed
+Dropped
+Deferred
+Bounced
+Delivered
+
+Account Data
+Account Status Change
+Security features
+Secure your webhook data coming from Twilio SendGrid. Learn more.
+
+Signature Verification
+Enable Signed Event Webhook
+Verification key
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEbL80uUtzFX6SXKtUip7H/co/WTup/XJ/EFLW/s7xHy80c+ZJEmynFsy1Y9Pzl7GoS+kbuYTk3SSmUw9Xixb39g==
+Click "Test integration" below to test your verification key.
+OAuth Verification
+Enable OAuth
+
+Test Integration
+
+Cancel
+
+Save
+Mail Settings
+/
+Webhook Settings
+Event Webhook
+Event Webhooking
+
+Notify a URL of your choice with information about events that occur as SendGrid processes your email. Learn more.
+
+
+Dismiss alert
+
+Create new webhook
+State	Signed event	Friendly name	Webhook ID	Endpoint URL	Created Date	Last Updated	
+Enabled
+Enabled
+JobRunner Dev Activity Hook	4b33f7d9-5046-4c64-b328-e285668472e0	https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/api/webhooks/sendgrid	2026-05-02	2026-05-02	
+
+Enabled
+Enabled
+JobRunner Activity Hook	027577f9-9980-4c9f-9929-0303855058eb	https://jobrunner.com.au/api/webhooks/sendgrid	2026-05-02	2026-05-02	
+
+Edit
+Delete

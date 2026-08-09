@@ -1,0 +1,66 @@
+This is the document that captures everything. The complete vision, end to end.
+
+What AppScout is
+AppScout is the first AI-powered app quality analyser that doesn’t just find problems — it shows you finding them. It navigates your app, understands what it sees, and produces a living document of every issue discovered. Not a list of bug reports. Not a generic accessibility checker. A genuine AI critique of your product delivered as a cinematic experience.
+The positioning is precise. AppScout is the design and UX quality layer for the vibe coding era. Every developer using Cursor, Lovable, or Replit to ship apps faster than ever before has the same blind spot — they can build in hours but they can’t see their own product clearly anymore. AppScout is the outside eye they don’t have.
+
+The design language
+Dark. Editorial. Premium without being cold.
+The palette is near-black backgrounds with warm off-white text. Not pure black, not pure white — both have a slight warmth that feels considered rather than default. One accent colour — a sharp lime green — used sparingly only for the most important moments. The primary interactive colour is a refined purple that reads as intelligent rather than decorative.
+Typography is a pairing of Instrument Serif for display moments — the logo, the score reveal, the report headers — and DM Sans for everything functional. DM Mono for all code, numbers, paths, and technical labels. This combination creates a product that feels both editorial and precise. Like a well-designed magazine that also happens to run very good software.
+Spacing is generous. Every element has room to breathe. The interface never feels crowded. White space is used deliberately — not as empty space but as a signal that what’s there matters.
+Borders are 0.5px, barely visible, just enough to define edges without adding visual weight. Everything sits on slightly different depths of dark — the background, the surface, the elevated surface — creating subtle layering without shadows or gradients.
+Motion is restrained everywhere except the annotations. The rest of the interface transitions gently and predictably. The annotations are the only thing in the product that demands attention through movement. That contrast is intentional — when something draws itself onto the screen it stands out against an otherwise calm interface.
+
+The five screens
+Setup is calm and confident. The user pastes their URL, adds credentials, writes an optional instruction, selects analysis types. The right panel shows a live credit estimate that updates as they make selections. Two buttons — Start recording in purple and Let AI navigate greyed out and labelled V2. Everything communicates that this is a thoughtful tool with a clear purpose. No clutter. No feature overload. Just the information needed to begin.
+Recording is the only moment that happens outside AppScout. The user’s own browser tab, their own app, their own session. The Chrome extension adds a single floating toolbar at the top of their tab — recording duration, a screenshot flag button, a stop button. Everything else is their app exactly as it always looks. This is deliberate. The recording feels natural because it is natural. They’re just using their product. A thumbnail strip at the bottom shows screens captured as they navigate, growing quietly as they move through the app. When they stop, they’re brought back to AppScout with their recording ready to review and submit.
+Preparing is the bridge. After submission the batch job runs — Playwright replays the recording server-side, screenshots fire at every screen, Claude analyses each one. The user sees a live progress view that makes 30 to 90 seconds feel active rather than empty. Five clear steps with status icons. Screen thumbnails in a row with green checkmarks appearing one by one as each screen completes. The current screen name shown in the centre — “Analysing Invoice editor — screen 5 of 8.” A progress bar that moves steadily. This screen communicates that something real is happening and the system is working hard on their behalf.
+Live analysis is the product’s soul. The screen they’ll screenshot and post. The moment that sells every subsequent subscription.
+The layout is three independent panels that operate completely separately from each other.
+The left sidebar lists every discovered screen with a coloured status dot — green for analysed and clean, amber for issues found, red for critical issues, purple pulsing for currently active. Screen names and issue counts. A clean URL indicator at the top. Simple and scannable.
+The centre is the video. A composed playback of the Playwright recording at full quality. The browser chrome is visible — the address bar showing the app URL, the window controls. The app itself fills the frame.
+On top of the video sits the annotation layer. This is where the product becomes something nobody has seen before.
+When the analysis finds an issue, an annotation draws itself onto the screen. The shape appears from nothing, the stroke extending like handwriting — no pen, no hand, just the line appearing. A circle wraps around a problematic element. An arrow extends toward a specific location. An underline draws beneath a piece of confusing copy. The shape completes in 700 milliseconds. Then the label text appears letter by letter beside it. Red for critical issues. Amber for warnings. Green for passed checks.
+The 700 milliseconds is doing two things simultaneously. It’s the most visually memorable moment in the product — the signature interaction that makes AppScout look unlike anything else. And it’s masking the Claude API response time. By the time the annotation finishes drawing, the analysis has been ready for several hundred milliseconds. The animation is both the product’s beauty mark and its latency buffer. One mechanism, two jobs.
+At the bottom of the video a single subtitle line appears in clean DM Sans. Maximum eight words. Never competes with the video. Just whispers what the AI is looking at right now. “Checking CTA hierarchy on dashboard.” Then it fades. The next one appears when there’s something worth saying.
+In the top right corner of the video a small status pill shows three states only — Navigating, Analysing, Issue found. When a new issue is found the pill flashes briefly. Nothing else. Restrained.
+The 2-3 second hold when the video pauses on a new screen is a designed moment not a loading state. The subtitle is active. The status shows Analysing. The annotation begins drawing if the analysis is ready. The user perceives it as the AI taking a careful look — not as the system being slow.
+The bottom of the video has a timeline scrubber. Every captured screen appears as a small tick mark on the track. The current position is shown as a dot. The user can drag to any moment or click any tick to jump to that screen. Time elapsed on the left. Screens completed on the right.
+The right panel has three tabs — Feed, Issues, Screens.
+The Feed tab is the default. The AI commentary appears here in real time as findings come in. Not bullet points. Conversational observations that sound like a designer thinking out loud. “The hero section has three competing elements — there’s no clear primary action.” Below each observation an issue card fades in with the severity badge, the specific title, the problem description, and the fix recommendation. The cards accumulate as the session progresses. The feed scrolls automatically but stops if the user manually scrolls up — they can always scroll back down to follow live.
+The Issues tab is the sorted list. All findings from all screens, ranked by severity. Filterable by screen and by pass type. This is the working reference — the thing developers open alongside their code editor when fixing things.
+The Screens tab shows every captured screen as a thumbnail grid. Click any to see it full size with all its annotations visible simultaneously.
+At the bottom of the right panel four download buttons sit dormant, labelled “Ready after scan.” When the session completes they activate simultaneously with a subtle animation. Raw video. Annotated video. PDF report. Screenshots ZIP.
+The report screen is a reveal. The score counts up from zero to the final number — animated, deliberate, like a result being announced. The issue counts appear one by one. Then the screen gallery loads. Then the download buttons activate. Then the share link generates and appears.
+The layout is clean. Score circle on the left. Statistics beside it — screens analysed, issues by severity, run time. Below that the full gallery of screen thumbnails, each badged with their issue count or a clean indicator. Click any thumbnail to jump to a detailed view of that screen with all its annotations.
+The shareable link sits in a highlighted row — the URL displayed in the product’s purple, a copy button, a note that anyone with the link can view without an account.
+Four large download cards at the bottom. Each with a file size shown before clicking. Raw MP4, annotated MP4, PDF, screenshots ZIP.
+
+The export artefacts
+The raw video is the session exactly as it happened. Clean, no overlays, just the app being navigated naturally. Users share this to show what their onboarding looks like to a first-time visitor. Agencies use it in client presentations.
+The annotated video is the product’s most powerful artefact. Every annotation baked in — drawing themselves at exactly the right moment. Subtitles appearing at the bottom. The full experience rendered into a downloadable file that plays anywhere without special software. This is what gets posted on Twitter. This is what agencies forward to clients. This is what circulates in developer communities. Every share of an annotated video is an AppScout advertisement.
+The PDF report is the professional deliverable. Every screen thumbnailed in order. Issues listed below each one ranked by severity with exact element location, problem description, and specific fix recommendation. Overall score. Breakdown by pass type — layout quality, UX and copy quality. Overall summary. This is what gets attached to a Jira ticket. This is what goes in a client folder. This is what a developer opens alongside their code.
+The screenshots ZIP gives every captured screen as a clean PNG — named by screen path, no overlays. Designers drop these into Figma. Developers attach them to bug reports. Product managers use them in review meetings.
+
+The shareable link
+This is the organic growth engine. A unique URL that opens a hosted version of the full report — the annotated video player, the issue list, the screen gallery — all visible without an account. The link never asks for signup. It just shows the work.
+When a developer shares their AppScout result the recipient sees everything. They watch the annotated video. They read the findings. They think “I need to run this on my app.” They sign up. The product acquires a new user from a single share without spending a dollar.
+
+The experience in one sentence for every type of user
+For the solo developer — it finds in six minutes what you’ve been staring past for six weeks.
+For the agency — it produces the client deliverable automatically so you can bill for the insights not the hours.
+For the founder — it’s the outside eye your team stopped having the moment you got too close to the product.
+For the vibe coder — it’s the senior designer you didn’t hire telling you everything that needs fixing before your users find it.
+
+The feeling the product should leave
+After running AppScout on their app, the user should feel two things simultaneously.
+Slightly humbled — because the AI found real things they’d genuinely missed. Not obvious things. Specific, precise, actionable things that a real designer would have caught.
+Genuinely grateful — because now they know. The product respected their time, gave them something they couldn’t get anywhere else, and packaged it in a way they can actually use.
+That combination — humbled and grateful — is what creates word of mouth. Not satisfaction. Not delight. The specific feeling of having been shown something true about your own work that you couldn’t see yourself.
+That’s the product AppScout aspires to be.
+
+The final word
+The vision is complete. The design is defined. The architecture is locked. The problems are solved. The plan exists.
+The only thing left is building it.
+Finish JobRunner. Run week zero. Then make this real.​​​​​​​​​​​​​​​​

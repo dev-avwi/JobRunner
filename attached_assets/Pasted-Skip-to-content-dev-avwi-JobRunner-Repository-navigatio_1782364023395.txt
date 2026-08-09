@@ -1,0 +1,190 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+84
+ (84)
+Insights
+Settings
+Security: dev-avwi/JobRunner
+Security and quality
+Findings
+Reporting
+Code scanning
+ CodeQL is reporting errors. Check the status page for help.
+ 
+is:open branch:main 
+
+Select all alerts
+
+Select alert #60
+Use of externally-controlled format string
+High
+#60 opened 1 hour ago • Detected by CodeQL in server/vapiService.ts :2435
+main
+
+Select alert #59
+Use of externally-controlled format string
+High
+#59 opened 1 hour ago • Detected by CodeQL in server/vapiService.ts :2383
+main
+
+Select alert #58
+Use of externally-controlled format string
+High
+#58 opened 1 hour ago • Detected by CodeQL in server/vapiService.ts :2291
+main
+
+Select alert #57
+Use of externally-controlled format string
+High
+#57 opened 1 hour ago • Detected by CodeQL in server/vapiService.ts :1455
+main
+
+Select alert #56
+Use of externally-controlled format string
+High
+#56 opened 1 hour ago • Detected by CodeQL in server/emailRoutes.ts :812
+main
+
+Select alert #55
+Loop bound injection
+High
+#55 opened 1 hour ago • Detected by CodeQL in server/routes.ts :13011
+main
+
+Select alert #54
+Loop bound injection
+High
+#54 opened 1 hour ago • Detected by CodeQL in server/routes.ts :12974
+main
+
+Select alert #53
+Loop bound injection
+High
+#53 opened 1 hour ago • Detected by CodeQL in server/routes.ts :12939
+main
+
+Select alert #52
+Loop bound injection
+High
+#52 opened 1 hour ago • Detected by CodeQL in server/routes.ts :12908
+main
+
+Select alert #51
+Loop bound injection
+High
+#51 opened 1 hour ago • Detected by CodeQL in server/routes.ts :12452
+main
+
+Select alert #50
+Insecure randomness
+High
+#50 opened 1 hour ago • Detected by CodeQL in server/routes.ts :3947
+main
+
+Select alert #49
+Insecure randomness
+High
+#49 opened 1 hour ago • Detected by CodeQL in server/routes.ts :3946
+main
+
+Select alert #48
+Insecure randomness
+High
+#48 opened 1 hour ago • Detected by CodeQL in server/routes.ts :3234
+main
+
+Select alert #47
+Insecure randomness
+High
+#47 opened 1 hour ago • Detected by CodeQL in server/storage.ts :1686
+main
+
+Select alert #46
+Insecure randomness
+High
+#46 opened 1 hour ago • Detected by CodeQL in server/mockData.ts :168
+main
+
+Select alert #45
+Insecure randomness
+High
+#45 opened 1 hour ago • Detected by CodeQL in server/mockData.ts :167
+main
+
+Select alert #44
+Insecure randomness
+High
+#44 opened 1 hour ago • Detected by CodeQL in server/auth.ts :684
+main
+
+Select alert #43
+Insecure randomness
+High
+#43 opened 1 hour ago • Detected by CodeQL in server/auth.ts :614
+main
+
+Select alert #42
+Insecure randomness
+High
+#42 opened 1 hour ago • Detected by CodeQL in server/auth.ts :523
+main
+
+Select alert #41
+Insecure randomness
+High
+#41 opened 1 hour ago • Detected by CodeQL in client/.../pages/AcceptInvite.tsx :248
+main
+
+Select alert #40
+Insecure randomness
+High
+#40 opened 1 hour ago • Detected by CodeQL in client/.../hooks/useOfflineTimeTracking.t... :184
+main
+
+Select alert #36
+Missing rate limiting
+High
+#36 opened 1 hour ago • Detected by CodeQL in server/vite.ts :82
+main
+
+Select alert #35
+Missing rate limiting
+High
+#35 opened 1 hour ago • Detected by CodeQL in server/vite.ts :44
+main
+
+Select alert #34
+Missing rate limiting
+High
+#34 opened 1 hour ago • Detected by CodeQL in server/index.ts :355
+main
+
+Select alert #33
+Missing rate limiting
+High
+#33 opened 1 hour ago • Detected by CodeQL in server/index.ts :211
+main
+     
+ ProTip! CodeQL queries are developed by an open-source coalition called the GitHub Security Lab
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

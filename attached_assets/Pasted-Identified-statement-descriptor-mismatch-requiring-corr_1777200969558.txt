@@ -1,0 +1,206 @@
+Identified statement descriptor mismatch requiring correctionIdentified statement descriptor mismatch requiring correctionA few things jump out that need fixing before the presentation and before any real customers pay.
+
+Fix These In Stripe Now
+1. Statement descriptor says TRADIETRACK
+This is what appears on a customer's bank statement when they pay. If a tradie pays $49 and their bank statement says TRADIETRACK they'll have no idea what it is and potentially dispute the charge.
+Go to Settings → Business details → Statement descriptor and change it to JOBRUNNER. You can see it's already showing the correct preview as JOBRUNNER in the edit screen — just make sure you save it.
+2. Business name showing Linkup2care
+The legal entity is correct — Linkup2care Pty Ltd is the registered company. That's fine and correct. The public facing business name showing as JobRunner is also correct. This is set up properly so don't touch it.
+3. Support phone number
+It's showing your personal number +61 458 300 051 publicly on receipts and invoices. That's fine for now since you're handling support personally. Just be aware that every customer receipt will show your mobile number.
+4. Customer support email is empty
+Add admin@avwebinnovation.com as the customer support email so it appears on receipts and invoices. Customers need a way to contact you.
+
+The One Critical Fix
+Change TRADIETRACK to JOBRUNNER in the statement descriptor right now. That's the one that could cause real problems with real customers.
+Everything else is fine to leave until after the presentation.You said: Skip to contentSkip to content
+Personal settings
+[Personal details](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/user)
+[Contact information, password, authentication methods and your active sessions.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/user)
+[Communication preferences](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/communication-preferences)
+[Customise the emails, SMS, and push notifications you receive.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/communication-preferences)
+[Developers](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/developers)
+[Workbench, developer tools, and more.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/developers)
+Account settings
+[Business](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/account)
+[Account details, account health, public info, payouts, legal entity, custom domains, and more.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/account)
+[Team and security](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/team)
+[Team members, roles, account security, authorised apps, and shared resources.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/team)
+[Plans and fees](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/plans-and-fees/plans)
+[Cost management for your Stripe products and services.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/plans-and-fees/plans)
+[Stripe profile](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/profile)
+[Manage how you show up to other businesses.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/profile)
+[Compliance and documents](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/compliance)
+[PCI compliance, documents, and legacy exports.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/compliance)
+[Perks](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/perks)
+[Discounts on tools to run your startup.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/perks)
+Product settings
+[Billing](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/billing)
+[Subscriptions, invoices, quotes, and customer portal.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/billing)
+[Connect](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/connect)
+[Manage your platform and connected accounts.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/connect)
+[Data Pipeline](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/stripe-data-pipeline)
+[Data warehouse and contact for updates on data processing.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/stripe-data-pipeline)
+[Financial Connections](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/financial-connections)
+[Appearance, featured institutions, optimisations, and usage details.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/financial-connections)
+[Identity](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/identity)
+[Synthetic identity protection and native mobile SDK.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/identity)
+[Managed Payments](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/managed-payments)
+[Stripe's merchant of record handles global tax, fraud and disputes.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/managed-payments)
+[Payments](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/checkout)
+[Checkout, payment methods, currency conversion, and more.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/checkout)
+[Radar](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/radar)
+[Manage fraud protection and customisation capabilities for your account.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/radar)
+[Sigma](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/sigma)
+[Manage your Sigma features.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/settings/sigma)
+[Discover more features](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/setup)
+[Boost revenue, manage finances, and more.](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/setup)
+Share feedback·Keyboard shortcuts
+Navigated to Settings – JobRunner – Stripe
+JobRunner[Home](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/dashboard)[Balances](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/balance/overview)[Transactions](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/payments)[Customers](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/customers)[Product catalogue](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/products?active=true)
+Shortcuts[Subscriptions](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/subscriptions?status=active)[Workflows](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/workflows)[Climate](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/climate)[Financial Connections](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/financial-connections)[Atlas](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/atlas)
+ProductsConnectPaymentsBillingReportingApps
+ [Overview](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/apps/installed)More
+ [Profiles](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/profiles)[Tax](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/tax)[Identity](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/identity/application)[Atlas](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/atlas)[Financial Connections](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/financial-connections)[Climate](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/climate)[Workflows](https://dashboard.stripe.com/acct_1SYRLeRMt9h2Z30A/workflows)
+Search
+Setup guide
+Next:Start building with blueprints
+
+
+
+
+
+DevelopersShow more8:31 PMClaude responded: Three things I can see here:Surveyed Stripe settings menu to dispense practical guidanceSurveyed Stripe settings menu to dispense practical guidanceThree things I can see here:
+
+Branding Page — Do These Now
+Upload the JobRunner logo and icon. The branding page is empty — no logo, no icon. When a tradie pays an invoice through Stripe checkout they see a blank logo area. Takes 2 minutes to fix. Upload the JobRunner logo as the icon and the full logo.
+The brand colour is currently #525f7f which is a dark grey-blue. Change it to JobRunner's brand blue #2563EB so the checkout page matches your app colours.
+
+Custom Domain — Don't Pay For This Yet
+Image 2 shows the custom domain setup. It costs US$10 per month to have checkout.jobrunner.com.au instead of checkout.stripe.com.
+Skip this for now. It's not worth $10 a month when you have no paying customers yet. Stripe's checkout is trusted and professional regardless of the domain. Add this when you're making real revenue.
+
+The Checkout Preview Looks Fine
+The checkout page preview in Image 1 looks clean and professional. Once you add the logo and fix the brand colour it'll look properly branded.
+
+Priority order right now:
+
+Fix statement descriptor from TRADIETRACK to JOBRUNNER — most urgent
+Upload logo and icon to branding
+Change brand colour to #2563EB
+Skip custom domain for now
+
+Do those three things and your Stripe setup is presentation-ready.8:35 PMClaude responded: The error is clear — the file is over 512KB.I notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block being in English, here is the summary:
+
+Diagnosed file size issue and prescribed compression solutionI notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block being in English, here is the summary:
+
+Diagnosed file size issue and prescribed compression solutionThe error is clear — the file is over 512KB. These logo files are large high-resolution images that need to be compressed before uploading.
+
+Which logo goes where
+Icon field — Use Image 4 (just the J graphic, white background). This is the small square icon that appears in the corner of checkout pages.
+Logo field — Use Image 2 (full JobRunner logo with text, white background). This is the larger logo shown on receipts and invoices.
+Don't use Image 3 (black background) for Stripe — the black background will look wrong on white checkout pages.
+
+How to compress them under 512KB right now
+Go to squoosh.app in your browser. It's free and takes 30 seconds.
+
+Drag the image in
+On the right side change quality to around 75-80%
+Check the file size shown at the bottom — get it under 500KB
+Download the compressed version
+Upload that to Stripe
+
+Do that for both the icon and the logo separately.
+
+After uploading
+Turn on "Prefer logo over icon" so the full JobRunner logo with text shows on checkout pages instead of just the J graphic.
+That's it. Five minutes and your Stripe checkout will look properly branded for the presentation.8:39 PMClaude responded: That looks great.That looks great. The branding is now properly set up.
+
+What's Looking Good
+Icon uploaded — the J graphic showing correctly in the small square. Logo uploaded — full JobRunner logo visible. Prefer logo over icon ticked. Brand colour set to #2563EB — your correct blue. Receipt preview shows "Receipt from JobRunner" with the logo in the blue header. Looks professional and on-brand.
+
+One Small Thing To Fix
+The receipt preview shows sample line items — "One Year's Membership", "Club T-Shirt", "Branded Monocle". That's just Stripe's placeholder preview content, not real data. Your actual receipts will show the correct JobRunner subscription details when real payments process. Nothing to fix there.
+
+Now Go Fix The Statement Descriptor
+Go to Business details tab — change TRADIETRACK to JOBRUNNER. That's the last thing blocking a clean Stripe setup.
+After that your Stripe is fully presentation-ready. A tradie paying through JobRunner will see a professional branded checkout and receipt that says JobRunner, shows your logo, and uses your brand blue.
+Done. Good work getting that sorted quickly.8:42 PMClaude responded: Everything looks great across all the branding previews.Everything looks great across all the branding previews. Let me go through each one:
+
+Email Receipts (Image 1) — JobRunner logo showing in blue header. Looks professional. Good.
+Checkout & Payment Links (Image 2) — Brand blue header with J icon. Clean checkout page. Good.
+Customer Portal (Image 3) — "Return to JobRunner" in the header. Shows current subscription, update/cancel buttons, payment method, invoice history. This is exactly what a paying tradie will see when they manage their subscription. Looks great.
+Invoice (Image 4) — "From JobRunner" with blue branded header. Invoice PDF button. Google Pay and card payment options. Professional and clean.
+Identity (Image 5) — "JobRunner works with Stripe to verify your identity." This is only shown if you ever use Stripe Identity for verification. Not relevant right now but branded correctly.
+Global Payouts (Image 6) — This one needs attention. It shows "Questions? Contact JobRunner at admin@avwebinnovation.com for support." That email is visible to connected accounts receiving payouts. That's fine for now since you're using avwebinnovation.com as your support email. Just be aware tradies who receive payouts via Stripe Connect will see that address.
+
+One Thing To Do
+Hit Save changes on the Global Payouts tab — there's a Save changes button visible bottom right. Make sure all these branding changes are saved.
+Then go fix the statement descriptor. That's still the last outstanding item.8:46 PMClaude responded: Two issues here that need fixing.Identified pricing discrepancies between systems requiring reconciliationIdentified pricing discrepancies between systems requiring reconciliationTwo issues here that need fixing.
+
+Product Catalogue Is Outdated (Image 1)
+Your Stripe products still show the old pricing model:
+
+JobRunner Pro — $49/month ✅ correct
+JobRunner Team Base — $59/month ❌ old model
+Additional Team Member — $29/month ❌ old model
+
+These don't match the new pricing you locked in. You need to update Stripe to match:
+
+JobRunner Pro — $49/month — keep this one
+JobRunner Team — $99/month — update Team Base
+JobRunner Business — $199/month — create this new one
+Archive Additional Team Member — no longer needed
+
+Go into each product and either update the price or archive the old ones and create new ones. Don't delete them — archive keeps the history clean.
+
+Subscriptions Empty (Image 2)
+No active subscriptions yet which is expected — no paying customers yet. The "Start collecting recurring revenue" prompt is just Stripe's default empty state. Nothing wrong here.
+
+Tell Replit This
+"The Stripe product catalogue needs to be updated to match our new pricing. Archive the JobRunner Team Base at $59 and the Additional Team Member at $29. Create two new products — JobRunner Team at $99/month and JobRunner Business at $199/month. Make sure the Stripe product IDs for all four plans are updated in the server config so the subscription system correctly maps to the right Stripe products."
+Fix the product catalogue before your first real customer signs up. Otherwise the wrong price could get charged.You said: no but remember those are apple ones not the stripe onesno but remember those are apple ones not the stripe ones8:47 PMClaude responded: You're right, my mistake.You're right, my mistake.
+The Apple IAP products are in App Store Connect — Pro $49, Team $99, Business $199.
+The Stripe products in the catalogue are separate — they're for web and Android users who pay through Stripe directly. The old per-seat model — Pro $49, Team Base $59, Additional Team Member $29 — is what Stripe currently has.
+
+The Question Is — Do You Update Stripe Too?
+You have two options:
+Option A — Leave Stripe as is for now
+Web and Android users who want Team still go through the old per-seat model via Stripe. iOS users use the new flat-rate IAP model. Two different pricing structures on two different platforms. Confusing and inconsistent.
+Option B — Update Stripe to match Apple
+Change Stripe products to match the new four-tier flat pricing — Starter free, Pro $49, Team $99, Business $199. Consistent pricing across every platform. Every tradie pays the same regardless of whether they're on iOS, Android, or web.
+
+My honest recommendation — Option B
+Consistent pricing across every platform is simpler, cleaner, and easier to explain to customers. A tradie shouldn't pay a different amount depending on what phone they use.
+Tell Replit:
+"Update the Stripe product catalogue to match our new flat pricing — archive the old Team Base and Additional Team Member products, create JobRunner Team at $99/month and JobRunner Business at $199/month. All platforms should have consistent pricing."
+Then you just need to archive those old products in Stripe yourself.You said: lets just chill with option Alets just chill with option A8:49 PMClaude responded: Fair enough.Fair enough. Keep it simple for now.
+Old Stripe products stay as is for web and Android. Apple IAP handles iOS with the new flat pricing. You can align them later once you have real customers and understand which platform they're mostly coming from.
+Nothing to do right now on Stripe products.
+
+Where things actually stand right now:
+Stripe branding — done. Logo, colours, all previews looking good.
+Statement descriptor — still needs changing from TRADIETRACK to JOBRUNNER. This is the only remaining Stripe task.
+Apple IAP — built by Replit, waiting on EAS build.
+App Store submission — waiting on new build with IAP code.
+Presentation — slides need to be built in Canva or Google Slides before Tuesday.
+
+What's your next move right now?You said: do i need this subscriptions in stripe though evenm tho i already have product cataloguedo i need this subscriptions in stripe though evenm tho i already have product catalogue8:51 PMClaude responded: No you don't need to manually create subscriptions here.Weighed necessity of Stripe subscriptions against existing product setupWeighed necessity of Stripe subscriptions against existing product setupNo you don't need to manually create subscriptions here.
+This page is for manually creating subscriptions one by one — like if you wanted to hand-enrol a customer yourself without them going through a checkout flow.
+Your setup is different. When a tradie pays through your app or website, Replit's code automatically creates the Stripe subscription in the background using the product IDs from your product catalogue. It all happens through the API — you never need to touch this page.
+The only time you'd use this page is if you wanted to manually set up a founding member or pilot customer on a specific plan without them going through the normal signup flow.
+So for Thirkell Engineering and Granite Fabricating as pilot businesses — if you want to give them free access or a discounted rate, you could come here and manually create a subscription at $0 or a custom price. That's the one use case.
+Otherwise ignore this page entirely. Your product catalogue is what matters and that's already set up correctly.You said: has replti got this setup properly so when we do connect stripe account to within jobrunner app it works all like thishas replti got this setup properly so when we do connect stripe account to within jobrunner app it works all like this8:53 PMClaude responded: Two things to flag here.Examined Stripe Connect setup and identified verification concernsExamined Stripe Connect setup and identified verification concernsTwo things to flag here.
+
+The Restricted Status Is A Problem
+Both connected accounts — Ayden Plumbing and Mike's Plumbing Services — are showing as Restricted. This means they haven't completed Stripe's identity verification and can't actually receive payouts yet. A tradie who connects their Stripe account through JobRunner and sees Restricted won't be able to get paid.
+This needs to be resolved before any real customer uses the payment flow.
+
+The Connect Flow Itself
+Image 2 shows the account creation dialog asking what the account should do. The correct option is already selected — "Accept payments from their own customers" which adds merchant configuration. That's right. Don't tick the second option for receiving transfers unless you're paying subbies directly through Stripe.
+
+Tell Replit This
+"Check the Stripe Connect onboarding flow in the app. When a tradie goes to Settings and connects their Stripe account, does the full Stripe Express onboarding flow appear — identity verification, bank account details, business details? Both test connected accounts are showing as Restricted which means the onboarding isn't completing properly. The flow needs to take the tradie through Stripe's hosted onboarding until their account reaches Enabled status before they can receive payouts. Check the /api/stripe/connect endpoint and make sure it's creating Express accounts and returning the correct account link URL for onboarding."
+
+Also — Delete The Test Accounts
+Ayden Plumbing and Mike's Plumbing Services are test accounts sitting there restricted. Once the connect flow is fixed and working properly you can clean these up. Don't leave test connected accounts sitting in your production Stripe dashboard.

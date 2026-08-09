@@ -1,0 +1,214 @@
+Alright — one blueprint, no branches, no “options”.
+
+This is the polished, straight system:
+
+✅ TradieTrack Website Add-On Blueprint (Relume → Webflow → TradieTrack on Replit)
+
+The promise
+
+Each tradie gets:
+	•	A real custom domain website (hosted on Webflow)
+	•	A “Get a Quote” form that creates leads inside their TradieTrack account
+	•	A Client Portal / Pay Invoice button that sends customers into TradieTrack (no login, magic links via SMS/email)
+	•	You handle it end-to-end as a concierge service
+
+⸻
+
+1) Inside TradieTrack (Replit): “Request Website” flow
+
+UI
+
+Add a menu item: Add-Ons → Website
+
+Button: Request Website
+
+Form fields:
+	•	Business name
+	•	Best contact phone
+	•	Email
+	•	Domain (have one? if yes, what is it?)
+	•	Services (short)
+	•	Service areas
+	•	Notes
+
+When they submit
+
+Your backend does 2 things immediately:
+	1.	Creates a “Website Request” record in your admin dashboard
+	2.	Sends YOU an SMS with the request summary
+
+SMS example to you:
+
+“Website request: Mike’s Electrical | 04xx… | Domain: mikes…com.au | Services: Electrical | Areas: Cairns…”
+
+Now you personally message/call them from your number and run the build like a real service.
+
+⸻
+
+2) You build the website (Relume → Webflow)
+
+Build steps
+	1.	In Relume: generate sitemap + wireframe + sections
+	2.	You review + adjust layout so it’s not “AI generic”
+	3.	Export to Webflow
+
+In Webflow (quality + SEO pass)
+
+You then:
+	•	Replace content (real copy)
+	•	Add real photos
+	•	Set SEO for each page:
+	•	Page title
+	•	Meta description
+	•	H1/H2 structure
+	•	Alt text
+
+Publish to Webflow staging first (for review).
+
+⸻
+
+3) Domain is connected (Webflow hosting)
+
+Tradie gives you their domain (or buys it) and you connect it in Webflow:
+
+Webflow:
+	•	Site Settings → Hosting → Custom Domains
+	•	Add: their-domain.com.au
+	•	Webflow generates DNS records
+	•	You/they add DNS at registrar
+	•	Webflow automatically provisions SSL
+	•	Site goes live on their domain
+
+At this point, website is public and professional.
+
+⸻
+
+4) The “website talks to TradieTrack” (the actual integration)
+
+This is the core.
+
+4.1 Every tradie website gets a unique Business Key
+
+In TradieTrack, each tradie/business has:
+	•	businessId (or businessKey)
+
+Example:
+	•	businessId = biz_8F2K1
+
+You store it once.
+
+4.2 You embed that businessId into the Webflow website (hidden field)
+
+On the website’s Get a Quote form in Webflow:
+	•	Add hidden input:
+	•	businessId = biz_8F2K1
+
+So every form submit is automatically tagged to the correct tradie.
+
+4.3 Webflow form submits directly into TradieTrack (Replit endpoint)
+
+Set the Webflow form action to:
+
+https://api.tradietrack.com.au/api/public/leads
+
+Payload (what your endpoint expects):
+	•	name
+	•	phone
+	•	email
+	•	address/suburb (optional)
+	•	message
+	•	businessId
+
+4.4 Replit backend logic (what happens server-side)
+
+When your API receives the lead:
+	1.	Validate fields (anti-spam basics)
+	2.	Find business by businessId
+	3.	Create a Lead inside TradieTrack DB:
+	•	status = “New”
+	•	source = “Website”
+	•	store all contact details
+	4.	Notify the tradie inside TradieTrack (and optionally notify them by SMS/email later)
+
+Now the website enquiry becomes a TradieTrack lead automatically — that’s the “talking”.
+
+⸻
+
+5) Client Portal / Pay Invoice on the website (done properly with no logins)
+
+Here’s the clean, correct rule:
+
+✅ The website does NOT generate portal access.
+✅ TradieTrack generates portal links per job/invoice and sends them to the client by SMS/email.
+
+So on the website, you simply include a button:
+
+Client Portal / Pay Invoice
+→ links to a TradieTrack portal landing page:
+
+https://app.tradietrack.com.au/portal
+
+That page is informational and has:
+	•	“Enter invoice/job link” OR “Check your SMS link”
+(You can keep this minimal — the real experience is via magic links you send during jobs/invoices.)
+
+The actual portal access happens through:
+	•	Quote link
+	•	Job link
+	•	Invoice link
+sent from TradieTrack.
+
+No logins. No security risk.
+
+⸻
+
+6) What you (Ayden / AV Web Innovation) actually do per website
+
+Your repeatable workflow:
+	1.	Tradie submits request in TradieTrack → you get SMS
+	2.	You contact them personally and collect:
+	•	logo
+	•	photos
+	•	services
+	•	suburbs
+	•	domain
+	3.	Build in Relume → export to Webflow
+	4.	SEO pass in Webflow
+	5.	Connect domain
+	6.	Add hidden businessId + set form action to TradieTrack endpoint
+	7.	Test by submitting a lead and confirming it appears in TradieTrack
+	8.	Deliver + get testimonial
+
+⸻
+
+7) What you need built in TradieTrack (minimum endpoints + admin)
+
+Database
+	•	businesses: id, name, phone, etc.
+	•	website_requests: request form submissions
+	•	leads: standard lead table
+
+API endpoints (Replit)
+	1.	POST /api/website-request
+
+	•	called by the in-app form
+	•	triggers SMS to you
+
+	2.	POST /api/public/leads
+
+	•	called by Webflow quote form
+	•	creates lead under correct business
+
+That’s it.
+
+⸻
+
+Final polished summary
+	•	Relume creates the structure fast
+	•	Webflow hosts the real custom-domain website professionally
+	•	TradieTrack (Replit) receives website enquiries as leads via one API endpoint
+	•	Every website form includes a hidden businessId, so leads go to the right tradie
+	•	Portal remains no-login via magic links sent from TradieTrack during quotes/jobs/invoices
+	•	You operate it as a concierge service to keep credibility high
+
+If you want, next I’ll write you the exact field names + payload for the Webflow form → Replit endpoint and the Twilio SMS content for the website request so you can paste straight into Replit.

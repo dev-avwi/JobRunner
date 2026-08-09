@@ -1,0 +1,246 @@
+Good.
+
+Now we’re moving from hype → discipline.
+
+You don’t need motivation right now.
+
+You need a serious production readiness checklist.
+
+This is the exact standard used by real SaaS companies before allowing real money to flow through their system.
+
+I’m splitting this into:
+
+• Core Business Logic
+• Financial Integrity
+• Multi-User & Permissions
+• Mobile Readiness
+• Web Readiness
+• Infrastructure & Backend
+• Integrations (Twilio / AI / Maps)
+• Security
+• Performance
+• Support & Recovery
+• Legal / Compliance
+• UX Safety
+• Operational Monitoring
+
+Save this. Audit against it. No emotion.
+
+⸻
+
+🔴 LEVEL 1 — CORE BUSINESS LOGIC (Non-Negotiable)
+
+Job Lifecycle
+	•	Create job
+	•	Edit job
+	•	Delete job (soft delete, not hard delete)
+	•	Convert quote → job
+	•	Convert job → invoice
+	•	Cancel job
+	•	Duplicate job
+	•	Job status tracking (draft / scheduled / in progress / completed / invoiced)
+
+Client Management
+	•	Create client
+	•	Edit client
+	•	Duplicate client prevention
+	•	Merge duplicate clients
+	•	Client job history accurate
+
+Data Integrity
+	•	No duplicate invoice numbers
+	•	Unique ID generation collision-safe
+	•	Timestamps correct timezone handling
+	•	All records tied to correct business (multi-tenant isolation)
+
+⸻
+
+🔴 LEVEL 2 — FINANCIAL ACCURACY (Trust Layer)
+
+GST / Tax
+	•	GST calculated correctly
+	•	Rounding consistent
+	•	Discounts handled correctly
+	•	Line-item tax accurate
+
+Invoices
+	•	Partial payments supported
+	•	Payment status tracking
+	•	Invoice edits re-calc totals correctly
+	•	Prevent double-send
+	•	Invoice numbering sequence consistent
+	•	PDF output matches on-screen totals
+
+Edge Cases
+	•	Editing quote after job created
+	•	Editing job after invoice draft created
+	•	Removing line item recalculates correctly
+	•	Deleting client doesn’t delete invoices
+
+If money math fails once → trust destroyed.
+
+⸻
+
+🔴 LEVEL 3 — MULTI-USER / TEAM LOGIC
+	•	Role-based permissions (owner, admin, staff)
+	•	Staff can’t see other businesses
+	•	Prevent simultaneous overwrite (concurrency control)
+	•	Activity log per job
+	•	Change history recorded (Proof Pack integrity)
+	•	Location tracking only for active shifts
+
+⸻
+
+📱 MOBILE READINESS (Real World Conditions)
+
+Connectivity
+	•	Graceful handling of weak signal
+	•	Retry logic on failed API calls
+	•	Prevent data loss if app crashes
+	•	No infinite loading states
+
+Device Handling
+	•	Background resume safe
+	•	GPS battery drain optimized
+	•	Camera upload compression
+	•	Large image handling stable
+	•	Push notifications reliable
+
+UX Safety
+	•	Confirmation before destructive actions
+	•	Clear error messages
+	•	No hidden critical actions
+	•	Tap protection against double submits
+
+⸻
+
+🌐 WEB APP READINESS
+	•	Responsive layouts
+	•	Works on Chrome, Safari, Edge
+	•	No console errors
+	•	No layout shifts breaking forms
+	•	Keyboard navigation usable
+	•	Loading states present
+	•	Forms validate correctly
+
+⸻
+
+🔧 INFRASTRUCTURE & BACKEND
+	•	Database indexing optimized
+	•	No N+1 query problems
+	•	Rate limiting on APIs
+	•	API authentication verified
+	•	Backup system confirmed
+	•	Restore test performed
+	•	Environment variables secure
+	•	No secrets in repo
+
+⸻
+
+🔌 INTEGRATIONS HARDENING
+
+Twilio
+	•	SMS idempotency (no duplicate sends)
+	•	Inbound messages attached to correct job
+	•	Failure handling
+	•	SMS cost caps
+	•	Logging of all send attempts
+
+AI Quotes
+	•	AI output labeled as draft
+	•	User must confirm before saving
+	•	Rate limiting
+	•	No direct write to financial totals without review
+	•	Error fallback if AI fails
+
+Maps / Dispatch
+	•	Location update throttling
+	•	Map fallback if API fails
+	•	Accurate timezone handling
+	•	Prevent ghost jobs on board
+
+⸻
+
+🔐 SECURITY
+	•	JWT/session validation
+	•	Secure storage on mobile
+	•	HTTPS enforced
+	•	Input sanitization
+	•	SQL/NoSQL injection prevention
+	•	File upload validation
+	•	Role-based route protection
+	•	Audit log for admin actions
+
+⸻
+
+⚡ PERFORMANCE
+	•	Job list loads < 2s
+	•	Invoice generation < 2s
+	•	No blocking synchronous calls
+	•	Lazy loading where needed
+	•	No memory leaks in mobile
+
+⸻
+
+📊 OBSERVABILITY
+	•	Structured logging
+	•	Error logging system
+	•	Crash reporting
+	•	Monitoring for API failures
+	•	Twilio usage monitoring
+	•	AI usage tracking
+
+⸻
+
+🔁 SUPPORT & RECOVERY
+	•	Admin ability to view user account
+	•	Manual invoice correction process
+	•	Data export feature (CSV/PDF)
+	•	Soft delete recovery
+	•	Clear rollback procedure
+
+⸻
+
+📜 LEGAL / COMPLIANCE (Australia)
+	•	GST compliance
+	•	Invoice legal requirements met
+	•	ABN field optional/validated
+	•	Privacy policy
+	•	Terms of service
+	•	Data retention policy
+	•	SMS opt-out compliance
+
+⸻
+
+🎯 PILOT READINESS CRITERIA
+
+You are ready for 3-business pilot if:
+	•	No financial calculation bugs
+	•	No duplicate invoice creation
+	•	No data loss during network failure
+	•	No cross-business data leaks
+	•	SMS sends reliably
+	•	Proof Pack entries immutable
+	•	1 business can run a full week without breakage
+
+⸻
+
+🚨 What Most Young Founders Overlook
+
+Not features.
+
+Edge cases.
+
+Scaling is not:
+“Can it handle 10,000 users?”
+
+Scaling is:
+“Can it handle one business without breaking under real chaos?”
+
+⸻
+
+Now I’m going to ask you something critical:
+
+If I told you to remove AI quotes completely until everything else is bulletproof…
+
+Would you do it?

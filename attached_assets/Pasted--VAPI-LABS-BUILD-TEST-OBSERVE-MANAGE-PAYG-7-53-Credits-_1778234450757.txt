@@ -1,0 +1,152 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+7.53 Credits
+Assistants
+3
+
+
+Create Assistant
+
+Search Assistants
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+Mike's Plumbing Services AI Receptionist
+
+d3d89b1a-baea-43cd-80ce-2b224d3b8311
+
+
+Talk
+
+
+Publish
+
+
+
+
+
+
+
+You're using Vapi's new agent builder. You can switch back to the classic layout anytime from themenu in the header.
+
+Unsaved changes — publish to apply.
+
+Calls
+
+Chat
+
+Sessions
+
+Webhooks
+Time Range
+
+
+Time Range
+Call ID
+
+Call ID
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...4476
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 8, 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+-	
+-
+Web	
+Customer
+May 8, 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+Transcript and Chat
+
+Assistant
+Good day. Thanks for calling Mark's Plumbing Services. How can I help you today?
+Customer ended the call
+07:53 PM
+05/08/2026 19:55 inboundPhoneCall
+Assistant
+Cost: $0.16
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 1m 29s
+019e0703-837...
+View detailed logs for this call session
+Recording
+01:03
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+Summary
+Aiden Vogler contacted Mike's Plumbing Services regarding a really urgent leaking tap. They provided their name and phone number (0458300051) to the AI assistant. The AI confirmed the details and informed Aiden that someone from the team would follow up shortly to assist with the repair.
+Success Evaluation
+true
+Data
+This is the data extracted based on the Conversation.
+
+"N/A"
+Metadata
+No Metadata Available
+Assistant Override Variable Values
+No Assistant Override Variable Values
+Close

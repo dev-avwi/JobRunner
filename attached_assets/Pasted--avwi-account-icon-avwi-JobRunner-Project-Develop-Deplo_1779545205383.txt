@@ -1,0 +1,277 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+520f11cd
+
+
+Copy error as prompt
+
+Compare
+iOS App Store build
+c8cfec3 · Add live activity extension configuration to app settings Declare the iOS app extension target and its bundle identifier in app.json to ensure correct provisioning profile injection during EAS builds. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 27b74830-f05f-40b9-818c-024cf9657f77 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 6af885c4-e497-4eaa-a7b1-e9ea4a894cbc Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/27b74830-f05f-40b9-818c-024cf9657f77/fgbijDW Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.3
+
+
+production
+
+ 1.1.3 (32)
+
+6482939
+
+c8cfec3
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+May 24, 2026 12:00 AM
+134ms
+
+44s
+
+3m 9s
+
+3m 53s
+
+29 days
+
+Logs
+
+Waiting to start
+
+44s
+
+
+Spin up build environment
+
+42s
+
+
+Install custom tools
+
+9s
+
+
+Prepare project
+
+11s
+
+
+Read eas.json
+
+1ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+12s
+
+
+Read app config
+
+
+1
+401ms
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+4s
+
+
+Prebuild
+
+3s
+
+
+Install pods
+
+22s
+
+
+Calculate expo-updates runtime version
+
+223ms
+
+
+Configure Xcode project
+
+51ms
+
+
+Configure expo-updates
+
+7ms
+
+
+Bundle JavaScript
+
+24s
+
+
+Run fastlane
+
+
+1
+1m 28s
+
+
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- unable to spawn process '/../../node_modules/react-native/scripts/xcode/ccache-clang.sh' (No such file or directory) (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+Command line invocation:
+
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -derivedDataPath ./build -destination generic/platform=iOS -archivePath "/Users/expo/Library/Developer/Xcode/Archives/2026-05-23/JobRunner 2026-05-23 07.02.20.xcarchive" -resultBundlePath /var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/result-bundle-1779544936043.xcresult archive
+
+​
+
+Writing result bundle at path:
+
+	/var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/result-bundle-1779544936043.xcresult
+
+​
+
+ComputePackagePrebuildTargetDependencyGraph
+
+​
+
+Prepare packages
+
+​
+
+CreateBuildRequest
+
+​
+
+SendProjectDescription
+
+​
+
+CreateBuildOperation
+
+​
+
+ComputeTargetDependencyGraph
+
+note: Building targets in dependency order
+
+note: Target dependency graph (153 targets)
+
+    Target 'JobRunner' in project 'JobRunner'
+
+        ➜ Implicit dependency on target 'Pods-JobRunner' in project 'Pods' via file 'Pods_JobRunner.framework' in build phase 'Link Binary'
+
+        ➜ Implicit dependency on target 'JobRunnerLiveActivity' in project 'JobRunner' via file 'JobRunnerLiveActivity.appex' in build phase 'Copy Files'
+
+

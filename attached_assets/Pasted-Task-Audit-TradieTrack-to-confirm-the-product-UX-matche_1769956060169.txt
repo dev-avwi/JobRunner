@@ -1,0 +1,52 @@
+Task: Audit TradieTrack to confirm the product UX matches our public promise.
+
+Context: We replied to a tradie saying:
+- We do NOT “read plans” or pretend to catch upstream mistakes.
+- We DO keep a clear record of what was agreed, when it changed, and who said what.
+- Photos should be tied to the job, notes tied to the moment, and changes/variations should create a clear paper trail.
+
+Goal: Verify the app actually reflects this and identify gaps. Produce a short report + specific fixes.
+
+1) Walk the main flows (end-to-end)
+- Create job → add client → add site address
+- Add notes on job (site observations)
+- Add photos (before/after) and confirm they are attached to the job and viewable later
+- Create quote → send quote → view quote history
+- Create variation/change order → send → client approval → view timeline
+
+2) “Paper trail” checks (must-have)
+- Is there a single job timeline/activity feed that shows:
+  - quote sent (timestamp)
+  - note added (timestamp + author)
+  - photo added (timestamp + uploader)
+  - variation created/sent/approved (timestamp)
+  - status changes (job/quote/variation)
+- Can a user open any job and quickly answer:
+  a) what was agreed?
+  b) when did it change?
+  c) who changed it?
+
+3) UX clarity checks (language + placement)
+- Do we have a clear, dedicated place for:
+  - “Site observations / Notes tied to the moment”
+  - “Photos from site”
+  - “Changes / Variations”
+- Remove or avoid any language that implies we “read plans” or “catch mistakes automatically.”
+- If we mention “smart/AI,” confirm it’s not presented as replacing tradie judgement.
+
+4) Evidence linkage checks
+- When viewing a quote later, can I see:
+  - the notes created around the quote
+  - photos relevant to the quote/job at the time
+  - assumptions/inclusions/exclusions (if present)
+- When viewing a variation later, can I see:
+  - reason, photos, and notes attached to that variation
+
+5) Output required
+- Provide:
+  A) Pass/fail table for each requirement above
+  B) 5–10 concrete UI/logic changes to close gaps (with file paths + components)
+  C) Any bugs found + how to reproduce
+  D) Any missing instrumentation/events we should track (optional)
+
+Important: prioritize minimal changes that create a stronger “record of reality” experience, especially a Job Timeline / Activity Log if we don’t already have one.

@@ -1,0 +1,160 @@
+~/workspace/mobile$ eas submit --platform ios --profile production
+★ eas-cli@19.0.8 is now available.
+To upgrade, run:
+npm install -g eas-cli
+Proceeding with outdated version.
+
+
+✔ What would you like to submit? › Select a build from EAS
+? Which build would you like to submit? › - Use arrow-keys. Return to submit.
+✔ Which build would you like to submit? › - ID: f7aa491c-5279-4088-b2e5-e788832d8053 (5 minutes ago)
+Looking up credentials configuration for com.jobrunner.app...
+✔ App Store Connect API Key already set up.
+Using Api Key ID: SR79K4PS2Y ([Expo] EAS Submit bgx8XiZHHR)
+
+ASC App ID:                 6760283858
+Project ID:                 78e88ca7-014e-438b-8170-1ccae4cd9386
+App Store Connect API Key:  
+    Key Name  :  [Expo] EAS Submit bgx8XiZHHR
+    Key ID    :  SR79K4PS2Y
+    Key Source:  EAS servers
+Build:                      
+    Build ID    :  f7aa491c-5279-4088-b2e5-e788832d8053
+    Build Date  :  5/23/2026, 2:10:25 PM
+    App Version :  1.1.3
+    Build number:  32
+
+✔ Scheduled iOS submission
+
+Submission details: https://expo.dev/accounts/avwi/projects/tradietrack/submissions/7bf8e6f7-fc44-404e-9ff8-511816a0dd1b
+
+Waiting for submission to complete. You can press Ctrl+C to exit.
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠏ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠋ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠙ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠹ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠸ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠼ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠴ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠦ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠧ Submitting your app to Apple App Store Connect: waiting for an available submi
+⠇ Submitting your app to Apple App Store Connect: waiting for an available submi
+✖ Something went wrong when submitting your app to Apple App Store Connect.
+~/workspace/mobile$ 

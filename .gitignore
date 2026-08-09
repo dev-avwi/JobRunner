@@ -1,26 +1,49 @@
-node_modules
-.env
-.env.*
-.expo
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
 dist
-build
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Exclude from deployment bundle (large directories not needed in production)
-attached_assets/
-mobile/ios/
-mobile/android/
+# dependencies
+node_modules
 
-# Signing secrets — NEVER commit (certificates, keystores, provisioning, passwords)
-mobile/credentials.json
-mobile/credentials/
-**/*.p12
-**/*.p8
-**/*.jks
-**/*.keystore
-**/*.mobileprovision
-mobile/GoogleService-Info.plist
-mobile/google-service-account.json
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# macOS Finder metadata — never commit these
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
-**/.DS_Store
+Thumbs.db
+
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
+
+# Replit
+.cache/
+.local/

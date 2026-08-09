@@ -1,0 +1,110 @@
+App Review
+iOS Submission
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.1
+
+1.0.0 (21)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+2.2.0 Performance: Beta Testing
+
+Screenshot-0129-093921.pngDownload
+Edit
+
+Messages (1)
+
+AppleToday 7:41 PM
+Hello,
+
+Thank you for your resubmission. Upon further review, we identified additional issues that need your attention. See below for more information.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+
+Review Environment
+
+Submission ID: 61088bf5-f0af-4d45-acc4-e2d188ffb25b
+Review date: January 29, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.1
+
+
+Guideline 2.1 - Information Needed
+
+We have started our review, but we still need additional information to continue. Specifically, it appears your app may access or include paid digital content or services, and we want to understand your business model before completing our review. 
+
+Next Steps
+
+Please review the following questions and provide as much detailed information about your business model as you can.
+
+1. Who are the users that will use the paid content, subscriptions, features, and services in the app?
+2. Where can users purchase the content, subscriptions, features, and services that can be accessed in the app?
+3. What specific types of previously purchased content, subscriptions, features, and services can a user access in the app?
+4. What paid content, subscriptions, or features are unlocked within your app that do not use in-app purchase?
+5. How do users obtain an account? Do users have to pay a fee to create an account?
+6. Are the enterprise services in your app sold to single users, consumers, or for family use?
+
+
+Guideline 2.1 - Performance - App Completeness
+Issue Description
+
+The app still exhibited one or more bugs that would negatively impact users.
+
+Bug description: Sign in with Apple failed.
+
+Review device details:
+
+- Device type: iPad Air 11-inch (M3) 
+- OS version: iPadOS 26.2
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+
+Guideline 2.2 - Performance - Beta Testing
+
+Your app appears to be a pre-release, test, or trial version with a limited feature set. Apps that are created for test or trial purposes are not appropriate for the App Store.
+
+Next Steps
+
+To resolve this issue, please complete, remove, or fully configure any partially implemented features. If your app is not ready for public distribution, use TestFlight to test your app.
+
+Resources
+
+- To learn more about our policies for beta testing, see App Review Guideline 2.2.
+- Test apps and invite users to provide feedback with TestFlight Beta Testing.
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review
+
+Date Submitted
+Jan 28, 2026 at 7:14 AM
+Submission ID
+61088bf5-f0af-4d45-acc4-e2d188ffb25b
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission

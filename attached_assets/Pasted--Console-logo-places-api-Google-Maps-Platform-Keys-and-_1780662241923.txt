@@ -1,0 +1,103 @@
+
+Console logo
+places api
+
+Google Maps Platform
+/
+Keys and credentials
+Places API
+Credentials compatible with this API
+To view all credentials visit Credentials in APIs and services
+
+Remember to configure the OAuth consent screen with information about your application.
+API keys
+Name
+Creation date
+Restrictions
+Actions
+No API keys to display
+URL Signing Secret
+Secret generator
+Used in conjunction with an API key, a URL signing secret can tag API requests with a higher degree of security. Learn more
+
+To protect against unauthorised usage, requests without a signature are subject to a limit of 25,000 requests per day.
+
+Current secret
+40kheXoUsXs_iQluFwtEqDzpFiY=
+Sign a URL now
+Construct the request URL without the signature, making sure that you include your API key or client ID. Note that you must URL-encode any non-standard characters.
+
+Note: All Google services require UTF-8 character encoding (which implicitly includes ASCII). If your applications operate using other character sets, make sure that they construct URLs using UTF-8 and properly URL-encode them.
+
+URL
+Example: https://maps.googleapis.com/maps/api/staticmap?YOUR_REQUEST_PARAMETERS&amp;KEY_OR_CLIENT=YOUR_KEY_OR_ID
+
+Create API key
+Name
+Places API
+Use a unique name to identify your API key
+APIs that can be accessed using this key
+New key creation: To use Agent Platform (Vertex) or Gemini APIs with an API key, you must bind it to a service account by selecting 'Authenticate API calls through a service account' before applying the API restriction.
+
+Note: An organisation policy governs creating API keys bound to a service account for projects with a Google Cloud organisation. Learn more 
+Select API restrictions
+35 APIs
+This list includes only APIs enabled in this project. If you don't see the API that you need, visit the API Library to enable it.
+Selected APIs:
+Address Validation API
+Aerial View API
+Air Quality API
+Directions API
+Distance Matrix API
+Geocoding API
+Geolocation API
+Map Management API
+Map Tiles API
+Maps 3D SDK for Android
+Maps 3D SDK for iOS
+Maps Elevation API
+Maps Embed API
+Maps Grounding Lite API
+Maps JavaScript API
+Maps Platform Datasets API
+Maps SDK for Android
+Maps SDK for iOS
+Maps Static API
+Navigation SDK
+Places Aggregate API
+Places API
+Places API (New)
+Places UI Kit
+Pollen API
+Roads API
+Route Optimization API
+Routes API
+Solar API
+Street View Publish API
+Street View Static API
+Time Zone API
+Weather API
+Places SDK for iOS
+Places SDK for Android
+
+Authenticate API calls through a service account
+API calls made by this key will authenticate as the bound service account. This option is required to access some APIs such as Agent Platform (Vertex).
+
+Restrict your key to reduce security risks
+Select a specific application type to restrict access
+
+Action recommended: This key can currently be used with any application. Restrict where it can be used to improve security. Learn more 
+Application restrictions
+
+None
+
+Websites
+
+IP addresses
+
+Android apps
+
+iOS apps
+Note: It may take up to five minutes for settings to take effect.
+
+7 results showing.

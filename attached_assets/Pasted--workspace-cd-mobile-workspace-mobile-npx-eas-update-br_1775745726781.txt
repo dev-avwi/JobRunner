@@ -1,0 +1,109 @@
+~/workspace$ cd mobile
+~/workspace/mobile$ npx eas update --branch production
+An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+✔ Email or username … avwi
+✔ Password … ************
+✔ Provide an update message: … Update free trial period to 7 days across platforms
+
+Adjusts default free trial duration from 30 days to 7 days in billing service and routes, aligning web and mobile trial lengths.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 9ee9ddc8-8c9e-4c9a-972e-0555d66e6d4d
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/lTbRIfD
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  1.0% (1/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓░░░░░░░░░░░░░░ 14.8% ( 17/126)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓░░░░░░░░░░░░░░ 17.4% ( 86/246)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 36.4% (257/426)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 35.5% (277/465)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 36.4% (407/687)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.7% (453/719)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 37.8% (424/690)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 43.0% (498/789)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 37.8% (424/690)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 43.0% (516/801)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 37.8% (424/690)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 43.5% (533/808)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 37.8% (424/690)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 46.9% (561/819)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 37.8% (424/690)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.4% (611/877)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.4% (456/754)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.4% (611/877)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.4% (472/764)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.6% (627/896)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.7% (486/771)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.6% (627/896)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 42.1% (503/775)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.6% (627/896)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 44.2% (522/785)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.6% (627/896)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 45.2% (528/786)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 49.6% (627/896)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 48.8% (619/888)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 58.9% (707/921)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 55.2% (674/907)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.2% (717/924)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 56.4% (688/916)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.2% ( 807/2881)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.0% ( 731/2538)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.2% ( 883/2987)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.0% ( 913/3011)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.2% ( 935/3020)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.0% ( 913/3011)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 60.2% (1406/3158)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.0% ( 913/3011)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 67.9% (2618/3178)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 57.0% (1278/3071)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 83.3% (2994/3281)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 68.7% (2614/3154)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 83.3% (2994/3281)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 84.9% (3008/3291)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.9% (3175/3613)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.5% (3238/3732)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.9% (3292/3782)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.5% (3292/3780)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.9% (3353/3822)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.5% (3292/3780)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.9% (3550/3882)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 86.5% (3519/3845)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 92.5% (3773/3922)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 92.8% (3778/3922)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 93.1% (3819/3964)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.4% (4085/4195)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.4% (4128/4246)
+[expo-cli] Android Bundling failed 113986ms node_modules/expo-router/entry.js (4297 modules)
+[expo-cli] Error: Unable to resolve module react-native-iap from /home/runner/workspace/mobile/src/lib/iap.ts: react-native-iap could not be found within the project or in these directories:
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli]   12 |   type SubscriptionPurchase,
+[expo-cli]   13 |   type Subscription,
+[expo-cli] > 14 | } from 'react-native-iap';
+[expo-cli]      |         ^
+[expo-cli]   15 |
+[expo-cli]   16 | export const IAP_PRODUCT_IDS = {
+[expo-cli]   17 |   pro: 'com.jobrunner.pro.monthly',
+[expo-cli] 
+[expo-cli] Import stack:
+[expo-cli] 
+[expo-cli]  src/lib/iap.ts
+[expo-cli]  | import "react-native-iap"
+[expo-cli] 
+[expo-cli]  app/more/subscription.tsx
+[expo-cli]  | import "../../src/lib/iap"
+[expo-cli] 
+[expo-cli]  app (require.context)
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

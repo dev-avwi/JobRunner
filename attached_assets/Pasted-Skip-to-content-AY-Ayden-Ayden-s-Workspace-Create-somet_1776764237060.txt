@@ -1,0 +1,199 @@
+Skip to content
+
+
+AY
+Ayden
+Ayden's Workspace
+Create something new
+Import code or design
+Home
+Projects
+Published Projects
+Integrations
+Settings
+Learn
+Documentation
+
+Refer & Earn
+Install Replit on
+•
+Changelog
+
+
+AY
+Ayden
+Ayden's Workspace
+Hi Ayden, what do you want to make?
+
+Describe your idea, Replit will bring it to life...
+
+
+Plan
+
+
+
+Website
+
+Mobile
+
+Slides
+
+Animation
+
+3D Game
+
+Data Visualization
+
+Design
+
+Document
+
+Spreadsheet
+
+Blank
+
+Try an example prompt
+
+
+Startup analytics dashboard
+
+Fitness app onboarding wireframe
+
+Mobile app proposal
+Your recent Projects
+View All
+Waiting for you
+JobRunner
+JobRunner
+Published
+·
+12 hours ago
+Waiting for you
+
+Criti
+Published
+·
+12 hours ago
+Waiting for you
+AV Web Innovation
+AV Web Innovation
+Published
+·
+22 hours ago
+Home - Replit
+Settings
+
+
+AD
+admin3404
+admin3404's Workspace
+Workspace
+
+Workspace overview
+
+Workspace collaborators
+
+Workspace usage
+
+Integrations
+
+Security
+Account
+
+Billing
+
+Account seats
+
+Account usage
+
+Advanced
+User
+
+Profile
+
+Personalization
+Account usage
+Usage overview
+Total available credits
+Remaining 
+$0
+
+View breakdown
+Resets 
+in 10 days
+Credits used this month
+Used 
+$20
+
+View breakdown
+Additional usage
+Spent 
+$1,351.47
+Alert: 
+not set
+ | 
+Budget: 
+not set
+Manage 
+Credits
+
+Purchase credit pack
+Credit packs
+Promotional credits
+Resource usage
+Invoice date:
+
+Current invoice
+
+Current invoice
+AI
+Usage total	Unit price	Cost accrued
+Agent
+1313.39	Variable	$1313.39
+Replit AI Integrations
+5.16	Variable	$5.16
+Published Apps
+Quota used	Quota	Usage total	Unit price	Cost accrued
+Outbound Data Transfer
+(GiB)
+4%	100	4.45	$0.1 / GiB	$0.00
+Reserved VM
+(Compute hours)
+-	-	0.00	-	$0.00
+Autoscale Deployment
+(Deployments)
+-	-	89.00	$0.033 / day	$2.94
+Autoscale Deployment
+(Compute units)
+-	-	10176994.77	$3.20 / 1 million	$32.57
+Autoscale Deployment
+(Requests)
+-	-	108900.00	$1.20 / 1 million	$0.13
+Static Deployment
+(Count)
+0%	200	0.00	-	$0.00
+Scheduled Deployments
+(Deployments)
+-	-	0.00	$0.033 / day	$0.00
+Scheduled Deployments
+(Compute units)
+-	-	0.00	$3.20 / 1 million	$0.00
+PostgreSQL Storage
+(GiB)
+-	-	0.55	$1.5 / GiB	$0.83
+PostgreSQL Compute
+(Hours)
+-	-	108.12	$0.16 / hour	$17.30
+App Storage
+(GiB-months)
+-	-	0.00	$0.03 / GiB / month	$0.00
+App Storage Data Transfer
+(GiB)
+-	-	0.00	$0.1 / GiB	$0.00
+App Storage Basic Operations
+(Requests)
+-	-	0.00	$0.0006 / 1K	$0.00
+App Storage Advanced Operations
+(Requests)
+-	-	0.00	$0.0075 / 1K	$0.00
+Updates take up to 1 hour and may not reflect the latest usage data. See previous invoices.

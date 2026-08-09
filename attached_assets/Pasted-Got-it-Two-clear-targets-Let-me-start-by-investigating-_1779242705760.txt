@@ -1,0 +1,72 @@
+Got it. Two clear targets. Let me start by investigating both in parallel.
+
+
+3 actions
+Commit 113776ff is type-only on the dashboard — it added a tomorrowJobs? field to state and a styles.card style definition. No JSX/component-tree changes at all. So it is NOT the source of "Attention Needed is now in a container." We need to look elsewhere.
+
+Let me triage both issues in parallel — find the actual "Attention Needed" wrapping change, and survey the bottom-sheet chain:
+
+
+11 actions
+Found the smoking gun for "Attention Needed in a container":
+
+Look at the blame line 1287: <View style={[styles.card, ...]}> — added on 2026-04-13 in commit cbad4d9a5. The JSX has been referencing styles.card for over a month.
+
+But the styles.card definition didn't exist until commit 113776ff on 2026-05-19 (the Task #61 typecheck fix). That diff added:
+
++  card: {
++    backgroundColor: colors.card,
++    borderRadius: radius.xl,
++    borderWidth: 1,
++    borderColor: colors.cardBorder,
++    ...shadows.sm,
++  },
+
+For 5 weeks the View was being passed [undefined, {marginBottom: ...}] — RN silently ignores undefined styles, so it rendered as a transparent wrapper. The moment Task #61 defined styles.card to satisfy the TS error, the wrapper became a real bordered/shadowed card.
+
+Let me verify that the styles.card reference at line 1287 was always intended (vs accidentally added) and check the bottom-sheet situation:
+
+
+6 actions
+Triage report
+Issue 1: "Attention Needed" is now in a container — root cause confirmed
+It's exactly what Xcode-Claude suspected, but the mechanism is a little different from "the fix wrapped something."
+
+mobile/app/(tabs)/index.tsx line 1287:
+
+<View style={[styles.card, { marginBottom: spacing['3xl'] + 4 }]}>
+
+That JSX has been referencing styles.card since 2026-04-13 (commit cbad4d9a5, "Improve dashboard spacing"). But styles.card was never defined in the stylesheet — for 5 weeks RN was passing [undefined, {marginBottom: …}], which RN silently ignores. The View rendered as a transparent wrapper.
+
+Commit 113776ff (Task #61, 2026-05-19) added this to satisfy a TS error about styles.card being missing:
+
++  card: {
++    backgroundColor: colors.card,
++    borderRadius: radius.xl,
++    borderWidth: 1,
++    borderColor: colors.cardBorder,
++    ...shadows.sm,
++  },
+
+The moment that definition landed, the wrapper at line 1287 became a real bordered, shadowed card. Same JSX, new visible style. So Task #61 didn't add a wrapper — it activated an orphan style reference that had been quietly broken since April.
+
+The fix is one line. Two reasonable options:
+
+Option	Change	Result
+A. Match the 5-week look	Delete styles.card from line 1287 → <View style={{ marginBottom: spacing['3xl'] + 4 }}>	Reverts to the transparent-wrapper rendering the user remembers. Leaves the styles.card definition for any other component that may need it.
+B. Keep the card, drop the wrapper	Delete the wrapper View entirely; render alerts directly	Cleaner but more invasive — and changes the visual hierarchy more than what the user noticed
+I'd go with A — it's the literal undo. Want me to make that change?
+
+Issue 2: bottom sheets — need symptoms before I bisect
+AppBottomSheet.tsx has been touched 15× in recent history (10 with vague "Improve…" messages). The file is 442 lines of PanResponder + Animated math + autoHeight inference. I don't want to do speculative surgery on it.
+
+The file looks coherent to me on read — the comments are well-thought-out, the gesture logic has clear intent, autoHeight inference is documented. But "looks coherent" ≠ "works on device."
+
+To bisect efficiently I need from the user:
+
+Which sheets feel broken? (Search/filter on Work tab? Job detail action sheet? "What's New"? All of them?)
+What's the specific symptom? (Won't dismiss? Snaps to wrong height? Content clipped? Can't drag? Drags but doesn't close? Backdrop unresponsive?)
+iOS or Android or both? (Several recent commits were Android-specific — the panResponder has Platform.OS === 'android' edge-swipe carve-outs.)
+Without that I'd be guessing at which of b37d8e34 → 5d868d68 to revert. With it, I can pinpoint in one or two reads.
+
+Recommended next step: I make the one-line dashboard fix now (Option A) and commit it, then ping back for the sheet symptoms. Sound good?

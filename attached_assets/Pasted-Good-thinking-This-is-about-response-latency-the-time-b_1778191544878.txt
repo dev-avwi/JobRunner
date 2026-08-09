@@ -1,0 +1,44 @@
+Good thinking. This is about response latency — the time between the caller finishing speaking and the AI starting to respond. For a phone conversation anything over 700ms starts feeling unnatural and robotic. Under 600ms feels like a real person.
+
+---
+
+**Tell Replit This:**
+
+*"Refine the AI Receptionist system with these improvements:*
+
+*1. Latency optimisation on assistant creation:*
+*When a new Vapi assistant is created for a business — either when they upgrade to the AI Receptionist add-on or when an admin provisions one — the assistant must be configured with these latency-optimised settings:*
+- *responseDelay: 0 — no artificial delay added*
+- *llmRequestDelay: 0 — no delay before sending to language model*
+- *numWordsToInterruptAssistant: 3 — allows caller to interrupt quickly*
+- *backgroundDenoisingEnabled: true — reduces background noise on job sites*
+- *model: gpt-4o-mini — fastest response model, not gpt-4o*
+- *voice latency settings should target under 600ms end to end*
+
+*2. Latency monitoring on the knowledge bank and greeting:*
+*When a business saves changes to their AI Receptionist settings — greeting text, knowledge bank content, business hours, transfer numbers — run a latency check against the Vapi API after saving. If the estimated response latency comes back above 700ms show a warning banner:*
+*"Your receptionist response time may feel slow to callers. Try shortening your greeting or reducing the knowledge bank content to improve response speed."*
+*If latency is between 600-700ms show an amber warning.*
+*If latency is under 600ms show a green confirmation: "Response time is optimal."*
+
+*3. Knowledge bank length limit:*
+*Add a character counter to the knowledge bank text area. Warn the business when they exceed 2000 characters — longer prompts increase latency. Show: "Your knowledge bank is getting long. Consider summarising to keep response times fast."*
+
+*4. Greeting length guidance:*
+*Add helper text under the greeting field: "Keep your greeting under 15 words for the fastest response. Example: Hey thanks for calling [Business Name], how can I help?"*
+
+*5. When a new AI Receptionist assistant is provisioned:*
+*Run an automatic test call via the Vapi API immediately after creation. Log the response latency. If it comes back above 700ms flag it in the admin dashboard for review before activating. Only mark the assistant as Active once latency is confirmed within range.*
+
+*6. In the AI Receptionist settings page:*
+*Show a live latency indicator — green under 600ms, amber 600-700ms, red above 700ms. Pull this from the last test call result stored in the ai_receptionist_config table. Add a Test Response Time button that triggers a fresh Vapi test and updates the indicator.*
+
+*The goal is that every business using the AI Receptionist has a response time that feels natural to callers — under 600ms is the target, 700ms is the ceiling, anything above that needs a warning and guidance on how to fix it."*
+
+---
+
+**Why This Matters For The Presentation**
+
+If you demo the AI receptionist on May 13 and it has a noticeable pause before responding it undermines the whole moment. Getting this tuned now means the demo sounds natural and impressive every time.
+
+GPT-4o-mini is the key change — it's significantly faster than GPT-4o with barely any quality difference for a receptionist use case. That alone should drop latency by 200-300ms.

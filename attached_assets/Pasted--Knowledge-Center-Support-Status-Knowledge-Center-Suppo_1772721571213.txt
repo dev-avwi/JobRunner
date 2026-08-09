@@ -1,0 +1,63 @@
+
+Knowledge Center
+Support
+Status
+Knowledge Center
+Support
+Status
+Log Out
+Support My Support Requests Request #25362315
+SendGrid Account Verification - Response Required
+ZendeskMarch 3, 2026 at 12:24 AM
+
+Hello,
+
+Thank you for your interest in upgrading your Twilio SendGrid account.
+
+We want to make sure our platform is safe and trustworthy. We are currently reviewing your account upgrade request. To expedite the process, please provide the following information if you haven't already done so during the signup process:
+
+The official website for your business. If the website is unavailable, please provide the verified social media site for your business. 
+A detailed description of your business model and the products or services you provide.
+Your first and last name, as well as your affiliation with your business.
+Additionally, please include a publicly available source that verifies your role, such as your LinkedIn profile.
+To help us understand your use case, please outline the following:
+What type of emails do you intend to send? Will they be transactional or marketing in nature? If they are marketing emails, please provide a link to your opt-in page. If your opt-in page is not on your website (e.g., through your app), please provide a screenshot.
+Please share a content sample by providing a link or attachment. For marketing emails, ensure that the following elements are visible in your example:
+Unsubscribe link
+Privacy Policy link
+Physical mailing address
+Thank you in advance for your patience and cooperation.
+
+DanMarch 3, 2026 at 4:18 AM
+
+Hello,
+ 
+Thank you for your interest in upgrading your Twilio SendGrid account.
+ 
+We want to make sure our platform is safe and trustworthy. To do this, we are checking your account details, your connection to your project, and how you plan to use our service.
+ 
+We need the following information from you to complete our review of your account:
+The official website for your business. If the website is unavailable, please provide the verified social media site for your business. 
+A detailed description of your business model and the products or services you provide.
+Your first and last name, as well as your affiliation with your business.
+Additionally, please include a publicly available source that verifies your role, such as your LinkedIn profile.
+To help us understand your use case, please outline the following:
+What type of emails do you intend to send? Will they be transactional or marketing in nature? If they are marketing emails, please provide a link to your opt-in page. If your opt-in page is not on your website (e.g., through your app), please provide a screenshot.
+Please share a content sample by providing a link or attachment. For marketing emails, ensure that the following elements are visible in your example:
+Unsubscribe link
+Privacy Policy link
+Physical mailing address
+ 
+If you have any additional questions or concerns, please reach out to us.
+
+ 
+
+
+Best regards,
+
+Dan
+
+Comment
+Attachments
+Add file or drop files here
+© 2020 SendGrid / Home / Knowle

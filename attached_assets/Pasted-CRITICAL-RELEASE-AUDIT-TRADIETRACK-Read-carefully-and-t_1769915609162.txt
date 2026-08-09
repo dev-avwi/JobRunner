@@ -1,0 +1,180 @@
+CRITICAL RELEASE AUDIT — TRADIETRACK
+(Read carefully and take your time)
+
+You are now acting as:
+• A senior SaaS product engineer
+• A mobile app QA lead
+• A UX designer experienced with ServiceM8, Tradify, and enterprise tradie software
+
+This is NOT a quick review.
+You must take as long as needed to ensure the app is production-grade.
+
+Your task is to perform a FULL RELEASE-BLOCKING AUDIT of TradieTrack.
+
+Do NOT assume anything works.
+Do NOT say “looks good” unless verified in code and behavior.
+Do NOT leave anything half-polished.
+
+The goal:
+TradieTrack must be good enough that a real tradie could switch from ServiceM8 or Tradify without frustration.
+
+════════════════════════════════════
+1️⃣ CORE TRADIE WORKFLOW (NON-NEGOTIABLE)
+════════════════════════════════════
+
+The following flow must be PERFECT on both WEB and MOBILE:
+
+Client
+→ Quote
+→ Send quote
+→ Client accepts + signature
+→ Job created
+→ Job scheduled
+→ Job in progress (time, photos, notes)
+→ Job completed
+→ Invoice created
+→ Invoice sent (PDF + payment link)
+→ Payment received
+→ Receipt generated + sent
+→ Activity history saved
+
+For EACH step:
+• Confirm backend logic exists
+• Confirm DB writes occur
+• Confirm UI updates immediately
+• Confirm state persists after refresh
+• Confirm error handling exists
+• Confirm mobile + web behave the same
+
+If ANY step is clunky, unclear, or fragile:
+→ Identify exactly why
+→ Propose concrete fixes
+→ Implement them
+
+════════════════════════════════════
+2️⃣ NO FAKE FEATURES RULE
+════════════════════════════════════
+
+Audit the entire UI and navigation:
+
+• If a button exists, it MUST work
+• If a feature is not finished:
+  - Hide it OR
+  - Clearly mark it “Coming Soon”
+• No placeholder modals
+• No dead routes
+• No “TODO” behavior visible to users
+
+Pretend a paying tradie is clicking EVERYTHING.
+
+════════════════════════════════════
+3️⃣ UX / POLISH COMPARISON (SERVICE M8 STANDARD)
+════════════════════════════════════
+
+Compare TradieTrack to ServiceM8 & Tradify in these areas:
+
+• Speed (time to do common tasks)
+• Cognitive load (how many taps)
+• Visual clarity
+• Error feedback
+• Empty states
+• Loading states
+• Animations (subtle, not flashy)
+• Mobile ergonomics (one-hand use)
+
+For every screen:
+• Ask “Is this easier than ServiceM8?”
+• If not, explain why and improve it
+
+No excuses like “it’s good enough for now”.
+
+════════════════════════════════════
+4️⃣ TEAM SYSTEM & ROLES
+════════════════════════════════════
+
+Verify team logic end-to-end:
+
+• Owner
+• Manager
+• Worker
+
+Confirm:
+• Permissions enforced server-side
+• Workers cannot access billing
+• Owners can manage invites
+• Invites work on web + mobile
+• Team map updates correctly
+• Job assignments sync in real-time
+
+Simulate:
+• Solo tradie
+• 3-person team
+• Owner + workers using app at same time
+
+════════════════════════════════════
+5️⃣ OFFLINE & RELIABILITY
+════════════════════════════════════
+
+Tradies work in bad reception.
+
+Verify:
+• Offline data caching
+• Clear “offline” indicator
+• Queued actions sync later
+• No data loss
+• No app crashes
+
+If something fails offline:
+→ Clearly explain to user what will sync later
+
+════════════════════════════════════
+6️⃣ PAYMENTS, EMAILS, TRUST
+════════════════════════════════════
+
+Verify:
+• Stripe flows are robust
+• No double charges possible
+• Invoice states always accurate
+• Emails always send OR fail gracefully
+• PDFs render perfectly on mobile + Gmail
+• Accept buttons open secure pages
+• Signatures saved correctly
+
+This must feel LEGIT.
+No “startup jank”.
+
+════════════════════════════════════
+7️⃣ APPLE & ANDROID STORE SAFETY
+════════════════════════════════════
+
+Check:
+• Subscription disclosures
+• Trial behavior
+• No misleading paywalls
+• No fake “free” claims
+• Restore purchases logic
+• Beta behavior acceptable for review
+
+If Apple would reject ANYTHING:
+→ Flag it clearly
+→ Explain why
+→ Fix it
+
+════════════════════════════════════
+8️⃣ FINAL VERDICT (BE HONEST)
+════════════════════════════════════
+
+At the end, provide:
+
+• A brutal honesty rating (0–10)
+• Would a tradie switch today? Yes/No
+• What would stop them?
+• What MUST be fixed before charging money
+• What can wait
+• A “ship / don’t ship” verdict
+
+Do not sugarcoat.
+Assume my reputation and money depend on this.
+
+Take as long as needed.
+This is a real product, not a demo.

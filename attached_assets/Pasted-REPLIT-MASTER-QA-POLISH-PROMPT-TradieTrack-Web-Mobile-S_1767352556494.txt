@@ -1,0 +1,262 @@
+REPLIT MASTER QA + POLISH PROMPT — TradieTrack (Web + Mobile) “ServiceM8-level Workflow”
+
+Act as a senior QA engineer + product designer. Your job is to audit TradieTrack’s WEB and MOBILE apps and make them “beta/production ready,” meaning: no UI-only features, all workflows truly work end-to-end, and the experience is as smooth as ServiceM8 (not identical UI, but same quality).
+
+You MUST:
+1) verify backend wiring for every visible feature
+2) remove/disable any fake/half-done UI or label as “Coming Soon (Beta)”
+3) ensure the core tradie workflow is flawless on Web + Mobile
+4) ensure role-based onboarding produces correct dashboards and permissions
+5) ensure Stripe billing is ready for live launch (but allow disabling card collection for early beta)
+
+========================================================
+A) CORE WORKFLOW TO PERFECT (Web + Mobile)
+========================================================
+
+Goal: a tradie can run their whole day with minimal thinking.
+
+FLOW 1 — Quote -> Email -> Acceptance -> Signature -> Invoice -> Payment -> Receipt
+
+1) Quote creation
+- From Job detail, click “Create Quote”
+- Must save to DB with:
+  • quote_number (unique sequential or prefixed, no duplicates)
+  • business_id, client_id, job_id
+  • line items, qty, unit price, GST toggle, totals
+  • draft/sent/accepted status
+- Must have “Live Preview” (paper view) while editing
+- Validate totals + GST correctly
+
+2) Sending Quote (email)
+- “Send Quote” must NOT be UI-only.
+- Must generate:
+  • PDF attachment OR hosted PDF/link (client-facing)
+  • Email template (clean) with big “View & Accept Quote” button
+- Important: Accept is NOT inside Gmail; button must open a secure TradieTrack acceptance page.
+- Email requirements:
+  • Subject: “Quote {Q-XXXX} from {BusinessName}”
+  • From: default verified TradieTrack sender (e.g., no-reply@tradietrack…)
+  • Reply-To: tradie/business email
+  • Includes link + optional PDF attachment
+
+3) Acceptance page (client-facing)
+- Must be publicly accessible via secure token
+- Client sees paper-like quote preview
+- Client can Accept / Decline
+- If Accept:
+  • show signature capture (canvas / typed / upload)
+  • if a signature already exists for this client, prefill and allow edit
+  • on submit, store:
+    - accepted_at timestamp
+    - accepted_by name/email field
+    - signature image/hash reference
+    - quote revision/version at acceptance
+  • update quote.status = ACCEPTED
+  • append to quote.audit_log/activity_feed
+
+4) Tradie notification + app update
+- After acceptance:
+  • tradie sees quote status change instantly (websocket/poll ok)
+  • job status optionally moves to “Approved/Scheduled”
+  • activity feed logs “Quote accepted by ___ at ___”
+  • optional push/email notification to tradie (if enabled)
+
+5) Convert Quote -> Invoice
+- “Convert to Invoice” must:
+  • copy line items, totals, GST, client/job link
+  • generate invoice_number (unique)
+  • carry signature optionally into invoice PDF (toggle on/off)
+  • status starts as DRAFT or SENT
+
+6) Send Invoice (email) with Payment Link + PDF (critical)
+- Must support BOTH:
+  A) Online pay (payment link included)
+  B) No online pay (paid in person / bank transfer only)
+- Email must include:
+  • invoice PDF attachment (or hosted PDF)
+  • pay button/link if online pay enabled
+  • due date, amount, invoice number
+- Payment link must be generated safely (tokenized) and tied to that invoice
+
+7) Customer payment
+- If paying online:
+  • payment page opens (client)
+  • pay via Stripe (test mode now, live-ready later)
+  • on success:
+    - invoice.status = PAID
+    - paid_at timestamp stored
+    - payment_method stored
+    - Stripe payment intent id stored
+    - activity feed entry created
+
+8) Receipt (optional but clean)
+- After invoice marked paid:
+  • tradie has “Send Receipt” button
+  • also allow optional automation: auto-send receipt on payment success
+  • receipt email includes receipt PDF + paid timestamp + amount + reference
+
+========================================================
+B) ONBOARDING + ROLES (Solo vs Team)
+========================================================
+
+Onboarding must decide:
+- Account type: “Solo Tradie” OR “Team / Business Owner”
+- If Team/Owner:
+  • create business/workspace
+  • set business settings (logo, ABN, address, payment methods)
+  • invite team members (optional)
+  • pick roles (Owner/Manager/Worker)
+- If Solo:
+  • simpler setup
+  • lands on solo dashboard (no team admin clutter)
+
+Role enforcement (backend + UI):
+- Owner: full access (billing, business settings, team, reports)
+- Manager: jobs/clients/quotes/invoices + assign workers, limited billing
+- Worker: assigned jobs + time tracking + job chat + photos; cannot see billing settings unless allowed
+
+After onboarding:
+- ensure correct dashboard + nav items appear per role
+- confirm API protects data with RBAC (not just hidden UI)
+
+========================================================
+C) MAP + TEAM LOCATION + DISPATCH
+========================================================
+
+Owner/Manager Map Page must be REAL, not UI-only:
+- Use Google Maps / Mapbox (whichever you chose)
+- Jobs appear as pins using stored lat/lng
+- Each pin shows a status badge (Scheduled / In Progress / Completed)
+- Clicking pin opens job preview card (client name, time, status, assigned tradie)
+- Filters:
+  • date range
+  • status
+  • assigned worker
+- Ensure job creation stores address + optionally lat/lng (autocomplete preferred)
+
+Team location tracking:
+- Show team members on map (if permission enabled)
+- Last updated time visible (e.g., “updated 2m ago”)
+- Only Owner/Manager can see live locations
+- Worker can toggle “Share location” on/off
+- If location tracking requires dev build (Expo Go limitation), label it clearly and ensure it works in dev build.
+
+Dispatch board (if present):
+- Ensure it’s wired: assignment updates DB and reflects for worker.
+- If not fully built, hide or mark Coming Soon.
+
+========================================================
+D) CHAT (TEAM + JOB-BASED)
+========================================================
+
+Chat must be fully integrated:
+1) Team group chat:
+- owner + team can discuss general stuff
+- stores messages in DB
+- shows unread badges
+- push notifications optional
+
+2) Direct chat (Owner/Manager <-> Worker):
+- separate thread per person
+- permissions enforced
+
+3) Job chat:
+- thread tied to job_id
+- only assigned team members + owner/manager can see
+
+Ensure:
+- messages persist
+- real-time updates (socket/poll)
+- attachments optional (photo/docs)
+- clean UX (iOS style)
+
+========================================================
+E) STRIPE BILLING / TRIALS (Ready for live, flexible for beta)
+========================================================
+
+Subscriptions for TradieTrack (tradies paying YOU):
+- Plans:
+  • Pro: $49/mo
+  • Team: $59/mo + $29/mo per worker seat
+- Implement Stripe correctly:
+  • Stripe Products/Prices mapped to tiers
+  • Seat-based billing for Team (quantity = number of active workers)
+  • webhooks update subscription status (trialing/active/past_due/canceled)
+  • feature gating based on subscription + role
+
+Trial flow:
+- I want the ability to run beta without taking cards.
+Implement a feature flag / env config:
+  BILLING_MODE = "BETA_NO_CARD" | "LIVE_REQUIRE_CARD"
+- In BETA_NO_CARD:
+  • allow trial access without card
+  • show “Billing coming soon” banner
+  • collect testimonials
+- In LIVE_REQUIRE_CARD:
+  • start trial but collect card upfront (Stripe recommended)
+  • auto convert to paid after trial
+- Ensure app can switch modes safely without breaking accounts.
+
+Invoice payments (customers paying tradies):
+- Use Stripe Checkout or PaymentLinks tied to invoice
+- If using Connect, confirm payouts go to tradie’s connected account
+- If Connect not fully working, keep payment to platform + mark as “coming soon” OR disable it in beta.
+
+Also: fix current Stripe Terminal errors
+- /api/stripe/terminal-connection-token returns 500 currently.
+Either:
+  • implement correctly with Stripe Terminal credentials, or
+  • feature flag it off and hide “Tap to Pay” until terminal is configured.
+No broken button allowed in beta.
+
+========================================================
+F) PDF SYSTEM (ServiceM8 level)
+========================================================
+
+PDF requirements:
+- quotes/invoices/receipts look professional in Gmail on mobile
+- includes business logo, ABN, contact details, client details
+- line item table clean, multi-page safe
+- shows totals, GST clearly, due date
+- includes acceptance signature on quote (after accepted) if enabled
+- ensure attachments are real PDFs, not broken layouts
+
+Branding:
+- Free: “Powered by TradieTrack” visible
+- Pro/Team: custom logo + footer and minimal TradieTrack branding
+- control via code, not manual.
+
+========================================================
+G) OFFLINE / RELIABILITY
+========================================================
+
+At minimum:
+- app doesn’t crash offline
+- queues write actions (create job / add note / time entry) when offline and syncs later
+- shows offline banner + last sync time
+- conflicts handled safely (latest wins or prompt)
+
+========================================================
+H) “NO UI-ONLY” AUDIT + REPORT
+========================================================
+
+Do a full scan of Web + Mobile:
+- list every visible navigation item + button
+- for each: confirm a backend endpoint exists + works
+- if missing: implement or hide it for beta
+
+Deliverables:
+1) A QA report:
+   ✅ working end-to-end
+   ⚠ partially implemented (needs fix or hidden)
+   ❌ broken
+2) A MUST-FIX list before inviting real tradies
+3) A “ServiceM8-style polish list” for spacing, typography, loading states, success toasts
+4) Ensure Pro pricing is updated everywhere ($49 Pro, $59 Team + $29/seat)
+5) Ensure Apple/Android compliance basics:
+   - permissions strings
+   - privacy copy placeholders
+   - no crashes on launch
+   - no secret keys in client
+
+Important: Use the codebase as truth, not assumptions. Implement the missing backend where required. Hide unfinished items rather than leaving broken UI.

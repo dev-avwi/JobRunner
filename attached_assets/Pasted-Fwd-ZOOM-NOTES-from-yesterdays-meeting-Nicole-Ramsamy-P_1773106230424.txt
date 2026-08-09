@@ -1,0 +1,126 @@
+Fwd: ZOOM NOTES from yesterdays meeting - Nicole Ramsamy & Paul - Friday 6 March 2026
+External
+Inbox
+AI Overview
+Nicole forwarded Petina's meeting notes regarding Ayden's tradies app development.
+Petina advised Ayden to stop feature development, focus on QA, and test security/integrations.
+Next steps include Ayden testing, moving to secure server, and Petina sending NDA/contacts.
+By Gemini; there may be mistakes. Learn more
+
+Nicole Ramsamy <admin@linkup2care.com.au>
+9 Mar 2026, 20:03 (15 hours ago)
+to Hans, me
+
+fyi
+
+
+
+
+
+---------- Forwarded message ---------
+From: Petina Tieman <petina@petinatieman.com.au>
+Date: Sat, 7 Mar 2026 at 10:05
+Subject: ZOOM NOTES from yesterdays meeting - Nicole Ramsamy & Paul - Friday 6 March 2026
+To: Nicole Ramsamy <admin@linkup2care.com.au>
+Cc: Paul Gear <paul@paulgear.com.au>
+
+
+Hey there Nicole – sounds like the meeting with Paul went well. Here are the zoom notes from yesterday’s meeting.
+
+ 
+
+NOTE – everywhere that it says, Petina Tieman should of course be Paul. 😊
+
+
+
+Meeting assets for ZOOM MTG - Nicole Ramsamy & Paul - 4.15pm are ready!
+
+Meeting summary
+
+Quick recap
+Petina Tieman and Ayden discussed Ayden's job management app for tradies, including its features, technology stack, and development process, with Petina Tieman sharing insights about similar apps and offering guidance on commercialization strategies. They explored branding considerations and potential collaboration opportunities, with Petina Tieman advising against certain partnerships and recommending focus on quality assurance and user feedback. The conversation concluded with discussions about potential work opportunities for Ayden, including building custom systems for Petina Tieman's clients and future business collaboration possibilities.
+
+Next steps
+Ayden: Stop developing new features and start quality assurance testing on the app
+Ayden: Test multi-tenancy security to ensure companies cannot see each other's records
+Ayden: Finalize integration testing for Outlook, Microsoft, and Google Calendar
+Ayden: Research and move app to secure server (AWS Lambda or similar) with data in Sydney data center
+Ayden: Reach out to friends' parents, sporting teammates, schoolmates, and family with businesses to offer free trials
+Ayden: Update GitHub repository to current version
+Ayden: Research and align safety forms with WHS legislation requirements
+Ayden: Get insurance quotes (cyber insurance and software insurance)
+Petina Tieman: Send NDA template to Ayden for potential users to sign
+Petina Tieman: Discuss with Petina Tieman tomorrow about IBA funding eligibility under Ayden's father's name
+Petina Tieman: Talk to Petina Tieman tomorrow about potential work experience opportunities with Brisbane developers
+Petina Tieman: Send insurance provider recommendations (Keystone or similar) to Ayden
+Petina Tieman: Sign NDA and review Ayden's app when time permits
+Petina Tieman: Provide list of potential contacts who may want to trial the system
+Petina Tieman: Come back to Ayden with information about building systems for Petina Tieman's business
+Petina Tieman: Discuss with Petina Tieman about engaging Ayden to build 3-4 systems (manufacturing, childcare, CRM for disability chairs, swimming pool company)
+Petina Tieman: Discuss rebuilding Nicole's iCare system on Ayden's tech stack
+Summary
+Tradies Job Management App Discussion
+Petina Tieman and Ayden discussed Ayden's job management app for tradies, which includes features like quoting, health and safety documentation, and form creation. Ayden explained the app's tech stack, including React, Expo Native, Stripe for payments, and Superbase for the database, noting it functions as a web app with a mobile sync option. The conversation was cut short when Nicole arrived, and Ayden stepped away to let her in.
+
+Trades App Development Discussion
+Petina Tieman and Ayden discussed Ayden's mobile application development, which is based on web technology with a cloud database and likely uses REST API. Ayden built the app using ideas from ChatGPT, targeting tradies in Cairns, though integration with accounting systems like Xero or QuickBooks still needs testing. Petina Tieman shared insights about a similar tradies-focused app they developed, noting that companies want comprehensive solutions including on-site quoting, invoice creation, safety documentation, and custom form building capabilities. Petina Tieman also mentioned their company now uses low-code/no-code solutions rather than traditional base coding to accelerate development.
+
+Vibecoder Business Management App Discussion
+Petina Tieman and Ayden discussed Ayden's development of a business management app called Vibecoder, which took about 3 months to build. The app includes features like job management, quotes, invoices, payments, client portals, and mapping functionality for tracking workers and jobs. Petina Tieman advised Ayden to focus on proving commercial viability by getting real user feedback, particularly from smaller operators who would be the target market, rather than trying to build every possible feature.
+
+App Development and Branding Guidance
+Ayden discussed his app development journey with Petina Tieman, who provided guidance on branding and commercialization. Ayden had initially developed an app but faced a naming conflict, leading him to rebrand as "JobRunner." Petina Tieman advised on protecting intellectual property through copyright and trademark registration, emphasizing the importance of security and compliance with Australian data storage requirements. They discussed next steps, including getting feedback from users in a trusted network, potentially offering free trials, and ensuring the system meets safety and workplace standards. Petina Tieman expressed interest in potentially collaborating on future projects due to her company's need for new system development.
+
+Quality Assurance and Commercialization Strategy
+Petina Tieman recommended that Ayden stop developing new features and focus on quality assurance testing instead. She advised testing the system's security, particularly ensuring proper separation of company records and testing with dummy data to verify tenant isolation. Petina Tieman suggested offering the system for free to gather feedback before moving to commercialization, including trademarking and formal market launch. Regarding pricing, Petina Tieman advised against setting it too low, noting the value of customized support compared to generic systems, and suggested pricing should be based on market feedback.
+
+Business Partnership Strategy Advice
+Petina Tieman advised Ayden against partnering with or launching alongside another developer named Trady Track, recommending that Ayden maintain ownership of the product to avoid potential conflicts. She discouraged forming partnerships at this early stage, suggesting Ayden could potentially use his father's name or First Nations connection for differentiation. Petina Tieman also advised against pursuing legal measures like trademark registration or hiring lawyers at this stage, suggesting Ayden could use tools like ChatGPT for trademark applications if needed in the future, and recommended using non-disclosure agreements for any collaborations.
+
+Work Experience Opportunity Discussion
+Petina Tieman agreed to send an NDA and review Ayden's app/website, which is built on WordPress and Divi Theme. They discussed potential work experience opportunities for Ayden, with Petina Tieman offering to connect him with developers in Brisbane, including AI specialists and app developers who specialize in commercialization. Ayden expressed willingness to travel to Brisbane for work experience if necessary, and Petina Tieman mentioned they would speak to colleagues the next day about potential opportunities.
+
+Trades Job Management System Demo
+Ayden demonstrated a comprehensive job management system built for tradies, showing Petina Tieman its key features including job scheduling, client requests, quote creation, and document management. The system allows users to store media, take before/after photos, and includes AI-assisted features for creating quotes and emails. While the system has basic integrations with email and payments through Stripe, Ayden noted that Microsoft Outlook and Google Calendar integrations are still in development and not fully tested yet.
+
+Custom Systems Development Proposal Discussion
+Petina Tieman proposed to Ayden that he build 3-4 custom systems for her clients, including a manufacturing CRM, a childcare system, and an inventory management system for disability chairs. Ayden expressed interest in the opportunity, which would involve using his existing tech stack and potentially moving Petina Tieman's systems to a more flexible platform. Petina Tieman offered not just payment but also mentoring and business support to help Ayden commercialize his work. They agreed to follow up after Petina Tieman discusses the proposal with Tina the next day, and Ayden mentioned he had received a previous offer of around 20-30 for his existing system from another party.
+
+Business Deal and Brand Discussion
+Ayden and Petina Tieman discussed a recent business negotiation where they walked away from a potential deal involving an app purchase for around $20,000-30,000. They decided to maintain their "JobRunner" brand name instead of "Trady Track," as Petina Tieman suggested it provides more flexibility for different industries. Petina Tieman offered to potentially engage Ayden for building multiple systems, including one for a swimming pool company, and expressed interest in helping Ayden with both his app commercialization and future business opportunities.
+
+AI can make mistakes. Review for accuracy.
+
+Please rate the accuracy of this summary.
+
+feedback goodfeedback bad
+
+Thank you,
+
+Zoom Support Team
+
+https://support.zoom.us
+
+LinkedIn
+
+X
+
+Instagram
+
+Facebook
+
+YouTube
+
+Blog
+
+
+Zoom.com 55 Almaden Blvd
+San Jose, CA 95113
+
++1.888.799.9666
+
+© 2026 Zoom Communications, Inc.
+
+ 
+
+DISCLAIMER: This email and any attachments to it are confidential and may be subject to copyright. If you are not the intended recipient you must not disclose or use the information contained in it. If you have received this document in error, please advise us immediately on 07 4000 4141 and destroy the document or delete it from your system. Complete Business Solutions (QLD) Pty Ltd do not represent or warrant any files attached to this email are free from computer viruses or other defects and will not be liable in connection with any data corruption, interruption, delay, computer virus or unauthorised access or amendment to t

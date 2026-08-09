@@ -1,0 +1,78 @@
+Ahh yep — got you now.
+
+So:
+	•	Business Number popup = the GOOD popup family
+	•	Safety Check popup = the BAD popup family
+	•	and the Safety Check one is just one example of the other wrong popups in the app
+
+So what you need is not “fix this one popup only.”
+
+You need Replit to understand:
+
+there are currently two popup families in the app
+and only one of them is correct
+
+Send Replit this exactly
+
+There are currently TWO popup families in the app.
+
+1. GOOD popup family:
+- Business Number popup
+- this is the correct reference
+- this is the exact design family I want all popups to use
+
+2. BAD popup family:
+- Safety Check popup
+- and other similar popups using that same style
+- these are the wrong popup family and need to be replaced
+
+Important:
+Do not treat this as fixing one single popup.
+This is a popup system/design-family problem.
+
+The correct popup family is the Business Number popup.
+
+That is the family/style language I want used everywhere:
+- soft modern iOS liquid-glass feel
+- premium frosted/translucent white surface
+- subtle Apple-like depth
+- integrated rounded action controls
+- clean spacing
+- calm/system-like presentation
+- not chunky
+- not flat
+- not heavy dark custom buttons
+- not Android-like
+
+The wrong popup family is the Safety Check style:
+- blocky
+- heavy
+- stacked dark buttons
+- feels like an unrelated custom modal system
+
+Your task:
+1. Identify every popup/modal currently using the old Safety Check style family
+2. Refactor them to use the Business Number popup family instead
+3. Keep each popup’s content and logic the same
+4. Only unify the visual system and component family
+
+Goal:
+There should only be ONE popup family in the app, and it should be the Business Number popup family.
+
+The key phrase
+
+This is the most important sentence:
+
+“There are currently two popup families in the app, and only the Business Number popup family is correct.”
+
+That should finally stop them from thinking this is just a one-off modal tweak.
+
+My read
+
+You’ve basically discovered that your app has:
+	•	one premium iOS glass popup system
+	•	one older ugly custom popup system
+
+And Replit needs to kill the second one completely.
+
+If you want, I can also write you a shorter harsher version of that prompt that sounds more direct and harder for Replit to misunderstand.

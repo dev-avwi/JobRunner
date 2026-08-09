@@ -1,0 +1,17 @@
+I don't like the FAB button we have now why'd you create a new one, I want the old one where it has a star symbol and it's more rectangular and universal
+Also the header for team hub is having that problem I think the back button think form before where there's this row above the team header which pushes it down , we need to get rid of that blank row to push the team hub header up to beneath the top header
+The maps page needs to have the team members in it too like the jobs with the toggle and stuff and within the maps page find a way to easily click on a team members location and from it, it hides the rest of the team members and ask which job do you want to assign ... too you know.
+Also the delete button when viewing a job detail needs to be there I can't see it, it's like gone for some reason.
+Also in job detail there can be a receipt document too that links to the job only after creating receipt from the certain invoice you know. So within the job create a receipt as a generate payment from an invoice.
+The download pdf still isn't working or taking too long cause I tried saving to device and it keeps processing, it takes far too long
+The custom forms also has the header problem where it's not at the top to the top header but is in the middle of the page
+When in schedule page allow for a reschedule within the week, month and dispatch allow for edit of the schedule
+Make sure the quick actions in time tracking aren't jut for UI and actually working for example the add entry button
+Make sure the reports exports export in like a excel spreadsheet or something like that, try get inspo from other top apps
+Make sure payment hub is clear it looks pretty good at the moment and like yeah and when viewing quotes, invoices and receipts allow the related phases to quick button to the job or quote or invoice that's linked to that workflow of the quote, job, invoice and receipt
+Make sure composed emails work button and downloading of pdf and online payments and that they automatically work with attached pdf
+Make sure the collect payment page works cause it isn't at the moment it just feels like it's there for UI I can barely click things and stuff it barely works
+Also where's the pre templates for mobile app the business templates like in web. Clearly the apps aren't talking to eachother which they should be
+Make sure the settings page is correct cause in the plan section it says the payment plan is free which it is not
+Make sure all notifications and alerts all wor properly and are integrated well and work like the top apps
+Make sure the branding part within settings works too cause why is there a branding page and a branding section in settings it really doesn't make sense

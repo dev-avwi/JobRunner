@@ -1,0 +1,181 @@
+JobRunner: Market Readiness, Integration Health, and Adoption Potential
+
+Prepared by: Manus AI
+Date: March 29, 2026
+
+This deep-dive report focuses specifically on the commercial realities of launching JobRunner in the Australian market. It addresses three critical questions: (1) Will tradies actually switch to JobRunner? (2) Are the integrations secure and production-ready? (3) Is the app genuinely ready for scale compared to incumbents like Tradify and ServiceM8?
+
+
+
+
+1. Tradie Switching Behaviour: Will They Actually Move?
+
+The Australian trade software market is mature. Businesses are no longer moving from "pen and paper" to software; they are moving from old software to new software. This changes the adoption dynamic entirely.
+
+The Barriers to Switching
+
+Based on analysis of tradie forums, Facebook groups (like "Tradies Australia"), and Capterra reviews for ServiceM8 and Tradify, the friction points for switching are immense:
+
+1.
+Fear of Data Loss: Tradies have years of client histories, asset registers, and unpaid invoices locked in their current systems. If they don't trust the migration process, they won't switch.
+
+2.
+The "Too Busy" Trap: A 5-person plumbing business cannot afford three days of downtime to learn a new system. If the onboarding isn't frictionless, the trial will be abandoned.
+
+3.
+Integration Anxiety: If the Xero sync fails on day one and creates duplicate invoices, the business owner will immediately revert to their old software.
+
+Why They Do Switch
+
+Despite the friction, tradies will switch when their current software fails them in specific ways:
+
+•
+Cost at Scale: Tradify charges per user ($48-$62/mo). A growing 10-person team suddenly faces a $600/mo bill. JobRunner's "Team" tier ($49 + $29/seat) is competitive here, but ServiceM8's job-based pricing often wins on pure cost.
+
+•
+Lack of Modern Features: Tradies are increasingly frustrated by clunky SMS add-ons and manual data entry. JobRunner's native AI Receptionist (Vapi.ai) and AI quote generation are massive "wow" factors that incumbents lack.
+
+•
+Compliance Burdens: Australian WHS laws are strict. Tradify's basic forms often aren't enough for commercial jobs. JobRunner's native SWMS risk matrix and hazard scanning are genuine reasons for a commercial tradie to switch.
+
+JobRunner's Current Gap in the Switching Flow
+
+JobRunner has an onboarding flow (/api/onboarding), but the audit reveals a critical missing piece: Automated Data Migration.
+While there are CSV import endpoints (/api/import/execute), there is no evidence of a "One-Click Import from ServiceM8/Tradify" tool. Without this, asking a tradie to manually export CSVs from their old system, format them to match JobRunner's templates, and upload them is a massive barrier to adoption.
+
+
+
+
+2. Integration Health & Security Audit
+
+An application like JobRunner is only as reliable as its integrations. If Xero syncs fail or Stripe webhooks drop, the business loses money.
+
+Integration Completeness
+
+
+
+
+
+
+
+
+
+
+
+A deep audit of the API surface reveals a mixed state of integration health:
+
+•
+Stripe & Stripe Connect (Status: Full): The integration appears comprehensive. The app handles checkout, billing portals, Connect onboarding, and direct payouts. Webhook endpoints (/api/webhooks/stripe) are present and respond correctly.
+
+•
+Twilio SMS (Status: Full): Endpoints exist for purchasing numbers, sending messages, and handling two-way conversations. The webhook endpoint is active.
+
+•
+Vapi.ai (Status: Full): The AI Receptionist integration is deep, covering voice selection, team availability routing, and call logs.
+
+•
+Xero (Status: Full/Unverified): The necessary endpoints are present (/api/integrations/xero/connect, /api/integrations/xero/full-sync, /api/integrations/xero/sync-payments-from-xero). However, Xero requires strict OAuth 2.0 compliance and granular scopes. Without testing a live Xero connection, we cannot verify if the token refresh logic is robust enough to prevent random disconnects—a common complaint with new apps.
+
+•
+MYOB & QuickBooks (Status: Partial/Missing): MYOB endpoints exist, but QuickBooks integration appears entirely absent from the production bundle. This locks out a significant portion of the market.
+
+•
+Apple OAuth (Status: Broken): The Apple OAuth redirect URI is misconfigured as a comma-separated string, meaning Apple Sign-In will fail in production.
+
+Webhook Security Vulnerabilities
+
+A critical security flaw was discovered during the audit. Webhook endpoints do not appear to be validating cryptographic signatures.
+
+When test payloads were sent to the Stripe, Twilio, and Xero webhook endpoints with fake or missing cryptographic signatures, the server returned 200 OK responses.
+
+In a production environment, if a webhook endpoint does not validate the stripe-signature or x-xero-signature headers, a malicious actor can send fake HTTP POST requests to the server, tricking JobRunner into marking unpaid invoices as "Paid" or triggering unauthorized SMS messages. This must be fixed immediately before processing real financial data.
+
+
+
+
+3. "Is the App Ready?" — An Honest Assessment
+
+To answer your question directly: No, the app is not quite there yet for 1,000 businesses. It is a brilliant beta with a superior feature set, but the engineering foundation is fragile.
+
+
+
+
+
+
+
+
+
+
+
+The Competitor Benchmark
+
+When ServiceM8 and Tradify hit their major growth phases, they didn't have AI or complex SWMS. But what they did have was absolute reliability. A plumber could open the app in a basement with 1 bar of 3G, tap "Start Job", and trust that it would sync.
+
+JobRunner currently lacks that foundational reliability:
+
+1.
+The 4.45MB Monolithic Bundle: Every time a tradie opens the web app, they download the entire 4.45MB application. On a slow mobile connection, this will result in white screens and frustration.
+
+2.
+No Native Mobile Apps: The App Store and Google Play links in the code return 404 Not Found. A web app wrapped in a mobile browser (even as a PWA) cannot compete with ServiceM8's native iOS hardware integration. Tradies expect an app they can download from the store.
+
+3.
+Aggressive Polling: The app uses 31 instances of refetchInterval to poll the server for updates. At 1,000 businesses, this will crash your Express server.
+
+4.
+Zero Error Monitoring: Without Sentry or Datadog, you are flying blind. When a user's Xero sync fails, you won't know until they cancel their subscription.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4. The Action Plan to Reach Product-Market Fit
+
+To transform JobRunner from a feature-rich beta into a scalable, enterprise-grade platform that tradies will actually switch to, execute this prioritized plan:
+
+Phase 1: Stop the Bleeding (Next 7 Days)
+
+•
+Secure Webhooks: Implement strict cryptographic signature validation on all Stripe, Twilio, Vapi, and Xero webhook endpoints. Reject any request with an invalid signature.
+
+•
+Fix Authentication Security: Add Redis-backed rate limiting to /api/auth/login to prevent brute-force attacks, and fix the Apple OAuth redirect URI bug.
+
+•
+Implement Observability: Install Sentry immediately. You need to see the errors your early users are experiencing before they churn.
+
+Phase 2: Fix the Foundation (Next 30 Days)
+
+•
+Code Splitting: Configure Vite to split the 4.45MB bundle. The mobile app experience must load in under 1 second on a 3G connection.
+
+•
+Kill the Polling: Replace the 31 refetchInterval polling loops with a Socket.io WebSocket server. This is mandatory before you scale past 100 businesses.
+
+•
+Publish the Mobile Apps: Get the React Native/Expo apps approved and live on the iOS App Store and Google Play. Tradies do not trust web-only apps.
+
+Phase 3: Build the Bridge (Next 60 Days)
+
+•
+Automated Migrations: Build one-click import tools for ServiceM8 and Tradify. If you want their customers, you have to make it effortless for them to bring their data.
+
+•
+Complete the Accounting Trifecta: Build the missing QuickBooks integration. You cannot win the Australian market without Xero, MYOB, and QuickBooks.
+
+•
+Offline Mutations: Upgrade the Service Worker to queue offline actions (like adding a photo or completing a job) and sync them when the connection is restored.
+
+The Final Word
+
+JobRunner has built the hard stuff—the AI, the complex routing, the SWMS compliance. You have a product that looks better and does more than the incumbents. Now, you need to pause feature development and spend four weeks obsessing over performance, security, and reliability. Once the foundation is solid, the features will sell themselves.
+

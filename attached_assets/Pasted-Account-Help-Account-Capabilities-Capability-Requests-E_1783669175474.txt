@@ -1,0 +1,197 @@
+Account Help
+Account / Capabilities / Capability Requests
+
+Expand all
+Release notes
+
+Basics
+
+Membership
+
+Access
+
+Certificates
+
+Keys
+
+Identifiers
+
+Capabilities
+
+Capabilities overview
+
+Capability requests
+
+Configure Apple Pay
+
+Configure Apple Pay on the web
+
+Create a DeviceCheck private key
+
+Create a ClassKit Catalog key
+
+Create a Maps identifier and private key
+
+Create a media identifier and private key
+
+Communicate with APNs using authentication tokens
+
+Communicate with APNs using a TLS certificate
+
+Send push notifications from your web server
+
+About Sign in with Apple
+
+Enabling server-to-server notifications
+
+Group apps for Sign in with Apple
+
+Create a Sign in with Apple private key
+
+Configure Sign in with Apple for the web
+
+Configure private email relay service
+
+Create Wallet identifiers and certificates
+
+Create a Mac version of an iPad app
+
+Create a services identifier and private key for WeatherKit
+
+Create order type identifiers and certificates
+
+Services
+
+Service Configurations
+
+Devices
+
+Provisioning Profiles
+
+Reference
+
+
+Filter ⌘K
+Capabilities
+Request access to managed capabilities
+Managed capabilities are app services that need an entitlement assigned to your account by Apple before you can enable them. To access these capabilities, your app must meet specific criteria and follow defined terms and conditions. If you are enrolled in a developer program as an organization, your Account Holder will need to submit your request for access on behalf of the team.
+
+Once an entitlement has been assigned, the managed capability can be added to your Xcode targets by program members with access to Certificates, Identifiers & Profiles.
+
+Required role: Account Holder.
+
+Request access to a capability
+In Certificates, Identifiers & Profiles, click Identifiers in the sidebar.
+Click the name of the identifier in the list of App IDs.
+Click the Capability Requests tab.
+Find the capability you want to request.
+Click the Request button.
+Submit the request form for the capabilty.
+Be sure to read the criteria used to validate each request to confirm that your app meets the requirements.
+
+Learn more about specific entitlements
+
+Check the status of your request
+In Certificates, Identifiers & Profiles, click Identifiers in the sidebar.
+Click the name of the identifier in the list of App IDs.
+Click the Capability Requests tab.
+Click the Status button of the capability you requested to get more details.
+Enable a capability
+After a managed capability’s entitlement has been assigned to your account, the capability can be enabled for your app by either adding the capability in Xcode (which automatically configures the capability and code signs your app) or manually enabling the capability in Certificates, Identifiers & Profiles.
+
+To manually enable a capability:
+
+In Certificates, Identifiers & Profiles, click Identifiers in the sidebar.
+Click the name of the identifier in the list of App IDs.
+Click the Capabilities tab. This list will include managed capabilities that have been approved for your App ID or team.
+Click the Enable selector for each capability you want to enable.
+Click the Save button.
+Learn more about specific entitlements
+
+Submit your
+feedback
+
+Ask questions on the forums
+
+Contact Apple Developer Support
+
+Developer Footer
+
+Apple
+DeveloperHelpAccountCapabilitiesCapability Requests
+Platforms
+iOS
+iPadOS
+macOS
+tvOS
+visionOS
+watchOS
+App Store
+Tools
+Swift
+SwiftUI
+Swift Playground
+TestFlight
+Xcode
+Xcode Cloud
+Icon Composer
+SF Symbols
+Technologies
+Accessibility
+Accessories
+AI & Machine Learning
+Apple Intelligence
+Audio & Video
+Augmented Reality
+Business
+Design
+Distribution
+Education
+Games
+Health & Fitness
+In-App Purchase
+Localization
+Maps & Location
+Security
+Safari & Web
+Resources
+Documentation
+Downloads
+Sample Code
+Videos
+Documentation Archive
+Support
+Help Guides & Articles
+Contact Us
+Forums
+Feedback & Bug Reporting
+System Status
+Account
+Apple Developer
+App Store Connect
+Certificates, IDs, & Profiles
+Feedback Assistant
+Programs
+Apple Developer Program
+Apple Developer Enterprise Program
+App Store Small Business Program
+MFi Program
+Mini Apps Partner Program
+News Partner Program
+Video Partner Program
+Security Bounty Program
+Security Research Device Program
+Events
+Meet with Apple
+Apple Developer Centers
+App Store Awards
+Apple Design Awards
+Apple Developer Academies
+WWDC
+Read the latest news. Get the Apple Developer app.
+Light
+Dark
+Auto
+
+English
+Copyright © 2026 Apple Inc. All rights reserved.Terms of Use Privacy Policy Agreements and Guidelines

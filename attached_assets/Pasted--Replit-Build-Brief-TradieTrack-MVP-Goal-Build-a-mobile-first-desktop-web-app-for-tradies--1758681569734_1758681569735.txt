@@ -1,0 +1,424 @@
+🔧 Replit Build Brief — TradieTrack (MVP)
+
+Goal: Build a mobile‑first + desktop web app for tradies only that manages Jobs → Quotes → Invoices → Payments. Clients do not log in; they receive emails with links to view PDFs and pay via Stripe Checkout (hosted). Design is clean, minimal, professional, similar to Linkup2Care’s structure: bottom nav on mobile, left sidebar on desktop, card/table hybrid, clear whitespace, big touch targets.
+
+0) Tech Stack (use these)
+
+Frontend: React + TypeScript, TailwindCSS, shadcn/ui, React Router, TanStack Query
+
+Backend: Node.js (Express or Fastify), Zod for validation
+
+DB & Auth: Supabase (Postgres + Supabase Auth + Storage)
+
+Email: Resend (or Postmark/SendGrid fallback)
+
+Payments: Stripe Checkout (hosted)
+
+PDFs: server‑side HTML → PDF (e.g., pdf-lib or @react-pdf/renderer on server)
+
+Deployment: keep dev in Replit; assume prod on Railway/Render later
+
+Timezone default: Australia/Brisbane
+
+1) Repository Structure
+/app
+  /src
+    /components
+      Header.tsx
+      Sidebar.tsx
+      BottomNav.tsx
+      KPIBox.tsx
+      DataTable.tsx
+      FormField.tsx
+      FileDropzone.tsx
+      StatusBadge.tsx
+      PageTitle.tsx
+      EmptyState.tsx
+    /features
+      /auth
+        Login.tsx
+        Register.tsx
+        VerifyEmail.tsx
+        OnboardingWizard.tsx
+      /dashboard
+        Dashboard.tsx
+      /clients
+        ClientsList.tsx
+        ClientDetail.tsx
+        ClientForm.tsx
+      /jobs
+        JobsList.tsx
+        JobDetail.tsx
+        JobForm.tsx
+      /quotes
+        QuotesList.tsx
+        QuoteDetail.tsx
+        QuoteWizard.tsx
+      /invoices
+        InvoicesList.tsx
+        InvoiceDetail.tsx
+        InvoiceForm.tsx
+      /calendar
+        CalendarView.tsx
+      /settings
+        Settings.tsx
+        BusinessProfile.tsx
+        Branding.tsx
+        Billing.tsx
+    /hooks
+      useAuth.ts
+      useBusiness.ts
+    /lib
+      supabase.ts
+      api.ts
+      stripe.ts
+      pdf.ts
+      utils.ts
+    main.tsx
+    App.tsx
+  index.html
+
+/server
+  app.ts
+  /routes
+    auth.ts
+    clients.ts
+    jobs.ts
+    files.ts
+    quotes.ts
+    invoices.ts
+    settings.ts
+    payments.ts
+    webhooks.ts
+    ai.ts
+  /db
+    schema.sql
+    queries.ts
+  /email
+    templates.ts (HTML for quote/invoice/receipt)
+  /pdf
+    invoiceTemplate.ts
+    quoteTemplate.ts
+  /lib
+    supabase.ts (service key), stripe.ts, mailer.ts, authGuard.ts, rbac.ts, z.ts (zod)
+.env.example
+README.md
+
+2) Design System (minimalist, trades‑professional)
+
+No Indigenous colour motifs. Keep it neutral, industrial, and clean.
+
+Font: Inter (fallback: system‑ui)
+
+Colors:
+
+--primary: #3B5998 (Steel Blue)
+
+--accent: #FFC107 (Safety Yellow) for primary CTAs
+
+--bg: #F9F9F9
+
+--surface: #FFFFFF
+
+--text: #1F2937
+
+--muted: #6B7280
+
+Status: success #38B000, warning #FFC107, danger #D72638
+
+Shadows: very subtle, focus states strong
+
+Radius: rounded-xl for cards and inputs
+
+Buttons: Primary (accent), Secondary (primary outline), Destructive (danger)
+
+Dark mode: invert backgrounds to near‑charcoal, maintain contrast; keep accent consistent
+
+Tailwind config: export these as CSS variables; set focus rings and large tap targets (min 44px).
+
+3) Navigation & Layout
+
+Mobile (bottom nav): Jobs • Calendar • Invoices • More
+Desktop (left sidebar): Dashboard • Jobs • Clients • Quotes • Invoices • Calendar • Settings
+
+Header (desktop): Search, notifications, user menu
+Page title row: Title + “Add” button (contextual)
+
+4) Screens (wireframe‑level spec)
+4.1 Auth & Onboarding
+
+Register: email, password (+ confirm), agree to Terms/Privacy (links), email verification required
+
+Onboarding wizard (4 steps):
+
+Business profile: business name, ABN (optional), phone, email, timezone (Brisbane default), currency (AUD), GST toggle
+
+Branding: logo upload (Pro later), primary colour choose (optional), invoice prefix (TT- default)
+
+Defaults: hourly rate, callout fee, quote validity (days), payment instructions (BSB/Account/PayID)
+
+Team (optional): invite emails with roles (Owner/Admin/Tradie/Accountant). Skippable
+
+4.2 Dashboard
+
+KPIs: Jobs Today, Unpaid Invoices, Quotes Awaiting, Earnings (Month)
+
+Shortcuts: + Job, + Quote, + Invoice
+
+Recent activity: audit trail entries
+
+4.3 Jobs
+
+List (desktop): Table with columns: Title, Client, Date/Time, Status, Assigned, Actions
+
+List (mobile): stacked rows with status badge, quick actions (View / Done / Invoice)
+
+Filters: status, date, client
+
+Job Detail: client info, address (map link), description, notes, photos & attachments, status control, buttons: Generate Quote, Create Invoice
+
+New Job form: client select/create, address, scheduled_at, description, assign to (optional), add files
+
+4.4 Quotes
+
+List: Draft | Sent | Accepted | Rejected tabs; search and filter
+
+Quote Wizard (4 steps): Job select/new → Items (labour/materials) → Review (GST, totals) → Send (email + PDF)
+
+Quote Detail: history, resend email, convert to invoice
+
+4.5 Invoices
+
+List: Draft | Sent | Paid | Overdue tabs; show Gross / Fees / Net sums
+
+Invoice Detail: breakdown, PDF preview, Send, Create Payment Link, mark paid (manual), show payment history
+
+Create Payment Link: calls server to create Stripe checkout session; returns checkout_url to embed in email
+
+4.6 Calendar
+
+Desktop: Week view with drag & drop; Month/Day toggles
+
+Mobile: Agenda list; “Jump to Today”
+
+Cards: show job title + client + status colour
+
+4.7 Clients
+
+List: name, phone, email, last job
+
+Detail: contact info, job history, quick create job
+
+4.8 Settings
+
+Business Profile: all fields, ABN, GST, timezone
+
+Branding: logo (Pro), colour, invoice/quote preview
+
+Billing (subscription placeholders): Free vs Pro toggles (no Stripe billing needed for MVP)
+
+Payment Settings: BSB/Account/PayID text, enable Stripe (on/off), surcharge toggle (optional; do not exceed cost of acceptance)
+
+Floating AI button (optional for MVP): opens side panel with: “Quote from notes”, “Follow‑up email”, “Invoice description from job notes”.
+
+5) Data Model (Supabase SQL)
+
+(Use this schema; apply RLS so each row belongs to business_id and only members of that business can access.)
+
+-- See earlier message for full schema; include: businesses, memberships, clients, jobs, job_files, quotes, invoices, settings, audit_log.
+-- Ensure RLS policies: user must be a member of the business_id to read/write.
+
+
+Storage buckets: logos, job-files (images/pdf). Create signed URLs.
+
+6) API (server) — endpoints & behaviour
+
+Auth: Handled by Supabase Auth; frontend sends Bearer token. Middleware decodes user, loads memberships & role.
+
+/onboarding/start [POST] → create business + owner membership + settings
+
+/clients [GET/POST], /clients/:id [GET/PUT/DELETE]
+
+/jobs [GET/POST], /jobs/:id [GET/PUT/DELETE]
+
+/jobs/:id/files [POST] (multipart) → store in Supabase Storage, create job_files row
+
+/quotes [GET/POST], /quotes/:id [GET/PUT/DELETE]
+
+/quotes/:id/send [POST] → render HTML + PDF, email via Resend
+
+/quotes/:id/accept [POST] (no auth, tokenized link for client from email)
+
+/invoices [GET/POST], /invoices/:id [GET/PUT/DELETE]
+
+/invoices/:id/send [POST] → email with Pay Now button + PDF
+
+/invoices/:id/create-checkout-session [POST] → returns checkout_url
+
+/webhooks/stripe [POST]:
+
+On checkout.session.completed: mark invoice paid, record paid_at, stripe_fee, net_received; send receipt
+
+/settings [GET/PUT]
+
+/ai/quote-from-notes [POST]: { notes, hourly_rate? } → returns suggested line items
+
+/ai/invoice-summary [POST]: { job_notes } → returns 1‑2 sentence description
+
+Guarding & roles:
+
+Owner/Admin: full CRUD
+
+Tradie: CRUD jobs they created/assigned; can create draft invoices; cannot change global settings
+
+Accountant: read invoices & export only
+
+7) Emails (HTML) — keep them beautiful & simple
+
+Quote email
+
+Subject: Quote {{quote.number}} from {{business_name}}
+
+Header with logo (Pro), business details, client name
+
+Summary table (items, GST, total), Buttons: “View PDF”, “Accept Quote”
+
+Footer: contact details
+
+Invoice email
+
+Subject: Invoice {{invoice.number}} — {{business_name}}
+
+Summary (items, GST, total)
+
+Primary CTA: Pay Now (Stripe Checkout link)
+
+Secondary: View/Download PDF
+
+Bank/PayID details as fallback
+
+Receipt email after payment
+
+8) PDFs
+
+Invoice PDF layout matching email: logo (Pro), business info, client info, items table, GST line, totals, payment instructions (BSB/PayID QR if easy)
+
+Quote PDF similar, with validity date
+
+Show invoice/quote number with prefix from Settings
+
+9) Payments (Stripe Checkout)
+
+Create checkout session for invoice:
+
+line_items = single item “Invoice {{number}}”
+
+amount = invoice.total (in cents)
+
+metadata: business_id, invoice_id
+
+success_url = APP_URL/invoices/{{id}}?paid=1
+
+cancel_url = APP_URL/invoices/{{id}}?canceled=1
+
+Webhook handler:
+
+Verify signature
+
+On checkout.session.completed → get payment_intent + fees
+
+Update invoice: status='paid', paid_at=now(), store stripe_fee, net_received
+
+Write audit_log
+
+Send receipt email
+
+10) Freemium Limits (MVP)
+
+Free plan:
+
+Max 5 jobs/month
+
+Plain invoices (no logo)
+
+AI helper limited or off
+
+Pro plan (placeholder):
+
+Unlimited jobs
+
+Branded invoices
+
+AI helper on
+
+(You can fake subscription state in settings until billing is added.)
+
+11) UX Rules (critical)
+
+Most common actions ≤ 2 taps/clicks:
+
+Add Job
+
+Generate Quote
+
+Send Invoice
+
+Big touch targets (min-h-[44px])
+
+Keep forms short, use sensible defaults
+
+Keyboard + screen reader accessible
+
+Confirm before destructive actions; show toast success
+
+12) ENV & Setup
+
+.env.example
+
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
+RESEND_API_KEY=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+APP_BASE_URL=http://localhost:5173
+SERVER_BASE_URL=http://localhost:3000
+DEFAULT_TIMEZONE=Australia/Brisbane
+
+13) Seed Data (optional for dev)
+
+1 business (“Test Plumbing Cairns”), GST off, invoice prefix TP-
+
+2 clients (Edge Hill, Whitfield)
+
+3 jobs (one pending today, one in_progress tomorrow, one done)
+
+1 draft quote, 1 sent invoice
+
+14) Acceptance Criteria (definition of done)
+
+Register → verify email → onboarding → dashboard works
+
+Create client → create job (with photo) → generate quote & email → convert to invoice → send with Pay Now → Stripe test payment → webhook marks Paid → receipt sent
+
+Free plan blocks creating the 6th job in a month with a friendly upgrade banner
+
+Desktop sidebar + mobile bottom nav both work cleanly
+
+Invoice/Quote PDFs render correctly; logo appears only on Pro
+
+15) Don’t Include
+
+No client logins/portal (MVP)
+
+No Indigenous colour motifs
+
+No accounting or supplier integrations yet
+
+No route optimisation or GPS tracking yet
+
+No offline mode yet
+
+Build it exactly to this spec.
+Use clean, modern UI; keep it fast and simple. Prioritise the tradie workflow: Jobs → Quotes → Invoices → Pay. Ensure all role‑based permissions and RLS are enforced.

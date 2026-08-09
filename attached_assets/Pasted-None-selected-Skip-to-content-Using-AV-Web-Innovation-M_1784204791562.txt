@@ -1,0 +1,89 @@
+None selected
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+3 of 284
+[Inquiry Received][Ayden Vogler] Request Access to the ProximityReader APIs; Case-ID: 20927765
+External
+Inbox
+Summarise this email
+
+TTPOI Entitlements
+8 Jul 2026, 19:46 (8 days ago)
+Hi there, Thank you for getting in touch with us! We've received your inquiry and it's already in the hands of our team. We'll review the details and get back t
+2
+
+TTPOI Entitlements
+15 Jul 2026, 09:27 (1 day ago)
+Hi team, Thank you for your interest in Apple Pay entitlements. We’ve received your request and it is now under review. We’ll keep you informed as updates becom
+
+TTPOI Entitlements 
+07:05 (15 hours ago)
+to me
+
+Hello,
+
+Thanks for sharing details of your app with Tap to Pay on iPhone. 
+
+Before we can proceed with the entitlement process, there are a few prerequisites that need to be addressed. The section(s) outlined below detail the specific requirements. Kindly review the information, and feel free to reach out if you have any questions or need further clarification.
+
+In the videos provided there is no awareness moment to the end users to encourage them to set up Tap to Pay on iPhone.
+
+The submitted video flows must clearly demonstrate the user being prompted to review and accept Tap to Pay on iPhone’s Terms and Conditions. It is recommended that these be presented to the user following the awareness moment.
+
+
+
+
+Educating Merchants Requirements
+
+
+
+4.1
+
+Your app must present education screens immediately after successful enabling Tap to Pay on iPhone and accepting Terms and Conditions.
+
+Required
+
+4.2
+
+Your app must make merchant education screens accessible for reference in either Settings or Help section.
+
+Required
+
+4.3
+
+Your merchant education screens must align with marketing guidelines for visual assets and copy. 
+
+Required
+
+4.4
+
+Merchant education must demonstrate how to accept contactless cards with Tap to Pay on iPhone.
+
+Required
+
+4.5
+
+Merchant education must demonstrate how to accept Apple Pay and other digital wallets with Tap to Pay on iPhone.
+
+Required
+
+
+In the videos provided there was no evidence of merchant education. 
+• You can use the new iOS 18 feature, ProximityReaderDiscovery, to accomplish this with little effort. More details here - https://developer.apple.com/documentation/proximityreader/proximityreaderdiscovery
+
+In the videos provided it appears the copy used on the checkout button is not following the Human Interface Guidelines:
+• Be sure you are using the wave.3.right.circle or wave.3.right.circle.fill from SF Symbols.
+• Adjust the copy on the final checkout button to “Tap to Pay on iPhone”
+
+Please provide updated screen recordings of Tap to Pay on iPhone.
+
+Please reply to this email and upload the requested material to the File Uploader at your earliest convenience.
+
+Best Regards,
+Zach G.
+Wallet Entitlements Team
+
+
+

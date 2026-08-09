@@ -1,0 +1,41 @@
+Good news overall — the documents are solid. But those two critical fixes need to happen before anyone sees them. Let me tell you exactly what to tell Replit:
+
+---
+
+**Tell Replit This Right Now**
+
+*"Please make these specific legal changes to our Terms of Service and Privacy Policy pages:*
+
+*TERMS OF SERVICE — CRITICAL:*
+
+*1. Remove Clause 23 entirely — the Class Action Waiver. The Australian High Court has ruled this is unenforceable and an unfair contract term under Australian Consumer Law. Delete it completely.*
+
+*2. Remove Clause 22 entirely — the Arbitration clause. It directly contradicts Clause 20 which correctly references the ACL and ACCC. Having both creates a contradiction that a lawyer could exploit against us. Delete it completely.*
+
+*TERMS OF SERVICE — MEDIUM PRIORITY:*
+
+*3. Add a Price Change clause: 'We may change our pricing or plan features by giving you 30 days notice via email. Continued use of the service after the notice period constitutes acceptance of the new pricing.'*
+
+*4. Add a Service Modification clause: 'We may modify, suspend or discontinue any feature or part of the service with reasonable notice to users.'*
+
+*5. Add a Feedback IP clause: 'If you provide feedback, suggestions or ideas about the service, you grant LinkUp2Care Pty Ltd a perpetual, royalty-free, worldwide licence to use and implement that feedback without compensation.'*
+
+*6. Add to the Limitation of Liability clause: 'This limitation does not exclude or limit your rights under the Australian Consumer Law.'*
+
+*PRIVACY POLICY — MEDIUM PRIORITY:*
+
+*7. Under GPS and Location Data, add the specific purpose: 'GPS data is collected to enable core platform features including job scheduling, dispatch mapping, and automated timesheet verification, which reduces administrative work for users.'*
+
+*8. Under User Rights, add how to actually exercise them: 'You can access and update most personal information directly through the Settings section of your JobRunner account. For information you cannot access yourself or to request deletion, contact our Privacy Officer at support@jobrunner.com.au.'*
+
+*9. Add a new section: 'The employee records exemption under the Privacy Act 1988 does not apply to the data of our customers employees that we handle as part of providing our service. This Privacy Policy applies to all personal information processed by the JobRunner platform.'*
+
+*Please make all these changes and confirm when done."*
+
+---
+
+**After Replit Makes The Changes**
+
+Get a real Australian solicitor to do a final review before launch. Costs a few hundred dollars. Completely worth it. Ask Manus to find a startup-friendly Australian solicitor who specialises in SaaS if you need a recommendation.
+
+The documents are genuinely good after these fixes. You'll be properly protected.

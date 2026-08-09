@@ -1,0 +1,86 @@
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Remove unnecessary import from job details page
+
+Remove the unused `Linking` import from the `mobile/app/job/[id].tsx` file.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 4ab7c548-ae0e-44a6-8340-cbb6f5ef9c40
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/JgVr7we
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.9% (3687/3846)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓░░░░░░░░░░░░░ 24.5% (309/624)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 97.6% (4120/4170)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4243/4244)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4237/4237)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4243/4244)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4242/4242)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4243/4244)
+[expo-cli] iOS Bundled 44654ms node_modules/expo-router/entry.js (4242 modules)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4242/4242)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4243/4244)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4249/4249)
+[expo-cli] Android Bundled 62201ms node_modules/expo-router/entry.js (4249 modules)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4249/4249)
+[expo-cli] Creating asset map
+[expo-cli] 
+[expo-cli] › Assets (52):
+[expo-cli] assets/jobrunner-logo-header.png (120 kB)
+[expo-cli] assets/jobrunner-logo.png (2.11 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/AntDesign.ttf (130 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Entypo.ttf (66.2 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/EvilIcons.ttf (13.5 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf (55.6 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf (166 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf (134 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf (33.7 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf (203 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Brands.ttf (209 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Regular.ttf (68 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Solid.ttf (424 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf (314 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Foundation.ttf (57 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf (390 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf (1.31 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf (357 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Octicons.ttf (69.4 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/SimpleLineIcons.ttf (54.1 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Zocial.ttf (25.8 kB)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.png (653 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon.png (8 variations | 359 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/clear-icon.png (4 variations | 425 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/close-icon.png (4 variations | 235 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/search-icon.png (7 variations | 592 B)
+[expo-cli] node_modules/expo-router/assets/arrow_down.png (9.46 kB)
+[expo-cli] node_modules/expo-router/assets/error.png (469 B)
+[expo-cli] node_modules/expo-router/assets/file.png (138 B)
+[expo-cli] node_modules/expo-router/assets/forward.png (188 B)
+[expo-cli] node_modules/expo-router/assets/pkg.png (364 B)
+[expo-cli] node_modules/expo-router/assets/sitemap.png (465 B)
+[expo-cli] node_modules/expo-router/assets/unmatched.png (4.75 kB)
+[expo-cli] 
+[expo-cli] › ios bundles (2):
+[expo-cli] _expo/static/js/ios/entry-c9adf26db170158ecac1e5f9120ceb76.hbc (8.39 MB)
+[expo-cli] _expo/static/js/ios/entry-c9adf26db170158ecac1e5f9120ceb76.hbc.map (24.3 MB)
+[expo-cli] 
+[expo-cli] › android bundles (2):
+[expo-cli] _expo/static/js/android/entry-6d785ae78fad43061146d228b3cd93bc.hbc (8.39 MB)
+[expo-cli] _expo/static/js/android/entry-6d785ae78fad43061146d228b3cd93bc.hbc.map (24.3 MB)
+[expo-cli] 
+[expo-cli] › Files (2):
+[expo-cli] assetmap.json (21.7 kB)
+[expo-cli] metadata.json (6.16 kB)
+[expo-cli] 
+[expo-cli] Exported: dist
+✔ Exported bundle(s)
+✔ Uploaded assetmap.json 
+✖ Failed to upload
+Asset processing timed out for assets: 
+- /home/runner/workspace/mobile/dist/_expo/static/js/ios/entry-c9adf26db170158ecac1e5f9120ceb76.hbc,
+- /home/runner/workspace/mobile/dist/_expo/static/js/android/entry-6d785ae78fad43061146d228b3cd93bc.hbc
+    Error: update command failed.
+~/workspace/mobile$ 

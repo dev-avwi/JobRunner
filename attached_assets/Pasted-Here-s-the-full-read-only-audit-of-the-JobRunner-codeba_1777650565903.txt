@@ -1,0 +1,327 @@
+Here's the full read-only audit of the JobRunner codebase. No files were modified, no packages installed, no migrations run.
+
+═══════════════════════════════════════════
+SECTION 1 — SUBSCRIPTION TIERS & PRICING
+═══════════════════════════════════════════
+
+1a. PRICING constant (shared/schema.ts:77)
+
+Pro: $49/mo (4900 cents) — shared/schema.ts:79
+Team: $59 base + $29/seat per month — shared/schema.ts:84-85
+Trial: 7 days — shared/schema.ts:72
+Business tier in PRICING constant: NOT FOUND. It exists in TIER_LIMITS (shared/schema.ts:61) and the users table tier enum (shared/schema.ts:321), but no monthly price is defined for it.
+1b. Hardcoded Stripe price/product IDs
+
+NONE FOUND. Stripe checkout uses dynamic price_data instead (server/routes.ts:20696, server/stripeConnect.ts:239). This is fine for runtime but means there's no canonical mapping in code.
+1c. Apple IAP product IDs (mobile/src/lib/iap.ts)
+
+Pro: com.jobrunner.pro.monthly — line 17
+Team: com.jobrunner.team.monthly — line 18
+Business: com.jobrunner.business.monthly — line 19
+1d. IS_BETA flag — currently true
+
+Defined: server/freemiumService.ts:5
+Bypasses subscription checks at:
+server/subscriptionService.ts:90 (returns unlimited usage)
+server/subscriptionService.ts:197, 234, 271 (job/invoice/quote creation always allowed)
+server/routes.ts:5326 (requireProSubscription middleware bypassed)
+server/routes.ts:5925, 6018, 6141 (capability flags forced true on /api/subscription/status)
+server/freemiumService.ts:397, 427 (AI suggested replies/suggestions bypassed)
+mobile/app/more/team-management.tsx:1544 (BETA_MODE, set to false at line 30, plus currentTier === 'beta' bypass)
+This is the single biggest go-live switch. Flipping IS_BETA = false will immediately enforce gating and may surprise users currently on the beta plan.
+
+1e. Feature gating
+
+requireTeamPlan (server/permissions.ts:337) — checks for team/business/beta via ownerHasTeamCapability (server/permissions.ts:317). Used at: server/routes.ts:5687, 31835, 31934, 32074 (subcontractor upgrades, team invites, invite codes).
+requireProSubscription (server/routes.ts:5324) — accepts pro/team/beta (server/routes.ts:5333). Gates AI features at: server/routes.ts:7375, 7388, 7517, 7537, 8146, 8178, 8288, 8381, 8428, 8453, 8591.
+tier === 'free' checks: server/routes.ts:6175, server/freemiumService.ts:458.
+1f. Mobile vs server pricing discrepancies (mobile/app/more/subscription.tsx)
+
+Pro: mobile fallback $49 (:559) ✅ matches server
+Team: mobile fallback $99 (:559) ❌ contradicts server $59 base + $29/seat
+Business: mobile fallback $199 (:559) ❌ no server price exists
+Tier name: mobile uses "Starter" for free (:59), server has no display name for free
+Files consulted: shared/schema.ts, server/routes.ts, server/subscriptionService.ts, server/freemiumService.ts, server/permissions.ts, server/billingService.ts, server/stripeConnect.ts, mobile/app/more/subscription.tsx, mobile/app/more/team-management.tsx, mobile/src/lib/iap.ts, client/src/hooks/use-subscription.ts, client/src/pages/SubscriptionPage.tsx.
+
+═══════════════════════════════════════════
+SECTION 2 — WEB FEATURES
+═══════════════════════════════════════════
+
+Dashboard / Action Centre
+
+ActionCenter.tsx — urgent tasks, approvals, alerts feed
+Insights.tsx — high-level business health & trends
+More.tsx — mobile-style nav hub for secondary features
+Jobs
+
+WorkPage.tsx — main job pipeline (list/board)
+SchedulePage.tsx — drag-and-drop assignment calendar
+CalendarPage.tsx — calendar view of scheduled jobs
+RecurringJobs.tsx — recurring/maintenance schedules
+AcceptAssignment.tsx — worker accept/decline page
+JobInvite.tsx — public subbie invite page
+TrackArrival.tsx — live ETA tracking
+Quotes
+
+WorkPage.tsx — quote create/convert via QuoteForm/QuoteDetailView
+JobPortal.tsx — client-facing quote view & sign
+Invoices + Payment Hub + Smart Chaser
+
+PaymentHub.tsx — financial transactions hub
+CollectPayment.tsx — virtual terminal / on-site collection
+PaymentPage.tsx — public Stripe checkout
+PayoutsDashboard.tsx — Stripe Connect payouts/balances
+Chat Hub
+
+ChatHub.tsx — unified team chat + 2-way SMS + automated notifications
+TeamChat.tsx — internal-only team messaging
+DirectMessages.tsx — 1:1 messaging
+CommunicationsHub.tsx — log of system-sent emails/SMS
+GPS / Dispatch / Live Map
+
+DispatchBoard.tsx — live worker locations & route optimisation
+JobMap.tsx — geographic job visualisation
+Team management
+
+Team.tsx — members/roles/permissions/invites
+AcceptInvite.tsx — onboarding via invite link
+TimeTracking.tsx — timesheets & manual entry
+TimeEditAuditLog.tsx — timesheet edit audit trail
+PayrollReports.tsx — payroll exports
+TeamOperations.tsx — field teams/vehicles/shifts
+Clients + Client Portal
+
+ClientPortalHub.tsx — portal config
+ClientPortal.tsx — client login/dashboard
+Leads.tsx — CRM for inbound enquiries
+WHS / Safety
+
+WhsHub.tsx — SWMS, incidents, compliance hub
+CustomForms.tsx — checklist/inspection form builder
+Expenses + AI receipt scanning
+
+ExpensesPage.tsx — business cost tracking
+ExpenseTracking.tsx — receipt capture + AI OCR
+Reports / Analytics
+
+Reports.tsx — sales/tax/team reports
+ProfitabilityReport.tsx — quote vs actual job costing
+AI Receptionist (Vapi)
+
+AIReceptionist.tsx — voice assistant config & call routing
+AIReceptionistCalls.tsx — call log & transcripts
+Autopilot / Automations
+
+Autopilot.tsx — high-level automation config
+Automations.tsx — trigger-based rule builder
+ServiceReminders.tsx — automatic maintenance reminders
+Booking Page
+
+WebsiteAddon.tsx — public booking page + landing page builder
+Subcontractor management
+
+SubcontractorWebView.tsx — lightweight external interface
+MagicLinkLanding.tsx — magic-link/passwordless access
+Settings + Integrations
+
+Integrations.tsx — Xero/QuickBooks/Stripe/Twilio config
+TemplatesHub.tsx — document/email/SMS templates + catalog
+Admin Dashboard
+
+AdminDashboard.tsx — super-admin platform monitoring
+Billing & Subscriptions
+
+SubscriptionPage.tsx — plan/usage/billing history
+Other
+
+LandingPage.tsx, Demo.tsx, Calculators.tsx, Files.tsx, InventoryPage.tsx, Equipment.tsx, AIVisualization.tsx, OpenApp.tsx, VerifyEmail.tsx, VerifyEmailPending.tsx, ResetPassword.tsx, DeleteAccount.tsx, PrivacyPolicy.tsx, TermsOfService.tsx, Support.tsx.
+Stub/incomplete flags found
+
+client/src/pages/: TODO and FIXME = NOT FOUND (zero matches)
+server/routes.ts:9398 — file upload still data-URL/mocked, S3/GCS not wired
+server/routes.ts:9952 — demo email "logged to console (mock mode)"
+server/emailService.ts:209 — mockEmailService exists
+mobile/src/lib/stripe-terminal.tsx:81, 86 — Android perms stub, terminal simulator stub
+mobile/src/lib/haptics.ts:8 — expo-haptics mock fallback
+Files consulted: all client/src/pages/*.tsx, server/routes.ts, server/emailService.ts, mobile/src/lib/stripe-terminal.tsx, mobile/src/lib/haptics.ts.
+
+═══════════════════════════════════════════
+SECTION 3 — MOBILE FEATURES & PARITY
+═══════════════════════════════════════════
+
+3a. Parity matrix
+
+Feature	Mobile	Path
+Jobs	YES	mobile/app/(tabs)/jobs.tsx, mobile/app/job/[id].tsx
+Quotes	YES	mobile/app/more/quotes.tsx, quote/[id].tsx, new.tsx
+Invoices	YES	mobile/app/more/invoices.tsx, invoice/[id].tsx, new.tsx
+Chat	YES	mobile/app/more/chat-hub.tsx, job/chat.tsx, team-chat.tsx
+GPS Dispatch	YES	mobile/app/(tabs)/map.tsx, more/dispatch-board.tsx
+Team mgmt	PARTIAL	mobile/app/more/team-management.tsx, team-operations.tsx
+Clients	YES	mobile/app/more/clients.tsx, client/[id].tsx
+WHS	YES	mobile/app/more/whs-hub.tsx, compliance.tsx
+Expenses	YES	mobile/app/more/expenses.tsx, receipts.tsx
+Reports	YES	mobile/app/more/reports.tsx, insights.tsx
+AI Receptionist	YES	mobile/app/more/ai-receptionist.tsx
+Automations	YES	mobile/app/more/autopilot.tsx
+Booking page	NO	(no /booking route in mobile)
+Subcontractors	YES	mobile/app/more/subcontractors.tsx
+Settings	YES	mobile/app/more/settings.tsx, business-settings.tsx, app-settings.tsx
+Admin	YES	mobile/app/more/admin.tsx
+Billing	YES	mobile/app/more/subscription.tsx, payment-hub.tsx
+3b. Offline mode
+
+Engine: mobile/src/lib/offline-storage.ts:16 (expo-sqlite)
+Sync queue table: mobile/src/lib/offline-storage.ts:350
+Screens with offline ops:
+Jobs: mobile/src/lib/store.ts:900 (updateJobOffline, saveJobOffline)
+Clients: mobile/src/lib/store.ts:1105
+Time tracking: mobile/app/(tabs)/index.tsx:822
+Chat: mobile/app/more/direct-messages.tsx:676 (optimistic UI)
+WHS: mobile/app/more/whs-hub.tsx:221 (cacheJsaDocs)
+3c. Tap to Pay — STUBBED in production
+
+Lib: @stripe/stripe-terminal-react-native (mobile/package.json:35)
+isSDKAvailable = false hardcoded — mobile/src/lib/stripe-terminal.tsx:58
+Status string: "[StripeTerminal] SDK disabled in production - pending Apple Tap to Pay approval (Case-ID 18817353)" (mobile/src/lib/stripe-terminal.ts:72)
+iOS 17.6+ check at mobile/src/lib/stripe-terminal.ts:96
+Simulator fallback for dev at mobile/src/lib/stripe-terminal.ts:175
+3d. Dark mode — full system-wide
+
+Implementation: mobile/src/lib/theme.tsx
+Detection: useColorScheme() from RN (:2)
+Mode logic: const isDark = effectiveMode === 'system' ? systemScheme === 'dark' : effectiveMode === 'dark'; (:557)
+Dynamic brand-color generator for both modes (:297)
+3e. App version (mobile/app.json)
+
+version: "1.1.2" (line 5)
+iOS buildNumber: "30" (line 24)
+Android versionCode: 29 (line 145)
+3f. EAS config (mobile/eas.json)
+
+appVersionSource: "remote" (line 4)
+autoIncrement: true on production profile (line 44)
+EXPO_PUBLIC_API_URL: "https://jobrunner.com.au" for development, preview, production (lines 14, 32, 49)
+Files consulted: mobile/app.json, mobile/eas.json, mobile/package.json, mobile/src/lib/theme.tsx, mobile/src/lib/offline-storage.ts, mobile/src/lib/stripe-terminal.ts, mobile/app/(tabs)/index.tsx, mobile/src/lib/store.ts.
+
+═══════════════════════════════════════════
+SECTION 4 — INTEGRATIONS
+═══════════════════════════════════════════
+
+Integration	Present	Init file	Prod-ready	Webhook signature verification
+Stripe	Yes	server/stripeClient.ts:127 (getUncachableStripeClient); init at :162	Yes (live + test, Replit connector or env var)	✅ server/webhooks.ts:28 & server/webhookHandlers.ts:32 (stripe.webhooks.constructEvent)
+Apple IAP	Yes	mobile/src/lib/iap.ts:43 (initIAP); SKUs at :17-19	Client-side only	❌ NOT FOUND — no server-side App Store Server Notifications endpoint; finishTransaction runs client-side at mobile/src/lib/iap.ts:129
+Twilio	Yes	server/twilioClient.ts:133 (initializeTwilio)	Yes	✅ server/twilioClient.ts:710 (validateTwilioWebhook); webhooks: /api/twilio/voice/shared (server/routes.ts:40117), /api/sms/webhook/incoming (server/routes.ts:40131)
+Vapi	Yes	server/vapiService.ts:153 (vapiRequest) using VAPI_PRIVATE_KEY	Yes	✅ server/vapiService.ts:60 (verifyVapiWebhook with crypto.timingSafeEqual); endpoint /api/vapi/webhook (server/index.ts:155)
+Xero	Yes	server/xeroService.ts:30	Yes (full OAuth2 + token refresh)	✅ server/xeroService.ts:1643 (verifyWebhookSignature with XERO_WEBHOOK_KEY)
+MYOB	Yes	server/myobService.ts:20	Yes (OAuth2)	❌ NOT FOUND — polling/outbound only
+QuickBooks	Yes	server/quickbooksService.ts:11	Yes (OAuth2)	❌ NOT FOUND — polling/outbound only
+Google Calendar	Yes	server/googleCalendarClient.ts:39 (getOAuth2Client)	Yes (OAuth2 + refresh tokens + bg sync)	N/A — outbound API only
+SendGrid	Yes	server/emailService.ts:7, 44	Yes	N/A — outbound only
+Retell	NOT FOUND	—	—	— (replaced by Vapi)
+Files consulted: server/billingService.ts, server/stripeClient.ts, server/webhooks.ts, server/webhookHandlers.ts, server/twilioClient.ts, server/vapiService.ts, server/xeroService.ts, server/myobService.ts, server/quickbooksService.ts, server/googleCalendarClient.ts, server/emailService.ts, server/index.ts, server/routes.ts, mobile/src/lib/iap.ts.
+
+═══════════════════════════════════════════
+SECTION 5 — KNOWN ISSUES & TECH DEBT
+═══════════════════════════════════════════
+
+5a. TODOs/stubs
+
+Block-launch:
+mobile/src/lib/stripe-terminal.tsx:4-5 — Tap to Pay stubbed pending Apple approval
+mobile/src/lib/stripe-terminal.tsx:58 — isSDKAvailable = false (hard off)
+mobile/src/lib/stripe-terminal.tsx:118 — error string surfaces "temporarily unavailable"
+Important: no FIXME/HACK of substance found in app source
+Nice-to-have: most TODO matches are inside node_modules (not project debt)
+5b. Security
+
+Helmet: ✅ server/index.ts:229 with detailed CSP (Stripe/Maps/Replit allowances)
+Rate limiting: ✅ express-rate-limit with separate limiters in server/routes.ts for auth (:210), password reset (:220), payments (:229), messaging (:237), and general API (:245); plus persistent rateLimits table in PG (:274-326)
+Session cookies (server/index.ts:283-296): connect-pg-simple, secure: isReplit || isProduction, httpOnly: true, sameSite: 'lax', 24h, name jobrunner.sid
+Webhook signatures verified for: Stripe, Xero, Twilio, Vapi (see Section 4)
+5c. routes.ts size
+
+server/routes.ts: 51,519 lines — ~17× the 3,000-line threshold. Major maintenance/PR-review risk; cold-start parse cost; difficult to test. Should be split aggressively.
+5d. Bundle size
+
+dist/index.js: 3.4 MB (server bundle, large because of routes.ts)
+dist/public/: 39 MB (frontend assets total)
+5e. Replit dev URLs in production
+
+❌ mobile/src/lib/api.ts:22 has a hardcoded https://ff735932...worf.replit.dev URL — red flag for production builds
+Server CSP allows *.replit.dev/*.repl.co (server/index.ts:247-255) — acceptable for dev preview, may want to scope down in prod
+server/urlHelper.ts:13 and server/xeroAuth.ts:55 correctly filter .replit.dev/.repl.co in favour of custom domain
+5f. Demo account cleanup
+
+DEMO_USER (demo@jobrunner.com.au) — server/demoData.ts:11
+Re-seeded on every server restart when NODE_ENV !== 'production' or ENABLE_DEMO_DATA === 'true' — server/index.ts:335-347 ✅ does not persist stale across deploys
+startDemoDataRefreshScheduler() keeps demo team "alive" — server/index.ts:461
+5g. Pre-existing TS errors
+
+npx tsc --noEmit: 1,185 errors
+Files consulted: server/routes.ts, server/index.ts, server/demoData.ts, server/xeroService.ts, server/webhooks.ts, server/twilioClient.ts, mobile/src/lib/api.ts, mobile/src/lib/stripe-terminal.tsx, mobile/app/more/team-management.tsx, client/src/pages/AdminDashboard.tsx.
+
+═══════════════════════════════════════════
+SECTION 6 — TECH STACK SUMMARY
+═══════════════════════════════════════════
+
+6a. Frontend web (package.json)
+
+React 18.3.1 (:108), Vite 5.4.19 (:153)
+UI: Radix UI primitives (:20-46) + Tailwind 3.4.17 (:150) + lucide-react (:93)
+State: TanStack Query 5.60.5 (:55)
+Routing: wouter 3.3.5 (:125)
+6b. Mobile (mobile/package.json)
+
+Expo SDK ~54.0.33 (:38), React Native 0.81.5
+expo-router ~6.0.23 (:62)
+NativeWind 4.0.1, TanStack Query 5.28.0, Zustand 4.5.0, Sentry 7.2.0
+6c. Backend
+
+Express 4.21.2 (:82), tsx 4.19.1 (:151), Node.js 20
+ORM: Drizzle 0.39.1 (:77)
+DB driver: @neondatabase/serverless 0.10.4 (:18) + pg (server/storage.ts:2)
+6d. Real-time
+
+WebSocket: ws 8.18.0; server at server/websocket.ts:62 (path /ws/location); broadcasts location pings, SMS, payments, job/timer updates, document status
+Polling still in use:
+Mobile: notifications 30s (mobile/app/_layout.tsx:550), DMs 10s (mobile/app/more/direct-messages.tsx:620), team chat 5s (mobile/app/more/team-chat.tsx:337)
+Web: client/src/components/ChatWidget.tsx:159 (30s), client/src/pages/JobPortal.tsx:464 (location fallback), client/src/pages/Integrations.tsx:205 (30s), client/src/pages/AIReceptionist.tsx:274
+6e. Hosting
+
+.replit uses nodejs-20 and postgresql-16; deployment target is autoscale (.replit:10)
+Prod domain: jobrunner.com.au — APP_DOMAIN set in .replit:59 and mobile/app.json:247
+Served via Express serveStatic in production (server/index.ts:396); Replit proxy/ingress fronts it
+Files consulted: package.json, mobile/package.json, server/index.ts, server/storage.ts, server/websocket.ts, .replit, mobile/app.json, mobile/app/_layout.tsx.
+
+═══════════════════════════════════════════
+FINAL SUMMARY
+═══════════════════════════════════════════
+
+Top 5 things truly ready to ship
+
+Stripe payments + subscriptions + Connect payouts — webhook signatures verified, both managed-connector and env-var paths supported, live/test mode handled.
+Twilio SMS + voice — webhook signatures validated server-side via the SDK; rate limiting around messaging endpoints.
+Vapi AI receptionist — full assistant provisioning, signed webhook with timing-safe equal, dedicated /api/vapi/webhook endpoint.
+Mobile dark mode — system-wide, system/light/dark modes with dynamic brand colours.
+Mobile offline mode for core entities — SQLite-backed sync queue covering jobs, clients, time entries, chat (optimistic), and WHS docs.
+Top 5 that LOOK ready but have hidden gotchas
+
+Subscription gating — IS_BETA = true (server/freemiumService.ts:5) silently bypasses every paywall in 8+ places. Looks like billing works, but no one is being limited today.
+Pricing displayed on mobile — Team shown as $99 and Business shown as $199 (mobile/app/more/subscription.tsx:559), but the server has Team at $59+$29/seat and no Business price at all. Customers will see one price and be billed another (or not be billable).
+Stripe price IDs — none hardcoded; everything is dynamic price_data. Works, but you have no source-of-truth mapping in code, and no Stripe Dashboard products tied to your tiers.
+Apple IAP — client SKUs exist and finishTransaction is wired, but no server-side App Store Server Notifications handler. Refunds, billing-retry events, and subscription state changes from Apple won't reach your DB.
+Tap to Pay — code shipped, SDK installed, but isSDKAvailable = false is hard-coded pending Apple Case-ID 18817353. Anyone tapping the button gets the "temporarily unavailable" string.
+Top 5 things still genuinely unfinished
+
+server/routes.ts is 51,519 lines — single-file backend monolith ~17× the recommended cap. Cold start, code review, and onboarding all suffer.
+1,185 TypeScript errors in tsc --noEmit. The build runs but you've lost all the safety TS is supposed to give you.
+Hardcoded *.worf.replit.dev URL in mobile/src/lib/api.ts:22 — will ship into a production mobile build unless overridden by EXPO_PUBLIC_API_URL.
+File uploads still mocked — server/routes.ts:9398 notes "we'll use a data URL or mock it" instead of S3/GCS. Stuffing files into data URLs hits DB and bandwidth limits fast.
+MYOB and QuickBooks have no webhook verification / inbound webhooks — sync is one-way (push to vendor). Status updates done in MYOB/QBO will not reflect back into JobRunner.
+Bonus brutally-honest call-outs
+
+Web booking page (WebsiteAddon.tsx) has no mobile equivalent.
+AI Receptionist screen still polls every refetchInterval rather than subscribing via WebSocket.
+Helmet CSP in production still allows *.replit.dev and *.repl.co — fine for hybrid hosting, worth tightening once you're 100% on jobrunner.com.au.
+Want me to fix any of the above? The first three I'd tackle in order are: (1) flip IS_BETA and reconcile mobile pricing strings with PRICING, (2) remove the hardcoded worf URL from mobile/src/lib/api.ts, (3) add an App Store Server Notifications endpoint so Apple IAP state stays in sync.

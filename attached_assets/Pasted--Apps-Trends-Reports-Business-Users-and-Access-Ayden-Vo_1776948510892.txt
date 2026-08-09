@@ -1,0 +1,81 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.1 (68)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+Screenshot-0422-085632.pngDownload
+Edit
+
+Messages (6)
+
+Apple2026-04-20 11:47 AM
+
+Ayden Vogler2026-04-20 5:08 PM
+
+AppleYesterday 5:57 PM
+
+Ayden VoglerYesterday 8:20 PM
+
+Ayden VoglerYesterday 8:24 PM
+
+AppleToday 10:21 PM
+Hello Ayden,
+
+Thank you for your reply.
+
+Apple reviews In-App Purchase products in the sandbox and the In-App Purchase products do not need prior approval to function in review. Review the product configurations, complete any missing information, and test them in the sandbox.
+
+To offer In-App Purchases in the app, the Account Holder must also accept the Paid Apps Agreement in the Business section of App Store Connect. Confirm you have a Paid Apps Agreement in effect.
+
+If you still need assistance after completing the steps and reviewing the resources, visit the Apple Developer Forums. If you can’t find an answer from an existing thread, start a new thread with your question to get guidance from Apple engineers and other developers.
+
+We look forward to reviewing your resubmitted app.
+
+Best regards,
+
+App Review
+
+Message Attachments:
+Screenshot-0423-132108.pngDownload
+Reply to App Review
+
+Date Submitted
+Apr 20, 2026 at 5:10 PM
+Submission ID
+73a653e8-2aca-42fb-8625-4951807fa3b3
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

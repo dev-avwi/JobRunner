@@ -1,0 +1,38 @@
+The Specific Issues From Your Screenshots
+On the WHS and Templates screens — these are real issues worth fixing:
+The duplicate templates in Templates Hub are definitely a demo data problem. Tell Replit to clean the demo account data completely — no duplicates, no draft SWMS documents, no failed SMS messages.
+The WHS dark theme inconsistency — ask Replit whether the dark mode is user-toggled or hardcoded for certain sections. If it's hardcoded it needs to match the rest of the app.
+The empty form preview showing blank checkboxes — tell Replit the form preview should show actual field labels not empty boxes.
+The WHS compliance items with no action buttons — each incomplete item needs a "Fix This →" button.
+
+One Honest Thing
+The app is very close to being genuinely demo-ready. The issues you're finding are polish issues, not fundamental problems. That's a good sign.
+But I'd stop adding new features right now. Version history on quotes is nice but it's not what's going to make a tradie sign up. What will make them sign up is the core flow — job to invoice to payment — working flawlessly and the AI receptionist demo blowing their mind.
+Focus on:
+
+Clean the demo data completely
+Fix the polish issues you found in those screenshots
+Get Retell working
+Demo it to a real tradie
+
+Everything else is distraction right now. What do you want to tackle first?8:14 AMOkay now I can see the light theme version of WHS which looks much better than the dark version. But I can see two issues immediately.
+
+Issue 1 — The Edit SWMS Modal Is Doubled Up
+Look at image 2. There are literally two "Edit SWMS" headers stacked on top of each other. The modal header appears twice — once at the top with the shield icon and X button, and then again immediately below it. That's a clear UI bug that looks broken to anyone who opens it.
+Tell Replit exactly this: the Edit SWMS modal is rendering the header twice — there's a duplicate header component inside the modal. Remove one of them.
+
+Issue 2 — WHS Compliance Items Have No Actions
+The four incomplete items — PPE Checked, SWMS Current, Training Up-to-date, Emergency Plan — just sit there with empty circles and a chevron arrow. A tradie looks at this and thinks "okay so what do I do?" There's no obvious next step.
+The chevron suggests they're clickable but it's not obvious. Tell Replit each incomplete item should either open something useful when clicked, or have a small action label like "Set Up →" or "Complete →" next to the chevron so it's clear what happens.
+
+The Tab Bar Has Too Many Tabs
+Count them — Overview, Incidents, Hazard Reports, SWMS, JSA, PPE Checklists, Training, Emergency Plans. That's 8 tabs and they're already overflowing with a scroll indicator on the left side. A tradie on mobile is going to be confused by this.
+This goes back to what we discussed earlier about the WHS page design — it should be a clean compliance dashboard, not 8 separate tabs. Consider collapsing JSA into SWMS, and PPE Checklists into a simpler overview. Five tabs maximum is the rule for mobile.
+
+Overall On WHS
+The light theme version looks significantly better than the dark version you showed earlier. The 2/6 Compliant circle with the percentage is actually a nice visual. The green ticks on No Open Incidents and No Open Hazards are clean.
+The three things to fix in priority order:
+Fix the doubled Edit SWMS header — it's a bug, do it now.
+Reduce the tab count from 8 to 5 maximum.
+Add action labels to the incomplete compliance items.
+Everything else on this screen is honestly fine for launch. Don't over-engineer it.

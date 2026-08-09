@@ -1,0 +1,195 @@
+Perfect.
+
+Expo + React Native is actually ideal for making your mobile app feel properly native and advanced.
+
+Right now your app feels clean but slightly “web structured inside a mobile shell.”
+That’s very common with Expo builds.
+
+We’re going to upgrade it without redesigning everything.
+
+⸻
+
+What Makes a React Native App Feel Premium
+
+Not layout.
+
+Not colors.
+
+It’s:
+
+• Native interaction patterns
+• Gesture support
+• Bottom sheets
+• Haptics
+• Smooth transitions
+• Proper loading states
+• Contextual actions
+• State-driven UI
+
+Right now you probably have:
+
+Stack screens
+TouchableOpacity buttons
+Flat lists
+Static cards
+
+That’s functional.
+
+Premium apps use more of the native ecosystem.
+
+⸻
+
+Step 1: Install the Right Native Tools
+
+Tell Replit to check and integrate these if not already:
+	•	expo-haptics
+	•	react-native-gesture-handler
+	•	react-native-reanimated
+	•	@gorhom/bottom-sheet
+	•	expo-blur
+	•	expo-linear-gradient
+	•	react-native-skeleton-placeholder
+
+Those alone change how the app feels.
+
+⸻
+
+Step 2: Send This to Replit (Expo-Specific Upgrade Directive)
+
+Copy this:
+
+⸻
+
+“Upgrade the JobRunner Expo/React Native mobile app to feel fully native and premium without changing navigation structure.
+
+Perform a screen-by-screen audit and refactor.
+
+Goals:
+	•	Match web app feature depth where appropriate
+	•	Improve native interaction patterns
+	•	Increase perceived product maturity
+
+Implementation rules:
+	1.	Interaction Upgrades
+
+	•	Replace secondary navigation pushes with BottomSheet (@gorhom/bottom-sheet)
+	•	Add haptic feedback (expo-haptics) to primary actions
+	•	Implement swipe actions on list items (react-native-gesture-handler)
+	•	Add long-press contextual menus on cards
+	•	Add pull-to-refresh on all major FlatLists
+
+	2.	Visual Depth
+
+	•	Introduce subtle shadow elevation on cards
+	•	Add background layering (slight tinted sections)
+	•	Use expo-blur or gradient headers where appropriate
+	•	Avoid flat stacked-card repetition
+
+	3.	Loading & State
+
+	•	Replace spinners with skeleton loaders
+	•	Improve empty states with icon + explanation + primary CTA
+	•	Add optimistic UI updates where possible
+
+	4.	Power-User Layer
+
+	•	Add quick actions to Job cards (Start, Invoice, Navigate)
+	•	Add multi-select mode for lists
+	•	Add advanced filtering options (status, date, client)
+	•	Add contextual header actions
+
+	5.	Motion & Polish
+
+	•	Add smooth screen transitions
+	•	Add micro animations for metric changes
+	•	Ensure consistent spacing (16px inside cards, 24px between sections)
+
+Deliver:
+	•	A screen-by-screen upgrade summary
+	•	Then implement improvements across all mobile screens”
+
+⸻
+
+That will produce dramatically better results than “make it nicer.”
+
+⸻
+
+Step 3: Close the Web vs Mobile Gap
+
+Now ask Replit this:
+
+“Generate a feature parity comparison between web and mobile.
+List:
+	•	Missing features on mobile
+	•	Reduced versions of web features
+	•	UX shortcuts missing on mobile
+Classify each as:
+Critical / Important / Nice-to-have.”
+
+This is how serious product teams operate.
+
+⸻
+
+What You’re Actually Trying To Achieve
+
+You don’t need prettier.
+
+You need:
+
+Operational depth.
+
+Mobile should feel like:
+
+A field commander tool.
+
+Not a dashboard viewer.
+
+⸻
+
+Example of What Will Instantly Level You Up
+
+Instead of:
+
+Tap Job → New screen → Edit
+
+Do:
+
+Long press job → Bottom sheet:
+	•	Start timer
+	•	Mark complete
+	•	Add note
+	•	Create invoice
+	•	Navigate
+	•	Message client
+
+That alone makes it feel 30% more advanced.
+
+⸻
+
+Brutal Honest Assessment
+
+Your mobile app currently feels:
+
+Well built
+Structured
+Functional
+
+But not:
+
+Native-polished
+Power-user friendly
+Deep
+
+The gap is interaction, not UI.
+
+And Expo gives you everything needed to fix it.
+
+⸻
+
+If you want, next I can:
+
+• Design a specific “JobRunner Native Interaction Blueprint”
+• Or audit one specific screen and rewrite it properly for React Native
+• Or create a Mobile V2 upgrade roadmap
+
+Tell me which level you want to operate at.

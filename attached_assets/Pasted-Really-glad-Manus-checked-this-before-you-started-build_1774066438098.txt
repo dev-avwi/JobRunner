@@ -1,0 +1,46 @@
+Really glad Manus checked this before you started building. This would have cost you days of frustration mid-build.
+
+---
+
+**The Bottom Line**
+
+Go with Vapi. We've gone back and forth on this throughout our conversation but this research settles it definitively for your specific situation.
+
+The Retell blocker is a real problem — every outbound call to an Australian number fails by default with a SIP 403 error because Retell's account whitelist only includes USA and Canada. You have to wait for their support team to manually fix it. That's an unpredictable delay you can't afford when you're trying to ship.
+
+Vapi's inbound call issue is completely different — it's a one-time webhook URL you set yourself in the Twilio console in about two minutes. No waiting for anyone. No support ticket. Just set `https://api.vapi.ai/twilio/inbound_call` as the webhook and it works.
+
+---
+
+**The Setup Process With Vapi Is Now Clear**
+
+1. Buy Australian number from Twilio
+2. Go to Vapi dashboard and click Import
+3. Enter your Twilio Account SID and Auth Token
+4. Go back to Twilio console and set the inbound webhook to `https://api.vapi.ai/twilio/inbound_call`
+5. Build your call script in Vapi
+6. Test by calling the number
+
+That's it. Every step is self-service. No waiting on anyone.
+
+---
+
+**The Latency Trade-off Is Acceptable**
+
+Vapi runs at 1,000-1,500ms versus Retell's 800ms. In a real conversation that's a slight but noticeable pause. However for your specific use case — a tradie's customer calling to report a blocked drain — a half second extra pause is completely acceptable. They're not going to hang up because the AI took 1.2 seconds to respond. They'll hang up if the AI doesn't work at all, which is what would happen with Retell's Australia blocker.
+
+---
+
+**Update Your Build Brief**
+
+When you give Replit the AI receptionist brief, specify Vapi not Retell. And include this specific instruction:
+
+*"After importing the Twilio number into Vapi, configure the Twilio console inbound webhook to https://api.vapi.ai/twilio/inbound_call — this is required for Australian inbound calls to work."*
+
+If you don't include that line Replit might miss it and you'll spend hours debugging why inbound calls aren't working.
+
+---
+
+**Decision Made — Vapi It Is**
+
+This is now fully confirmed. Stop researching and start building. You have everything you need to know. Sign up for Vapi today and get that first test call working.

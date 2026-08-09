@@ -1,0 +1,72 @@
+
+HomePaymentsTerminal
+Design a custom POS integration
+Choose your country, reader, and integration type to learn how to build your custom point of sale.
+Ask about this page
+Copy for LLM
+
+View as Markdown
+Country:
+
+Australia
+Reader:
+
+Stripe Reader S700
+Architecture:
+
+Server-driven
+Reader details
+For more information about the differences between readers, see Select your reader.
+
+two views of the S700 reader
+Pricing
+
+Reader instructions
+
+Product sheet
+
+Set up your integration
+
+S700 reader
+All-in-one, Android-based smart reader that can run your custom application
+For handheld or countertop use; optional dock available for mounted or countertop use cases
+Contactless, chip, and swipe payments
+Use it in a server-driven integration
+Write your point-of-sale app for any device
+Access Stripe features using the Stripe API
+Communicate with the reader using Stripe and your server
+Limitations
+Server-driven integration doesn’t support:
+
+Mobile readers
+Collect payments while offline
+If you don’t write code, you can find a Stripe partner who supports Terminal.
+
+Architecture
+In a server-driven integration, your POS device connects to your server. Your server then makes Stripe API calls, and Stripe updates the reader and returns the result.
+
+The structure of the integration looks like this:
+
+Server-driven integration architecture
+Prototyping
+Using the simulated reader
+When you begin writing your application, you can test it with a simulated reader and simulated cards – no reader hardware required. This lets you build and verify your complete integration without needing physical hardware. The Terminal Quickstart demonstrates an app at this stage of development.
+
+Using a physical reader
+When you’re ready to work with actual hardware, you can extend your integration to a physical device. Follow these steps:
+
+Order a Stripe Reader S700 and physical test cards
+Connect to the reader over the internet
+Test your logic with physical test cards
+Organise readers and locations
+Stripe requires a Location to be associated with every Terminal reader, including a simulated reader. Before you connect a reader to a Terminal integration, you must create one or more Locations, either in the Dashboard or using the API. When you connect to your reader, specify one of those locations.
+
+Locations represent physical places where your readers operate. Stripe needs location information to process payments correctly and keep your reader up to date. If your business requires you to move your readers frequently, your locations can use addresses that represent a primary place of business.
+
+Next steps
+See the Terminal Quickstart for a full code example using the simulated reader
+Set up your integration to start writing your own code
+Order readers, accessories, and test cards when you’re ready to work with physical hardware
+Was this page helpful?
+Yes
+No

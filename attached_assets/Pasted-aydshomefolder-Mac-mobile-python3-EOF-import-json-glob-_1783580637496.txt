@@ -1,0 +1,44 @@
+aydshomefolder@Mac mobile % python3 - <<'EOF'
+import json, glob, os
+fs = sorted(glob.glob(os.path.expanduser("~/Downloads/JobRunner-*.ips")), key=os.path.getmtime)
+f = fs[-1]
+print("FILE:", f)
+raw = open(f).read().split("\n", 1)[1]
+d = json.loads(raw)
+print("EXCEPTION:", d.get("exception"))
+print("REASON:", d.get("termination", {}).get("reasons"))
+imgs = d["usedImages"]
+t = d["threads"][d["faultingThread"]]
+for fr in t["frames"][:25]:
+    img = imgs[fr["imageIndex"]]
+    print(" ", img.get("name") or "?", fr.get("symbol") or hex(fr.get("imageOffset", 0)))
+EOF
+FILE: /Users/aydshomefolder/Downloads/JobRunner-2026-07-09-165938.ips
+EXCEPTION: {'codes': '0x0000000000000000, 0x0000000000000000', 'rawCodes': [0, 0], 'type': 'EXC_CRASH', 'signal': 'SIGABRT'}
+REASON: None
+  libsystem_kernel.dylib __pthread_kill
+  libsystem_pthread.dylib pthread_kill
+  libsystem_c.dylib abort
+  StripeTerminal 0x12da930
+  StripeTerminal 0xe4064
+  StripeTerminal 0xe4b14
+  JobRunner.debug.dylib StripeTerminalReactNative.discoverReaders(params:resolver:rejecter:)
+  JobRunner.debug.dylib @objc StripeTerminalReactNative.discoverReaders(params:resolver:rejecter:)
+  CoreFoundation __invoking___
+  CoreFoundation -[NSInvocation invoke]
+  CoreFoundation -[NSInvocation invokeWithTarget:]
+  React invocation function for block in facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)
+  React facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1::operator()() const
+  React decltype(std::declval<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>()()) std::__1::__invoke[abi:de180100]<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>(facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&)
+  React void std::__1::__invoke_void_return_wrapper<void, true>::__call[abi:de180100]<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>(facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&)
+  React std::__1::__function::__alloc_func<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1>, void ()>::operator()[abi:de180100]()
+  React std::__1::__function::__func<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1>, void ()>::operator()()
+  React std::__1::__function::__value_func<void ()>::operator()[abi:de180100]() const
+  React std::__1::function<void ()>::operator()() const
+  React invocation function for block in (anonymous namespace)::ModuleNativeMethodCallInvoker::invokeAsync(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::function<void ()>&&)
+  libdispatch.dylib _dispatch_call_block_and_release
+  libdispatch.dylib _dispatch_client_callout
+  libdispatch.dylib _dispatch_lane_serial_drain
+  libdispatch.dylib _dispatch_lane_invoke
+  libdispatch.dylib _dispatch_root_queue_drain_deferred_wlh
+aydshomefolder@Mac mobile % 

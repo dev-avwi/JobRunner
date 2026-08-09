@@ -1,0 +1,1791 @@
+Last login: Mon Jun  1 20:55:21 on ttys000
+aydshomefolder@Aydens-MacBook-Pro ~ % cd ~/Documents/GitHub/JobRunner
+git pull
+remote: Enumerating objects: 289, done.
+remote: Counting objects: 100% (289/289), done.
+remote: Compressing objects: 100% (57/57), done.
+remote: Total 230 (delta 174), reused 229 (delta 173), pack-reused 0 (from 0)
+Receiving objects: 100% (230/230), 93.20 KiB | 1.61 MiB/s, done.
+Resolving deltas: 100% (174/174), completed with 55 local objects.
+From https://github.com/dev-avwi/JobRunner
+   c72e4115..5011e1e1  main       -> origin/main
+Updating 228e89bc..5011e1e1
+Fast-forward
+ .agents/agent_assets_metadata.toml               |   18 +
+ .agents/memory/MEMORY.md                         |    7 +
+ .agents/memory/auth-403-clears-session.md        |   16 +
+ .agents/memory/db-add-table-no-push.md           |   21 +
+ .agents/memory/job-start-gate-paths.md           |   10 +
+ .agents/memory/mobile-prod-stale-deploy.md       |   10 +
+ .agents/memory/onboarding-guard-blocks-jobs.md   |   18 +
+ .agents/memory/sds-manager-integration.md        |   41 ++
+ .agents/memory/storage-db-undefined-footgun.md   |   30 +
+ client/src/App.tsx                               |  185 ++++---
+ client/src/components/CelebrationOverlay.tsx     |  127 +++++
+ client/src/components/ClientDetailView.tsx       |  196 +++++++
+ client/src/components/ErrorBoundary.tsx          |   77 ++-
+ client/src/components/JobDetailView.tsx          |  181 ++----
+ client/src/components/JobDetailView.types.ts     |  129 +++++
+ client/src/components/Settings.tsx               |  559 ++-----------------
+ client/src/components/SettingsImportCards.tsx    |  633 +++++++++++++++++++++
+ client/src/hooks/use-invoices.ts                 |    9 +-
+ client/src/hooks/use-jobs.ts                     |    7 +-
+ client/src/hooks/use-quotes.ts                   |    7 +
+ client/src/index.css                             |   29 +
+ client/src/lib/celebrate.ts                      |   34 ++
+ client/src/lib/lazyWithReload.ts                 |   79 +++
+ client/src/lib/mapSafe.tsx                       |   68 +++
+ client/src/lib/queryClient.ts                    |    8 +-
+ client/src/pages/AdminDashboard.tsx              |  105 ++++
+ client/src/pages/Insights.tsx                    |   65 ++-
+ client/src/pages/JobPortal.tsx                   |   34 +-
+ client/src/pages/LandingPage.tsx                 |   12 +-
+ client/src/pages/TeamOperations.tsx              |   32 +-
+ client/src/pages/TrackArrival.tsx                |    2 +
+ docs/task-194-prod-migration-plan.md             |   46 ++
+ exports/hero-demo-app-preview-886x1920-v2.mp4    |  Bin 0 -> 4626776 bytes
+ migrations/0019_subbie_billing_builder.sql       |   15 +
+ mobile/app/_layout.tsx                           |    2 +
+ mobile/app/more/ai-receptionist.tsx              |   27 +-
+ mobile/app/more/app-settings.tsx                 |    5 +-
+ mobile/app/more/calendar.tsx                     |   13 +-
+ mobile/app/more/phone-numbers.tsx                |   88 +++
+ mobile/app/more/subbie-bill.tsx                  |  582 +++++++++++++++++++
+ mobile/app/more/subbie-earnings.tsx              |  237 ++++++++
+ mobile/src/components/BottomNav.tsx              |    6 -
+ mobile/src/components/Celebration.tsx            |  138 +++++
+ mobile/src/components/FloatingActionButton.tsx   |   37 +-
+ mobile/src/components/Header.tsx                 |   10 +-
+ mobile/src/components/SubcontractorDashboard.tsx |   36 +-
+ mobile/src/components/WorkspaceSwitcher.tsx      |  245 ++++++--
+ mobile/src/lib/celebrate.ts                      |   29 +
+ mobile/src/lib/location-tracking.ts              |   17 -
+ mobile/src/lib/store.ts                          |    4 +
+ scripts/post-merge.sh                            |   20 +
+ server/demoData.ts                               |  160 +++++-
+ server/index.ts                                  |    8 +
+ server/pdfService.ts                             |   77 ++-
+ server/routes.ts                                 | 1876 +++++++++++++++++++++++---------------------------------------
+ server/routes/custom-forms.ts                    |  102 ++++
+ server/routes/equipment.ts                       |  201 +++++++
+ server/routes/inventory.ts                       |  347 ++++++++++++
+ server/routes/jobs.ts                            |  128 ++++-
+ server/routes/middleware.ts                      |  104 +++-
+ server/routes/rebates.ts                         |  142 +++++
+ server/routes/reports.ts                         |  163 ++++++
+ server/routes/service-reminders.ts               |  151 +++++
+ server/routes/team-groups.ts                     |  203 +++++++
+ server/storage.ts                                |   85 ++-
+ shared/displayName.ts                            |  105 ++++
+ shared/schema.ts                                 |   29 +-
+ 67 files changed, 6066 insertions(+), 2121 deletions(-)
+ create mode 100644 .agents/memory/auth-403-clears-session.md
+ create mode 100644 .agents/memory/db-add-table-no-push.md
+ create mode 100644 .agents/memory/job-start-gate-paths.md
+ create mode 100644 .agents/memory/mobile-prod-stale-deploy.md
+ create mode 100644 .agents/memory/onboarding-guard-blocks-jobs.md
+ create mode 100644 .agents/memory/sds-manager-integration.md
+ create mode 100644 .agents/memory/storage-db-undefined-footgun.md
+ create mode 100644 client/src/components/CelebrationOverlay.tsx
+ create mode 100644 client/src/components/JobDetailView.types.ts
+ create mode 100644 client/src/components/SettingsImportCards.tsx
+ create mode 100644 client/src/lib/celebrate.ts
+ create mode 100644 client/src/lib/lazyWithReload.ts
+ create mode 100644 client/src/lib/mapSafe.tsx
+ create mode 100644 docs/task-194-prod-migration-plan.md
+ create mode 100644 exports/hero-demo-app-preview-886x1920-v2.mp4
+ create mode 100644 migrations/0019_subbie_billing_builder.sql
+ create mode 100644 mobile/app/more/subbie-bill.tsx
+ create mode 100644 mobile/app/more/subbie-earnings.tsx
+ create mode 100644 mobile/src/components/Celebration.tsx
+ create mode 100644 mobile/src/lib/celebrate.ts
+ create mode 100644 server/routes/custom-forms.ts
+ create mode 100644 server/routes/equipment.ts
+ create mode 100644 server/routes/inventory.ts
+ create mode 100644 server/routes/rebates.ts
+ create mode 100644 server/routes/reports.ts
+ create mode 100644 server/routes/service-reminders.ts
+ create mode 100644 server/routes/team-groups.ts
+ create mode 100644 shared/displayName.ts
+aydshomefolder@Aydens-MacBook-Pro JobRunner % cd ~/Documents/GitHub/JobRunner/mobile
+npx expo run:android
+env: load .env
+env: export EXPO_PUBLIC_DEV_API_URL
+› Building app...
+Starting a Gradle Daemon (subsequent builds will be faster)
+Configuration on demand is an incubating feature.
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  35.0.0
+  - minSdk:      26
+  - compileSdk:  35
+  - targetSdk:   35
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+> Configure project :app
+WARNING: The option setting 'android.jetifier.ignorelist=jackson-core' is experimental.
+ ℹ️  Applying gradle plugin 'expo-dev-launcher-gradle-plugin'
+ ℹ️  Applying gradle plugin 'expo-updates-gradle-plugin'
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+
+> Configure project :stripe_stripe-terminal-react-native
+RN SDK package.json version: 0.0.1-beta.29
+
+> Configure project :expo
+
+Using expo modules
+  - expo-constants (18.0.13)
+  - expo-dev-client (6.0.20)
+  - expo-dev-launcher (6.0.20)
+  - expo-dev-menu (7.0.18)
+  - expo-dev-menu-interface (2.0.0)
+  - expo-eas-client (1.0.8)
+  - expo-json-utils (0.15.0)
+  - expo-manifests (1.0.10)
+  - expo-modules-core (3.0.29)
+  - expo-structured-headers (5.0.0)
+  - expo-updates (29.0.16)
+  - expo-updates-interface (2.0.0)
+  - [📦] expo-application (7.0.8)
+  - [📦] expo-asset (12.0.12)
+  - [📦] expo-audio (1.1.1)
+  - [📦] expo-av (16.0.8)
+  - [📦] expo-background-fetch (14.0.9)
+  - [📦] expo-blur (15.0.8)
+  - [📦] expo-camera (17.0.10)
+  - [📦] expo-clipboard (8.0.8)
+  - [📦] expo-crypto (15.0.8)
+  - [📦] expo-device (8.0.10)
+  - [📦] expo-file-system (19.0.21)
+  - [📦] expo-font (14.0.11)
+  - [📦] expo-haptics (15.0.8)
+  - [📦] expo-image-loader (6.0.0)
+  - [📦] expo-image-picker (17.0.10)
+  - [📦] expo-insights (0.10.8)
+  - [📦] expo-keep-awake (15.0.8)
+  - [📦] expo-linear-gradient (15.0.8)
+  - [📦] expo-linking (8.0.11)
+  - [📦] expo-location (19.0.8)
+  - [📦] expo-notifications (0.32.16)
+  - [📦] expo-secure-store (15.0.8)
+  - [📦] expo-sharing (14.0.8)
+  - [📦] expo-sms (14.0.8)
+  - [📦] expo-splash-screen (31.0.13)
+  - [📦] expo-sqlite (16.0.10)
+  - [📦] expo-store-review (9.0.9)
+  - [📦] expo-system-ui (6.0.9)
+  - [📦] expo-task-manager (14.0.9)
+  - [📦] expo-web-browser (15.0.10)
+  - [📦] unimodules-app-loader (6.0.8)
+
+
+[Incubating] Problems report is available at: file:///Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 20s
+657 actionable tasks: 26 executed, 1 from cache, 630 up-to-date
+Starting Metro Bundler
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ █ ▀▀▄ ▀▀▄ ▄▀█▄▄███▀ █▀█ ▄▄▄▄▄ █
+█ █   █ ███ ▄▄█ ▄▄ █▀█ ▄▄▀  ▄██ █   █ █
+█ █▄▄▄█ █ ▄▄ █▄▄ █▄██▄▄ ██▄▀█▀█ █▄▄▄█ █
+█▄▄▄▄▄▄▄█ █ ▀ █ ▀ █▄█▄█ █ █▄█ █▄▄▄▄▄▄▄█
+█  ▄▀▀ ▄▀▄▄ ██  ██▀▄▀██  ▀▀▄▀ ▄  ▄██  █
+█▀▄▄█ ▄▄ ▀█ ▄█▀█▄███  █ ▄▄▄▀▄▄▀▄▀▀ ██▄█
+██▄  ▀ ▄▄█▀▀▄ ▄█▄ █  █▄█▀ ██ ▀▀ ▄█▄█▀ █
+█ ▀  █ ▄▀▄ █▀ ▄ ▀ ██▄█▄ ▄▀█  ▀▄█▀▀▀▄▀ █
+█ ▀▄ ▄▄▄▀▄ ▀██  ███  ██▄▀█▀█▀ ▀ ▄█ █▄▀█
+█▀ ▄▄▀▀▄▄ ▀ ▄█▀█▄█▄   ▄▀▄ ▄█▄ ▄▄▄▀ ▄▄▄█
+██▀█▀▀█▄█ ██▄ ▄█▄ █▄▀▄█ ▀ ▀█▀ █ ██▄▀  █
+█▀▄▄▀▀▀▄▀▀▄ ▀ ▄ ▀ ▄▀ ▄█▄ ▄▄ ▄▀▀▀█▀▀▄█▄█
+███▀▀ █▄███ ██  █▄█  █▄█ ▀██  ▄  █ █ ▀█
+█▄▄█▄▀▀▄ ▄▄▄▄█▀█▄██ ▄███▄▀▄▀  ▀███▀▄▀▄█
+█▄▄▄▄█▄▄▄▀▄▄▄ ▄█ █▄█▀██▄ ▀▀█  ▄▄▄ ▀██ █
+█ ▄▄▄▄▄ █▀ ▀▀ ▄ ▄▄▄ ▄█▄▀ ▀██▀ █▄█  ▄█▄█
+█ █   █ ██▄ ██  ▀█▀  ██ ▀██▀ ▄ ▄▄ ██ ▄█
+█ █▄▄▄█ █  ▀▄█▀█▄▄▄▄  █▄ ▀▄██  █▀▄ ██▄█
+█▄▄▄▄▄▄▄█▄█▄▄▄▄█▄██▄▄▄▄██▄█▄█▄▄▄▄▄▄██▄█
+
+› Metro waiting on exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081
+› Scan the QR code above to open the project in a development build. Learn more: https://expo.fyi/start
+
+› Using development build
+› Press s │ switch to Expo Go
+
+› Press a │ open Android
+› Press i │ open iOS simulator
+› Press w │ open web
+
+› Press j │ open debugger
+› Press r │ reload app
+› Press m │ toggle menu
+› shift+m │ more tools
+› Press o │ open project code in your editor
+
+› Press ? │ show all commands
+
+› Installing /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+› Opening exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081 on Pixel_8
+
+› Logs for your project will appear below. Press Ctrl+C to exit.
+Android Bundled 11343ms node_modules/expo-router/entry.js (4543 modules)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/api.ts -> src/lib/offline-storage.ts -> src/lib/api.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [API] base url = https://jobrunner.com.au
+ LOG  [StripeTerminal] SDK loaded successfully
+ LOG  [useStripeTerminal] SDK hook loaded successfully
+ WARN  [global-font] Could not apply Inter font mapping to Text — RN internals changed. Typography parity may regress.
+ WARN  [global-font] Could not apply Inter font mapping to TextInput — RN internals changed. Typography parity may regress.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ WARN  setLayoutAnimationEnabledExperimental is currently a no-op in the New Architecture.
+ WARN  setLayoutAnimationEnabledExperimental is currently a no-op in the New Architecture.
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [API] GET /api/auth/me
+ WARN  expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [OfflineStorage] Background sync registered
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+Android Bundled 215ms src/lib/location-tracking.ts (633 modules)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] 429 backoff 13s for GET /api/auth/me
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [Auth] Network error, using cached auth data for offline mode
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [OfflineStorage] Sync already in progress
+ LOG  [Auth] Already authenticated, skipping checkAuth
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [Auth] Already authenticated, skipping checkAuth
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [OfflineStorage] Sync already in progress
+ LOG  [Auth] Already authenticated, skipping checkAuth
+Android Bundled 251ms src/lib/api.ts (999 modules)
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/usage
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [API] GET /api/operational-alerts
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/compliance-documents
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/operational-alerts
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/compliance-documents
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] GET /api/auth/pending-invites
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] GET /api/auth/pending-invites
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/jobs?unassigned=true
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/jobs?unassigned=true
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] 429 backoff 8s for GET /api/auth/my-businesses
+ LOG  [API] GET /api/weather
+ LOG  [API] GET /api/weather
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-entries/active
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [OfflineStorage] Migration error: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading revenue data: [TypeError: invoices.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading compliance data: [TypeError: docs.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] 429 backoff 6s for GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading revenue data: [TypeError: invoices.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading compliance data: [TypeError: docs.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] 429 backoff 5s for GET /api/clients
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] 429 backoff 5s for GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching team data: [TypeError: teamRes.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching team data: [TypeError: teamRes.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] DELETE /api/time-entries/undefined
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ WARN  [OfflineStorage] getActiveLocalTimeEntry unavailable (using server state): [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 15s for GET /api/auth/pending-invites
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] 429 backoff 15s for GET /api/team/my-role
+ ERROR  [OfflineStorage] Failed to clear cached auth data: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [Error: Uncaught (in promise, id: 0) Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [OfflineStorage] Failed to clear cached auth data: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [Error: Uncaught (in promise, id: 1) Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ ERROR  [OfflineStorage] Failed to clear cached auth data: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [Error: Uncaught (in promise, id: 2) Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] 429 backoff 10s for GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/notification-preferences
+ LOG  [API] GET /api/notification-preferences
+ LOG  [API] GET /api/notification-preferences
+ LOG  [API] 429 backoff 1s for GET /api/notification-preferences
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 10s for GET /api/notification-preferences
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] 429 backoff 2s for GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 5s for GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 15s for GET /api/team/my-role
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 15s for GET /api/team/my-role
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 7s for GET /api/team/my-role
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 3s for GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] 429 backoff 11s for GET /api/team/my-role
+› Stopped server
+aydshomefolder@Aydens-MacBook-Pro mobile % cd ~/Documents/GitHub/JobRunner && git pull
+cd mobile && npx expo run:android
+Already up to date.
+env: load .env
+env: export EXPO_PUBLIC_DEV_API_URL
+› Building app...
+Configuration on demand is an incubating feature.
+
+> Configure project :app
+WARNING: The option setting 'android.jetifier.ignorelist=jackson-core' is experimental.
+ ℹ️  Applying gradle plugin 'expo-dev-launcher-gradle-plugin'
+ ℹ️  Applying gradle plugin 'expo-updates-gradle-plugin'
+
+> Configure project :
+[ExpoRootProject] Using the following versions:
+  - buildTools:  35.0.0
+  - minSdk:      26
+  - compileSdk:  35
+  - targetSdk:   35
+  - ndk:         27.1.12297006
+  - kotlin:      2.1.20
+  - ksp:         2.1.20-2.0.1
+
+> Configure project :stripe_stripe-terminal-react-native
+RN SDK package.json version: 0.0.1-beta.29
+
+> Configure project :expo
+
+Using expo modules
+  - expo-constants (18.0.13)
+  - expo-dev-client (6.0.20)
+  - expo-dev-launcher (6.0.20)
+  - expo-dev-menu (7.0.18)
+  - expo-dev-menu-interface (2.0.0)
+  - expo-eas-client (1.0.8)
+  - expo-json-utils (0.15.0)
+  - expo-manifests (1.0.10)
+  - expo-modules-core (3.0.29)
+  - expo-structured-headers (5.0.0)
+  - expo-updates (29.0.16)
+  - expo-updates-interface (2.0.0)
+  - [📦] expo-application (7.0.8)
+  - [📦] expo-asset (12.0.12)
+  - [📦] expo-audio (1.1.1)
+  - [📦] expo-av (16.0.8)
+  - [📦] expo-background-fetch (14.0.9)
+  - [📦] expo-blur (15.0.8)
+  - [📦] expo-camera (17.0.10)
+  - [📦] expo-clipboard (8.0.8)
+  - [📦] expo-crypto (15.0.8)
+  - [📦] expo-device (8.0.10)
+  - [📦] expo-file-system (19.0.21)
+  - [📦] expo-font (14.0.11)
+  - [📦] expo-haptics (15.0.8)
+  - [📦] expo-image-loader (6.0.0)
+  - [📦] expo-image-picker (17.0.10)
+  - [📦] expo-insights (0.10.8)
+  - [📦] expo-keep-awake (15.0.8)
+  - [📦] expo-linear-gradient (15.0.8)
+  - [📦] expo-linking (8.0.11)
+  - [📦] expo-location (19.0.8)
+  - [📦] expo-notifications (0.32.16)
+  - [📦] expo-secure-store (15.0.8)
+  - [📦] expo-sharing (14.0.8)
+  - [📦] expo-sms (14.0.8)
+  - [📦] expo-splash-screen (31.0.13)
+  - [📦] expo-sqlite (16.0.10)
+  - [📦] expo-store-review (9.0.9)
+  - [📦] expo-system-ui (6.0.9)
+  - [📦] expo-task-manager (14.0.9)
+  - [📦] expo-web-browser (15.0.10)
+  - [📦] unimodules-app-loader (6.0.8)
+
+
+[Incubating] Problems report is available at: file:///Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/8.14.3/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 3s
+657 actionable tasks: 18 executed, 639 up-to-date
+Starting Metro Bundler
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ █ ▀▀▄ ▀▀▄ ▄▀█▄▄███▀ █▀█ ▄▄▄▄▄ █
+█ █   █ ███ ▄▄█ ▄▄ █▀█ ▄▄▀  ▄██ █   █ █
+█ █▄▄▄█ █ ▄▄ █▄▄ █▄██▄▄ ██▄▀█▀█ █▄▄▄█ █
+█▄▄▄▄▄▄▄█ █ ▀ █ ▀ █▄█▄█ █ █▄█ █▄▄▄▄▄▄▄█
+█  ▄▀▀ ▄▀▄▄ ██  ██▀▄▀██  ▀▀▄▀ ▄  ▄██  █
+█▀▄▄█ ▄▄ ▀█ ▄█▀█▄███  █ ▄▄▄▀▄▄▀▄▀▀ ██▄█
+██▄  ▀ ▄▄█▀▀▄ ▄█▄ █  █▄█▀ ██ ▀▀ ▄█▄█▀ █
+█ ▀  █ ▄▀▄ █▀ ▄ ▀ ██▄█▄ ▄▀█  ▀▄█▀▀▀▄▀ █
+█ ▀▄ ▄▄▄▀▄ ▀██  ███  ██▄▀█▀█▀ ▀ ▄█ █▄▀█
+█▀ ▄▄▀▀▄▄ ▀ ▄█▀█▄█▄   ▄▀▄ ▄█▄ ▄▄▄▀ ▄▄▄█
+██▀█▀▀█▄█ ██▄ ▄█▄ █▄▀▄█ ▀ ▀█▀ █ ██▄▀  █
+█▀▄▄▀▀▀▄▀▀▄ ▀ ▄ ▀ ▄▀ ▄█▄ ▄▄ ▄▀▀▀█▀▀▄█▄█
+███▀▀ █▄███ ██  █▄█  █▄█ ▀██  ▄  █ █ ▀█
+█▄▄█▄▀▀▄ ▄▄▄▄█▀█▄██ ▄███▄▀▄▀  ▀███▀▄▀▄█
+█▄▄▄▄█▄▄▄▀▄▄▄ ▄█ █▄█▀██▄ ▀▀█  ▄▄▄ ▀██ █
+█ ▄▄▄▄▄ █▀ ▀▀ ▄ ▄▄▄ ▄█▄▀ ▀██▀ █▄█  ▄█▄█
+█ █   █ ██▄ ██  ▀█▀  ██ ▀██▀ ▄ ▄▄ ██ ▄█
+█ █▄▄▄█ █  ▀▄█▀█▄▄▄▄  █▄ ▀▄██  █▀▄ ██▄█
+█▄▄▄▄▄▄▄█▄█▄▄▄▄█▄██▄▄▄▄██▄█▄█▄▄▄▄▄▄██▄█
+
+› Metro waiting on exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081
+› Scan the QR code above to open the project in a development build. Learn more: https://expo.fyi/start
+
+› Using development build
+› Press s │ switch to Expo Go
+
+› Press a │ open Android
+› Press i │ open iOS simulator
+› Press w │ open web
+
+› Press j │ open debugger
+› Press r │ reload app
+› Press m │ toggle menu
+› shift+m │ more tools
+› Press o │ open project code in your editor
+
+› Press ? │ show all commands
+
+› Installing /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+› Opening exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081 on Pixel_8
+
+› Logs for your project will appear below. Press Ctrl+C to exit.
+Android Bundled 1021ms node_modules/expo-router/entry.js (4543 modules)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/api.ts -> src/lib/offline-storage.ts -> src/lib/api.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [API] base url = https://jobrunner.com.au
+ LOG  [StripeTerminal] SDK loaded successfully
+ LOG  [useStripeTerminal] SDK hook loaded successfully
+ WARN  [global-font] Could not apply Inter font mapping to Text — RN internals changed. Typography parity may regress.
+ WARN  [global-font] Could not apply Inter font mapping to TextInput — RN internals changed. Typography parity may regress.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ WARN  setLayoutAnimationEnabledExperimental is currently a no-op in the New Architecture.
+ WARN  setLayoutAnimationEnabledExperimental is currently a no-op in the New Architecture.
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [API] GET /api/auth/me
+ WARN  expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [OfflineStorage] Background sync registered
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+Android Bundled 196ms src/lib/location-tracking.ts (633 modules)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [Auth] Network error, using cached auth data for offline mode
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [OfflineStorage] Sync already in progress
+ LOG  [Auth] Already authenticated, skipping checkAuth
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [Auth] Already authenticated, skipping checkAuth
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [OfflineStorage] Sync already in progress
+ LOG  [Auth] Already authenticated, skipping checkAuth
+Android Bundled 170ms src/lib/api.ts (929 modules)
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/usage
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [API] GET /api/operational-alerts
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/compliance-documents
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/operational-alerts
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/compliance-documents
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] 429 backoff 1s for GET /api/jobs?status=pending,scheduled,in_progress
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] GET /api/auth/pending-invites
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] GET /api/auth/pending-invites
+ WARN  [IAP] Billing unavailable (expected on emulator / no Play Store): [Error: Billing is unavailable. This may be a problem with your device, or the Play Store may be down.]
+ LOG  [API] 429 backoff 1s for GET /api/notifications/unified
+ LOG  [API] 429 backoff 1s for GET /api/notifications/missed
+ LOG  [API] 429 backoff 1s for GET /api/auth/pending-invites
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/jobs?unassigned=true
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/jobs?unassigned=true
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] GET /api/weather?lat=37.4219983&lon=-122.084
+ LOG  [API] GET /api/weather?lat=37.4219983&lon=-122.084
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-entries/active
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.execAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] 429 backoff 1s for GET /api/auth/my-businesses
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ ERROR  [OfflineStorage] Migration error: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  [OfflineStorage] Initialization failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ ERROR  Failed to initialize offline storage: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading revenue data: [TypeError: invoices.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading compliance data: [TypeError: docs.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/integrations/health
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading revenue data: [TypeError: invoices.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading compliance data: [TypeError: docs.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [JobsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [DashboardStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [ClientsStore] Cache fallback failed: [Error: Call to function 'NativeDatabase.prepareAsync' has been rejected.
+→ Caused by: java.lang.NullPointerException: java.lang.NullPointerException]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching to-invoice count: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching team data: [TypeError: teamRes.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error fetching team data: [TypeError: teamRes.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] 429 backoff 15s for GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] 429 backoff 4s for GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] GET /api/operational-alerts
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] 429 backoff 1s for GET /api/notifications/unified
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  Error loading todays jobs for timer: [TypeError: response.data.filter is not a function (it is undefined)]
+

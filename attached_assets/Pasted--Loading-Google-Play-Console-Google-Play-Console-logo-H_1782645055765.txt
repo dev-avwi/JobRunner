@@ -1,0 +1,57 @@
+
+Loading Google Play Console
+Google Play Console logo
+Home
+Policy status
+Users and permissions
+Order management
+Download reports
+Developer account
+Activity log
+Settings
+Help
+Android developer verification
+Settings
+Personal
+Email notifications
+Choose which notifications you'd like to receive via email
+Developer account
+General
+App transfers
+Transfer your apps to another developer account
+Benchmarking
+Opt in to use custom peer groups for Android vitals
+Email lists
+Create and manage email lists to use when testing your app
+Game projects
+Manage Play Games services game projects owned by this developer account
+Linked services
+Link your developer account to other Google services, like Google Ads and Firebase, to do more with your data
+Third-party app stores
+Manage the availability of your app listings on third-party app stores in the United States
+Monetisation
+Alternative billing
+Use an alternative billing system for customer transactions alongside Google Play's billing system
+Billing choice
+Provide users with the choice to pay through your own billing system or external web links alongside Google Play's billing system
+External content links
+Start enrolment so that you can publish links to external content, for example, links to external app downloads or to purchase in-app items, from within your Play app in the United States
+External offers
+Publish links within your app that lead the user outside the app to promote offers
+External payments programme
+Publish links within your app that lead users in Japan to payment methods outside Google Play's billing system
+Invoices for payments outside Google Play Billing
+Manage invoices for payments that you've taken through alternative billing systems and external offers
+Licence testing
+Test your licensing and billing integrations
+Payments profile
+Manage the payments profile used to track and receive payments from sales on Google Play
+Tax rates
+Set transaction tax rates by country or region for your Play products
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

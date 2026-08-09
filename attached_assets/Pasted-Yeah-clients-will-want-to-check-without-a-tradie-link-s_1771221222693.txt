@@ -1,0 +1,83 @@
+Yeah — clients will want to check without a tradie link sometimes. The best setup is:
+
+Best UX: Let them access it from JobRunner, but via OTP (no passwords)
+
+What clients do
+
+They go to your JobRunner site/app and tap:
+
+“Client Portal (Existing clients)”
+
+Then:
+	1.	Enter phone or email
+	2.	Get verification code (OTP)
+	3.	Enter code
+	4.	See their dashboard (jobs/quotes/invoices/pay)
+
+That works even if they never got a link.
+
+⸻
+
+Important rule: Don’t show anything unless the contact exists as a Client
+
+So this only works if:
+	•	the tradie already created them as a client (or they’ve had a job/quote before)
+
+If not found:
+	•	show a clean message:
+	•	“We couldn’t find an active client profile for that contact.”
+	•	Buttons: Request a Quote / Call Dispatch
+
+This prevents random people trying numbers/emails and seeing stuff.
+
+⸻
+
+How links fit in
+
+You still keep links because they’re better UX:
+
+1) Tracking link (for a specific job)
+	•	/p/{job_token}
+	•	read-only, no login
+	•	shows live map + status
+
+2) Portal link (optional shortcut)
+	•	from tracking page: “Open Client Portal”
+	•	still OTP verifies
+	•	but it auto-fills their contact so it’s fast
+
+⸻
+
+What to do about “multiple clients share one phone” (edge case)
+
+If the same phone/email is used for multiple clients (rare but happens for businesses/admins):
+	•	after OTP, show a client selector:
+	•	“Which account are you checking?”
+	•	then proceed
+
+⸻
+
+Copy/paste instruction for Replit
+
+Implement Client Portal access from the JobRunner website/app:
+
+- Add a visible “Client Portal (Existing clients)” entry point.
+- Access uses OTP via SMS/email (no passwords).
+- After OTP verification:
+  - If contact matches 1 client profile -> open dashboard.
+  - If matches multiple -> show selector then open dashboard.
+  - If matches none -> show “Not found” + CTA (Request quote / Call dispatch).
+- Tracking links remain job-specific and read-only (/p/{job_token}).
+- Payments and invoices are ONLY visible after OTP session.
+
+
+⸻
+
+My recommendation on placement (so it stays clean)
+	•	Top nav: Client Portal
+	•	Footer: Client Portal
+	•	In SMS/email: “View details in Client Portal”
+
+This keeps it easy for clients and still secure.
+
+If you want, I can also draft the exact wording for the portal screens so it looks polished (like Uber/ServiceM8 style).

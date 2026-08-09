@@ -1,0 +1,63 @@
+ ERROR  [Location] Initialization failed: [Error: One of the `NSLocation*UsageDescription` keys must be present in Info.plist to be able to use geolocation.] 
+
+Code: construct.js
+  2 | var setPrototypeOf = require("./setPrototypeOf.js");
+  3 | function _construct(t, e, r) {
+> 4 |   if (isNativeReflectConstruct()) return Reflect.construct.apply(null, arguments);
+    |                                                                 ^
+  5 |   var o = [null];
+  6 |   o.push.apply(o, e);
+  7 |   var p = new (t.bind.apply(t, o))();
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  constructor (node_modules/expo-modules-core/src/errors/CodedError.ts:11:5)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/team-chat
+ LOG  [API] GET /api/direct-messages/conversations
+ LOG  [API] GET /api/jobs
+ ERROR  Text strings must be rendered within a <Text> component. 
+
+Code: chat-hub.tsx
+  71 | }) {
+  72 |   return (
+> 73 |     <TouchableOpacity
+     |     ^
+  74 |       onPress={onPress}
+  75 |       style={[styles.filterChip, active && styles.filterChipActive]}
+  76 |       activeOpacity={0.7}
+Call Stack
+  FilterChip (app/more/chat-hub.tsx:73:5)
+  ChatHubScreen (app/more/chat-hub.tsx:349:11)
+  MoreLayout (app/more/_layout.tsx:6:5)
+  RootLayout (app/_layout.tsx:75:9)
+ ERROR  Text strings must be rendered within a <Text> component. 
+
+Code: chat-hub.tsx
+  71 | }) {
+  72 |   return (
+> 73 |     <TouchableOpacity
+     |     ^
+  74 |       onPress={onPress}
+  75 |       style={[styles.filterChip, active && styles.filterChipActive]}
+  76 |       activeOpacity={0.7}
+Call Stack
+  FilterChip (app/more/chat-hub.tsx:73:5)
+  ChatHubScreen (app/more/chat-hub.tsx:361:11)
+  MoreLayout (app/more/_layout.tsx:6:5)
+  RootLayout (app/_layout.tsx:75:9)
+ LOG  [API] GET /api/team/members
+ LOG  [API] Error 500: {"error": "column \"content\" does not exist"}
+ WARN  "receipt" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/ai/suggestions
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ WARN  "receipt" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/clients
+ WARN  "receipt" is not a valid icon name for family "feather"

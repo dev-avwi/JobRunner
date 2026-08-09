@@ -1,0 +1,68 @@
+[Ayden Vogler] Request Access to the ProximityReader APIs; Case-ID: 18817353
+External
+Inbox
+Summarise this email
+
+Tap to Pay on iPhone Entitlements <ttpoientitlements@apple.com>
+23:25 (2 minutes ago)
+to me
+
+Hello,
+
+Thank you for your interest in Apple Wallet Entitlements
+
+We have received and are reviewing your request which has been assigned Case-ID: 18817353. We will review the details you have provided and, should we require any additional information, we will reach out.
+
+You can expect a response within 1-2 Business Days.
+
+In the meantime, please let us know if you have any questions.
+
+Thanks,
+Apple Wallet Entitlements
+Please include the line below in follow-up emails for this request
+
+Case-ID: 18817353
+
+
+------------------------------------------------------------
+Name: Ayden Vogler
+E-mail: developer@avwebinnovation.com
+Team ID: 6557LUX45F
+Team Memberships: Apple Developer Program
+Company / Organization: Ayden Vogler
+Country: Australia
+Website: https://jobrunner.com.au
+
+To offer Tap to Pay on iPhone in your app, you’ll need to first integrate with a supported payment service provider (PSP). Who is your PSP?
+Stripe
+
+In the next 12 months, how many of your apps that are currently distributed on the App Store will use this entitlement?
+1
+
+
+
+In the next 12 months, how many new apps that use this entitlement will you distribute?
+None
+
+
+
+
+
+In the first 12 months of distribution, how many total iPhones do you expect will use Tap to Pay on iPhone with your apps?
+100-999
+
+Who will you distribute these apps to?
+The public through the App Store.
+
+
+
+Describe your merchant onboarding process for your publicly distributed apps.
+Merchant onboarding is done entirely in-app. New users sign up within the JobRunner iOS app, complete a guided business setup wizard (business name, ABN, trade type, contact details), and then connect their Stripe account via Stripe Connect Express — an embedded onboarding flow within the app. Once Stripe identity verification is complete, the merchant can immediately begin accepting Tap to Pay on iPhone payments. Minimum onboarding time after submitting their application is approximately 5-10 minutes, depending on Stripe's identity verification speed.
+
+List the countries/regions where you plan to use Tap to Pay on iPhone in order of release. Specify estimated release dates where possible.
+1. [April. 2026 - Australia]
+
+
+
+
+------------------------------------------------------------

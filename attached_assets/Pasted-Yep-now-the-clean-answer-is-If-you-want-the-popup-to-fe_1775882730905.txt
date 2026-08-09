@@ -1,0 +1,51 @@
+Yep — now the clean answer is:
+
+If you want the popup to feel like the newer iOS glass family, stop trying to fake it with a plain Modal + white card + custom pill buttons. React Native’s Modal is only a basic presentation layer, and Alert gives you a real system alert but only for the standard alert layout, not your custom content-heavy popup.  ￼
+
+For a custom popup that still feels “native glass,” the closest path in Expo is to rebuild the popup family using native iOS glass material with Expo GlassEffect, which renders native iOS liquid glass using UIVisualEffectView. Expo also documents BlurView for blurred surfaces, but GlassEffect is the closer match for the newer liquid-glass material language.  ￼
+
+So the plan for Replit should be:
+	•	keep your popup logic/content
+	•	replace the current popup surface/material system
+	•	use GlassEffect for the popup card and the bottom action area
+	•	keep the card layout custom, because there is no built-in React Native “latest iOS 26 custom dialog” component you can just drop in
+	•	reserve Alert.alert() only for simple system-native alerts where the standard alert layout is acceptable.  ￼
+
+Send Replit this:
+
+Do not keep styling the popup as a plain React Native Modal with a white card and custom grey buttons.
+
+We need to rebuild the popup family using native iOS glass material, not fake it with flat custom surfaces.
+
+Use this approach:
+
+1. Keep the popup logic and content structure the same.
+2. Rebuild the popup container using Expo GlassEffect (preferred) so it uses native iOS liquid glass material.
+3. If GlassEffect cannot be used in a specific place, use BlurView only as fallback.
+4. Rebuild the bottom action area so it feels like the same glass family as the improved header controls.
+5. Do NOT redesign the text/content/logic. Only replace the popup surface/material/action system.
+
+Important:
+- React Native Modal is only the presentation wrapper, not the visual style solution.
+- Do not treat this as a white card with rounded corners.
+- Do not use flat grey pill buttons.
+- The popup should feel like a premium iOS liquid-glass dialog family.
+
+Target:
+- softer translucent glass surface
+- better depth and separation from background
+- integrated modern iOS glass action controls
+- visually consistent with the rebuilt header controls
+
+If possible:
+- implement a new reusable popup component family based on Expo GlassEffect
+- then migrate current popups to it
+
+And one more important thing: if you’re using Expo Router / Expo native navigation pieces, Expo docs note that starting from iOS 26, navigation headers adopt the system Liquid Glass effect by default in that native stack context. That helps explain why some truly native areas feel more “right” than your custom popup system.  ￼
+
+So the real rule is:
+
+Native system area = true iOS glass automatically
+Custom popup/header/button = you must rebuild it with native glass material if you want it to feel the same  ￼
+
+If you want, send me what Replit says after that and I’ll tighten the prompt again.

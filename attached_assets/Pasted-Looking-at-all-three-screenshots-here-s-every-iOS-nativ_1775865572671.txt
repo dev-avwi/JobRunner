@@ -1,0 +1,29 @@
+Looking at all three screenshots here’s every iOS native component I can identify:
+
+Image 1 & 2 — The Business Number Popup
+This is a custom React Native Modal component styled to look like a native iOS alert. The rounded card, dimmed background, bold title, body text, and grey pill buttons are all custom built — not a native Alert.alert(). It correctly adapts to light and dark mode which is why it looks different between the two screenshots.
+
+Image 3 — Job Detail Screen
+Several distinct iOS native components here:
+Back button — < Back with the chevron is the standard iOS navigation back button from React Navigation’s native stack. This is the genuine native iOS back button style.
+Top right icon buttons — The document icon and red trash icon in circular containers are custom TouchableOpacity components styled to look like iOS toolbar buttons.
+Status badge — The green “In Progress” pill is a custom component.
+Tab bar — Info, Docs, Chat, More tabs are a custom horizontal tab component, not native iOS tabs.
+Toggle switch — The blue toggle on “Enable Portal” is the genuine native iOS Switch component from React Native. That’s 100% native.
+Purple Generate Portal Link button — Custom TouchableOpacity.
+Star FAB button — Floating action button, custom component.
+
+The Main Issue
+The Back button and the Switch are genuinely native iOS. Everything else is custom. Send me the next two screenshots and I’ll tell you exactly what’s inconsistent and what needs fixing.​​​​​​​​​​​​​​​​Now I can see exactly what’s wrong. Two clear issues:
+
+Problem 1 — Back Button Missing (Image 1)
+The previous screenshot had < Back in the top left. The new version has no back button at all — just the pencil and three-dot menu floating at the top right with nothing on the left. The back button has been removed or broken somewhere in a recent change.
+
+Problem 2 — Safety Check Popup Wrong Style (Image 2)
+This is the exact old ActionSheet style you wanted eliminated. Blue text links separated by thin lines, no rounded card container, coloured destructive text for “Start Anyway” in orange/red. This needs to match the Business Number popup style — rounded card, bold title, body text, grey pill buttons.
+
+Tell Replit This:
+“Two things to fix urgently:
+
+The back button has disappeared from the job detail screen. The previous version had a < Back button in the top left corner. Restore it exactly as it was — the native iOS back chevron with Back text.
+The Safety Check Required popup is still using the old ActionSheet style with blue text links separated by lines. Replace it with the same AppModal component used for the Business Number popup — rounded card, bold title, body text, and pill buttons side by side. The three options should be: Complete Safety Docs as the primary button, Start Anyway as a secondary button, and Cancel as a third option. All grey pill buttons, no coloured text links.”

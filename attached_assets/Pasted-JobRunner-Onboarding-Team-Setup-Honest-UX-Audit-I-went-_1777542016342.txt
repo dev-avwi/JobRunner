@@ -1,0 +1,45 @@
+JobRunner Onboarding → Team Setup: Honest UX Audit
+I went through it like a brand-new tradie would. Here's the real picture, no sugarcoating.
+
+What's Genuinely Good (don't touch)
+Mobile signup has Google + Apple Sign-In — huge friction killer, you nailed this on iOS
+7-day trial with no credit card upfront — exactly what tradies expect, removes the "is this a scam" hesitation
+Onboarding wizard is clean — Role → Business Details → Trade → Team Size, step-by-step, doesn't overwhelm
+Demo data seeds automatically — new users never land on a dead empty dashboard, they immediately see jobs/quotes/invoices and "get it"
+Apple IAP is properly wired for iOS subscriptions (the thing that gets most apps rejected)
+Mobile invite codes (DEMO01-style 6-digit) instead of long URLs — perfect for SMS, way better than deep links for site workers
+Australian-specific framing — ABN, GST, "Built for Aussie Tradies" copy lands well
+What's Actually Broken Right Now (Critical / High)
+1. The "Worker Hits a Wall" problem — CRITICAL
+This is the worst one. Here's the scenario:
+
+Solo tradie signs up, plays around in trial, doesn't subscribe
+3 weeks later wins a big job, hires their first apprentice
+Sends invite from the app → invite email arrives → apprentice clicks, signs up
+Apprentice gets: "Team Plan Required — Contact your employer"
+Apprentice thinks the app is broken, ghosts
+Owner has no idea this happened
+The plan-gating works correctly server-side (we recently added that), but the worker's "wall" is silent on the owner's side. Fix: when a worker is blocked by plan limits, push-notify the owner immediately with one-tap "Upgrade now to let [Worker Name] join" — converts a churn moment into a paid upgrade.
+
+2. Web signup still asks for a Username — HIGH
+AuthForm.tsx requires email + username + password + confirm password. Tradies will type their email, get "username taken," try their name, get "taken," and rage-quit. Fix: drop the username field, auto-generate from email server-side. Mobile already gets this right.
+
+3. Accept Invite has no "Already have an account?" path — HIGH
+If an existing JobRunner user (e.g., a sub who already has their own solo account) gets invited to join a mate's team, the invite page only shows the "Register" form. They try to register → "User already exists" → dead end. Fix: prominent "Already have an account? Log in to accept" link on AcceptInvite page. This is the path you patched recently — the function works, it's just not discoverable.
+
+Medium Priority (worth doing but not on fire)
+4. Android subscription dead end
+Android users can't subscribe in-app — they get "go to the website to pay." That's compliant with Google's policies but it's a click-through-graveyard. Fix: "Email me a payment link" button that emails them a one-click Stripe Checkout URL.
+
+5. ABN validation is too aggressive
+If someone fumbles an ABN, the form blocks progress with a technical-sounding error. ABN is optional anyway. Fix: soft warning instead of hard block — let them save and fix later from settings.
+
+6. Owner can't see invite status without leaving the flow
+After an owner sends an invite, they get a toast and... nothing. No "1 invite pending — sent 5 min ago" indicator on the team page until they go look. Fix: pending invites pinned to top of team list with sent timestamp + resend button.
+
+Low Priority (nice-to-haves)
+7. Empty states are text-only
+When a tradie deletes the demo data, the empty states are just an icon + "No jobs yet." Fix: 60-second video thumbnail "See how to create your first job" — non-tech tradies need to see it done, not read about it.
+
+8. Plan-gating discovery is reactive, not proactive
+The team-management page shows "Invite Team Member" button to everyone, regardless of plan. Free/Pro users only discover the gate AFTER filling in the invite form. Fix: button shows "Invite Team Member · Team plan required" with the upgrade copy, so they understand before they invest effort.

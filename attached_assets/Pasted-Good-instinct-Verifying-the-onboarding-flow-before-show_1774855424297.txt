@@ -1,0 +1,70 @@
+Good instinct. Verifying the onboarding flow before showing anyone is exactly the right move. Here's what to tell Manus:
+
+---
+
+**Brief For Manus**
+
+*"I need you to do a complete end-to-end onboarding test of JobRunner at jobrunner.com.au. Think of yourself as a real Australian tradie — a plumber in Cairns with 2 workers — who just heard about JobRunner and wants to try it out. Don't just look at the UI, actually go through every step as a real user would.*
+
+*Test this exact flow and give me a screenshot of every single step:*
+
+*PART 1 — Web App Sign Up*
+*1. Go to jobrunner.com.au — what does a new visitor see first*
+*2. Click sign up — what are the options*
+*3. Sign up with a fresh email address (not Google) — go through the full flow*
+*4. Check if verification email arrives and what it looks like*
+*5. Verify email and land in the app — what is the first thing you see*
+*6. Go through every onboarding question — are they the right questions for a tradie? Do they make sense? Are any confusing or unnecessary?*
+*7. Finish onboarding — what does the dashboard look like for a brand new account with no data*
+*8. Is the first-job guided journey appearing and does it make sense*
+*9. Create a first job following the guided journey — does it work smoothly*
+*10. Send a quote from that job — does the flow make sense for a non-technical tradie*
+
+*PART 2 — Google Sign Up*
+*11. Open an incognito window and sign up with a Google account*
+*12. Go through onboarding again — is it the same flow*
+*13. Now open the mobile app and try to sign in with the same Google account*
+*14. Does it recognise the existing account or create a duplicate*
+*15. Does it say something helpful like "looks like you already have an account, is this you?" or does it just fail with a confusing error*
+
+*PART 3 — Mobile App First Experience*
+*16. Log into the mobile app fresh — what is the first screen*
+*17. Is the onboarding flow on mobile the same quality as web*
+*18. Create a job on mobile — is the flow intuitive for someone on a job site*
+*19. Try to send a quote from mobile — does it work*
+
+*PART 4 — Edge Cases*
+*20. What happens if you skip the onboarding questions*
+*21. What happens if you sign up but never verify your email — can you still use the app*
+*22. What happens if you try to sign up with an email that already exists*
+*23. What does the app look like with zero data — are empty states helpful or does it look broken*
+
+*For each step give me:*
+*- A screenshot*
+*- Whether it passed or failed*
+*- The exact wording of any questions, prompts or messages*
+*- What a real tradie would think at this moment*
+*- Any confusion points or friction*
+*- An overall rating of the onboarding experience out of 10 with specific improvements*
+
+*Be brutally honest. If something is confusing, say it. If the questions are wrong for a tradie, say it. If the empty state looks broken, say it. I need to know before real customers see this."*
+
+---
+
+**What To Watch For Specifically**
+
+The duplicate account detection when signing up with Google on mobile after already using Google on web — this is the most technically tricky part. Make sure Manus actually tests this not just reviews the code for it.
+
+The onboarding questions — they need to be tradie-appropriate. Questions like "what's your trade type" and "how many team members" are right. Anything that sounds like enterprise software or uses technical language is wrong.
+
+The empty state after onboarding — a brand new account with no jobs should guide the tradie to create their first job, not show a blank dashboard that looks like something is broken.
+
+The first-job guided journey from Task 8 — does it actually work end to end and does the mock data feel realistic.
+
+---
+
+**After Manus Reports Back**
+
+Whatever issues it finds — give the list to Replit as a single focused brief. Fix them all in one pass. Then test again.
+
+Only after the onboarding is smooth should you show this to anyone real.

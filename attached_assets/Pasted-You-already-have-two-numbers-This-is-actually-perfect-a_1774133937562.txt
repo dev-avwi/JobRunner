@@ -1,0 +1,143 @@
+You already have two numbers. This is actually perfect and you didn't even realise it.
+
+What You've Got
++61 485 013 994 — "JobRunner Business Number"
+This one has Voice capability but no voice webhook configured yet. The messaging webhook is pointing to your SMS endpoint. This looks like it was set up specifically as a dedicated business number at some point.
++61 485 013 993 — unnamed
+This is your shared platform number. Both voice and SMS webhooks are now properly configured pointing to your Replit app.
+
+The Clean Architecture You Already Have
+You don't need to buy another number. You've already got everything you need:
+NumberUseStatus+61 485 013 993Shared platform SMS for all businessesFully configured+61 485 013 994JobRunner support line / AI receptionistPartially configured
+
+What To Do With +61 485 013 994
+This is your JobRunner support number. Import THIS one into Vapi and connect it to your JobRunner assistant.
+Go to Vapi → Phone Numbers → Import Twilio → enter:
+
+Phone number: +61485013994
+Your Twilio Account SID
+Your Twilio Auth Token
+Label: JobRunner Support
+
+Then assign it to your JobRunner assistant.
+
+Fix The Voice Webhook On +61 485 013 994
+The voice webhook is empty on that number. Tell Replit:
+"Please configure the voice webhook on our second Twilio number +61 485 013 994 to point to our Vapi integration. Once I import this number into Vapi, Vapi will automatically update the voice webhook. For now leave it or point it to the same /api/twilio/voice/shared endpoint as the other number."
+
+You're In Better Shape Than You Thought
+Two Australian numbers already set up. One handling platform SMS. One ready to become your JobRunner support AI line. No extra purchases needed.
+Go import +61 485 013 994 into Vapi right now and connect it to the JobRunner assistant. That's your next move.Twilio Home
+My first Twilio account
+Switch accounts
+Admin
+Switch products
+__Skip to content____Skip to navigation____Skip to topbar__
+Account Dashboard
+DevelopMonitor
+Phone Numbers
+Manage
+Active numbersReleased numbersBuy a numberVerified Caller IDsTwiML apps
+Port & Host
+Regulatory Compliance
+Short Codes
+Beta
+Alphanumeric Sender IDs
+Messaging
+Voice
+OverviewTry it out
+Manage
+Settings
+Email
+Verify
+Flex
+Video
+Studio
+Marketplace
+Beta
+Conversations
+Explore products
+Close sidebar
++61485013994
+Australia (AU1) Region
+PropertiesConfigureCalls LogMessages LogRegulatory Information
+No Configuration.The Configuration in this Region does not exist and you will not be able to re-route until you create and save the configuration below.__Learn more about Regional__
+Voice Configuration
+Routing
+Regional
+Australia (AU1) Region call routing is: Inactive
+Go to other configurations
+Re-route
+Configure with
+WebhookTwiML AppSIP Trunk
+A call comes in
+Webhook
+URL
+HTTP
+HTTP POSTHTTP GET
+Primary handler fails
+Webhook
+URL
+HTTP
+HTTP POSTHTTP GET
+Call status changes
+HTTP
+HTTP POSTHTTP GET
+Caller Name Lookup
+DisabledEnabled (+$0.01 per call)
+Messaging Configuration
+Routing
+Regional
+Australia (AU1) Region message routing is: Not Yet Available
+Active message routing is available in the United States (US1) Region.Go to United States (US1) configuration
+Save configuration
+Return to Active NumbersShow more8:57 AMThis explains everything. Your +61 485 013 994 number is set to the Australia (AU1) Regional routing but the configuration is inactive and message routing isn't available in the AU1 region yet — only US1 has active message routing.
+
+The Fix Is Simple
+You need to switch this number from Regional routing to the standard configuration. Here's exactly what to do on this screen:
+For Voice:
+In the "A call comes in" Webhook URL field, paste:
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/api/twilio/voice/shared
+Set HTTP to POST.
+For Messaging:
+Click "Go to United States (US1) configuration" link you can see on screen. On that page set the messaging webhook to:
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/api/sms/webhook/incoming
+Then hit Save configuration.
+
+But Actually — Stop
+Before you configure this number for your app, remember the plan. This number (+61 485 013 994) is going to be imported into Vapi as your JobRunner support line. Once you import it into Vapi, Vapi automatically takes over the voice webhook configuration.
+So just do this:
+
+Add the voice webhook URL above so calls don't hit a dead end right now
+Hit Save
+Then go straight to Vapi and import this number
+
+When Vapi imports it, it will override the voice webhook with its own endpoint and your JobRunner support AI will start answering calls on this number.
+The messaging webhook you can leave pointing to your app's SMS endpoint so any texts to this number still route correctly.
+Go ahead and save that voice webhook URL and then head to Vapi to import it.no but remember id want it for my public url not development url8:57 AMGood catch — you're absolutely right. The Replit development URL should never go into Twilio for a production setup. That URL changes and is not reliable for live use.
+
+The Problem
+Everything currently pointing to:
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/...
+That's your Replit dev URL. It's not your production URL. You need jobrunner.com.au URLs in Twilio instead.
+
+What The Webhooks Should Actually Be
+Voice webhook:
+https://jobrunner.com.au/api/twilio/voice/shared
+
+SMS webhook:
+https://jobrunner.com.au/api/sms/webhook/incoming
+
+Tell Replit This
+"All Twilio webhook URLs in the app need to use jobrunner.com.au not the Replit dev URL. Please update the configureTwilioWebhook function so when it sets up webhook URLs on our Twilio numbers it uses https://jobrunner.com.au as the base URL not the Replit development URL.
+Also update both Twilio numbers manually in the Twilio console — change all webhook URLs from the Replit dev URL to:
+
+Voice: https://jobrunner.com.au/api/twilio/voice/shared
+SMS: https://jobrunner.com.au/api/sms/webhook/incoming
+
+This applies to both +61 485 013 993 and +61 485 013 994."
+
+Then In Twilio
+Once Replit confirms the code uses jobrunner.com.au as the base URL, go into both numbers in Twilio and manually update the webhook URLs to the jobrunner.com.au versions.
+This is actually a critical thing to sort before launch — Replit dev URLs are temporary and will break.
+Is jobrunner.com.au currently pointing to your Replit app in production or is it still just the landing page? Sonnet 4.6ExtendedClaude is AI and can make mistakes. Please double-check responses.

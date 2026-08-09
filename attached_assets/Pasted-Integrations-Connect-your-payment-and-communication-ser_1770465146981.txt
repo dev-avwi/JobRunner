@@ -1,0 +1,283 @@
+Integrations
+Connect your payment and communication services
+
+Stripe Setup Incomplete
+Your Stripe account needs additional verification. Complete the setup to start accepting payments.
+
+Complete Setup
+Payment Processing
+Accept payments via Stripe
+
+Incomplete
+Your Stripe account is connected but requires additional verification before you can receive payments.
+
+Charges not enabled. Payouts not enabled. Complete verification to activate.
+
+Complete Stripe Verification
+Email - Instant Sending
+Verified
+Quotes and invoices sent instantly via our servers
+
+Working
+When you email a quote or invoice:
+
+Review in Gmail first
+
+Opens Gmail so you can check and personalise before sending
+
+Send instantly
+
+Emails go out immediately via our servers - faster for busy tradies
+
+Instant sending active
+
+Quotes and invoices are sent instantly when you click "Send" - no extra steps. Professional emails with your business name are delivered directly to your client's inbox.
+
+What's included:
+
+One-click sending (no Gmail popup)
+Professional email templates
+PDF attachments included
+Emails sent from your business name
+About Templates
+Send Test Email
+Setup Checklist
+
+Email delivery connected
+Quote templates ready
+Invoice templates ready
+Professional PDF generation
+
+Australian Compliance Tips
+Outlook / Microsoft 365
+Send emails from your Outlook account
+
+Not Connected
+Connect your Outlook or Microsoft 365 account to send quotes and invoices directly from your business email.
+
+Professional emails: Sent from your own email address
+
+Works with: Outlook.com, Hotmail, Microsoft 365
+
+Secure: We never store your password
+
+Connect Outlook
+Xero Accounting
+Sync invoices and contacts with Xero
+
+Not Connected
+Connect your Xero account to automatically sync invoices and contacts.
+
+Two-way sync: Contacts and invoices stay in sync
+
+Automatic updates: Changes sync between platforms
+
+Australian business: Works with Xero AU
+
+Connect to Xero
+QB
+QuickBooks Online
+Sync invoices and contacts with QuickBooks
+Not Connected
+Setup Guide
+2/5 Steps
+Never manually enter invoices in QuickBooks again!
+
+Two-way sync
+Australian GST
+Auto invoices
+What syncs:
+
+Clients → Customers
+Invoices → QuickBooks
+Why Connect QuickBooks
+
+Sync invoices & contacts automatically
+
+Click 'Connect to QuickBooks'
+
+One-click OAuth connection
+
+3
+Log Into Your Intuit Account
+
+Use your existing QuickBooks credentials
+
+4
+Grant TradieTrack Access
+
+Authorize secure data sync
+
+5
+You're Connected!
+
+Start syncing invoices & contacts
+
+API credentials required: QuickBooks integration needs to be configured by your administrator. The QuickBooks API credentials (Client ID & Secret) must be added to the system first.
+
+Your data is secure. TradieTrack uses official Intuit OAuth2 integration. We never see your QuickBooks password and you can disconnect anytime.
+
+What is QuickBooks?
+What data is synced?
+How long does setup take?
+Is my data secure?
+Need help? Check QuickBooks Support or contact support.
+
+Google Calendar
+Sync scheduled jobs to your calendar
+
+Not Connected
+Setup Guide
+1/5 Steps
+Never miss a job appointment again!
+
+Auto sync jobs
+Smart reminders
+Location details
+What syncs to calendar:
+
+Job title & time
+Client details
+Job address
+Auto reminders
+Why Connect Calendar
+
+See all jobs in your Google Calendar
+
+2
+Click 'Connect Calendar'
+
+One-click Google OAuth connection
+
+3
+Sign In With Google
+
+Use your existing Google account
+
+4
+Grant Calendar Access
+
+Authorize TradieTrack to add events
+
+5
+You're Connected!
+
+Jobs sync automatically to calendar
+
+Connect Google Calendar
+Your data is secure. TradieTrack uses official Google OAuth2 integration. We never see your Google password and you can disconnect anytime.
+
+What is Google Calendar integration?
+What data is synced to the calendar?
+How long does setup take?
+How do I disconnect?
+Need help? Check Google Calendar Help or contact support.
+
+MYOB AccountRight
+Sync invoices and contacts with MYOB
+
+Not Configured
+MYOB integration is not configured. Please contact support to enable this feature.
+
+MYOB_CLIENT_ID and MYOB_CLIENT_SECRET must be configured.
+
+Communication Services
+Connect these services to automate client communications
+
+SMS Notifications
+Send SMS reminders and updates to clients
+
+Not Connected
+Connect your Twilio account to send SMS reminders and updates directly to your clients' phones.
+
+You'll need: Your Twilio Account SID, Auth Token, and Phone Number
+
+Features: Job reminders, status updates, confirmations
+
+What happens when connected:
+
+SMS reminders sent automatically
+Two-way texting with clients
+Appointment confirmations
+Connect Twilio
+Message Templates
+Create reusable email and SMS templates
+
+8 templates
+Save time by creating templates for common messages. Use merge fields to personalize each message.
+
+Email (4)
+SMS (4)
+Job Completed
+
+Job completed - {job_title}
+
+
+
+Payment Reminder
+
+Friendly reminder - Invoice #{invoice_number}
+
+
+
+Quote Follow-up
+
+Following up on your quote
+
+
+
+Test Quote Template Jl2yEy
+
+Quote #{quote_number} for {client_name}
+
+
+
+Create Email Template
+Available merge fields:
+
+{{client_name}}, {{job_address}}, {{job_date}}, {{amount}}, {{business_name}}
+
+Setup Guide
+1/4 Steps
+Connect Your Account
+
+Link your business to Stripe Express
+
+2
+Verify Your Identity
+
+Confirm your business details with Stripe
+
+3
+Add Bank Account
+
+Where you'll receive your payments
+
+4
+Start Collecting Payments
+
+You're all set to get paid online
+
+Complete Verification
+What is Stripe?
+How much does it cost?
+How long until I receive payments?
+What do I need to connect?
+How do my clients pay?
+Need help? Check our Stripe Connect FAQ or contact support.
+
+Quick Guide: Getting Paid
+1
+Connect Stripe
+
+Add your bank details so you can receive payments
+
+2
+Send Invoice
+
+Your client gets an email with a "Pay Now" button
+
+3
+Get Paid
+
+Money goes to your bank in 2-3 business days

@@ -1,0 +1,50 @@
+Replit's closing observation is the most honest thing said in this entire conversation and worth sitting with before anything else.
+The product will land between automated accessibility checker and senior UX designer. That's still genuinely valuable. But week zero tells you exactly where. Trust the results even if humbling. Price to match actual quality not aspirational quality.
+That's the most important sentence in the whole document. Keep it.
+
+Final things worth saying
+The bbox JSON structure is locked. That's the contract everything downstream depends on. Don't change it after pipeline code is written.
+Confidence score threshold of 0.7 is the right starting point. Below that Claude isn't sure enough — don't draw the annotation, don't show the finding. Precision over recall, always.
+The bookmarklet for V1.1 is worth building early. Some of your best early customers will be the ones who won't install an extension. Don't lose them.
+Document every prompt iteration. When a prompt produces better output than the previous version, save both and note what changed. Over time this becomes institutional knowledge about what makes Claude analyse UI well. That knowledge is worth more than the code.
+
+Now here are the scenarios. Real situations. Real people. This is your product in the world.
+
+Scenario 1 — The solo developer, 11pm on a Tuesday
+Jake is a developer in Melbourne. He's been building a SaaS invoicing tool for freelancers using Lovable for three weeks. He's proud of it. He shares the link with a friend who says it looks "a bit off" but can't explain what. Jake can't see it — he's been staring at it too long.
+He finds AppScout via a Reddit comment on r/SideProject. Someone posted their audit result — a short clip of an AI navigating their app with red circles drawing themselves around problems. Jake clicks through and signs up in two minutes.
+He installs the extension. Opens his app. Clicks record. Spends four minutes clicking through every screen he wants reviewed — login, dashboard, new invoice, send to client, payment received. He flags the invoice creation screen with the screenshot button because something always felt slightly wrong about it there.
+He submits. AppScout processes for 55 seconds.
+Then the video starts playing.
+He watches his own app being navigated. At the login screen a green annotation draws itself around the email field — good contrast ratio, passed. Two seconds later on the dashboard a red circle appears around his primary action button. The subtitle reads "CTA competing with nav items." A card appears in the right panel: "Primary button has identical visual weight to three secondary navigation elements. Users have no clear entry point. Fix: increase to 44px height, reduce secondary items to ghost style."
+He hadn't noticed. His friend had felt it but couldn't name it.
+The invoice screen — the one he flagged — gets three annotations. The date field has no format hint. The line item total doesn't update live when quantities change. The send button says Submit with no indication of what happens next.
+He watches for six minutes. The video ends. Score: 6.1 out of 10. Fourteen findings. Three critical.
+He downloads the PDF. Fixes seven things over the next two hours. Re-runs the scan. Score: 8.3. He posts the before-and-after in the same Reddit thread. The post gets 340 upvotes. AppScout gets 180 signups that week.
+
+Scenario 2 — The agency account manager, Monday morning
+Priya runs client accounts at a twelve-person digital agency in Sydney. Every time they ship a new web app to a client there's the same painful process — a junior designer goes through every screen manually, writes a document, the client reads it, argues about half the findings, and the whole thing takes three days.
+Her dev lead shows her AppScout. She's sceptical.
+She runs it on a client's new booking platform that's about to launch. The client is a dental chain. The app has forty screens. She submits it with a custom instruction: "Focus on how a first-time patient would navigate booking their first appointment. Pay particular attention to any steps where they might drop off or get confused."
+While it processes she makes coffee.
+Six minutes later she has a video of the entire app being navigated with annotations and a sixty-page PDF broken down by screen, severity, and category. The critical findings are things she genuinely hadn't caught — the confirmation screen doesn't tell patients what to bring to their appointment, the cancel booking flow has no confirmation step meaning accidental cancellations are common, and the new patient form asks for Medicare details before explaining why.
+She exports the annotated video. In her client meeting the next morning she plays the six-minute video on a shared screen. The client watches an AI navigate their own product and flag real problems in real time. The annotations drawing themselves onto their screens make every issue undeniable — it's not Priya's opinion, it's the AI showing them exactly where the circle is.
+The meeting that usually takes two hours of debate takes forty minutes. Every finding gets actioned. The client asks if AppScout can be run on their other two platforms.
+Priya upgrades to the Agency plan that afternoon. She bills the client for the analysis as a line item. The tool pays for itself in the first engagement.
+
+Scenario 3 — The YC founder, the night before demo day
+Marcus is four days from presenting his startup at a demo day in San Francisco. His co-founder built the product. Marcus handles everything else. He hasn't used the product as a real user in six weeks because he's been in meetings, pitching, and fundraising.
+His investor asks if the product is polished enough for the demo. Marcus says yes but isn't sure.
+At 11pm he runs AppScout on their staging environment. Custom instruction: "Treat this as if you are a non-technical first-time user who has never seen the product. Flag anything that requires prior knowledge to understand."
+The results land forty minutes later.
+Seven critical findings. The onboarding assumes the user knows what "workspace" means without defining it. The first action the app wants the user to take — create a pipeline — has no explanation of what a pipeline is. The empty state on the main dashboard has no guidance, just a grey screen that says No items yet. Three buttons across the product say Click here with no verb describing what happens.
+Marcus reads the PDF at midnight. He sends it to his co-founder with the message "we have a problem, can we fix these before Thursday."
+They fix six of the seven by Wednesday morning. The demo goes well. Two investors specifically comment that the onboarding felt unusually clear for an early-stage product.
+
+The honest picture
+Three different people. Three different use cases. Same product delivering different value to each of them.
+Jake found it organically, paid $29, fixed his own app, and brought 180 new users through a single post.
+Priya pays $249 a month and charges clients for the analysis. AppScout is a profit centre for her agency, not a cost.
+Marcus used it the night before the highest-stakes presentation of his career and it changed what he said on stage.
+The gap between those outcomes and what exists right now in the market is the entire business.
+Finish JobRunner. Run week zero. Then build this. The scenarios above are real — they're just waiting for the product to exist.

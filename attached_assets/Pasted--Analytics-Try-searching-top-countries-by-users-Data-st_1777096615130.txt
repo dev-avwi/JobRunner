@@ -1,0 +1,59 @@
+
+ Analytics
+Try searching "top countries by users"
+
+Data streams
+All
+iOS
+Android
+Web
+JobRunner
+com.jobrunner.app
+14273446513
+No data received in past 48 hours.
+JobRunner
+https://jobrunner.com.au
+13376661110
+No data received in past 48 hours.
+JobRunner (dev)
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/
+13377103569
+No data received in past 48 hours.
+©2026 Google | Analytics home | Terms of Service | Privacy policy | 
+Web stream details
+Caution
+Data collection isn't active for your website. If you installed tags more than 48 hours ago, make sure that they are set up correctly.
+Stream details
+Stream name
+JobRunner (dev)
+Stream URL
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/
+Stream ID
+13377103569
+Measurement ID
+G-894NG5HD0H
+Events
+Enhanced Measurement icon
+Enhanced measurement
+Automatically measure interactions and content on your sites in addition to standard page view measurement.
+Data from on-page elements such as links and embedded videos may be collected with relevant events. You must ensure that no personally identifiable information will be sent to Google.Learn more
+Measuring:
+Modify events
+Modify incoming events and parameters. Learn more
+Create custom events
+Create new events from existing events. Learn more
+Measurement Protocol API secrets
+Create an API secret to enable additional events to be sent into this stream through the Measurement Protocol. Learn more
+
+Redact data
+Prevent specific data from being sent to Google Analytics. Learn more
+Email activeURL query parameter keys inactive
+Google tag
+Configure tag settings
+Configure your Google tag behaviour, including cross-domain linking and internal traffic.Learn more
+Manage connected site tags
+Load tags for additional properties or products using this stream's on-page Google tag. Learn more
+0 connected
+View tag instructions
+Get instructions for how to implement your Google tag for this data stream.Learn more
+No data received

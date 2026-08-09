@@ -1,0 +1,131 @@
+Ayden Vogler
+Sign Out
+
+Tap to Pay on iPhone Entitlement Request Form
+This entitlement lets your app use the Tap to Pay on iPhone APIs to accept contactless payments.
+
+
+Developer Information
+Name
+Ayden Vogler
+Email
+developer@avwebinnovation.com
+Organization
+Ayden Vogler - 6557LUX45F
+Website
+https://jobrunner.com.au
+
+PSP
+To offer Tap to Pay on iPhone in your app, you’ll need to first integrate with a supported payment service provider (PSP). Who is your PSP?
+
+Stripe
+Additional details
+In the next 12 months, how many of your apps that are currently distributed on the App Store will use this entitlement?
+
+None
+1
+2-5
+6+
+List the URLs of all your publicly listed apps that will use this entitlement. If none of your apps are publicly listed, leave this blank.
+
+In the next 12 months, how many new apps that use this entitlement will you distribute?
+
+None
+1
+2-5
+6+
+In the first 12 months of distribution, how many total iPhones do you expect will use Tap to Pay on iPhone with your apps?
+
+0-99
+100-999
+1000-9,999
+10,000-99,999
+100,000+
+Who will you distribute these apps to?
+
+The public through the App Store.
+Specific third parties through Apple Business or unlisted app distribution on the App Store.
+Employees within my organization through Apple Business or unlisted app distribution on the App Store.
+Select all that apply.
+List the countries/regions where you plan to use Tap to Pay on iPhone in order of release. Specify estimated release dates where possible. Please use the list of countries from our regions and countries site and list the release schedule in order using this format:
+
+Example:
+
+1. [Jan. 2024 - United States]
+2. [Feb. 2024 - United Kingdom]
+
+
+Developer Footer
+
+Apple
+DeveloperContactTap to Pay on iPhone Entitlement Request Form
+Platforms
+iOS
+iPadOS
+macOS
+tvOS
+visionOS
+watchOS
+App Store
+Tools
+Swift
+SwiftUI
+Swift Playground
+TestFlight
+Xcode
+Xcode Cloud
+Icon Composer
+SF Symbols
+Technologies
+Accessibility
+Accessories
+Apple Intelligence
+Audio & Video
+Augmented Reality
+Business
+Design
+Distribution
+Education
+Games
+Health & Fitness
+In-App Purchase
+Localization
+Maps & Location
+Machine Learning & AI
+Security
+Safari & Web
+Resources
+Documentation
+Downloads
+Sample Code
+Videos
+Support
+Help Guides & Articles
+Contact Us
+Forums
+Feedback & Bug Reporting
+System Status
+Account
+Apple Developer
+App Store Connect
+Certificates, IDs, & Profiles
+Feedback Assistant
+Programs
+Apple Developer Program
+Apple Developer Enterprise Program
+App Store Small Business Program
+MFi Program
+Mini Apps Partner Program
+News Partner Program
+Video Partner Program
+Security Bounty Program
+Security Research Device Program
+Events
+Meet with Apple
+Apple Developer Centers
+App Store Awards
+Apple Design Awards
+Apple Developer Academies
+WWDC
+Read the latest news. Get the Apple Developer app.
+Copyright © 2026 Apple Inc. All rights reserved.Terms of Use Privacy Policy Agreements and Guidelines

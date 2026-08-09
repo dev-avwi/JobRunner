@@ -1,0 +1,40 @@
+~/workspace/mobile$ eas build --profile production --platform ios
+★ eas-cli@18.5.0 is now available.
+To upgrade, run:
+npm install -g eas-cli
+Proceeding with outdated version.
+
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+Environment variables loaded from the "production" build profile "env" configuration: NPM_CONFIG_LEGACY_PEER_DEPS, EXPO_PUBLIC_API_URL, SENTRY_DISABLE_AUTO_UPLOAD.
+
+✔ Incremented buildNumber from 29 to 30.
+
+
+ios.buildNumber field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+✔ Using remote iOS credentials (Expo server)
+
+If you provide your Apple account credentials we will be able to generate all necessary build credentials and fully validate them.
+This is optional, but without Apple account access you will need to provide all the missing values manually and we can only run minimal validation on them.
+✔ Do you want to log in to your Apple account? … yes
+
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … developer@avwebinnovation.com
+› The password is only used to authenticate with Apple and never stored on EAS servers
+  Learn more: https://bit.ly/2VtGWhU
+✔ Password (for developer@avwebinnovation.com): … ***********
+› Saving Apple ID password to the local Keychain
+  Learn more: https://docs.expo.dev/distribution/security#keychain
+✔ Logged in, verify your Apple account to continue
+Two-factor Authentication (6 digit code) is enabled for developer@avwebinnovation.com. Learn more: https://support.apple.com/en-us/HT204915
+
+✔ Please enter the 6 digit code you received at +61 •••• ••• •51: … 596320
+✔ Valid code
+✔ Logged in and verified
+› Team Ayden Vogler (6557LUX45F)
+› Provider Ayden Vogler (128354611)
+✖ Failed to register bundle identifier com.jobrunner.app
+Apple 403 detected - Access forbidden.
+Unable to process request - PLA Update available - You currently don't have access to this membership resource. To resolve this issue, agree to the latest Program License Agreement in your developer account.
+    Error: build command failed.
+~/workspace/mobile$ 

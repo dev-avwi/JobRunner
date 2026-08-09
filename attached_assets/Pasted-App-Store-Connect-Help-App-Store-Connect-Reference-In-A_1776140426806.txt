@@ -1,0 +1,272 @@
+App Store Connect Help
+App Store Connect / Reference / In-App Purchases and subscriptions / In-App Purchase information
+
+Expand all
+Release notes
+
+Get started
+
+Manage your team
+
+Create an app record
+
+Manage builds
+
+Manage asset packs
+
+Manage app information
+
+Manage app accessibility
+
+Test a beta version
+
+Manage submissions to App Review
+
+Manage your app's availability
+
+Manage app pricing
+
+Update your app
+
+Manage featuring nominations
+
+Monitor ratings and reviews
+
+Measure app performance
+
+Transfer an app
+
+Manage agreements
+
+Manage banking information
+
+Manage tax information
+
+Manage compliance information
+
+Getting paid
+
+Making payments to Apple
+
+Understanding the Core Technology Fee
+
+Offer promo codes
+
+Offer App Clip experiences
+
+Create custom product pages
+
+Create product page optimization tests
+
+Offer In-App Events
+
+Configure In-App Purchase settings
+
+Manage In-App Purchases
+
+Manage subscriptions
+
+Test In-App Purchases
+
+Configure Game Center
+
+Managing alternative distribution
+
+Reference
+
+Account management
+
+App information
+
+Pricing and availability
+
+App uploads
+
+TestFlight
+
+In-App Purchases and subscriptions
+
+In-App Purchase types
+
+In-App Purchase information
+
+In-App Purchase statuses
+
+In-App Purchase localization statuses
+
+Auto-renewable subscription information
+
+Auto-renewable subscription price increase thresholds
+
+Consent for subscription offer conversions
+
+Game Center
+
+Nominations
+
+In-App Events
+
+Reporting
+
+Store Services tiers
+
+
+Filter ⌘K
+Reference
+In-App Purchase information
+General Information
+The main In-App Purchase properties identify the product in App Store Connect and in the app.
+
+Property
+
+Description
+
+Apple ID
+
+A unique identifier automatically generated for your In-App Purchase when you add the In-App Purchase to your account.
+
+Reference Name
+
+A unique name you give to your In-App Purchase for internal tracking that's not visible to customers, but used in App Store Connect and Sales and Trends reports. The reference name can include any characters and can be as long as 64 characters.
+
+The reference name can be edited at any time without review.
+
+Product ID
+
+A unique ID specific to your app that you can assign to your In-App Purchases to uniquely identify them within your app.
+
+The product ID can contain letters, numbers, hyphens, periods, and underscores, and can be as long as 100 characters. You need separate identifiers for In-App Purchases in your iOS apps and your macOS apps.
+
+When your app uses StoreKit to communicate with the App Store, it uses product IDs to retrieve the configuration data you provided for each In-App Purchase. When a user wants to make a purchase, your app identifies the In-App Purchase using its product ID.
+
+The product ID isn't editable after you save the In-App Purchase.
+
+Once a product ID is assigned to an in-app puchase, it can't be reused for another In-App Purchase within the same app, even if you delete the original In-App Purchase with that ID.
+
+Review Notes
+
+Additional information about the In-App Purchase that might help Apple review the submission, such as test user accounts and passwords. Review notes should not exceed 4000 characters.
+
+Image
+
+An image is required if you want to promote your In-App Purchase on your App Store product page or set up win-back offers. This image will represent your In-App Purchase in all countries or regions where your app is available. If you’re also using offer codes for auto-renewable subscriptions, your promotional image will appear on the App Store page when customers redeem their codes on iOS 14 or later. Your promotional image must meet the following requirements:
+
+JPG or PNG.
+
+Dimensions of 1024 x 1024 pixels.
+
+72 dpi, RGB, flattened and no rounded corners.
+
+Show to all App Store users, even those who don’t have the app installed
+
+An indication that you'd like all customers to locate your promoted In-App Purchases, which is based on the user device information. By default, this is selected. If you deselect the checkbox, but haven’t implemented the SKProductStorePromotionController API, your In-App Purchase will not be visible on the App Store. Visit Promote In-App Purchases to relevant customers only. Note that a customer needs to have opened your app on their device at least once to locate your order and visibility settings inside your app.
+
+App Review Screenshot
+
+A screenshot of the In-App Purchase that clearly shows the item or service being offered. This screenshot is used for review only and isn't displayed on the App Store.
+
+Upload a screenshot that meets any of the screenshot specifications your app supports. Once you’ve uploaded a screenshot, you can update it but not remove it.
+
+Localizable information
+Add localizable In-App Purchases information used in the product display. You must include these properties for at least one language. For a list of languages, visit App Store localizations.
+
+Changes to the localized information require review. The existing text displays on the store until the new text is approved. The change has its own status separate from the overall status of the In-App Purchase. Before your changes are reviewed, you can revert the change.
+
+Property
+
+Description
+
+Display Name
+
+The name of the In-App Purchase that is displayed to customers. The display name must be at least two characters and no more than 30 characters.
+
+Description
+
+A description of the In-App Purchase that potentially displays to users. If you make your In-App Purchase available for promotion, this displays under your In-App Purchase name on the App Store. The description must be no more than 45 characters.
+
+Submit your
+feedback
+
+Ask questions on the forums
+
+Contact Apple Developer Support
+
+Developer Footer
+
+Apple
+DeveloperHelpApp Store ConnectReferenceIn-App Purchases and subscriptionsIn-App Purchase information
+Platforms
+iOS
+iPadOS
+macOS
+tvOS
+visionOS
+watchOS
+App Store
+Tools
+Swift
+SwiftUI
+Swift Playground
+TestFlight
+Xcode
+Xcode Cloud
+Icon Composer
+SF Symbols
+Technologies
+Accessibility
+Accessories
+Apple Intelligence
+Audio & Video
+Augmented Reality
+Business
+Design
+Distribution
+Education
+Games
+Health & Fitness
+In-App Purchase
+Localization
+Maps & Location
+Machine Learning & AI
+Security
+Safari & Web
+Resources
+Documentation
+Downloads
+Sample Code
+Videos
+Support
+Help Guides & Articles
+Contact Us
+Forums
+Feedback & Bug Reporting
+System Status
+Account
+Apple Developer
+App Store Connect
+Certificates, IDs, & Profiles
+Feedback Assistant
+Programs
+Apple Developer Program
+Apple Developer Enterprise Program
+App Store Small Business Program
+MFi Program
+Mini Apps Partner Program
+News Partner Program
+Video Partner Program
+Security Bounty Program
+Security Research Device Program
+Events
+Meet with Apple
+Apple Developer Centers
+App Store Awards
+Apple Design Awards
+Apple Developer Academies
+WWDC
+Read the latest news. Get the Apple Developer app.
+Light
+Dark
+Auto
+
+English
+Copyright © 2026 Apple Inc. All rights reserved.Terms of Use Privacy Policy Agreements and Guidelines

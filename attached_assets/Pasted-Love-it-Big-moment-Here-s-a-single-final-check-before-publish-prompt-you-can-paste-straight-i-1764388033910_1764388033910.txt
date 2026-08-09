@@ -1,0 +1,272 @@
+Love it. Big moment. 🎉
+Here’s a single “final check before publish” prompt you can paste straight into Replit.
+
+This tells Replit to:
+	•	Test all core features we planned
+	•	Audit UI/UX for tradies
+	•	Fix remaining layout issues
+	•	Compare patterns vs ServiceM8 / Tradify / ServiceTitan
+	•	Get the app into “ready to show real tradies” shape
+
+⸻
+
+🧠 REPLIT PROMPT — FINAL FULL TEST & PRE-PUBLISH AUDIT FOR TRADIETRACK
+
+I’m building a SaaS web app called TradieTrack for tradies (plumbers, sparkies, handymen) to manage:
+	•	jobs
+	•	clients
+	•	quotes
+	•	invoices
+	•	calendar/schedule
+	•	team & roles
+	•	job chat & team chat
+	•	files/photos
+	•	settings
+	•	billing & payments
+
+I believe I’m ready to publish, but I want a full final audit and test of everything before I show real tradies or start charging.
+
+Act as:
+	•	a QA tester
+	•	a UX designer who understands tradies
+	•	and a SaaS product reviewer
+
+Please go through the whole codebase and app and do the following:
+
+⸻
+
+1️⃣ Confirm all planned core features work end-to-end
+
+Find and test (in code and flows) these features:
+
+Onboarding & Auth
+	•	Signup & login
+	•	Basic onboarding (business name, trade, solo/team)
+	•	Owner/manager/tradie roles connected to business
+
+Business Settings
+	•	Business info (name, ABN, logo, phone, email, address)
+	•	Email verification state (if implemented)
+	•	Billing/Subscription information (plan, status)
+	•	Payments/Stripe Connect status
+	•	Team management (invite, roles)
+
+Clients & Jobs
+	•	Create/edit/delete clients
+	•	Create/edit/update jobs
+	•	Assign jobs to specific tradies
+	•	Jobs list (filters, search if present)
+	•	Job detail view:
+	•	notes
+	•	status
+	•	attached files/photos
+	•	job chat
+
+Quotes
+	•	Create quote for a client/job
+	•	Line items (description, qty, unit price, total)
+	•	GST calculation (if enabled)
+	•	Auto-generated quote number
+	•	Quote status (draft, sent, accepted, declined)
+	•	Quote preview (must look professional)
+	•	Send quote via email or share link (backend logic)
+
+Invoices
+	•	Convert quote → invoice (if implemented)
+	•	Create invoice from scratch (if allowed)
+	•	Line items and totals
+	•	GST clearly shown as included/added
+	•	Auto-generated invoice number
+	•	Invoice statuses: draft, sent, paid, overdue
+	•	Invoice preview/PDF (must look like a real business invoice)
+
+Calendar / Schedule
+	•	Jobs shown by date
+	•	Easy to see today/this week’s jobs
+	•	Clicking a job in calendar takes you to job details
+
+Chat & Communication
+	•	Job chat (messages linked to a job)
+	•	Team chat / general chat (if implemented)
+	•	Messages created/saved correctly, easy to read
+
+Files & Photos
+	•	Upload file/photo to job (if implemented)
+	•	File links or previews visible on job detail
+
+If any of these flows are incomplete, broken, or still using mock data, fix them or clearly mark them as “not ready” in code comments.
+
+⸻
+
+2️⃣ UI / UX Audit — does this feel clean & modern for a tradie?
+
+Go through all main pages and check:
+
+Layout consistency
+	•	All pages use a consistent layout container
+	•	No weird empty right-hand column or unused grid space
+	•	Spacing (padding/margins) is consistent across pages
+	•	Content is not squeezed onto the left side
+
+Pages to check:
+	•	Dashboard
+	•	Jobs list
+	•	Job detail
+	•	Clients
+	•	Quotes
+	•	Invoices
+	•	Calendar
+	•	Chat
+	•	Settings (Business, Billing, Payments, Team, More)
+
+Dashboard
+	•	Uses a 2×2 widget/card layout on desktop, 1 column on mobile
+	•	Shows useful info for tradies:
+	•	jobs today
+	•	pending quotes
+	•	unpaid invoices
+	•	maybe recent activity
+
+Readability
+	•	Text is large enough and clear
+	•	Button labels use simple language:
+	•	“Create job”
+	•	“Send quote”
+	•	“Convert to invoice”
+	•	“Mark as paid”
+	•	No jargon or developer language (no “submit entity”, etc.)
+
+Mobile
+	•	Layout works on a narrow screen
+	•	No horizontal scrolling
+	•	Navigation is easy (e.g. bottom nav bar)
+
+Any layout using an extra column or leaving unused space on the right should be refactored to match the clean layout used by the “More/Settings” page.
+
+⸻
+
+3️⃣ Legitimacy of quotes, invoices & emails
+
+Compare the feel and structure of my quotes & invoices to what top apps like ServiceM8, Tradify, ServiceTitan use (based on your training and knowledge).
+
+Check that:
+
+Quotes include:
+	•	Business logo & name
+	•	ABN
+	•	Contact info (phone, email, address)
+	•	Client name & address
+	•	Quote number
+	•	Issue date & expiry date
+	•	Clear description and line items
+	•	GST breakdown (if applicable)
+	•	Final total
+	•	Notes/terms section
+	•	Status (draft/sent/accepted)
+	•	Are visually neat and professional
+
+Invoices include:
+	•	“INVOICE” clearly visible
+	•	Invoice number
+	•	Business logo & details
+	•	Client details
+	•	Issue date & due date
+	•	Job reference (if possible)
+	•	Line items & totals
+	•	GST label
+	•	Payment instructions or “Pay now” button (if online payments enabled)
+	•	Status (draft/sent/paid/overdue)
+
+Emails (if templates are set up):
+	•	Subject lines are clear (e.g. “Your quote from Cairns Plumbing via TradieTrack”)
+	•	From: TradieTrack for {BusinessName} <no-reply@tradietrack.com>
+	•	Reply-To: tradie’s business email
+	•	Body looks professional and not spammy
+
+If anything feels “student project” instead of real tradie business software, improve it.
+
+⸻
+
+4️⃣ Production integrations sanity check
+
+Verify, in code and configuration, that:
+
+Stripe Subscriptions (tradie → me)
+	•	Uses environment variables for keys
+	•	Checkout session endpoints are correct
+	•	Webhooks update subscription_tier, subscription_status, current_period_end in business table
+	•	Billing page shows correct plan & status
+
+Stripe Connect (customer → tradie)
+	•	Connect onboarding flow exists (button → account link → Stripe Express)
+	•	stripe_connect_account_id, charges_enabled, payouts_enabled stored correctly
+	•	Invoice online payments (if implemented) use PaymentIntent with:
+	•	application_fee_amount for my platform fee
+	•	transfer_data.destination for tradie’s account
+	•	Webhooks mark invoices as paid on successful payment
+
+SendGrid
+	•	API key only used server-side
+	•	App-level emails and customer emails use separate helpers
+	•	Customer emails use From: TradieTrack for {BusinessName} with Reply-To tradie’s email
+
+Security
+	•	No secrets in frontend
+	•	RLS rules are configured so users only access their own business data
+	•	Backend checks user role and business affiliation on sensitive routes
+
+⸻
+
+5️⃣ Performance & error handling
+
+Check that:
+	•	Pages show loading states (no blank white screens while fetching)
+	•	Errors show friendly messages (e.g. “Couldn’t save job, please try again.”)
+	•	No obvious console errors in key flows
+	•	Initial page load is not extremely slow
+
+If there are wasteful or obviously heavy operations, optimize them.
+
+⸻
+
+6️⃣ Comparison vs top tradie apps (ServiceM8, Tradify, etc.)
+
+Using your knowledge of common patterns in top trade management apps:
+	•	Check if my app follows standard patterns for:
+	•	navigation
+	•	job detail layout
+	•	quote & invoice flows
+	•	calendar layout
+	•	client management
+	•	Identify any critical missing feature that would prevent a tradie from fully switching from something like ServiceM8/Tradify for a small team (1–5 users).
+
+Do NOT try to match every advanced feature; focus on MVP parity:
+	•	Reliable jobs
+	•	Clean quotes
+	•	Legit invoices
+	•	Basic schedule
+	•	Basic team roles
+	•	Simple comms
+
+If something is missing that tradies expect as basic, point it out in comments or a summary.
+
+⸻
+
+7️⃣ Final pre-publish summary
+
+After making fixes, generate a summary (in comments or console) of:
+	1.	✅ Which core flows are fully working and tested
+	2.	⚠️ Which parts are still prototype/rough and should be marked “beta”
+	3.	🛠 Any TODOs that must be done soon after launch
+	4.	🎯 Whether the app feels:
+	•	Ready for 3–5 real tradie beta testers
+	•	Ready for a wider “public beta”
+	•	Or needs more core work before anyone uses it
+
+Use this entire prompt as the final QA + UX + production readiness spec and bring TradieTrack to a clean, modern, tradie-friendly state suitable for a real launch.
+
+⸻
+
+You can paste that straight into Replit’s AI.
+
+If you want, after Replit’s done and you tweak a bit more, you can give me your latest URL + a quick written description of how each main page looks and I’ll help you tune messaging, layout, and “tradie trust” even more before you show it to anyone in Cairns.

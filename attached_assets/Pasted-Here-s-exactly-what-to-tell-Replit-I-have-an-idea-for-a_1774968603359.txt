@@ -1,0 +1,36 @@
+Here's exactly what to tell Replit:
+
+"I have an idea for a new product I want to build after JobRunner launches. I want to know if this is technically feasible in our stack and what you think of it.
+The idea: An AI-powered app quality analyser. Developers and agencies submit their web app URL or upload their mobile APK/IPA. The system automatically navigates through every screen of their app, captures screenshots of every state, then uses Claude's vision API to analyse each screen like a senior UX designer and QA engineer would. It returns a detailed report showing every screen with specific issues flagged — design inconsistencies, padding problems, confusing copy, broken flows, empty states that look unfinished, accessibility issues — all categorised by severity with specific fix recommendations.
+The tech stack I'm thinking:
+- Playwright to automatically navigate web apps and capture screenshots
+- Appium or BrowserStack for mobile app navigation
+- Claude vision API to analyse each screenshot and return structured JSON feedback
+- A clean dashboard showing every screen with issues annotated
+- Re-run functionality so developers can fix issues and check their score improved
+Questions for you:
+1. Is this technically feasible to build?
+2. Can our current stack handle it or do we need different infrastructure?
+3. How long would an MVP take to build — web apps only first?
+4. What are the hardest technical problems to solve?
+5. What would you build differently or better than what I've described?
+6. Is there anything legally or technically that would stop this from working?
+Be honest — is this a good idea worth building?"
+
+What I Actually Think
+Genuinely yes this can be big. Here's my honest assessment:
+The problem is real — every developer manually tests their own app and misses obvious things. I just watched Replit find 7 issues in your mobile app that you hadn't caught. Multiply that across thousands of developers and agencies.
+The market is large — every app developer, every design agency, every startup pre-launch, every company doing app updates. That's millions of potential users globally.
+The timing is right — Claude's vision API is good enough now to give genuinely useful design feedback. Six months ago this wasn't possible at the quality level needed.
+The competition is weak — Apptest.ai finds crashes. Nothing finds design and UX issues automatically. You'd be creating a new category.
+The business model is simple — free tier for one app, paid plans for teams and agencies. Agencies especially would pay $200-500/month easily if it saves them hours of manual QA.
+The founder story is perfect — you built this because you needed it for JobRunner and kept catching UI issues too late. Every developer will relate to that.
+The honest risks:
+Playwright navigating complex apps reliably is harder than it sounds — apps with unusual auth flows, complex state, or heavy JavaScript can be tricky to navigate automatically.
+Claude's vision feedback quality needs careful prompt engineering — bad prompts give generic useless feedback. The quality of the product lives or dies on how well you craft the analysis prompts.
+Mobile is significantly harder than web — running Appium at scale requires proper device farm infrastructure which is expensive to set up.
+My recommendation:
+Build the web-only MVP first. Playwright plus Claude plus a clean dashboard. Prove people will pay for it. Then add mobile.
+You could launch a working web version in a month of focused development after JobRunner ships. Price it at $29/month for indie developers and $99/month for agencies. Get 50 paying customers. Then raise money or expand.
+This is genuinely a fundable idea if you execute it well.
+Send that brief to Replit and see what they say.

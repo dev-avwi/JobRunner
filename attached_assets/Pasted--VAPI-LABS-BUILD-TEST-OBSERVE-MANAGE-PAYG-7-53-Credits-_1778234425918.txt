@@ -1,0 +1,212 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+7.53 Credits
+Assistants
+3
+
+
+Create Assistant
+
+Search Assistants
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+Mike's Plumbing Services AI Receptionist
+
+d3d89b1a-baea-43cd-80ce-2b224d3b8311
+
+
+Talk
+
+
+Publish
+
+
+
+
+
+
+
+You're using Vapi's new agent builder. You can switch back to the classic layout anytime from themenu in the header.
+
+Unsaved changes — publish to apply.
+
+Calls
+
+Chat
+
+Sessions
+
+Webhooks
+Time Range
+
+
+Time Range
+Call ID
+
+Call ID
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...4476
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 8, 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+-	
+-
+Web	
+Customer
+May 8, 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+Transcript and Chat
+
+Assistant
+Good day. Thanks for calling Mark's Plumbing Services. How can I help you today?
+Customer ended the call
+07:53 PM
+05/08/2026 19:55 inboundPhoneCall
+Assistant
+Cost: $0.16
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 1m 29s
+019e0703-837...
+View detailed logs for this call session
+Recording
+01:03
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+0 / 17 selected
+
+Assistant
+Good day. Thanks for calling Mike's Plumbing Services. How can I help you today?
+7:55:32 PM(+00:00.82)
+User
+Hello. So I've got a leaking tap.
+
+7:55:38 PM(+00:07.20)
+
+Assistant
+Good day. Sorry to hear about your leaking tap. May I get your name and phone number to start with also? Could you please tell me the suburb or address where
+7:55:43 PM(+00:11.89)
+User
+Aiden. a y d e n
+
+7:55:54 PM(+00:22.33)
+
+Assistant
+Thanks, Ida.
+7:55:59 PM(+00:27.40)
+User
+Vogler, v o g l e r.
+
+7:55:59 PM(+00:27.40)
+
+Assistant
+Thanks for that, Iden.
+7:56:03 PM(+00:31.72)
+User
+Mobile. And o four five eight three zero zero zero five one.
+
+7:56:04 PM(+00:32.56)
+
+Assistant
+Got it, Aden. Just to confirm, your mobile number is zero four five eight three hundred o five one. Now could you please let me know how urgent the tap repair is? do you have any specific requirements for the job?
+7:56:13 PM(+00:41.84)
+User
+It's really urgent, but there's no requirements.
+
+7:56:28 PM(+00:57.14)
+
+Capture Lead
+Completed successfully
+07:56 PM
+7:56:34 PM(+01:03.00)
+
+Assistant
+Hold on a sec.
+7:56:35 PM(+01:03.90)
+
+Assistant
+I've noted that down, Aden. Someone from the team will follow-up shortly to assist you with the leaking tap. Is there anything else I can help you with today?
+7:56:38 PM(+01:06.46)
+User
+Yeah. So thank you.
+
+7:56:49 PM(+01:17.42)
+
+Assistant
+You're very welcome, Aden. If you need anything else, don't hesitate to reach out. Have a great day.
+7:56:51 PM(+01:19.64)
+User
+Thank you.
+
+7:56:59 PM(+01:27.96)
+
+Assistant
+No.
+7:57:01 PM(+01:29.58)
+Customer ended the call
+07:57 PM
+Close

@@ -1,0 +1,158 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Submissions
+
+25cef03e
+
+iOS App Store submission
+Status
+
+Created by
+
+Created at
+
+Failed
+
+avwi account icon
+avwi
+
+May 8, 2026 11:30 PM
+Submitted build
+View build
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.2
+
+
+production
+
+ 1.1.2 (73)
+
+470f8f5
+
+07fb488
+
+avwi account icon
+avwi
+
+Created by a workflow job
+Submit app to TestFlight job / EAS Submit — iOS workflow
+
+View workflow run
+
+Logs
+
+Spin up build environment
+
+6ms
+
+
+Download build
+
+599ms
+
+
+Upload to App Store Connect
+
+40s
+
+
+Reading App information for Apple app identifier: 6760283858...
+Uploading Build to "JobRunner" (com.jobrunner.app)...
+Creating Build Upload...
+Build Upload initialized (ID: 628ce500-c14c-4023-b8df-53b388b9fb10). Preparing IPA upload...
+IPA Upload initialized (ID: 4576ed6b-9cb4-45f1-b15a-993a3c2232f1). Uploading IPA...
+  Uploading chunk 1/7 (offset: 5242880, length: 5242880)...
+  Uploading chunk 2/7 (offset: 0, length: 5242880)...
+  Uploading chunk 3/7 (offset: 10485760, length: 5242880)...
+  Uploading chunk 4/7 (offset: 15728640, length: 5242880)...
+  Uploading chunk 5/7 (offset: 20971520, length: 5242880)...
+  Uploading chunk 6/7 (offset: 26214400, length: 5242880)...
+  Uploading chunk 7/7 (offset: 31457280, length: 5230273)...
+  Chunk 6/7 uploaded.
+  Chunk 1/7 uploaded.
+  Chunk 5/7 uploaded.
+  Chunk 2/7 uploaded.
+  Chunk 3/7 uploaded.
+  Chunk 4/7 uploaded.
+  Chunk 7/7 uploaded.
+Committing upload...
+Checking upload file status...
+File upload (ID: 4576ed6b-9cb4-45f1-b15a-993a3c2232f1) completed!
+See your build in App Store Connect: https://appstoreconnect.apple.com/apps/6760283858/testflight/ios/628ce500-c14c-4023-b8df-53b388b9fb10
+Checking build upload status...
+Waiting for build upload to complete... (status = PROCESSING)
+Waiting for build upload to complete... (status = PROCESSING)
+Waiting for build upload to complete... (status = PROCESSING)
+Waiting for build upload to complete... (status = PROCESSING)
+
+Errors:
+- Invalid Pre-Release Train. The train version '1.1.2' is closed for new build submissions (90186)
+- This bundle is invalid. The value for key CFBundleShortVersionString [1.1.2] in the Info.plist file must contain a higher version than that of the previously approved version [1.1.2]. Please find more information about CFBundleShortVersionString at https://developer.apple.com/documentation/bundleresources/information_property_list/cfbundleshortversionstring (90062)
+Build upload was rejected by App Store Connect because the 1.1.2 app version is not accepted for new build submissions. This usually means the version train is closed or lower than a previously approved version. Bump the iOS app version (CFBundleShortVersionString, e.g. expo.version) to a higher version, then rebuild and submit again.
+
+Complete job
+
+162ms
+
+

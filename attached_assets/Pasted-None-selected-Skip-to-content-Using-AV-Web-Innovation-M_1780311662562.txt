@@ -1,0 +1,66 @@
+None selected
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+1 of 1,908
+[JobRunner ERROR] frontend: Client error: Failed to fetch dynamically imported module: https://jobrunner.com
+External
+Inbox
+
+JobRunner <noreply@jobrunner.com.au>
+16:53 (4 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Team-89hdBSLg.js
+
+User: 2fa70120-ed66-4a1c-8354-b3b0b9c6c99b
+
+Error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Team-89hdBSLg.js
+
+Error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Team-89hdBSLg.js
+    at file:///home/runner/workspace/dist/index.js:89396:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20977:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-06-01T06:53:13.845Z
+
+Alerts are throttled to one every 5 minutes.
+
+
+
+JobRunner <noreply@jobrunner.com.au>
+20:57 (3 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Insights-DUMlbTMY.js
+
+User: 2fa70120-ed66-4a1c-8354-b3b0b9c6c99b
+
+Error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Insights-DUMlbTMY.js
+
+Error: Failed to fetch dynamically imported module: https://jobrunner.com.au/assets/Insights-DUMlbTMY.js
+    at file:///home/runner/workspace/dist/index.js:89396:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20977:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-06-01T10:57:48.656Z
+

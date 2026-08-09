@@ -1,0 +1,257 @@
+2️⃣ Replit – Starter Blueprint (React version)
+
+I’ll assume you’re using something like React + Vite (or Create React App). You can adapt this easily.
+
+a) Suggested file structure
+
+In Replit, aim for something like:
+
+src/
+  main.tsx
+  App.tsx
+  routes/
+    Dashboard.tsx
+    Jobs.tsx
+    JobDetail.tsx
+    Clients.tsx
+    ClientDetail.tsx
+    Quotes.tsx
+    Invoices.tsx
+    Calendar.tsx
+    Settings.tsx
+  components/
+    Layout/
+      AppLayout.tsx
+      Sidebar.tsx
+      TopBar.tsx
+    UI/
+      Button.tsx
+      Card.tsx
+      Badge.tsx
+      Input.tsx
+      Select.tsx
+      StatCard.tsx
+  data/
+    mockJobs.ts
+    mockClients.ts
+    mockInvoices.ts
+    mockQuotes.ts
+  styles/
+    theme.ts
+    global.css
+
+b) Example theme.ts (colours + spacing)
+// src/styles/theme.ts
+export const theme = {
+  colors: {
+    primary: "#007AFF",
+    primaryDark: "#0051B3",
+    accent: "#00C853",
+    warning: "#FFB300",
+    error: "#E53935",
+    bg: "#F5F7FA",
+    cardBg: "#FFFFFF",
+    text: "#1F2933",
+    textMuted: "#6B7280",
+    border: "#E5E7EB",
+  },
+  radius: {
+    card: "12px",
+    button: "10px",
+  },
+  shadow: {
+    card: "0 4px 12px rgba(15, 23, 42, 0.06)",
+  },
+};
+
+c) Example layout skeleton
+// src/components/Layout/AppLayout.tsx
+import React from "react";
+import { Sidebar } from "./Sidebar";
+import "./AppLayout.css";
+
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="app-root">
+      <Sidebar />
+      <main className="app-main">
+        {children}
+      </main>
+    </div>
+  );
+};
+
+// src/components/Layout/Sidebar.tsx
+import React from "react";
+import { NavLink } from "react-router-dom";
+
+export const Sidebar: React.FC = () => {
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-logo">
+        <span className="logo-dot" /> TradieTrack
+      </div>
+      <nav className="sidebar-nav">
+        <NavLink to="/dashboard">Dashboard</NavLink>
+        <NavLink to="/jobs">Jobs</NavLink>
+        <NavLink to="/clients">Clients</NavLink>
+        <NavLink to="/quotes">Quotes</NavLink>
+        <NavLink to="/invoices">Invoices</NavLink>
+        <NavLink to="/calendar">Calendar</NavLink>
+        <NavLink to="/settings">Settings</NavLink>
+      </nav>
+    </aside>
+  );
+};
+
+d) Example Jobs page with mock data
+// src/data/mockJobs.ts
+export type JobStatus = "draft" | "scheduled" | "in_progress" | "completed" | "invoiced" | "paid";
+
+export interface Job {
+  id: string;
+  title: string;
+  clientName: string;
+  status: JobStatus;
+  scheduledAt: string;
+  address: string;
+}
+
+export const mockJobs: Job[] = [
+  {
+    id: "1",
+    title: "Leaking shower repair",
+    clientName: "Sarah Smith",
+    status: "scheduled",
+    scheduledAt: "2025-11-15T09:00:00",
+    address: "12 Reef St, Smithfield QLD",
+  },
+  {
+    id: "2",
+    title: "Switchboard upgrade",
+    clientName: "Cairns Coffee Co.",
+    status: "in_progress",
+    scheduledAt: "2025-11-13T13:30:00",
+    address: "58 Esplanade, Cairns QLD",
+  },
+];
+
+// src/routes/Jobs.tsx
+import React from "react";
+import { mockJobs } from "../data/mockJobs";
+
+const statusColors: Record<string, string> = {
+  draft: "#6B7280",
+  scheduled: "#007AFF",
+  in_progress: "#FFB300",
+  completed: "#00C853",
+  invoiced: "#007AFF",
+  paid: "#00C853",
+};
+
+export const Jobs: React.FC = () => {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h1>Jobs</h1>
+          <p>View and manage all your jobs.</p>
+        </div>
+        <button className="primary-btn">+ New Job</button>
+      </div>
+
+      <div className="card">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Job</th>
+              <th>Client</th>
+              <th>Status</th>
+              <th>Scheduled</th>
+              <th>Address</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mockJobs.map((job) => (
+              <tr key={job.id}>
+                <td>{job.title}</td>
+                <td>{job.clientName}</td>
+                <td>
+                  <span
+                    className="status-pill"
+                    style={{ backgroundColor: statusColors[job.status] }}
+                  >
+                    {job.status.replace("_", " ")}
+                  </span>
+                </td>
+                <td>{new Date(job.scheduledAt).toLocaleString()}</td>
+                <td>{job.address}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+
+Once you have routing set up (React Router), you just plug this into /jobs. You can do similar for Dashboard, Clients, etc.
+
+3️⃣ “Meets All Targets” Checklist (for you to tick off)
+
+Use this as your QA sheet:
+
+✅ UI / UX
+
+ App works on mobile + desktop
+
+ Sidebar on desktop, bottom nav on mobile
+
+ Cards, rounded corners, shadows match theme
+
+ Colours: primary blue + green accent + light background
+
+ Fonts consistent, no random font changes
+
+ Empty states show helpful messages
+
+✅ Core Features
+
+ Jobs list with statuses & filtering
+
+ Job detail page with at least: overview, photos section, notes, messages placeholder
+
+ Clients list + client detail page
+
+ Quotes list + quote detail
+
+ Invoices list + invoice detail
+
+ Calendar view of jobs (even basic)
+
+ Settings page with business info card
+
+✅ AI Hooks (placeholders for now)
+
+ “🤖 Rewrite with AI” next to job description
+
+ “🤖 Draft message” in job messages area
+
+ “🤖 Suggest quote items” on quote page
+
+ “🤖 Summarise this client” on client detail
+
+ Dashboard AI box with 2–3 fixed suggestions
+
+✅ Modern App Essentials
+
+ Login page (even if fake for now, UI should be there)
+
+ Consistent navigation across pages
+
+ Responsive: cards wrap nicely on small screens
+
+ Clear error/success messages (toasts or banners)
+
+ Mock data wired in for jobs, clients, quotes, invoices

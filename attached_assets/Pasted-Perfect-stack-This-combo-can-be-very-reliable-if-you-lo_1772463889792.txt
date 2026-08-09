@@ -1,0 +1,229 @@
+Perfect stack. This combo can be *very* reliable — **if you lock down 6 failure zones**: auth/session, database rules, offline/sync, payments/webhooks, messaging deliverability, and observability.
+
+Here’s a **bulletproofing plan specifically for Expo/React Native + Supabase + Stripe + SendGrid + Twilio**.
+
+---
+
+## The 6 “must not fail” systems
+
+### 1) Auth + sessions (Expo + Supabase)
+
+**Goal:** nobody gets randomly logged out, and tokens refresh cleanly.
+
+**Do this:**
+
+* Use `@supabase/supabase-js` auth with **secure token storage** (Expo SecureStore).
+* Add a “session restore” boot step:
+
+  * show splash → load session → refresh token → then render app
+* Handle these cases cleanly:
+
+  * token expired → refresh
+  * refresh fails → hard logout + explain
+  * user is offline → allow cached read-only mode (if you support offline)
+
+**Bulletproof UI rule:** show clear states:
+
+* “Offline mode”
+* “Syncing…”
+* “Last saved 12s ago”
+
+---
+
+### 2) Supabase database safety (RLS, constraints, backups)
+
+This is the biggest “real business trust” layer.
+
+**You want:**
+
+* **RLS ON for every table** with policies that match your org model.
+* Strong DB constraints so bad data literally can’t be inserted.
+
+**Minimum table protections:**
+
+* `NOT NULL` on required fields (client_id, job_id, totals, etc.)
+* Foreign keys (`jobs.client_id → clients.id`)
+* Unique constraints where needed (invoice number per business, etc.)
+* “Soft delete” (deleted_at) for important entities (clients/jobs/invoices)
+
+**Multi-tenant pattern (recommended):**
+
+* every record includes `business_id`
+* policies enforce: user must belong to business OR be assigned as subbie
+
+**Backups:**
+
+* Turn on **point-in-time recovery** if available on your Supabase plan (or at least daily backups)
+* Practice a restore once (seriously)
+
+---
+
+### 3) Offline + sync (Expo RN reality check)
+
+Offline is where apps die if done wrong.
+
+**Bulletproof approach:**
+
+* Local queue: store all writes locally first (SQLite via `expo-sqlite`).
+* Each write becomes an “operation”:
+
+  * `op_id` (UUID)
+  * `type` (create_job / add_note / upload_photo / mark_complete)
+  * `payload`
+  * `status` (pending/sent/failed)
+  * `retry_count`, `last_error`
+* When online, sync in order and retry with backoff.
+
+**Critical rule:** make every write **idempotent** (safe to repeat)
+
+* Use client-generated IDs for jobs/invoices/photos.
+* Server “upserts” instead of blind inserts.
+* Never create duplicate invoices because a request retried.
+
+---
+
+### 4) Payments (Stripe) – make it impossible to double-charge
+
+Stripe itself is safe — your integration is what creates risk.
+
+**Non-negotiables:**
+
+* Use **Stripe idempotency keys** for any charge/payment intent creation.
+* All money state comes from **webhooks**, not just “client says paid”.
+
+**Flow to use:**
+
+* App requests “create payment” (server/Edge Function)
+* Server creates PaymentIntent with idempotency key
+* Stripe sends webhook → your server updates invoice/payment status
+* App simply displays status from DB
+
+**Also:**
+
+* Protect webhook endpoint:
+
+  * verify Stripe signature
+  * log all webhook events
+  * store `stripe_event_id` in DB and ignore duplicates (idempotent webhook handler)
+
+---
+
+### 5) SendGrid + Twilio deliverability (quotes/invoices/messages)
+
+“Bulletproof” means: if delivery fails, user knows and can retry without duplicates.
+
+**Do this:**
+
+* Implement delivery status table:
+
+  * `message_id`, `channel` (email/sms), `to`, `template`, `status`, `provider_id`, `error`
+* When sending:
+
+  * create DB record first (status = queued)
+  * attempt send
+  * update status (sent/failed)
+* Provide a “Resend” button that:
+
+  * creates a new message record
+  * DOES NOT create a new invoice
+
+**Deliverability checklist:**
+
+* Domain authentication (SPF + DKIM) for SendGrid
+* A branded sender like `invoices@jobrunner.com.au`
+* Templates that don’t look spammy (avoid link-heavy, too many images)
+
+Twilio:
+
+* Use a consistent AU number
+* Keep message bodies short + clear
+* Include business name + invoice ref
+
+---
+
+### 6) Observability (so you can fix issues fast)
+
+Most “bulletproof” apps are just apps with **great error reporting**.
+
+**Add immediately:**
+
+* **Sentry** (React Native + backend/Edge Functions)
+* Log:
+
+  * sync failures
+  * payment webhook failures
+  * pdf generation failures
+  * upload failures
+
+**Also add:**
+
+* “Report a problem” button that attaches:
+
+  * user id
+  * business id
+  * last 50 logs (non-sensitive)
+  * device info
+
+---
+
+## Hardening checklist by feature area
+
+### Files/photos (Supabase Storage)
+
+* Use **signed URLs** for private files
+* Storage policies must match business ownership
+* Upload with retry + progress
+* Save metadata in DB (file_id, job_id, size, hash if possible)
+* If upload fails: keep op in queue, don’t “lose” the photo
+
+### PDF generation (quotes/invoices/proof pack)
+
+* Generate PDFs server-side (Edge Function) if possible for consistency
+* Cache generated PDFs
+* Save `pdf_url` + generation timestamp
+* If generation fails: show retry + keep draft invoice intact
+
+### Rate limiting + abuse controls
+
+* Protect:
+
+  * signup/login attempts
+  * message sending (email/sms)
+  * AI features (if any)
+* Put basic throttles in Edge Functions.
+
+---
+
+## Release strategy that prevents disasters
+
+* Use **EAS Update** + staged rollouts (small % first)
+* Feature flags for risky stuff (offline sync, new invoice logic)
+* Keep a rollback plan (previous update ready)
+
+---
+
+## The “Bulletproof Week” plan (do this in order)
+
+**Day 1:** RLS + constraints + soft delete + backups
+**Day 2:** Stripe webhooks + idempotency + payment status model
+**Day 3:** SendGrid/Twilio message table + resend logic + domain auth
+**Day 4:** Offline op-queue + idempotent upserts
+**Day 5:** Storage policies + uploads reliability + signed URLs
+**Day 6:** Sentry + logging + “report issue” + crash fixes
+**Day 7:** 5-tester pilot setup + daily check-ins + bug triage loop
+
+---
+
+## I can make this extremely concrete if you tell me 3 things
+
+Reply with just these (dot points is fine):
+
+1. **Do you support offline right now?** (yes/no/partial)
+2. **Is it multi-business / RBAC already?** (yes/no/partial)
+3. **Where do you run backend logic?** (Supabase Edge Functions? server? none yet)
+
+Then I’ll give you:
+
+* the exact **RLS policy model** you should use,
+* the exact **Stripe webhook table design**,
+* and the exact **offline queue schema + sync rules** to prevent duplicates.

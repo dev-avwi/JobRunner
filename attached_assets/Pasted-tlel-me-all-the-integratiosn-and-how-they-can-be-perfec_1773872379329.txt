@@ -1,0 +1,108 @@
+tlel me all the integratiosn and how they can be perfect, as remember, its the tradies accounts integrating into the app, not my account. so how will it work, ive kind of got it setup but just want checking that your saying to tell replit. so stripe, google calendar, xero, myob, quickbooks, zapier, and outlook?
+
+8:17 AM
+Good thinking to go through all of these properly. And you're right — the key distinction is that each tradie's own accounts connect to their JobRunner workspace, not your accounts. Here's exactly how each one should work:
+
+Stripe
+
+This one is different from the others. Stripe has two separate things happening:
+
+Your Stripe account — handles JobRunner subscription billing. Tradies pay you through this. Already built.
+
+Each tradie's Stripe account — handles them getting paid by their own customers for jobs and invoices. This is a separate Stripe Connect integration where each business connects their own Stripe account to JobRunner so their customers can pay invoices online.
+
+How it should work: Inside JobRunner settings, tradie clicks "Connect Stripe" → goes through Stripe Connect OAuth flow → their account is linked → their invoices now have a "Pay Online" button that deposits money directly into their bank account.
+
+What to tell Replit: Verify that Stripe Connect is properly implemented for individual business payment collection, separate from the platform subscription billing. Test it with a real Stripe test account end to end.
+
+Google Calendar
+
+How it should work: Tradie goes to Settings → Integrations → connects their Google account via OAuth → any job they schedule in JobRunner automatically creates a Google Calendar event → if they update the job time it updates the calendar → if they mark a job complete the calendar event updates too.
+
+The sync should be one way primarily — JobRunner pushes to Google Calendar. You don't necessarily need Google Calendar events pulling back into JobRunner, that gets complicated.
+
+What to tell Replit: Test the OAuth connection with a real Google account. Test that creating a scheduled job creates a calendar event. Test that updating a job time updates the event. Test that the connection survives token expiry — Google access tokens expire and need refreshing.
+
+Xero
+
+How it should work: Tradie goes to Settings → Integrations → connects their Xero account via OAuth → when they create an invoice in JobRunner it automatically syncs to their Xero as an invoice → when they mark a client as paid in JobRunner it marks as paid in Xero too → clients sync as Xero contacts automatically.
+
+The critical things that must work:
+
+Invoice creation syncs to Xero
+Payment status syncs both ways
+Client/contact records sync
+Tax amounts calculated correctly for Australian GST
+What to tell Replit: The 25 connection limit we discussed — make sure the Xero app is registered properly and this limit is handled. Token refresh every 30 minutes must work silently in the background. Test with a real Xero demo company account.
+
+MYOB
+
+How it should work: Identical flow to Xero but through MYOB's API. Tradie connects their MYOB account, invoices sync, payments sync, contacts sync.
+
+MYOB is less common than Xero in Australia but older tradies and their accountants often insist on it. Worth having but lower priority than Xero.
+
+What to tell Replit: Same as Xero — OAuth connection, invoice sync, payment sync, contact sync. MYOB's API is less developer-friendly than Xero so this one is more likely to have edge cases.
+
+QuickBooks
+
+How it should work: Same as Xero and MYOB. Connect via OAuth, invoices sync, payments sync, contacts sync.
+
+QuickBooks is common with tradies who have accountants that prefer it. Less dominant in Australia than Xero but still worth having.
+
+What to tell Replit: Same testing approach as Xero. QuickBooks uses OAuth 2.0, tokens expire, refresh logic must be solid.
+
+Zapier
+
+How it should work: JobRunner exposes webhook triggers that Zapier can listen to. Things like:
+
+New job created → trigger Zapier
+Invoice paid → trigger Zapier
+New client added → trigger Zapier
+Job completed → trigger Zapier
+This lets tradies connect JobRunner to thousands of other tools without you building every integration yourself.
+
+Honestly this is not urgent for launch. It's a nice-to-have that becomes valuable once you have customers asking for specific integrations you haven't built yet.
+
+What to tell Replit: Don't prioritise this now. Add it to the roadmap for after launch.
+
+Outlook / Microsoft Calendar
+
+How it should work: Same as Google Calendar but through Microsoft's OAuth. Tradie connects their Outlook or Microsoft 365 account, scheduled jobs create calendar events.
+
+Less common than Google Calendar for tradies but worth having for businesses that use Microsoft 365.
+
+What to tell Replit: Same as Google Calendar but using Microsoft Graph API for OAuth and calendar events. Lower priority than Google Calendar.
+
+The Priority Order
+
+Integration	Priority	Why
+Stripe Connect	Critical	Tradies need to get paid
+Xero	Critical	47% of Australian SMBs use it
+Google Calendar	High	Most tradies use Google
+QuickBooks	Medium	Common enough to matter
+MYOB	Medium	Older tradies and their accountants
+Outlook Calendar	Low	Microsoft users only
+Zapier	Low	After launch
+The One Thing That Matters For All Of Them
+
+Every single one of these uses OAuth — meaning the tradie clicks Connect, gets redirected to that service, approves the connection, gets redirected back to JobRunner. The OAuth tokens expire and need refreshing silently in the background.
+
+The most common integration failure across all of them is the same thing — token refresh logic breaking silently so the integration appears connected but stops actually syncing. Tradies won't notice until they check their Xero and their last 10 invoices aren't there.
+
+Tell Replit this specifically: every integration needs a connection health check visible in Settings. Something simple like a green dot meaning "Connected and syncing" and a red dot meaning "Reconnection required." If the token refresh fails, the tradie should get a notification telling them to reconnect — not just silent failure.
+
+What To Tell Replit Right Now
+
+Give them this exact brief:
+
+For each integration — Stripe Connect, Xero, QuickBooks, MYOB, Google Calendar, Outlook — verify the following:
+
+OAuth connection flow works end to end with a real account
+Token refresh works silently after expiry
+Connection health status visible in Settings
+If connection breaks, tradie gets notified to reconnect
+Data syncs correctly — invoices, payments, contacts, calendar events
+Disconnecting cleanly removes the integration without breaking anything
+Test each one personally with a real account before marking it done. Automated tests are not sufficient for OAuth integrations.
+
+That brief covers everything and gives Replit a clear standard to meet for each one.

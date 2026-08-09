@@ -1,0 +1,210 @@
+Good call switching back to TradieTrack – once this bit is nailed you’re *actually* beta-ready.
+
+Here’s a **single master Replit prompt** you can copy–paste straight into Replit AI. It’s written as if you’re talking to it directly.
+
+---
+
+### 🔧 Replit “Master Workflow QA Prompt” – TradieTrack
+
+```text
+You are acting as a senior QA engineer + product owner for my app **TradieTrack** – a job / quote / invoice / payments / team app for tradies.
+
+Goal:  
+Make sure TradieTrack is a **technically solid beta**, where **all major workflows are fully wired**, smart, and integrated – not just pretty UI.
+
+Please work through the codebase and:
+
+- Use realistic mock data
+- Trace real-world workflows end-to-end
+- Fix or flag anything that is “UI only”
+- Suggest small UX improvements where behaviour is confusing for a tradie
+
+Use this mock business and client when reasoning about flows:
+
+**Business**
+- Name: Cairns Coast Plumbing
+- ABN: 12 345 678 910
+- Email: cairnscoastplumbing@example.com
+- Phone: 0400 123 456
+- Address: 123 Sheridan St, Cairns QLD
+- Plan: start on Free, then upgrade to Pro in tests
+
+**Client**
+- Name: Sarah Thompson
+- Email: sarah.thompson@example.com
+- Address: 45 Lake St, Cairns QLD
+
+**Jobs (examples)**
+- Job 1: “Fix leaking shower” at Sarah’s address
+- Job 2: “Install new vanity” at Sarah’s address
+- Job 3: “Hot water system service” at another Cairns address
+
+Now systematically verify and/or improve these areas:
+
+--------------------------------------------------
+1️⃣ Onboarding, login & roles
+--------------------------------------------------
+- New tradie signup → business created → default “Owner” user created.  
+- Login + session handling work reliably.
+- Role system: Owner, Manager, Tradie.  
+  - Owners can see everything, manage team, billing.  
+  - Tradies only see their assigned jobs, chats, timesheets.
+- If roles or permissions are only implied in UI, implement simple backend checks or hide UI that isn’t ready.
+
+--------------------------------------------------
+2️⃣ Business settings & subscriptions
+--------------------------------------------------
+- Business settings page actually **reads/writes** from DB (name, ABN, address, contact).
+- Subscription tier stored correctly (Free / Pro) and used in code (not just labels).
+- Stripe subscription integration:
+  - Uses test keys via env vars.
+  - Creates/updates/cancels subscriptions correctly.
+  - Webhooks update business.subscription_tier and status.
+- Free vs Pro:
+  - Pro unlocks: branding (logo on PDFs/emails), maybe more jobs/clients, etc.
+  - Free shows “Powered by TradieTrack” branding.
+
+--------------------------------------------------
+3️⃣ Jobs, time tracking & location
+--------------------------------------------------
+Make sure the **job system is real**, not fake.
+
+- Creating a job:
+  - Saves to DB with: client, address, description, status, scheduled time, assigned tradie.
+  - Status transitions work: New → Scheduled → In progress → Completed → Cancelled.
+- Time tracking:
+  - “Start job” / “Stop job” (or equivalent) persists time logs.
+  - Totals per job can be calculated.
+- Location:
+  - Job address stored, and if possible geocoded to (lat, lng).
+  - Any “Use current location” buttons actually call code and store a coordinate.
+- Map page for owner:
+  - Shows **past and current jobs as pins** on a region map.
+  - Pin colour or label indicates job status (New/Scheduled/In progress/Completed).
+  - Shows team members’ last known locations if that feature is present.
+  - Clicking a pin opens a mini card with job title, client, status, and quick actions (View job / Open in Maps).
+- If any map / tracking UI elements are not fully wired, either:
+  - Finish wiring them, or
+  - Hide them for beta and mark as “coming soon” in comments.
+
+--------------------------------------------------
+4️⃣ Quotes workflow (with PDFs & email)
+--------------------------------------------------
+For Job 1 (“Fix leaking shower”) confirm:
+
+- “Create quote from job”:
+  - Pre-fills client and job info.
+  - Adds line items with quantity, unit price, GST, totals.
+- Quotes have unique numbers: Q-1001, Q-1002, etc.
+- Live preview shows a **proper document layout**.
+- Quote saved to DB with correct relationships (business, client, job, items).
+- PDF generation:
+  - Includes business details, client details, line items, subtotal, GST, total, terms.
+  - Layout is clean for long descriptions and multi-line items.
+- Email sending (via SendGrid):
+  - “Send quote” button calls backend function.
+  - Uses a proper subject like “Quote Q-1001 from Cairns Coast Plumbing”.
+  - From: verified sender (e.g. no-reply@tradietrack.app).  
+  - Reply-to: business email.
+  - Sends either PDF attachment or public quote link.
+
+--------------------------------------------------
+5️⃣ Quote acceptance → job progression
+--------------------------------------------------
+- Public quote view or link works without login (client side).
+- “Accept quote” button:
+  - Updates quote.status → Accepted.
+  - Stores acceptance timestamp and IP or identifier.
+  - Optionally moves job status to “Approved” or “Ready to schedule”.
+- Tradie/owner dashboard shows accepted quotes clearly.
+
+--------------------------------------------------
+6️⃣ Invoices & payments (Stripe)
+--------------------------------------------------
+From an **accepted** quote:
+
+- “Convert quote to invoice”:
+  - Copies client, items, totals to invoice.
+  - Generates unique invoice number: INV-1001, etc.
+- Invoice PDF:
+  - Includes due date, payment instructions, totals, status.
+- “Send invoice”:
+  - Triggers SendGrid email similar to quotes.
+- Stripe payment flow:
+  - For clients paying invoices: creates PaymentIntent correctly.
+  - On successful payment (Stripe webhook), invoice.status → Paid, with paid_at timestamp.
+  - No invoice can show Paid without a recorded payment.
+- For tradies paying **TradieTrack subscription**, confirm:
+  - Customer & subscription entities created correctly.
+  - Webhook updates business.subscription_tier.
+
+--------------------------------------------------
+7️⃣ Team & chat (group + job chat)
+--------------------------------------------------
+Check that collaboration tools really work.
+
+- Team management:
+  - Owner can invite/add tradies (even if via email stub in beta).
+  - Roles saved in DB.
+- Chat:
+  - Group chat for entire team (“Team chat”).
+  - Job-specific chat: each job has its own thread.
+  - Messages saved with sender, timestamp, job_id or channel_id.
+  - Notifications (even basic badge indicators) update when new messages exist.
+- If there’s direct owner ↔ tradie chat, ensure separate conversation/channel per pair.
+
+--------------------------------------------------
+8️⃣ Dashboards & UX sanity
+--------------------------------------------------
+- Home dashboard numbers (Open jobs, Overdue invoices, etc.) actually reflect DB data.
+- Clicking stats (e.g. “3 open jobs”) filters to the correct jobs page.
+- Empty states are friendly and clear, not broken layouts.
+- Layout behaves nicely on mobile-ish widths (no impossible scrolls or hidden buttons).
+
+--------------------------------------------------
+9️⃣ Email & PDF branding (Free vs Pro)
+--------------------------------------------------
+- On **Pro** plan:
+  - Business logo appears on PDFs and emails.
+  - Custom footer text appears if set.
+  - “Powered by TradieTrack” minimal or removed.
+- On **Free**:
+  - No custom logo; clear subtle “Powered by TradieTrack” in PDF/email footer.
+
+--------------------------------------------------
+🔟 Error handling & offline-ish behaviour
+--------------------------------------------------
+- For all critical actions (create job, save quote, send email, pay invoice):
+  - Show loading states.
+  - Handle failed API calls gracefully with clear error messages.
+  - Don’t leave UI in broken states (e.g. duplicate records, spinner forever).
+
+--------------------------------------------------
+1️⃣1️⃣ Security & multi-tenant sanity
+--------------------------------------------------
+- Queries always scoped by business_id so one business cannot see another’s jobs, quotes, invoices, or chats.
+- No sensitive keys (Stripe, SendGrid) on the client side.
+
+--------------------------------------------------
+1️⃣2️⃣ Final output: is TradieTrack a “smart, integrated beta”?
+--------------------------------------------------
+At the end, provide a concise summary (as console output or comments) including:
+
+- ✅ Flows that are confirmed working end-to-end:
+  - e.g. “Job → Quote → Email → Accept → Invoice → Stripe payment → Receipt”
+  - “Team chat & job chat persisted”
+  - “Map shows jobs + statuses correctly”
+- ⚠️ Features that are partially implemented and should be hidden or labelled “coming soon”.
+- 🛠 Critical bugs or missing backend logic that must be fixed before real tradies use it.
+- 🎯 Top 5 MUST-FIX items to make TradieTrack ready for real-world beta testing.
+
+Focus everything around:  
+**Would a real Cairns tradie be able to run their day from this app without hitting fake features or broken flows?**  
+Make any reasonable code improvements needed to move the app towards that standard.
+```
+
+---
+
+You can drop that straight into Replit AI on your project.
+
+Once it’s run, **you + me** can then do a final “human tradie test” together (you pretend to be Cairns Coast Plumbing, send yourself quotes/invoices, pay with Stripe test cards, watch the map, use chat, etc.) and tighten anything that still feels clunky.

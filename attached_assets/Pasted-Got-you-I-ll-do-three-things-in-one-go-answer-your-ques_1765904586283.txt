@@ -1,0 +1,347 @@
+Got you. I’ll do three things in one go:
+
+answer your question about whether tradies actually use Tradify daily
+
+design a proper Xero / MYOB / QuickBooks integration flow (the “right way” so it feels legit + saves time)
+
+give you a single Replit “master prompt” to audit the whole job → quote → invoice → payment journey + UX from a tradie’s POV, and make sure nothing is “UI only”.
+
+1) Do tradies actually use Tradify daily?
+
+Yes. Apps like Tradify/ServiceM8 get used daily because they solve boring daily admin pain:
+
+quotes/invoices on-site
+
+scheduling jobs
+
+tracking who’s where
+
+getting paid
+
+keeping records for tax/GST
+
+proof in disputes (timestamps, notes, photos)
+
+Most tradies don’t switch because “the UI is prettier” — they switch when your app:
+
+saves time every day
+
+reduces mistakes
+
+helps them get paid faster
+
+connects cleanly to accounting (Xero/MYOB/QB)
+
+works reliably on phone (offline + low fuss)
+
+doesn’t break their existing workflow
+
+So if TradieTrack becomes the “fastest path from job → paid → books done”, they’ll switch.
+
+2) The accounting integration flow that feels “pro”
+
+Here’s the best practice flow (and what you should build first):
+
+A) Xero integration flow (recommended first in AU)
+
+Goal: tradie invoices in TradieTrack automatically appear in Xero with correct GST + customer + payments.
+
+Step 1 — Connect Xero (Owner only)
+
+Settings → Integrations → Xero → Connect
+
+OAuth login
+
+Choose Xero Organisation (if they have multiple)
+
+Save tokens securely (server-side only)
+
+Step 2 — Mapping (one-time setup wizard)
+
+Default GST setting (GST on/off)
+
+Default Revenue Account (e.g., “Sales”)
+
+Default Payment Account (Bank)
+
+Optional: “Tracking categories” (Xero feature) mapping:
+
+e.g., “Worker” or “Job Type”
+
+Sync customers:
+
+Option A: “Xero is source of truth”
+
+Option B: “TradieTrack is source of truth”
+
+For beta: pick one (I recommend Xero source of truth)
+
+Step 3 — Invoice push rules
+When invoice is marked “Sent” in TradieTrack:
+
+Create/Match Contact in Xero
+
+Create Invoice in Xero (with line items, GST, due date)
+
+Save Xero invoice ID back into TradieTrack
+
+Show “Synced to Xero ✅” badge
+
+Step 4 — Payments
+If customer pays via Stripe in TradieTrack:
+
+Update invoice status to Paid
+
+Optionally create Xero Payment (or mark invoice paid)
+
+Store payment reference + date
+
+Step 5 — Reconciliation safety
+If something fails:
+
+show clear “Sync failed” state
+
+retry button
+
+don’t duplicate invoices (idempotency keys)
+
+✅ Result: tradie does admin once, not twice.
+
+B) MYOB integration flow (later, but similar)
+
+MYOB has API differences, but your UX should be identical:
+
+Connect
+
+Map accounts/GST
+
+Sync contacts
+
+Push invoices
+
+Sync payments
+
+Key point: keep the same “Integration Wizard UI” so it feels consistent.
+
+C) QuickBooks integration flow (same UX, different adapter)
+
+Same exact UI and steps, just swap the backend adapter.
+
+Best architecture:
+Build a single “AccountingProvider” interface:
+
+createOrMatchContact()
+
+createInvoice()
+
+recordPayment()
+
+syncStatus()
+
+Then implement:
+
+XeroProvider
+
+MYOBProvider
+
+QuickBooksProvider
+
+3) Single Replit master prompt (adds Xero + full QA + tradie UX)
+
+Paste this into Replit. It’s written so it can check your codebase, find “UI-only”, and implement missing wiring.
+
+✅ REPLIT MASTER QA + XERO INTEGRATION PROMPT (TradieTrack)
+Act as a senior QA engineer + product engineer for TradieTrack (tradie job management SaaS). 
+Your goal: make TradieTrack a “technically solid beta” where no features are UI-only, all workflows are integrated end-to-end, and UX matches how a real tradie works daily.
+
+========================
+SECTION 1 — CORE WORKFLOWS (MUST WORK END-TO-END)
+========================
+Verify and fix end-to-end flows using realistic seed data:
+
+Business (Owner):
+- Name: Cairns Coast Plumbing
+- ABN: 12 345 678 910
+- Plan: Free then Pro
+- Address: 123 Sheridan St, Cairns QLD
+
+Users:
+- Owner: Joe (role: Owner)
+- Manager: Mia (role: Manager)
+- Worker: Liam (role: Worker)
+
+Client:
+- Sarah Thompson, 45 Lake St, Cairns QLD, (use a test email)
+
+Jobs:
+- Job 1: Fix leaking shower (Scheduled)
+- Job 2: Install new vanity (In Progress)
+
+You must ensure ALL buttons and screens perform real backend actions:
+1) Create job -> saved in DB
+2) Attach client -> persisted
+3) Add job location -> address + lat/lng stored
+4) Time tracking: start/stop timer -> saved as time entry, linked to job + user
+5) Job photos/files -> upload stores file + link to job
+6) Quote creation -> correct calculations + GST + quote number
+7) Quote preview -> correct template + PDF generation
+8) Send quote -> SendGrid sends email with PDF or secure link
+9) Client accepts quote -> status accepted, timestamp saved, optionally job status update
+10) Convert quote -> invoice -> totals correct
+11) Send invoice -> email + payment link works
+12) Stripe payment -> invoice becomes paid + receipt is sent
+13) Audit log: record key events (sent, accepted, paid, status changes)
+
+Detect any “UI-only” elements and either implement fully or hide behind “Coming Soon” flags for beta.
+
+========================
+SECTION 2 — TEAM ROLES + PERMISSIONS (Owner vs Worker UX)
+========================
+Enforce role-based UX:
+- Owner sees: full dashboard, business settings, integrations, team management, reporting, map overview
+- Manager sees: similar to owner but limited (no billing plan changes)
+- Worker sees: Today’s jobs, assigned jobs, time tracking, job chat, job details, minimal settings
+
+Confirm:
+- Worker cannot see billing/subscriptions
+- Worker can only view jobs assigned to them (unless permission granted)
+- Owner can see all jobs + team locations
+
+Add onboarding that asks:
+- business type
+- solo vs team
+- role
+- default settings (GST, invoice terms)
+Then routes user to correct dashboard.
+
+========================
+SECTION 3 — MAP SYSTEM (OWNER MAP + JOB PINS + TEAM LOCATIONS)
+========================
+Implement/verify a dedicated Map screen for Owners/Managers:
+- Uses Google Maps (or Mapbox) and displays:
+  - job pins across region
+  - pin color/style by status (Scheduled/In Progress/Completed)
+  - small callout on tap: job name, status badge, time, assigned worker
+  - filter chips: Today / This week / Completed / Unassigned
+- Stores job location in DB with:
+  - address
+  - lat
+  - lng
+- Team locations:
+  - worker app can share location (dev build required)
+  - show worker markers on map with name + last updated timestamp
+  - do NOT track in Expo Go if unsupported; instead show “Requires dev build” and disable UI
+- Add “Open in Maps” button on job details using stored coordinates.
+
+========================
+SECTION 4 — CHAT SYSTEM (TEAM + DIRECT + JOB CHAT)
+========================
+Verify chat is fully wired (not UI):
+- Team group chat for business
+- Direct messages: Owner/Manager <-> Worker
+- Job-specific chat thread attached to each job
+Confirm:
+- messages persist in DB
+- messages are scoped to business/team
+- job chat is visible only to users with access to that job
+- include attachments (optional for beta)
+- message notifications:
+  - in-app badge + local notifications (push can be staged)
+
+========================
+SECTION 5 — SENDGRID EMAILS (REAL WORLD QUALITY)
+========================
+Ensure email flows are real:
+- Quote sent
+- Invoice sent
+- Payment receipt
+Requirements:
+- API key server-side only
+- Verified sender domain (from)
+- Reply-To = tradie email
+- Pro plan branding:
+  - includes business logo/header/footer
+  - removes or minimizes “Powered by TradieTrack”
+- Free plan:
+  - standard template + “Powered by TradieTrack”
+Confirm emails render well in Gmail mobile (simple HTML, no broken layout).
+
+========================
+SECTION 6 — STRIPE (SUBSCRIPTIONS + CUSTOMER PAYMENTS)
+========================
+Implement/verify:
+A) Subscriptions for TradieTrack billing:
+- checkout flow
+- webhook updates subscription status + tier
+- gating features by tier
+
+B) Customer invoice payments:
+- PaymentIntent creation
+- success webhook marks invoice paid
+- receipts sent
+- store payment reference + date
+
+If Stripe Terminal endpoints exist:
+- ensure keys/config are valid
+- if not configured, hide Terminal UI for beta instead of throwing 500 errors.
+
+========================
+SECTION 7 — XERO INTEGRATION (AU-FOCUSED)
+========================
+Add Xero integration (Owner only):
+1) Connect Xero (OAuth)
+2) Select Xero organization
+3) Mapping wizard:
+   - default revenue account
+   - GST setting
+   - payment/bank account
+4) Sync rules:
+   - When invoice status becomes “Sent”, push to Xero (create contact if needed, create invoice, save xeroInvoiceId)
+   - When invoice is paid in TradieTrack, record payment in Xero (or mark paid)
+5) UI shows:
+   - “Synced to Xero ✅” or “Sync failed ⚠️ (Retry)”
+6) Prevent duplicates using idempotency keys.
+
+========================
+SECTION 8 — OFFLINE / RELIABILITY (BETA LEVEL)
+========================
+Ensure:
+- offline banner
+- cached data read (jobs, clients)
+- queue writes when offline for:
+  - time tracking entries
+  - job notes
+- clean error handling (no crashes, no infinite spinners)
+
+========================
+SECTION 9 — FINAL OUTPUT
+========================
+After auditing and fixing, output:
+1) A list of VERIFIED working flows ✅
+2) A list of features to hide for beta ⚠️
+3) A list of critical bugs MUST fix before App Store ⛔
+4) A small “Test Plan” checklist I can follow on my phone
+
+Your quick answers to the build errors you pasted
+
+Those build errors are real and fixable:
+
+react-native-worklets missing → install it:
+
+npx expo install react-native-worklets
+
+Version mismatches:
+
+run: npx expo install --check
+
+update expo-audio, @types/react, typescript to the expected SDK versions
+
+And your Stripe Terminal 500 errors in logs?
+That’s almost always:
+
+missing env vars
+
+using test keys but not configured
+
+or calling Terminal APIs in a build that doesn’t support it yet
+→ for beta, hide the Terminal UI unless the backend is confirmed configured.

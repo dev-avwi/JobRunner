@@ -1,0 +1,25 @@
+Committed as 6c7937ea. Here's where we are:
+
+What changed in this build vs what's running on your simulator:
+
+| Surface | Before (fc2d0f07) | Now (6c7937ea) |
+|---|---|---|
+| Lock screen | Brand row + divider + action row, "View job ›" chevron, 5 different padding values | Single tight row: badge / address+suburb+status / timer. Uniform 14/16 padding. |
+| Compact Dynamic Island | Tiny white squircle (unreadable logo) + timer | Status-coloured dot with soft glow + timer |
+| Minimal Dynamic Island | Tiny white squircle | Status-coloured dot |
+| Expanded Dynamic Island | Full badge + content + bottom action row | Badge + address + status line, no action row |
+| Address fallback | Empty second line when no comma | Falls back to "Active job" — card never collapses |
+
+Now I need a real look at where we actually are before recommending a deeper rebuild. Three things would let me make the right call:
+
+1. Push and rebuild. Once 6c7937ea is on the simulator, the Dynamic Island compact will look completely different — colored dot instead of tiny squircle. That alone might fix what you're calling "worse."
+2. Send me a fresh lock-screen screenshot (Cmd+L in the simulator while a job is running). I haven't actually seen the new layout rendered yet — I'm flying blind, and given my track record this session of shipping designs I haven't verified, that's a problem worth fixing.
+3. Send me what the Dynamic Island looks like in both compact (during normal app use) and expanded (long-press on the pill).
+
+Then I'll know whether we need:
+• (a) Tweaks only — paddings, font sizes, the runner-figure crop — surgical
+• (b) Premium rebuild — start from Apple's HIG specs verbatim, no creative liberties, ship a baseline that's known-good and only deviate where there's evidence
+
+My honest take: option (a) is more likely correct, but I want to see screenshots before committing. Doing (b) blind from descriptions is what landed us in this iterate-without-verification loop. Let me see it rendered, then decide.
+
+Push the commit, rebuild in Xcode, lock the screen with a job running, send the screenshot.

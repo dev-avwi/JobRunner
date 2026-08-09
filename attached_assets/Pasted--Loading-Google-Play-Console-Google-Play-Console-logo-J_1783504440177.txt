@@ -1,0 +1,71 @@
+
+Loading Google Play Console
+Google Play Console logo
+
+JobRunner
+Dashboard
+Statistics
+Publishing overview
+Protected with Play
+Test and release
+Monitor and improve
+Grow users
+Monetise with Play
+Publishing overview
+See an overview of the changes made to your app and control when changes are sent for review or published. Show more
+
+Managed publishing off
+Changes in review
+Your changes are now in review. We may find additional issues when reviewing your app.
+Closed testing - Alpha
+49 (1.1.4)
+Start full rollout
+Countries/regions
+Add 4 countries/regions: Australia, New Zealand and 2 more
+Countries/regions
+Unsync from production
+Track status
+Resume track
+Testers
+Set testers to be managed by email lists: Ayden Vogler
+Testers
+Change feedback channel to admin@avwebinnovation.com
+Store listings
+English (United Kingdom) – en-GB
+Default store listing
+Add language. Provided app name (JobRunner), and all other required information.
+English (Australia) – en-AU
+Default store listing
+Add language. Provided app name (JobRunner), and all other required information.
+App content
+Content Rating
+Submit new questionnaire
+Target audience and content
+Update Target audience and content information. Target age is 16 and older.
+Privacy policy
+Set privacy policy URL to https://jobrunner.com.au/privacy-policy
+Ads declaration
+Update ads declaration
+Data safety
+Complete Data safety questionnaire
+Health apps
+Complete Health apps declaration
+Store settings
+App category
+Select app category (Business app)
+What you've told us
+Items listed here aren't published, but we'll take them into account when reviewing your app:
+App content: 'Update background location permissions' declaration
+App content: Update sign-in details instructions (all functionality available without special access)
+App content: 'Advertising ID' declaration updated
+App content: 'Government apps' declaration updated
+App content: 'Financial features' declaration updated
+App content: 'Foreground services' declaration updated
+App content: 'Photo and video permissions' declaration updated
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

@@ -1,0 +1,317 @@
+Nice, Ayden — sounds like you’re at the **“time to break it”** stage.
+Here’s the **single master Replit testing prompt** you can copy-paste straight into Replit’s AI.
+
+---
+
+## 🧪 TradieTrack – Replit Master Testing Prompt
+
+> You are my senior QA + product engineer helping me test and polish my web app **TradieTrack** – a job, quote and invoice management app for tradies in Australia (plumbers, sparkies, etc.).
+>
+> The app already *looks* quite polished. Now I want you to focus on:
+>
+> * **A) Core flows & reliability**
+> * **B) UX & UI consistency**
+> * **C) Integrations & data (Stripe, SendGrid, auth, storage)**
+> * **D) Offline behaviour & cloud sync**
+>
+> Your job is to:
+>
+> 1. Read the codebase.
+> 2. Run the app.
+> 3. Use it like a real tradie business.
+> 4. Report issues + suggest具体 fixes (code + UX).
+
+---
+
+### A) Core flows & reliability – FULL CHECKLIST
+
+Please test these end-to-end flows and tell me what works, what’s broken, and what feels half-finished:
+
+1. **Sign up & login**
+
+   * Email + password auth.
+   * “Continue with Google” (if present).
+   * Validation for bad email, weak password, duplicate accounts.
+   * Reset password flow (if implemented).
+
+2. **Onboarding**
+
+   * Creating a new business:
+
+     * Business name, trade type, ABN, contact details.
+     * Choosing trade (plumbing, electrical, etc.).
+     * Team setup: owner + additional staff users (different roles).
+   * Make sure:
+
+     * Required fields are enforced with clear errors.
+     * Onboarding can be skipped/resumed.
+     * Data actually saves to the backend and is used across the app.
+
+3. **Roles & permissions**
+
+   * At minimum: **Owner/Admin vs Staff/Field Worker**.
+   * Confirm:
+
+     * Owner can see everything.
+     * Staff can’t access billing, subscription, or global settings.
+     * Permissions are enforced server-side (not just hidden in the UI).
+
+4. **Jobs → Quotes → Invoices**
+   Do a full lifecycle test as if you’re a tradie:
+
+   * Create a **Client**.
+   * Create a **Job** for that client.
+   * Add job details (address, description, due date, status).
+   * Create a **Quote** from that job:
+
+     * Line items (qty, unit price, GST).
+     * Auto-calculated totals.
+     * Quote number (Q-1001 style), issue date, expiry date.
+   * “Send” the quote (even if it just simulates email).
+   * Convert the accepted quote into a **Job** and then into an **Invoice**.
+   * Invoice should have:
+
+     * Invoice number (INV-1001 style).
+     * Status: Draft / Sent / Paid / Overdue.
+     * Payment terms + due date.
+   * Mark invoice as **Paid** and confirm:
+
+     * Status + paid date update.
+     * Any job / client balances update correctly.
+
+5. **Calendar & schedule**
+
+   * Add jobs to specific days and times.
+   * Ensure:
+
+     * Time zone behaviour is sensible.
+     * Jobs show correctly in any list & calendar views.
+     * Mobile layout still works.
+
+6. **Attachments & files**
+
+   * Try uploading a few files (images/PDFs) against a job, quote, or invoice.
+   * Check:
+
+     * Upload success + error states.
+     * File size/type limits and messages.
+     * That files are re-loadable after refresh.
+
+7. **Messaging / Chat (if present)**
+
+   * Test:
+
+     * Team chat.
+     * Job-specific chat.
+   * Confirm:
+
+     * Messages are stored with correct job & user.
+     * Different users see the same history.
+     * Read/unread or at least sensible ordering.
+
+8. **Demo / mock data mode (if implemented)**
+
+   * Turn on Demo/Beta mode.
+   * Verify:
+
+     * A demo account is pre-loaded with mock jobs, clients, quotes & invoices.
+     * It’s clearly labelled as demo.
+     * No real Stripe/SendGrid actions fire in demo mode.
+
+---
+
+### B) UX & UI consistency – FULL REVIEW
+
+Please review the app like a product designer and comment on:
+
+1. **Navigation**
+
+   * Bottom nav on mobile vs sidebar/left nav on desktop:
+
+     * Is it consistent across all pages?
+     * Are icons and labels clear (Home, Jobs, Clients, Invoices, More, etc.)?
+   * No “dead ends” or screens without a way back.
+
+2. **Dashboard**
+
+   * Does the home screen instantly answer:
+
+     * How many jobs today?
+     * Any overdue invoices?
+     * Revenue this month?
+   * Are cards aligned, spacing consistent, and content centered?
+   * No weird unused columns or blank white space on the right.
+
+3. **Forms**
+
+   * Are forms short, clear, and grouped logically?
+   * Consistent input styles, labels, error messages.
+   * Useful defaults (e.g., today’s date, 14-day expiry, etc.).
+
+4. **Tables & lists**
+
+   * Jobs, Clients, Quotes, Invoices lists:
+
+     * Sort & filter behaviour.
+     * Pagination or infinite scroll.
+     * Loading & empty states (not just blank).
+
+5. **Visual consistency**
+
+   * Use the new **blue/orange TradieTrack branding**:
+
+     * Same primary blue & orange as in the logo.
+     * Buttons, highlights, tags use this palette.
+   * Check typography:
+
+     * Prefer modern sans (e.g., Inter/Manrope/SF Pro style).
+     * Consistent sizes for headings, body, labels.
+
+6. **Dark mode**
+
+   * If dark mode exists:
+
+     * Check all screens: text contrast, icon visibility, borders.
+     * No white flashes or unreadable grey-on-grey text.
+
+Please output:
+
+* A list of **UX polish suggestions** grouped by page (Dashboard, Jobs, Clients, Quotes, Invoices, Settings, etc.).
+* Mark each suggestion as **High / Medium / Low** impact.
+
+---
+
+### C) Integrations & data – Stripe, SendGrid, auth, storage
+
+1. **Authentication**
+
+   * Confirm tokens/sessions are handled securely.
+   * Sensitive routes protected server-side (API guards / middleware).
+
+2. **Stripe**
+
+   * Two cases:
+
+     1. **App subscription billing** (TradieTrack Pro vs Basic).
+     2. **(If implemented)** Client payments for invoices.
+   * Verify:
+
+     * Correct Stripe keys are loaded from environment variables.
+     * Webhook endpoints exist and handle:
+
+       * `checkout.session.completed`
+       * subscription updates/cancellations.
+     * The app updates:
+
+       * user’s subscription tier
+       * trial status
+       * limits (e.g., branding removal, advanced features).
+
+3. **SendGrid (Twilio SendGrid)**
+
+   * There are **two use cases**:
+
+     1. Emails from **my system to tradies** (welcome, trial ending, etc.).
+     2. Emails **tradies send to their clients** (quotes, invoices, payment receipts).
+   * Ensure:
+
+     * API key is not hard-coded.
+     * Emails are built from templates.
+     * Business branding (name, logo, contact details) appears on client-facing emails.
+     * Proper error handling/logging if SendGrid fails.
+   * For tests, it’s fine to:
+
+     * Use a sandbox/test mode.
+     * Log email payloads instead of actually sending.
+
+4. **Data model & storage**
+
+   * Confirm the main entities and relationships:
+
+     * Users, Businesses, TeamMembers/Roles
+     * Clients
+     * Jobs
+     * Quotes
+     * Invoices
+     * Attachments / Files
+     * Messages (if chat)
+   * Check referential integrity:
+
+     * Deleting a client doesn’t silently orphan jobs.
+     * Jobs always have a valid client and business.
+     * Quotes and invoices always belong to a job/client.
+
+5. **Security & privacy basics**
+
+   * No secrets in the frontend bundle.
+   * Basic validation on API routes.
+   * Only the right users can access a business’s data.
+
+Please list:
+
+* Any **integration misconfigurations**.
+* Any obviously missing **error handling** or **security checks**.
+* Suggested **code-level improvements** (e.g., where to centralise billing, notification, or document generation logic).
+
+---
+
+### D) Offline behaviour & cloud sync
+
+I want TradieTrack to feel reliable on the road.
+
+Please:
+
+1. Check if there is any Service Worker / PWA support:
+
+   * If yes:
+
+     * Does it cache core assets for offline use?
+     * Does it handle network loss gracefully?
+   * If not:
+
+     * Suggest a simple PWA/offline strategy.
+
+2. Test behaviour when:
+
+   * Creating/editing a job **while offline**.
+   * Creating a quote or invoice offline.
+   * Coming back online.
+   * Does data sync properly to the backend?
+   * If offline is **not** implemented, explain the simplest architecture to:
+
+     * Cache local edits (localStorage/IndexedDB).
+     * Queue sync to API when connection returns.
+
+3. Make concrete recommendations:
+
+   * “Here’s how I would implement basic offline-first behaviour for jobs, quotes, and invoices in this codebase.”
+
+---
+
+### Final output format
+
+Please give me:
+
+1. **Summary**
+
+   * One short paragraph: “Is TradieTrack ready for closed beta with 3–5 real tradies?”
+
+2. **Critical issues (must fix before beta)**
+
+   * Numbered list with file names / components and specific fixes.
+
+3. **Important UX improvements (next 1–2 weeks)**
+
+   * Grouped by page.
+
+4. **Nice-to-have polish & future ideas**
+
+   * Things to consider after launch.
+
+5. **Checklist for me to tick off**
+
+   * A compact bullet list I can paste into my own task manager.
+
+---
+
+Use clear headings, be blunt and honest, and assume I’m 14 but serious about turning this into a real SaaS.

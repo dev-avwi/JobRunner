@@ -1,0 +1,297 @@
+Here’s a real-world example, start to finish, exactly how a customer + tradie would use it day-to-day (with your “no login” portal + website lead form + SMS triggers). I’ll keep it super practical.
+
+Scenario: Mike’s Electrical (tradie) + Sarah (customer)
+1) Customer finds the tradie
+
+Sarah Googles “electrician Cairns” and clicks mikeelectrical.com.au (your Webflow site built from Relume).
+
+On the site she taps Get a Quote and submits:
+
+Name: Sarah Johnson
+
+Phone: 0400 111 222
+
+Message: “Power keeps tripping, think it’s the stove.”
+
+Suburb: Smithfield
+
+✅ What happens behind the scenes:
+
+Webflow form sends to your TradieTrack API (Replit)
+
+TradieTrack creates a new Lead under Mike’s account:
+
+Source: Website
+
+Status: New
+
+Mike gets a notification inside TradieTrack:
+
+“New website lead: Sarah – Smithfield – ‘Power keeps tripping’”
+
+2) Tradie follows up (normal tradie behaviour)
+
+Mike calls Sarah (or texts her personally) and they agree on a rough price range and a visit.
+
+Then Mike opens TradieTrack and creates a Quote for “Stove circuit fault check”.
+
+He taps Send Quote.
+
+✅ SMS Trigger: Quote Sent
+Sarah receives:
+
+“Mike’s Electrical: Your quote is ready. View & accept: tradietrack.com.au/portal/q/8K2X…”
+
+She taps the link → opens the portal (no login) → sees:
+
+Quote details
+
+“Accept Quote” button
+
+She taps Accept.
+
+Mike sees in TradieTrack:
+
+“Quote accepted ✅”
+
+3) Job booked + “On my way”
+
+Mike schedules the job for Tuesday 2pm, assigns his apprentice Jake.
+
+Tuesday 1:40pm Jake taps On My Way in TradieTrack.
+
+✅ SMS Trigger: On My Way
+Sarah gets:
+
+“Mike’s Electrical: Jake is on the way. ETA ~20 mins. Track & message: tradietrack.com.au/portal/j/5H9Q…”
+
+She taps → portal shows:
+
+Job status “On the way”
+
+(Optional: map later, but MVP can just show status + messages)
+
+Message box
+
+Sarah messages:
+
+“Side gate is open, dog is inside.”
+
+Jake sees that instantly in TradieTrack job chat.
+
+4) Job complete + photos
+
+Jake finishes the job, uploads after photos, marks job Complete.
+
+✅ SMS Trigger: Job Complete
+Sarah gets:
+
+“Mike’s Electrical: Job complete. View photos & details: tradietrack.com.au/portal/j/5H9Q…”
+
+She taps and sees:
+
+Before/after photos
+
+Notes: “Replaced stove isolator”
+
+Status: Complete
+
+5) Invoice + payment (this is the big money moment)
+
+Mike creates Invoice #INV-1042-K7Q and taps Send Invoice.
+
+✅ SMS Trigger: Invoice Sent
+Sarah receives:
+
+“Mike’s Electrical: Invoice INV-1042-K7Q ready. Pay online: tradietrack.com.au/portal/i/3F7B…”
+
+She taps → sees invoice → taps Pay Now → Stripe checkout → pays.
+
+✅ SMS Trigger: Payment Received
+Sarah gets:
+
+“Mike’s Electrical: Thanks! Payment of $385 received.”
+
+Mike gets:
+
+“Payment received ✅”
+
+The “Lost SMS” situation (your manual lookup shines here)
+
+A month later Sarah wants the receipt again, but she deleted the SMS thread.
+
+She goes to Mike’s website and taps:
+Existing client? Pay invoice / view invoice
+
+It opens:
+tradietrack.com.au/portal
+
+She enters:
+
+Invoice #: INV-1042-K7Q
+
+Phone: 0400 111 222
+
+TradieTrack verifies the phone matches the invoice → shows the invoice + receipt.
+
+No login. No account. No drama.
+
+Why this feels good in the real world
+For the tradie:
+
+Website enquiries appear as leads automatically (no missed jobs)
+
+SMS only happens at important points (not spam)
+
+Client doesn’t need an app or account
+
+Payments happen fast through Stripe
+
+Proof (photos + history) is stored for disputes
+
+For the client:
+
+Everything works from a link
+
+If they lose the link, they can recover invoice access with invoice # + phone
+
+No password, no app download, no confusion
+
+If you want, I can also write the “worst-case scenario” version (client tries to access without invoice number, spam attempts, etc.) and show exactly how you keep it secure without logins.
+
+ are you sure this is secure though to an extent cuase you dont need lots of security but is it good enough and also like instead of document numbers what about verification codes or something what do you think or nah is that too hard
+
+Yeah — it can be secure enough for your use case if you do it properly, and you don’t need bank-level security. But invoice# + phone by itself is only “okay” if you add a couple safeguards, because it’s basically “something you know” + “something you know”. The good news: adding a verification code (OTP) is not too hard and it upgrades trust a lot.
+
+Here’s the clean recommendation.
+
+What’s “secure enough” for TradieTrack portals?
+Your portal is exposing:
+
+invoice amount + line items
+
+maybe address
+
+photos (potentially sensitive)
+
+payment link
+
+So you want protection against:
+
+random guessing
+
+someone who knows the customer’s phone
+
+spam scripts hammering the portal
+
+You don’t need perfect security, but you do need “hard to abuse”.
+
+Best approach (simple + strong)
+✅ Use Magic links as the primary access
+
+This is already secure enough in practice because tokens are long and unguessable.
+
+Example:
+/portal/i/3F7B... (really should be a long token like 32+ chars)
+
+That’s your main path.
+
+✅ For “lost link” recovery: use Phone OTP (verification code)
+
+Instead of invoice# + phone.
+
+Flow:
+
+Client enters phone number on /portal
+
+System sends a 6-digit code by SMS
+
+Client enters code
+
+System shows their invoices/jobs (or just invoices) and they pick
+
+This is way more secure because it proves they actually control the phone.
+
+Is this too hard?
+
+No — because you already want Twilio for tradie SMS anyway. OTP is basically:
+
+generate code
+
+store hash + expiry
+
+send SMS
+
+verify
+
+That’s very doable.
+
+What I would ship (polished and realistic)
+Portal access methods (final)
+
+SMS magic link (default, easiest, most secure)
+
+Lost link? Verify by SMS code (OTP recovery)
+
+That’s it. No invoice number needed.
+
+If you still want invoice numbers
+
+You can still show invoice numbers as convenience, but don’t rely on them as “security”.
+
+If you insist on invoice lookup, make it safer like this:
+
+✅ Invoice number should be non-guessable: INV-1042-K7Q (random suffix)
+✅ Add rate limiting + lockout
+✅ Don’t reveal whether invoice exists until after verification
+✅ Only allow a few tries per IP/phone per hour
+
+But honestly — OTP is cleaner and more modern.
+
+Recommended security minimums (keep it simple)
+For magic links
+
+Token = long, random (at least 128-bit)
+
+Expire tokens after X time for quotes (e.g., 30–90 days)
+
+For invoices/receipts you can keep longer, but allow “regenerate link”
+
+Optional: if link is opened on a totally new device, require OTP (later)
+
+For OTP
+
+6 digits
+
+Expire in 10 minutes
+
+5 attempts max
+
+Rate limit sends (e.g., 3 per hour per phone)
+
+Store hashed OTP, not plain text
+
+General
+
+Don’t show client photos on invoice recovery unless verified
+
+Log access events (basic)
+
+Straight answer: invoice# + phone vs verification code
+Invoice# + phone
+
+✅ easiest to build
+⚠️ weaker security
+⚠️ people mistype invoice numbers
+⚠️ invoice numbers can leak on PDFs
+
+Verification code (OTP)
+
+✅ still easy to build
+✅ much better security
+✅ better UX (“send me a code”)
+✅ fits your SMS ecosystem perfectly
+
+My pick: OTP recovery, no invoice number required.
+
+If you want, I’ll write the exact portal screen text + the exact backend logic in plain steps so you can implement it in Replit without confusion.

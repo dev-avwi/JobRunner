@@ -1,0 +1,243 @@
+Here’s a ready-to-paste **Replit prompt for the Jobs page** matching your screenshots 👇
+
+---
+
+## ✅ Replit Prompt — TradieTrack **Jobs Screen**
+
+**PASTE THIS INTO REPLIT:**
+
+---
+
+I am rebuilding the TradieTrack **Jobs** page from my web app into a **React Native (Expo) mobile app**.
+I want you to recreate the UI **as close as possible to the web layout and styling**, but optimised for mobile.
+
+I have two reference screenshots (desktop + mobile) that show the full design of the Jobs screen:
+
+* Desktop: sidebar, top bar, “Jobs”, filters, stats cards, recent activity, all jobs list.
+* Mobile: top app bar, “Jobs”, New Job button, filters row, stats grid, recent activity card, all jobs, bottom nav.
+
+### 🎯 Tech Stack to Use
+
+Build this screen with:
+
+* Expo + React Native (TypeScript)
+* Expo Router (or React Navigation)
+* React Query (for fetching jobs + stats)
+* MMKV or SQLite (for caching jobs list offline)
+* Reanimated 3 (for subtle animations: filter changes, list fade/slide)
+* Expo Image (no camera needed on this screen)
+* Bottom tab navigation already exists: Dashboard, Jobs, Map, More
+
+Assume the TradieTrack app shell already exists and this screen is one tab in the bottom navigation.
+
+---
+
+## 🔹 1. Screen Structure
+
+Create a `JobsScreen` at:
+
+`app/jobs/index.tsx`  (or equivalent in the router setup)
+
+The layout should include:
+
+1. **Top App Bar**
+
+   * Left: TradieTrack logo
+   * Center/left: title “Jobs”
+   * Subtext under title: “20 total” (placeholder, use dynamic later)
+   * Right side:
+
+     * Search icon
+     * Notifications icon with badge
+     * Profile avatar
+   * On mobile, also include a “+ New Job” primary button aligned to the right *under* the title (like in the screenshot).
+
+2. **Search Bar**
+
+   * Full-width rounded search input with placeholder:
+     “Search jobs, clients, addresses…”
+   * Light grey background, inner shadow style similar to web.
+
+3. **Status Filter Pills Row**
+   A horizontal scroll row of filter chips matching the web:
+
+   * All (20) – highlighted/selected by default
+   * New (3)
+   * Scheduled (2)
+   * In Progress (4)
+   * Completed (6)
+   * Invoiced (5)
+
+   Each pill:
+
+   * Rounded, small badge with count
+   * Selected pill: solid background (blue) with white text
+   * Unselected pills: white background, light border, dark text
+
+   Selecting a pill should:
+
+   * Animate slightly with Reanimated (scale/opacity)
+   * Filter the Jobs list (for now just filter placeholder data in memory)
+
+4. **Stats Cards Row (Quick Overview)**
+   Recreate the four white cards:
+
+   * **Card 1**
+
+     * Icon: “briefcase/box”
+     * Big number: `20`
+     * Label: “Total Jobs”
+
+   * **Card 2**
+
+     * Icon: clock
+     * Big number: `2`
+     * Label: “Scheduled”
+
+   * **Card 3**
+
+     * Icon: play/triangle
+     * Big number: `4`
+     * Label: “In Progress”
+
+   * **Card 4**
+
+     * Icon: check
+     * Big number: `6`
+     * Label: “Completed”
+
+   Layout:
+
+   * On mobile: 2x2 grid (two cards per row) with spacing similar to screenshot.
+   * Cards are rounded, soft shadow, subtle border.
+
+5. **Recent Activity Section**
+
+   Title row:
+
+   * “Recent Activity” (section title)
+   * Small grey label “This Week” inside the card.
+
+   Inside the recent activity card:
+
+   * A vertical list of 3 example jobs:
+
+     * “Shower Head Replacement – Today – Invoiced”
+     * “Gas Fitting – BBQ – Today – Invoiced”
+     * “Laundry Taps Installation – Today – Invoiced”
+   * Each row:
+
+     * Blue dot bullet
+     * Job title
+     * Subtext: “· Today”
+     * Right side: pill badge “Invoiced” (purple background, white text)
+   * Card should be scrollable if items exceed height (as in screenshot, with a scrollbar/indicator).
+
+6. **All Jobs Section**
+
+   Below Recent Activity:
+
+   * Section header: “All Jobs”
+   * Jobs list of cards (at least one or two dummy jobs), each card including:
+
+     * Job title: e.g. “Shower Head Replacement”
+     * Status pill: e.g. “Invoiced”, “In Progress”, “Scheduled”, with different colours
+     * Short metadata row: client name, address, maybe scheduled time
+     * Three-dot menu icon on the right for actions
+
+   Use a simple flat list with Reanimated entrance (fade + slide up).
+
+7. **Bottom Navigation Bar**
+
+   Integrate with existing bottom nav:
+
+   * Tabs: Dashboard, Jobs (selected), Map, More
+   * Jobs tab highlighted in blue as per second screenshot.
+
+---
+
+## 🔹 2. Data + State
+
+Use placeholder/mock data but wire it like a real app:
+
+* Create TypeScript types: `Job`, `JobStatus`, `JobActivityItem`.
+* Use React Query with a mock `useJobs` hook that returns:
+
+  * A list of jobs
+  * Aggregated stats (total, scheduled, in progress, completed, invoiced)
+* Add simple filtering by status when a filter pill is selected.
+* Store the last selected filter in React state or Zustand (your choice).
+
+Example statuses: `"new" | "scheduled" | "in_progress" | "completed" | "invoiced"`.
+
+---
+
+## 🔹 3. Components & File Structure
+
+Please create these components to keep it clean:
+
+```
+app/
+  jobs/
+    index.tsx           // JobsScreen
+components/
+  jobs/
+    JobsHeader.tsx      // title, total count, New Job button
+    JobsSearchBar.tsx
+    JobStatusFilterBar.tsx
+    JobStatCard.tsx
+    RecentActivityCard.tsx
+    RecentActivityItem.tsx
+    JobList.tsx
+    JobListItem.tsx
+  common/
+    SectionHeader.tsx
+    BottomTabBar.tsx    // if not already built
+hooks/
+  useJobs.ts            // mock React Query hook
+types/
+  jobs.ts               // Job, JobStatus types
+```
+
+Use `StyleSheet` or `NativeWind` for styling, but match:
+
+* Colours: soft light grey backgrounds, white cards, blue primary
+* Spacing: generous padding and gaps like screenshot
+* Fonts: similar hierarchy (title bold, labels subtle grey, numbers clear)
+
+---
+
+## 🔹 4. Animations
+
+Use Reanimated 3 for:
+
+* Filter pill selection (small scale/opacity effect)
+* Job list entrance animation (fade + translateY)
+* Optional: subtle card press feedback.
+
+---
+
+## 🔹 5. Output Requirements
+
+When you generate code, show:
+
+1. The full `JobsScreen` (`app/jobs/index.tsx`)
+2. Component implementations for:
+
+   * `JobStatusFilterBar`
+   * `JobStatCard`
+   * `RecentActivityCard`
+   * `JobList` + `JobListItem`
+3. The `useJobs` mock hook using React Query
+4. Types for `Job` and `JobStatus`
+
+I will later replace the mock API with a real backend, so add comments where API URLs / queries should go.
+
+---
+
+End of prompt. Generate the full React Native (Expo) code for this Jobs screen now.
+
+---
+
+You can paste that straight into Replit.
+When you’re ready for **Job Details** or **New Job** screen prompts, send the next screenshot and I’ll write those too.

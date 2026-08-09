@@ -1,0 +1,89 @@
+Yeah 100%, it can work beautifully on web + mobile and stay perfectly in sync – as long as you set it up with the right architecture.
+
+Think of it like this:
+
+📱 Mobile app + 💻 Web app are just 2 different “screens” talking to the same brain (backend + database).
+
+⸻
+
+1. How to make them stay in sync
+
+You don’t store the main data on the device.
+You store it in a central backend + database, for example:
+	•	Backend: Node/Express or NestJS (could be hosted on Replit at the start)
+	•	DB: Postgres (Supabase / Neon / RDS / whatever)
+
+Then:
+	•	The web app (React / Next.js) calls the backend via API
+	•	The mobile app (Expo React Native) calls the same API
+
+So when a tradie:
+	1.	Marks a job as “Completed” on their phone → mobile calls PATCH /jobs/123.
+	2.	The backend updates the job in the database.
+	3.	When they open the web app → it fetches /jobs again and sees the updated status.
+
+Same account, same data, just a different UI.
+
+⸻
+
+2. Recommended setup for you
+
+Given everything we’ve talked about, this combo makes sense:
+
+Backend
+	•	Node + Express (or NestJS)
+	•	REST API like:
+	•	GET /jobs
+	•	POST /jobs
+	•	PATCH /jobs/:id
+	•	GET /clients
+	•	Deployed on Replit or a cheap VPS
+
+Mobile app
+	•	Expo + React Native
+	•	Uses fetch / Axios to talk to the backend
+
+Web app
+	•	React or Next.js
+	•	Uses the same API endpoints
+
+Authentication:
+	•	Simple JWT-based auth (/login → returns a token; both apps store it and send with each request).
+
+⸻
+
+3. What about offline use?
+
+This is the only tricky bit – but still totally doable.
+	•	Mobile app keeps a local cache (MMKV / AsyncStorage) of jobs.
+	•	When offline:
+	•	User updates jobs locally and flags them as “pendingSync”.
+	•	When back online:
+	•	App sends changes to backend.
+	•	Backend updates DB → web app picks it up next time it loads or polls.
+
+The source of truth is always the server, not the device.
+
+⸻
+
+4. Should you actually build both now?
+
+My honest take for you:
+	•	Phase 1: Focus on mobile app + simple web admin (even just for you / office staff).
+	•	Phase 2: Build a nicer full web dashboard once you’ve:
+	•	Got a few tradies using it
+	•	Know exactly what they click most
+
+Tradies will mostly live in the app on-site, office managers might love the web.
+
+⸻
+
+5. TL;DR
+	•	✅ Yes, web + app together is totally fine and normal
+	•	✅ They’ll sync perfectly if both talk to a single backend + database
+	•	✅ Start with:
+	•	Expo React Native app
+	•	Node backend (Replit)
+	•	Later add a React/Next web dashboard
+
+If you want, next message I can sketch a little diagram + API list for TradieTrack (jobs, quotes, invoices, clients) showing exactly how web + app plug into it.

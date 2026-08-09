@@ -1,0 +1,56 @@
+
+❌  (ios/Pods/Headers/Public/RCT-Folly/folly/Expected.h:1587:10)
+
+  1585 | // Inspired by https://github.com/toby-allsopp/coroutine_monad
+  1586 | #if FOLLY_HAS_COROUTINES
+> 1587 | #include <folly/coro/Coroutine.h>
+       |          ^ 'folly/coro/Coroutine.h' file not found
+  1588 | 
+  1589 | namespace folly {
+  1590 | namespace expected_detail {
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedMountHook.cpp
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedJSIUtils.cpp
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedHermesRuntime.cpp
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedCommitHook.cpp
+› Compiling react-native-reanimated Pods/RNReanimated » RNRuntimeDecorator.cpp
+› Compiling react-native-reanimated Pods/RNReanimated » REASwizzledUIManager.mm
+› Compiling react-native-reanimated Pods/RNReanimated » REASlowAnimations.mm
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	CompileC /Users/expo/Library/Developer/Xcode/DerivedData/TradieTrack-ejalqrgguwtpabbwvjlnbfqtzpql/Build/Intermediates.noindex/ArchiveIntermediates/TradieTrack/IntermediateBuildFilesPath/Pods.build/Debug-iphoneos/RNReanimated.build/Objects-normal/arm64/ReanimatedRuntime.o /Users/expo/workingdir/build/mobile/node_modules/react-native-reanimated/Common/cpp/worklets/WorkletRuntime/ReanimatedRuntime.cpp normal arm64 c++ com.apple.compilers.llvm.clang.1_0.compiler (in target 'RNReanimated' from project 'Pods')
+▸ 	Archiving workspace TradieTrack with scheme TradieTrack
+▸ (2 failures)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.228.0                 |
+| sdk         | iPhoneOS26.0.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- 'folly/coro/Coroutine.h' file not found
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1s
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- 'folly/coro/Coroutine.h' file not found
+Refer to "Xcode Logs" below for additional, more detailed logs.

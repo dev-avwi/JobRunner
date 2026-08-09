@@ -1,0 +1,203 @@
+Perfect — here are **two things** you can copy straight into Replit:
+
+1. **One master Replit prompt** (clear build instructions)
+2. **Permissions matrix** (Owner/Manager/Worker/Subcontractor/Client)
+
+---
+
+## 1) Master Replit Prompt (copy/paste)
+
+```text
+Build a bulletproof team + dispatch + JobRunner SMS/portal system for TradieTrack.
+
+GOAL:
+- Support small AND large businesses with roles, assignments, visual dispatch, materials tracking, and Uber-style client tracking links.
+- Ensure SMS and portal always reflect the correct assigned worker (employee or subcontractor), with ETA + live travel map.
+
+CORE DATA MODELS:
+1) Company
+- id, name, logo_url, owner_name, owner_phone, dispatch_phone (optional), support_email, ABN (optional)
+- settings flags: show_worker_phone_to_client default, enable_live_tracking default, tracking_timeout_minutes
+
+2) User
+- id, company_id, name, phone, email, role (OWNER, MANAGER, WORKER, SUBCONTRACTOR)
+- status (active/suspended)
+- default_hourly_rate
+
+3) Client
+- id, company_id, name, phone, email
+
+4) Job
+- id, company_id, client_id, title, description, address, lat, lng
+- scheduled_start, scheduled_end
+- status (CREATED, ASSIGNED, EN_ROUTE, ARRIVED, IN_PROGRESS, COMPLETED, INVOICED)
+- created_by_user_id
+
+5) JobAssignment (CRITICAL - all worker actions must use assignment_id)
+- id (assignment_id), job_id, worker_user_id, assigned_by_user_id
+- assignment_status (ASSIGNED, ACCEPTED, DECLINED, EN_ROUTE, ARRIVED, WORKING, DONE)
+- rate_override (nullable)
+- snapshot fields: worker_name_snapshot, worker_phone_snapshot
+- visibility flags: show_worker_name_to_client, show_worker_phone_to_client
+
+6) EventLog (append-only)
+- id, company_id, job_id, assignment_id (nullable), actor_user_id (nullable)
+- type (JOB_CREATED, WORKER_ASSIGNED, ON_MY_WAY, ARRIVED, CLOCK_IN, CLOCK_OUT, MATERIAL_ADDED, PHOTO_UPLOADED, GPS_LOST, TIME_EDITED, INVOICE_GENERATED, PORTAL_OPENED, etc.)
+- payload JSON, created_at
+
+7) PortalToken (read-only client portal)
+- id, job_id, assignment_id
+- token, expires_at, revoked_at
+- created_at
+
+8) LocationPing
+- id, assignment_id, lat, lng, accuracy_m, recorded_at
+
+9) TimeEntry
+- id, job_id, assignment_id, worker_user_id
+- start_at_utc, end_at_utc, duration_seconds
+- gps_verified boolean, gps_loss_count int
+- manual_edit_count int
+- created_at
+
+10) Materials
+- id, job_id, added_by_user_id
+- item_name, qty, unit_cost, markup_percent, taxable_flag
+- supplier (optional)
+- receipt_file_url (optional)
+
+WORKER APP FLOW:
+- Worker only sees assigned jobs.
+- Worker taps “On My Way” on an assigned job:
+  - call POST /jobs/{job_id}/assignments/{assignment_id}/on-my-way
+  - validate actor_user_id == assignment.worker_user_id
+  - create EventLog: ON_MY_WAY
+  - set assignment_status = EN_ROUTE
+  - generate or refresh PortalToken scoped to assignment_id
+  - compute ETA using worker last location (or request immediate location ping) and job destination coords
+  - send client SMS + email with portal link, worker name, ETA, business name, owner/dispatch number
+  - begin travel tracking (location pings every 30-60s; update ETA every 60s)
+  - stop tracking automatically when “Arrived” pressed or after timeout (e.g., 120 mins)
+  - record GPS_LOST events when no GPS updates
+
+- Worker taps “Arrived”:
+  - EventLog: ARRIVED
+  - set assignment_status = ARRIVED
+  - stop live travel tracking
+  - prompt to clock in if not clocked in
+
+TIME TRACKING REQUIREMENTS (ROCK SOLID):
+- Manual clock in/out with persistence across app close/lock
+- Offline-first: queue events locally and sync later
+- Time edits must never overwrite history; create TIME_EDITED events and store reason
+- Generate a TimesheetSummary per job per assignment:
+  - total hours, work period start/end, gps_loss_count, manual_edit_count
+- Invoice uses TimesheetSummary, not raw logs directly
+
+GEOFENCING (MVP SAFE):
+- Use job radius (e.g., 150m configurable)
+- When entering radius during EN_ROUTE, prompt “Confirm arrival?”
+- When leaving radius during WORKING, prompt “Clock out or switch job?”
+- Do not auto-change times silently—prompt + log event
+
+VISUAL DISPATCH (OWNER/MANAGER):
+- Dispatch board columns: ASSIGNED / EN_ROUTE / ARRIVED / IN_PROGRESS / COMPLETED
+- Map view of active workers + active jobs
+- Ability to assign/reassign workers (creates EventLog)
+- Ability to send client updates manually (re-send portal link)
+- Timesheet approval workflow:
+  - Workers submit; managers approve; invoices use approved time only
+- Materials tracking per job:
+  - add items, receipts, markup; include in invoice
+- Reporting:
+  - labour vs materials, job profitability, hours per worker
+
+JOBRUNNER CLIENT PORTAL (NO LOGIN):
+- Route: /p/{token}
+- Read-only view showing:
+  - business branding + owner/dispatch contact
+  - job status and timeline
+  - worker card: name and phone depending on visibility flags
+  - live map + ETA ONLY while EN_ROUTE (travel mode)
+  - “last updated” timestamp and accuracy disclaimer
+  - before/after photos gallery
+  - documents: quote/invoice/cert PDFs
+- Token security:
+  - long random token
+  - expiry after job completion (default 7 days)
+  - revokable by owner/manager
+  - log PORTAL_OPENED event
+
+SMS/EMAIL TEMPLATES:
+- Use variables: BusinessName, WorkerName, ETA, PortalLink, OwnerName, OwnerPhone
+- SMS triggers:
+  - ON_MY_WAY -> send SMS
+  - ARRIVED -> optional SMS
+  - COMPLETED -> send completion SMS + invoice link
+- Anti-spam:
+  - do not send the same event SMS twice within 10 minutes unless manually forced by manager
+
+SUBCONTRACTOR SUPPORT:
+- Subcontractor must ACCEPT assignment before using On My Way
+- Option to hide worker phone from client (default off for subcontractors)
+- All subcontractor actions still use assignment_id
+
+DELIVERABLES:
+- Implement backend endpoints + UI for all flows above
+- Ensure audit logs and event timeline are available in dispatch view
+- Ensure everything is assignment-based so SMS/portal always identifies the correct worker and job
+```
+
+---
+
+## 2) Permissions Matrix (bulletproof)
+
+### Actions → Who can do what
+
+**Owner**
+
+* ✅ everything
+
+**Manager**
+
+* ✅ create/edit jobs
+* ✅ assign/reassign workers/subcontractors
+* ✅ send/resend client portal link
+* ✅ view team map + dispatch board
+* ✅ approve timesheets (if enabled)
+* ✅ add/edit materials
+* ✅ generate invoices
+* ❌ billing/plan changes
+* ❌ change company ownership
+
+**Worker**
+
+* ✅ view assigned jobs only
+* ✅ On My Way / Arrived / Start / Finish updates
+* ✅ clock in/out
+* ✅ add notes/photos/material receipts
+* ✅ view own timesheet
+* ❌ assign other workers
+* ❌ see company-wide finances
+* ❌ edit business settings
+
+**Subcontractor**
+
+* ✅ same as worker, but:
+* ✅ must accept assignment first
+* ✅ can upload time/photos/receipts
+* ❌ cannot see other jobs/teams
+* ❌ phone visibility to client optional (default off)
+
+**Client (Portal Viewer)**
+
+* ✅ read-only:
+
+  * status, ETA, map (travel only), photos, documents
+* ❌ no edits
+* ❌ no worker list
+* ❌ no internal data
+
+---
+
+If you want, I can also write the **exact SMS templates** (On My Way / Arrived / Delayed / Completed) in a clean consistent brand tone, plus the **client portal layout** in sections so Replit nails the UI.

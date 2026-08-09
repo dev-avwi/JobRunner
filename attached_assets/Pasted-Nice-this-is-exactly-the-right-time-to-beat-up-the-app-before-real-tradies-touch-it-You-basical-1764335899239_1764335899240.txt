@@ -1,0 +1,331 @@
+Nice, this is exactly the right time to “beat up” the app before real tradies touch it.
+
+You basically want two things:
+	1.	A manual test script you follow in the browser (using Replit’s preview URL)
+	2.	A Replit AI test prompt that tells it what to inspect + fix in the code (including Settings)
+
+I’ll give you both.
+
+⸻
+
+1️⃣ How to think about testing (simple version)
+
+You’re testing 4 big areas:
+	1.	Core flows – can a tradie actually do their job?
+	2.	Settings – is their business set up properly?
+	3.	Money – subscriptions + invoice payments (even in test mode)
+	4.	Polish & safety – UI, errors, legit feel, no “school-project” energy
+
+We’ll cover all of that.
+
+⸻
+
+2️⃣ Manual test script for you to run in Replit
+
+Run the app in Replit, open the web preview, and follow this like a checklist.
+
+A. New tradie signup & onboarding
+	1.	Go to your sign-up page.
+	2.	Create a brand new account as if you’re a tradie:
+	•	Name: “Joe Smith”
+	•	Business: “Cairns Plumbing Co”
+	•	Email: use a realistic one (even if fake)
+	3.	Complete onboarding:
+	•	Business name
+	•	Trade type
+	•	Location (if you have it)
+	•	Solo or team
+
+✅ Check:
+	•	Does it feel simple or overwhelming?
+	•	Are there any fields that feel confusing or unnecessary?
+	•	Do you ever feel “stuck” or unsure what to do next?
+	•	After onboarding, does it land you on a sensible page (Dashboard or Jobs)?
+
+⸻
+
+B. Settings – Business + Email + Payments
+
+Go into your Settings area and test each section.
+
+1. Business Info
+	•	Add:
+	•	Logo
+	•	Business name
+	•	ABN
+	•	Phone
+	•	Email
+	•	Address
+
+✅ Check:
+	•	Do quotes/invoices pull this info correctly?
+	•	If ABN is empty, is there a warning message?
+
+2. Email (verification / preferences)
+	•	If you have email verification:
+	•	Try “Resend verification”
+	•	If not, just check:
+	•	Does it show whether email is verified or not?
+
+✅ Check:
+	•	Do messages explain clearly what email verification is for?
+	•	If email isn’t verified, does the app warn you before sending quotes/invoices?
+
+3. Billing (your subscription)
+	•	Go to Billing page.
+	•	Pick a plan (Starter/Pro).
+	•	Make sure it:
+	•	Shows your current plan
+	•	Shows upgrade button
+	•	Shows status (active / trial / etc.)
+
+(You don’t have to run a full Stripe test every time, just make sure the flow isn’t broken.)
+
+✅ Check:
+	•	Is it clear what each plan gives you?
+	•	If you’re in “beta/free mode”, does it say that?
+
+4. Payments (Stripe Connect)
+	•	Go to “Payments” or “Accept card payments” section.
+	•	Find the “Connect Stripe” button.
+	•	Click it and check:
+	•	Does it send you to a Stripe onboarding page (in test mode)?
+	•	After you come back, does the app show “Connected / Verified / Active” or similar?
+
+✅ Check:
+	•	Is it obvious to a tradie what “Connect Stripe” does?
+	•	Is there a clear explanation like:
+“Connect Stripe to accept card payments on your invoices.”
+
+⸻
+
+C. Core business flows
+
+Now pretend you’re a real tradie using this as your main app.
+
+1. Create a client
+	•	Go to Clients.
+	•	Add:
+	•	Name: “Sarah Thompson”
+	•	Address
+	•	Phone
+	•	Email
+
+✅ Check:
+	•	Is it quick to add a client?
+	•	Is anything weird or unnecessary?
+
+2. Create a job
+	•	Create a new job linked to Sarah:
+	•	“Fix leaking shower”
+	•	Set:
+	•	Status: New / Scheduled / etc.
+	•	Date + time
+	•	Assign yourself (or a test tradie)
+
+✅ Check:
+	•	Does the job appear on:
+	•	Jobs list
+	•	Calendar (if you have one)
+	•	Is it clear what the current status is?
+
+3. Add job details
+	•	Add:
+	•	Notes (“Customer wants quote first”)
+	•	Photo (if implemented)
+	•	Files (if you support uploads)
+
+✅ Check:
+	•	Do attachments show clearly in job view?
+	•	Does it feel organised, not cluttered?
+
+⸻
+
+D. Quotes & Invoices (legit feel check)
+
+1. Create a quote for that job
+	•	Add line items:
+	•	“Labour – 2 hours @ $100/hr”
+	•	“Materials – mixer tap”
+
+✅ Check:
+	•	Are totals correct?
+	•	Is GST clearly calculated and labelled?
+	•	Does the quote preview look professional?
+
+2. Send quote
+Even if you don’t actually send it (or use a test email):
+	•	Click “Send” or “Share”.
+	•	Check the email preview / confirmation modal.
+
+✅ Check:
+	•	Does it show a public link or PDF?
+	•	Does the wording sound professional?
+
+3. Accept quote (if you have public page)
+	•	Open the public quote link (if available).
+	•	Click “Accept”.
+	•	Check:
+	•	Does status change to Accepted?
+	•	Does it auto-create a Job or Invoice?
+
+4. Convert to invoice
+	•	Turn the accepted quote into an invoice.
+	•	Check:
+	•	Invoice number format (e.g. INV-1001)
+	•	Business details
+	•	Client details
+	•	Terms
+	•	GST
+	•	Total
+
+✅ This is your “does this look like a real business document?” test.
+
+⸻
+
+E. Online payment (if wired)
+
+If you’ve connected Stripe Connect (even in test mode):
+	•	Open invoice as a client.
+	•	Click “Pay now”.
+	•	Use a Stripe test card (4242 4242 4242 4242 etc.) if you have a payment page.
+
+✅ Check:
+	•	After paying, does invoice status change to Paid?
+	•	Does the app show a clear confirmation?
+
+⸻
+
+F. Job & Team Chat
+	•	Open a job.
+	•	Send a few messages in the job chat.
+	•	If you have team chat:
+	•	Send a general message there too.
+
+✅ Check:
+	•	Do messages post instantly?
+	•	Is it clear who sent what?
+	•	Is it easy to scroll?
+
+⸻
+
+G. Multi-user roles (if you’ve got them)
+	•	Invite a second user (e.g., a tradie).
+	•	Log in as that tradie (in another browser/incognito).
+	•	Check:
+
+✅ As tradie:
+	•	Only sees assigned jobs
+	•	Limited settings access
+	•	No billing/plan change controls
+
+✅ As owner:
+	•	Sees all jobs
+	•	Can manage team
+
+⸻
+
+H. UI & layout sanity check
+
+On desktop and phone:
+	•	Dashboard:
+	•	Are widgets balanced (2x2 grid on desktop)?
+	•	No big empty column on the right?
+	•	Jobs list:
+	•	Easy to read?
+	•	Job detail:
+	•	Not too cramped?
+	•	Settings:
+	•	Tab names clear?
+	•	Bottom nav (on mobile):
+	•	Easy to tap?
+	•	Icons understandable?
+
+If you see the “unused right column” issue, note which page and what you were doing.
+
+⸻
+
+3️⃣ What to ask Replit AI to test & fix
+
+Once you’ve done your manual test and noticed issues, NOW you bring in Replit AI.
+
+Here’s a prompt you can paste into Replit:
+
+⸻
+
+🧠 REPLIT PROMPT – “FULL APP TEST & HARDEN FOR PRODUCTION”
+
+I’m building a SaaS app called TradieTrack for tradies (jobs, quotes, invoices, chat, scheduling, etc.).
+
+I want you to act as:
+	•	a QA tester
+	•	a UX reviewer
+	•	and a production-hardening engineer
+
+Please:
+	1.	Scan the entire codebase (frontend + backend + components + pages).
+	2.	Identify all the key flows:
+	•	sign up
+	•	onboarding
+	•	business settings
+	•	jobs
+	•	clients
+	•	quotes
+	•	invoices
+	•	chat
+	•	calendar/schedule
+	•	billing (Stripe)
+	•	payments (Stripe Connect if present)
+	3.	For each area, verify:
+	•	API calls are correct
+	•	error handling exists
+	•	forms validate inputs
+	•	empty states are handled
+	•	the right data is loaded from the database
+	•	nothing is still using hard-coded mock data
+	4.	Pay special attention to Settings:
+	•	Business info (name, ABN, logo, email, phone, address)
+	•	Email verification state
+	•	Billing (subscription tier/status)
+	•	Payments (Stripe Connect: account ID + charges/payouts enabled)
+	•	Team management (roles: owner, manager, tradie)
+	5.	Fix:
+	•	any layout that uses an extra right-hand column or unused grid
+	•	any inconsistent page container (pages that don’t match the layout used by the “More”/Settings page)
+	•	any missing loading and error states
+	•	any routes that don’t redirect properly after form submit (e.g. after onboarding, job creation, quote creation)
+	6.	Check and improve the production setup:
+	•	environment variables (remove hard-coded keys)
+	•	API base URLs
+	•	Stripe keys and webhooks are referenced via env variables
+	•	SendGrid key is only used on the server side
+	•	RLS/auth checks for all protected routes and queries
+	7.	For quotes and invoices:
+	•	ensure all required fields are present (business details, ABN, client details, numbers, dates, totals, GST)
+	•	ensure totals and GST are calculated correctly
+	•	ensure IDs are auto-generated and unique (e.g. Q-1001, INV-1001)
+	•	ensure the preview / PDF output is clean and professional
+	8.	For Stripe:
+	•	verify subscription checkout session creation and webhook handling
+	•	verify (if present) Stripe Connect account creation and account links
+	•	verify that PaymentIntent creation for invoice payments correctly uses connect accounts and metadata
+	9.	For SendGrid:
+	•	verify that email sending functions use templates and do not expose secrets
+	•	verify that app→tradie emails and tradie→customer emails are separated
+	•	confirm Reply-To for tradie customer emails uses the tradie’s business email
+	10.	At the end:
+
+	•	list all important fixes you made
+	•	list any remaining TODOs that must be done before inviting 3–5 real tradies as beta testers
+
+Use my codebase as the source of truth and upgrade everything towards a stable, production-ready, tradie-friendly app.
+
+⸻
+
+You can run that once, let it refactor, then re-test manually with the checklist above.
+
+⸻
+
+If you’d like, next I can:
+	•	help you create a “Beta Tradie Feedback Form” (so when you onboard your first 3 tradies, you know exactly what to ask), or
+	•	write email texts for welcome / quote sent / invoice sent / payment receipt so your app feels super legit.

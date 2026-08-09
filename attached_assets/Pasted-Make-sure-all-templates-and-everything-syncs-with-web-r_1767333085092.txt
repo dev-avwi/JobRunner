@@ -1,0 +1,16 @@
+Make sure all templates and everything syncs with web remember like if I make a template on mobile then it has to automatically update to the mobile side
+And all these screenshots show an error in what can be fixed in the mobile app
+The mas page doesn't have team members on it like how web app has it, the quick create is still too colourful and the two bottom actions the ai assistant and collectpayment/assign job is too big. The buttons were too big they need to be smaller to make it look cleaner
+The timer in the dashboard page should have like jobs next to it and from the dashboard allow for manual continue or pause or cancel timer, and the timer today if you've done jobs, or the workers, it should show the jobs that have been next to it as there's space there, 
+The list for items like how we've done web app isn't in mobile quite yet it doesn't look like that sorting thing, I like how the grid is but the list toggle isn't as good cause it's just the grid but in one column which isn't what I had intended, I wanted that card where it has the sorting above it
+When I tried quick action creating a job from a client it came up with job not found
+There's no delete buttton when viewing jobs and stuff
+Also I don't know if there is but there's no delete button for items like quote, invoice and receipts or clients not sure though just check
+When I tried creating a quote from client it filled in the details but didn't fill it in on the live editing see how it's blank there, underneath client option it's jut blank even though it's filled in on the live preview 
+I viewed a receipt but it didn't show the invoice number so just check everything in it you know
+THIS IS A MUST: Redesign the collect payment page cause it looks so half done and doesn't fit with how great the rest of the app looks
+I don't know if mobile is syncing with the web purely just yet cause I tried viewing team members on mobile but there was nothing but in web there is team members so just check everything
+When I tried viewing the business templates it just wouldn't load for some reason it didn't work
+In the settings page there's still UI problems cause the subscription should be team but it's says I'm still free but in subscription page it is correct with team so just check it
+Also with the advanced theme section in branding it's kind of UI still cause it tried doing things and it said applied but it didn't work so make sure it's working properly
+In the team member map identity it didn't quite work properly I tried viewing as a worker and it wasn't quite right I think

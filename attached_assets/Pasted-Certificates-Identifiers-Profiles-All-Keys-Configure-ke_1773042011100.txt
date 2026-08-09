@@ -1,0 +1,50 @@
+Certificates, Identifiers & Profiles
+All Keys
+Configure key
+Continue
+
+Key Name
+Expo Push Notifications Key 20251207192247
+You cannot use special characters such as @, &, *, ', ", -, .
+
+Key Usage Description (optional)
+Enable	Name	Description	
+	Apple Push Notifications service (APNs)Apple Push Notifications service (APNs)	
+Establish connectivity between your notification server and the Apple Push Notification service. One key is used for all of your apps. Learn more
+
+Edit
+	DeviceCheckDeviceCheck	
+Access the DeviceCheck and AppAttest APIs to get data that your associated server can use in its business logic to protect your business while maintaining user privacy. Learn more
+
+	MapKit JSMapKit JS	
+Use Apple Maps on your websites. Show a map, display search results, provide directions, and more. Learn more
+
+There are no identifiers available that can be associated with the key
+Configure
+	Media Services (MusicKit, ShazamKit)Media Services (MusicKit, ShazamKit, Apple Music Feed)	
+Access the Apple Music catalog and make personalized requests for authorized users, check audio signatures against the Shazam music catalog, and access Apple Music Feed.
+
+There are no identifiers available that can be associated with the key
+Configure
+	Sign in with AppleSign in with Apple	
+Enable your apps to allow users to authenticate in your application with their Apple ID. Configuration is required to enable this feature.
+
+Edit
+	iWork Document ExportingiWork Document Exporting	
+Enable your users to display iWork documents by requesting a read-only PDF version of the document.
+
+There are no identifiers available that can be associated with the key
+Configure
+	Account & Organizational Data SharingAccount & Organizational Data Sharing	
+Configure your apps and websites with Account & Organizational Data Sharing to securely request access to your users’ Apple ID account information.
+
+	ClassKit CatalogClassKit Catalog	
+Publish all of your ClassKit app activities to teachers creating Handouts in Apple Schoolwork. Learn more
+
+	WeatherKitWeatherKit	
+Access the Apple Weather service.
+
+Copyright © 2026 Apple Inc. All rights reserved.
+
+Terms of Use
+Privacy Policy

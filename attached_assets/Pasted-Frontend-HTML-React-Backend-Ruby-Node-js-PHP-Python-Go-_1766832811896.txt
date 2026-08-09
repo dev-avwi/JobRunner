@@ -1,0 +1,315 @@
+Frontend:
+
+
+HTML
+
+React
+Backend:
+
+
+Ruby
+
+Node.js
+
+PHP
+
+Python
+
+Go
+
+.NET
+
+Java
+Integration Path:
+
+
+Customers v1
+
+Accounts v2
+Prebuilt subscription page with Stripe Checkout
+View the text-based guide
+Get started with our sample app to run a full, working subscription integration using Stripe Billing and Stripe Checkout.
+
+The sample app demonstrates redirecting your customers from your site to a pre-built payment page hosted on Stripe. The Stripe Billing APIs create and manage subscriptions, invoices, and recurring payments, while Checkout provides the pre-built, secure, Stripe-hosted UI for collecting payment details.
+
+Click each step to see the corresponding sample code. As you interact with the steps, such as adding pricing data, the builder updates the sample code.
+
+Download and customise the sample app locally to test your integration.
+
+
+Download example
+Integrate in VS Code
+Don't code? Use Stripe’s no-code options or get help from our partners.
+1
+Set up products, pricing, and payment methods
+Add your products and prices
+Create new Products and Prices that you can use in this sample.
+
+
+Select a test product or create a new one
+
+Client
+Add features to your product
+Create features, such as an annual birthday gift, and associate them with your subscription to entitle new subscribers to them. Listen to the active entitlements summary events for your event destination, and use the list active entitlements API for a given customer to fulfil your customer’s entitlements.
+
+Note
+Create or select a product before adding a feature.
+Client
+(Optional) Enable payment methods
+Use your Dashboard to enable supported payment methods that you want to accept in addition to cards. Checkout dynamically displays your enabled payment methods in order of relevance, based on the customer’s location and other characteristics.
+
+2
+Build your subscription page
+Add a pricing preview page
+Add a page to your site that displays your product and allows your customers to subscribe to it. Clicking Checkout redirects them to a Stripe-hosted Checkout page, which finalises the order and prevents further modification.
+
+Consider embedding a pricing table to dynamically display your pricing information through the Dashboard. Clicking a pricing option redirects your customer to the payment page.
+
+Client
+Add a checkout button
+The button on your order preview page redirects your customer to the Stripe-hosted payment page and uses your product’s lookup_key to retrieve the price_id from the server.
+
+Client
+Add a success page
+Create a success page to display order confirmation messaging or order details to your customer. Associate this page with the Checkout Session success_url, which Stripe redirects to after the customer successfully completes the checkout.
+
+Client
+Add a customer portal button
+Add a button to redirect to the customer portal to allow customers to manage their subscription. Clicking this button redirects your customer to the Stripe-hosted customer portal page.
+
+Client
+3
+Call the Stripe API
+Install the Stripe Ruby library
+Install the Stripe ruby gem and require it in your code. Alternatively, if you’re starting from scratch and need a Gemfile, download the project files using the link in the code editor.
+
+
+Terminal
+
+Bundler
+
+GitHub
+Install the gem:
+
+gem install stripe
+
+Server
+Create a Checkout Session
+The Checkout Session controls what your customer sees in the Stripe-hosted payment page such as line items, the order amount and currency, and acceptable payment methods.
+
+Server
+Get the price from lookup key
+Pass the lookup key you defined for your product in the Price endpoint to apply its price to the order.
+
+Server
+Define the line items
+Always keep sensitive information about your product inventory, such as price and availability, on your server to prevent customer manipulation from the client. Pass in the predefined price ID retrieved above.
+
+Server
+Set the mode
+Set the mode to subscription. Checkout also supports payment and setup modes for non-recurring payments.
+
+Server
+Supply success URL
+Specify a publicly accessible URL that Stripe can redirect customers after success. Add the session_id query parameter at the end of your URL so you can retrieve the customer later and so Stripe can generate the customer’s hosted Dashboard.
+
+Server
+Redirect from Checkout
+After creating the session, redirect your customer to the URL returned in the response (either the success or cancel URL).
+
+Server
+Create a customer portal session
+Initiate a secure, Stripe-hosted customer portal session that lets your customers manage their subscriptions and billing details.
+
+Server
+Redirect to customer portal
+After creating the portal session, redirect your customer to the URL returned in the response.
+
+Server
+Fulfil the subscription
+Create a /webhook endpoint and obtain your webhook secret key in the Webhooks tab in Workbench to listen for events related to subscription activity. After a successful payment and redirect to the success page, verify that the subscription status is active and grant your customer access to the products and features they subscribed to.
+
+Server
+4
+Test your page
+Run the server
+Start your server and go to http://localhost:4242/
+
+ruby server.rb
+
+Server
+Try it out
+Click the checkout button. In the Stripe-hosted payment page, use any of these test cards to simulate a payment.
+
+Payment succeeds
+
+4242 4242 4242 4242
+Payment requires authentication
+
+4000 0025 0000 3155
+Payment is declined
+
+4000 0000 0000 9995
+Client
+Add customisation features
+If you successfully subscribed to your product in your test, you have a working, basic subscriptions checkout integration. Use the toggles below to see how to customise this sample with additional features.
+
+
+Attach a trial period to a Checkout session.
+
+
+Specify a billing cycle anchor when creating a Checkout session.
+
+
+Calculate and collect the right amount of tax on your Stripe transactions. Learn more about Stripe Tax and how to add it to Checkout. Activate Stripe Tax in the Dashboard before integrating.
+
+Next steps
+Update subscription prices
+Update subscriptions to handle customers upgrading or downgrading their pricing plan.
+
+Apply pro-rata calculations
+Learn how to adjust a customer’s invoice to accurately reflect mid-cycle pricing changes.
+
+Offer upsells
+Incentivise customers with discounts for committing to longer billing intervals.
+
+Was this page helpful?
+Yes
+No
+
+checkout.html
+
+success.html
+
+cancel.html
+
+client.js
+
+server.rb
+
+Download
+require 'stripe'
+require 'sinatra'
+
+# This is your test secret API key.
+Stripe.api_key = 'sk_test_51SXSR7LxIf4mgxjiMzvfn07vezfjDSgO1P5BkZmn3R2zKjPJGADnWyT5MfVgv5H0BhZBoUhUSPoGrTjwWmq1I6la00amCVcdBQ'
+
+set :static, true
+set :port, 4242
+
+YOUR_DOMAIN = 'http://localhost:4242'
+
+post '/create-checkout-session' do
+  prices = Stripe::Price.list(
+    lookup_keys: [params['lookup_key']],
+    expand: ['data.product']
+  )
+
+  begin
+    session = Stripe::Checkout::Session.create({
+      mode: 'subscription',
+      line_items: [{
+        quantity: 1,
+        price: prices.data[0].id
+      }],
+      success_url: YOUR_DOMAIN + '/success.html?session_id={CHECKOUT_SESSION_ID}',
+    })
+  rescue StandardError => e
+    halt 400,
+        { 'Content-Type' => 'application/json' },
+        { 'error': { message: e.error.message } }.to_json
+  end
+
+  redirect session.url, 303
+end
+
+post '/create-portal-session' do
+  content_type 'application/json'
+  # For demonstration purposes, we're using the Checkout session to retrieve the customer_account ID.
+  # Typically this is stored alongside the authenticated user in your database.
+  checkout_session_id = params['session_id']
+  checkout_session = Stripe::Checkout::Session.retrieve(checkout_session_id)
+
+  # This is the URL to which users will be redirected after they're done
+  # managing their billing.
+  return_url = YOUR_DOMAIN
+
+  session = Stripe::BillingPortal::Session.create({
+
+                                                    customer: checkout_session.customer,#
+                                                    return_url: return_url
+                                                  })
+  redirect session.url, 303
+end
+
+post '/webhook' do
+  # Replace this endpoint secret with your endpoint's unique secret
+  # If you are testing with the CLI, find the secret by running 'stripe listen'
+  # If you are using an endpoint defined with the API or dashboard, look in your webhook settings
+  # at https://dashboard.stripe.com/webhooks
+  webhook_secret = 'whsec_12345'
+  payload = request.body.read
+  if !webhook_secret.empty?
+    # Retrieve the event by verifying the signature using the raw body and secret if webhook signing is configured.
+    sig_header = request.env['HTTP_STRIPE_SIGNATURE']
+    event = nil
+
+    begin
+      event = Stripe::Webhook.construct_event(
+        payload, sig_header, webhook_secret
+      )
+    rescue JSON::ParserError => e
+      # Invalid payload
+      status 400
+      return
+    rescue Stripe::SignatureVerificationError => e
+      # Invalid signature
+      puts '⚠️  Webhook signature verification failed.'
+      status 400
+      return
+    end
+  else
+    data = JSON.parse(payload, symbolize_names: true)
+    event = Stripe::Event.construct_from(data)
+  end
+  # Get the type of webhook event sent - used to check the status of PaymentIntents.
+  event_type = event['type']
+  data = event['data']
+  data_object = data['object']
+
+  if event.type == 'customer.subscription.deleted'
+    # handle subscription canceled automatically based
+    # upon your subscription settings. Or if the user cancels it.
+    # puts data_object
+    puts "Subscription canceled: #{event.id}"
+  end
+
+  if event.type == 'customer.subscription.updated'
+    # handle subscription updated
+    # puts data_object
+    puts "Subscription updated: #{event.id}"
+  end
+
+  if event.type == 'customer.subscription.created'
+    # handle subscription created
+    # puts data_object
+    puts "Subscription created: #{event.id}"
+  end
+
+  if event.type == 'customer.subscription.trial_will_end'
+    # handle subscription trial ending
+    # puts data_object
+    puts "Subscription trial will end: #{event.id}"
+  end
+
+  if event.type == 'entitlements.active_entitlement_summary.updated'
+    # handle active entitlement summary updated
+    # puts data_object
+    puts "Active entitlement summary updated: #{event.id}"
+  end
+
+  content_type 'application/json'
+  {
+    status: 'success'
+  }.to_json
+end

@@ -1,0 +1,89 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Removed
+
+Items Submitted (1)
+Item
+Type
+Review Status
+iOS App 1.0
+
+1.1.0 (65)
+
+App Version
+Removed
+2.1.0 Performance: App Completeness
+
+3.0.0 Business: Preamble
+
+Screenshot-0418-131440.pngDownload
+See More
+Messages (4)
+
+Apple2026-04-15 2:10 PM
+
+Ayden Vogler2026-04-15 2:18 PM
+
+AppleYesterday 3:20 PM
+
+Ayden VoglerToday 4:33 AM
+
+Hi App Review Team,
+
+Thank you for the detailed feedback. We've addressed all three items below and submitted a new build (1.1.0, build 64) for review.
+
+Re: Guideline 3 – Pricing confirmation
+
+Yes, we confirm the In-App Purchase pricing for "Business Monthly" is intentionally {{AUD $199.99 / month — confirm or replace with the figure shown in App Store Connect}}. Our Paid Apps Agreement is in effect and all StoreKit products are configured.
+
+Re: Guideline 2.1(b) – Subscription not registering after purchase
+
+Thank you for flagging this. We reproduced the issue — the subscription-state refresh wasn't running immediately after a successful StoreKit transaction in some flows. The new build now:
+
+Re-validates entitlements with our backend immediately on transactionUpdated.
+Refreshes subscription status on app foreground and after every successful purchase, before navigating away from the paywall.
+Adds retry/idempotency on the receipt-validation endpoint so a transient network blip during the receipt callback no longer leaves the user in an unsubscribed state.
+We've re-tested in the StoreKit sandbox on iPadOS 26.4.1 (iPad Air 11-inch, M3) and the subscription is now recognised immediately, with no second prompt.
+
+Re: Guideline 2.1 – Navigation feature location
+
+Navigation is reached from inside any active job:
+
+Sign in with the demo credentials below.
+From the Jobs tab, open any scheduled or in-progress job.
+On the Job Details screen, tap the {{exact button label — e.g. "Navigate" or "Get Directions"}} button in the address card near the top.
+This opens the device's default maps app (Apple Maps by default) with turn-by-turn directions to the job site.
+The same action is also available from the "On My Way" workflow card, which notifies the customer via SMS and launches navigation in one tap.
+
+Demo credentials:
+
+Email: demo@jobrunner.com.au
+Password: demo123
+The paywall is reachable from More → Subscription, or by attempting any premium action.
+Please let us know if you need anything further.
+
+Kind regards,
+Ayden
+Date Submitted
+Apr 15, 2026 at 2:18 PM
+Submission ID
+76612d4a-6324-4c0c-9f1d-f278252f23ff
+Submitted By
+Ayden Vogler
+Last Updated By
+Ayden Vogler
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

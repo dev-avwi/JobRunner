@@ -1,0 +1,190 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+2
+ (2)
+Insights
+Settings
+Security: dev-avwi/JobRunner
+Security and quality
+Findings
+Reporting
+Code scanning
+ CodeQL is reporting errors. Check the status page for help.
+ 
+is:open branch:main 
+
+Select all alerts
+
+Select alert #82
+Type confusion through parameter tampering
+Critical
+#82 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :41851
+main
+
+Select alert #81
+Host header poisoning in email generation
+Critical
+#81 opened 15 minutes ago • Detected by CodeQL in server/emailIntegrationService.... :308
+main
+
+Select alert #39
+Server-side request forgery
+Critical
+#39 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :32439
+main
+
+Select alert #38
+Server-side request forgery
+Critical
+#38 opened 15 minutes ago • Detected by CodeQL in server/quickbooksService.ts :603
+main
+
+Select alert #37
+Server-side request forgery
+Critical
+#37 opened 15 minutes ago • Detected by CodeQL in server/quickbooksService.ts :144
+main
+
+Select alert #80
+Creating biased random numbers from a cryptographically secure source
+High
+#80 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :31011
+main
+
+Select alert #79
+Creating biased random numbers from a cryptographically secure source
+High
+#79 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20370
+main
+
+Select alert #78
+Creating biased random numbers from a cryptographically secure source
+High
+#78 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20283
+main
+
+Select alert #77
+Creating biased random numbers from a cryptographically secure source
+High
+#77 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19892
+main
+
+Select alert #76
+Creating biased random numbers from a cryptographically secure source
+High
+#76 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19325
+main
+
+Select alert #75
+Creating biased random numbers from a cryptographically secure source
+High
+#75 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :18753
+main
+
+Select alert #74
+Creating biased random numbers from a cryptographically secure source
+High
+#74 opened 15 minutes ago • Detected by CodeQL in server/storage.ts :2724
+main
+
+Select alert #73
+Creating biased random numbers from a cryptographically secure source
+High
+#73 opened 15 minutes ago • Detected by CodeQL in server/emailRoutes.ts :586
+main
+
+Select alert #72
+Use of externally-controlled format string
+High
+#72 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :44833
+main
+
+Select alert #71
+Use of externally-controlled format string
+High
+#71 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20085
+main
+
+Select alert #70
+Use of externally-controlled format string
+High
+#70 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20073
+main
+
+Select alert #69
+Use of externally-controlled format string
+High
+#69 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20062
+main
+
+Select alert #68
+Use of externally-controlled format string
+High
+#68 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :20017
+main
+
+Select alert #67
+Use of externally-controlled format string
+High
+#67 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19963
+main
+
+Select alert #66
+Use of externally-controlled format string
+High
+#66 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19945
+main
+
+Select alert #65
+Use of externally-controlled format string
+High
+#65 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19074
+main
+
+Select alert #64
+Use of externally-controlled format string
+High
+#64 opened 15 minutes ago • Detected by CodeQL in server/routes.ts :19005
+main
+
+Select alert #63
+Use of externally-controlled format string
+High
+#63 opened 15 minutes ago • Detected by CodeQL in server/vapiService.ts :2630
+main
+
+Select alert #62
+Use of externally-controlled format string
+High
+#62 opened 15 minutes ago • Detected by CodeQL in server/vapiService.ts :2617
+main
+
+Select alert #61
+Use of externally-controlled format string
+High
+#61 opened 15 minutes ago • Detected by CodeQL in server/vapiService.ts :2602
+main
+     
+ ProTip! You can run CodeQL locally from the command line. Learn more
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

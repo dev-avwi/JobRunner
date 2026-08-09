@@ -1,0 +1,71 @@
+Good question. Here's how you actually know — not theory, real signals.
+
+## The 3 Things That Kill Apps at Scale
+
+**1. Database connections run out**
+Your Neon pool is capped at 15 connections. 100 concurrent users hitting the app simultaneously is fine — most requests are milliseconds. But if you have slow queries or background jobs holding connections open, you'll hit "connection pool exhausted" and the app freezes for everyone. This is your most likely failure point per the eval.
+
+**2. Memory leaks under sustained load**
+Puppeteer (PDF generation) is notorious for this. Each PDF render spawns a headless browser. If they don't clean up properly, memory climbs until the server crashes. Fine at 5 users, dies at 50.
+
+**3. External API rate limits**
+OpenAI, Twilio, Stripe all have rate limits. 100 users doesn't mean 100 API calls — it can mean thousands per minute depending on what triggers them.
+
+---
+
+## How You Actually Test This
+
+The honest answer is **load testing**. You simulate fake traffic and watch what breaks. The tool everyone uses:
+
+```
+k6 — free, runs from your terminal
+artillery — also free, simpler syntax
+```
+
+You point it at your app, tell it "simulate 100 users doing typical actions for 10 minutes" and watch:
+- Does the DB pool hold?
+- Does memory climb and not come back down?
+- Are there 500 errors in the logs?
+
+**You don't need to write complex tests.** Even just hammering the dashboard endpoint with 50 concurrent requests tells you a lot.
+
+---
+
+## The Simpler Real-World Way
+
+Most solo SaaS founders don't load test before launch. They do this instead:
+
+| Stage | What you do |
+|-------|-------------|
+| 0–10 users | Watch Sentry for errors manually |
+| 10–50 users | Set up Neon DB monitoring alerts (connection count, query time) |
+| 50–100 users | Now load test because you have real usage patterns to model |
+
+**You already have Sentry wired in.** That's the most important thing. If something breaks for a real user you'll know within minutes.
+
+---
+
+## The Neon-Specific Fix Right Now
+
+Your DB pool cap of 15 is the concrete thing to fix before you worry about anything else. Two options:
+
+**Option A — Neon connection pooling (PgBouncer)**
+Neon has built-in pooling. You switch your connection string from the direct URL to the pooled URL and your effective connection capacity goes from 15 to hundreds. It's a one-line config change.
+
+**Option B — Upgrade Neon plan**
+Their paid plans have higher limits and better performance.
+
+Option A is free and takes 5 minutes. Do that first.
+
+---
+
+## Bottom Line
+
+You won't know for certain until real load hits it — nobody does. But the honest benchmark: **most well-built Express + Postgres apps handle 100–500 concurrent users without breaking a sweat.** Your app has known weak spots (the pool, Puppeteer) but they're fixable before you'd realistically hit them.
+
+The sequence is:
+1. Switch to Neon pooled connection string (5 mins)
+2. Make sure Sentry alerts are going to your email/phone
+3. Launch and watch
+
+You'll know it's breaking because Sentry will tell you before customers complain.

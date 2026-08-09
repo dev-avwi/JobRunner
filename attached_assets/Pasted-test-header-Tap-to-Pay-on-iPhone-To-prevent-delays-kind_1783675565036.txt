@@ -1,0 +1,61 @@
+test-header
+Tap to Pay on iPhone
+To prevent delays, kindly utilize the applicable links provided below:
+
+The Americas: https://apple.ent.box.com/f/5e738f8f5a354e149a2042b629dec4bb
+UK & Nordic: https://apple.ent.box.com/f/7747a2289ecc47c28d358a40fbc8baef
+Continental Europe: https://apple.ent.box.com/f/6d6454e6fa1f4fad879f59ec194ed83a
+Eastern Markets: https://apple.ent.box.com/f/5d466a0b5d5c4bcfa4c64389951e5ab4
+China and Taiwan: https://apple.ent.box.com/f/36d4f5772d1e4f54a4f1da6ae8cdbd7a
+Japan: https://apple.ent.box.com/f/e56b752978fb42308f3b9d29a2abb44c
+ANZSEA: https://apple.ent.box.com/f/11e15daa470449d092711c445a97894f
+
+If you are unsure which region to select, use the form below and let us know you used the "general link"
+
+Email address
+Enter your email
+Team ID
+Enter a response
+Your unique 10-character string assigned to your team
+
+First country to be launched
+Enter a response
+List the first country where you plan to launch Tap to Pay on iPhone - REMINDER please use the links above to prevent severe delays!
+
+1. A video recording of the “New User Flow”
+See https://apple.box.com/v/ttpoiappreviewpdf for more information
+
+New User Flow (TTP).mp4
+81.2 MB
+
+Add another file
+2. A video recording of the “Existing User Flow”
+See https://apple.box.com/v/ttpoiappreviewpdf for more information
+
+Existing User Flow (TTP).mp4
+59.7 MB
+
+Add another file
+3. A video recording of the “Checkout Flow”
+See https://apple.box.com/v/ttpoiappreviewpdf for more information
+
+Checkout Flow (TTP).mp4
+39 MB
+
+Add another file
+4. A completed App Review Requirements Checklist
+https://apple.box.com/v/ttpoichecklist
+
+App Review Requirements Checklist 1_6.numbers (Edited).numbers
+184.9 KB
+
+Add another file
+Do you understand that you must reopen the case to officially request Full Publishing Entitlement?
+Enter a response
+ttpoientitlements@apple.com
+
+
+By checking this box you agree to Box's Terms of Service and confirm you have read Box's Privacy Notice.
+Before submitting, please make sure that you trust this site, have the rights to the data and want to share this content to the owner of this file request.
+
+Box Terms of Service|Box Privacy Notice

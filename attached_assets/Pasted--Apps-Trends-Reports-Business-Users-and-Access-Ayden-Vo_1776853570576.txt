@@ -1,0 +1,157 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.1 (68)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+Screenshot-0422-085632.pngDownload
+Edit
+
+Messages (5)
+
+Apple2026-04-20 11:47 AM
+Hello,
+
+Thank you for your efforts to follow our guidelines. There are some outstanding issues that still need your attention.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+Submission ID: 73a653e8-2aca-42fb-8625-4951807fa3b3
+Review date: April 20, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0
+
+Guideline 2.1(b) - Performance - App Completeness
+
+Issue Description
+
+The In-App Purchase products in the app exhibited one or more bugs which create a poor user experience. Specifically, subscriptions still kept loading endlessly while purchased. Review the details and resources below to troubleshoot this issue.
+
+Review device details: 
+
+- Device type: iPad Air 11-inch (M3) 
+- OS version: iPadOS 26.4.1
+
+Next Steps
+
+Apple reviews In-App Purchase products in the sandbox and the In-App Purchase products do not need prior approval to function in review. Review the product configurations, complete any missing information, and test them in the sandbox.
+
+To offer In-App Purchases in the app, the Account Holder must also accept the Paid Apps Agreement in the Business section of App Store Connect. Confirm you have a Paid Apps Agreement in effect.
+
+If you still need assistance after completing the steps and reviewing the resources, visit the Apple Developer Forums. If you can’t find an answer from an existing thread, start a new thread with your question to get guidance from Apple engineers and other developers.
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+iOS App 1.0App Version
+Rejection Reasons:
+2.1.0 Performance: App Completeness
+
+Rejection Attachments:
+Screenshot-0420-094604.pngDownload
+
+Ayden Vogler2026-04-20 5:08 PM
+Thank you for the detailed review.
+
+We have identified and resolved the issue you reported with the in-app purchase flow on iPad.
+
+Root cause
+Our backend endpoint that verifies Apple receipts (/api/subscription/verify-apple-receipt) was missing in production. The StoreKit purchase itself completed successfully, but when the app called our server to activate the subscription, the server returned 404. The loading indicator never cleared because no response ever arrived. Additionally, all three subscription buttons shared a single loading state, which is why every tier appeared to spin.
+
+Fixes shipped in build 30 (version 1.1.1)
+
+Server: Added the missing receipt verification endpoint with full Apple verifyReceipt integration, including the sandbox fallback (status 21007) so reviewer test accounts behave identically to production accounts.
+Client: Replaced the shared loading state with per-tier state, so only the tapped subscription button shows a spinner.
+Client: Added a 90-second safety timeout that clears the spinner and shows a recovery dialog if the server is ever unreachable, so the UI can never get permanently stuck again.
+Server: Implemented App Store Server Notifications V2 webhook to handle renewals, cancellations, refunds, and revocations.
+The IAP flow has been re-tested in sandbox on both iPad and iPhone with all three subscription tiers (Pro, Team, Business). Purchases now complete in 2-4 seconds and the subscription tier updates immediately.
+
+Demo account (for any non-IAP review needs):
+Email: demo@jobrunner.com.au
+Password: demo123
+
+Thank you for your patience with this resubmission.
+
+— Ayden Vogler
+LinkUp2Care Pty Ltd
+
+AppleToday 5:57 PM
+
+Ayden VoglerToday 8:20 PM
+
+Ayden VoglerToday 8:24 PM
+Apologies — I sent my previous reply without the screenshots attached. Resending now with the visual evidence included.
+
+Thank you for the follow-up review.
+
+Our App Store configuration is fully in order:
+
+Paid Apps Agreement: Active (effective 14 Apr 2026)
+All three subscriptions (Pro Monthly, Team Monthly, Business Monthly) submitted and "Waiting for Review" — attached to this build
+Banking and tax forms: Active
+Server-side receipt verification endpoint live and tested
+The IAP flow has been verified working end-to-end on real iOS devices via TestFlight today (April 22, 2026). The attached screenshots show successful purchases of the Pro and Business subscriptions, including the Apple purchase sheet appearing correctly, the "Upgrade Successful" confirmation, and Restore Purchases functioning.
+
+The "An unknown error occurred" message in your screenshot is the standard StoreKit error returned when the sandbox session encounters a transient issue — it is not a string our app generates. We have been unable to reproduce this error on iPad Air with iPadOS 26.4.1 across multiple sandbox accounts.
+
+Could you please:
+
+Confirm the sandbox tester account was signed in via Settings → App Store → Sandbox Account before launching the app, and
+Retry the purchase once. We are confident the flow is functional.
+If the issue reproduces, please share the exact error code from the device console (E_* prefix) so we can investigate without further blind iterations.
+
+Demo credentials for non-IAP review:
+Email: demo@jobrunner.com.au
+Password: demo123
+
+Thank you,
+Ayden Vogler
+LinkUp2Care Pty Ltd
+Message Attachments:
+Photo 22-4-2026, 8 13 01 pm.pngDownload
+Photo 22-4-2026, 8 11 57 pm.pngDownload
+Photo 22-4-2026, 8 12 37 pm.pngDownload
+Reply to App Review
+
+Date Submitted
+Apr 20, 2026 at 5:10 PM
+Submission ID
+73a653e8-2aca-42fb-8625-4951807fa3b3
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

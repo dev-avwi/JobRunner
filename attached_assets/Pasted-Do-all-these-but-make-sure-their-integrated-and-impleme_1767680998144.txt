@@ -1,0 +1,37 @@
+Do all these but make sure their integrated and implemented perfectly on both web and mobile and that they work seamlessly2. Quick Actions from Dashboard
+"Log today's hours" button for time tracking
+"Photo a receipt" for expense tracking
+"Request payment" one-tap from unpaid invoices card
+3. SMS Quote/Invoice Delivery
+Many clients (especially homeowners) respond faster to SMS than email
+"Send via SMS" option alongside email when sending quotes/invoices
+Twilio is already integrated - just needs UI
+4. Voice Notes on Jobs
+Let tradies record voice memos instead of typing job notes
+Hands are often dirty/busy on site
+Transcribe with AI for searchable notes
+Also With the voice note part I like how it is now it's good but after voice recording I'll be good like ai analysis of photos where we can transcribe the audio recording and it has the option to edit the words and upload to the notes section like ai photo analysis.
+I want this but I don't know how to make it professional and clean1. First-Time User Video Walkthrough
+Add a 60-second intro video on first login showing how to create their first job, quote, and invoice
+Tradies often learn by seeing, not reading
+Could reduce support questions significantly
+Let's try this and see what it'll be and also for all changes make sure their mock data can integrate with it and the production ready to ensure nice testing6. Recurring Job Templates
+"Repeat this job weekly/monthly" for maintenance contracts
+Pool cleaning, lawn care, HVAC servicing are common use cases
+Auto-creates jobs and reminders
+8. I thou g to we had this like an on my way or quick actions if it says overdue the job or late, the quick action will change to "Running Late" One-Tap
+When tradie is delayed, one tap sends SMS to client
+Pre-written message: "Running 15 mins late, see you soon!"
+Nice-to-Have Improvements
+9. Before/After Photo Comparison
+Side-by-side before/after shots for completed jobs
+Great for social proof and client satisfaction
+Easy to share on social media
+10. Simple CRM / Lead Pipeline
+Track enquiries before they become quotes
+"Enquiry → Quote Sent → Follow-up → Won/Lost"
+Basic pipeline view
+12. End-of-Day Summary Email
+Daily digest: "3 jobs completed, $2,450 invoiced, 1 quote accepted"
+Keeps business owners informed
+Optional weekly summary

@@ -1,0 +1,30 @@
+Here is the full competitive analysis. Both the Markdown and PDF versions are attached.
+
+
+The Short Answer
+JobRunner is genuinely competitive on product merit — arguably the most feature-complete platform in the Australian market at its price point. But the product being competitive and the business being competitive are two different things. Right now, JobRunner has zero reviews, zero market presence, and is up against platforms with years of earned trust.
+
+
+The Key Findings
+Where JobRunner Wins Outright
+Pricing for teams is a knockout blow against Tradify. Tradify’s per-user pricing means a 5-person crew costs ~$360 AUD/month. JobRunner charges a flat $99/month. At 15 users, Tradify costs over $1,000/month vs. JobRunner’s $199/month. This alone is a compelling migration argument.
+
+Android users are completely underserved by ServiceM8. ServiceM8’s Android app is a stripped-down “Lite” version — a constant source of complaints in tradie communities. JobRunner offers a full, feature-equal app on both iOS and Android.
+
+The WHS compliance hub has no real competitor. Neither ServiceM8 (which uses customisable forms) nor Tradify (which has nothing) offers a dedicated WHS module with SWMS, JSA, incident reporting, PPE tracking, training records, and AI-powered hazard detection from site photos. For Australian tradies with legal WHS obligations, this is a genuine gap that JobRunner fills.
+
+The AI Receptionist is a market-first. Tradies in Reddit discussions specifically flagged “missed calls not getting followed up” as their biggest pain point. JobRunner’s $60/month AI Receptionist (24/7 answering, call recording, sentiment analysis, automated SMS follow-up) directly solves this. Neither Tradify nor ServiceM8 offers this natively.
+
+MYOB integration is present in JobRunner but absent in Tradify — a meaningful advantage given MYOB’s strong presence among Australian small businesses.
+
+Where the Competitors Still Win
+ServiceM8’s Form Store is a curated marketplace of hundreds of trade-specific compliance forms (electrical safety certs, gas compliance forms, etc.) built by industry professionals. JobRunner’s WHS module is structurally superior, but it requires users to build their own forms — a higher barrier for compliance-focused tradies.
+
+Tradify’s market trust (9,000+ reviews, 4.8/5 Trustpilot) and ServiceM8’s proven reliability are not things that can be matched with a feature list. Tradies choose software based on peer recommendations, and right now JobRunner is invisible in those conversations.
+
+ServiceM8’s integrations ecosystem (Zapier, n8n, Mailchimp, Apple CarPlay, Deputy) gives it extensibility that JobRunner currently lacks.
+
+The Honest Reality
+JobRunner is at App Store version 1.1.2 — its first update was released days ago. The developer is listed as an individual (Ayden Vogler / AV Web Innovation). There are zero reviews anywhere. The product formula is right, but the business has not yet proven its reliability under real-world load, and it has no social proof to convert sceptical tradies.
+
+The path to genuine competitiveness: survive the first year without a major reliability incident, aggressively cultivate the first 50 users into vocal advocates, and focus marketing on the two clearest wins — teams being crushed by Tradify’s per-user costs, and Android-heavy teams locked out of ServiceM8’s best features.

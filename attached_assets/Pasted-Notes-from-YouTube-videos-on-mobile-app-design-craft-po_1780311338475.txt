@@ -1,0 +1,735 @@
+Notes from YouTube videos on mobile app design craft — polish, animations, illustrations, icons, taste-building. Cross-referenced against your apps: **JobRunner**, **Criti**, **Kindred**.
+
+---
+
+# 🎥 Video 1 — 5 Tips to Make Your App Feel 10x Better Than Default iOS
+
+**Channel:** Chris (productivity apps) | **Apps:** Luna (budgeting), Ellie (daily planner), Lily (meeting assistant)
+
+https://www.youtube.com/watch?v=8mMH6Pq8qnE
+
+## Why This Matters
+
+Chris gets constant compliments that his apps feel "different" — more polished, more fun. These are the specific techniques behind that. None of them are one big thing. It's many small things that stack into a premium experience.
+
+> "If I can make a finance app feel fun to use, you can do it for your own app too."
+> 
+
+---
+
+## Tip 1 — Interactions & Animations
+
+### The Problem
+
+Default iOS apps use instant, static transitions. No animation. Apple does this for accessibility/motion sickness reasons at billion-user scale. You're not Apple — you can make different choices.
+
+### What to Do
+
+- Add animation anywhere it feels appropriate — tab switches, page transitions, button states, loading states
+- Example: Luna's tab bar doesn't just switch instantly — pages slide in from the previous one. Feels alive
+- Example: Ellie's voice dictation button — send button rotates into a checkmark, background expands from the microphone, listening text fades with a spring animation. All happening simultaneously
+
+### How to Build It with Claude Code
+
+- **Don't oneshot complex animations** — "animate this for me" produces nothing impressive
+- **Break it into sub-animations**: "make the arrow rotate into a checkmark", "expand the background from the microphone", "fade the text with a spring animation" — one instruction per component
+- Apple has a solid built-in animation API and Claude Code is well-trained on it — plain English instructions work well if they're specific
+- What took Chris 5 days pre-AI now takes under an hour with Claude Code
+
+### Apply to Your Apps
+
+- **Kindred** — emotion-driven app should feel warm and alive. Tab transitions, smooth page slides, subtle button feedback all reinforce the emotional tone
+- **JobRunner** — satisfying micro-animations on job status updates (swipe to archive, mark as applied) would make the repetitive data entry feel rewarding
+- **Criti** — submit/review flow is a key moment. Animate the transition into the review state — makes it feel like something meaningful happened
+
+---
+
+## Tip 2 — Custom Illustrations & Empty States
+
+### The Problem
+
+Most apps show a blank screen with "No tasks for today" text when there's no data. This is a missed opportunity.
+
+### What to Do
+
+- Add custom illustrations or animations to empty states — when there's no data, no search results, loading screens
+- Create a **mascot** or character for your app — then generate infinite contextual variations of it
+
+### How to Do It with AI
+
+- Get a base illustration made (commission an artist, ask someone you know, or generate one with ChatGPT using multiple reference images + creative prompting)
+- Feed the base mascot into ChatGPT → generate contextual variants: mascot searching, sleeping, taking notes, celebrating
+- The more reference images you feed in and the more you tweak the prompt, the more unique the result
+- Next level: animate the illustrations using **Rive** (Chris hasn't shipped this yet but plans to)
+
+### Recommendations
+
+- Commission a real artist/illustrator for the base if possible — even one custom base illustration to derive everything from. Cheaper than you think
+- If not, ChatGPT image gen works but requires creative prompting to avoid generic results
+- Use contextual mascot variants for: empty search, no upcoming events, loading, success state, error state
+
+### Apply to Your Apps
+
+- **Kindred** — a mascot would fit the warmth of the brand perfectly. Empty state when someone hasn't added any relationships yet is a key onboarding moment — a friendly character here could nudge them forward
+- **Criti** — empty state when no submissions are pending is a big drop-off point. A curious/waiting character here plus a CTA to share the submission link could convert passive users
+- **JobRunner** — empty job board could have a character actively looking/searching. Turns a dead screen into a motivating moment
+
+---
+
+## Tip 3 — Haptic Feedback
+
+### What It Is
+
+When you tap a button, the phone vibrates subtly. Physical feedback that makes the app more tactile and satisfying.
+
+### Why It Works
+
+- Adds depth and makes tapping feel rewarding — almost addictive (like clicking a pen)
+- Apple's default apps barely use haptics. You can differentiate here
+- If people are tapping around your app for fun, that's pure retention
+
+### How to Implement
+
+- Control vibration strength in code — not all haptics feel the same
+- **Light haptics**: frequent interactions like number input, typing
+- **Heavy haptics**: tab switches, completing an action, destructive actions
+- The key is using the right weight for each context — wrong weight feels jarring, right weight feels satisfying
+- Ask Claude Code: "add haptic feedback to [button/action] — use light impact for X and heavy impact for Y"
+
+### Apply to Your Apps
+
+- **JobRunner** — every swipe/status update on a job card is a natural haptic moment. Light on scroll, heavier on archive/complete
+- **Kindred** — completing a relationship touchpoint ("reached out to X") deserves a satisfying heavy haptic. Makes the action feel meaningful
+- **Criti** — submitting work for critique = important moment. Strong haptic on submit confirmation
+
+---
+
+## Tip 4 — Icons Done Right
+
+### The Problem
+
+Most iOS apps use SF Symbols (Apple's default icon set). They're fine but generic — every app uses them. Mixing icon styles kills cohesion.
+
+### Rules
+
+1. **Pick one icon pack and commit to it** — don't mix packs or styles
+2. **Pick the right weight for your brand** — thin/minimal = clean/modern, filled/heavy = bold/playful, complex/outlined = detailed/technical
+3. **Use style changes to show state** — thin icon when inactive, filled icon when selected. Adds depth without adding noise
+4. **Stay consistent** — one mixed icon in a tab bar breaks the whole feeling
+
+### Recommended Packs
+
+- **Hero Icons (thin version)** — Chris's pick for Luna. Minimal, clean, free
+- Browse icon packs on **Mobin** (see Tip 5) to find what matches your aesthetic
+
+### What Not to Do
+
+- Don't mix thin and filled icons in the same tab bar
+- Don't just change color for active state — change the icon weight too (Apple doesn't do this; you should)
+
+### Apply to Your Apps
+
+- If you're using SF Symbols everywhere, spend 30 minutes on Hero Icons or similar and see if it changes the feel
+- **Kindred** — warmer, rounder icon style fits the brand better than sharp minimal icons. Worth intentionally choosing
+- **Criti** — design-critique app should have impeccable icon discipline. Your icon choices are a signal of your design taste to the exact users you're targeting
+
+---
+
+## Tip 5 — Build Your Design Taste (Ongoing)
+
+### The Core Idea
+
+Good design isn't one decision — it's exposure over time. You naturally absorb patterns, colour palettes, icon styles, and layout choices by looking at great design constantly.
+
+### Where to Go
+
+**Twitter/X**
+
+- Follow talented product designers. Their work shows up in your feed passively
+- Bookmark everything you like — builds a personal reference library over time
+
+**Mobin** (mobbin.com)
+
+- Huge library of app screenshots, organised by screen type (tab bar, onboarding, empty state, etc.)
+- Two uses:
+    1. **Passive browsing** — scroll for a few minutes daily/weekly. Taste builds automatically
+    2. **Specific questions** — search "tab bar" to see how the best apps handle it. "Empty state" to see illustrations others use. Answers design decisions with real examples
+- Free to browse, extremely well catalogued
+
+### Habit
+
+- Even once a week on Mobin will make a noticeable difference over a month
+- The goal isn't to copy — it's to train your eye for what feels right and what doesn't
+
+### Apply to Your Apps
+
+- Before designing any new screen in any of your apps, spend 5 minutes searching that screen type on Mobin first
+- Follow 5–10 product designers on Twitter this week. Passive feed exposure is free taste improvement
+- **Criti specifically** — your users are designers. Your app's design is part of your credibility with them. Regular Mobin sessions are basically product research for Criti
+
+---
+
+# 🧠 Cross-Video Synthesis
+
+| Technique | Effort to Implement | Impact | Do with Claude Code? |
+| --- | --- | --- | --- |
+| Animations & interactions | Medium | High | Yes — break into sub-steps |
+| Custom mascot/illustrations | Low–Medium | High | Partial — use ChatGPT for variants |
+| Haptic feedback | Very Low | Medium–High | Yes — plain English works well |
+| Icon pack upgrade | Low | Medium | No — design decision, then Claude implements |
+| Design taste building | Zero cost, ongoing | Compounding | No — personal habit |
+
+---
+
+# 🎯 Action Items
+
+## Quick Wins (under 1 hour each)
+
+- [ ]  Add haptic feedback to key actions in all 3 apps — ask Claude Code to implement light/heavy by context
+- [ ]  Audit your icon usage — are you mixing styles anywhere? Fix it
+- [ ]  Add social handles somewhere visible inside each app (Flo's partner found him this way)
+- [ ]  Search your main screen types on Mobin before next design session
+
+## Medium Effort
+
+- [ ]  Replace SF Symbols with a proper icon pack (Hero Icons thin is a good start) in at least one app
+- [ ]  Design a custom empty state for the highest-traffic empty screen in each app
+- [ ]  Add 1–2 meaningful animations to key interaction moments (job status update, relationship touchpoint, critique submission)
+
+## Longer Term
+
+- [ ]  Commission a base mascot illustration for Kindred — use AI to generate contextual variants
+- [ ]  Look into Rive for animated illustrations once you have a base mascot
+- [ ]  Follow 10 product designers on Twitter — let the feed do the work
+
+---
+
+# 📚 Tools & Resources Referenced
+
+| Tool | Purpose |
+| --- | --- |
+| Mobin (mobbin.com) | App screenshot library — layout, tab bars, empty states, icons |
+| Hero Icons | Clean, minimal, free icon pack. Use thin version for minimal feel |
+| SF Symbols | Apple's default icons — fine but generic |
+| Rive | Animation tool for custom illustrations |
+| ChatGPT image gen | Generating mascot variants from a base illustration |
+| Claude Code | Implementing animations, haptics — break into sub-steps |
+
+---
+
+# 🎥 Video 2 — Vibe Coding a 3D Product Website (7-Step AI Workflow)
+
+**Channel:** bugdev / anonymous | **Project:** Slam Dunk 3D — basketball e-commerce showcase
+
+https://www.youtube.com/watch?v=uqpXAfNEY4g&list=LL&index=6&t=163s
+
+## What Was Built
+
+A 3D product showcase website: scroll-driven animations move a photorealistic basketball through cinematic sections, it flies into the cart on click with a sound effect synthesised in real-time by the browser (no audio files), texture is procedural shader math — no images. Under 3MB total. Built by one person using Gemini + Google AI Studio. Got noticed by the creator of Three.js, led to 5 client projects and a job offer — all with zero name, no portfolio, no credentials.
+
+> "The gap between average AI output and what you saw isn't the tool. It's the process around the tool."
+> 
+
+## Tech Stack
+
+- **React 19** + **Three.js via React Three Fiber** (3D)
+- **GSAP** — scroll-driven animations
+- **Gemini / Google AI Studio** — primary AI for creative/visual work
+- CodeEx / Claude Code — better for backend-heavy tasks
+- No audio files — Web Audio API generates sound in real time from code
+
+## The 7-Step Vibe Coding System
+
+### Step 1 — Research Before You Prompt
+
+- Study references *before* writing a single prompt
+- Don't just note "that looks cool" — break down: layout structure, spacing rhythm, typography organisation, are animations decorative or functional, how does responsiveness work
+- **Use AI to do the analysis**: feed a reference design into Gemini, ask it to extract the full design system (colours, spacing, typography, animation patterns) before building anything
+
+### Step 2 — Define Goals Before You Open the Tool
+
+- AI performs better with constraints, worse with vague instructions
+- Regresses when asked to fix broad problems, improves with scoped instructions
+- Lock your goals before any prompting starts
+- Example goals for this project: immersive 3D e-commerce, scroll-driven storytelling, real-time customisation, every visual and sound generated from code — no room for AI to wander
+
+### Step 3 — Build a Master Prompt
+
+The biggest differentiator. A master prompt is a structured document that tells AI how to behave for the entire project. Structure:
+
+1. **Establish authority** — "Act as an expert front-end engineer and creative UI developer"
+2. **Lock the reference** — "Do not redesign, simplify, or reinterpret any element. The reference image is the only source of truth. Follow all instructions with extreme precision"
+3. **General rules** — layout, typography, colour must match the screenshot exactly. Source free images if needed
+4. **Extract the design system** — typography (fonts + sizes for every text type), colour palette (primary, accent, secondary, buttons), layout structure
+5. **Section breakdown** — rebuild layout exactly as shown, preserve section order, alignment, container widths and proportions, don't make creative alterations
+6. **Visual accuracy** — all font sizes, weights, letter spacing must match. All spacing, alignment, proportions must be pixel perfect. Do not simplify, omit, or improve — AI loves to improve, you don't need that
+7. **Return final implementation** — all instructions above must be followed with extreme precision
+
+> Key line to always include: **"Do not try to improve the design."**
+> 
+
+You can generate this master prompt by feeding a reference design into any AI chat and asking it to extract the design system. Or feed a video if it has animations — far more detail.
+
+### Step 4 — Iterate Surgically
+
+- Even the best master prompt won't produce perfection on the first try — that's normal
+- The mistake: vague feedback → "the layout feels off" → creates more chaos
+- The fix: specific, measurable instructions
+    - Bad: "something looks wrong with the scroll"
+    - Good: "scroll should transition from hero to section 2 where ball size increases, appears in half, rolls to section 2, reduces to normal size and sits centred"
+- **Always end every correction with: "Fix only these items. Do not change anything else."** Without this, AI will try to be helpful and fix things you didn't ask about → regression, more things broken than fixed
+
+### Step 5 — One Problem at a Time
+
+- Never ask AI to "build me a 3D e-commerce website" — that prompt gives a bad website
+- Isolate each problem as a separate conversation:
+    - "Generate a 3D ball using custom geometry and colour maps in Three.js"
+    - "Write a shader that creates a pebbled leather texture with noise"
+    - "Scroll the 3D ball from hero section with smooth GSAP animations"
+    - "Synthesise a click sound using the Web Audio API"
+- One job at a time → verify it works → move to the next
+- You're not asking AI to hold an entire project in its head
+
+### Step 6 — Understand What You Ship
+
+- AI wrote code that would take weeks to write manually (shader math, procedural noise, coordinate system translations)
+- But: understand what each piece does before shipping it
+- You don't need to write a shader from memory — you need to know *what* it does and *why* it's there
+- First time something breaks, if you don't understand the code you're stuck
+- Let AI write the first draft. You own the final version
+
+### Step 7 — Build in Public
+
+- Don't wait until it's perfect. Share the process, iterations, wins and failures
+- The incognito mission proved: you don't need a big name, a following, or credentials
+- The creator of Three.js noticed anonymous work posted openly — not a portfolio, just the work and the process
+- The messy middle is where the interesting stuff happens. Share it
+
+## Key Iteration Examples from This Project
+
+**Texture:** Prompted "procedural leather texture with pebbled surface using noise, feel like a realistic basketball" → first output not close → 4-5 rounds of iteration ("make bumps smaller", "seams too thick", "surface too uniform, add variation") → got it right
+
+**Performance:** High-res noise was killing frame rate → told Gemini "this is slow, fix it" → found redundant calculations, suggested dynamic resolution scaling → solved in one conversation
+
+**Cart animation:** 3D ball lives in canvas (its own coordinate system with depth/perspective), cart icon lives in regular HTML → two different worlds. Had to: translate 3D position to 2D screen coordinates, calculate a curved flight path, animate along the curve while shrinking, work across all screen sizes → multiple failures before it worked
+
+## The Bigger Point: What AI Changes About Development
+
+> "The skill isn't writing code anymore. The skill is knowing what to build, why to build it, and being able to describe it clearly enough so AI can execute."
+> 
+- AI compresses years of specialised learning into a single afternoon
+- The developer becomes the **architect** — designing systems, defining constraints, directing implementation
+- AI becomes the **execution layer**
+- What you need to stay relevant: vision + taste + the ability to describe what you want precisely
+
+## Apply to Your Apps & Projects
+
+- **The master prompt system** — before your next Claude Design session, write a master prompt using this structure. The "do not improve the design" instruction alone will save you from AI inventing things you didn't ask for
+- **"Fix only these items. Do not change anything else."** — add this line to every correction you give Claude Code. This is the single most useful tip in the video for preventing regression
+- **One problem at a time** — you're probably already doing this, but be deliberate. Each animation, each API integration, each new screen = separate conversation or scoped prompt
+- **Research before prompting** — before building a new screen in any app, spend 5 minutes on Mobin finding 3 references, then feed one into Claude and ask it to extract the design system before writing any code
+- **Build in public** — this video is proof that anonymous work with a good process gets noticed. You're building 3 apps simultaneously. That's a story worth sharing
+- **Web Audio API** — useful for Criti specifically. Submission confirmation sound, review notification. No audio files needed, purely synthesised. Claude Code handles this well
+
+---
+
+# 🧠 Cross-Video Synthesis — Design Principles Across Both Videos
+
+| Principle | Chris (iOS tips) | bugdev (3D web) | Apply |
+| --- | --- | --- | --- |
+| Break animations into sub-steps | ✅ | ✅ | Always — never oneshot complex animations |
+| Reference before building | Mobin browsing | Systematic reference analysis | Make it a habit before every new screen |
+| "Fix only this, nothing else" | — | ✅ critical | Add to every correction in Claude Code |
+| One problem at a time | ✅ | ✅ | Separate conversations per feature |
+| Understand what you ship | — | ✅ | Read the plan, know what each piece does |
+| Build in public | — | ✅ proved it works | Pick one app, start sharing the process |
+| Design requires taste, not just AI | ✅ | ✅ | Vision + taste is the irreplaceable part |
+
+---
+
+# 🎯 Updated Action Items
+
+## Quick Wins
+
+- [ ]  Add "Fix only these items. Do not change anything else." to every Claude Code correction — starting now
+- [ ]  Add haptic feedback to key actions in all 3 apps
+- [ ]  Audit icon consistency in all apps
+- [ ]  Add social handles inside each app
+
+## Medium Effort
+
+- [ ]  Write a master prompt for next UI session using the 7-step structure
+- [ ]  Replace SF Symbols with a proper icon pack in at least one app
+- [ ]  Custom empty states for highest-traffic screens
+
+## Longer Term
+
+- [ ]  Commission base mascot for Kindred
+- [ ]  Look into Web Audio API for Criti submission/review sounds
+- [ ]  Follow 10 product designers on Twitter
+- [ ]  Build in public — pick one app and start
+
+---
+
+# 🎥 Video 3 — Build a Multi-Page Animated Website with Claude Design + Claude Code + GSAP
+
+**Channel:** (creator) | **Focus:** Claude Design → Claude Code handoff, GSAP animations, GitHub + Vercel deploy
+
+https://www.youtube.com/watch?v=xYv4_cTOSNM
+
+## What Was Built
+
+A 5-page agency website (homepage, services, contact, about, case studies) built using Claude Design for visual mockups, converted to Next.js via Claude Code with GSAP scroll animations added throughout. Deployed to GitHub + Vercel. Total time: ~10 minutes.
+
+## The Two-Source Strategy (Design + Structure)
+
+The key insight: combine **two separate sources** to get the best result.
+
+- **Design source** → Claude Design system (brand colours, fonts, components — the visual identity)
+- **Structure source** → Dribbble screenshot (layout hierarchy, section order — the wireframe skeleton)
+
+Combining both gives you something coherent and original. Using just one gives you either a generic layout with good branding, or a beautiful layout with no identity.
+
+## Step 1 — Create a Design System (getdesign.md shortcut)
+
+- Go to **getdesign.md** — free library of brand kits for 68 major brands (Airbnb, Apple, Airtable, BMW, etc.)
+- Each kit includes: all headlines, all colours, all font families, dark/light mode variants
+- You can tie the site to the user's time zone (light during day, dark at night)
+- Copy the full design.md text for your chosen brand
+- In Claude Design → Design Systems tab → Create new system → paste into Additional Notes → Generate
+- Takes ~5 minutes. Output includes: icons, pre-built buttons, type families, marketing UI kit, full branding suite
+
+## Step 2 — Get Structure Reference (Dribbble)
+
+- Go to Dribbble, search for the type of site you want to build (e.g. "marketing agency website")
+- Find a layout you like, save a screenshot
+- The final site won't look like the Dribbble reference — the structure (headline placement, sections, grid) will be used, but the design will follow your design system
+
+## Step 3 — Build in Claude Design (High-Fidelity Prototype)
+
+- Claude Design → Home → Prototype → name your project → select your design system → choose **High-Fidelity** (not Wireframe)
+- Wireframe = structure only. High-fidelity = the actual visual output.
+- Attach the Dribbble screenshot, then prompt:
+    
+    > *"Can you please build out a beautiful agency website for my company [name] that has five pages: homepage, services, contact, about, case studies. Use the Claude design system for all branding. Use the attached screenshot for the structure of the page."*
+    > 
+- Output: all 5 pages generated with coherent style across every page
+
+## Step 4 — Edit in Claude Design
+
+Three editing tools available:
+
+- **Comment** → click any element on the page → Claude knows exactly what you're targeting → type what you want changed
+- **Edit** → change specific properties: colour, font size, font family
+- **Draw** → circle something freehand on the page → describe the change → Claude applies it
+
+Replace all placeholder content (names, images) before export. Placeholder content is the #1 thing that makes AI-built sites look AI-built.
+
+## Bonus: Animated Motion Graphics
+
+Claude Design also builds standalone animated motion graphics. Prompt: "Can you make me an animated motion graphic?" The trick for quality output: go to Claude chat first, describe what you want in one sentence, ask Claude to turn it into a mega-prompt (you'll get 10 sentences back), then paste that mega-prompt into Claude Design's chat.
+
+## Step 5 — Export → Handoff to Claude Code
+
+- In Claude Design → Export → Handoff to Claude Code → copy the command
+- In VS Code or Antigravity (Google's free code workspace): open a new empty folder, paste the command
+- Add to the prompt:
+    
+    > *"Can you please build this Claude Design website using Next.js? Use the library GSAP to add animations wherever appropriate. I want as many beautiful stunning animations as possible without it looking cheesy. Read the claude.md file and build this out in one go."*
+    > 
+- The **claude.md file** is a critical addition — it's an instruction manual for Claude Code, like an employee onboarding doc. Download free from the creator's community, paste into your project folder before running.
+
+## Step 6 — GSAP Animations
+
+**GSAP** (GreenSock Animation Platform) is the animation library. Adding it to the prompt makes Claude Code layer scroll-triggered animations across the entire site automatically:
+
+- Text flying in on page load
+- Buttons floating up
+- Sliders animating
+- Brand partner logos scrolling on scroll
+- Numbers counting up as you scroll
+
+Browse **demos.gsap.com** to see what's possible. All of it is requestable via plain English to Claude Code — just describe what you want and it builds the animation logic.
+
+## Step 7 — Deploy (GitHub + Vercel, both free)
+
+**GitHub** = Google Drive for code. Stores your code in the cloud.
+
+**Vercel** = takes the code from GitHub and makes it live on the internet.
+
+In Claude Code: *"Can you please upload all the code in this project to GitHub? Deploy it all in one go."* → paste the GitHub repo URL when prompted.
+
+In Vercel: Add new project → import from GitHub → **change application preset to Next.js** (critical step, easy to miss) → Deploy.
+
+**Domain**: Vercel gives you a `[name].vercel.app` URL by default. For client work this is unusable. Go to Vercel → Domains → import from GoDaddy, Namecheap, or buy directly through Vercel.
+
+## Apply to Your Projects
+
+- **getdesign.md** — if you ever want to prototype a landing page that matches an existing brand's aesthetic (competitor analysis, pitch decks, client mockups), this is the fastest way to get a coherent design system in minutes
+- **The two-source strategy** — design system for identity + Dribbble for structure. Apply this to any UI project: use your app's existing brand tokens as the design system, find a reference layout for the screen you're building
+- **GSAP** — the animations described (text fly-in, scroll-triggered counters, floating buttons) are directly applicable to landing pages for Kindred, Criti, or JobRunner. One line in a Claude Code prompt adds the whole library.
+- **claude.md pattern** — this is the same concept as a CLAUDE.md or system prompt file for Claude Code projects. Having a project-level instruction file that Claude reads before building is good practice for any complex project to maintain consistency across sessions.
+- **GitHub → Vercel deploy** — this is the free, professional standard for any Next.js project. Worth having this wired up for all your app landing pages.
+
+---
+
+# 🎥 Video 4 — Claude Design → Claude Code: Design Systems for Real AI Products (Chris)
+
+**Channel:** Chris | **Focus:** Extract design system from existing codebase, generate SEO pages, automate with Claude Desktop Routines
+
+https://www.youtube.com/watch?v=8GXvgxKPATk
+
+## What This Is
+
+A practical, honest walkthrough of using Claude Design to extract a design system from an existing app's codebase, generate a high-fidelity SEO comparison page, and then automate daily SEO page creation using Claude Desktop Routines. From a designer with 15 years of app and startup experience — more sceptical and rigorous than most Claude Design videos.
+
+## Key Distinction: What Claude Design Is Actually For
+
+Claude Design can do many things: prototypes (like Lovable/Bolt), slide decks, templates, animations, videos. But the most powerful and underrated feature is the **design system** — not the design assets it produces.
+
+> "This is where the real design work actually happens — not just prompting to create some random website and claiming it killed Figma."
+> 
+
+Claude Design didn't kill Figma. But the design system extraction workflow is genuinely impressive for AI-assisted product work.
+
+## The Full Workflow
+
+### Step 1 — Set up the design system from your actual codebase
+
+- Claude Design → Set Up Design System → enter company name and description
+- **Link your GitHub repo** (or drag a local folder in) — Claude copies selected files, not the whole codebase. For large codebases: attach a front-end focused subfolder only.
+- Add key visual assets: hero images, icon SVGs, anything that carries your brand
+- Add notes: specify the fonts you're using
+- Generate → takes ~5 minutes. Keep the tab open.
+
+**What it extracts automatically:**
+
+- Correct typefaces with right tracking, sizing, and weight
+- Typography scale (display, heading, body, caption)
+- Core colours, surface colours, semantic colours (error, success states)
+- Radius, elevation, scale definitions
+- Component library: buttons, input fields, navbar, tabs, cards, browser cards
+- Brand logo (correctly)
+- Photography style guidelines (e.g. "warm foreground + cool sky, full-bleed rounded-LG, one photograph carries the brand")
+- Iconography in use
+- Brand voice guidelines (limited if your site doesn't have much copy)
+
+The generated design system version can look even better than the original — it synthesises the visual language from the code into something more coherent.
+
+### Step 2 — Generate a new page using the design system
+
+- New Design → select your extracted design system → describe what you want to build
+- Claude Design asks clarifying questions before building:
+    - Which tool are you comparing against?
+    - Primary goal of the page?
+    - Tone?
+    - Which sections to include? (hero + CTA, feature comparison table, use case breakdowns, head-to-head scenario cards, pricing comparison, testimonials, related comparisons)
+    - Page depth? (medium = full comparison with scenarios)
+    - How to present variations?
+    - Hero treatment? (match homepage, landscape photo with display serif)
+    - Feature tab style?
+    - Primary CTA? (Claude picks this up automatically from your imported code)
+    - What should be tweakable?
+
+Result: a fully designed SEO comparison page in ~10–15 minutes that follows your exact design system — correct fonts, correct spacing, correct component styles, correct photography treatment, correct brand voice.
+
+**Caveat**: AI-generated factual claims (feature comparisons, capability tables) need human verification before publishing. Claude will flag this itself.
+
+### Step 3 — Tweaks panel
+
+Claude Design generates a **tweaks panel** based on what you're designing. You can:
+
+- A/B test headline variants live
+- Toggle table density (compact vs comfortable)
+- Turn specific sections on/off
+- Prompt Claude Design to add more options to the tweaks panel
+
+### Step 4 — Hand off to Claude Code
+
+- Share → Hand off to Claude Code → Send to local coding agent
+- Claude Design generates a prompt: "Fetch this design file, read it, read the README, implement the relevant aspects of the design"
+- Copy this prompt, add any extra instructions (e.g. "use the current website top-nav, add a comparison dropdown section")
+- Paste into Claude Code (Claude desktop app), select your project folder, select Opus 4.7
+- Claude Code builds the page, writes the diff, integrates it into your existing project
+
+**What Claude Code does vs. the design:** It reuses your existing navbar (as instructed), skips design-only elements that don't have code equivalents (tweaks panel), uses your existing footer. It flags deviations clearly.
+
+**Debugging note**: Opus 4.7 can sometimes introduce Tailwind errors. Paste the error back into Claude Code and it self-corrects. The handoff isn't perfectly seamless yet — expect one round of debugging.
+
+### Step 5 — Automate with Claude Desktop Routines
+
+The most powerful part. In Claude Desktop app:
+
+- Sidebar → Routines → Create new routine
+- Name: "Daily SEO page build"
+- Folder: your project
+- Set to accept edits automatically
+- Schedule: daily at 9:00am
+- Instruction:
+    
+    > *"Research new SEO pages every single day and choose the top 3 with the highest search traffic potential for [your site]. Outline the content for each page using the [comparison page] as a template. Build 3 new pages inside this project following the same conventions."*
+    > 
+
+Result: Claude Desktop automatically researches, designs, and builds 3 new SEO pages per day, following your design system, using a proven template, without any manual input.
+
+## The SEO Agency Application
+
+This workflow is directly productisable: if you run an SEO agency, you can build design-system-consistent SEO pages for clients on autopilot. The design comes from Claude Design (10–15 minutes), the implementation from Claude Code, the ongoing production from Routines. Clients get new pages daily without you lifting a finger.
+
+## Apply to Your Projects
+
+- **Extract your app's design system now** — drag your front-end folder into Claude Design and generate the design system. You'll get a documented, visual design system from your existing Tailwind/CSS code that you can reference, share, and use to keep new features visually consistent.
+- **The clarifying questions flow** — Claude Design asks great questions before building. This is a useful model for your own product requirements process: sections, depth, tone, CTA, what's tweakable. Apply this checklist before starting any new screen.
+- **Claude Desktop Routines** — this is the automation layer that turns one-off Claude Code work into recurring automated work. For any repetitive build task (blog posts, SEO pages, changelog entries, app store screenshots), a Routine runs it daily without you.
+- **Verification before publish** — Claude flags when generated factual claims need checking. Build this habit into your own workflow: anything Claude writes about competitor features or capabilities needs manual verification before it's live.
+
+---
+
+# 🎥 Video 5 — Cinematic Sites Agent: Auto-Build Premium Animated Websites (Jay)
+
+**Channel:** Jay (RoboNuggets) | **Focus:** Skill.md agent pipeline — brand analysis → scene generation → website build → Vercel deploy
+
+https://www.youtube.com/watch?v=bUt1WpDlI6E
+
+## What This Is
+
+A four-step agentic pipeline that takes any existing website, analyses the brand, generates cinematic video assets, builds a premium animated website, and deploys it to Vercel — fully automated. Built as a reusable `skill.md` file that any Claude Code / OpenClaude / agentic platform can run.
+
+## The Four-Step Pipeline
+
+### Step 1 — Brand Analysis
+
+- Agent reads the target website's HTML (no external tools needed — Claude Code, Antigravity, and OpenClaude can all read HTML directly)
+- Optional: use Firecrawl for JS-rendered sites
+- Extracts: industry, colour palette, typography, Japanese/cultural characters if relevant, suggested headline, tagline, hero line, overall theme direction
+- Outputs a **brand card** as an HTML page — a visual staging step so you can approve the branding before anything is built
+- Pause point built into the skill so you review before continuing
+
+### Step 2 — Scene Generation
+
+- Agent suggests **3 cinematic hero animation concepts** with emoji labels (e.g. steam rising from ramen, overhead broth pour, empty bar counter)
+- You pick 1–2 options and optionally refine them (e.g. "make it shrimp-based")
+- Image generation: uses **Google's Nano Banana** model via Google's API (each Gmail account gets $300 free welcome credit — lasts a long time for image/video use)
+- Video animation: uses **Kling v3** via **Wavespeed** (API aggregator — no monthly subscription, pay per use; more models than Higsfield/Freepik)
+- Generate 2 videos per concept for optionality — probabilistic nature of video models means volume = higher chance of a good output
+- All of this is codified in the skill.md — the agent calls the APIs directly, no manual tool-switching
+
+**How to teach your agent these APIs:**
+
+- For Nano Banana: give Claude Code the Google API documentation page — it reads it and knows all the right commands
+- For Kling/Wavespeed: copy the Wavespeed API docs for Cling 3.0 Pro and paste to Claude Code — it learns the model's call structure
+
+### Step 3 — Website Build
+
+The skill.md contains:
+
+- Architecture rules for the website structure
+- Design system controls
+- The scroll-frame extraction logic: takes individual frames from the video and maps them to scroll position so the video "scrubs" as you scroll down the page
+- **Cinematic Modules Pack** integration — 30+ pre-built modular HTML/CSS/JS components:
+    - Reveal text effect
+    - Kinetic text / typewritten text / glitch text
+    - Image trails (cursor becomes photos)
+    - Accordion slider (images expand on hover, vertical variant available)
+    - SVG draw animation (the flower effect)
+    - Flip cards (for testimonials)
+    - Future scrolling modules
+    - And 20+ more
+
+The cinematic modules pack is free — linked in the description. Drop the modules into your skill.md so the agent knows which components exist and can pull them in on request.
+
+### Step 4 — Deploy to Vercel
+
+- Agent deploys automatically via Vercel's free tier
+- Outputs a live shareable URL to send to clients as a demo
+
+## The Skill.md Pattern
+
+The entire pipeline runs from a single `skill.md` markdown file — a plain text instruction manual for the agent. Structure:
+
+- Step definitions with clear pause points
+- Methodology notes for each extraction step
+- API code snippets (the Google API call for Nano Banana, the Wavespeed call for Kling)
+- Design system rules
+- Cinematic module references
+
+Any agent platform (Claude Code, Antigravity, OpenClaude, Telegram-connected Claude Code session) can run this skill.
+
+## Results Shown
+
+- Pizza restaurant: accordion menu section, cinematic food background
+- Flower shop: SVG draw animation forming a flower on scroll, mouse cursor becomes flower photos
+- Shoe cleaning service: interactive "how it works" section
+- Brewing company: brand story in brand colours
+- Jewelry company: browsable category layout
+- Perfume brand: bottle exploding into flowers on scroll
+- Ramen shop: cinematic shrimp bowl animation + accordion menu
+- Furniture service: unboxing animation on scroll revealing bedroom furniture
+
+## Apply to Your Projects
+
+- **The skill.md pattern** — this is directly applicable to your own Claude Code workflows. Any repeatable multi-step process (onboarding flow generation, screenshot → landing page, weekly SEO page build) can be codified as a skill.md and handed to the agent
+- **Wavespeed over monthly subscriptions** — for occasional video generation, Wavespeed's pay-per-use model is cheaper than Higsfield/Freepik subscriptions. Worth knowing for the website agency workflow.
+- **Google API $300 credit** — every Gmail account gets $300 in free Google Cloud credits. This covers Nano Banana image gen and Veo video gen. If you need images/videos for any project, this is effectively free.
+- **The scroll-frame extraction technique** — converting video to individual frames and tying playback to scroll position is one of the highest-impact web effects possible. The technique is codified in the skill — worth extracting and applying to any app landing page hero.
+
+---
+
+# 🎥 TikTok + Guide — The 10-Minute Premium Dashboard Workflow (Adrien Ninet)
+
+**Creator:** @adrien.ninet (315K TikTok followers, AI Tips for Designers & Devs)
+
+**Full guide:** https://klimestudio.notion.site/The-10-Minute-Premium-Dashboard-Workflow
+
+https://www.youtube.com/watch?v=NMi2LnFrUxw
+
+## The 3-Step Workflow
+
+### Step 1 — Pick a Block from efferd.com
+
+Go to **efferd.com/blocks/dashboard** and pick the dashboard block you want. Copy the prompt they provide → paste into Claude Code. Then describe what the dashboard is for so Claude adapts the template instead of just replicating it.
+
+This is the starting structure — a high-quality Shadcn block that gives Claude something real to work from rather than starting from scratch.
+
+### Step 2 — Add a Custom Background with Limora
+
+> "This is what makes your dashboard stop looking like every other AI build."
+> 
+
+Go to **limora.ai** → Background Image. Describe the visual you want (e.g. "minimal style, professional mood, background of the sea and a boat floating"), adjust settings (section type: Hero/Content/Footer, visual style: Photographic/Cinematic/Illustrated), download the image. Upload to Claude Code, ask it to add as a banner/background.
+
+Limora is a full AI asset toolkit — background images, hero visuals, mockups, illustrations, icons, product photos. 5 credits per generation, 300 credits on free tier.
+
+### Step 3 — Animate with transitions.dev Skill
+
+Install the **transitions.dev** skill in Claude Code. Ask it to animate the interface. Refine until it feels right. Ask Claude to publish — dashboard is live.
+
+## The Full Resource Stack
+
+| Tool | Purpose |
+| --- | --- |
+| efferd.com/blocks/dashboard | Shadcn dashboard block library — starting point |
+| Limora (limora.ai) | AI asset generator — backgrounds, heroes, mockups, icons |
+| transitions.dev | Claude Code animation skill — install globally |
+| Claude Code | Build, animate, deploy |
+
+## About Adrien Ninet
+
+315K TikTok, runs a design studio, builds products, posts AI design workflows. Newsletter at **logiaweb.net** (every Monday — tools, workflows, prompts, templates).
+
+**Recent high-performing TikToks worth watching:**
+
+- "How to make AI websites not look like AI websites" — 68.7K likes
+- "We rebuilt our entire studio website in 4 hours using AI" — 87.3K likes
+- "I connected Claude to Higgsfield — cinematic websites on autopilot" — 94.4K likes
+- "Framer's new Shaders feature turns generic sites into premium ones in 60 seconds" — 176.3K likes
+- "How to create brand assets using Grok" — 548.3K likes
+- "Claude Design just launched — 3 use cases every designer needs to know" — 30.5K likes
+
+## Apply to Your Projects
+
+- **Criti dashboard** — efferd block → Limora background (dark, editorial aesthetic) → transitions.dev animations → Claude deploys. This is the exact workflow.
+- **JobRunner web dashboard** — analytics/tracking dashboard block, Limora professional background, same flow
+- **transitions.dev** — install globally in Claude Code now. Any interface you build can be animated with one prompt.
+- **Limora for all visual assets** — mockups, illustrations, icons, product photos. Any custom visual that can't look AI-generated, Limora is the tool.
+- **Subscribe to logiaweb.net** — most directly relevant AI design newsletter for what you're building

@@ -1,0 +1,103 @@
+Payment Settings
+Default Hourly Rate ($)
+85
+Callout Fee ($)
+120
+Quote Validity (Days)
+30
+Payment Instructions
+Bank details, PayID, or other payment instructions...
+These instructions will appear on invoices and quotes
+
+Bank Account Details
+BSB: 000-000
+Account: 12345678
+Account Name: Your Business Name
+Bank transfer details shown on invoices
+
+Payment Due (Days)
+14
+Default due date for invoices
+
+Late Fee Rate
+1.5% per month
+Interest on overdue invoices
+
+Warranty Period
+12 months
+Default warranty on work
+
+Document Terms & Conditions
+Legal terms that appear on your quotes and invoices. These protect your business.
+
+Quote Terms & Conditions
+1. ACCEPTANCE: This quote is valid for 30 days from the date of issue.
+2. PAYMENT: A deposit may be required before work commences.
+3. VARIATIONS: Any variations must be agreed in writing.
+4. WARRANTY: Work is guaranteed for 12 months from completion.
+Leave blank to use our standard Australian trade terms. Custom terms will replace the defaults.
+
+Invoice Terms & Conditions
+1. PAYMENT TERMS: Payment is due within 14 days of invoice date.
+2. LATE PAYMENT: Overdue accounts incur interest at 1.5% per month.
+3. DISPUTES: Disputes must be raised within 7 days.
+4. OWNERSHIP: Goods remain supplier's property until paid in full.
+Leave blank to use our standard terms. Your late fee rate will be automatically included.
+
+Legal Note: These terms help protect your business and set clear expectations with clients. For complex projects, consider having a lawyer review your terms. TradieTrack's default terms cover common Australian trade business requirements including acceptance, payment, variations, and warranty.
+
+Payment Methods & Fees
+Accept multiple payment methods and reduce processing fees. Offer bank transfer for lower costs or pass card fees to customers.
+
+Bank Transfer Details
+Customers can pay directly to your bank account (no fees!)
+
+BSB
+000-000
+Account Number
+12345678
+Account Name
+Your Business Name
+Accepted Payment Methods
+Card Payments
+Visa, Mastercard via Stripe (~1.95% + $0.3)
+
+
+Bank Transfer
+Direct deposit to your bank account (FREE)
+
+
+BECS Direct Debit
+Debit from customer's bank account (~$0.5 flat fee)
+
+
+Card Payment Surcharge
+Pass card processing fees to customers who pay by card
+
+
+Early Payment Discount
+Encourage faster payments by offering a discount for paying early (e.g., via bank transfer)
+
+
+Save Payment Settings
+Digital Signature
+Add your signature to quotes and invoices for a professional touch
+
+Your Signature
+Sign here
+
+Clear
+Name Under Signature
+e.g., John Smith, Director
+This name will appear below your signature on documents
+
+Automatically Include Signature On:
+Quotes
+Add your signature to all quotes automatically
+
+
+Invoices
+Add your signature to all invoices automatically
+
+
+Tip: Draw your signature above and click "Save Signature" to store it. Your signature adds a professional touch to quotes and invoices and can help with client trust.

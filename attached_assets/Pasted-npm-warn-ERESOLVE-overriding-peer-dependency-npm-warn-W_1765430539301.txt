@@ -1,0 +1,70 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @react-native/virtualized-lists@0.81.5
+npm warn Found: @types/react@19.0.0
+npm warn node_modules/@types/react
+npm warn   dev @types/react@"19.0.0" from the root project
+npm warn   29 more (@radix-ui/react-collection, @radix-ui/react-slot, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peerOptional @types/react@"^19.1.0" from @react-native/virtualized-lists@0.81.5
+npm warn node_modules/@react-native/virtualized-lists
+npm warn   @react-native/virtualized-lists@"0.81.5" from react-native@0.81.5
+npm warn   node_modules/react-native
+npm warn
+npm warn Conflicting peer dependency: @types/react@19.2.7
+npm warn node_modules/@types/react
+npm warn   peerOptional @types/react@"^19.1.0" from @react-native/virtualized-lists@0.81.5
+npm warn   node_modules/@react-native/virtualized-lists
+npm warn     @react-native/virtualized-lists@"0.81.5" from react-native@0.81.5
+npm warn     node_modules/react-native
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: react-native@0.81.5
+npm error Found: @types/react@19.0.0
+npm error node_modules/@types/react
+npm error   dev @types/react@"19.0.0" from the root project
+npm error   peerOptional @types/react@"*" from @radix-ui/react-collection@1.1.7
+npm error   node_modules/@radix-ui/react-collection
+npm error     @radix-ui/react-collection@"1.1.7" from @radix-ui/react-roving-focus@1.1.11
+npm error     node_modules/@radix-ui/react-roving-focus
+npm error       @radix-ui/react-roving-focus@"1.1.11" from @radix-ui/react-tabs@1.1.13
+npm error       node_modules/@radix-ui/react-tabs
+npm error         @radix-ui/react-tabs@"^1.1.12" from expo-router@6.0.17
+npm error         node_modules/expo-router
+npm error   28 more (@radix-ui/react-slot, @radix-ui/react-compose-refs, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peerOptional @types/react@"^19.1.0" from react-native@0.81.5
+npm error node_modules/react-native
+npm error   react-native@"0.81.5" from the root project
+npm error   peerOptional overridden react-native@"0.81.5" (was "*") from @expo/cli@54.0.18
+npm error   node_modules/@expo/cli
+npm error     @expo/cli@"54.0.18" from expo@54.0.27
+npm error     node_modules/expo
+npm error       expo@"~54.0.25" from the root project
+npm error       24 more (@expo/cli, @expo/metro-config, @expo/metro-runtime, ...)
+npm error   36 more (@expo/devtools, @expo/metro-runtime, ...)
+npm error
+npm error Conflicting peer dependency: @types/react@19.2.7
+npm error node_modules/@types/react
+npm error   peerOptional @types/react@"^19.1.0" from react-native@0.81.5
+npm error   node_modules/react-native
+npm error     react-native@"0.81.5" from the root project
+npm error     peerOptional overridden react-native@"0.81.5" (was "*") from @expo/cli@54.0.18
+npm error     node_modules/@expo/cli
+npm error       @expo/cli@"54.0.18" from expo@54.0.27
+npm error       node_modules/expo
+npm error         expo@"~54.0.25" from the root project
+npm error         24 more (@expo/cli, @expo/metro-config, @expo/metro-runtime, ...)
+npm error     36 more (@expo/devtools, @expo/metro-runtime, ...)
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/runner/.npm/_logs/2025-12-11T05_14_47_564Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-12-11T05_14_47_564Z-debug-0.log
+~/workspace/mobile$ 

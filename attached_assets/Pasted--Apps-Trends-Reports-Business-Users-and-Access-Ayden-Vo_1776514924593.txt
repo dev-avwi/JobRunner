@@ -1,0 +1,119 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.0 (62)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+3.0.0 Business: Preamble
+
+Screenshot-0418-131440.pngDownload
+See More
+Edit
+
+Messages (3)
+
+Apple2026-04-15 2:10 PM
+
+Ayden Vogler2026-04-15 2:18 PM
+
+AppleToday 3:20 PM
+Hello,
+
+Thank you for your efforts to follow our guidelines. There are some outstanding issues that still need your attention.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+Submission ID: 76612d4a-6324-4c0c-9f1d-f278252f23ff
+Review date: April 18, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0
+
+Guideline 3 - Business
+
+Issue Description
+
+We began our review, but we are unable to continue because we need additional information about the app.
+
+Specifically, can you confirm that $129.99 is the intended price of your In-App Purchase product, Business Monthly? 
+
+Once we receive your confirmation, we will continue our review. If there's additional information you'd like to provide, please include it in your response to this message in App Store Connect.
+
+Resources
+
+Learn more about guideline 3 requirements in guideline 3.
+Guideline 2.1(b) - Performance - App Completeness
+
+Issue Description
+
+The In-App Purchase products in the app exhibited one or more bugs which create a poor user experience. Specifically, after we subscribed/purchased, the app did not register our subscription status, and we were asked to subscribe/purchase again. Review the details and resources below to troubleshoot this issue.
+
+Review device details: 
+
+- Device type: iPad Air 11-inch (M3) 
+- OS version: iPadOS 26.4.1
+
+Next Steps
+
+Apple reviews In-App Purchase products in the sandbox and the In-App Purchase products do not need prior approval to function in review. Review the product configurations, complete any missing information, and test them in the sandbox.
+
+To offer In-App Purchases in the app, the Account Holder must also accept the Paid Apps Agreement in the Business section of App Store Connect. Confirm you have a Paid Apps Agreement in effect.
+
+If you still need assistance after completing the steps and reviewing the resources, visit the Apple Developer Forums. If you can’t find an answer from an existing thread, start a new thread with your question to get guidance from Apple engineers and other developers.
+Guideline 2.1 - Information Needed
+
+We need more information to continue the review.
+
+Next Steps
+
+Provide detailed answers to the following questions:
+
+- Where is the navigation feature located?
+
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review
+
+Date Submitted
+Apr 15, 2026 at 2:18 PM
+Submission ID
+76612d4a-6324-4c0c-9f1d-f278252f23ff
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

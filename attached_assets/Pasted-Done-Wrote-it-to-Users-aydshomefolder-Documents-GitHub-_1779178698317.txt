@@ -1,0 +1,15 @@
+Done. Wrote it to /Users/aydshomefolder/Documents/GitHub/JobRunner/CLAUDE.md (repo root, so it survives prebuild and gets picked up by Claude from any subfolder including mobile/ios/).
+
+What I changed vs. the briefing draft, based on the live project state:
+
+1. Bumped the iOS deployment target note — your Podfile sets the main app to 15.1, but Live Activities require 16.1+, so I called this out as a hard constraint on the extension target (extensions can have a higher minimum than the host app — that's fine and normal).
+2. Confirmed New Architecture is ON (RCTNewArchEnabled: true in Info.plist) and Hermes is the JS engine — both worth noting because any native module you bridge needs to be New-Arch-compatible.
+3. Recorded the current version (1.1.3, build 32) so future sessions have a baseline.
+4. Listed the existing URL schemes (jobrunner, com.jobrunner.app, exp+tradietrack) and background modes (fetch, remote-notification, location) so I don't suggest re-adding them.
+5. Flagged the existing Handoff/Siri hook (NSUserActivityTypes already declares com.jobrunner.app.expo.index_route) — relevant when the App Intents work happens later.
+6. Named the precise extension-target plan (JobRunnerLiveActivity, bundle com.jobrunner.app.liveactivity, App Group group.com.jobrunner.app) so the next session doesn't bikeshed naming.
+7. Pointed at the right file for the AppDelegate seam — the file already has the // Extension point for config-plugins comment, which is exactly where the config plugin pattern hooks in. Reinforced "don't edit AppDelegate directly, write a plugin."
+8. Added a workflow section (plugin first → Xcode target → App Groups → BuildProject) so future sessions follow the right order.
+9. Recorded tool preferences for the Xcode Agent specifically — XcodeRefreshCodeIssuesInFile before BuildProject, DocumentationSearch for ActivityKit/Liquid Glass (since those are post-training-cutoff).
+
+Paste this back to the other "me" (the chat-side Claude) for a sanity check — I'd especially want it to confirm the planned bundle ID com.jobrunner.app.liveactivity and App Group group.com.jobrunner.app match what you actually have provisioned in your Apple Developer account, since those need to exist there before EAS can sign the extension.

@@ -1,0 +1,45 @@
+Here is the full valuation and positioning report. The PDF and all charts are attached below.
+The Honest Numbers
+What Is JobRunner Worth Right Now (Code & IP Alone)?
+~$310,000 AUD. That is the estimated cost to rebuild every feature you have built — the job engine, mobile app, Vapi AI receptionist, SWMS module, Xero/MYOB/QB integrations, Stripe Connect, and the client/subcontractor portals — at a senior Australian developer rate of $150/hr. That is the floor value of the IP today, regardless of revenue.
+What Is It Worth at $10K MRR?
+At $10K MRR ($120K ARR), the valuation methodology shifts from "cost to rebuild" to a revenue multiple:
+Scenario
+Multiple
+Valuation (AUD)
+Conservative (low growth, some churn)
+3x ARR
+$360,000
+Standard (healthy growth, <5% churn)
+5x ARR
+$600,000
+What Is It Worth at Scale?
+MRR
+ARR
+Multiple
+Valuation (AUD)
+$25K MRR
+$300K
+5x
+$1.5M
+$50K MRR
+$600K
+5x
+$3.0M
+$50K MRR
+$600K
+8–12x (strategic)
+$4.8M–$7.2M
+The Tradify Benchmark: Tradify was acquired by The Access Group in October 2024 for over $100M USD (~$150M AUD) — at approximately 8.8x revenue — when it had $17M revenue and 20,000 customers. That is the ceiling of what this market can produce. JobRunner is targeting the same market, with better AI features, at a lower price point.
+Is the App Ready for Tradies to Switch?
+Honestly — the web app is ready. The mobile story is not.
+The web onboarding is genuinely best-in-class. A tradie can sign up and create their first job in under 3 minutes — faster than any competitor. The UI is cleaner than Tradify, the feature set is more complete than ServiceM8, and the AI Receptionist is a feature no competitor has.
+But tradies live on their phones. The App Store and Google Play links in your codebase both return 404. Until those apps are published and searchable, you will lose every trial that starts on a phone. That is the single biggest thing standing between you and $10K MRR.
+Pricing Recommendation
+Your current pricing ($39 Pro / $49+$29/seat Team) is too cheap for what you are offering. You are giving away AI features and SWMS compliance at a price that signals "beta project" rather than "professional tool."
+Recommended post-beta pricing:
+Pro: $59/mo (still $3/mo cheaper than Tradify's cheapest plan per user)
+Team: $79/mo base + $35/seat
+AI Receptionist: Keep at $60/mo, but add usage-based billing above 100 calls/mo
+A 5-person team on JobRunner at the recommended pricing would pay $219/mo — still $91/mo cheaper than Tradify and $176/mo cheaper than ServiceM8, while offering more features than both.
+The full report with all valuation charts is attached.

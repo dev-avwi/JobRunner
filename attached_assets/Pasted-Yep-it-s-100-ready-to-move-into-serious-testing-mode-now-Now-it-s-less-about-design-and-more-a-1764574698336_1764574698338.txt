@@ -1,0 +1,161 @@
+Yep – it’s 100% ready to move into “serious testing” mode now.
+Now it’s less about design and more about proving it works like a real product.
+
+I’ll give you A, B, C and D all together:
+
+⸻
+
+A. Full testing checklist (what to run through now)
+
+Do these flows as if you’re a real tradie:
+	1.	Account + onboarding
+	•	Sign up (email / password)
+	•	Verify email (if you’ve added it)
+	•	Complete onboarding: business name, trade, ABN (if used), logo, team size.
+	•	Log out, log back in.
+	2.	Jobs & clients
+	•	Create a new client.
+	•	Create a new job for that client.
+	•	Add notes, address, due date, priority.
+	•	Change job status (New → Scheduled → In progress → Completed).
+	•	Archive / delete a job (if allowed).
+	3.	Quotes → invoices → payments
+	•	Create a quote from a job.
+	•	Add line items, GST, terms.
+	•	Save, preview PDF, “Send” (trigger SendGrid in test/sandbox).
+	•	Mark quote as accepted → have it auto-create a job or invoice.
+	•	Create invoice, mark as paid (or run a test payment with Stripe test keys).
+	4.	Files & activity
+	•	Upload before/after photos to a job.
+	•	Attach documents (PDF, image).
+	•	Check they show correctly in the job timeline.
+	5.	Notifications & email
+	•	Trigger every email you have:
+	•	welcome
+	•	quote sent
+	•	invoice sent
+	•	payment receipt
+	•	Make sure the emails:
+	•	use the right logo/name
+	•	don’t say “Replit” or test stuff
+	•	links go back to the right URLs.
+	6.	Team / roles (if implemented)
+	•	Create a second user in the same business.
+	•	Check:
+	•	owner vs staff permissions
+	•	staff can’t change billing/settings if that’s how you designed it
+	•	job assignment works.
+	7.	Error & edge cases
+	•	Try submit a form with missing fields.
+	•	Wrong password.
+	•	Invalid email.
+	•	Very long client name/job description.
+	•	No internet (turn Wi-Fi off on your phone and see what breaks).
+
+Write down every bug, weird message, or ugly screen in a little “Bug log” doc.
+
+⸻
+
+B. UX polish checklist (make it feel top-tier)
+
+Walk through every screen and check:
+	1.	Consistency
+	•	Same font sizes used for headings/body.
+	•	Same button shapes, radius, and shadows.
+	•	Same blue/orange brand colours everywhere.
+	2.	Spacing & alignment
+	•	No elements “stuck” to the edge.
+	•	Cards sized evenly (your 2×2 layout).
+	•	Nothing looks left-heavy (that old unused column issue).
+	3.	Copy & micro-text
+	•	Clear titles: “Create Job”, “Send Quote”, etc.
+	•	Helpful helper text under fields (e.g. “This is what your client will see on the invoice”).
+	•	No lorem ipsum / placeholder gibberish.
+	4.	States
+	•	Empty states (no jobs, no invoices yet) have friendly messages and a big CTA button.
+	•	Loading states (spinner or skeletons).
+	•	Error states (“Something went wrong – try again or contact support”).
+	5.	Mobile vs desktop
+	•	Test on your phone in portrait.
+	•	Check buttons big enough for thumbs.
+	•	Bottom nav on mobile feels natural and not cramped.
+
+⸻
+
+C. Backend + offline + “real product” setup
+
+This is where you make it production-grade:
+	1.	Choose and lock in your production backend
+	•	One real database (e.g. Supabase / Postgres / PlanetScale / Neon / Railway).
+	•	Separate TEST and PROD environments:
+	•	SUPABASE_URL_TEST, SUPABASE_URL_PROD (or equivalent)
+	•	Same idea for Stripe and SendGrid keys.
+	2.	Data model sanity check
+Make sure your tables/entities cover:
+	•	Users
+	•	Businesses / Accounts
+	•	Team members
+	•	Clients
+	•	Jobs
+	•	Quotes
+	•	Invoices
+	•	Payments
+	•	Files (or file references)
+	•	Notifications / Email log
+	•	Audit log (optional but pro)
+	3.	Stripe (for your subscriptions)
+	•	Use Stripe test mode now.
+	•	Plans: Free, Pro, maybe Business.
+	•	Webhooks:
+	•	checkout.session.completed
+	•	invoice.payment_succeeded
+	•	On webhook → update user’s plan and status.
+	4.	SendGrid / email
+	•	Authenticate your sending domain (support@tradietrack.app or similar).
+	•	Make sure all email templates use:
+	•	your logo
+	•	your brand colours
+	•	correct links back to app.
+	5.	Offline + sync idea
+	•	Short term: make sure if internet drops while filling a form, user doesn’t lose everything (save draft in localStorage/IndexedDB).
+	•	Medium term: local cache of:
+	•	last X jobs
+	•	last X clients
+	•	last X quotes/invoices
+	•	When connection returns → sync back to backend.
+You don’t have to build full offline right now, but plan it.
+
+⸻
+
+D. What’s next after tests? (Real-world steps)
+
+Once you’ve done a test pass yourself:
+	1.	Fix the obvious bugs + rough edges.
+	2.	Invite 2–3 beta tradies
+	•	Give them:
+	•	Their own login
+	•	A simple “Getting started” guide (1 page or short Loom video)
+	•	Ask them to use it for at least a week for:
+	•	creating jobs
+	•	sending at least one quote/invoice
+	•	saving at least one client.
+	3.	Collect feedback
+	•	What confused them?
+	•	What was slow?
+	•	What did they love?
+	•	What’s missing for them to switch from their current system?
+	4.	Decide your v1
+	•	Freeze new features.
+	•	Only fix bugs and polish.
+	•	Lock pricing (maybe Free during beta + future Pro).
+	5.	Then: soft launch
+	•	Small landing page with your new logo.
+	•	Clear value: “Job + quotes + invoices app for Cairns tradies.”
+	•	Simple “Request early access” form.
+
+⸻
+
+If you like, next I can:
+	•	Turn this into a single Replit “master testing prompt” you paste so it knows exactly what to check,
+or
+	•	Help you design the beta tester guide (what you send to the first tradies so they know how to use it).

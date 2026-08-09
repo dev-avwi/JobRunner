@@ -1,0 +1,80 @@
+~/workspace/mobile$ npx eas update --branch development
+? Provide an update message: › Task #107: Auth flow polish for TestFlight 2026-05
+
+- iOS typography: rewrote global-text-defaults.ts to be a no-op on iOS
+  (only patches Android), restoring App Store SF font look. Bumped
+  patched marker to r15.
+- Demo login: added "Use demo account" button under Google on the
+  login screen with handler that POSTs /api/auth/demo-login, sets
+✔ Provide an update message: … Task #107: Auth flow polish for TestFlight 2026-05
+
+- iOS typography: rewrote global-text-defaults.ts to be a no-op on iOS
+  (only patches Android), restoring App Store SF font look. Bumped
+  patched marker to r15.
+- Demo login: added "Use demo account" button under Google on the
+  login screen with handler that POSTs /api/auth/demo-login, sets
+  session token, refreshes auth + business settings, then routes
+  straight to /(tabs).
+- Persistent skip: added top-bar Skip link to the onboarding wizard
+  visible on every step including the role picker entry; confirms
+  via Alert then calls /api/onboarding/complete and lands on /(tabs).
+- Demo login and skip flows are transactional: both require
+  /api/onboarding/complete to succeed AND a refreshed
+  businessSettings.onboardingCompleted=true before navigating;
+  failures surface an Alert and abort instead of silently landing
+  in a broken state.
+- Added a global routing guard in mobile/app/_layout.tsx that bounces
+  authenticated users with onboardingCompleted=true off the
+  /(onboarding) stack — covers cold start / deep link / token refresh.
+  Banner CTA opts into re-entry via `?resume=1`; both the global guard
+  and the wizard's internal guard honour it and pre-seed the form.
+- Skip affordance now also visible on the role-picker entry step.
+- Added .local/reports/auth-flow-2026-05/diffs/{typography-ios-rollback,auth-flow-snippets}.md
+  as visual proof artifacts (device screenshots require macOS).
+- Removed `as any` route cast from OnboardingReminderBanner; uses
+  the same plain string literal as other onboarding navigations.
+- Banner dismissal key now scoped per user (DISMISS_KEY_PREFIX + userId).
+- Top-bar skip label updated to "Skip for now" to match spec.
+- Used useGlobalSearchParams (not pathname) to read ?resume=1 in
+  _layout.tsx guard (usePathname strips query strings).
+- Reminder banner: new OnboardingReminderBanner component shown to
+  owners on the dashboard when onboarding is marked complete but
+  businessName/tradeType are still empty. Dismissible via
+  AsyncStorage; "Finish" deep-links back to /(onboarding)/setup.
+- Audited resolvePostAuthRedirect in login/register and the setup
+  auto-redirect — already correct, no changes.
+- Updated mobile/scripts/typecheck-baseline.txt to absorb line-number
+  shifts in (tabs)/index.tsx; new code typechecks clean.
+- Added .local/reports/auth-flow-2026-05/SUMMARY.md.
+
+Replit-Task-Id: 34e7a405-8330-4ece-a9b2-fe2583b0cd13
+Update message exceeds the allowed 1024 character limit. Truncating message...
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.8% ( 908/1447)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 94.6% (3754/3860)
+[expo-cli] Android Bundling failed 7190ms node_modules/expo-router/entry.js (3941 modules)
+[expo-cli] Error: Unable to resolve module react-native-toast-message from /home/runner/workspace/mobile/app/_layout.tsx: react-native-toast-message could not be found within the project or in these directories:
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli]   40 | import { CustomAlertProvider } from '../src/components/CustomAlert';
+[expo-cli]   41 | import { initGlobalIAP } from '../src/lib/iap-global';
+[expo-cli] > 42 | import Toast from 'react-native-toast-message';
+[expo-cli]      |                    ^
+[expo-cli]   43 | import { buildToastConfig } from '../src/lib/toast';
+[expo-cli]   44 | import { GestureHandlerRootView } from 'react-native-gesture-handler';
+[expo-cli]   45 | import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+[expo-cli] 
+[expo-cli] Import stack:
+[expo-cli] 
+[expo-cli]  app/_layout.tsx
+[expo-cli]  | import "react-native-toast-message"
+[expo-cli] 
+[expo-cli]  app (require.context)
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

@@ -1,0 +1,62 @@
+
+I understand - there are issues with team role permissions where different roles aren't seeing the right pages/features. Let me check the mobile app's role logic:
+
+I see part of the issue. Let me check the team_members table to understand how roles are actually assigned:
+
+Now I can see the problem clearly. The vogler.ayden@gmail.com account has the Administrator role with ["*"] permissions (full access), but the mobile app's navigation filtering doesn't properly handle this.
+
+Let me check how the mobile app determines what to show:
+
+Let me check the exact filtering logic and how Administrator is being handled:
+
+Now I see part of the issue - the BottomNav is hardcoded and doesn't show the Map tab at all! Let me check how team location visibility works:
+
+Now I can see the issue. Let me check how useUserRole determines canAccessMap and other permissions:
+
+Now I can see the key problems! Here's my analysis:
+
+Root Cause Analysis
+Problem 1: Wildcard Permission Not Handled
+The Administrator role has ["*"] permissions (meaning "all permissions"), but in hasPermission() (line 299), the code does:
+
+return cache.permissions.includes(key);
+This checks if "*".includes("view_map") which is false! The wildcard * isn't being interpreted.
+
+Problem 2: Role Mapping
+The Administrator should be mapped to 'manager' role type by getRoleFromTeamInfo() (since "Administrator" includes "admin"), but I need to verify this is happening correctly.
+
+Problem 3: Navigation Filtering
+Many nav items use allowedRoles: ['owner', 'solo_owner', 'manager'], so if Administrator properly maps to 'manager', they should see these pages. But if the role mapping fails, they won't.
+
+Let me check the API endpoint that returns role data:
+
+I've found the core issues. Here's the complete picture:
+
+Issues Found
+1. Wildcard Permission * Not Handled
+The Administrator role has permissions: ["*"] (meaning "all permissions"), but the mobile app's hasPermission() function does:
+
+return cache.permissions.includes(key);
+This checks if ["*"].includes("view_map") which returns false. The * wildcard isn't interpreted!
+
+2. Role Mapping Should Work But May Have Issues
+The getRoleFromTeamInfo() function should map "Administrator" → 'manager' (since it includes "admin"), but this needs verification in the actual runtime.
+
+3. Navigation Config Doesn't Include All Manager-Level Items for Administrators
+Even if Administrator is mapped to 'manager', some items don't have 'manager' in their allowedRoles.
+
+Proposed Fixes
+Fix hasPermission() in mobile hook - Add wildcard handling:
+
+if (cache.permissions.includes('*')) return true;
+Fix navigation config - Ensure Administrator (mapped to 'manager') can see all appropriate items
+
+Audit the web app for the same issues - The web likely has similar problems
+
+Standardize role logic - Create a clear mapping:
+
+Owner = full access (business owner)
+Administrator/Manager = near-full access (team member with management permissions)
+Worker/Staff = limited access (field worker)
+Would you like me to create a task list to fix these team role permission issues across the mobile app?
+

@@ -1,0 +1,57 @@
+Honestly these are significantly better than the previous versions. The fixes are clear and meaningful. Let me go through each one properly.
+
+---
+
+**WHS Overview — Much Better**
+
+The action links on the right side of each incomplete item — "Add Checklist", "Create SWMS", "Add Record", "Set Up" — that's exactly what was missing before. A tradie now knows exactly what to do. The duplicate SWMS documents are gone too. This screen is now genuinely good.
+
+---
+
+**Incidents Tab — Properly Fixed**
+
+The green tick icon with "No incidents reported — Your safety record is clean" is a completely different feel to the broken triangle from before. That's a positive message rather than an empty broken screen. The Hazard Reports section below it with the real demo data showing "Several large uncovered holes workers could fall through" with Medium/Open tags is excellent — that's exactly what the screen should show. This is now one of the stronger screens.
+
+One small thing — the timestamp on the hazard report shows `2026-03-13T01:06:46.005Z` in raw format. That should display as "13 Mar 2026" not the raw ISO timestamp. Looks like a bug even if it isn't one.
+
+---
+
+**SWMS & JSA Tab — Clean**
+
+The two SWMS cards side by side work well. "Working at Heights — 5 hazards, 0 signatures" gives useful at-a-glance info. The PDF button on the Electrical Work card is good. The empty JSA state below is fine — clear message and obvious action button.
+
+The "draft" badges on both SWMS documents are still showing. For demo purposes these should probably show as "Active" not "draft" — otherwise every tradie who sees the demo thinks the system only creates drafts.
+
+---
+
+**Training Tab — Acceptable**
+
+Empty state is clean and the description "Track your team's White Cards, licences, first aid certs, and other qualifications" is genuinely useful — tradies immediately understand what this is for. The Add Record button is prominent. This is fine.
+
+---
+
+**Compliance Tab — Good Structure**
+
+Two separate sections on one screen — PPE Checklists and Emergency Plans — both with their own empty states and action buttons. This is logically structured and clean. The CPCCWHS1001 reference in the subtitle shows attention to actual Australian compliance standards which is impressive and builds credibility with tradies.
+
+---
+
+**The Overall Dark Theme Question**
+
+Looking at all five screens together now — the dark theme is consistent across WHS Safety and it actually works reasonably well here. Safety and compliance feeling slightly more serious than the main job management screens is not necessarily wrong. If the dark theme is a user-toggled setting then this is completely fine.
+
+---
+
+**Remaining Fixes Worth Doing**
+
+Two small things before showing anyone:
+
+The raw ISO timestamp on the hazard report — fix to show a human readable date.
+
+The SWMS documents showing "draft" in the demo — change to "Active" so the demo looks production-ready.
+
+---
+
+**Honest Overall Assessment of WHS Now**
+
+Before your changes I'd have said this section was a 5/10. Now it's genuinely a 7.5/10. The action items on the overview, the proper incidents empty state, the hazard report demo data — those three changes make a significant difference. A tradie looking at this now would understand it and trust it. That's what matters.

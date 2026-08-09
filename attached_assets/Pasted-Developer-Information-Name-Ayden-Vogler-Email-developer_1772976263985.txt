@@ -1,0 +1,54 @@
+Developer Information
+Name
+Ayden Vogler
+Email
+developer@avwebinnovation.com
+Organization
+Ayden Vogler - 6557LUX45F
+Website
+https://jobrunner.com.au
+
+PSP
+To offer Tap to Pay on iPhone in your app, you’ll need to first integrate with a supported payment service provider (PSP). Who is your PSP?
+
+Stripe
+Additional details
+In the next 12 months, how many of your apps that are currently distributed on the App Store will use this entitlement?
+
+None
+1
+2-5
+6+
+List the URLs of all your publicly listed apps that will use this entitlement. If none of your apps are publicly listed, leave this blank.
+
+In the next 12 months, how many new apps that use this entitlement will you distribute?
+
+None
+1
+2-5
+6+
+In the first 12 months of distribution, how many total iPhones do you expect will use Tap to Pay on iPhone with your apps?
+
+0-99
+100-999
+1000-9,999
+10,000-99,999
+100,000+
+Who will you distribute these apps to?
+
+The public through the App Store.
+Specific third parties through Apple Business Manager or unlisted app distribution on the App Store.
+Employees within my organization through Apple Business Manager or unlisted app distribution on the App Store.
+Select all that apply.
+Describe the merchant onboarding process for your publicly distributed apps.
+
+Merchant onboarding is done entirely in-app. New users sign up within the JobRunner iOS app, complete a guided business setup wizard (business name, ABN, trade type, contact details), and then connect their Stripe account via Stripe Connect Express — an embedded onboarding flow within the app. Once Stripe identity verification is complete, the merchant can immediately begin accepting Tap to Pay on iPhone payments. Minimum onboarding time after submitting their application is approximately 5-10 minutes, depending on Stripe's identity verification speed.
+Specify how onboarding is done (e.g., in-app, on a website) and the minimum onboarding time for a merchant after submitting their application.
+List the countries/regions where you plan to use Tap to Pay on iPhone in order of release. Specify estimated release dates where possible. Please use the list of countries from our regions and countries site and list the release schedule in order using this format:
+
+Example:
+
+1. [Jan. 2024 - United States]
+2. [Feb. 2024 - United Kingdom]
+
+1. [April. 2026 - Australia]

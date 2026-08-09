@@ -1,0 +1,89 @@
+{
+  "colorScheme": "light",
+  "fonts": [
+    {
+      "family": "Google Sans",
+      "count": 9
+    },
+    {
+      "family": "roboto",
+      "count": 9
+    },
+    {
+      "family": "Noto Sans Myanmar UI",
+      "count": 9
+    },
+    {
+      "family": "Noto Sans Khmer",
+      "count": 9
+    },
+    {
+      "family": "arial",
+      "count": 9
+    },
+    {
+      "family": "sans-serif",
+      "count": 9
+    }
+  ],
+  "colors": {
+    "primary": "#1A73E8",
+    "accent": "#E8F0FE",
+    "background": "#FFFFFF",
+    "textPrimary": "#3C4043",
+    "link": "#E8F0FE"
+  },
+  "typography": {
+    "fontFamilies": {
+      "primary": "Google Sans",
+      "heading": "Google Sans"
+    },
+    "fontStacks": {
+      "body": [
+        "Google Sans",
+        "roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "arial",
+        "sans-serif"
+      ],
+      "heading": [
+        "Google Sans",
+        "roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "arial",
+        "sans-serif"
+      ],
+      "paragraph": [
+        "Google Sans",
+        "roboto",
+        "Noto Sans Myanmar UI",
+        "Noto Sans Khmer",
+        "arial",
+        "sans-serif"
+      ]
+    },
+    "fontSizes": {
+      "h1": "44px",
+      "h2": "44px",
+      "body": "14px"
+    }
+  },
+  "spacing": {
+    "baseUnit": 4,
+    "borderRadius": "8px"
+  },
+  "components": {},
+  "images": {
+    "logo": null,
+    "favicon": null,
+    "ogImage": null
+  },
+  "__framework_hints": [],
+  "confidence": {
+    "buttons": 0,
+    "colors": 0,
+    "overall": 0
+  }
+}

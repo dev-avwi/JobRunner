@@ -1,0 +1,669 @@
+Notes from YouTube videos on growing mobile apps — UGC, influencer outreach, paid ads, Reddit, content strategy, and user acquisition.
+
+---
+
+# 🎥 Video 1 — Nicole: $150K/Month × 4 Apps
+
+**Channel:** Starter Story | **Apps:** Glam Up (beauty AI), Sprout/Prep AI (job apps AI)
+
+https://www.youtube.com/watch?v=32vqaJa90kw
+
+## Who She Is
+
+Built 4 apps in 2 years. Hit 1M users in 6 months on Glam Up, 250K MRR on Sprout in 8 months. Currently 400–500M monthly views across TikTok, Instagram, YouTube Shorts.
+
+## Growth Philosophy
+
+> "Design the app to be innately viral for social media. The design IS part of your distribution."
+> 
+- Hard paywall on all apps — weekly or monthly subscription only
+- Try a content format for 2–3 weeks, exhaust every variation, then rotate if not working
+- Once you find what works, double down and scale
+
+## Her UGC System
+
+### Step 1 — Source Creators
+
+- Match creator type to content style: talkers for talking-head, expressive faces for reaction videos
+- **Inbound**: application forms in UGC group chats, Instagram, Reddit, Syift
+- **Outbound**: VAs doing outreach to micro-influencers
+
+### Step 2 — Onboard
+
+- Interview first — vibe check
+- Full **creator course**: Typeform → video modules → quiz at end of each module
+- 50%+ of creators who complete the course go viral within 2 weeks
+- Course is completely app-specific — walks through the content bank, what good looks like
+
+### Step 3 — Manage
+
+- Discord channel, bi-weekly feedback calls
+- Top performers get promoted to manage other creators
+- At peak: managing 200 active creators simultaneously
+
+### Step 4 — Systemise
+
+- Referral system for creators
+- Analytics dashboards for performance
+- Scale referral program once you have momentum
+
+## Tech Stack
+
+React Native, RevenueCat, Superwall (paywall UI), PostHog (analytics), Syift (UGC recruiting), Atio (CRM)
+
+## Apply to Your Apps
+
+- **JobRunner vs Sprout** — Sprout is almost the same market as JobRunner. Nicole validated this at 250K MRR. Study Sprout's TikTok content — the UGC format that works for them will likely work for JobRunner
+- **Criti** — before/after critique is inherently shareable. "Roast my UI" style content would perform well
+- **Kindred** — emotion-driven app = perfect for talking-head or personal story UGC
+- **Gap vs Nicole** — you have no creator course, no onboarding doc, no system. Before reaching out to any UGC creator, write a one-page brief
+
+---
+
+# 🎥 Video 2 — Flo: $300/Month to $35K/Month with One Influencer
+
+**Channel:** Starter Story | **App:** Monai (expense tracking, native iOS)
+
+https://www.youtube.com/watch?v=rGLXc1GmsaI
+
+## The Story
+
+Flo (Germany) built Monai — a minimalist AI-powered expense tracker. Spent 1.5 years grinding solo: $300 MRR. Then a Colombian content creator found him via social handles inside the app. One partnership later: $35K+ MRR in 12 months. 10,000% growth.
+
+> "The only thing wrong with your app is that nobody was seeing it."
+> 
+
+## The Influencer Partnership Model
+
+- **1 influencer, 3 videos/month** — quality over quantity
+- **Profit-share + fixed monthly retainer** — aligns incentives, influencer has skin in the game
+- Influencer owns the creative direction — Flo doesn't brainstorm video ideas
+- Videos are **story-driven**, not walkthroughs
+
+## His 5-Step Influencer Outreach Playbook
+
+### Step 1 — Find aligned partners
+
+- Lifestyle + tone + audience must match your product
+- Look for: charisma, replies to comments, tech + lifestyle crossover (not purely tech)
+
+### Step 2 — Warm up the relationship
+
+- Follow them, comment on their videos consistently — they notice recurring names
+
+### Step 3 — Be specific in your outreach
+
+- Don't send: *"I love your content, let's collab"*
+- Do: reference a specific video, a specific moment, a joke they made
+
+### Step 4 — Connect the dots to your product
+
+- Show alignment, not a transaction
+- "I think there's a real overlap between what your audience values and what my product does"
+
+### Step 5 — Signal willingness to pay early (most important)
+
+- Lead with making it clear they'll be compensated
+- Show revenue potential: look up similar apps on Sensor Tower
+- Example: *"I understand the value of what you do. I'd love a long-term profit-share partnership. Other apps in this niche make $50–100K/month with the right distribution."*
+
+### Final Tips
+
+- **Be brief** — one punchy paragraph max
+- **Send a personalised video** — mention their name and specific content. Almost nobody does this
+- **Add your social handles inside your app** — this is how Flo's partner found him
+- **Look outside the US** — huge opportunity in Colombia, France, Argentina, and other markets
+
+## Key Insight: Repurpose Influencer Content as Ad Creative
+
+> "My creator makes great videos. Those videos you can use to experiment with Meta ads very easily."
+> 
+- The organic content that converts also converts as paid ads
+- Playbook: organic influencer content → find what converts → put paid spend behind it
+
+## Apply to Your Apps
+
+- **JobRunner** — one aligned influencer who's a job seeker / career content creator is worth more than 50 TikTok posts
+- **Kindred** — relationship/self-improvement niche has massive creator presence
+- **Criti** — design/dev Twitter and YouTube is where your users already are
+- **The social handles in app tip** — are your socials linked inside your apps right now? Free and takes 5 minutes
+- **Meta ads** — once you have influencer content that converts organically, that same video as a Meta ad is the next step
+
+---
+
+# 🎥 Video 3 — Real Data: My First $400 Facebook/Instagram Ad Campaign for an App
+
+**Channel:** (indie dev creator) | **Focus:** Honest breakdown of campaign metrics, income, and whether paid ads are worth it
+
+https://www.youtube.com/watch?v=1cFVO6EnhwA
+
+## The Numbers (Two-Week Campaign, $400 Spend)
+
+| Metric | Result |
+| --- | --- |
+| Impressions | ~300,000 |
+| Reach | ~150,000 |
+| Clicks to website | ~7,000 |
+| App downloads / accounts created | ~2,400 |
+| In-app purchases | 4 users |
+| Revenue from IAP | ~$40 (after tax/fees) |
+| Revenue from in-app ads | ~$20 |
+| **Total revenue** | **~$60** |
+| **Net campaign cost** | **~$340** |
+
+**Cost per install**: ~$0.17. Revenue per install: ~$0.025. Not yet profitable, but this is experiment 1.
+
+## What Went Wrong: The Ad Frequency Problem
+
+Users complained about too many ads. Started leaving 1-star reviews on App Store and Play Store.
+
+**Fix**: applied a **frequency cap** — limits the number of times the same ad is shown to the same person per minute.
+
+> "You need to listen to your customers."
+> 
+
+## Apply to JobRunner
+
+- **$400 is a real, testable budget** — the data you get is worth more than the $400 itself
+- **The frequency cap lesson** — cap ad frequency from day one if you add ads to JobRunner
+- **Revenue per install is your north star** — once you know LTV per install (RevenueCat), you know the maximum you can spend per install profitably
+
+---
+
+# 🎥 Video 4 — The 4-Step Blueprint to Your First 10,000 App Users
+
+**Channel:** (app growth creator) | **Focus:** Reddit, viral message, UGC creators via Posted, paid ads
+
+https://www.youtube.com/watch?v=e_t1gYkvZkI
+
+## The Core Insight
+
+> "Don't sell the features. Sell the transformation."
+> 
+
+Your content only has to do one job: get them interested enough to go to the App Store. Your App Store listing gets them to download. Your onboarding gets them to purchase. Don't try to do all three in one video.
+
+## The Cheat Code: Reddit First
+
+Post on relevant subreddits today — takes one hour, can drive real users immediately.
+
+**Best subreddits for founders**: r/SideProject, r/SaaS, r/programming
+
+**For JobRunner specifically**: r/jobs, r/cscareerquestions, r/jobsearch, r/recruitinghell
+
+Don't spam your product link. Be helpful, be real, share your experience as a founder.
+
+## Step 1 — Identify Your Viral Marketing Message
+
+- Go to TikTok, search your app's core problem, sort by most popular of all time
+- Study what the top-performing videos have in common — the format, the hook, the transformation
+- **Trending sounds**: integrate your product naturally into a viral sound video → free views from the trend
+
+**The funnel mindset**:
+
+1. TikTok video → get them to **go to the App Store**
+2. App Store listing → get them to **download**
+3. Onboarding → get them to **purchase**
+
+## Step 2 — Scale with UGC Creators (Posted.app)
+
+**Platform**: postedapp.com
+
+- Creators make a video, submit with a bid
+- You watch the video **before paying** — completely risk-free
+- You own the content for life (MP4 + TikTok Spark Ad code)
+
+**Two pricing models**:
+
+- **Deals**: creator names a flat fee, you review before paying
+- **CPM**: creator gets paid per 1,000 views — maximum risk-free option
+
+**Real results**: 4,000 downloads in one week, $1,500 spent across 17 videos = **$0.37 per download**
+
+## Step 3 — Scale Winners with Paid Ads
+
+- Take organic videos that are driving installs → run as paid ads
+- Paid ads have a direct CTA — conversion rate is dramatically higher for the same content
+
+**The math problem**:
+
+- RevenueCat → Realized LTV per download → Customer Lifetime: Unbounded
+- As long as you can acquire installs for less than that number, you're profitable
+
+## Apply to JobRunner
+
+- **Reddit immediately**: post in r/jobs, r/jobsearch, r/recruitinghell. Share your story as a founder, not just a product link
+- **The viral message**: TikTok search "job search tips", sort all time. The transformation = "I was sending 50 applications and getting ignored → now I'm getting callbacks"
+- **Posted.app for UGC**: risk-free, brief creators with viral video examples from your research
+- **RevenueCat LTV**: pull Realized LTV per download (unbounded) right now. That's your max spend per install
+
+---
+
+# 🧠 Cross-Video Synthesis — Growth Practices
+
+| Practice | Nicole | Flo | Campaign Video | Blueprint Video |
+| --- | --- | --- | --- | --- |
+| Hard paywall | ✅ | ✅ | — | — |
+| UGC system | ✅ 200 creators | — | — | ✅ Posted.app |
+| Creator onboarding course | ✅ | — | — | Brief only |
+| 1 influencer, profit-share | — | ✅ | — | — |
+| Reddit as first channel | — | — | — | ✅ |
+| Sell transformation not features | ✅ | — | — | ✅ |
+| Repurpose organic content as paid ads | — | ✅ | — | ✅ |
+| LTV calculation before paid spend | — | — | ✅ | ✅ |
+| Social handles inside the app | — | ✅ | — | — |
+
+---
+
+# 🎯 Action Items
+
+## JobRunner (Immediate)
+
+- [ ]  Post in r/jobs, r/jobsearch, r/recruitinghell today — share your founder story, ask for feedback
+- [ ]  TikTok research: search "job search tips", sort all time, study what the top videos do
+- [ ]  Pull RevenueCat LTV per download (unbounded) — this is your paid ads budget ceiling
+- [ ]  Study Sprout (Nicole's job-seeker app) TikTok — nearly identical market, proven UGC format
+- [ ]  Add your social handles inside the JobRunner app
+
+## When Ready to Spend
+
+- [ ]  Write a one-page creator brief before reaching out to anyone
+- [ ]  Try Posted.app Deals feature — risk-free, you only pay for videos you approve
+- [ ]  Once you have organic content that converts, run it as a paid ad
+
+## All Apps
+
+- [ ]  Write a one-page creator brief for each app (what it does, what good content looks like, 3 example hooks)
+- [ ]  App Store screenshots — are they actually good? Are you prompting users for reviews?
+
+---
+
+# 🎥 Video 5 — App Marketing in 2026: Short Form Content Is the Only Free Growth Channel That Works
+
+**Channel:** (indie dev creator) | **Focus:** TikTok/Reels/Shorts as the primary growth lever for indie apps in 2026
+
+https://www.youtube.com/watch?v=HjnXnssrj4M
+
+## The Shift
+
+App Store Optimisation used to work — build an app, add keywords, rank on search, profit. That era is over. The algorithm has changed, there's more competition, and new apps struggle to rank. And yet some indie developers are still growing fast, for free.
+
+The answer in 2026: **consistent daily short form content** on TikTok, Instagram Reels, and YouTube Shorts.
+
+## Two Case Studies
+
+### Jack — Lovely App (doodles to your partner)
+
+- 50,000 downloads in months with poor ASO and zero ads
+- Posts ~2 short form videos per day
+- Goes further: **watches viral content within his niche**, then **builds new features specifically to hook into those trends**
+- His most popular video: 4 million views, 160K likes, 503 comments — mostly asking "what's the app?"
+- The feature wasn't built for the product. It was built for the video.
+
+### Max Blade — Talk Macros (log calories by talking)
+
+- Built for just over a month, already at $1,000+ MRR
+- Posts ~2 videos per day
+- Direct correlation: days he didn't post = fewer new users. The graph makes it undeniable.
+- His background as a personal trainer gave him genuine product credibility — he knows what he's talking about, and that comes through
+
+> "The first few hours of every single day should be making short form content."
+> 
+
+## The Key Insight: Build Features for Virality, Not Just Utility
+
+Jack doesn't just post about existing features. He:
+
+1. Watches what's going viral in his niche
+2. Identifies what's getting traction
+3. **Builds a new feature specifically to hook into that viral trend**
+4. Posts about the feature
+
+This is a completely different mental model from traditional product development. The distribution channel informs the product roadmap.
+
+## Why Most People Fail at This
+
+The beginning is brutal. You post, nothing happens. A handful of views, a few likes, and you lose motivation and stop. That's exactly why it doesn't work — consistency through the zero-traction phase is the whole game.
+
+> "I'm treating this like building a muscle, not chasing instant results."
+> 
+
+The creator committed to posting at least one piece of short form content per day in 2026, regardless of results, to push through the zero-traction phase.
+
+## The State of Things in 2026
+
+> "Distribution isn't optional anymore for indie app developers. It's no longer a nice to have. It's part of the job description. If you're not showing up every day, somebody else will."
+> 
+
+ASO is harder. Paid ads are expensive and hard to get right. Short form organic content is free, works, and compounds — but only if you show up every day.
+
+## Apply to JobRunner
+
+- **The direct correlation between posting and downloads** — Max's graph is the clearest data point in this whole library. If you post on days you want downloads, the connection is almost mechanical at this stage of the algorithm
+- **Build features for virality** — this is the most counterintuitive and most powerful idea in this video. What's going viral in the job search / career space on TikTok right now? What feature could JobRunner add specifically to hook into that? This is a product question, not just a marketing question
+- **The zero-traction phase** — expect the first 2–4 weeks of posting to feel pointless. That's normal. The creators who break through are the ones who post through it anyway
+- **2 videos per day is the benchmark** — both successful devs here post around 2 per day. Even 1 per day consistently is better than 3 in a burst and then nothing
+- **"Mostly asking what's the app"** — that's the goal. The video doesn't need to sell JobRunner. It needs to make someone curious enough to search for it.
+
+---
+
+# 🎥 Video 6 — First Paying Customer in 3 Days: TikTok Ads Setup for Mobile Apps
+
+**Channel:** Alim (Ambitious Labs) | **Focus:** AppsFlyer attribution, TikTok campaign structure, Arc Ads for creative, onboarding funnel
+
+https://www.youtube.com/watch?v=AMzwwgLta3I
+
+## The Setup Before Running Any Ads
+
+### Step 1 — Install AppsFlyer (MMP)
+
+AppsFlyer is a Mobile Measurement Partner — it connects your app to TikTok so the ad network knows who's downloading and purchasing.
+
+**Why this is critical**: without it, TikTok keeps scanning the entire world randomly. With it, TikTok learns who your buyers are and finds more of them.
+
+**What AppsFlyer does**:
+
+- Tells TikTok how many installs and purchases each ad generates
+- Enables TikTok's algorithm to optimise toward your best customers
+- Tells you which specific ad drove each download (so you can cut losers and scale winners)
+
+**Install**: create an AppsFlyer account → install their SDK into your app (Flutter SDK available) → connect your TikTok account to AppsFlyer.
+
+### Step 2 — Set Up Analytics (Mixpanel)
+
+You need a funnel report showing: how many users signed up → progressed through onboarding → purchased.
+
+> "If you can't measure it, you can't manage it. Nobody should run ads without proper tracking in place."
+> 
+
+Alim's result on $50 spend: 14 signups → 1 purchase = 7% signup-to-purchase conversion. His goal: 15–20%. If he can't hit that with another $50 of data, he'll kill the campaign, fix the onboarding, and retest.
+
+---
+
+## Creating the Ad Without Going on Camera
+
+**Tool: Arc Ads** (~$10/video)
+
+- Write a script (30–45 seconds)
+- Pick an AI avatar from their library
+- The avatar reads your script on video
+- Download the avatar video → edit in CapCut with a screen recording of your app overlaid
+- Result: looks like a real UGC creator showing your app
+
+**Script structure that worked**: lead with who it's for, name the app, state the specific outcome, list what it does, close with a call to action.
+
+Example: *"If you work in sales, then this app will make you rich. It's called Closer Academy, an AI-powered sales coach that's proven to help you double your close rate..."*
+
+---
+
+## TikTok Campaign Structure
+
+### Account warm-up first
+
+Spend ~1 week posting organic content on the TikTok account before running ads. Create a real profile, post a few things, get some traction. TikTok treats accounts that look real differently.
+
+**Don't use the Boost feature** — that's for people who don't know how to run ads. Use TikTok Ads Manager.
+
+Post the ad as an organic post first, let it run for a couple of days, then use **Spark Ads** to promote that exact post as a paid ad. This lets you build organic traction and paid reach on the same video.
+
+### Campaign setup
+
+- Campaign type: **App Promotion** → App Install campaign
+- Enable **iOS 14 dedicated campaign** (required since IDFA deprecation)
+- Connect your MMP (AppsFlyer) — if not connected, you'll see an error here
+- **One campaign per country** — never combine countries. Blending costs makes it impossible to compare performance.
+- **Optimization goal**: start with **Install** (not in-app purchase) until you have enough data. Once you have real users purchasing, switch to optimizing for purchase events.
+- **Budget**: minimum $30/day. Commit $100 and let it run. Don't pull out early — TikTok penalises hesitant advertisers.
+
+### The Canada hack
+
+- US CPM: ~$3.59 per 1,000 views
+- Canada broad CPM: ~$0.55 per 1,000 views — **6x cheaper**
+- Canada niche CPM: ~$0.70 per 1,000 views
+
+Alim's strategy: start in Canada to test whether the funnel works (can people get through onboarding and purchase?). Once you know the funnel converts, scale to more expensive markets. Canadians are professional, have good jobs, and will purchase — it's not a junk market.
+
+### Broad vs niche targeting
+
+- **Broad**: let TikTok's AI find your customer. No interest targeting.
+- **Niche**: target specific hashtags (e.g. #sales, #salesmotivation). More expensive, more targeted.
+
+Run both as separate ad groups so you can compare. The data will tell you which to cut.
+
+---
+
+## The Onboarding Funnel (Where the Money Is Made)
+
+> "65% of purchases are made during the onboarding flow."
+> 
+
+The path: TikTok ad → App Store listing → Download → Onboarding → Paywall → Purchase
+
+Each step must tell a consistent story. If the ad says X, the App Store screenshots must confirm X. If the screenshots confirm X, the first screen must reinforce X.
+
+**Alim's onboarding structure**:
+
+1. Sign-up screen (multiple options: Google, Apple, email)
+2. Lead qualification questions (who are you, what do you sell, what's stopping you)
+3. Social proof screen ("join 1,000 others who've doubled their sales")
+4. Personalisation animation (illusion of the app setting up a custom profile)
+5. Paywall
+
+The qualification questions do two things: filter out people who aren't the target user, and get users to sell themselves on why they need the app.
+
+**Iteration mindset**: 7% conversion isn't good enough. Goal is 15–20%. If he can't improve it with another $50 of data, he'll kill the campaign, redesign the onboarding, and retest with a fresh $50 budget.
+
+---
+
+## Apply to JobRunner
+
+- **Install AppsFlyer before running any paid ads** — without it, TikTok can't optimise and you're flying blind. This is step 0.
+- **Mixpanel funnel report** — set up: signup → onboarding step 1 → onboarding step 2 → paywall seen → purchase. This tells you exactly where people drop off.
+- **The Canada test** — start there. 6x cheaper CPMs, comparable user quality. Validate that your funnel works before spending US rates.
+- **Arc Ads for creative** — $10/video is cheap for testing multiple angles. Write 2–3 different scripts targeting different JobRunner pain points (missed applications, no callbacks, interview anxiety) and test which converts.
+- **65% of purchases happen in onboarding** — if JobRunner's onboarding isn't designed to lead to a purchase, that's the biggest lever. Qualification questions + social proof + personalisation animation before the paywall is the proven structure.
+- **The iteration loop**: spend $50 → measure signup-to-purchase rate → if below 15%, fix onboarding → retest. Don't scale until you hit the benchmark.
+
+---
+
+# 🎥 Video 7 — 11 Million Downloads: The 3-Pillar Free Marketing System for Indie Apps
+
+**Channel:** (solo dev creator) | **Focus:** ASO, website/SEO, app launch tour — organic traffic compounding system
+
+https://www.youtube.com/watch?v=8khLNPHTfKI
+
+## The Mission
+
+> "The mission of every indie app developer should be to build free streams of traffic where people find a piece of content on the internet which leads them to our app."
+> 
+
+This creator bootstraps every app with zero budget. 11M+ downloads across all apps. Three pillars, all free.
+
+---
+
+## Pillar 1 — App Store Optimisation (ASO)
+
+**Two goals**: rank higher (more people see your app) + convert higher (more people download once they see it).
+
+### Ranking factors (in order of importance)
+
+**Title and subtitle** — put your most important keywords here. Don't repeat keywords between title and subtitle — wasted space.
+
+**Keyword field** — fill with keywords that don't fit in the title/subtitle. Rules:
+
+- Don't repeat keywords from title/subtitle
+- No prepositions (on, for, at) — the algorithm adds these free
+- No brand names — high risk of getting banned
+- No spaces — use commas with no spacing
+- Use singular only (calorie not calories — the algorithm handles plurals)
+
+**Description** — has zero effect on the algorithm. Write it entirely for humans.
+
+**Screenshots** — Apple may now use AI to read text in screenshots and recognise images. Put your most important keywords in screenshot text. If your app is about exercise, include a person exercising. Screenshots are effectively a second keyword field.
+
+**Reviews** — Apple uses reviews to rank your app. Ask for reviews after a user completes something positive (finished a workout, won a game, completed a task). Higher chance of getting 5 stars at a positive moment.
+
+**Update frequency** — frequent updates signal an active, maintained app.
+
+**Performance** — crashes push you down rankings. Stability matters.
+
+### Conversion factors (getting downloads once people land)
+
+**First 3 screenshots are everything.** Focus on benefits not features — people relate to outcomes, not how it works. Use credibility badges ("used by 10K people"). Clear text, readable at a glance.
+
+**Description** — write for humans, not the algorithm. The algorithm doesn't read it.
+
+**A/B test everything** — you don't know how humans will react. Apple provides A/B testing tools in App Store Connect.
+
+**ASO is always changing** — Apple recently removed the one-week new app boost (to fight AI-generated app spam). What worked last year may not work today.
+
+---
+
+## Pillar 2 — Website + SEO
+
+A website is the single point that ties all marketing together. Every win (press feature, content piece, Reddit post) flows through it and builds domain authority. More authority → higher Google ranking → more downloads → more authority. It's a compounding loop.
+
+**Example**: Tiny Fast (Mac OS app) launched with domain authority 0.5. After launch tactics: DA went to 26. Now ranks #1 on Google for the app name.
+
+**Why you own your website but not your App Store listing** — if Apple removes your app, you've lost everything. Your website's domain authority survives.
+
+### SEO tactics that work for app websites
+
+1. **Free backlinks** — the fastest way to build domain authority (covered in Pillar 3)
+2. **Add pages about your app's core functionality** — e.g. a compression app adds pages about file compression. These rank for related searches.
+3. **Add free JavaScript tools your target audience will use** — people stick around and you get backlink-worthy content
+4. **Programmatic SEO** — generate many pages from your app's own data (e.g. a social media calendar that feeds from the app's internal data)
+5. **Monitor with Google Search Console** — track what's working
+
+### Landing page structure: StoryBrand Framework
+
+Imagine the user as a character with a problem. Your website is the guide that helps them solve it. Structure every landing page around: character → problem → guide (you) → plan → success.
+
+**Tracking tip**: Apple's App Store Connect → Acquisition → Campaigns → generate a trackable link for your website. You can see exactly how many people from your website convert to in-app purchases.
+
+---
+
+## Pillar 3 — The App Launch Tour (Free Backlinks + Traffic)
+
+Every time a new app launches, submit it to these platforms. Two benefits: traffic + backlinks (which increase domain authority → better SEO → more traffic).
+
+**Only submit to directories with domain rating above 10** — below that, Google may flag your site as spam.
+
+### The platforms (in order of value)
+
+**Hacker News** (DR 91)
+
+- Post in "Show HN" section — add "Show HN:" before your title
+- Geeky, scientific, or technical posts perform best — audience is mostly entrepreneurs and developers
+- Best case: Alim's Shorts app hit 3rd place on front page → 700 downloads in a few hours (equivalent to ~$700 in paid ads)
+- Even if you don't get upvoted: you still get a DR91 backlink
+
+**Product Hunt** (DR 91)
+
+- Submit every app. Even mediocre launches get some traffic.
+- Best case: Tiny Fast got 300+ upvotes, front page, massive download spike
+- Audience is almost entirely entrepreneurs and developers — works best for dev tools
+
+**App directories**
+
+- Not for traffic — for backlinks
+- How Tiny Fast went from DA 0.5 to DA 26 in a few weeks
+- Use services that submit to multiple directories at once to save time
+- Only submit to directories with DR 10+
+
+**Reddit**
+
+- High effort but high reward if done right. High risk of bans if done wrong.
+- Rules: choose communities where your actual target user lives (not just indie hackers/builders — those give upvotes but no downloads). Need karma above 100 in some communities — contribute before posting.
+- **F5 bot** (free) — email alert when someone on Reddit mentions a keyword you track. Use this to find people asking questions your app solves. Reply helpfully with your app.
+- Tiny Fast post: 400+ upvotes, real feedback, download spike.
+
+---
+
+## The Compounding System
+
+These three pillars work together:
+
+- Good ASO → more App Store visibility → more downloads
+- More downloads → more reviews → better ASO ranking
+- Website with good backlinks → Google ranking → traffic → downloads
+- Downloads and traffic → more domain authority → better Google ranking
+- Launch tour → backlinks → domain authority → Google ranking → traffic
+
+The loop reinforces itself. The earlier you start, the stronger the compounding.
+
+---
+
+## Apply to JobRunner
+
+- **ASO audit now**: is your keyword field using the rules above? No repeated words, no spaces, no prepositions, singular only? This is free to fix and directly affects ranking.
+- **Screenshots**: are they benefit-focused or feature-focused? Do the first 3 screenshots communicate the transformation, not the functionality?
+- **Website**: does JobRunner have a proper landing page with a trackable Apple acquisition link? If not, you're missing a whole traffic loop.
+- **Hacker News**: JobRunner has a technical enough story (AI + job tracking + retention data). A "Show HN: I built a job application tracker that shows you your week-1 retention" post could resonate strongly with the HN audience.
+- **Product Hunt**: schedule a launch. Even a modest launch gives you DR91 backlinks.
+- **F5 bot for Reddit**: set up keyword alerts for "job application tracker", "job search app", "how to track job applications". Reply helpfully when people ask. This is free and ongoing.
+- **The StoryBrand framework** — your landing page should position the job seeker as the hero, the job search as the villain, and JobRunner as the guide. Not "here are our features" but "you're sending applications and hearing nothing back. Here's what changes that."
+
+---
+
+# 🎥 Video 8 — 0 to 10,000 Users in 30 Days: The Hook & Demo Formula (Yorby)
+
+**Channel:** (Yorby co-founder) | **Focus:** AI-generated hook & demo content, LinkedIn for B2B, email capture from day 1
+
+https://www.youtube.com/watch?v=PZylEWhBDqo
+
+## What Happened
+
+Yorby (social media marketing platform) went from 0 to 10,000 signed-up users and $0 to $4,000 revenue in 30 days. Only marketing channel: organic short-form content on TikTok and Instagram. No ads. Both founders were travelling on holiday when it went viral.
+
+## The Only Growth Lever: Hook & Demo Format
+
+**The format:**
+
+1. **Hook** — AI-generated avatar looking excited/surprised at camera. Juicy, curiosity-sparking opening line that presents a problem. Example: *"POV: you finally understand why creators stopped using ChatGPT"* — makes you think "wait, what?"
+2. **Demo** — immediately follow the hook with a product demo showing the solution to that exact problem
+
+That's it. No complex production. AI avatar + screen recording of the app + CapCap edit.
+
+**Why it works**: the hook creates a problem in the viewer's mind. The demo resolves it. The viewer never feels like they're watching an ad — they feel like they discovered something.
+
+## AI Content vs Human UGC — The Real Answer
+
+Once the AI content started working, they hired human UGC creators to make the same videos. The reasoning:
+
+> "It's a venture capital play. If you get 10 accounts posting content, 9 will probably fail or not do well. But that 1 account that the algorithm picks up will drive the vast majority of your growth."
+> 
+
+**The algorithm doesn't care if content is AI or human.** It cares about one thing: is the content good or is it spam? High quality content wins regardless of how it was made.
+
+**The inbound flywheel**: going viral on TikTok started generating inbound from UGC creators who wanted to make videos for them. The sourcing problem solved itself.
+
+## Channel Split
+
+- **TikTok + Instagram (80%)** — drives solo users, individuals, quick conversion
+- **LinkedIn (20%)** — drives team plan users, enterprise clients, longer sales cycles. Different audience, worth investing in even though conversion is slower.
+
+The two channels complement each other because they attract fundamentally different customer types.
+
+## Email from Day One
+
+Even during the viral chaos, they captured email on every signup immediately.
+
+> "Email marketing is one of the best ways of communicating with your users. Although I wasn't doing active email marketing at the time, I still made sure to capture email so I can use it later."
+> 
+
+**Email provider recommended**: Brevo — charges per email sent, not per contact stored. Better model for growing apps with large user lists but infrequent sends.
+
+## The Growth Priority Stack (Their Future Plan)
+
+1. **Organic short-form content** — still #1, double down, more accounts, more AI and human content
+2. **Paid ads (Meta)** — second tier. Would hire an agency rather than run themselves
+3. **SEO / programmatic SEO** — third tier. Technical co-founder plans to lead this using coding background for clever programmatic approaches
+
+## Apply to JobRunner
+
+- **The hook & demo format** is the most replicable thing in this video. The hook for JobRunner: *"POV: you've applied to 50 jobs and heard nothing back"* or *"This is why your job search is taking so long"* → immediately show the JobRunner dashboard with all the data. Problem created, solution shown, done.
+- **10 accounts = VC play mindset** — if you can get 10 different creators or accounts posting about JobRunner, statistically one of them breaks through. The maths of content creation favours volume.
+- **Capture email on signup if you haven't already** — even if you're not doing email marketing yet, you want the list. Every user who signs up and doesn't convert to paid is a future remarketing opportunity.
+- **LinkedIn for employer-side** — if JobRunner ever has an employer-facing product or B2B element, LinkedIn is where that audience lives. Worth starting to post there even at low volume now.
+- **The holiday lesson** — they went viral when they expected nothing. Consistency through low-expectation periods is what creates the conditions for unexpected virality. Post even when you think nobody's watching.

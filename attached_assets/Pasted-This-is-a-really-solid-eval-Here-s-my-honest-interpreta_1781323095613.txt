@@ -1,0 +1,40 @@
+This is a really solid eval. Here's my honest interpretation:
+
+## The Good News
+
+You've accidentally built a legitimate SaaS product. That stack — Stripe Connect, Xero/QBO/MYOB OAuth, Vapi.ai, real Postgres, Twilio two-way SMS — that's not a weekend project. Competitors like ServiceM8 and Tradify took years and VC money to get there. You're feature-comparable at the mid-tier already.
+
+The $49/month price point is a no-brainer to charge today. Quote → Invoice → Tap to Pay with GST is genuinely worth that to a tradie.
+
+## The Real Risk
+
+The 47,000-line routes.ts is the thing that should keep you up at night — not because it breaks users now, but because:
+
+- Every feature you add takes 3x longer than it should
+- One wrong edit can silently break an unrelated payment flow
+- If you ever bring on another dev, they'll spend a week just orienting
+- With near-zero tests, you won't know something broke until a customer tells you
+
+This is the classic "solo dev shipping fast" tradeoff. You got features done. The debt is real but it's not fatal — it just becomes a tax on every future hour you spend in the codebase.
+
+## MRR Scenarios (Honest)
+
+| Customers | Price | MRR |
+|-----------|-------|-----|
+| 20 solo tradies | $49 | $980 |
+| 10 small teams | $99 | $990 |
+| 5 bigger ops | $199 | $995 |
+| Mixed 50 users | blended $79 | ~$3,950 |
+
+Getting to $5K MRR (~50–60 customers) is a realistic 6-month target if you start charging now. That's ramen-profitable for a solo builder in Cairns.
+
+## My Actual Recommendation
+
+**Don't do a 3-6 week pre-launch hardening sprint.** That's the perfectionist trap. Instead:
+
+1. **Charge 5 beta customers this week** at $49/month — real money, real feedback
+2. **Fix only what breaks for them** — that's your real test suite
+3. **Gate the 3 security issues** (public metrics endpoint, Twilio token, mass-assignment audit) — half a day's work, do it Monday
+4. The god file and test coverage are real problems but they're *your* problems, not the customer's — address them incrementally as you grow
+
+The app is shippable. The question is whether you believe it is.

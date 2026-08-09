@@ -1,0 +1,542 @@
+Perfect, here’s the full master prompt you can copy-paste into Replit.
+This tells it exactly how to:
+	•	use Stripe for:
+	•	your SaaS subscriptions (tradie → you)
+	•	Stripe Connect for customer payments (customer → tradie, with your fee)
+	•	use SendGrid for:
+	•	your app emails (you → tradie)
+	•	tradie’s business emails to their customers (via your SendGrid, with Reply-To set to tradie)
+
+All designed so it’s simple for tradies, safe, and scalable.
+
+⸻
+
+🧠 MASTER REPLIT PROMPT — STRIPE + STRIPE CONNECT + SENDGRID (TWO LAYERS)
+
+I’m building a SaaS app called TradieTrack.
+
+It’s a job, quote, invoice, team, and communication platform for tradies.
+I’ve already integrated Stripe and SendGrid at a basic level, but now I want a proper, two-layer setup:
+	1.	Platform billing → Tradies pay me for using TradieTrack (subscriptions)
+	2.	Customer payments → Tradies can connect their own Stripe to accept payments from their customers
+	3.	App emails → From me to tradies (welcome, billing, etc.)
+	4.	Tradie emails → From TradieTrack to tradies’ customers (quotes/invoices), but using my SendGrid
+
+Use this prompt as the source of truth for wiring up backend, frontend, DB, and email flows.
+
+⸻
+
+0) Assumptions
+	•	Frontend: React (TS preferred)
+	•	Backend: Supabase (DB + Auth + Storage + Edge Functions) or equivalent API
+	•	Payments:
+	•	Stripe for my SaaS subscription billing
+	•	Stripe Connect Express for tradies taking payments from their customers
+	•	Emails:
+	•	SendGrid with one main account for now
+	•	We’ll use:
+	•	From: TradieTrack for {BusinessName} <no-reply@tradietrack.com>
+	•	Reply-To: tradie’s real email
+
+Environment variables (examples):
+	•	STRIPE_SECRET_KEY
+	•	STRIPE_WEBHOOK_SECRET
+	•	STRIPE_CONNECT_WEBHOOK_SECRET (can be same or combined)
+	•	SENDGRID_API_KEY
+	•	APP_BASE_URL (e.g. https://app.tradietrack.com)
+
+If the project already has some of these, reuse/clean them.
+
+⸻
+
+1) DATABASE UPDATES
+
+Extend or add tables as needed.
+
+1.1 business table
+
+Add or confirm fields:
+
+business (
+  id uuid primary key,
+  name text,
+  trade_type text,
+  phone text,
+  email text,
+  abn text,
+  address text,
+
+  -- SaaS subscription (tradie → me)
+  subscription_tier text,         -- 'free' | 'starter' | 'pro' | 'elite'
+  subscription_status text,       -- 'inactive' | 'active' | 'past_due' | 'canceled'
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  current_period_end timestamptz,
+
+  -- Stripe Connect (customer payments → tradie)
+  stripe_connect_account_id text,
+  connect_charges_enabled boolean,
+  connect_payouts_enabled boolean,
+
+  -- Email status
+  email_verified boolean default false,
+
+  created_at timestamptz default now()
+);
+
+1.2 users table
+
+Confirm fields:
+
+users (
+  id uuid primary key,
+  email text unique,
+  full_name text,
+  role text,                -- 'owner' | 'manager' | 'tradie'
+  business_id uuid references business(id),
+  created_at timestamptz default now()
+);
+
+1.3 invoices table (for customer payments)
+
+Make sure invoices support online payments:
+
+invoices (
+  id uuid primary key,
+  business_id uuid references business(id),
+  job_id uuid references jobs(id),
+  client_id uuid references clients(id),
+  status text,              -- 'draft' | 'sent' | 'paid' | 'overdue'
+  gst_included boolean,
+  total_cents integer,      -- store in cents
+  currency text default 'aud',
+  due_date timestamptz,
+  stripe_payment_intent_id text,
+  payment_method text,      -- 'card', 'bank_transfer', etc
+  payment_reference text,
+  paid_at timestamptz,
+  created_at timestamptz default now()
+);
+
+1.4 notifications table
+
+We’ll use this for app-level events:
+
+notifications (
+  id uuid primary key,
+  business_id uuid references business(id),
+  user_id uuid null,
+  type text,         -- 'subscription_activated', 'payment_failed', 'invoice_paid', etc.
+  title text,
+  body text,
+  related_type text, -- 'subscription', 'invoice', etc.
+  related_id uuid,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+
+⸻
+
+2) STRIPE LAYER 1: SAAS SUBSCRIPTIONS (TRADIE → ME)
+
+2.1 Plans
+
+Define plans in Stripe (or via config in code):
+	•	Starter → e.g. price_starter_monthly
+	•	Pro → e.g. price_pro_monthly
+	•	Elite → e.g. price_elite_monthly
+
+Store their IDs in env or config.
+
+2.2 API: POST /api/billing/create-checkout-session
+
+Purpose: When a tradie picks a plan in the Billing UI.
+
+Input (from frontend):
+
+{
+  "businessId": "uuid",
+  "userId": "uuid",
+  "plan": "starter" | "pro" | "elite"
+}
+
+Backend logic:
+	1.	Look up business and ensure userId belongs to it and is an owner/manager.
+	2.	If stripe_customer_id missing, create customer:
+
+const customer = await stripe.customers.create({
+  email: ownerEmail,
+  name: business.name,
+  metadata: { business_id }
+});
+
+Store stripe_customer_id.
+
+	3.	Map plan → price_id.
+	4.	Create Stripe Checkout Session:
+
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  customer: business.stripe_customer_id,
+  line_items: [{ price: priceId, quantity: 1 }],
+  success_url: `${APP_BASE_URL}/billing?success=1`,
+  cancel_url: `${APP_BASE_URL}/billing?cancelled=1`,
+  metadata: {
+    business_id: business.id,
+    plan: plan
+  }
+});
+
+
+	5.	Return session.url to frontend.
+
+Frontend redirects user to that URL.
+
+⸻
+
+2.3 Webhook: /api/stripe/subscription-webhook
+
+Handle:
+	•	checkout.session.completed
+	•	invoice.payment_succeeded
+	•	invoice.payment_failed
+	•	customer.subscription.deleted or canceled
+
+Logic for checkout.session.completed:
+	1.	Verify webhook signature.
+	2.	Get session object.
+	3.	Read business_id and plan from session.metadata.
+	4.	Fetch subscription from session.subscription.
+	5.	Update business:
+
+business.subscription_tier = plan;
+business.subscription_status = 'active';
+business.stripe_subscription_id = subscription.id;
+business.current_period_end = subscription.current_period_end (converted to timestamp);
+
+
+	6.	Insert notifications row:
+	•	type: subscription_activated
+	•	title: Subscription activated
+	•	body: Your ${plan} plan is now active.
+	7.	Optional: call SendGrid to send confirmation email to owner.
+
+On invoice.payment_failed:
+	•	Set subscription_status = 'past_due'
+	•	Insert notification + email.
+
+On customer.subscription.deleted or canceled:
+	•	Set subscription_status = 'canceled'
+	•	Optionally downgrade subscription_tier = 'free'
+	•	Insert notification + email.
+
+⸻
+
+2.4 Frontend: Billing Page
+
+In /billing:
+	•	Show current plan & status from business table.
+	•	Plans cards:
+	•	Free / Starter / Pro / Elite
+	•	Upgrade buttons call /api/billing/create-checkout-session.
+	•	Show success/error messages using URL params / query string.
+
+Use subscription_status to show banners like:
+	•	“Your Pro plan is active.”
+	•	“Payment failed – update your payment details.”
+
+⸻
+
+3) STRIPE LAYER 2: TRADIE CUSTOMER PAYMENTS (STRIPE CONNECT)
+
+Now for tradie ↔ customer payments.
+
+3.1 API: POST /api/payments/create-connect-account-link
+
+Used when tradie clicks “Connect Stripe” in Settings → Payments.
+
+Input:
+
+{
+  "businessId": "uuid",
+  "userId": "uuid"
+}
+
+Backend logic:
+	1.	Check user is owner or manager of businessId.
+	2.	If business.stripe_connect_account_id exists:
+	•	Retrieve account to see if charges/payouts enabled.
+	•	If account exists, create an account link for updating:
+
+const link = await stripe.accountLinks.create({
+  account: business.stripe_connect_account_id,
+  refresh_url: `${APP_BASE_URL}/settings/payments?refresh=1`,
+  return_url: `${APP_BASE_URL}/settings/payments?connected=1`,
+  type: 'account_onboarding'
+});
+
+
+	•	Return link.url.
+
+	3.	If no account yet:
+	•	Create stripeAccount:
+
+const account = await stripe.accounts.create({
+  type: 'express',
+  email: business.email || ownerEmail,
+  metadata: { business_id: business.id }
+});
+
+
+	•	Save stripe_connect_account_id to business.
+	•	Create accountLinks.create same as above, return URL.
+
+Frontend: redirect user to link.url.
+
+⸻
+
+3.2 Webhook: /api/stripe/connect-webhook
+
+Listen to account.updated events:
+	•	Retrieve account object from Stripe.
+	•	Use account.metadata.business_id or find business by stripe_connect_account_id.
+	•	Update business:
+
+business.connect_charges_enabled = account.charges_enabled;
+business.connect_payouts_enabled = account.payouts_enabled;
+
+
+
+Now you can show status in UI:
+	•	if charges_enabled && payouts_enabled → “Payments active”
+	•	else → “Verification pending” / “Action required”
+
+⸻
+
+3.3 Invoices with online card payment
+
+On an invoice detail page:
+	•	If business.stripe_connect_account_id and connect_charges_enabled:
+	•	Show toggle: “Allow online card payment”
+
+When generating a public invoice payment page, you:
+	1.	Have a URL like:
+/pay/invoice/:invoiceId/:token
+	2.	On that page:
+	•	Show invoice summary, amount, and “Pay now” button.
+	3.	When customer clicks “Pay now”:
+	•	Frontend calls: POST /api/payments/create-payment-intent
+Input:
+
+{
+  "invoiceId": "uuid"
+}
+
+Backend logic:
+	1.	Fetch invoice + business.
+	2.	Ensure:
+	•	invoice.status === 'sent' or overdue
+	•	business.stripe_connect_account_id is set
+	•	connect_charges_enabled === true
+	3.	Decide platform fee, e.g. 1.5%:
+
+const platformFee = Math.round(invoice.total_cents * 0.015);
+
+
+	4.	Create PaymentIntent:
+
+const paymentIntent = await stripe.paymentIntents.create({
+  amount: invoice.total_cents,
+  currency: invoice.currency || 'aud',
+  application_fee_amount: platformFee,
+  on_behalf_of: business.stripe_connect_account_id,
+  transfer_data: {
+    destination: business.stripe_connect_account_id
+  },
+  metadata: {
+    invoice_id: invoice.id,
+    business_id: business.id
+  }
+});
+
+
+	5.	Return client_secret or a Stripe Checkout URL.
+
+	4.	Frontend:
+	•	Use Stripe Elements or redirect to Checkout to complete the payment.
+	5.	Webhook: In your main webhook (or connect webhook), handle payment_intent.succeeded:
+	•	Retrieve paymentIntent.
+	•	Use paymentIntent.metadata.invoice_id to find invoice.
+	•	Update:
+
+invoices.status = 'paid';
+invoices.paid_at = now();
+invoices.payment_method = 'card';
+invoices.payment_reference = paymentIntent.id;
+
+
+	•	Create notification:
+	•	type: invoice_paid
+	•	title: Invoice paid
+	•	body: Invoice INV-XXXX has been paid.
+	•	Trigger SendGrid email to:
+	•	customer: receipt / confirmation
+	•	tradie: “Your invoice was paid.”
+
+⸻
+
+4) SENDGRID LAYER 1: APP EMAILS (YOU → TRADIES)
+
+Use sender:
+	•	TradieTrack <no-reply@tradietrack.com>
+
+Types of emails:
+	•	Email verification
+	•	Welcome
+	•	Subscription activated
+	•	Payment failed / canceled
+	•	New feature announcements
+
+Implement a backend helper:
+
+sendAppEmail(to, template, data)
+
+Internally:
+	•	uses SENDGRID_API_KEY
+	•	selects template ID based on template string
+	•	fills dynamic_template_data with data
+
+Examples:
+
+sendAppEmail(owner.email, 'welcome', {
+  name: owner.full_name,
+  businessName: business.name
+});
+
+All app→tradie emails use this.
+
+⸻
+
+5) SENDGRID LAYER 2: TRADIE EMAILS (TRADIE → THEIR CUSTOMERS)
+
+Still sent via your SendGrid, but displayed as:
+	•	From: TradieTrack for {BusinessName} <no-reply@tradietrack.com>
+	•	Reply-To: business.email
+
+So if a client replies → tradie gets it directly.
+
+Create another helper:
+
+sendCustomerEmail(business, toEmail, type, data)
+	•	From:
+	•	name = "TradieTrack for " + business.name
+	•	email = "no-reply@tradietrack.com"
+	•	Reply-To: business.email
+
+Types:
+	•	quote_sent
+	•	invoice_sent
+	•	payment_receipt
+
+Data might include:
+
+{
+  clientName,
+  businessName,
+  quoteNumber,
+  invoiceNumber,
+  amount,
+  dueDate,
+  publicUrl
+}
+
+Use different templates in SendGrid for each type.
+
+⸻
+
+6) SETTINGS UI: PAYMENT & EMAIL STATUS
+
+In Settings → Business / Payments, show:
+
+Billing (SaaS subscription)
+	•	Plan: Free / Starter / Pro / Elite
+	•	Status: active, past due, canceled
+	•	Renewal date (current_period_end)
+	•	Button: “Change plan” (calls /create-checkout-session)
+
+Payments (customer payments)
+	•	Stripe Connect status:
+	•	Not connected:
+	•	Button: “Connect Stripe to accept card payments”
+	•	Connected but pending:
+	•	Status: “Stripe account connected, verification pending”
+	•	Fully active:
+	•	Status: “Payments enabled – you can accept card payments on invoices.”
+	•	Button: “Manage Stripe account” (redirect to Stripe Express dashboard link)
+
+Email verification
+	•	If business.email_verified === false:
+	•	Banner: “Please verify your email to send quotes and invoices reliably.”
+	•	Button: “Resend verification email” (calls an endpoint that triggers sendAppEmail)
+
+⸻
+
+7) SECURITY & SECRETS
+	•	All Stripe secret keys and SendGrid keys must only exist in backend / Edge functions.
+	•	Never exposed in frontend code.
+	•	Verify webhook signatures for:
+	•	/stripe/subscription-webhook
+	•	/stripe/connect-webhook
+	•	Make sure all calls that modify business settings, billing, or payments:
+	•	check userId via auth
+	•	confirm the user belongs to the businessId
+	•	confirm they are an owner/manager
+
+⸻
+
+8) TESTING SCENARIOS
+
+Please add or suggest tests for:
+
+Unit tests
+	•	Plan → price ID mapping
+	•	Invoice total & GST calculations
+	•	Correct building of email payloads (From/Reply-To, template data)
+	•	Payment fee calculation
+
+Integration tests
+	•	Create business + user → call /create-checkout-session → validate session metadata
+	•	Simulated subscription webhook → ensure business.subscription_tier and status updated
+	•	Simulated PaymentIntent webhook → invoice marked as paid
+
+Manual tests (document in comments/readme)
+	•	New user signup → verify email → onboard business
+	•	Upgrade to Pro → Stripe checkout → webhook → app shows Pro plan
+	•	Connect Stripe account → see status in app
+	•	Create invoice with online payment → pay via Stripe → invoice becomes paid → emails sent
+
+⸻
+
+9) GOAL
+
+After implementing this spec, I want:
+	•	A clean Billing page where tradies can subscribe to TradieTrack using my Stripe.
+	•	A Payments settings page where tradies can connect their own Stripe account (Stripe Connect).
+	•	Invoices that can optionally accept online card payments to the tradie’s Stripe account, with a small platform fee for me.
+	•	SendGrid used for:
+	•	app-level emails (me → tradies)
+	•	customer emails (tradies’ customers) with:
+	•	From: TradieTrack for {BusinessName} <no-reply@tradietrack.com>
+	•	Reply-To: tradie’s email
+	•	Clear status indicators and safe architecture, easy enough for tradies to understand and use.
+
+Use this prompt as the architecture blueprint and update my existing Replit project to match it as closely as possible.
+
+⸻
+
+You can drop that straight into Replit’s AI.
+
+If you want next, I can help you:
+	•	write the exact email texts (welcome, quote sent, invoice sent, payment receipt), or
+	•	design the Settings → Payments page layout so it looks clean and simple for tradies.

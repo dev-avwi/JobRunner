@@ -1,0 +1,41 @@
+~/workspace$ cd mobile && npx eas build --platform android --profile production
+★ eas-cli@18.6.0 is now available.
+To upgrade, run:
+npm install -g eas-cli
+Proceeding with outdated version.
+
+An Expo user account is required to proceed.
+
+Log in to EAS with email or username (exit and run eas login --help to see other login options)
+✔ Email or username … avwi
+✔ Password … ************
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+Environment variables loaded from the "production" build profile "env" configuration: NPM_CONFIG_LEGACY_PEER_DEPS, EXPO_PUBLIC_API_URL, SENTRY_DISABLE_AUTO_UPLOAD.
+
+✔ Incremented versionCode from 29 to 30.
+
+
+android.versionCode field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+● Validation Warning:
+
+  Unknown option "watcher.unstable_workerThreads" with value false was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+✔ Using remote Android credentials (Expo server)
+✔ Using Keystore from configuration: Build Credentials ImuuQtkuLP (default)
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+✔ Compressed project files 1m 29s (802 MB)
+Your project archive is 802 MB. You can reduce its size and the time it takes to upload by excluding files that are unnecessary for the build process in .easignore file. Learn more: https://expo.fyi/eas-build-archive
+✔ Uploaded to EAS 2m 22s
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/avwi/projects/tradietrack/builds/4122640f-afee-4eb2-8d6b-561d97d26cc1
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+✖ Build failed
+
+🤖 Android build failed:
+Gradle build failed with unknown error. See logs for the "Run gradlew" (https://expo.dev/accounts/avwi/projects/tradietrack/builds/4122640f-afee-4eb2-8d6b-561d97d26cc1#run-gradlew) phase for more information.
+~/workspace/mobile$ 

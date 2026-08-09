@@ -1,0 +1,79 @@
+[SendGrid Support] Re: #25362315
+External
+Inbox
+
+Twilio SendGrid Support <support@twiliosendgrid.zendesk.com>
+Tue 3 Mar, 00:24 (3 days ago)
+to me
+
+## In replies all text above this line is added to the ticket ##
+Your ticket, #25362315 has been updated!
+
+To check the status of the ticket and add additional comments, follow the link here support.sendgrid.com/hc/requests/25362315, or you can also update this ticket by responding directly to this email. Please make sure to Reply All to ensure your comment is added to the ticket.
+
+	
+System (SendGrid)
+
+Mar 2, 2026, 6:24 AM PST
+
+Hello,
+
+Thank you for your interest in upgrading your Twilio SendGrid account.
+
+We want to make sure our platform is safe and trustworthy. We are currently reviewing your account upgrade request. To expedite the process, please provide the following information if you haven't already done so during the signup process:
+
+The official website for your business. If the website is unavailable, please provide the verified social media site for your business. 
+A detailed description of your business model and the products or services you provide.
+Your first and last name, as well as your affiliation with your business.
+Additionally, please include a publicly available source that verifies your role, such as your LinkedIn profile.
+To help us understand your use case, please outline the following:
+What type of emails do you intend to send? Will they be transactional or marketing in nature? If they are marketing emails, please provide a link to your opt-in page. If your opt-in page is not on your website (e.g., through your app), please provide a screenshot.
+Please share a content sample by providing a link or attachment. For marketing emails, ensure that the following elements are visible in your example:
+Unsubscribe link
+Privacy Policy link
+Physical mailing address
+Thank you in advance for your patience and cooperation.
+
+
+This email is a service from SendGrid. Delivered by Zendesk.
+[MW9KMM-46MKV]
+
+Dan (Twilio SendGrid Support) <support@twiliosendgrid.zendesk.com>
+Tue 3 Mar, 04:18 (3 days ago)
+to me
+
+## In replies all text above this line is added to the ticket ##
+Your ticket, #25362315 has been deemed solved.
+
+To re-open this ticket or add additional comments, follow the link here support.sendgrid.com/hc/requests/25362315. You can also re-open this ticket by responding directly to this email. Please make sure to Reply All to ensure your comment is added to the ticket.
+
+We would love to hear from you! As part of our continuous improvement process for how we better support our customers, you may receive a customer satisfaction survey by email and would love your participation.
+
+	
+Dan (SendGrid)
+
+Mar 2, 2026, 10:18 AM PST
+
+Hello,
+ 
+Thank you for your interest in upgrading your Twilio SendGrid account.
+ 
+We want to make sure our platform is safe and trustworthy. To do this, we are checking your account details, your connection to your project, and how you plan to use our service.
+ 
+We need the following information from you to complete our review of your account:
+The official website for your business. If the website is unavailable, please provide the verified social media site for your business.
+A detailed description of your business model and the products or services you provide.
+Your first and last name, as well as your affiliation with your business.
+Additionally, please include a publicly available source that verifies your role, such as your LinkedIn profile.
+To help us understand your use case, please outline the following:
+What type of emails do you intend to send? Will they be transactional or marketing in nature? If they are marketing emails, please provide a link to your opt-in page. If your opt-in page is not on your website (e.g., through your app), please provide a screenshot.
+Please share a content sample by providing a link or attachment. For marketing emails, ensure that the following elements are visible in your example:
+Unsubscribe link
+Privacy Policy link
+Physical mailing address
+ 
+If you have any additional questions or concerns, please reach out to us.
+
+ 
+Best regards,
+Dan

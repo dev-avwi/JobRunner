@@ -1,0 +1,234 @@
+INTRUCTIONS
+1. Once you have completed the development of your app. please fill out the empty cells in the two tabs
+2. Attach the file to your email to Apple
+March 2025 v1.5
+Team ID
+App Name
+PSP Name
+Date
+Version
+Existing or New app
+Distribution type (Public / Unlisted / Enterprise)
+How to Demonstrate Status Comments (Optional)
+General Requirements Checklist
+1.1 Required Your app must offer Tap to Pay on iPhone to compatible devices only (that is, iPhone XS and later).
+Checklist
+1.2 Required
+If Tap to Pay on iPhone is the main feature of your app, you must set the iOS Deployment Target in Xcode
+to the minimum version supporting your Tap to Pay on iPhone configuration. Confirm the minimum version
+with your PSP SDK documentation.
+1.3 Required
+For iOS versions prior to 17.6, your app must handle the
+PaymentCardReaderError.osVersionNotSupported error by displaying a message to inform the user that
+they must update to the latest version of iOS.
+1.4 Required Your app must trigger initial preparation/warming up of Tap to Pay on iPhone at launch of your app or
+when your app comes into the foreground. Please refer to PSP SDK documentation for more details.
+1.5 Conditional
+If your app supports Tap to Pay on iPhone as the sole payment acceptance method, ensure that only
+compatible devices can download the app by requiring iphone-ipad-minimum-performance-a12 with
+UIRequiredDeviceCapabilities
+1.6 Required
+The status of whether a merchant has accepted Tap to Pay on iPhone Terms & Conditions should be
+retrieved from Apple rather than a local variable in your app. Please refer to PSP SDK documentation for
+more details.
+1.7 Recommended Apps on the public App Store should leverage FaceID or TouchID for a seamless login experience for
+merchants at checkout.
+1.8 Conditional Apps on the public App Store must adhere to the Human Interface Guidelines.
+1.9 Conditional Apps on the public App Store must adhere to the Tap to Pay on iPhone Developer Marketing Guidelines
+and the Tap to Pay on iPhone Marketing Guide and Toolkit.
+Onboarding Merchants Requirements
+2.1 Required The process to create an account and/or gain access to Tap to Pay on iPhone must be easily
+discoverable to a new user who has just downloaded your app.
+New User Flow
+Recording
+2.2 Required The process to create an account and/or gain access to Tap to Pay on iPhone must have a digital
+onboarding experience triggered from your app that can be fully completed on an iPhone.
+2.3 Required
+Digital onboarding must take less than 15 minutes* for most of your users from information submission (or
+access request for existing merchants) to accepting payment with Tap to Pay on iPhone.
+*In compliance with local merchant onboarding regulations.
+Enabling Tap to Pay on iPhone Requirements
+3.1 Required Your app implements a highly-visible and easily discoverable communication for Tap to Pay on iPhone.
+New User and / or
+Existing User Flow
+Recording
+3.2 Recommended Your app implements a full-screen modal (splash screen) for Tap to Pay on iPhone. [This would also
+complete Marketing requirement 6.2]
+3.3 Required Your app displays communications for Tap to Pay on iPhone to all eligible users at least once. This can be
+accomplished with a push notification. [This would also complete Marketing requirement 6.3]
+3.4 Required Your app displays an obvious way to enable Tap to Pay on iPhone at the end of every new merchant
+onboarding flow.
+3.5 Required Your communications for Tap to Pay on iPhone must have a clear action to trigger acceptance of Tap to
+Pay on iPhone Terms and Conditions.
+3.6 Required Your app provides a way to enable Tap to Pay on iPhone outside of the communications and the checkout
+flow (for example, in your app settings).
+3.7 Required Your app must provide a trigger to enable Tap to Pay on iPhone within your checkout flow or requires Tap
+to Pay on iPhone enablement prior to checkout flow
+3.8 Required
+Tap to Pay on iPhone Terms and Conditions must only be accepted by an administrator user or otherwise
+authorized party for the merchant. If you only provide one user type for the merchant, ensure that the
+correct user is accepting Terms and Conditions on behalf of the merchant.
+3.8.1 Required If a non admin type user is attempting to enable Tap to Pay on iPhone, a message must inform user to
+contact their admin.
+3.8.2 Conditional
+For enterprise deployments (that is, Custom App, Unlisted App, or Apple Developer Enterprise Program)
+you must support the ability to accept Terms and Conditions outside of the app using Apple Business
+Connect. Check with your PSP for implementation details.
+3.9 Recommended
+Once Terms and Conditions are accepted and the user has gone through the education or tutorial on how
+to use Tap to Pay on iPhone, your app presents a dedicated screen prompting the user to try out Tap to
+Pay on iPhone. This screen will also display the progress of Tap to Pay on iPhone readiness as the
+device is being configured.
+3.9.1 Required
+Your app must provide a configuration progress indicator using
+PaymentCardReader.Event.updateProgress(_:) (or the equivalent call from your PSP SDK) This screen
+will display the progress of Tap to Pay on iPhone readiness as the device is being configured. This screen
+will inform the user if Tap to Pay on iPhone is not yet ready for use both in initial setup and typical usage
+while the reader is preparing.
+Educating Merchants Requirements
+4.1* Recommended Use ProximityReaderDiscovery to provide merchant education if your app is targeting iOS 18 and later.
+New User and / or
+Existing User Flow
+Recording
+If you use ProximityReaderDiscovery this will fulfill all of the merchant education
+requirements.
+4.1 Required Your app must present education screens after user accepts Terms and Conditions.
+4.2 Required Your app must make merchant education screens accessible for reference in either Settings or Help
+section.
+4.3 Required Use the Apple-approved Tap to Pay on iPhone Marketing Guide and Toolkit for your merchant education
+screens if you are not using ProximityReaderDiscovery.
+4.4 Required Merchant education must demonstrate how to accept contactless cards with Tap to Pay on iPhone.
+4.5 Required Merchant education must demonstrate how to accept Apple Pay and other digital wallets with Tap to Pay
+on iPhone.
+4.6 Conditional on
+Region
+Merchant education must demonstrate support for PIN Entry with explicit mention of accessibility options
+available on PIN screen if the region you deploy supports PIN entry. Check with PSP SDK for this feature
+and see Regional Requirements for more details.
+4.7 Conditional on
+Region
+Merchant education must demonstrate fallback to an alternate payment method in case Tap to Pay on
+iPhone is unable to read a payment card (e.g. Payment Link) if the region you deploy requires a Fallback
+Payment Method.
+Checking Out Requirements
+5.1 Required User must have an obvious, prominent button to invoke a Tap to Pay on iPhone payment during checkout.
+Checkout Flow
+Recording
+5.2 Required
+The button that invokes Tap to Pay on iPhone must be in a visible location (without scrolling) for the user
+to select at the time of check out. Tap to Pay on iPhone should be at the top of the list when there are
+multiple payment acceptance options.
+5.3 Required
+The button that invokes Tap to Pay on iPhone must never be altered, grayed out, or otherwise hidden
+based on whether the user has enabled Tap to Pay on iPhone or not. If the user has not yet enabled Tap
+to Pay on iPhone, the button will invoke that path.
+5.4 Conditional If there are multiple payment options, the button that invokes Tap to Pay on iPhone must use the proper
+copy for your region. Refer to Localization strings for Tap to Pay on iPhone for more details.
+5.5 Conditional If using iconography in the button, the symbol used must be wave.3.right.circle or wave.3.right.circle.fill
+from SF Symbols. 􀱝􀭹
+5.6 Required When the Tap to Pay on iPhone screen closes after a successful read of the card, there must be a
+“processing” screen indicating that the transaction is being processed.
+5.7 Required There must be a clear communication of the outcome after the processing screen to the user. This would
+highlight approved, declined, or timed out transactions to the user.
+5.8 Required
+When the transaction is processed regardless of outcome (approved or declined), it must be possible to
+send a digital receipt to the customer in a confidential way. For example the digital receipt may be sent by
+SMS, email, QR code or using Activity views.
+5.9 Conditional on
+Region
+Comply with regional requirements based on where you deploy your app. See Regional Requirements for
+more details.
+5.10 Conditional If the user is not authorized to accept Tap to Pay on iPhone Terms and Conditions, display a message
+telling them to contact an admin to enable Tap to Pay on iPhone.
+Marketing Requirements
+6.1 Required At launch, a dedicated launch email must be sent to all eligible users. This must leverage the ‘Launch’
+email referred to in the Tap to Pay on iPhone Marketing Guide.
+6.2 Required At launch, an in-app Splash Screen must be made visible to all eligible users at least once. This must
+leverage the ‘Hero’ in-app banner referred to in the Tap to Pay on iPhone Marketing Guide.
+6.3 Required At launch, an in-app push notification must deployed to all eligible users. This must leverage the ‘Value
+Proposition’ copy from ‘Push Notification’ copy guidelines in the Tap to Pay on iPhone Marketing Guide.
+Details for User Flow Recordings
+Required Provide a recording of the “New User Flow”
+For all recordings a
+video recording
+from another iPhone
+is best to
+demonstrate.
+Otherwise, screen
+recording from the
+same device will
+suffice.
+For the New User Flow please demonstrate by recording with a second device;
+• Demonstrate the path for new merchant onboarding, including account creation and
+know your customer (KYC) where applicable.
+• Once a merchant account is approved, demonstrate how Tap to Pay on iPhone is
+introduced to the new merchant in this path.
+• Demonstrate how a user will accept Terms and Conditions for Tap to Pay on iPhone.
+• If Terms and Conditions will be accepted outside of the app, provide details on
+how this process will be completed.
+• Demonstrate merchant education provided to the new merchant after accepting
+Terms and Conditions.
+• If Terms and Conditions will be accepted outside of the app, provide details on
+how merchant education will be shared with users within the app.
+• Demonstrate where a user can find merchant education at a later time, this is
+typically accomplished with a section for Tap to Pay on iPhone in the settings of your
+app.
+• Demonstrate a progress indicator to the user when the Tap to Pay on iPhone is being
+configured.
+• Demonstrate the completion of the configuration.
+• If your app does not provide a path for a new user to onboard within the app provide
+details on how new users onboard to become merchants.
+If you need to unlink your Apple Account from accepting terms and conditions in
+order to “reaccept” for the purposes of screen recording. More information
+available here.
+Required Provide a recording of the “Existing User Flow”
+For the Existing User Flow please demonstrate by recording with a second device;
+• Before accepting Terms & Conditions, demonstrate that the Tap to Pay on iPhone
+payment acceptance button exists and is visible to existing users.
+• Demonstrate where an existing user will become aware that Tap to Pay on iPhone is
+available.
+• Typically this is accomplished with a full screen modal after the existing user has
+logged in or launched updated app.
+• Demonstrate merchant education is provided after accepting Terms and Conditions.
+• Demonstrate where a user can find merchant education at a later time, this is
+typically accomplished with a Tap to Pay on iPhone section in the settings of your
+app.
+• If the user completes or skips merchant education before configuration is complete,
+demonstrate a progress indicator to the user to inform them of status.
+• For applicable regions you must demonstrate a PIN transaction and a Fallback
+Payment Method transaction, see Conditional Requirements for more details.
+If you need to unlink your Apple Account from accepting terms and conditions in
+order to “reaccept” for the purposes of screen recording. More information
+available here.
+Required Provide a recording of the “Checkout Flow”
+For the Checkout User Flow please demonstrate by recording with a second
+device;
+• Demonstrate adding items to a cart, or entering a currency amount for payment.
+• Demonstrate the Payment Option(s).
+• Demonstrate the Tap to Pay on iPhone button.
+• Initiate and complete a Tap to Pay on iPhone transaction.
+• Demonstrate PIN (in regions where applicable - see Regional Requirements for more
+details).
+• Demonstrate Fallback Payment mechanisms (in regions where applicable - see
+Regional Requirements for more details).
+Other Information
+Supported schemes:
+Visa
+Mastercard
+American Express
+Discover
+Domestic scheme (please specify)
+Is Refund supported:
+Requires tapping card with Tap to Pay on iPhone
+Referenced refund (requires a purchase transaction first)
+Unreferenced refund (doesn’t require a purchase transaction first)
+Receipt methods:
+SMS (customer is receiving SMS from a SMS service, not from the merchant phone number)
+email (customer is receiving email from an email service, not from the merchant email address)
+scanning a QR code
+using iOS Share (ie with AirDrop and other apps)
+if PIN Fallback is applicable for your market, alternative payment methods:
+Payment Link
+Card Reader
+Other
+Other notes

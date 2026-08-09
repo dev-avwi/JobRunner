@@ -1,0 +1,43 @@
+make sure this is all flexible in the jobrunner app for customisation and web app you know this woul dbe really great for tradie owners if they have team and also disable or enable to ai recpeitonist if they have it so what if they have team manager or whatever. what dyo you think
+
+You're absolutely right — the team angle makes this even more valuable. Here's how I'd handle it:
+
+Team + AI Receptionist Logic
+For solo tradies (Free/Pro tier):
+
+Simple on/off toggle for the AI receptionist
+Calls either transfer to the owner or take a message
+One transfer number (their mobile)
+For team businesses (Team tier):
+
+The business owner or admin enables/disables the AI receptionist for the whole business
+Team managers can also control it if they have the right permissions — so if the owner is on holiday, the manager can toggle it on/off or change who calls get transferred to
+Smart routing — the AI can ask "Is this for electrical or plumbing?" and route to the right team member based on their skills/trade type
+Transfer priority list — instead of one number, you set a list: try the owner first, if no answer after 15 seconds try the site manager, then take a message
+Per-member availability — each team member can mark themselves available/unavailable in the app, and the AI knows who's free for transfers
+Permission Model
+This fits right into your existing RBAC system:
+
+Owner — Full control. Enable/disable, configure voice, set hours, view all call logs and transcripts
+Admin/Manager — Can toggle on/off, change transfer numbers, view call logs for their team
+Team members — Can only toggle their own availability for transfers. Can see calls that were routed to them
+Workers — No access to AI receptionist settings. They just see leads that get created from calls
+The Flexibility Piece
+Every business is different, so the settings need to cover:
+
+Completely off — traditional business, doesn't want AI answering
+After hours only — AI only picks up outside business hours, during hours the phone rings normally
+Always on with transfer — AI always answers, gathers info, transfers if someone's available
+Always on, message only — AI answers and takes messages, never transfers (some tradies prefer this because they want to control when they call back)
+Selective — AI answers for new/unknown numbers, known clients ring through directly
+This way it's not a one-size-fits-all feature. A solo sparky working out of his ute uses it differently than a 15-person plumbing company with a dispatcher.
+
+What Makes This a Killer Feature
+Most AI receptionist products on the market are standalone — they don't know anything about the business's jobs, clients, or team. Because this is built into JobRunner:
+
+The AI knows who's a returning customer (matches caller ID against the client list)
+The AI knows the team structure and who handles what
+Bookings go straight into the job system
+Call logs link to client profiles
+The business owner sees ROI directly — "AI answered 47 calls this month, created 12 leads, 8 became jobs worth $14,200"
+This is a substantial build but incredibly high-value. Want me to switch to planning mode and break it into tasks? Before I do, I just need one thing from you: add your Vapi Private API Key as a secret in the project so I can build the integration. You can find it in your Vapi dashboard under API Keys — it's the one under "Private API Keys."

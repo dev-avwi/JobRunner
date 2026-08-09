@@ -1,0 +1,178 @@
+Notes from YouTube videos on productivity systems, time management, energy optimisation, and operating at a high level while managing multiple priorities.
+
+---
+
+# 🎥 Video 1 — 10 Productivity Hacks from a $3M/Year Founder, Full-Time Student & D1 Athlete (Sui)
+
+**Channel:** Sui | **Focus:** 10 concrete hacks, from least to most impactful — tools, mindset, time architecture
+
+https://www.youtube.com/watch?v=n0ocrEKOVvo
+
+## Context
+
+Sui is 20, runs a $3M/year consulting company while studying full-time and playing D1 basketball in London. His system is built around one principle: protect your baseline so that ordinary work feels rewarding, not draining.
+
+---
+
+## Hack 1 — Cut Caffeine and Nicotine
+
+The worst effect isn't physical — it's psychological. You become dependent on an external trigger to "lock in." Nicotine hijacks dopamine receptors and raises the baseline output required for focus, so over time the baseline work feels worse and worse without it.
+
+Replacement: music in the background. Same psychological trigger for focus, no dependency.
+
+---
+
+## Hack 2 — Do a Blood Test, Then Use Claude to Build Your Stack
+
+Get a blood test. Understand what your body is actually lacking, not what you think it needs.
+
+Then: paste the results into Claude with an SOP prompt — it gives you a complete supplement stack from A to Z based on your specific deficiencies.
+
+**Sui's current stack** (not a prescription — do your own blood work):
+
+- **Magnesium glycinate** — muscle recovery, better sleep without the grogginess of melatonin
+- **Fish oil** — reduces eye strain from 7–8 hours of screen time, improves HDL
+- **Ashwagandha** — lowers cortisol, reduces emotional reactivity, enables clearer decision-making under pressure
+- **Vitamin D** — critical if you're in a low-sun climate (moved from Malaysia to London). Prevents the 2–3pm energy crash, sustains focus to 8–10pm
+- **Creatine** — muscle recovery and focus. 2 tablets before gym every morning.
+
+---
+
+## Hack 3 — Stop Relying on Willpower. Use Systems.
+
+**The dopamine baseline principle**: the lower your dopamine baseline, the more rewarding ordinary work feels. Every scroll session raises the baseline. When the baseline is high, boring work feels unbearable.
+
+**Tool: Opal** (screen time blocker)
+
+- Blocks all social and video apps Monday–Sunday, 9am–5pm
+- If genuinely needed for research: 6-second wait + max 15 minutes
+- Physically cannot access Instagram or YouTube outside of breaks
+
+**Tool: Rise** (time tracking)
+
+- Calendar-integrated time tracker — shows exactly where your hours went
+- Distinguishes productive time from miscellaneous time
+- Visible week-to-week breakdown
+
+**Tool: Physical voice recorder** (clips to back of phone)
+
+- Hold for 3 seconds → records your thought
+- Hold again → AI generates a complete structured note with action steps
+- Replaces the notes app for capturing ideas on the move
+
+---
+
+## Hack 4 — Calculate Your Dollar Per Hour Rate
+
+The concept: every person has an implicit hourly rate. Anything below that rate should be outsourced, as long as the freed time goes toward work.
+
+**Formula**: (Monthly profit) ÷ (Working hours in the month) = $/hour rate
+
+**Sui's example**: £211K profit ÷ (7 hours/day × 26 working days) = ~£1,700/hour (~$2,170/hour). Everything below $2,000/hour, he outsources.
+
+**What he outsources**: cleaning, cooking (meal prep service or Uber Eats), driving (Uber for calls in transit), financial management (bookkeeper), groceries (Amazon subscription — paper towels, food, supplies auto-delivered weekly), flights and hotels and bills (executive assistant).
+
+> "I don't even go to the grocery store."
+> 
+
+**The key**: outsourcing only makes sense if you redirect that time to work or genuine rest — not to more scrolling.
+
+---
+
+## Hack 5 — Don't Work in the Same Room You Sleep In
+
+Your brain uses environmental cues to switch modes. If you work in your bedroom, it can't tell whether to focus or rest, so it does neither well.
+
+Keep the bedroom for sleep only. Charge your phone and laptop outside the room. Minimise radiation-emitting devices in the sleeping space.
+
+---
+
+## Hack 6 — Set an Alarm for When to Go to Sleep, Not When to Wake Up
+
+Sleep is the highest-leverage productivity input. Protecting it outperforms more hours worked at lower capacity.
+
+Sui's alarm rings at 10:30pm as a signal to wind down. Target: in bed by 11pm. He doesn't set a morning alarm — his body wakes naturally when rested.
+
+> "Decision-making is so important at this level of business that I don't want to risk sleeping less and working more but operating at a lower frequency."
+> 
+
+---
+
+## Hack 7 — Hybrid Workout Routine (Stop Only Lifting)
+
+Pure weight training every day leads to OTS (overtraining syndrome) — a real condition where you feel dependent on endorphins and crash after sessions.
+
+A hybrid routine gives sustained energy throughout the day rather than a post-gym crash.
+
+**Sui's weekly example**:
+
+- Monday: chest and shoulders (strength)
+- Tuesday: HYROX circuit (zone 3 cardio)
+- Wednesday: bodyweight full body (push-ups, squats, pull-ups, dips)
+- Thursday: 8km run
+- Friday: swimming (30 laps freestyle, 10 breaststroke)
+- Saturday: basketball
+- Sunday: rest
+
+Variety prevents the crash. Different stimulus, different recovery demand, consistent energy.
+
+---
+
+## Hack 8 — Maximum Two Routine Habits
+
+Anything above two morning habits is sludge — extra steps that delay the actual work.
+
+> "I've seen people wake up, meditate, journal, ice bath, sauna, drink supplements, ground... and half their day is already wasted."
+> 
+
+Find two habits that genuinely move the needle. Do those. Start work.
+
+**Sui's two**:
+
+1. **Meditation** — controls emotional reactivity, creates awareness that feelings are temporary states not fixed identity. Grew up with severe ADHD; this was the intervention.
+2. **Five-minute journal** — morning: what am I grateful for, what would make today great, daily affirmations. Evening: highlights of the day, what I learned. Takes under 5 minutes. Prevents the entrepreneur trap of only feeling good when hitting new targets.
+
+> "Happiness comes from enjoying every single day — not only when you achieve the next goal."
+> 
+
+---
+
+## Hack 9 — Don't Work on Sundays
+
+Sundays are for reflection, not production. Review the week: what went well, what didn't, what to do differently, priorities for the coming week.
+
+As a founder, where you put your time dictates whether the business grows. A weekly reflection forces intentionality about that allocation.
+
+Hobbies that require presence (basketball, chess, reading, vinyl records, candles, movies) are not optional extras — they're part of the system. You need to actually switch off to come back sharper.
+
+> "It's a marathon, not a sprint."
+> 
+
+---
+
+## Hack 10 (The Most Important) — Separate Call Days from Deep Work Days
+
+Constantly switching between managing people (calls) and creating (deep work) fragments both. You wear different hats and can't fully inhabit either.
+
+**Sui's calendar structure**:
+
+- **Call days**: Monday, Wednesday, Friday
+- **Deep work days**: Tuesday, Thursday, Saturday
+- **Sunday**: off
+
+Each deep work day has a maximum of two or three focus areas — not a list of 20 tasks. Thursday is dedicated purely to learning about AI and investing.
+
+Notion to-do list tracks everything by day and by team member. Every team member has their own list visible to Sui.
+
+> "Intention and the little intricacies of detail is what will allow you to get ahead of your competition."
+> 
+
+---
+
+## Apply to Your Projects
+
+- **The dopamine baseline principle** — directly explains why building while doom-scrolling doesn't work. Opal (or any blocker) during 9–5 is a system, not willpower. The lower the baseline, the more rewarding the building sessions feel.
+- **The blood test + Claude prompt** — a genuinely useful workflow. Get the test, paste results into Claude with a supplement SOP prompt, get a personalised stack. Low effort, potentially high impact on sustained focus.
+- **Dollar-per-hour rate** — calculate yours now. For a solo founder, anything that takes time away from building or resting (that someone else can do for less than your rate) should be delegated as soon as there's cash flow to support it.
+- **Call days vs deep work days** — applies directly to managing user research calls, investor calls, and building sessions. If every day has meetings, there's no deep work. Block it structurally.
+- **Max two morning habits** — the 10-step morning routine is a procrastination system dressed up as productivity. Two things, then start.

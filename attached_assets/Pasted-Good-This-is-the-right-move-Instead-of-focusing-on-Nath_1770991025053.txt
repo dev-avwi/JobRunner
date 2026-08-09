@@ -1,0 +1,341 @@
+Good. This is the right move.
+
+Instead of focusing on Nathan, we’re extracting the **useful product + legal ideas** and building them properly into *your* version.
+
+I’m going to break this into 3 sections:
+
+1. ✅ Core Features You Two Discussed
+2. 🚀 Advanced / Growth Features Nathan Mentioned
+3. ⚖️ Terms & Conditions Clauses You NEED (so you can tell Replit exactly what to build)
+
+You can literally copy parts of this into Replit as implementation tasks.
+
+---
+
+# ✅ 1️⃣ CORE FEATURES DISCUSSED (MVP-Level)
+
+These are the features both of you were talking about as the foundation.
+
+## 🕒 Time Tracking
+
+* Manual clock in / clock out
+* Timer continues running even if:
+
+  * App is closed
+  * Phone screen is locked
+* Offline caching (if no service)
+* Sync when internet reconnects
+* Manual time edit ability
+* Log when time was manually edited
+
+---
+
+## 📍 GPS Tracking
+
+* Record GPS location while clocked in
+* Show:
+
+  * Job site location
+  * Time arrived
+  * Time left
+* Flag if GPS signal lost
+* Add log entry:
+
+  > “GPS signal lost at 3:42pm”
+* Store location history tied to job entry
+
+---
+
+## 🚧 Multi-Role Support
+
+Your app should support:
+
+* Sole trader
+* Team accounts
+* Subcontractors
+* Office/admin users
+* Managers/supervisors
+
+Which means:
+
+* Multiple user roles
+* Permissions per role
+* Team member tracking under one business
+* Subcontractor job allocation
+
+---
+
+## 🧾 Invoicing System
+
+* Generate invoice from tracked time
+* Include:
+
+  * Job name
+  * Date
+  * Hours
+  * Rate
+  * Line items
+* Download as PDF
+* Share link
+* Pre-composed email
+* Customizable invoice layout
+* Add business logo
+* Add notes
+* Add materials
+
+---
+
+## 💻 Desktop + Mobile Sync
+
+Nathan emphasized this:
+
+* Mobile app (on-site use)
+* Desktop/web dashboard (office use)
+* Same login works on both
+* Data syncs across devices
+
+---
+
+# 🚀 2️⃣ ADVANCED FEATURES (Growth Phase)
+
+These are not required for MVP but are strong competitive features.
+
+## 📡 Smart GPS Exit Reminder
+
+If user leaves job site radius:
+
+* Trigger notification:
+
+  > “You’ve left the job site. Clock out?”
+
+Requires:
+
+* Geofencing
+* Background location permissions
+
+---
+
+## ⌚ Watch Integration (Future Phase)
+
+* Apple Watch / Android Watch clock-in
+* Quick toggle from watch
+* Emergency clock-out if phone dies
+
+Not MVP. Phase 2 or 3.
+
+---
+
+## 🧠 AI Automation (Future Phase)
+
+Nathan mentioned:
+
+* Auto-detect work hours via GPS
+* Auto-suggest timesheet
+* AI invoice summary
+* AI job summaries
+
+That’s advanced. Don’t build now.
+
+---
+
+## 🔌 Accounting Integrations
+
+Later-phase integrations:
+
+* Xero
+* MYOB
+* QuickBooks (add this too)
+
+Not required for MVP.
+
+---
+
+## 📊 Admin Dashboard Features
+
+You’ll need:
+
+* Team hours summary
+* Weekly timesheet export
+* Revenue summary
+* Job profitability report
+* Edit logs
+* GPS log audit trail
+
+---
+
+# ⚖️ 3️⃣ TERMS & CONDITIONS YOU NEED
+
+This is the MOST important part.
+
+You need strong legal protection built into:
+
+* Terms of Service
+* Privacy Policy
+* User Agreement
+
+Below is what you should tell Replit to include in your legal pages.
+
+---
+
+## 🛡️ A. Invoice Accuracy Disclaimer
+
+You need a clause that says:
+
+> The user is responsible for reviewing all generated invoices before sending.
+> The platform does not guarantee accuracy of time, rates, calculations, or totals.
+
+This protects you from:
+
+* $500 missing invoice disputes
+* “The app calculated wrong” claims
+
+---
+
+## 🛡️ B. Time Tracking Disclaimer
+
+Include:
+
+> Time tracking data may be affected by device performance, GPS availability, battery life, and connectivity.
+> Users are responsible for verifying recorded hours.
+
+This protects against:
+
+* GPS drift
+* Timer bugs
+* Background app restrictions
+
+---
+
+## 🛡️ C. GPS Liability Protection
+
+Add:
+
+> GPS location data may be inaccurate or unavailable due to signal interference.
+> The platform is not liable for disputes arising from GPS discrepancies.
+
+---
+
+## 🛡️ D. Edited Time Log Clause
+
+Include:
+
+> Edited time entries will be logged within the system.
+> Users acknowledge that manual adjustments override original tracked data.
+
+This prevents:
+
+* Fraud claims
+* “The system changed my time” accusations
+
+---
+
+## 🛡️ E. No Financial Escrow Clause
+
+VERY IMPORTANT.
+
+If you're NOT handling client payments directly:
+
+> The platform does not act as an escrow service or financial intermediary.
+> Users are responsible for handling payments independently.
+
+If you integrate Stripe later:
+You must state:
+
+> Payment processing is handled by third-party providers (e.g., Stripe).
+> The platform does not store credit card information.
+
+---
+
+## 🛡️ F. Limitation of Liability
+
+Add:
+
+> The platform’s liability is limited to the subscription fee paid within the last 30 days.
+
+This caps your legal exposure.
+
+---
+
+## 🛡️ G. Data Loss Clause
+
+> The platform is not responsible for data loss due to user device failure or force majeure events.
+
+---
+
+## 🛡️ H. Subscription Terms
+
+Include:
+
+* Monthly billing cycle
+* Cancellation policy
+* No refunds after billing period begins
+* Trial period terms (if offered)
+
+---
+
+## 🛡️ I. Intellectual Property
+
+> All platform software, branding, and design remain the property of [Your Company Name].
+
+---
+
+# 🧠 What You Should Tell Replit
+
+You can paste this directly:
+
+---
+
+**Build Requirements Update**
+
+I want to implement the following:
+
+### Feature Requirements:
+
+* Persistent timer (works in background and offline)
+* GPS tracking with loss detection logs
+* Manual time edit logging
+* Multi-role team system
+* Customizable PDF invoice generator
+* Desktop + mobile synced login
+* Weekly exportable timesheets
+* Job profitability reports
+* Audit log for time edits
+* Soft launch test mode toggle
+
+### Legal Pages Required:
+
+* Terms of Service (include invoice disclaimer, time disclaimer, GPS disclaimer, limitation of liability)
+* Privacy Policy (include data storage + third-party processors)
+* Subscription Agreement (billing, cancellation, refunds)
+* Data Processing Disclosure
+
+---
+
+# 🎯 My Strategic Advice
+
+Don’t build:
+
+* Watch integration
+* Full AI automation
+* Xero/MYOB
+
+Yet.
+
+Build:
+
+* Bulletproof timer
+* GPS logs
+* Clean invoicing
+* Strong legal protection
+
+That’s your weapon.
+
+---
+
+If you want next, I can:
+
+* 🔥 Rank these features by priority for MVP
+* 📋 Write a structured Replit development roadmap
+* ⚖️ Tell you what actually matters legally in Australia
+
+What do you want?

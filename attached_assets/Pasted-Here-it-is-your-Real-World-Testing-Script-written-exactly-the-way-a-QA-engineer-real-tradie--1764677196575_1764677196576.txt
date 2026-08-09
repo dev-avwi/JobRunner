@@ -1,0 +1,320 @@
+Here it is — **your Real-World Testing Script** written exactly the way a QA engineer + real tradie would test TradieTrack **in the field using 2 phones**.
+
+This is **not** a code-testing prompt.
+This is a **physical, hands-on, real-life simulation** so you know your app will work in Cairns with an actual tradie before launch.
+
+This script will reveal all UX gaps, backend bugs, and “UI only” features.
+
+---
+
+# 🔥 **REAL-WORLD FIELD TESTING SCRIPT (Use your phone + another phone)**
+
+## 📱 **Setup for the test**
+
+You need:
+
+* Your phone (acting as *Owner / Admin*)
+* A second device (phone or laptop) acting as *Tradie*
+* A suburb you can walk around (or simulate by switching WiFi hotspots)
+
+This script assumes:
+
+Owner = You
+Tradie = a test account you create
+Team = you + tradie
+
+---
+
+# 🟦 **1️⃣ TEST: Real Job Creation → Map → Team Visibility**
+
+### **Step 1 — Owner creates a job**
+
+On Owner phone:
+
+1. Add Job
+   **Job:** “Blocked drain – McLeod St”
+   **Client:** Sarah Thompson
+   **Address:** 21 McLeod St, Cairns North
+   **Status:** New
+   **Assign to:** Test Tradie #1
+
+2. Save job
+
+### Expected:
+
+* Job instantly appears under “Jobs”
+* Job appears on the **Map screen**
+* Job pin shows STATUS (“New”)
+
+**If not → Map backend or geocoding missing.**
+
+---
+
+# 🟦 **2️⃣ TEST: GPS Position of Tradie Live on Map**
+
+On Tradie phone:
+
+1. Log in with the tradie account
+2. Go to “Team Map” or “Location Share” page
+3. Enable location sharing (or simulate)
+
+   * Walk outside OR
+   * Turn location on and off OR
+   * Change WiFi networks to simulate movement
+
+### Expected:
+
+* Owner map shows tradie moving or updating position
+* Tradie has a **badge**: “Available” or “En Route”
+
+**Broken sign?**
+→ Websocket listener or API route not implemented.
+
+---
+
+# 🟦 **3️⃣ TEST: Owner assigns job → Tradie receives notification**
+
+On Owner phone:
+
+1. Assign job to Tradie #1
+2. Set start time (e.g. “Today 3:15pm”)
+
+On Tradie phone:
+
+### Expected:
+
+* Notification (in-app + email ideally)
+* Job appears in “My Jobs”
+* Job appears on map with their icon
+
+---
+
+# 🟦 **4️⃣ TEST: Job Discussion (Team Chat + Job Chat)**
+
+## A) Team Chat
+
+Owner:
+“Hey mate, can you head to McLeod St now?”
+
+Tradie:
+“Yep, on the way.”
+
+### Expected:
+
+* Messages deliver instantly (websockets)
+* Typing indicators optional
+* Chat persists across refresh
+* No duplicated messages
+
+**If messages appear twice → duplicate event handler.**
+**If messages vanish on refresh → backend not storing chat.**
+
+---
+
+## B) Job-Specific Chat
+
+Owner posts in **Job Chat**:
+
+“Client said the drain backs up when shower runs.”
+
+Tradie replies:
+
+“Copy that. Will check S-bend.”
+
+Expected:
+
+* Job chat is separate from team chat
+* Messages attach to correct job
+* Persist in Job Activity Log
+
+---
+
+# 🟦 **5️⃣ TEST: Quote → Email → Client Gmail → Accept → Back into App**
+
+### Step 1 — Owner creates quote
+
+* Labour: 1.5 hrs @ $110/hr
+* Part: Drain cleaner – $35
+* GST ON
+* Total auto-calculated
+* PDF preview shows live updates
+
+### Step 2 — Send quote
+
+Send to **your +client Gmail**.
+
+### Step 3 — Check in Gmail (on your real phone)
+
+Email must show:
+
+* Subject: “Quote from Cairns Coast Plumbing”
+* Logo (if Pro)
+* PDF OR clean web-view link
+* CTAs: **Accept | Ask a question**
+
+### Step 4 — Accept quote (as client)
+
+Expected:
+
+✔ Quote status changes to **Accepted**
+✔ Job status auto-changes to **Approved**
+✔ Activity feed logs “Sarah accepted quote at 2:42 PM”
+
+---
+
+# 🟦 **6️⃣ TEST: Invoice → Stripe Payment → Receipt**
+
+Owner:
+
+1. Convert quote → Invoice
+2. Send invoice (email)
+3. Check PDF looks professional
+
+Client (on another device):
+
+1. Open invoice
+2. Hit “Pay Now”
+3. Use Stripe test card 4242 4242 4242 4242
+4. Complete payment
+
+Expected in Owner view:
+
+✔ Invoice status: **Paid**
+✔ Payment reference stored
+✔ “Payment received email” goes to client
+✔ Job moves to **Completed** (optional automation)
+
+---
+
+# 🟦 **7️⃣ TEST: Location Tracking On-Site**
+
+Tradie goes to real driveway/street OR simulate via map.
+
+Tradie:
+
+* Opens job
+* Taps “On Site”
+* App stores real coordinates
+* Timer starts (“Time tracking”)
+
+Owner:
+
+* Sees “Tradie on site @ 3:09 PM”
+* Map shows tradie pinned at job
+* Timer running in real-time
+
+Tradie:
+
+* Presses “Complete”
+* Adds photos
+* Notes
+* Timer stops
+
+Owner:
+
+✔ Receives completion event
+✔ Notes + photos attached
+✔ Job marked completed
+
+If any of this fails → backend missing.
+
+---
+
+# 🟦 **8️⃣ TEST: Map Review Page (Job History + Icons)**
+
+Owner opens **Map → Past Jobs**:
+
+Expected:
+
+* Completed jobs appear as grey pins
+* Scheduled jobs are blue
+* Urgent jobs (if exists) are red
+* Tapping a pin opens job summary
+* Clusters show if many in same suburb
+* Filter by “My Jobs”, “Team”, “This Week”
+
+If pins are missing:
+→ geocoding or DB relationship missing
+If wrong color:
+→ status → pin-color mapping missing
+
+---
+
+# 🟦 **9️⃣ TEST: Team Communication Flow**
+
+Owner sends message to tradie:
+
+“Send me a photo of the drain before fixing.”
+
+Tradie:
+
+* Opens job
+* Uploads 1–3 photos
+* Sends message
+
+Expected:
+
+✔ Photos appear in Job Activity
+✔ Photos load fast
+✔ Thumbnails generate
+✔ Can tap to enlarge
+
+---
+
+# 🟦 **🔟 TEST: Offline or Bad Connection**
+
+On Tradie phone:
+
+1. Turn on Airplane Mode
+2. Try:
+
+   * Open job
+   * Add note
+   * Mark on-site
+   * Take photo
+
+Expected:
+
+* UI doesn’t crash
+* Shows “No internet, will sync when online” OR
+* Disables action
+
+Then turn connection on again:
+
+Expected:
+
+* Sync runs
+* Job updates
+* No duplicate events
+
+---
+
+# 🔥 BONUS — FINAL TEST: Real tradie simulation
+
+Perform this next time you’re in town.
+
+* Owner stays in Cairns North
+* Tradie stands in Edge Hill or Manunda
+* Owner assigns job
+* Tradie travels (walk, bike, car)
+* You watch tradie move across the map
+* Tradie marks on-site and completes job
+* You approve and invoice
+* You test Stripe payment
+* You check activity log
+
+If this works — your app is **ready for REAL tradies.**
+
+---
+
+# ⭐ NEXT:
+
+If you want, I can also generate:
+
+🧠 A “real tradie interview script” (what to ask testers)
+🏷️ A “beta feedback form”
+💳 Suggested pricing for beta testers
+📣 A launch announcement for Cairns tradies
+📱 A UI polish checklist before launch
+
+Just tell me and I’ll build it.

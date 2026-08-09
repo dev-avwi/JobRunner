@@ -1,0 +1,42 @@
+not that this is maybe relevant but heres some stuff for itCPCWHS1001 - Queensland White Card
+Hi Ayden Vogler, please complete the questions below as directed by your trainer.
+Open Theory Assessment
+Task Four: Fitting PPE
+Fitting PPE
+For this task, you need to demonstrate the correct fitting of the below Personal Protective Equipment (PPE)
+
+The assessor will ask you to fit one item of PPE at a time. You will fit the PPE and then remove it before fitting the next item. The assessor will record if you have fitted each item of PPE correctly.
+
+Eye protection
+Hearing protection
+Hard hat
+High visibility vest, shirt or jacket
+
+Eye Protection
+I confirm I have the Eye Protection and ready to demonstrate to your assessor
+
+Hearing protection
+I confirm I have the Hearing Protection and ready to demonstrate to your assessor
+
+Hard hat
+I confirm I have the Hard hat and ready to demonstrate to your assessor
+
+High vis vest
+I confirm I have the High visibility vest and ready to demonstrate to your assessor
+Declaration
+I have undertaken this course via a Face to Face Classroom, which involved training between a Blue Dog Training trainer and students; and
+I remained in the Face to Face Classroom for the entirety of the course for which I was enrolled; and
+All work I have submitted for this course is my own; and
+In the completion of this course I was given no assistance from anyone other than the Blue Dog Training trainer.
+I, Ayden Vogler, agree to the declaration above.
+
+Thanks for sharing that, Ayden! That's actually really useful context. The White Card training (CPCCWHS1001) covers exactly the kind of safety compliance the WHS Hub is designed to support. The PPE fitting assessment — eye protection, hearing protection, hard hats, hi-vis — maps directly to the kind of on-site safety requirements tradies need to track.
+
+A few things from that content we could potentially build into the app down the track if you're interested:
+
+PPE Checklist / Tracker — A quick daily PPE check-in per worker before starting a job (hard hat, hi-vis, eye pro, hearing pro, gloves, boots, etc.)
+Training Records — Track which team members have their White Card, when it was completed, and with which RTO (like Blue Dog Training in your case)
+Competency Sign-offs — Digital version of the PPE fitting demonstration sign-off, so site supervisors can confirm workers have been assessed
+For now though, the WHS Hub already covers the core areas from the White Card curriculum — incident reporting, emergency plans, JSAs, hazard identification, and safety signage. Those are the practical on-site applications of what the training teaches.
+
+Want me to add any of those PPE or training tracking features, or is the current WHS Hub good to go for now?

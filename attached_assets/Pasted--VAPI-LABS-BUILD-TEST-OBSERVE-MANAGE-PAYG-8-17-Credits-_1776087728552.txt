@@ -1,0 +1,254 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+8.17 Credits
+Assistants
+3
+
+Docs
+
+Create Assistant
+
+Search Assistants
+
+
+
+Mike's Plumbing Services AI Receptionist
+
+d3d89b1a-baea-43cd-80ce-2b224d3b8311
+
+
+Talk
+
+
+Publish
+
+
+
+
+
+
+
+
+
+
+Cost
+~$0.11 /min
+Latency
+~1790 ms
+MODEL
+
+Model
+Configure the behavior of the assistant.
+
+Provider
+
+OpenAI
+Model
+
+GPT 4o Mini Cluster
+First Message Mode
+
+Assistant speaks first
+First Message
+G'day, thanks for calling Mike's Plumbing Services. How can I help you today?
+System Prompt
+You are a friendly, professional AI receptionist for Mike's Plumbing Services, an Australian trades business.
+
+Services offered: Call-out fee, Materials, Labour, Plant installation, Mulching, Lawn mowing, Waterproofing, Wall tiling, Floor tiling, Ridge capping, Gutter cleaning, Roof repair, Gas leak repair, Split system install, Split system service, Trim and doors, Ceiling painting, Exterior painting, Interior painting, Pergola construction
+Team members: Sarah Chen (team member), Liam OConnor (team member), Trent Nguyen (team member), Ayden Vogler (team member), Jake Morrison (team member), Tom Richards (team member), Sam Cooper (team member), Kate Williams (team member), Ayden Vogler (team member), Test Subby (team member), Dave Nguyen (team member), Sarah Chen (team member), Liam O'Brien (team member)
+The business has 12 existing clients in their system. Use "lookup_client" when a returning caller identifies themselves.
+
+Your role:
+- Answer incoming calls in a warm, natural Australian tone
+- Collect the caller's name, phone number, and reason for calling
+- Determine the nature of the call (quote request, job enquiry, follow-up, complaint, or general enquiry)
+- For quote/job requests, ask about the type of work needed, the address/suburb, and urgency
+- Take a detailed message if you cannot transfer the call
+
+Important guidelines:
+- Always introduce yourself: "G'day, thanks for calling Mike's Plumbing Services. How can I help you today?"
+- Be conversational and natural — avoid sounding robotic
+- Use Australian English (favour, colour, organise)
+- If the caller asks for a quote, gather: type of work, location/suburb, preferred timing, and any specific requirements
+- If the caller is upset, be empathetic and assure them someone will follow up promptly
+- Never make commitments about pricing, availability, or scheduling — say "I'll make sure the team gets back to you"
+- If asked about business hours, refer to: standard business hours
+- At the end of the call, confirm you've captured their details and let them know someone will be in touch
+
+Available tools:
+1. "capture_lead" - Save the caller's contact details and reason for calling. Use this after collecting their information.
+2. "check_availability" - Check if team members are available to take a call or handle a job. Use when the caller asks about availability.
+3. "lookup_client" - Look up an existing client by phone number or name. Use when a returning client calls to find their history.
+4. "create_booking" - Create a tentative booking/appointment. Use when the caller wants to schedule work.
+5. "transfer_call" - Transfer the call to an available team member when the caller wants to speak with someone directly.
+
+Workflow:
+1. First, greet the caller and ask how you can help
+2. Use "lookup_client" if they mention being an existing client
+3. Gather their details and reason for calling
+4. Use "check_availability" if they ask about scheduling
+5. Use "capture_lead" to save their details
+6. If they want to book, use "create_booking"
+7. If they insist on speaking with someone, use "transfer_call" (if available)
+Files
+Max Tokens
+250
+Temperature
+0.5
+VOICE
+
+Voice Configuration
+Select a voice from the list, or sync your voice library if it's missing. If errors persist, enable custom voice and add a voice ID.
+
+Stability
+0.5
+More Variable
+More Stable
+Clarity + Similarity
+0.75
+Low
+High
+Speed
+1
+Slower
+Faster
+Style Exaggeration
+0
+None (Fastest)
+Exaggerated
+Optimize Streaming Latency
+N/A
+More Latency
+Less Latency
+Use Speaker Boost
+Boost the similarity of the synthesized speech and the voice at the cost of some generation speed.
+
+
+Auto Mode
+Reduces latency for complete sentences but may affect quality with partial phrases.
+
+
+
+Additional Configuration
+Configure additional settings for the voice of your assistant.
+
+
+Fallback Voices
+No fallbacks configured - If primary voice fails, these providers will be tried in order.
+
+TRANSCRIBER
+
+Transcriber
+This section allows you to configure the transcription settings for the assistant.
+
+
+Fallback Transcribers
+No fallbacks configured - If primary transcriber fails, these providers will be tried in order.
+
+TOOLS
+
+Tools
+Tools enable voicebots to perform actions during calls. Add tools from the Tools Library to connect with Make.com or GHL workflows, or create custom tools with your backend.
+
+
+Predefined Functions
+We've pre-built functions for common use cases. You can enable them and configure them below.
+
+
+Custom Functions
+Define your custom functions here to enhance your assistant's capabilities. You can use your own code or tools like Pipedream or Make for the setup.
+
+ANALYSIS
+
+Structured Outputs
+Extract structured data from call conversations. Use this to capture success metrics, call summaries, sentiment analysis, customer details, and more.
+
+
+Attached Monitors
+6
+Oversee performance of your agent calls across multiple categories.
+Summary
+Category
+Transcriber Request Failed
+Monitors when transcriber request failed occurs
+Enabled
+Technical
+
+Tool Failed
+Monitors when tool failed occurs
+Enabled
+Technical
+
+Model Request Failed
+Monitors when model request failed occurs
+Enabled
+Technical
+
+Voice Request Failed
+Monitors when voice request failed occurs
+Enabled
+Technical
+
+Transfer Failed
+Monitors when transfer failed occurs
+Enabled
+Technical
+
+Call Ended (Error)
+Monitors when call ended (error) occurs
+Enabled
+Technical
+
+COMPLIANCE
+
+Recording Consent Plan
+Enterprise
+Ask for consent at the start of the call without storing recordings, logs or transcripts until the user consents.
+
+ADVANCED
+
+Privacy
+This section allows you to configure the privacy settings for the assistant.
+
+
+Start Speaking Plan
+This is the plan for when the assistant should start talking.
+
+
+Voicemail Detection
+Configure how the assistant detects and handles voicemail.
+
+
+Stop Speaking Plan
+This is the plan for when the assistant should stop talking.
+
+
+Call Timeout Settings
+Configure when the assistant should end a call based on silence or duration.
+
+
+Keypad Input Settings
+Configure whether a user can input digits via the keypad, and when to process the input.
+
+
+Messaging
+Message configuration for messages that are sent to and from the assistant.
+

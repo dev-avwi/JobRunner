@@ -1,0 +1,196 @@
+Perfect — that’s exactly the clarity I needed.
+React + Vite + TypeScript on Replit is a great stack for analytics — clean and easy to instrument properly.
+
+Let’s do this the right way so:
+✅ No hacks in random files
+✅ Type-safe
+✅ Doesn’t break builds
+✅ Scales later for Meta Pixel
+✅ Easy to add more events
+
+You’ll be production-ready analytics in under 20 minutes. 🚀
+
+⸻
+
+🎯 OVERVIEW (What We’re About To Do)
+	1.	Create your GA4 property
+	2.	Inject GA into client/index.html
+	3.	Add a tiny analytics helper
+	4.	Track:
+	•	Page views
+	•	Signup clicked
+	•	Signup completed
+	5.	Verify everything live in GA
+
+⸻
+
+✅ STEP 1 — CREATE GOOGLE ANALYTICS PROPERTY
+
+Do this first.
+
+Go to:
+👉 https://analytics.google.com
+	1.	Click Admin
+	2.	Create Property
+	•	Name: TradieTrack
+	•	Timezone: Australia
+	•	Currency: AUD
+	3.	Choose Web
+	4.	Website URL:
+	•	Put your Replit URL or tradietrack.com
+	5.	Finish setup
+
+You will receive:
+
+✅ Measurement ID like: G-XXXXXXXXXX
+
+👉 Copy this ID — you’ll need it in the next step.
+
+Tell me when you have it.
+
+⸻
+
+⸻
+
+✅ STEP 2 — ADD GA SCRIPT TO VITE INDEX.HTML
+
+Open:
+
+client/index.html
+
+Find:
+
+<head>
+
+Paste this inside the <head> (replace G-XXXXXXX later):
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXX', {
+    send_page_view: true
+  });
+</script>
+
+⚠️ Don’t commit yet until you paste your real ID.
+
+⸻
+
+⸻
+
+✅ STEP 3 — ADD TYPESAFE ANALYTICS HELPER
+
+Create this file:
+
+client/src/lib/analytics.ts
+
+Paste:
+
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
+export function trackEvent(
+  eventName: string,
+  params?: Record<string, any>
+) {
+  if (!window.gtag) return;
+
+  window.gtag("event", eventName, params);
+}
+
+This keeps your app clean.
+
+⸻
+
+⸻
+
+✅ STEP 4 — TRACK SIGNUP CLICK
+
+Open:
+
+client/src/components/AuthFlow.tsx
+
+Find the button or handler where user clicks Sign Up.
+
+Import:
+
+import { trackEvent } from "../lib/analytics";
+
+Inside the click handler BEFORE navigation or API call:
+
+trackEvent("signup_clicked", {
+  source: "landing",
+});
+
+
+⸻
+
+⸻
+
+✅ STEP 5 — TRACK SIGNUP SUCCESS
+
+Find where:
+
+POST /api/auth/register
+
+returns success.
+
+Right after success:
+
+trackEvent("signup_completed", {
+  method: "email",
+});
+
+
+⸻
+
+⸻
+
+✅ STEP 6 — MARK CONVERSIONS IN GA
+
+After events appear in GA:
+
+GA → Admin → Events
+Toggle:
+	•	signup_completed → Conversion
+
+Later we’ll add payments.
+
+⸻
+
+⸻
+
+🧪 STEP 7 — VERIFY EVERYTHING
+
+After deploy:
+	1.	Open GA → Reports → Realtime
+	2.	Open your site in incognito
+	3.	Click signup
+	4.	Create test account
+	5.	Watch events fire
+
+You should see:
+✔ page_view
+✔ signup_clicked
+✔ signup_completed
+
+⸻
+
+⸻
+
+🚦 YOUR NEXT ACTION
+
+👉 Go create the GA property and send me your:
+
+Measurement ID
+
+Once you send it:
+	•	I’ll double-check your script placement
+	•	Help you verify realtime tracking
+	•	Then we’ll wire Meta Pixel next 🚀

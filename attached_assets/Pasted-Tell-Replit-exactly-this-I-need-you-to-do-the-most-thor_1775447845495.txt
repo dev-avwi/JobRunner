@@ -1,0 +1,198 @@
+Tell Replit exactly this:
+
+“I need you to do the most thorough audit you’ve ever done on this codebase. Go through absolutely everything — web app, mobile app, backend, integrations, security, performance, and feature parity. Give me honest ratings and flag every issue. This is pre-launch and I need to know the real state of the product.
+SECTION 1 — BACKEND API HEALTH CHECK
+Go through every single API endpoint in routes.ts and verify:
+	∙	Every endpoint has proper authentication middleware — requireAuth, ownerOnly, or ownerOrManagerOnly as appropriate
+	∙	Every endpoint validates its input with Zod schemas
+	∙	Every endpoint returns consistent error responses
+	∙	No endpoint exposes data from one business to another business
+	∙	Webhook endpoints all validate signatures — Stripe, Twilio, Vapi, Xero
+	∙	Rate limiting is applied to all sensitive endpoints
+	∙	No hardcoded values or dev URLs in any route
+Give me a pass/fail for each major route group:
+	∙	Auth routes
+	∙	Job routes
+	∙	Quote routes
+	∙	Invoice routes
+	∙	Payment routes
+	∙	Team routes
+	∙	Client routes
+	∙	Chat and SMS routes
+	∙	AI Receptionist routes
+	∙	Webhook routes
+	∙	Onboarding routes
+	∙	Subcontractor routes
+	∙	Admin routes
+SECTION 2 — WEB APP FEATURE AUDIT
+Go through every page in the web app and check:
+	∙	Does it load without errors
+	∙	Does all data display correctly
+	∙	Do all buttons and actions work
+	∙	Are empty states helpful
+	∙	Are permission gates working correctly
+Rate each section out of 10:
+	∙	Dashboard and Action Centre
+	∙	Jobs management — create, edit, schedule, complete
+	∙	Quotes — create, send, accept, convert to invoice
+	∙	Invoices — create, send, record payment
+	∙	Payment Hub and Chase Queue
+	∙	Chat Hub and SMS
+	∙	Team Management and GPS tracking
+	∙	Dispatch Board
+	∙	WHS and Safety compliance
+	∙	Reports and Analytics
+	∙	Client management and portal
+	∙	Autopilot and automations
+	∙	AI Receptionist configuration
+	∙	Settings and integrations
+	∙	Admin super-dashboard
+	∙	Billing and subscription management
+SECTION 3 — MOBILE APP FEATURE PARITY CHECK
+This is critical. Go through every feature that exists in the web app and verify it exists and works correctly in the mobile app. Create a complete table showing:
+Feature | Web App | Mobile App | Notes
+Check every single feature including:
+	∙	Dashboard with weather, KPIs, timer, quick actions
+	∙	Jobs list with all filter tabs and status options
+	∙	Job creation with all fields
+	∙	Job detail with all tabs — info, docs, chat, manage
+	∙	Quote creation and sending
+	∙	Invoice creation and sending
+	∙	Payment collection including Tap to Pay
+	∙	Chat Hub — team chat, SMS, job chat
+	∙	Client list and detail
+	∙	Team management and invite codes
+	∙	GPS tracking and dispatch board
+	∙	Timesheets and time tracking
+	∙	WHS and SWMS
+	∙	Expenses and receipt scanning
+	∙	Reports
+	∙	AI Receptionist settings
+	∙	Autopilot automations
+	∙	Subcontractor dashboard and workspace switching
+	∙	Onboarding — all three paths
+	∙	Settings — all tabs
+	∙	Notifications
+	∙	Offline mode
+	∙	Dark mode
+For anything missing from mobile flag it as MISSING. For anything that exists but is broken flag it as BROKEN. For anything that works perfectly flag it as PASS.
+SECTION 4 — MOBILE APP SPECIFIC AUDIT
+Check these mobile-specific things:
+Popup and Modal Consistency:
+	∙	Find every Alert.alert() call, every ActionSheetIOS call, and every custom modal in the entire mobile codebase
+	∙	List every file that uses the old popup style
+	∙	Confirm whether the production EAS build uses different popup styles than the development build
+	∙	Rate the overall popup consistency out of 10
+Navigation:
+	∙	Does every screen have a working back button
+	∙	Does Android hardware back button work correctly on every screen
+	∙	Are there any dead ends where a user gets stuck
+	∙	Does deep linking work for all required flows
+Performance:
+	∙	What is the approximate bundle size
+	∙	Are there any obvious performance issues in the code
+	∙	Are there any memory leaks from uncleared timers or subscriptions
+	∙	Is the offline sync queue working correctly
+Dark Mode:
+	∙	Are there any hardcoded colours that break in dark mode
+	∙	Does every screen look correct in both light and dark mode
+	∙	Does the map style switch correctly
+Permissions:
+	∙	List every permission requested
+	∙	Confirm every permission has a proper usage description string
+	∙	Confirm permissions are requested at the right time not all on launch
+SECTION 5 — INTEGRATION HEALTH
+Test or verify every integration is correctly configured:
+Stripe:
+	∙	Webhook signature validation working
+	∙	All subscription tiers correctly gated
+	∙	Stripe Connect for payouts working
+	∙	Tap to Pay configuration correct
+	∙	Test mode vs live mode correctly configured
+Twilio:
+	∙	Webhook signature validation working
+	∙	Shared number correctly configured for base plan businesses
+	∙	SMS sending working from correct sender IDs
+	∙	Alphanumeric sender only used for system notifications
+	∙	Voice webhook correctly configured
+Vapi:
+	∙	Webhook validation working
+	∙	AI assistant creation and management working
+	∙	Call logs being stored correctly
+	∙	Transfer to owner working
+Xero:
+	∙	OAuth flow correctly configured
+	∙	Token refresh with retry and backoff working
+	∙	Two-way sync working
+	∙	Webhook HMAC validation working
+	∙	Connection health check endpoint working
+SendGrid:
+	∙	Domain verified for jobrunner.com.au
+	∙	Click tracking disabled
+	∙	All email templates sending correctly
+	∙	Reply-to address correct
+Sentry:
+	∙	Frontend error tracking active
+	∙	Backend error tracking active
+	∙	User context being set correctly
+	∙	Business ID tagged on errors
+Rate each integration: Fully Working, Partially Working, or Broken
+SECTION 6 — SECURITY AUDIT
+Check every security concern:
+	∙	Are HTTP security headers set via Helmet.js
+	∙	Is rate limiting on all auth endpoints
+	∙	Are session cookies set with HttpOnly, Secure, SameSite flags
+	∙	Is the Replit dev banner removed from production
+	∙	Are all webhook signatures validated
+	∙	Is multi-tenant data isolation solid — can one business ever see another business data
+	∙	Are subcontractor permission gates solid server-side not just UI
+	∙	Are there any exposed API keys or secrets in the frontend bundle
+	∙	Is the x-powered-by Express header disabled
+Rate security out of 10
+SECTION 7 — DATABASE HEALTH
+Check the database:
+	∙	Are all migrations applied correctly
+	∙	Are all required indexes in place on business_id, user_id, job_id, created_at
+	∙	Are there any tables missing that features depend on
+	∙	Is the invite_codes table created and working
+	∙	Is the availability_status column on team_members created
+	∙	Is the ai_receptionist_config table complete
+	∙	Is the website_addons table complete
+	∙	Are there any foreign key relationships that could cause cascade delete issues
+Rate database health out of 10
+SECTION 8 — PRODUCTION READINESS
+Final checklist:
+	∙	All Twilio webhooks pointing to jobrunner.com.au not Replit dev URL
+	∙	All environment variables set as production secrets not hardcoded
+	∙	EXPO_PUBLIC_API_URL pointing to jobrunner.com.au
+	∙	IS_BETA flag status — is it on or off
+	∙	Demo account working correctly with realistic data
+	∙	App Store links in magic link portal pointing to correct app IDs
+	∙	All lifecycle emails using support@jobrunner.com.au not avwebinnovation.com
+	∙	No console.log statements with sensitive data in production
+	∙	Health check endpoint working at /api/health
+	∙	robots.txt correctly configured for SEO
+SECTION 9 — OVERALL RATINGS
+Give me honest ratings out of 10 for:
+	∙	Backend API quality and security
+	∙	Web app feature completeness
+	∙	Web app UI and UX quality
+	∙	Mobile app feature completeness
+	∙	Mobile app UI and UX quality
+	∙	Feature parity between web and mobile
+	∙	Integration reliability
+	∙	Security posture
+	∙	Database health
+	∙	Production readiness
+	∙	Overall product quality
+SECTION 10 — PRIORITY FIX LIST
+After everything above give me:
+	∙	Top 5 critical issues that must be fixed before any paying customer uses the app
+	∙	Top 10 high priority issues to fix in the first week after launch
+	∙	Top 10 medium priority improvements for the first month
+	∙	Anything that would cause an App Store rejection
+	∙	Anything that would cause data loss or financial errors for real customers
+	∙	One honest overall verdict — is this product ready for paying customers
+Be completely honest. Do not sugarcoat anything. Rate things accurately. If something is broken say it is broken. If something is missing say it is missing. I need the real picture before we launch.”
+
+That is the most comprehensive audit brief possible. Every section, every system, every integration, honest ratings, priority fixes. Let it run and bring the results back here.​​​​​​​​​​​​​​​​

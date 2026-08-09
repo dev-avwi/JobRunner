@@ -1,0 +1,111 @@
+Best option: **one tracking link per job**, and it can show **one “primary” live tracker** by default, with a toggle to view **other assigned workers** (if you want). That’s the cleanest for clients and the least confusing.
+
+### Why this is best
+
+* **Client simplicity:** one link, one place. No “which link do I click?”
+* **Less spam:** you don’t send multiple SMS threads.
+* **Scales to big teams:** 3–10 workers on a job is possible.
+* **More control:** you can decide how much to reveal (privacy + subcontractors).
+
+---
+
+## Recommended behavior (clean + Uber-like)
+
+### SMS/Email
+
+* Only **ONE SMS** goes out:
+
+  * triggered by the **primary assigned worker** pressing “On My Way”
+  * or dispatch sends manually
+
+SMS contains:
+
+* “{PrimaryWorkerName} is on the way”
+* One portal link: `/p/{job_token}`
+
+### Tracking Link Page (JobRunner)
+
+Shows:
+
+**Default view (simple)**
+
+* Primary worker live map + ETA
+* Status updates
+* Dispatch contact
+* “Crew assigned: 2” (small badge)
+
+**Optional “View crew” section**
+
+* List of other assigned workers:
+
+  * name (or “Support crew”)
+  * status (On the way / Arrived / Working)
+  * last update time
+* If you enable it: map can show extra dots (no ETA per person unless selected)
+
+✅ This means: *client sees one live driver like Uber*, but still knows a crew is involved.
+
+---
+
+## Privacy rules (important for subcontractors)
+
+* **Primary worker** can show name/phone (based on setting)
+* **Subcontractors**:
+
+  * show as “Support crew” by default
+  * hide their phone number by default
+* Client always sees **dispatch/owner number**.
+
+---
+
+## How to make this bulletproof in your system (what to tell Replit)
+
+### Token strategy
+
+* Use **JobPortalToken** (not assignment token) for the public tracking link:
+
+  * `/p/{job_token}`
+* Inside the portal, you can show:
+
+  * primary assignment + optional other assignments
+
+### “Primary worker” logic
+
+A job has:
+
+* `primary_assignment_id`
+* all other assignments are `support_assignments[]`
+
+Rules:
+
+* Only primary can trigger the **client “On My Way” SMS** automatically
+* Support crew “On My Way” updates the portal, but **no client SMS** unless dispatch forces it
+
+---
+
+## The map design (best UX)
+
+Option A (best): **single live map for primary only**
+
+* Cleaner, less “dots everywhere”
+
+Option B: **multi-worker map toggle**
+
+* Button: “Show crew on map”
+* Shows extra pins
+* Client taps a pin to switch to that worker’s ETA
+
+I’d ship **Option A first**, add Option B later if clients ask.
+
+---
+
+## Your final “lock it in” decision
+
+I recommend you lock in:
+
+✅ **One public tracking link per job**
+✅ **Primary worker is the only one with live map + ETA by default**
+✅ **Support crew appear as status badges**, and optionally on map via toggle
+✅ **Only one SMS thread unless dispatch manually sends updates**
+
+If you want, I’ll rewrite the Replit prompt section for this exact design so it builds it the way we intend (no guessing).

@@ -1,0 +1,80 @@
+Error: Cannot find native module 'LiveActivity'
+
+requireNativeModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1268622
+anonymous
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1882109
+loadModuleImplementation
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139978
+guardedLoadModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139501
+metroRequire
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139011
+anonymous
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1881413
+loadModuleImplementation
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139978
+guardedLoadModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139501
+metroRequire
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139011
+anonymous
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1629608
+loadModuleImplementation
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139978
+guardedLoadModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139501
+metroRequire
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139011
+anonymous
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1621699
+loadModuleImplementation
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139978
+guardedLoadModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139501
+metroRequire
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139011
+anonymous
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1288077
+loadModuleImplementation
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139978
+guardedLoadModule
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139457
+metroRequire
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:139011
+get
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:6301276
+metroContext
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:6301251
+loadRoute
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1578161
+getLayoutNode
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1580316
+_loop3
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1578052
+getDirectoryTree
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1575820
+getRoutes
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1574804
+getRoutes
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1573799
+useStore
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1545289
+ContextNavigator
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:1613121
+renderWithHooks
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:324295
+updateFunctionComponent
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:343142
+beginWork
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:351027
+performUnitOfWork
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:369727
+workLoopSync
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:368735
+renderRootSync
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:368567
+performWorkOnRoot
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:365989
+performWorkOnRootViaSchedulerTask
+    fe5f94dc0b7d7a231b60b26a2693d72a.bundle:1:319744

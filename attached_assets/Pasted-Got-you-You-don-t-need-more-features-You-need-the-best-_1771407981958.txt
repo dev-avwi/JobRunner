@@ -1,0 +1,162 @@
+Got you. You don’t need “more features”. You need the best-of-best core that makes a tradie business feel safe switching.
+
+From what you’ve posted, JobRunner already has some rare strengths (map + dispatch views + chat/SMS + financial integrity). The “not ready” feeling usually comes from missing the boring-but-critical stuff that ServiceM8/Tradify/Fergus have dialed in over years.
+
+Here’s what the top apps typically have that your JobRunner spec doesn’t clearly guarantee yet — and how to bake it in cleanly (not copy, just match the standard).
+
+⸻
+
+The real “switching” checklist tradies care about
+
+1) Client acquisition pipeline built-in (bookings + enquiries)
+
+ServiceM8 pushes hard on 24/7 online booking that drops straight into the schedule.  ￼
+Tradify includes enquiry capture / inbox features on higher tiers.  ￼
+
+If JobRunner doesn’t have this end-to-end, you’ll feel “not ready”.
+
+Best-of-best version for JobRunner
+	•	Public booking/request form (quote request OR time-slot booking)
+	•	Auto-create Lead → Draft Job/Quote
+	•	Auto-confirmation + follow-ups (email/SMS)
+
+⸻
+
+2) Migration + switching tools
+
+This is a silent killer. Tradies won’t switch if moving data is painful.
+
+Top apps win because:
+	•	Import customers
+	•	Import price items
+	•	Bring in basic history
+
+Tradify is heavily positioned around “flowing into accounting” and ease-of-running the business.  ￼
+
+Best-of-best version
+	•	“Import from CSV” for: Clients, Catalog/Items, Jobs (optional), Suppliers
+	•	“Bring your last 50 invoices/quotes” (even if read-only)
+	•	Setup wizard that confirms: branding, payments, accounting sync
+
+⸻
+
+3) Accounting sync that feels invisible
+
+Tradify’s Xero integration messaging is two-way invoices/payments/credit notes, plus other objects depending on setup.  ￼
+Fergus leans into “job management + financial oversight” with Xero handling accounting/reporting.  ￼
+
+Even if JobRunner integrates, the “mature” feel comes from:
+	•	Correct edge cases
+	•	Clear sync status
+	•	Error recovery
+
+Best-of-best version
+	•	Sync status banner: “Last sync: 2 min ago”
+	•	Per-invoice “Synced / Failed / Needs attention”
+	•	Retry + mapping UI (tax rates, accounts, tracking categories)
+
+⸻
+
+4) Simple automation templates (not “AI”, just reliability)
+
+ServiceM8 and Tradify emphasize communications/booking flows; Tradify offers SMS + reminders as add-ons in tiers.  ￼
+ServiceM8 markets scheduling, quotes, invoices, email/SMS as essentials.  ￼
+
+Best-of-best version
+	•	Prebuilt automations (toggle on/off):
+	•	Quote follow-up after 2/5/7 days
+	•	Appointment reminder 24h prior
+	•	“On the way” message when EN_ROUTE
+	•	Payment reminder schedule (7/14/30 days)
+
+No custom builder needed at first.
+
+⸻
+
+5) Forms/checklists that are dead-simple and repeatable
+
+ServiceM8 has a mature checklist system (create/manage/copy across jobs).  ￼
+
+You have scope checklists (great). But “mature standard” is:
+	•	Multiple checklists per job
+	•	Templates by job type
+	•	Assign to workers + reminders
+	•	Completion required before “Done”
+
+Best-of-best version
+	•	Job templates = scope + checklist + photo requirements + default time blocks
+
+⸻
+
+6) A “lead → quote → job → invoice” flow that’s fast, not feature-heavy
+
+Tradify users literally praise how fast they can quote → job → invoice and then sync to accounting.  ￼
+
+You have a powerful engine, but if UI feels messy, businesses won’t switch.
+
+Best-of-best version
+	•	1 primary path per role:
+	•	Owner: Pipeline + Money + Today
+	•	Worker: Today + Timer + Navigate
+	•	Everything else goes behind “More”
+
+⸻
+
+The “Best of Best” core set (what JobRunner must nail)
+
+If you want to be switch-ready, JobRunner needs these “no excuses” modules:
+	1.	Lead / Enquiry / Online Booking (ServiceM8-style)  ￼
+	2.	Fast quote → job → invoice pipeline (Tradify-style)  ￼
+	3.	Accounting sync that never feels scary (Tradify/Fergus style)  ￼
+	4.	Automation toggles for comms + reminders (maturity standard)  ￼
+	5.	Templates + checklists + required proof (ServiceM8 maturity)  ￼
+	6.	Dispatch + map + tracking (your differentiation)
+	7.	Payments + receipts + audit integrity (your differentiation)
+
+That’s “solid”. That’s what makes switching realistic.
+
+⸻
+
+What to tell Replit (copy/paste) to make it “proper business ready”
+
+Goal: make JobRunner switch-ready for real tradie businesses (ServiceM8/Tradify/Fergus standard).
+
+Do a “Business Readiness Hardening Sprint” focused on:
+1) Core flow speed + clarity:
+   Lead/Enquiry → Quote → Job → Invoice → Payment
+   Reduce clicks, remove duplicate paths, enforce one primary flow per role.
+
+2) Switching blockers:
+   - Add imports (CSV) for Clients + Catalog/Items + Suppliers
+   - Add simple “getting started” migration wizard
+
+3) Accounting sync maturity:
+   - Add sync status UI (last sync time, per-document sync state)
+   - Add error recovery (retry, mapping for tax/accounts)
+
+4) Automation templates:
+   - Add toggles for quote follow-ups, appointment reminders, on-the-way message, payment reminders
+
+5) Templates & checklists:
+   - Job templates that include checklist + photo requirements + default duration
+   - Checklist templates that can be copied between jobs and enforced before completion
+
+6) Mobile parity:
+   - Build a parity matrix (Web/iOS/Android) for ALL core actions
+   - Block launch if any core action missing on mobile
+
+
+⸻
+
+One more truth (why it feels “not ready”)
+
+It’s rarely missing “features”. It’s usually missing polish in the boring bits:
+	•	migrations
+	•	imports
+	•	automations
+	•	sync reliability UX
+	•	simpler dashboard
+
+If you nail those, your advanced stuff becomes a massive advantage instead of “extra complexity”.
+
+If you want, paste just your current dashboard layout (sections/widgets) and I’ll tell you exactly what to delete/move so it hits the “Tradify calm / ServiceM8 fast” vibe without losing power.

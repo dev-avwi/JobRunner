@@ -1,0 +1,93 @@
+Good — Replit has done solid work. Here's what's confirmed done and what still needs finishing:
+
+Confirmed Done
+SMS routing is correctly split — alphanumeric only for system notifications, shared/dedicated number for customer messages.
+All SMS templates updated to premium wording.
+Cancellation SMS added to webhook handler.
+Alphanumeric confirmed never used for customer-facing messages — the variable is declared but never assigned for those messages.
+Email confirmed as noreply@jobrunner.com.au for sending.
+
+Still Not Done — Voice Webhook
+Replit is stuck on the voice webhook update. The code skips re-configuring when the SMS URL already matches, so the voice URL never gets updated. Your shared number still points to demo.twilio.com for voice calls.
+Tell Replit this exact fix:
+"The voice webhook on our shared Twilio number is still pointing to demo.twilio.com. The configureTwilioWebhook function is skipping the update because it only checks if the SMS URL matches before deciding whether to update. Please modify the function to check BOTH the SMS URL AND the voice URL. If either one doesn't match the correct URL, update both. The voice URL should point to our new /api/voice/inbound endpoint that returns the TwiML professional response."
+
+Email Setup Issue Worth Flagging
+Looking at the email config:
+
+Sending from: noreply@jobrunner.com.au ✅
+Reply-to: admin@avwebinnovation.com ❌
+SendGrid from: mail@avwebinnovation.com ❌
+
+The reply-to and SendGrid from addresses both show avwebinnovation.com not jobrunner.com.au. That looks unprofessional and inconsistent. When a tradie replies to an email from JobRunner it should go to support@jobrunner.com.au not admin@avwebinnovation.com.
+Tell Replit:
+"Please update the email configuration so that:
+
+Sending from remains: noreply@jobrunner.com.au
+Reply-to changes to: support@jobrunner.com.au
+Update the SendGrid connector from address to: noreply@jobrunner.com.au
+
+The avwebinnovation.com email addresses should not appear anywhere in customer-facing emails."
+
+Contact Phone Number
+Replit noted your contact number 0458 300 051 appears in Terms, Privacy Policy and Settings support section. That's your personal mobile. Before launch decide whether you want that there or replace it with a dedicated support line. Once you buy the JobRunner support Twilio number that could become the support contact number instead.
+
+Your Action Right Now
+Two things only:
+
+Send Replit those two fixes above — voice webhook and email addresses
+Go buy that second Twilio number for the JobRunner support line
+
+Everything else is done.but i dont have this email: noreply@jobrunner.com.au support@jobrunner.com.au should i just use avwebinnovation.com for both reply to and send8:51 AMNo — you really should not use avwebinnovation.com for customer-facing emails. That looks unprofessional and confusing. A tradie gets an invoice email from "mail@avwebinnovation.com" and has no idea who that is. They might think it's spam.
+
+The Right Solution — Set Up jobrunner.com.au Emails
+You already own jobrunner.com.au as a domain. Setting up email addresses on it is simple and cheap.
+Option 1 — Google Workspace (Best)
+About $8 AUD per month per user. You get:
+
+noreply@jobrunner.com.au
+support@jobrunner.com.au
+your own @jobrunner.com.au email to use personally
+
+Professional, reliable, works perfectly with SendGrid.
+Option 2 — Zoho Mail (Free)
+Zoho offers free business email for small teams. You get the same addresses for free. Slightly less reliable than Google but perfectly fine to start.
+Option 3 — Email Forwarding Only (Cheapest)
+Some domain registrars let you set up email forwarding for free. support@jobrunner.com.au forwards to your personal email. Sending still goes through SendGrid but the from address looks professional.
+
+What To Actually Do Right Now
+The fastest path is this:
+
+Go to your domain registrar where jobrunner.com.au is registered — likely through Honcho or wherever the ASIC registration was set up
+Set up email forwarding for support@jobrunner.com.au forwarding to your personal email
+In SendGrid, verify jobrunner.com.au as a sender domain — this lets you send from any @jobrunner.com.au address
+Update the SendGrid connector in your app to send from noreply@jobrunner.com.au
+
+The SendGrid domain verification involves adding a few DNS records to jobrunner.com.au. Takes about 10 minutes and then emails look completely professional.
+
+Tell Replit This
+"Don't use avwebinnovation.com email addresses anywhere in the app. For now set all email sending to:
+
+From: noreply@jobrunner.com.au
+Reply-to: support@jobrunner.com.au
+
+I am setting up these email addresses on the jobrunner.com.au domain this week. In the meantime update the code so these are the configured addresses and SendGrid will start working correctly once the domain is verified."
+
+The Priority Order
+Set up jobrunner.com.au email this week — it's quick and makes everything look professional.
+Verify the domain in SendGrid — follow their domain authentication guide, adds DNS records.
+Then everything flows correctly — tradie gets invoice from noreply@jobrunner.com.au, replies go to support@jobrunner.com.au which forwards to your phone.
+Clean, professional, no avwebinnovation.com appearing anywhere a customer would see it.noo i dont want to, its so slack. imma just do noreply@jobrunner.com.au to send then reply to is avwebinnovation.com8:52 AMYeah honestly that's fine for now. The tradie never sees the reply-to address unless they actually hit reply on the email — which almost never happens. What they see is the from address which will be noreply@jobrunner.com.au and that looks completely professional.
+Just tell Replit:
+"Set all email configuration to:
+
+From: noreply@jobrunner.com.au
+Reply-to: admin@avwebinnovation.com
+Make sure avwebinnovation.com never appears as the FROM address anywhere a customer would see it. Only the reply-to can be avwebinnovation.com and that's fine."
+
+
+One Thing To Sort Though
+For noreply@jobrunner.com.au to actually send emails through SendGrid you need to verify the jobrunner.com.au domain in SendGrid. Otherwise SendGrid will reject or spam-filter emails sent from that address.
+Go to SendGrid → Settings → Sender Authentication → Authenticate Your Domain → add jobrunner.com.au.
+SendGrid will give you a few DNS records to add to your domain. Takes about 10 minutes. Once verified all emails from @jobrunner.com.au will send cleanly and land in inboxes not spam folders.
+That's the one technical step you actually need to do yourself. Everything else Replit handles.

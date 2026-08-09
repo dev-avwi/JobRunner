@@ -1,0 +1,69 @@
+iOS App
+1.0 Prepare for Submission
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+Pricing and Availability
+Save
+Price Schedule
+All Prices and Currencies
+
+Set up a starting price. The price determines the App Store price and your proceeds. To sell your app, you must have a Paid Application agreement. Learn More
+
+Add Pricing
+App Availability
+Determine where your app will be available to purchase or download. You can also make your app available for pre-order in specific countries or regions. Learn More
+
+Set Up Availability
+Tax CategoryEdit
+Category:App Store software
+iPhone and iPad Apps on Apple Silicon Macs
+Starting with macOS Big Sur, compatible iPhone and iPad apps can be made available on Apple silicon Macs. Apps will run natively and use the same frameworks, resources, and runtime environment as they do on iOS and iPadOS. Learn More
+
+Apple Silicon Mac Availability
+Select the checkbox below if you want this app to be available on the Mac App Store. Apple will automatically pick the minimum macOS version required for compatibility, but you can choose a different one. Learn More
+
+
+Make this app available
+
+Automatic (macOS 11.0)
+iPhone and iPad Apps on Apple Vision Pro
+Compatible iPhone and iPad apps can be made available on Apple Vision Pro. Apps will run natively and use the same frameworks, resources, and runtime environment as they do on iOS. Learn More
+
+Apple Vision Pro Availability
+
+Make this app available on Apple Vision Pro
+Compatibility
+Version 1.0 is not compatible and not available on the App Store on Apple Vision Pro
+App Distribution Methods
+Select how you want your app distributed to users. Once your app is approved, the distribution method cannot be changed. Learn More
+
+
+Public — Discoverable by anyone on the App Store (default)
+?
+
+Offer a reduced price on the Apple School Manager for volume purchases
+?
+
+Private — Available as a custom app on Apple Business Manager or Apple School Manager
+?
+Remove App From Sale

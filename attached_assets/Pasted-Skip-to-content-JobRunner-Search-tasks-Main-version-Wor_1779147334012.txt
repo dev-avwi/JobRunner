@@ -1,0 +1,702 @@
+Skip to content
+
+
+JobRunner
+Search tasks…
+
+
+Main version
+Working...
+
+New task
+
+Filters
+
+Plans
+
+Tasks
+
+ME
+Created by me
+
+
+Close task board
+Library
+
+File tree
+Search
+
+New
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+JobRunner — Complete Application Deep Brief
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+Feature Graphic (1024x500) - With your logo and branding
+Feature Graphic (1024x500) - With your logo and branding
+Image
+
+
+Overview
+
+Logs
+
+Analytics
+
+Resources
+
+Domains
+
+Manage
+
+Republish
+
+Adjust settings
+
+Run security scan
+Production
+Status
+Ayden published 6 days ago
+
+Uptime
+100.0% uptime
+
+1 day ago
+Now
+Visibility
+Public
+SEO score
+
+69 / 100
+Needs work
+
+Optimize SEO with Agent
+Domain
+https://TradieTrack.replit.app
+
+
+https://jobrunner.com.au
+
+
+https://jobrunner.org
+
+
+
+Buy a new domain
+Beta
+Geography
+North America
+Type
+Autoscale
+(4 vCPU / 8 GiB RAM / 3 Max)
+See all usage
+Database
+Production database connected
+e17332b8
+AV
+admin3404
+Ayden
+published 6 days ago
+e12adf16
+AV
+admin3404
+Ayden
+published 6 days ago
+1b09a45f
+AV
+admin3404
+Ayden
+published 6 days ago
+9e03f376
+AV
+admin3404
+Ayden
+published 6 days ago
+ad847c5c
+AV
+admin3404
+Ayden
+published 6 days ago
+8d50d56b
+AV
+admin3404
+Ayden
+published 6 days ago
+f173fab9
+AV
+admin3404
+Ayden
+published 8 days ago
+f0a9f667
+AV
+admin3404
+Ayden
+published 9 days ago
+8818b7d6
+AV
+admin3404
+Ayden
+published 9 days ago
+863ebdf4
+AV
+admin3404
+Ayden
+published 9 days ago
+f07bee40
+AV
+admin3404
+Ayden
+published 9 days ago
+943c8d72
+AV
+admin3404
+Ayden
+published 9 days ago
+1cf4acca
+AV
+admin3404
+Ayden
+failed to publish 9 days ago
+bc87cecc
+AV
+admin3404
+Ayden
+published 9 days ago
+83e47a43
+AV
+admin3404
+Ayden
+published 9 days ago
+12673acb
+AV
+admin3404
+Ayden
+published 9 days ago
+e26d22aa
+AV
+admin3404
+Ayden
+published 9 days ago
+3956cb22
+AV
+admin3404
+Ayden
+published 9 days ago
+0c67f95b
+AV
+admin3404
+Ayden
+failed to publish 9 days ago
+
+Improve sheet sizing and drag functionality for better user experience
+
+
+
+3 messages & 14 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 3 minutes
+
+Attached Image
+
+Attached Image
+Yes good job your using the one I want but see there's white space under the thing, it needs to be shorter cause of excess space see
+
+3 days ago
+
+4 messages & 21 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 4 minutes
+no i dont want the custom sheet i want the ios native one or whatever you had before, cause it used to work well and i know you cna figure it out, you just gotta think back to basics
+
+3 days ago
+
+4 messages & 24 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 4 minutes
+
+Attached Image
+Surely there's a way it can be shorter I guess or adaptive right cause it used to be shorter I remember
+
+3 days ago
+
+1 message & 9 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 1 minute
+nooo i want the ios native sheet cause it used to work i know it did, just think of it, and spend time figuring out how it can be used. cause i know it works cause it used to work before when you first built it
+
+3 days ago
+
+3 messages & 19 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 3 minutes
+nah its gotta be the ios native version, i have to. but tell me why native ios doenst allow it to be different length screens/modals cause it used to work. why isnt it now
+
+3 days ago
+
+1 message & 1 action
+i thought we already had true native sheets and stuff, is that what the original had. cause the custom modal, isnt actually correct i feel
+
+3 days ago
+
+1 message & 7 actions
+
+Worked for 32 seconds
+yes please lets work it
+
+3 days ago
+
+4 messages & 29 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 6 minutes
+can i do eas update --auto cause thats waht i have been doing
+
+3 days ago
+Yes, eas update --auto works fine — it auto-detects the branch from your current git branch and uses the commit message. Run it from the mobile/ directory:
+
+cd mobile && EXPO_PUBLIC_API_URL=https://jobrunner.com.au eas update --auto
+
+The EXPO_PUBLIC_API_URL part matters — without it the bundle defaults to a dev URL and your app talks to the wrong backend. The eas-update.sh script just wraps that with the env var pre-set, but --auto does the same thing functionally.
+
+
+Pasted--BottomSheetModalInternalContext-cannot-be-null-This-er_1778925465906.txt
+3 days ago
+
+2 messages & 3 actions
+
+Checkpoint made
+3 days ago
+
+Worked for 1 minute
+now its gone back to not working, the button reacts but modal wont open. so stick with ios antive and make sure its just flexible to just the amoutn the section needs you know
+
+3 days ago
+
+Planning native pageSheet integration (9 seconds)
+User wants back to iOS native. Let me check the RN version and see if newer detent props (including fitToContents) are available:
+
+
+5 actions
+I confirmed RN 0.81's <Modal> doesn't expose iOS detent APIs at all (no sheetAllowedDetents, no fitToContents, no sheetCornerRadius). The native pageSheet physically cannot do adaptive height with your current build — that's not me being lazy, it's a React Native limitation.
+
+So the only path that actually delivers what you want (native feel + flexible height) IS gorhom. Let me fix why it didn't open instead of going backwards.
+
+The likely cause: with enableDynamicSizing and no snapPoints fallback, if gorhom can't measure your content height (which can happen with scrollable={false} + custom layouts), the sheet opens at 0 height and looks invisible. Fix: always pass a fallback snap point as a max cap, and gorhom will use the measured content height when it fits, otherwise fall back to the snap.
+
+
+4 actions
+Pushed the fix. Now AppBottomSheet:
+
+Always enables dynamic sizing (content-hugging)
+Always has at least one snapPoint as a fallback ('90%' default if call-site doesn't provide one)
+This way gorhom prepends a content-measured snap point at index 0, but if measurement ever fails or returns 0, the '90%' snap acts as a guaranteed-visible max cap. The sheet will always open, and will hug short content while still being capable of going taller for long content.
+
+Push OTA again:
+
+cd mobile && EXPO_PUBLIC_API_URL=https://jobrunner.com.au eas update --auto
+
+Test Schedule Job and Assign Workers — they should slide up to fit just their content this time.
+
+
+4 messages & 16 actions
+
+Worked for 34 minutes
+
+Attached Image
+will any of this affect what we have in here
+
+1 day ago
+
+1 message & 1 action
+
+Attached Image
+so i want to like start figuring out and refining my app cause the problems we wanted to fix which was the sliding panel, its not counting for touch over the whole thing or doesnt feel premium, like i try to slide down the top part (not the x button) yet it doesnt work, it only works on the x button slide down still for some reasonThis is a JavaScript/React Native fix — Replit's job. Here's exactly what to paste in Replit:
+
+Bug: Bottom sheet drag-to-dismiss only works on the X button, not the full header area
+
+The sliding panel can only be dragged down to dismiss by touching/dragging the X button specifically. Dragging anywhere else on the header (the top bar area of the panel) doesn't register the gesture at all.
+
+Expected behaviour: The entire top handle/header area of the bottom sheet should be draggable. The user should be able to place their finger anywhere across the top strip and drag down to dismiss — not just on the X button. This is standard iOS behaviour (like Apple's own sheets).
+
+Likely cause: The PanResponder or gesture handler is probably attached only to the X button component rather than the full header container. The touchable/gesture area needs to wrap the entire header row, and the X button should just be a visual element inside it — not the gesture trigger itself.
+
+Fix needed: Move the drag gesture to the parent header container so the whole top area is the drag target. The X button can remain as a tap-to-close fallback but shouldn't be the only drag surface.
+
+That's specific enough for Replit to find the exact component and fix it. Once they push the fix, just pull in GitHub Desktop and test with npx expo start → press i.i also still feel that the simpleness of the hugging the content, the slide panels are not quite like premium enough in which im saying is that its not adapted to the right ehight for the certain content and like when i slide it up, it shows part of the app underneath, this look weirdGood screenshot — I can see both problems clearly. Here's what to paste in Replit:
+
+Bug: Bottom sheets have two visual polish issues
+
+Problem 1 — Sheet doesn't hug its content height
+The bottom sheet (e.g. "Assign Workers") has too much or too little vertical space — it's not sizing itself to fit the content naturally. It should expand to show the list comfortably and stop there, rather than using a fixed or arbitrary height. On shorter content sheets it leaves dead whitespace; on taller ones it cuts content off awkwardly.
+
+Problem 2 — App content bleeds through behind the sheet when dragging
+When the sheet is dragged upward, you can see the underlying screen content appearing behind/underneath the sheet. This looks broken. The backdrop overlay behind the sheet should be fully opaque/dimmed at all times while the sheet is open — it should never be see-through or show the app behind it during a drag gesture.
+
+Expected behaviour (standard iOS feel):
+
+Sheet height fits its content, with a comfortable bottom safe area padding
+The backdrop stays consistently dimmed the entire time the sheet is visible — no bleed-through during drag
+Dragging up should either snap back or expand the sheet, never reveal the screen behind it
+Where it's visible: Assign Workers sheet, and likely all bottom sheets throughout the app — appears to be a global sheet component issue.
+
+That covers both problems precisely. Once Replit pushes the fix, pull and test with npx expo start → i.
+
+
+Show more
+1 day ago
+
+10 messages & 18 actions
+
+Checkpoint made
+1 day ago
+
+Worked for 9 minutes
+now i want you to pay attention and brutally be honest and think simply cause what you did fixed the slide up on panel, it fixed it by making sure you cant slide up at its max, but the thing is the panel is not consistenly/premiumly at the right height for the content, remember its a sliding panel it was never mean tto take up the whole screen. you built it before in one go, how come you cant think abck to basics now, also the drag on the panel only works for x button still, i cant hold the header and drag down still
+
+1 day ago
+
+7 messages & 32 actions
+
+Checkpoint made
+1 day ago
+
+Worked for 18 minutes
+it works anywhere except the header the fck, also the consistency so like i triec doing create swms and it was alright but i selected on a swms template to fill out but i cant see the panel of the template like dang its below th escreen kind of cause i can see tiny bit of the panel. this is a seriosu problem throughout the whole app, why cnat we revert to absics and think how it can be consistent throughout well
+
+1 day ago
+
+9 messages & 51 actions
+
+Checkpoint made
+1 day ago
+
+Worked for 31 minutes
+lets work on the android version anything you want to critique and check for padding and component and card builds and issues, cause i feel android and ios is like the slider panels still arent right and yeah just stuff isnt good enough yet
+
+12 minutes ago
+
+Planning polish audit and sub-tasks
+Good call — let me do a proper Android audit instead of guessing. I'll run a few investigators in parallel to find the real problems, then I'll prioritise the fixes.
+
+
+4 actions
+Good audit. The most impactful Android fixes are concentrated in a few files — let me make surgical changes that you'll actually feel, then push.
+
+
+17 actions
+Those already have elevation — audit was slightly off. The real wins are all in AppBottomSheet (already edited). Pushing OTA:
+
+
+Running for.
+
+Scroll to latest
+
+Make, test, iterate…
+
+
+
+Power
+
+
+
+Drafts
+45
+Suggested
+
+Show less
+
+Edit
+Undo button for status changes and duplicates in the quotes/invoices list
+Planned by Agent - #127 ·
+1w
+
+
+Start
+
+View plan
+Show clearer messages when a status change or duplicate is blocked
+Planned by Agent - #128 ·
+1w
+
+
+Start
+
+View plan
+Replace remaining loading spinners with shared skeletons
+Planned by Agent - #126 ·
+1w
+
+
+Start
+
+View plan
+Add undo toasts to Expenses, Leads, and Templates
+Planned by Agent - #124 ·
+1w
+
+
+Start
+
+View plan
+Verify undo and skeleton flows with end-to-end browser tests
+Planned by Agent - #125 ·
+1w
+
+
+Start
+
+View plan
+Add a banner reminder when sample data has been sitting unused for a week
+Planned by Agent - #122 ·
+1w
+
+
+Start
+
+View plan
+Cover the sample data flow with an end-to-end test
+Planned by Agent - #123 ·
+1w
+
+
+Start
+
+View plan
+Let staff drag-reorder their next job from the top of the dashboard
+Planned by Agent - #119 ·
+1w
+
+
+Start
+
+View plan
+Show the drive-time strip on the mobile app's Today screen too
+Planned by Agent - #121 ·
+1w
+
+
+Start
+
+View plan
+Make Today's Schedule reorder work from a phone with touch dragging
+Planned by Agent - #120 ·
+1w
+
+
+Start
+
+View plan
+Open Xero links straight to the right company instead of the org picker
+Planned by Agent - #118 ·
+1w
+
+
+Start
+
+View plan
+Remember the Xero filter chips you used last time
+Planned by Agent - #117 ·
+1w
+
+
+Start
+
+View plan
+Catch broken pages before they reach users
+Planned by Agent - #109 ·
+1w
+
+
+Start
+
+View plan
+Block bad database changes before they merge, not after deploy
+Planned by Agent - #110 ·
+1w
+
+
+Start
+
+View plan
+Verify magic-link emails open the app on a real Android device after deploy
+Planned by Agent - #106 ·
+1w
+
+
+Start
+
+View plan
+Run the production iOS and Android builds end-to-end on a real device
+Planned by Agent - #102 ·
+1w
+
+
+Start
+
+View plan
+Burn down the catalogued mobile TypeScript drift (305 → 0)
+Planned by Agent - #100 ·
+1w
+
+
+Start
+
+View plan
+Wire mobile typecheck into CI so type errors can't sneak back in
+Planned by Agent - #99 ·
+1w
+
+
+Start
+
+View plan
+Show response time on each individual AI receptionist call
+Planned by Agent - #98 ·
+1w
+
+
+Start
+
+View plan
+Show the same void-vs-credit-note flow for QuickBooks invoices
+Planned by Agent - #97 ·
+1w
+
+
+Start
+
+View plan
+Active
+0
+No tasks
+Ready
+0
+No tasks
+Done
+103
+Premium polish pass across every Android screen
+Done - #137 ·
+2d
+
+Fix all mobile bottom-sheet modals app-wide
+Done - #134 ·
+2d
+
+Signup, role & verification email fixes
+Done - #131 ·
+2d
+
+Revert mobile bottom-sheet migration to native Modals
+Done - #130 ·
+3d
+
+Fix iOS dev-build polish: fonts, slide-up modals, padding
+Done - #129 ·
+1w
+
+Inline status, duplicate & convert preview (quotes/invoices)
+Done - #113 ·
+1w
+
+Today's Schedule: drag, weather, smart empty state
+Done - #114 ·
+1w
+
+Undo toasts + skeleton audit
+Done - #112 ·
+1w
+
+First-run sample data toggle
+Done - #115 ·
+1w
+
+Chat Hub quick replies
+Done - #116 ·
+1w
+
+Xero Sync Manager polish
+Done - #111 ·
+1w
+
+End-to-end stability audit + landing page polish + guard rails to stop production regressions
+Done - #108 ·
+1w
+
+Fix mobile typography, demo login, and onboarding skip on the new iOS build
+Done - #107 ·
+1w
+
+Add Play Store upload-key fingerprint so Play-signed builds also auto-open links
+Done - #105 ·
+1w
+
+Add the Android signing fingerprint so app links open the app on Android
+Done - #104 ·
+1w
+
+Make app links from emails and SMS open the app directly without a browser tap
+Done - #103 ·
+1w
+
+Walk every mobile screen and confirm iOS + Android builds are ready to ship
+Done - #101 ·
+1w
+
+what do you think we could work on you reckon whats seeming useful in this
+
+
+JobRunner - Replit

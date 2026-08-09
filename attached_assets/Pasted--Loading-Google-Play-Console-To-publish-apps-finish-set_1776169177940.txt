@@ -1,0 +1,130 @@
+
+Loading Google Play Console
+To publish apps, finish setting up your developer account
+Google Play Console logo
+
+JobRunner
+Dashboard
+Statistics
+Publishing overview
+Test and release
+Monitor and improve
+Grow users
+Store presence
+Store listings
+Store listing experiments
+Store settings
+Store performance
+Translations
+Deep links
+Monetise with Play
+Default store listing
+
+Default – English (United Kingdom) – en-GB
+* – Required fields. Enter all fields in English (United Kingdom) – en-GB
+
+Listing assets
+Check the Metadata policy and Help Centre guidance to avoid common issues with your Store Listing. Review all programme policies before submitting your app.
+
+If you're eligible to provide advance notice to the app review team, contact us before publishing your Store Listing.
+
+App name *
+JobRunner
+This is how your app will appear on Google Play 
+
+9 / 30
+Text is 9 characters out of 30
+Short description *
+Job management, quotes, invoices & team tracking for Australian tradespeople
+A short description for your app. Users can expand to view your full description. 
+
+76 / 80
+Text is 76 characters out of 80
+Full description *
+JobRunner is the all-in-one job management app built for Australian tradespeople and field service businesses.
+
+Manage your entire workflow from your phone — create jobs, send professional quotes and invoices, track your team in real-time, and communicate with clients via SMS, all from one app.
+
+KEY FEATURES
+
+Job Management
+Create and manage jobs with full details, site photos, notes, and status tracking. Assign jobs to team members and track progress from start to finish.
+
+Quotes & Invoices
+Generate professional quotes and tax invoices on the spot. Send them directly to clients via SMS or email. Accept payments online through secure Stripe integration.
+
+Team Management
+Add team members, assign jobs, and see everyone's location on a live dispatch map. Built-in team chat keeps your crew connected throughout the day.
+
+GPS Tracking & Dispatch
+Real-time location tracking for your team. See who's closest to a job site and dispatch efficiently. Route planning helps reduce travel time.
+
+Client Communication
+Two-way SMS messaging lets you stay in touch with clients directly from the app. Send job updates, quotes, and invoices without leaving JobRunner.
+
+AI Receptionist
+Never miss a call again. Our AI-powered phone receptionist answers calls when you can't, takes messages, and keeps your business running even after hours.
+
+Client Portal
+Give your clients a branded portal where they can view quotes, approve jobs, and pay invoices online.
+
+BUILT FOR AUSTRALIAN TRADES
+JobRunner is designed specifically for Australian tradespeople — electricians, plumbers, builders, painters, landscapers, cleaners, and more. GST-compliant invoicing, Australian phone number support, and local business features built in.
+
+ABOUT
+JobRunner is developed by LinkUp2Care Pty Ltd (ABN 34 692 409 448), an Australian technology company focused on building tools that help trade businesses grow.
+
+Download JobRunner today and take control of your trade business.
+ 
+
+1952 / 4000
+Text is 1952 characters out of 4000
+Graphics
+Manage your app icon, screenshots and videos to promote your app on Google Play. Review the content guidelines before uploading new graphics. If you add translations for your Store Listing without localised graphics, we will use the graphics from your default language.
+
+App icon *
+Your app icon must be a PNG or JPEG, up to 1 MB, 512 px by 512 px, and meet our design specifications and metadata policy
+
+Feature graphic *
+Your feature graphic must be a PNG or JPEG, up to 15 MB and 1,024 px by 500 px
+
+Video
+https://www.youtube.com/watch?v=
+Add a video by entering a YouTube URL. This video must be public or unlisted, ads must be turned off and it must not be age restricted. 
+
+Phone
+Phone screenshots *
+Upload 2–8 phone screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+To be eligible for promotion, include at least 4 screenshots at a minimum of 1080 px on each side.
+Tablet
+7-inch tablet screenshots *
+Upload up to eight 7-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+10-inch tablet screenshots *
+Upload up to eight 10-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Chromebook
+Chromebook screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Android XR
+Android XR screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 15 MB each, 16:9 or 9:16 aspect ratio, with each side between 720 px and 7,680 px
+
+Spatial XR video
+https://www.youtube.com/watch?v=
+Add a spatial XR video for an immersive preview of your features by entering a YouTube URL. This video must be in 360°, 180° or 3D, be public or unlisted, ads must be turned off and it must not be age restricted.
+
+Non-spatial XR video
+https://www.youtube.com/watch?v=
+Add a non-spatial XR video by entering a YouTube URL. This video must be public or unlisted, ads must be turned off and it must not be age restricted.
+
+If you save, changes will be saved in Publishing overview, ready for you to send for review.
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

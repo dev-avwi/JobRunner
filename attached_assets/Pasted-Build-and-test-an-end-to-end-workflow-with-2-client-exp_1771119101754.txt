@@ -1,0 +1,110 @@
+Build and test an end-to-end workflow with 2 client experiences:
+
+(1) Job Tracking Link (no login): Uber-style live travel map + ETA + updates (read-only).
+(2) Client Portal (verified): Client can view all their jobs/quotes/invoices and pay invoices after OTP verification.
+
+SECURITY REQUIREMENT:
+- Tracking Link is token-based, scoped to 1 job + 1 assignment, read-only, no payment actions.
+- Client Portal requires OTP verification (SMS or email code) and then uses a secure session.
+
+DATA MODELS REQUIRED (minimum):
+- Client {id, name, phone, email}
+- Job {id, company_id, client_id, address, lat, lng, status}
+- Quote {id, job_id, amount, pdf_url, status}
+- Invoice {id, job_id, amount_due, pdf_url, status, payment_link_url}
+- JobAssignment {id, job_id, worker_user_id, status, rate_override, show_worker_phone_to_client}
+- PortalToken {token, job_id, assignment_id, expires_at, revoked_at}
+- ClientSession {client_id, session_token, expires_at}
+- OTPChallenge {client_id, channel, code_hash, expires_at, attempts, used_at}
+
+OTP FLOW REQUIREMENTS (Client Portal):
+1) Client clicks “Open Client Portal” from Tracking Link page.
+2) They enter phone/email (pre-filled if possible from job data).
+3) Send OTP via SMS/email (6-digit).
+4) Client enters OTP.
+5) If correct, create ClientSession token (httpOnly cookie or secure token) and redirect into Client Portal dashboard.
+6) Client Portal dashboard shows:
+   - Active jobs
+   - Past jobs
+   - Quotes
+   - Invoices
+   - Payment buttons for unpaid invoices
+7) Client can open/download quote/invoice PDFs.
+8) Client can click “Pay Now” -> redirect to Stripe hosted payment link OR in-app checkout.
+9) After payment webhook confirms success, mark invoice PAID and update portal automatically.
+
+ANTI-FRAUD / SAFETY:
+- OTP expires in 10 minutes
+- Max 5 attempts
+- Rate limit OTP sends (e.g., 3 per hour)
+- Client Portal only shows jobs/invoices for that client_id
+- Tracking Link tokens are long, random, and expire 7 days after job completion
+- Tracking Link cannot expose payment actions or sensitive account settings
+
+UBER-STYLE TRACKING LINK REQUIREMENTS:
+- Tracking page route: /p/{token}
+- Shows business name/logo, owner/dispatch phone, job status timeline.
+- Live map + ETA ONLY while assignment status = EN_ROUTE.
+- Live location updates every 30–60 seconds; show “last updated” and accuracy.
+- Stop tracking when ARRIVED confirmed or timeout (e.g. 120 mins).
+- Before/after photos and documents can be viewed on tracking page (read-only).
+- Include a clear button: “Open Client Portal (view invoices & pay)” -> triggers OTP flow.
+
+WORKER “ON MY WAY” SMS WORKFLOW (MUST USE ASSIGNMENT CONTEXT):
+- Worker taps On My Way on an assigned job.
+- Backend validates worker owns that assignment_id.
+- Generate/refresh PortalToken for that assignment.
+- Compute ETA.
+- Send client SMS:
+  "JobRunner — {BusinessName}: {WorkerName} is on the way. ETA {ETA}. Track live: {TrackingLink}. Need help? Call {OwnerPhone}. To view invoices & pay, open portal from the link."
+
+EXAMPLE WORKFLOW (IMPLEMENT AS AN INTEGRATION TEST SCENARIO):
+Create seed data:
+- Company: "JobRunner Plumbing"
+- Owner: "Hans" phone 04xx
+- Manager: "Nicole" phone 04xx
+- Worker: "Ayden" phone 04xx (rate $85/hr)
+- Subcontractor: "Tom (Subby)" phone 04xx (rate $95/hr, default hide phone to client)
+- Client: "Sarah Jones" phone 04xx email sarah@example.com
+
+Scenario:
+1) Manager creates Job #1001 for Sarah at 12 Coral St, Cairns, scheduled 2–4pm.
+2) Manager creates Quote Q-1001 ($420) and attaches PDF.
+3) Manager assigns Worker Ayden to job (assignment A1).
+4) System sends booking confirmation email with job summary and (optional) a button to open Client Portal (OTP required).
+5) On job day, Ayden taps “On My Way”.
+   - System creates Tracking Link token T1 for A1 and sends SMS to Sarah with ETA + link.
+6) Sarah clicks tracking link:
+   - Sees live map of Ayden + ETA + business contact + job status.
+7) Sarah clicks “Open Client Portal” on tracking page:
+   - OTP sent to Sarah via SMS.
+   - Sarah enters code successfully.
+   - Sarah sees dashboard:
+     - Job #1001
+     - Quote Q-1001
+     - No invoice yet
+8) Ayden arrives, clocks in/out, uploads before/after photos, adds materials.
+9) Manager generates Invoice I-1001 automatically:
+   - Labour line: Ayden 2.0 hrs x $85/hr = $170
+   - Materials lines (from job)
+   - Total due displayed
+   - Invoice PDF generated + payment link created
+10) Sarah refreshes Client Portal:
+   - sees Invoice I-1001 with “Pay Now”
+   - clicks pay -> Stripe -> success
+11) Webhook marks invoice as PAID.
+12) Client Portal shows PAID receipt + downloadable invoice.
+
+SUBCONTRACTOR VARIANT TEST:
+13) Manager reassigns Job #1002 to subcontractor Tom (assignment A2).
+14) Tom must accept assignment before On My Way.
+15) Tom taps On My Way:
+   - Tracking link works
+   - Worker phone hidden on portal (only dispatch phone shows)
+   - Everything else works.
+
+DELIVERABLES:
+- Implement both experiences (tracking link + verified client portal)
+- Implement OTP verification and session handling
+- Build the example scenario as a manual QA checklist or automated integration test
+- Ensure every step produces correct UI + logs and never leaks data between clients

@@ -1,0 +1,205 @@
+OS Bundled 375ms node_modules/expo-router/entry.js (1 module)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/api.ts -> src/lib/offline-storage.ts -> src/lib/api.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [API] base url = https://jobrunner.com.au
+ LOG  [StripeTerminal] SDK loaded successfully
+ LOG  [useStripeTerminal] SDK hook loaded successfully
+ WARN  [global-font] Could not apply Inter font mapping to Text — RN internals changed. Typography parity may regress.
+ WARN  [global-font] Could not apply Inter font mapping to TextInput — RN internals changed. Typography parity may regress.
+ WARN  [expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  🍎 Apple Sign In availability check (register): true
+ WARN  expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [OfflineStorage] Background sync registered
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+iOS Bundled 47ms src/lib/location-tracking.ts (1 module)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] Error 401: {"error": "Authentication required"}
+ LOG  🍎 Apple Sign In availability check: true
+ LOG  [App] App came to foreground - warming Terminal...
+iOS Bundled 42ms src/lib/api.ts (1 module)
+ LOG  [API] GET /api/auth/me
+ LOG  [Notifications] Push notifications require a physical device
+ LOG  [OfflineStorage] Sync already in progress
+ LOG  [Auth] Already authenticated, skipping checkAuth
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/notifications/missed
+ LOG  [API] GET /api/notifications/unified
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [IAP] Connection initialized: true
+ LOG  [GlobalIAP] Global IAP listener active
+ LOG  🍎 Apple Sign In availability check (register): true
+ LOG  🍎 Apple Sign In availability check: true
+ LOG  [IAP] Connection initialized: true
+ LOG  [GlobalIAP] Global IAP listener active
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/custom-forms
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [OfflineStorage] Background sync registered
+ LOG  [Location] Initialized successfully (foreground=true, background=false)
+ LOG  [App] Warming up Stripe Terminal for faster checkout...
+ LOG  [API] GET /api/jobs?status=pending,scheduled,in_progress
+ LOG  [API] GET /api/stripe/terminal-location
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_quotes"]}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Stripe Connect account not set up"}
+ LOG  [Stripe terminal]: initialize tokenProvider mode: StandardConnectionTokenProvider
+ LOG  [API] POST /api/stripe/terminal-connection-token
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_quotes"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  [OfflineStorage] Cached 1 jobs
+ LOG  [OfflineStorage] Cached 1 clients
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [API] Error 400: {"error": "Stripe Connect account not set up"}
+ LOG  [Stripe terminal]: CONNECTION_TOKEN_PROVIDER_ERROR Couldn't fetch connection token. Please check your tokenProvider method
+ ERROR  [StripeTerminal] Connection token fetch failed: [Error: Failed to fetch connection token] 
+
+Code: StripeTerminalProvider.tsx
+  78 |       
+  79 |       if (response.error || !response.data?.secret) {
+> 80 |         throw new Error('Failed to fetch connection token');
+     |                        ^
+  81 |       }
+  82 |       
+  83 |       return response.data.secret;
+Call Stack
+  fetchTokenProvider (src/providers/StripeTerminalProvider.tsx:80:24)
+ ERROR  Couldn't fetch connection token. Please check your tokenProvider method 
+
+Call Stack
+  construct (<native>)
+  apply (<native>)
+  _construct (node_modules/@babel/runtime/helpers/construct.js:4:65)
+  Wrapper (node_modules/@babel/runtime/helpers/wrapNativeSuper.js:15:23)
+  construct (<native>)
+  _callSuper (node_modules/@babel/runtime/helpers/callSuper.js:5:108)
+  NamelessError (node_modules/@expo/metro-runtime/src/metroServerLogs.native.ts:102:20)
+  captureCurrentStack (node_modules/@expo/metro-runtime/src/metroServerLogs.native.ts:106:27)
+  HMRClient.log (node_modules/@expo/metro-runtime/src/metroServerLogs.native.ts:39:79)
+  console.level (node_modules/react-native/Libraries/Core/setUpDeveloperTools.js:41:24)
+  initializeWithTokenProvider (node_modules/@stripe/stripe-terminal-react-native/src/components/StripeTerminalProvider.tsx:86:18)
+  throw (<native>)
+  asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+  _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:27)
+  tryCallOne (address at (InternalBytecode.js:1:1180)
+  anonymous (address at (InternalBytecode.js:1:1874)
+ ERROR  [Error: Failed to fetch connection token] 
+
+Code: StripeTerminalProvider.tsx
+  78 |       
+  79 |       if (response.error || !response.data?.secret) {
+> 80 |         throw new Error('Failed to fetch connection token');
+     |                        ^
+  81 |       }
+  82 |       
+  83 |       return response.data.secret;
+Call Stack
+  fetchTokenProvider (src/providers/StripeTerminalProvider.tsx:80:24)
+ ERROR  [useStripeTerminal] Initialize error: [Error: Couldn't fetch connection token. Please check your tokenProvider method] 
+
+Code: useServices.ts
+  135 |             return false;
+  136 |           }
+> 137 |           throw new Error(initError.message || 'SDK initialization failed');
+      |                          ^
+  138 |         }
+  139 |         setIsInitialized(true);
+  140 |         setStatus('ready');
+Call Stack
+  initialize (src/hooks/useServices.ts:137:26)
+ LOG  [Location] Subcontractor mode: false
+ LOG  [API] GET /api/team/members
+ LOG  [OfflineStorage] Cached 1 jobs
+ LOG  [OfflineStorage] Cached 1 clients
+ WARN  [OfflineStorage] Full sync skipped (offline DB unavailable, using server data): [TypeError: iterator method is not callable]
+ LOG  [OfflineStorage] Cached auth data for offline access
+ LOG  [API] GET /api/usage
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/auth/my-businesses
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/dashboard/daily-summary
+ LOG  [API] GET /api/worker/state
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/jobs/my-jobs
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/jobs/my-jobs
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/activity/recent/5
+ LOG  [API] GET /api/jobs/my-jobs
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] GET /api/weather?lat=37.785834&lon=-122.406417
+ LOG  [API] GET /api/weather?lat=37.785834&lon=-122.406417
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_quotes"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_quotes"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_quotes"]}
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  [OfflineStorage] Cached 1 clients
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/invoices
+ LOG  [OfflineStorage] Cached 1 clients
+ LOG  [OfflineStorage] Cached 1 clients
+ LOG  [API] GET /api/auth/pending-invites
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  Error fetching to-invoice count: [TypeError: invoices.map is not a function (it is undefined)]
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  Error fetching to-invoice count: [TypeError: invoices.map is not a function (it is undefined)]
+ LOG  [API] Error 403: {"error": "Access denied", "message": "You don't have permission to perform this action", "requiredPermission": ["read_invoices"]}
+ LOG  Error fetching to-invoice count: [TypeError: invoices.map is not a function (it is undefined)]
+ LOG  [API] Error 401: {"error": "Not authenticated"}
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/time-tracking/dashboard
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/notifications/unified
+

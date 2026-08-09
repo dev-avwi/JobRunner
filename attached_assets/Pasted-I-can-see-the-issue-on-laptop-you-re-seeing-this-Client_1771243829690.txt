@@ -1,0 +1,28 @@
+I can see the issue - on laptop you're seeing this "Client Portal" card with "Generate Client Portal Link" taking up space in the job detail view. Let me find where that's rendered and understand why it's more prominent on desktop.
+
+Now I understand the issue. On laptop/desktop, the job detail view is showing this "Client Portal" card prominently with a "Generate Client Portal Link" button. The user finds this annoying on desktop - it's taking up space and cluttering the job view. On phone the layout is probably different so it's less intrusive.
+
+Let me look at how the job detail view is laid out on desktop vs mobile to understand the full picture:
+
+Now I can see the layout. On desktop it's a 5-column grid (3 for main content, 2 for sidebar). The Client Portal card is in the left/main column (col-span-3) around line 2226. Let me see what's in the right column:
+
+Now I see the full picture. The Client Portal card with "Generate Client Portal Link" is sitting in the main content column of the job detail view. On desktop (laptop), this takes up visible real estate with the two-column layout. The user finds it annoying - it's generating links and cluttering the view when they just want to manage the job.
+
+The fix is to move the Client Portal card to the right sidebar column where it belongs as secondary/supporting content, and make it more compact so it doesn't dominate the view. It's utility content, not primary job info.
+
+Now I see what's in the right column:
+
+I can see the issue. The Client Portal card is sitting in the main content column (left side, col-span-3) right in the middle of the job details. On a laptop, this two-column layout makes it very visible and distracting. It should be tucked away in the right sidebar column where the secondary/supporting content lives.
+
+I'm going to move it to the right sidebar column and make it more compact — just a simple share button that expands when needed, rather than a big card always taking up space.
+
+Good, I removed it from the main column. Now let me add a more compact version to the right sidebar column:
+
+Now let me add a compact Client Portal section to the right sidebar. I'll put it after the LinkedDocumentsCard since it's related to sharing:
+
+Now I'll add a compact Client Portal section in the right sidebar, right after LinkedDocumentsCard:
+
+Good - the Client Portal card has been moved from the main content area to the right sidebar, and made much more compact. Now let me verify the server is running and test it:
+
+Job Runner Dashboard and Client Portal View
+I'm starting our adventure by heading straight to the login page. It's the most direct way to get us logged in and ready to roll. I'll check to see if we land on a login form or if we get whisked away automatically to the main dashboard.

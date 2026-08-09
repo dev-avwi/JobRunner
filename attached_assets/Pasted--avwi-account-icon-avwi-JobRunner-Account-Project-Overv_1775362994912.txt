@@ -1,0 +1,234 @@
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+Account
+
+Project
+
+Overview
+
+Insights
+
+Usage
+
+Develop
+
+Workflows
+
+Development builds
+
+Deploy
+
+Builds
+
+Submissions
+
+
+Over-the-air updates
+
+
+Hosting
+
+Push notifications
+
+Entities
+
+Fingerprints
+
+Project settings
+
+General
+
+Credentials
+
+Environment variables
+
+Hosting
+
+GitHub
+
+
+User menu
+avwi
+
+Builds
+
+a4a331da
+
+
+Compare
+iOS App Store build
+8397f73 · Improve Stripe Terminal integration by fixing code and updating settings Apply patch to @stripe/stripe-terminal-react-native to correct SDK compatibility issues and remove unnecessary credential clearing. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: fe9ce613-eb1e-4508-b71c-5cdd2dc2c15b Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/u9tTeaR Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (45)
+
+fa079e6
+
+8397f73
+
+avwi account icon
+avwi
+
+Build artifact
+IPA
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Finished
+
+Apr 5, 2026 1:48 PM
+221ms
+
+44s
+
+5m 55s
+
+6m 39s
+
+30 days
+
+Logs
+
+Waiting to start
+
+2s
+
+
+Spin up build environment
+
+42s
+
+
+Install custom tools
+
+32s
+
+
+Prepare project
+
+8s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+10s
+
+
+Read app config
+
+370ms
+
+
+Run expo doctor
+
+3s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+3s
+
+
+Install pods
+
+29s
+
+
+Calculate expo-updates runtime version
+
+258ms
+
+
+Configure Xcode project
+
+51ms
+
+
+Configure expo-updates
+
+3ms
+
+
+Bundle JavaScript
+
+22s
+
+
+Run fastlane
+
+3m 48s
+
+
+Clean up credentials
+
+633ms
+
+
+Upload application archive
+
+1s
+
+
+Xcode Logs
+
+Build Details — a4a331da-5e91-40aa-99a5-73269ae84857 — @avwi/tradietrack — Expo

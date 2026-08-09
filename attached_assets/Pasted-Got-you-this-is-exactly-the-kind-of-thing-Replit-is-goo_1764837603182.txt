@@ -1,0 +1,323 @@
+Got you — this is exactly the kind of thing Replit is good at if you tell it clearly.
+
+Below is a **single master prompt** you can paste straight into Replit AI to make it:
+
+* check **mobile vs desktop parity**
+* fix layouts (no broken/half-done mobile views)
+* ensure **buttons, nav, sidebars, search, map, PDFs** all work properly on phones
+* keep everything consistent with your web app design.
+
+Just copy–paste this into Replit AI in your TradieTrack project:
+
+---
+
+### 🧠 REPLIT MASTER PROMPT — “MAKE MOBILE MATCH WEB (UI + FEATURES) FOR TRADIETRACK”
+
+I’m building a SaaS app called **TradieTrack** for tradies (jobs, quotes, invoices, maps, chat, etc.).
+
+Right now the **desktop/web view** is ahead of the **mobile view**.
+I want you to make sure the **mobile app (phone layout) works and looks as good as the desktop app**, with full feature parity.
+
+Act as a **front-end engineer + UX QA**.
+
+Please:
+
+---
+
+## 1️⃣ Scan the whole codebase for layouts & navigation
+
+* Find:
+
+  * main layout components (shell, page wrappers)
+  * desktop sidebar / top nav
+  * mobile nav / bottom nav / hamburger
+  * all main pages: Dashboard/Activity, Jobs, Job Detail, Clients, Quotes, Invoices, Calendar, Map, Chat, Settings, Billing, etc.
+
+Identify where:
+
+* desktop layout is well-designed
+* mobile layout is incomplete, broken, or not aligned with desktop.
+
+---
+
+## 2️⃣ Unify desktop + mobile UI using the same design system
+
+I want:
+
+* **Desktop**: sidebar/top-nav layout (what I already have)
+* **Mobile**: bottom-nav / simple header layout
+
+Make sure:
+
+* All major pages use a **shared layout component** that:
+
+  * handles padding/margins
+  * uses proper max-width
+  * works at all breakpoints (e.g. 320px–1440px)
+* There are **no leftover empty columns** or unused grid areas on mobile (fix that “big blank right column” issue everywhere).
+* Typography, spacing, and card styles are consistent between web and mobile.
+
+If you find custom CSS or layout code that only suits desktop, refactor to use responsive patterns (Tailwind breakpoints, flexbox, grid, etc.).
+
+---
+
+## 3️⃣ Navigation parity (sidebar vs bottom nav)
+
+On **desktop**:
+
+* Sidebar/top nav can stay as-is (or be cleaned up).
+
+On **mobile**:
+
+* Ensure the **bottom nav** (or mobile nav) provides access to the same core sections:
+
+  * Home/Activity
+  * Jobs
+  * Clients
+  * Map / Schedule
+  * More/Settings
+
+Check:
+
+* Every bottom nav item routes correctly.
+* Active tab is clearly highlighted.
+* No page is “desktop-only”.
+
+If there are nav items that appear in one mode but not the other, fix or explain why.
+
+---
+
+## 4️⃣ Buttons, actions, and interactions: same behaviour on mobile
+
+For **every major action**:
+
+* “New Job”
+* “New Quote”
+* “New Invoice”
+* “Send Quote”
+* “Send Invoice”
+* “Convert to Invoice”
+* “Mark as Paid”
+* “Open Map”
+* “Open Chat”
+* “Start Timer” (time tracking)
+* “Save”, “Edit”, “Delete”
+
+Check:
+
+1. The **button exists on mobile** (not only desktop).
+2. It calls the **same handler / API**.
+3. Labels are clear and tappable on a phone.
+4. Touch targets are large enough (44px minimum height).
+
+If any feature is present in the desktop UI but missing or non-functional on mobile, either:
+
+* implement it properly on mobile, or
+* hide it from mobile for beta and mark as TODO in comments.
+
+---
+
+## 5️⃣ Search + filters: must work on mobile too
+
+Any search bars or filters (e.g. Jobs search, Clients search, Quotes/Invoices filters):
+
+* Must be visible and usable on phones.
+* Should not overflow off-screen.
+* Must actually filter results via real data, not just UI/placeholder.
+
+Check:
+
+* Jobs search/filter on mobile.
+* Clients search/filter.
+* Quotes/Invoices search/filter.
+* Any “status filter” chips (Scheduled / In progress / Completed).
+
+Fix anything that’s desktop-only or broken on narrow screens.
+
+---
+
+## 6️⃣ Map page & location systems (owner + team)
+
+I want a **proper map page** for owners/managers that works on mobile AND desktop.
+
+It should:
+
+* Show job locations across the city/region (using job address/coordinates).
+* Use proper map rendering (e.g. Leaflet/Mapbox/Google Maps wrapper).
+* Show markers with job status labels (e.g. Scheduled, In Progress, Completed).
+* Optionally show tradie locations (team members) if that feature exists.
+
+Please:
+
+1. Find the map page/component.
+2. Confirm:
+
+   * Job addresses are stored in DB.
+   * Coordinates (lat/lng) are stored if geocoding is used.
+   * Map markers are created from real job data.
+3. On mobile:
+
+   * Map is full-width, no weird cropping.
+   * No horizontal scroll.
+   * You can tap markers to see job details (client name, status, time).
+4. Ensure there is NO “fake map UI” that doesn’t use real data.
+
+If there’s any “Use current location” or tracking button:
+
+* Confirm it calls actual code.
+* If not fully implemented, hide it or label “coming soon” for beta.
+
+---
+
+## 7️⃣ Chat: team chat + job chat must work on mobile
+
+I have:
+
+* **Job-specific chat** (per job)
+* **Team / group chat**
+
+Check:
+
+* On mobile, you can access both:
+
+  * From a Job detail page → Job Chat.
+  * From a main Chat/Team section → group chat.
+* Messages are:
+
+  * Rendered clearly.
+  * Scrollable.
+  * Showing sender + timestamp.
+* Input bar is usable (not hidden behind keyboard, not offscreen).
+* Backend calls exist and messages are saved, not just displayed in local component state.
+
+If desktop chat has features mobile doesn't (e.g. attachments, emoji, etc.), either add them or leave a clean, minimal mobile subset that works reliably.
+
+---
+
+## 8️⃣ Time tracking + location for jobs
+
+If there is any **time tracking** or **location tracking**:
+
+* Start/Stop timer buttons must work on mobile.
+* Timer values must be stored server-side per job (not just local state).
+* Job detail should show logged time clearly.
+
+For location:
+
+* If the app lets you log job location or tradie location:
+
+  * Confirm that pressing the button updates the DB.
+  * Confirm it appears later on the map or in job history.
+
+If these are not fully implemented, hide unfinished UI for beta.
+
+---
+
+## 9️⃣ PDF generation & preview must be mobile-friendly
+
+For quotes & invoices:
+
+* Check that PDF generation logic is the same regardless of device.
+* Mobile view should offer:
+
+  * Clear “Preview PDF” button.
+  * Clear “Send to client” button.
+* On small screens:
+
+  * PDF preview should not break layout.
+  * If inline viewer is clunky, use a link / open-in-new-tab style.
+
+Confirm:
+
+* PDF templates use real data (business logo, ABN, client info, items, GST).
+* No fake/placeholder PDFs in the mobile path.
+* The same template engine is used for both desktop and mobile flows.
+
+---
+
+## 🔟 Responsive behaviour: fix all visual issues on mobile widths
+
+Test and fix for common breakpoints:
+
+* 320px / 360px (small phones)
+* 390–414px (normal iPhones)
+* 768px (tablet)
+
+For each main page:
+
+* Ensure no horizontal scrolling.
+* Fix any overflowing text or cards.
+* Ensure grids stack properly on mobile (e.g. 2×2 dashboard → 1×4 on phone).
+* Ensure modals/sheets fit nicely and are closable.
+
+If necessary, add mobile-specific layout adjustments (`md:`, `lg:` breakpoints, etc.).
+
+---
+
+## 1️⃣1️⃣ Role-based onboarding & dashboards
+
+There are at least two roles:
+
+* **Owner/Manager**
+* **Tradie/Worker**
+
+Check:
+
+* Onboarding flow asks enough questions to determine role (solo vs team, etc.).
+* Owner dashboard shows:
+
+  * Overview metrics.
+  * Map / team view.
+  * Financials.
+* Tradie dashboard shows:
+
+  * Today’s jobs.
+  * Next job.
+  * Quick access to job details, chat, and map.
+
+On mobile:
+
+* Both dashboards must be usable and not broken.
+* Ensure role checks exist so tradies don’t see owner-only pages (billing, business settings).
+
+---
+
+## 1️⃣2️⃣ General polish & “no half-done features” rule
+
+Go through the app and:
+
+* Identify any **half-done features** that are visible in the UI (buttons, menu items, tabs).
+* If a feature is not fully wired (no backend, no real logic), either:
+
+  * Complete the implementation, or
+  * Hide it for now and add a TODO comment.
+
+Goal: **Everything a beta user can see should actually work**, especially on mobile.
+
+---
+
+## 1️⃣3️⃣ Final summary
+
+After changes, produce a short summary (in comments or console) of:
+
+* ✅ Which main screens are now fully mobile-ready & feature-complete:
+
+  * Home/Activity
+  * Jobs list + Job detail
+  * Clients
+  * Quotes
+  * Invoices
+  * Calendar/Schedule
+  * Map
+  * Chat (job + team)
+  * Settings/Billing
+
+* 🛠 Any remaining known issues or desktop-only features that are intentionally hidden on mobile for now.
+
+Make sure the codebase represents a **technically solid beta** where the mobile experience is as complete and polished as the desktop experience for all the key TradieTrack workflows.
+
+---
+
+You can paste that into Replit as-is.
+
+If you want after that, we can do a **phone-only “walkthrough script”** for you to literally pick up your mobile, pretend to be an owner and then a tradie, and tap through everything like a real day on site.

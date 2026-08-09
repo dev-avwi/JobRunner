@@ -1,0 +1,89 @@
+JobRunner Document Audit Report:
+Quotes, Invoices & Receipts
+Overview
+This report details the findings from a comprehensive audit of JobRunner’s document
+generation system, specifically focusing on Quotes, Invoices, and Receipts. The audit
+evaluated the visual layout, data accuracy, PDF generation capabilities, and strict
+compliance with Australian Taxation Office (ATO) requirements for valid tax invoices.
+1. ATO Compliance Assessment (Critical)
+In Australia, the ATO has strict requirements for what constitutes a valid “Tax Invoice”.
+If a document does not meet these requirements, the customer cannot claim GST
+credits, and legally, they may be required to withhold 47% of the payment (No ABN
+Withholding rule).
+The Missing ABN (High Priority Fix)
+Across all three document types (Quotes, Invoices, Receipts), the Business ABN is
+completely missing from the document header.
+ATO Requirements Checklist for Sales > $1,000:
+Document is intended to be a tax invoice (Clearly labeled “TAX INVOICE”)
+Seller’s identity (Business name is present)
+Seller’s Australian business number (ABN) (MISSING)
+Date the invoice was issued
+Brief description of the items sold, including quantity and price
+GST amount payable (Correctly calculated at 10% and shown separately)
+Buyer’s identity (Client name/address)
+The Fix: You must add an ABN field to the Business Settings profile, make it mandatory
+for Australian accounts, and render it directly under the Business Name/Address block
+on every PDF and web view (e.g., “ABN: 12 345 678 901”).
+2. Document-by-Document Breakdown
+Quotes
+What works well:
+Clean, professional layout that builds trust.
+Line items are clearly broken down with Qty, Unit Price, and Amount.
+GST is calculated correctly (10% of subtotal).
+Terms & Conditions and Warranty blocks are included by default, which protects
+the tradie legally.
+The Signature Block at the bottom (“Quote Acceptance”) is a great touch for
+formal approvals.
+Issues found:
+“Loading…” Bug: In the web view, the “QUOTE FOR” section gets stuck on
+“Loading…” instead of displaying the client’s name and address. This appears to
+be a React state or data fetching issue that needs immediate fixing.
+Missing ABN in the header.
+Invoices
+What works well:
+Correctly titled “TAX INVOICE” (crucial for ATO compliance).
+Includes both “Date” and “Due Date”.
+Job Site Location is explicitly stated, which is excellent for trade businesses
+where the billing address might differ from the site address.
+UI features for “Payment Milestones” and “Payment Plans” are visible and wellintegrated.
+Issues found:
+“Loading…” Bug: Similar to Quotes, the “BILL TO” section is stuck on
+“Loading…”.
+Missing ABN.
+The default email in the demo ( admin@avwebinnovation.com ) should be
+dynamic based on the business profile.
+Receipts
+What works well:
+Clearly titled “RECEIPT” with a “Paid” badge.
+Shows the exact payment method (e.g., Cash, Stripe).
+Includes the Transaction ID for easy reconciliation.
+Date & Time stamp of the payment is accurate.
+Issues found:
+Missing ABN.
+The “RECEIVED FROM” section just says “Customer” instead of the actual client’s
+name.
+3. Public Portal & PDF Generation
+Public Portal Routes: The public-facing document routes ( /portal/quote/:token ,
+/i/:token , /r/:token ) are successfully implemented and return 200 OK statuses.
+This means clients can view their documents online without needing to log in, which is
+the correct architecture.
+PDF Generation: The PDF generation relies on endpoints (e.g.,
+/api/quotes/:id/pdf ). During testing, direct unauthenticated access correctly
+returned a 401 Unauthorized , which is good for security. However, the “Save as PDF”
+button in the UI needs to ensure it correctly handles the authentication token when
+requesting the blob, and displays a loading state (spinner) while the PDF is being
+generated, as server-side PDF generation can take 1-3 seconds.
+Summary of Action Items
+1. Add ABN Field: Update the database schema and Business Settings UI to capture
+the ABN.
+2. Update Document Templates: Inject the ABN into the header of all Quotes,
+Invoices, and Receipts.
+3. Fix the “Loading…” Bug: Investigate why the Client Details (Quote For / Bill To)
+are failing to render in the document view component.
+4. Fix Receipt Client Name: Ensure the receipt template pulls the actual client
+name instead of the hardcoded string “Customer”.
+5. Verify PDF Download UX: Ensure the “Save as PDF” button has a clear loading
+state so users don’t click it multiple times while waiting for the download to
+generate.
+Overall, the document design is beautiful and functional. Fixing the ABN issue and the
+data-loading bug will make them 100% production-ready and legally compliant.

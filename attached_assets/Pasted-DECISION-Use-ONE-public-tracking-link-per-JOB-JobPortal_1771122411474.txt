@@ -1,0 +1,81 @@
+DECISION: Use ONE public tracking link per JOB (JobPortalToken), and the tracking page shows ONE MAP with ALL assigned workers/subcontractors as separate pins.
+
+PUBLIC TRACKING PAGE: /p/{job_token}
+- Token is scoped to job_id (not assignment).
+- Read-only.
+- Shows a single map with:
+  - job destination pin
+  - all active assigned workers/subcontractors pins (multi-pin live map)
+- Shows ETA:
+  - Either show per-worker ETA in a list (recommended)
+  - Or show ETA only for selected worker (default select primary)
+
+WORKER IDENTIFICATION + PRIVACY:
+- Each assignment has visibility flags:
+  - show_worker_name_to_client
+  - show_worker_phone_to_client
+- Defaults:
+  - Employees: show name true, phone optional (company setting)
+  - Subcontractors: show name optional, phone default false
+- If hidden:
+  - show as "Support Crew" instead of name
+  - show dispatch phone only
+
+MAP UI REQUIREMENTS (Uber-style but multi-worker):
+- Worker list panel above/below map:
+  For each assigned person:
+    - Display name (or Support Crew)
+    - Status (Assigned / On My Way / Arrived / Working / Done)
+    - Last updated time
+    - ETA to job (while EN_ROUTE)
+- Clicking a worker in the list highlights their pin and shows their route/ETA details.
+- Map updates live:
+  - location pings every 30–60 seconds while EN_ROUTE
+  - if WORKING/ARRIVED, reduce updates or stop based on privacy setting
+- Show disclaimers:
+  - "Last updated X mins ago • Accuracy ±Ym"
+  - If GPS paused: "Tracking temporarily unavailable"
+
+SMS WORKFLOW (ONE LINK ONLY):
+- When ANY assigned worker presses On My Way:
+  - Update their assignment status = EN_ROUTE
+  - Start sending pings for that assignment
+  - Recompute their ETA
+- Only send SMS automatically if:
+  - worker is PRIMARY assignment OR manager triggers manual notify
+- SMS must include the single job link:
+  "JobRunner — {BusinessName}: {WorkerName/Support Crew} is on the way. Track progress: {JobTrackingLink}. Dispatch: {DispatchPhone}"
+
+TEAM OPERATIONS / VISUAL DISPATCH MUST SUPPORT SUBCONTRACTORS:
+Implement a Team module:
+- Team Members list includes:
+  - Employees (WORKER)
+  - Managers
+  - Subcontractors (SUBCONTRACTOR)
+- Subcontractor has:
+  - acceptance required toggle (default true)
+  - masked phone to client default (true)
+  - rate default
+- Dispatch assignment UI:
+  - Search members (employees + subcontractors)
+  - Assign multiple workers to a job (crew)
+  - Select "Primary" assignment
+  - Set per-assignment rate override
+  - Set per-assignment visibility flags for client portal
+  - Send optional “Job Assigned” SMS to worker/subcontractor
+- Subcontractor acceptance flow:
+  - subcontractor must Accept/Decline assignment
+  - until accepted, they cannot press On My Way
+  - dispatch sees acceptance status
+
+DATA REQUIREMENTS:
+- JobPortalToken: job_id, token, expires_at, revoked_at
+- LocationPing must be stored per assignment_id
+- Portal page aggregates pings from all assignments linked to job_id
+- Rate limit location ping uploads
+- EventLog append-only for all assignment/job actions
+
+DELIVERABLES:
+1) One public job tracking link with one map showing multiple worker/subbie pins
+2) Worker list with per-worker status + ETA + last update
+3) Dispatch + Team Operations that makes subcontractor assignment simple and safe

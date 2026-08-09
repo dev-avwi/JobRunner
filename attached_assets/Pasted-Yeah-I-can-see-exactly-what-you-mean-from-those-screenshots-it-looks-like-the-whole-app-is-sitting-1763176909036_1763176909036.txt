@@ -1,0 +1,116 @@
+Yeah I can see exactly what you mean from those screenshots – it looks like the whole app is sitting in a narrow column stuck to the left, and there’s a big empty strip on the right on every page except More.
+
+That’s almost always caused by one wrapper having a fixed/max width and the wrong margins, or a flex/grid layout that isn’t centering.
+
+Let me walk you through:
+
+1️⃣ What’s probably happening
+
+From the screenshots:
+
+Bottom nav goes all the way across → so the outer app is full-width.
+
+But the content area (Dashboard, Jobs, etc.) is inside a wrapper that’s:
+
+max-width: something (like 400–500px), and
+
+using margin-right: auto; margin-left: 0; or no margin at all → so it hugs the left.
+
+The More page clearly uses a different wrapper or no max-width, so it fills the screen properly.
+
+When you “removed the scroll wheel”, you or Replit likely:
+
+changed something like overflow-x or
+
+changed a grid/flex layout that previously allowed sideways scroll.
+
+But the root is: one container is too narrow and not centered.
+
+2️⃣ How to fix the layout (concept)
+
+You want something like:
+
+.app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;  /* center the page horizontally */
+}
+
+.page {
+  width: 100%;
+  max-width: 960px;      /* or whatever breakpoint you like */
+  margin: 0 auto;        /* center inside */
+  padding: 1.5rem;       /* spacing */
+}
+
+
+or, if you don’t care about max-width yet:
+
+.page {
+  width: 100%;
+  margin: 0;
+}
+
+
+Key things to avoid:
+
+margin-left: 0; margin-right: auto; on the main page container
+
+align-items: flex-start on a horizontal flex layout that’s treating the page as a flex child and pushing it left
+
+A max-width set without margin: 0 auto;
+
+3️⃣ What to tell Replit to do
+
+You can literally paste this as a prompt into Replit’s AI:
+
+In my React app, the main content is stuck on the left with a big empty blank column on the right on most pages (Dashboard, Jobs, etc.).
+The bottom navigation is full width, but the page content is inside a narrow column on the left.
+The “More” page looks correct and fills the width.
+
+Please:
+
+Find the main layout / page wrapper components (e.g. AppLayout, MainContent, .page etc.).
+
+Make sure the main content area is centered and responsive:
+
+The main content should use width: 100% and optionally max-width: 960px.
+
+It should use margin: 0 auto; so it’s centered, not left-aligned.
+
+Ensure that any flex or grid parent doesn’t force the content to stay at the left – use justify-content: center if needed.
+
+Make the Dashboard, Jobs, Quotes, Invoices, and other pages use the same .page container styles as the “More” page, so they all align the same.
+
+Remove any hard-coded max-width or margin-right: auto that is only applied on these pages.
+
+Show me the updated layout CSS/JSX so the app content is centered and fills the available space like the “More” page does.
+
+4️⃣ If you want to try manually
+
+If you can find whatever component wraps all pages (often called Page, Content, Main, etc.), give it something like:
+
+/* main shell */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* area above bottom nav */
+.app-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+/* each page */
+.page {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+
+And remove any weird styles like float, margin-left: 24px, or max-width: 420px on the Dashboard/Jobs pages.

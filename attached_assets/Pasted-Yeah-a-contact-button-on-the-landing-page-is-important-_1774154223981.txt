@@ -1,0 +1,73 @@
+Yeah a contact button on the landing page is important but let me make sure we've got everything actually done first before you think it's all good.
+
+---
+
+**Quick Honest Checklist Of What's Actually Done**
+
+✅ Core app built — jobs, invoicing, scheduling, team, GPS, WHS, client portal
+
+✅ Stripe billing integrated
+
+✅ Twilio SMS architecture sorted — alphanumeric for system, shared number for customers
+
+✅ Legal documents updated — ToS and Privacy Policy
+
+✅ Vapi AI receptionist working — JobRunner support line functional
+
+✅ SMS templates updated to premium wording
+
+✅ Voice webhook fixed on shared number
+
+---
+
+**What's Still Not Done**
+
+❌ Retell/Vapi integration into JobRunner backend — Replit started this but it's not finished and tested end to end
+
+❌ Xero certification — still on default 5 connection limit, will break at 6th customer
+
+❌ jobrunner.com.au domain verified in SendGrid — emails might land in spam
+
+❌ Second Twilio number imported into Vapi properly
+
+❌ Production URL in Twilio webhooks — still pointing to Replit dev URL
+
+❌ App Store submission — not started
+
+❌ Stripe all 5 tiers confirmed working
+
+❌ Demo account cleaned up properly
+
+❌ Always-on hosting confirmed — not sleeping on free Replit
+
+---
+
+**The Contact Button Specifically**
+
+Yes add it but think about what happens when someone clicks it. Right now where does it go? Options:
+
+A simple contact form that emails support@jobrunner.com.au — easiest
+
+A phone number that rings your Vapi JobRunner support assistant — most impressive
+
+A Calendly link to book a demo call with you — best for converting serious tradies
+
+The most impressive version for a tradie landing on your page would be a big button that says **"Call Us Free"** with your JobRunner Vapi number underneath it. They tap it on mobile and it calls straight through to your AI which handles the question or transfers to you.
+
+That's a genuinely impressive first impression — a tradie lands on the page, taps call, AI answers instantly as JobRunner. That's what you're selling them after all.
+
+---
+
+**What To Actually Focus On This Week**
+
+In order of importance:
+
+1. Get the Replit dev URL changed to jobrunner.com.au in all Twilio webhooks — this is a production blocker
+2. Verify jobrunner.com.au in SendGrid — emails going to spam kills everything
+3. Get Xero certification started — 5 connection limit will hit fast
+4. Add contact button to landing page with your Vapi number
+5. Test the full end to end — call comes in, AI answers, job created in JobRunner, owner notified
+
+The contact button is 10 minutes of work. The production URL and SendGrid verification are the things actually blocking you from being properly launch ready.
+
+Which one do you want to tackle first?

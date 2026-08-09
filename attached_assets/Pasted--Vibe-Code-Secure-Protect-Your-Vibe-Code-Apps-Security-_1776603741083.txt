@@ -1,0 +1,338 @@
+
+Vibe Code Secure
+Protect Your Vibe Code Apps
+
+Security Scanning for Vibe Code Applications
+Vibe Code Secure specializes in analyzing Vibe Code applications for security vulnerabilities, configuration issues, and best practices to help you build secure, resilient software tailored to the Vibe Code ecosystem.
+
+Built for Vibe Code Builders
+Replit
+Databutton
+Cursor
+Our security scanner is specially designed for applications built with these powerful Vibe Code platforms.
+
+Scan Your Web Application or API
+Application URL
+https://jobrunner.com.au
+Enter your web application or API URL (including http:// or https://)
+
+Scan Now
+Security Scan Results
+https://jobrunner.com.au - Scanned on Apr 19, 2026
+
+Must-Have Security Score (Critical & High Severity Only)
+Critical & High Priority
+77/100
+10 PASSED ·3 FAILED
+
+77
+Medium Priority Score
+58%
+7/12
+Overall Score
+70%
+19/27
+
+Must-Have Security
+77%
+(10/13) critical/high
+
+Good-to-Have
+58%
+(7/12) medium
+Must-Have Security Features
+These categories contain critical and high severity security checks that all projects should implement.
+
+The overall score at the top only counts high/critical severity checks, but below you'll see all checks within each category.
+
+Fix critical and high severity issues first to ensure basic security protection.
+
+
+HTTP Security Headers
+6/8
+Content-Security-Policy (CSP)
+PASS
+HIGH
+Restricts which resources can be loaded, preventing XSS attacks
+
+Why this passed:
+
+Properly implemented: default-src 'self';script-src 'self' https://js.stripe.com https://*.googletagmanager.com https://cd...
+
+X-Content-Type-Options
+PASS
+MEDIUM
+Prevents MIME type sniffing
+
+Why this passed:
+
+Properly implemented with "nosniff" value
+
+Strict-Transport-Security (HSTS)
+PASS
+HIGH
+Forces HTTPS connections
+
+Why this passed:
+
+Strong HSTS implementation with long duration: max-age=63072000; includeSubDomains, max-age=31536000; includeSubDomains
+
+Show all checks
+
+TLS/SSL Implementation
+4/5
+Minimum TLS version
+PASS
+HIGH
+TLS 1.2+ only, no support for deprecated SSL/TLS versions
+
+Why this passed:
+
+TLS 1.2+ supported. No deprecated SSL/TLS versions detected.
+
+Certificate validity
+PASS
+CRITICAL
+Properly signed, not expired, correct domain
+
+Why this passed:
+
+Certificate is valid, properly signed, and matches the domain.
+
+Strong cipher suites
+PASS
+HIGH
+Only modern, secure cipher suites enabled
+
+Why this passed:
+
+Modern cipher suites are being used.
+
+Perfect Forward Secrecy
+PASS
+HIGH
+Required for all connections
+
+Why this passed:
+
+Perfect Forward Secrecy appears to be supported.
+
+OCSP stapling
+INFO
+MEDIUM
+Implemented for better performance and privacy
+
+Details:
+
+OCSP stapling status could not be determined with precision.
+
+Show fewer checks
+
+Cookie Security
+0/5
+HttpOnly Flag
+FAIL
+HIGH
+Protects cookies from being accessed by JavaScript
+
+Why this failed:
+
+HttpOnly flag missing from cookies. This allows client-side JavaScript to access cookies, increasing the risk of XSS attacks.
+
+Recommended fix:
+
+Set the HttpOnly flag on all sensitive cookies to prevent client-side JavaScript access.
+
+AI
+AI Fix Prompt
+
+Copy for AI assistant
+I need help implementing a security fix for my web application at https://jobrunner.com.au. 
+
+SECURITY ISSUE: HttpOnly Flag
+
+DETAILS: HttpOnly flag missing from cookies. This allows client-side JavaScript to access cookies, increasing the risk of XSS attacks.
+
+RECOMMENDED FIX: Set the HttpOnly flag on all sensitive cookies to prevent client-side JavaScript access.
+
+Please provide specific code examples and step-by-step instructions on how to implement this security fix correctly. Include configuration examples and best practices for my web application.
+Secure Flag
+FAIL
+HIGH
+Ensures cookies are only sent over HTTPS
+
+Why this failed:
+
+Secure flag missing from cookies. This allows cookies to be transmitted over unencrypted HTTP connections.
+
+Recommended fix:
+
+Set the Secure flag on all cookies to ensure they are only transmitted over HTTPS connections.
+
+AI
+AI Fix Prompt
+
+Copy for AI assistant
+I need help implementing a security fix for my web application at https://jobrunner.com.au. 
+
+SECURITY ISSUE: Secure Flag
+
+DETAILS: Secure flag missing from cookies. This allows cookies to be transmitted over unencrypted HTTP connections.
+
+RECOMMENDED FIX: Set the Secure flag on all cookies to ensure they are only transmitted over HTTPS connections.
+
+Please provide specific code examples and step-by-step instructions on how to implement this security fix correctly. Include configuration examples and best practices for my web application.
+SameSite Attribute
+FAIL
+HIGH
+Restricts cross-site request inclusion of cookies
+
+Why this failed:
+
+SameSite attribute missing from cookies. This can enable cross-site request forgery (CSRF) attacks.
+
+Recommended fix:
+
+Set the SameSite attribute to either Strict or Lax on cookies to protect against CSRF attacks.
+
+AI
+AI Fix Prompt
+
+Copy for AI assistant
+I need help implementing a security fix for my web application at https://jobrunner.com.au. 
+
+SECURITY ISSUE: SameSite Attribute
+
+DETAILS: SameSite attribute missing from cookies. This can enable cross-site request forgery (CSRF) attacks.
+
+RECOMMENDED FIX: Set the SameSite attribute to either Strict or Lax on cookies to protect against CSRF attacks.
+
+Please provide specific code examples and step-by-step instructions on how to implement this security fix correctly. Include configuration examples and best practices for my web application.
+Cookie Expiration
+FAIL
+MEDIUM
+Ensures cookies have defined expiration dates
+
+Why this failed:
+
+Cookies without expiration dates become session cookies that persist until browser closure, which may extend session lifetime longer than intended.
+
+Recommended fix:
+
+Set appropriate Expires or Max-Age attributes on cookies to limit their lifetime.
+
+AI
+AI Fix Prompt
+
+Copy for AI assistant
+I need help implementing a security fix for my web application at https://jobrunner.com.au. 
+
+SECURITY ISSUE: Cookie Expiration
+
+DETAILS: Cookies without expiration dates become session cookies that persist until browser closure, which may extend session lifetime longer than intended.
+
+RECOMMENDED FIX: Set appropriate Expires or Max-Age attributes on cookies to limit their lifetime.
+
+Please provide specific code examples and step-by-step instructions on how to implement this security fix correctly. Include configuration examples and best practices for my web application.
+Cookie Prefixes
+INFO
+LOW
+Use of __Secure- or __Host- prefixes for enhanced security
+
+Details:
+
+Cookie prefixes (__Secure- or __Host-) are not in use. While optional, they provide additional security guarantees for cookies in modern browsers.
+
+Show fewer checks
+
+Cross-Origin Protections
+3/5
+X-Frame-Options
+PASS
+HIGH
+Prevents clickjacking by controlling iframe embedding
+
+Why this passed:
+
+X-Frame-Options is properly set to "SAMEORIGIN", protecting against clickjacking attacks.
+
+CORS Implementation
+INFO
+LOW
+Cross-Origin Resource Sharing configuration
+
+Details:
+
+No CORS headers detected. If this site serves APIs or resources to other origins, CORS should be properly configured.
+
+Cross-Origin Resource Policy
+PASS
+MEDIUM
+Additional protection against cross-origin information leaks
+
+Why this passed:
+
+Cross-Origin Resource Policy is set to "cross-origin", providing additional protection against Spectre-like attacks.
+
+Cross-Origin Opener Policy
+PASS
+MEDIUM
+Controls window.opener relationship with other browsing contexts
+
+Why this passed:
+
+Cross-Origin Opener Policy is set to "same-origin-allow-popups", isolating browsing context to protect against cross-origin attacks.
+
+Cross-Origin Embedder Policy
+INFO
+LOW
+Forces embedded resources to opt-in to being loaded by document
+
+Details:
+
+Cross-Origin Embedder Policy header is not set. This modern header can enable powerful features like SharedArrayBuffer by requiring opt-in for embedded resources.
+
+Show fewer checks
+
+Input Validation & Injection Prevention
+1/1
+XSS Protection
+PASS
+HIGH
+Tests for Cross-Site Scripting vulnerabilities
+
+Why this passed:
+
+XSS protection appears effective - payload not reflected
+
+
+Environment Configuration
+1/1
+Environment File Exposure
+PASS
+CRITICAL
+Tests for exposed environment configuration files
+
+Why this passed:
+
+No environment files found exposed
+
+
+Security Best Practices
+Export Detailed Report
+HTTP Headers
+Verify Vibe Code security headers for XSS, CSRF, and injection protection
+
+TLS/SSL
+Verify Vibe Code app transport layer and encryption implementation
+
+Auth Controls
+Evaluate Vibe Code authentication, authorization, and session security
+
+Infrastructure
+Assess Vibe Code API configurations, server security, and deployment setup
+
+Vibe Code Secure
+Comprehensive application & API security scanning
+
+© 2026 Vibe Code Secure. All rights reserved.

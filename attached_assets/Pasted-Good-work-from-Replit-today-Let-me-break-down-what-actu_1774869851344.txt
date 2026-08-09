@@ -1,0 +1,50 @@
+Good work from Replit today. Let me break down what actually got done.
+
+---
+
+**Bundle Splitting — This Is Significant**
+
+Main bundle dropped from 1,057KB to 479KB — a 55% reduction. That means the app loads roughly twice as fast on mobile for first-time users. Charts only load on reports pages, maps only load on dispatch, Sentry loads separately and gets cached. This directly fixes one of the critical issues Manus flagged.
+
+---
+
+**Lifecycle Email Sequences — This Is New And Valuable**
+
+This wasn't on the original list but it's genuinely important. Automated emails that trigger based on user milestones mean:
+
+- New signup gets a welcome email
+- Day 3 no jobs created gets a "here's how to create your first job" nudge
+- Day 7 still on free gets an upgrade prompt
+- First invoice sent gets a congratulations
+
+This is how you convert trials to paid customers without manually following up every single person. The bug with fullName vs firstName is fixed and it's running cleanly every 6 hours.
+
+---
+
+**Rate Limiting Gaps Closed**
+
+Password reset and email verification endpoints now have limiters. Small but correct.
+
+---
+
+**The One Thing To Watch**
+
+The lifecycle email scheduler running every 6 hours — make sure the email templates actually look good and sound like a real Australian product not a generic SaaS. The tone should match everything else — casual, warm, tradie-focused. Ask Replit to show you the actual email copy so you can review it before it fires on real users.
+
+Tell Replit: *"Can you show me the exact copy for each lifecycle email that will be sent — subject line and body for every trigger. I want to review the wording before real users receive them."*
+
+---
+
+**Updated Status**
+
+Everything from the Manus audit is now addressed. Bundle split, rate limiting, security headers, webhook validation — all done.
+
+Your remaining personal actions haven't changed:
+
+App Store submission — start today, seriously.
+
+Xero certification — you've apparently already started based on the log showing "Ayden Vogler started: Xero Marketplace certification prep" — good.
+
+Manus onboarding test — send that brief tonight.
+
+How's the Xero certification going?

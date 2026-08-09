@@ -1,0 +1,61 @@
+Yep, I see it.
+
+The issue now is:
+
+The Back / Edit / More controls look like they’re sitting inside another outer capsule, so instead of feeling like one clean floating glass control, they feel double-wrapped and bulky.
+
+And the popup is still basically a standard alert/card, not that iOS liquid glass floating panel look from your reference.
+
+Send Replit this:
+
+The Back, Edit, and More controls are closer now, but they still look wrong because they feel like they are inside two containers.
+
+What I want:
+	•	Each top control should feel like one single floating liquid-glass capsule, not a pill inside another pill
+	•	Remove the outer wrapper look, extra inset border feel, and double-layered padding
+	•	The shape should read as one premium frosted control with very subtle edge definition only
+	•	Keep the soft glass blur, but make it feel thinner, cleaner, and more native
+	•	The Back button should be one standalone capsule
+	•	The Edit / More control should be one segmented capsule, not two capsules inside a bigger one
+	•	The divider between Edit and More should be subtle and integrated into the same glass surface
+
+Visual direction:
+	•	iOS liquid glass / floating chrome
+	•	soft translucent white surface
+	•	very light inner highlight
+	•	faint hairline border
+	•	soft shadow, not thick glow
+	•	no chunky outer ring
+	•	no obvious nested background layer
+
+For the popup/modal:
+The current popup still looks like a normal alert card. I want it redesigned into the same liquid-glass family as the top controls.
+
+What I want for the modal:
+	•	floating frosted-glass panel
+	•	background blur behind it should feel stronger and more premium
+	•	panel should have translucent white glass, not flat solid white
+	•	subtle inner highlight and very soft border
+	•	rounded corners like modern iOS system surfaces
+	•	lighter, more airy visual weight
+	•	buttons should feel integrated into the glass system, not like default alert rows
+	•	overall should feel like Apple liquid glass, not a standard React Native modal or basic alert
+
+Important:
+Do not make it skeuomorphic or too glossy.
+Do not add thick borders, stacked containers, or obvious card-on-card layering.
+Everything should feel like one clean sheet of floating glass.
+
+Please refine both:
+	1.	top navigation controls
+	2.	modal/popups
+
+so they belong to the exact same visual family throughout the app.And this is the design correction in plain English:
+
+The controls should feel like machined glass floating above the UI, not like buttons placed inside button holders.
+
+The popup should feel like a premium floating system surface, not a regular dialog box.
+
+A strong extra note you can add is:Think “single surface” instead of “component with wrapper”.
+Right now it feels nested.
+I want it to feel fused, thin, and native.If you want, I can do an even sharper version that sounds more like a senior iOS design director talking to a UI engineer.

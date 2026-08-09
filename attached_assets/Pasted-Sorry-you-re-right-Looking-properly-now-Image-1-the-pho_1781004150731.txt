@@ -1,0 +1,29 @@
+Sorry, you're right. Looking properly now:
+
+**Image 1** — the photo aspect ratio is wrong, it's stretched/cropped badly and the colours clash with the logo and text sitting on top of it. Looks amateur.
+
+**Images 2-4** — floating white card on pure black void. Should feel like you're being shown the actual app, not a popup in darkness.
+
+For images 2-4 the fix is exactly what you said — show the real app screens blurred/dimmed in the background behind the card. So "Manage Your Jobs" slide has the Work screen blurred behind it, "Welcome to JobRunner" has the Dashboard behind it. Like Jobber does with their phone mockup slides — you're previewing what you're about to use.
+
+Paste this into Replit:
+
+---
+
+Fix two things in the post-onboarding flow:
+
+**1. Setup screen (the tradie photo welcome screen)**
+The background photo is stretched and the aspect ratio is wrong. Replace it with a solid dark background instead — use a dark navy #0F172A as the full screen background colour. No photo. Add a subtle radial glow in #2B7DE9 at 15% opacity centred behind the logo to add depth without a photo. This will look cleaner and more intentional than a badly cropped image.
+
+**2. Feature tour slides (the floating card screens)**
+The white cards floating on pure black look broken. Replace the black background with a blurred screenshot of the actual app screen relevant to each slide. Use a blurred + darkened version (blur 20, dark overlay rgba(0,0,0,0.6)) of the real app screen as the background for each slide:
+- "Welcome to JobRunner" slide → blurred Dashboard screen behind it
+- "Manage Your Jobs" slide → blurred Work/Jobs screen behind it  
+- Any other slides → blurred Dashboard behind them
+- "You're All Set" slide → keep as full white screen, no background needed, make it feel celebratory
+
+The white card itself should stay but float over the blurred app background, giving the user a preview of what they're about to use. Same card design, just fix the background from black void to blurred app screenshot.
+
+To implement the blurred backgrounds, use static screenshot images of the app screens captured at build time, or use a dark gradient that matches the app's colour scheme (#1E3A5F to #0F172A) as a fallback if live blur isn't feasible.
+
+---

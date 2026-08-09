@@ -1,0 +1,199 @@
+Integrations
+Connect your payment and communication services
+
+Ready to Accept Payments
+Your Stripe account is connected and ready. You can send invoices and collect payments!
+
+Live
+Payment Processing
+Accept payments via Stripe
+
+Connected
+AV Web Innovations
+Payments are processed and deposited directly to your bank account.
+
+View Stripe Dashboard
+Email - Gmail Review
+Verified
+Review and send from your Gmail account
+
+Working
+When you email a quote or invoice:
+
+Review in Gmail first
+
+Opens Gmail so you can check and personalise before sending
+
+Send instantly
+
+Emails go out immediately via our servers - faster for busy tradies
+
+Gmail review mode active
+
+When you send a quote or invoice, Gmail opens with everything ready. You can review, personalise the message, then hit send.
+
+Send Test Email
+Opens Gmail with a test message
+Setup Checklist
+
+Email delivery connected
+Quote templates ready
+Invoice templates ready
+Professional PDF generation
+
+Australian Compliance Tips
+Outlook / Microsoft 365
+Send emails from your Outlook account
+
+Not Connected
+Connect your Outlook or Microsoft 365 account to send quotes and invoices directly from your business email.
+
+Professional emails: Sent from your own email address
+
+Works with: Outlook.com, Hotmail, Microsoft 365
+
+Secure: We never store your password
+
+Connect Outlook
+Xero Accounting
+Sync invoices and contacts with Xero
+
+Not Connected
+Connect your Xero account to automatically sync invoices and contacts.
+
+Two-way sync: Contacts and invoices stay in sync
+
+Automatic updates: Changes sync between platforms
+
+Australian business: Works with Xero AU
+
+Connect to Xero
+Google Calendar
+Sync scheduled jobs to your calendar
+
+Not Connected
+Setup Guide
+1/5 Steps
+Never miss a job appointment again!
+
+Auto sync jobs
+Smart reminders
+Location details
+What syncs to calendar:
+
+Job title & time
+Client details
+Job address
+Auto reminders
+Why Connect Calendar
+
+See all jobs in your Google Calendar
+
+2
+Click 'Connect Calendar'
+
+One-click Google OAuth connection
+
+3
+Sign In With Google
+
+Use your existing Google account
+
+4
+Grant Calendar Access
+
+Authorize TradieTrack to add events
+
+5
+You're Connected!
+
+Jobs sync automatically to calendar
+
+Connect Google Calendar
+Your data is secure. TradieTrack uses official Google OAuth2 integration. We never see your Google password and you can disconnect anytime.
+
+What is Google Calendar integration?
+What data is synced to the calendar?
+How long does setup take?
+How do I disconnect?
+Need help? Check Google Calendar Help or contact support.
+
+MYOB AccountRight
+Sync invoices and contacts with MYOB
+
+Not Configured
+MYOB integration is not configured. Please contact support to enable this feature.
+
+MYOB_CLIENT_ID and MYOB_CLIENT_SECRET must be configured.
+
+Communication Services
+Connect these services to automate client communications
+
+SMS Notifications
+Send SMS reminders and updates to clients
+
+Not Connected
+Connect your Twilio account to send SMS reminders and updates directly to your clients' phones.
+
+You'll need: Your Twilio Account SID, Auth Token, and Phone Number
+
+Features: Job reminders, status updates, confirmations
+
+What happens when connected:
+
+SMS reminders sent automatically
+Two-way texting with clients
+Appointment confirmations
+Connect Twilio
+Message Templates
+Create reusable email and SMS templates
+
+8 templates
+Save time by creating templates for common messages. Use merge fields to personalize each message.
+
+Email (4)
+SMS (4)
+Job Completed
+
+Job completed - {job_title}
+
+
+
+Payment Reminder
+
+Friendly reminder - Invoice #{invoice_number}
+
+
+
+Quote Follow-up
+
+Following up on your quote
+
+
+
+Test Quote Template Jl2yEy
+
+Quote #{quote_number} for {client_name}
+
+
+
+Create Email Template
+Available merge fields:
+
+{{client_name}}, {{job_address}}, {{job_date}}, {{amount}}, {{business_name}}
+
+Quick Guide: Getting Paid
+1
+Connect Stripe
+
+Add your bank details so you can receive payments
+
+2
+Send Invoice
+
+Your client gets an email with a "Pay Now" button
+
+3
+Get Paid
+
+Money goes to your bank in 2-3 business days

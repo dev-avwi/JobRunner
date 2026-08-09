@@ -1,0 +1,325 @@
+warning: (arm64) /Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/Build/Products/Debug-iphonesimulator/JobRunner.app/JobRunner empty dSYM file detected, dSYM was created with an executable with no debug info.
+objc[16821]: Class SRDelegateController is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x1059929b8) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7ad30). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRIOConsumer is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992a30) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7ada8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRIOConsumerPool is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992a58) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7add0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRPinningSecurityPolicy is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992b48) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7ae20). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRProxyConnect is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992aa8) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7ae70). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRRunLoopThread is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992af8) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7aec0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRSecurityPolicy is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992b98) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7af10). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[16821]: Class SRWebSocket is implemented in both /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies (0x105992be8) and /Users/aydshomefolder/Library/Developer/CoreSimulator/Devices/138C78C3-7CF3-496B-851B-3AAD8A50479F/data/Containers/Bundle/Application/B61A651D-8FED-47F2-84CC-33CCD9432222/JobRunner.app/JobRunner.debug.dylib (0x109d7af60). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+`UIScene` lifecycle will soon be required. Failure to adopt will result in an assert in the future.
+_setUpFeatureFlags called with release level 2
+_setUpFeatureFlags called with release level 2
+EXTaskService: Restoring tasks configuration: {
+    mainApplication =     {
+        tasks =         {
+            "background-sync-task" =             {
+                consumerClass = "ExpoBackgroundFetch.BackgroundFetchTaskConsumer";
+                consumerVersion = 0;
+                name = "background-sync-task";
+                options =                 {
+                    minimumInterval = 900;
+                    startOnBoot = 1;
+                    stopOnTerminate = 0;
+                };
+            };
+        };
+    };
+}
+🟢 Insights: PROCESS_START at 1780234270.838487
+objc[16821]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23E254a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1082cc398) and /Library/Developer/CoreSimulator/Volumes/iOS_23E254a/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.4.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10e0fc310). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+AX Safe category class 'SLHighlightDisambiguationPillViewAccessibility' was not found!
+nw_socket_handle_socket_event [C8:1] Socket SO_ERROR [61: Connection refused]
+nw_endpoint_flow_failed_with_error [C8 127.0.0.1:8097 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] already failing, returning
+nw_connection_get_connected_socket_block_invoke [C8] Client called nw_connection_get_connected_socket on unconnected nw_connection
+TCP Conn 0x107672e40 Failed : error 0:61 [61]
+nw_connection_copy_protocol_metadata_internal_block_invoke [C8] Client called nw_connection_copy_protocol_metadata_internal on unconnected nw_connection
+nw_connection_copy_protocol_metadata_internal_block_invoke [C8] Client called nw_connection_copy_protocol_metadata_internal on unconnected nw_connection
+nw_connection_copy_connected_local_endpoint_block_invoke [C8] Client called nw_connection_copy_connected_local_endpoint on unconnected nw_connection
+nw_connection_copy_connected_remote_endpoint_block_invoke [C8] Client called nw_connection_copy_connected_remote_endpoint on unconnected nw_connection
+🟢 Registering module 'ExpoModulesCoreJSLogger'
+🟢 Registering module 'ExpoFetchModule'
+🟢 Registering module 'ExpoAppleAuthentication'
+🟢 Registering module 'ExpoApplication'
+🟢 Registering module 'ExpoAsset'
+🟢 Registering module 'ExpoAudio'
+🟢 Registering module 'ExpoVideoView'
+🟢 Registering module 'ExpoBackgroundFetch'
+🟢 Registering module 'ExpoBlurView'
+🟢 Registering module 'ExpoCamera'
+🟢 Registering module 'ExpoClipboard'
+🟢 Registering module 'ExponentConstants'
+🟢 Registering module 'ExpoCrypto'
+🟢 Registering module 'ExpoDevice'
+🟢 Registering module 'EASClient'
+🟢 Registering module 'FileSystem'
+🟢 Registering module 'ExponentFileSystem'
+🟢 Registering module 'ExpoFontLoader'
+🟢 Registering module 'ExpoFontUtils'
+🟢 Registering module 'ExpoHaptics'
+🟢 Registering module 'ExponentImagePicker'
+🟢 Registering module 'ExpoInsights'
+🟢 Registering module 'ExpoKeepAwake'
+🟢 Registering module 'ExpoLinearGradient'
+🟢 Registering module 'ExpoLinking'
+🟢 Registering module 'ExpoLocation'
+🟢 Registering module 'ExpoBackgroundNotificationTasksModule'
+🟢 Registering module 'ExpoBadgeModule'
+🟢 Registering module 'ExpoNotificationCategoriesModule'
+🟢 Registering module 'ExpoNotificationsEmitter'
+🟢 Registering module 'ExpoNotificationsHandlerModule'
+🟢 Registering module 'ExpoNotificationPermissionsModule'
+🟢 Registering module 'ExpoNotificationPresenter'
+🟢 Registering module 'ExpoPushTokenManager'
+🟢 Registering module 'ExpoNotificationScheduler'
+🟢 Registering module 'NotificationsServerRegistrationModule'
+🟢 Registering module 'ExpoHead'
+🟢 Registering module 'ExpoRouterNativeLinkPreview'
+🟢 Registering module 'ExpoSecureStore'
+🟢 Registering module 'ExpoSharing'
+🟢 Registering module 'ExpoSMS'
+🟢 Registering module 'ExpoSplashScreen'
+🟢 Registering module 'ExpoSQLite'
+🟢 Registering module 'ExpoStoreReview'
+🟢 Registering module 'ExpoUpdates'
+🟢 Registering module 'ExpoWebBrowser'
+[LA-SWIFT] OnCreate — module instantiated
+[LA-SWIFT] OnCreate — reattached activity: none
+🟢 Registering module 'LiveActivity'
+🟢 Registering module 'ExpoDevMenu'
+🟢 Registering module 'ExpoDevMenuInternal'
+🟢 Registering module 'DevMenuPreferences'
+AddInstanceForFactory: No factory registered for id <CFUUID 0x121407620> F8BB1C28-BAE8-11D6-9C31-00039315CD46
+🟢 Creating JS object for module 'ExpoModulesCoreJSLogger'
+🟢 Creating JS object for module 'ExpoUpdates'
+🟢 Creating JS object for module 'ExponentConstants'
+🟢 Creating JS object for module 'ExpoRouterNativeLinkPreview'
+Unbalanced calls start/end for tag 20
+Unbalanced calls start/end for tag 19
+Running "main" with {"rootTag":11,"initialProps":null,"fabric":true}
+SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+nw_protocol_instance_set_output_handler Not calling remove_input_handler on 0x1077d3800:socket
+nw_connection_copy_connected_local_endpoint_block_invoke [C9] Connection has no local endpoint
+nw_connection_copy_connected_local_endpoint_block_invoke [C9] Connection has no local endpoint
+🟢 Creating JS object for module 'ExpoSecureStore'
+🟢 Creating JS object for module 'ExpoSQLite'
+🟢 Creating JS object for module 'ExponentFileSystem'
+'Require cycle: src/lib/api.ts -> src/lib/offline-storage.ts -> src/lib/api.ts\n\nRequire cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.', { [Stack] name: 'Stack' }
+[API] base url = https://jobrunner.com.au
+🟢 Creating JS object for module 'ExpoLocation'
+🟢 Creating JS object for module 'ExpoApplication'
+🟢 Creating JS object for module 'NotificationsServerRegistrationModule'
+🟢 Creating JS object for module 'ExpoPushTokenManager'
+🟢 Creating JS object for module 'ExpoBadgeModule'
+🟢 Creating JS object for module 'ExpoNotificationsEmitter'
+🟢 Creating JS object for module 'ExpoNotificationsHandlerModule'
+🟢 Creating JS object for module 'ExpoDevice'
+🟢 Creating JS object for module 'ExpoAppleAuthentication'
+[StripeTerminal] SDK loaded successfully
+[useStripeTerminal] SDK hook loaded successfully
+<SKPaymentQueue: 0x10775a9b0>: Error in remote proxy while checking server queue: Error Domain=SKInternalErrorDomain Code=12 "(null)"
+'[global-font] Could not apply Inter font mapping to Text — RN internals changed. Typography parity may regress.', { [Stack] name: 'Stack' }
+'[global-font] Could not apply Inter font mapping to TextInput — RN internals changed. Typography parity may regress.', { [Stack] name: 'Stack' }
+🟢 Creating JS object for module 'ExpoSplashScreen'
+🟢 Creating JS object for module 'ExpoClipboard'
+🟢 Creating JS object for module 'ExpoVideoView'
+'[expo-av]: Expo AV has been deprecated and will be removed in SDK 54. Use the `expo-audio` and `expo-video` packages to replace the required functionality.', { [Stack] name: 'Stack' }
+🟢 Creating JS object for module 'ExpoLinking'
+🟢 Creating JS object for module 'ExpoKeepAwake'
+🟢 Insights: RUN_JS_BUNDLE_START at 1780234281.2439322
+🟢 Insights: RUN_JS_BUNDLE_END at 1780234282.182311
+🟢 Insights: APP_STARTUP_END at 1780234282.1823747
+🟢 Insights: CONTENT_APPEARED at 1780234283.102404
+🟢 Creating JS object for module 'ExpoFontLoader'
+🟢 Creating JS object for module 'ExpoAsset'
+[Notifications] Push notifications require a physical device
+'🍎 Apple Sign In availability check (register):', true
+WARNING: Logging before InitGoogleLogging() is written to STDERR
+I0531 23:31:23.759016 1810837504 UIManagerBinding.cpp:135] instanceHandle is null, event of type topHeaderHeightChange will be dropped
+expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+🟢 Creating JS object for module 'ExpoBackgroundFetch'
+[OfflineStorage] Initialized successfully
+[OfflineStorage] Background sync registered
+[Location] Initialized successfully (foreground=true, background=false)
+nw_protocol_instance_set_output_handler Not calling remove_input_handler on 0x1351d7400:socket
+nw_connection_copy_connected_local_endpoint_block_invoke [C13] Connection has no local endpoint
+nw_connection_copy_connected_local_endpoint_block_invoke [C13] Connection has no local endpoint
+[App] Warming up Stripe Terminal for faster checkout...
+[API] GET /api/jobs?status=pending,scheduled,in_progress
+nw_protocol_instance_set_output_handler Not calling remove_input_handler on 0x1351d5400:socket
+nw_connection_copy_connected_local_endpoint_block_invoke [C15] Connection has no local endpoint
+nw_connection_copy_connected_local_endpoint_block_invoke [C15] Connection has no local endpoint
+'[API] Error 401:', { error: 'Authentication required' }
+'🍎 Apple Sign In availability check:', true
+🟢 Creating JS object for module 'ExpoWebBrowser'
+[App] App came to foreground - warming Terminal...
+🟢 Posting 'appBecomesActive' event to registered modules
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will hide notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will change frame notification, but keyboard was not even present.
+Got a keyboard will hide notification, but keyboard was not even present.
+[API] GET /api/auth/me
+[Notifications] Push notifications require a physical device
+[OfflineStorage] Sync already in progress
+[Auth] Already authenticated, skipping checkAuth
+[API] GET /api/business-settings
+[API] GET /api/notifications/missed
+[API] GET /api/notifications/unified
+[API] GET /api/notifications/missed
+[API] GET /api/notifications/unified
+[API] GET /api/jobs
+[API] GET /api/clients
+[API] GET /api/quotes
+[API] GET /api/invoices
+[API] GET /api/custom-forms
+'[IAP] Connection initialized:', true
+[GlobalIAP] Global IAP listener active
+'🍎 Apple Sign In availability check (register):', true
+'🍎 Apple Sign In availability check:', true
+'[IAP] Connection initialized:', true
+[GlobalIAP] Global IAP listener active
+[OfflineStorage] No pending changes to sync
+[API] GET /api/jobs
+[API] GET /api/clients
+[API] GET /api/quotes
+[API] GET /api/invoices
+[API] GET /api/custom-forms
+[OfflineStorage] Initialized successfully
+[OfflineStorage] Background sync registered
+[Location] Initialized successfully (foreground=true, background=false)
+[App] Warming up Stripe Terminal for faster checkout...
+[API] GET /api/jobs?status=pending,scheduled,in_progress
+[API] GET /api/stripe/terminal-location
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_quotes' ] }
+[API] GET /api/team/my-role
+'[API] Error 400:', { error: 'Stripe Connect account not set up' }
+'[Stripe terminal]: initialize', 'tokenProvider mode: StandardConnectionTokenProvider'
+[API] POST /api/stripe/terminal-connection-token
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_quotes' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+[OfflineStorage] Cached 1 jobs
+[OfflineStorage] Cached 1 clients
+'[OfflineStorage] Full sync skipped (offline DB unavailable, using server data):', [TypeError: iterator method is not callable]
+'[API] Error 400:', { error: 'Stripe Connect account not set up' }
+'[StripeTerminal] Connection token fetch failed:', [Error: Failed to fetch connection token]
+Couldn't fetch connection token. Please check your tokenProvider method
+[Error: Failed to fetch connection token]
+'[Stripe terminal]: CONNECTION_TOKEN_PROVIDER_ERROR', 'Couldn\'t fetch connection token. Please check your tokenProvider method'
+'[useStripeTerminal] Initialize error:', [Error: Couldn't fetch connection token. Please check your tokenProvider method]
+[Location] Subcontractor mode: false
+[API] GET /api/team/members
+[OfflineStorage] Cached 1 jobs
+[OfflineStorage] Cached 1 clients
+'[OfflineStorage] Full sync skipped (offline DB unavailable, using server data):', [TypeError: iterator method is not callable]
+[OfflineStorage] Cached auth data for offline access
+[API] GET /api/usage
+[API] GET /api/jobs/today
+[API] GET /api/jobs
+[API] GET /api/quotes
+[API] GET /api/invoices
+[API] GET /api/clients
+[API] GET /api/jobs
+[API] GET /api/dashboard/daily-summary
+[API] GET /api/worker/state
+[API] GET /api/team/my-role
+[API] GET /api/auth/my-businesses
+[API] GET /api/auth/pending-invites
+[API] GET /api/jobs/today
+[API] GET /api/jobs
+[API] GET /api/quotes
+[API] GET /api/invoices
+[API] GET /api/clients
+[API] GET /api/jobs
+[API] GET /api/dashboard/daily-summary
+[API] GET /api/worker/state
+[API] GET /api/jobs/today
+[API] GET /api/jobs
+[API] GET /api/quotes
+[API] GET /api/invoices
+[API] GET /api/clients
+[API] GET /api/jobs
+[API] GET /api/dashboard/daily-summary
+[API] GET /api/worker/state
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today
+[API] GET /api/activity/recent/5
+[API] GET /api/jobs/my-jobs
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today
+[API] GET /api/activity/recent/5
+[API] GET /api/jobs/my-jobs
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today
+[API] GET /api/activity/recent/5
+[API] GET /api/jobs/my-jobs
+[API] GET /api/auth/pending-invites
+[API] GET /api/auth/pending-invites
+[API] GET /api/time-entries/active
+[API] GET /api/weather?lat=37.785834&lon=-122.406417
+[API] GET /api/weather?lat=37.785834&lon=-122.406417
+I0531 23:31:59.562739 1810837504 UIManagerBinding.cpp:135] instanceHandle is null, event of type topWillDisappear will be dropped
+'[API] Error 401:', { error: 'Not authenticated' }
+'[API] Error 401:', { error: 'Not authenticated' }
+'[API] Error 401:', { error: 'Not authenticated' }
+'[API] Error 401:', { error: 'Not authenticated' }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_quotes' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_quotes' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_quotes' ] }
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+[OfflineStorage] Cached 1 clients
+[API] GET /api/invoices
+[API] GET /api/invoices
+[API] GET /api/invoices
+[OfflineStorage] Cached 1 clients
+[OfflineStorage] Cached 1 clients
+[API] GET /api/auth/pending-invites
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'Error fetching to-invoice count:', [TypeError: invoices.map is not a function (it is undefined)]
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'Error fetching to-invoice count:', [TypeError: invoices.map is not a function (it is undefined)]
+'[API] Error 403:', { error: 'Access denied',
+  message: 'You don\'t have permission to perform this action',
+  requiredPermission: [ 'read_invoices' ] }
+'Error fetching to-invoice count:', [TypeError: invoices.map is not a function (it is undefined)]
+'[API] Error 401:', { error: 'Not authenticated' }
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today
+[API] GET /api/notifications/unified
+[API] GET /api/time-tracking/dashboard
+[API] GET /api/jobs/today

@@ -1,0 +1,251 @@
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+a4653792
+
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+a849ac2 · Prevent duplicate form submissions and signatures on retries Add idempotency checks to form submission and SWMS signing API endpoints to prevent duplicate data entry when requests are retried. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 1315696a-e31b-422c-af2f-9e8975622b5f Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/wwTBzZe Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (64)
+
+17554eb
+
+a849ac2
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 19, 2026 3:56 AM
+257ms
+
+40s
+
+1m 31s
+
+2m 11s
+
+29 days
+
+Logs
+
+Waiting to start
+
+1s
+
+
+Spin up build environment
+
+39s
+
+
+Install custom tools
+
+9s
+
+
+Prepare project
+
+11s
+
+
+Read eas.json
+
+1ms
+
+
+Read package.json
+
+0ms
+
+
+Install dependencies
+
+9s
+
+
+Read app config
+
+
+1
+372ms
+
+
+Run expo doctor
+
+2s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+24s
+
+
+Calculate expo-updates runtime version
+
+235ms
+
+
+Configure Xcode project
+
+54ms
+
+
+Configure expo-updates
+
+2ms
+
+
+Bundle JavaScript
+
+19s
+
+
+Starting Metro Bundler
+iOS node_modules/expo-router/entry.js ▓▓▓▓░░░░░░░░░░░░ 30.0% (293/608)
+iOS node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 36.2% (470/781)
+iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 56.4% (704/939)
+iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 58.8% (1896/3070)
+iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 91.1% (3670/3845)
+iOS Bundling failed 18363ms node_modules/expo-router/entry.js (4308 modules)
+Unable to resolve module @/src/lib/offline-storage from /Users/expo/workingdir/build/mobile/app/job/chat.tsx: @/src/lib/offline-storage could not be found within the project or in these directories:
+  node_modules
+  node_modules
+  718 |     let prevOnline = true;
+  719 |     (async () => {
+> 720 |       const { useOfflineStore } = await import('@/src/lib/offline-storage');
+      |                                                 ^
+  721 |       if (!mounted) return;
+  722 |       prevOnline = useOfflineStore.getState().isOnline;
+  723 |       unsub = useOfflineStore.subscribe((state) => {
+Import stack:
+ app/job/chat.tsx
+ | import "@/src/lib/offline-storage"
+ app (require.context)
+Error: Unable to resolve module @/src/lib/offline-storage from /Users/expo/workingdir/build/mobile/app/job/chat.tsx: @/src/lib/offline-storage could not be found within the project or in these directories:
+  node_modules
+  node_modules
+  718 |     let prevOnline = true;
+  719 |     (async () => {
+> 720 |       const { useOfflineStore } = await import('@/src/lib/offline-storage');
+      |                                                 ^
+  721 |       if (!mounted) return;
+  722 |       prevOnline = useOfflineStore.getState().isOnline;
+  723 |       unsub = useOfflineStore.subscribe((state) => {
+Import stack:
+ app/job/chat.tsx
+ | import "@/src/lib/offline-storage"
+ app (require.context)
+npx expo export:embed --eager --platform ios --dev false exited with non-zero code: 1
+
+Clean up credentials
+
+726ms
+
+
+Fail job
+
+1ms
+
+
+Build failed
+
+npx expo export:embed --eager --platform ios --dev false exited with non-zero code: 1
+

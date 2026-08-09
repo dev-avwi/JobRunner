@@ -1,0 +1,206 @@
+Yep — what you’re describing is exactly how real SaaS apps do it: feature gating + trials + “billing off during beta” + later flipping billing on without breaking existing users or getting rejected by Apple.
+
+Here’s a single Replit master prompt that tells it to thoroughly scan your app, make plans + roles logical, ensure team invites work on web + mobile, and make the app Apple-approval safe.
+
+Copy/paste:
+
+REPLIT MASTER BILLING + ACCOUNTS QA PROMPT (TRADIETRACK) — APPLE-APPROVED BETA
+
+You are acting as a senior SaaS engineer + QA lead. Spend at least 20 minutes carefully scanning the codebase and runtime behavior (web + mobile) to verify:
+1) subscription plans/roles are logically implemented
+2) team accounts + invites work perfectly across web + mobile
+3) the app is Apple review safe (no misleading paywalls / broken beta gating / fake UI)
+4) billing can be OFF during beta and turned ON later without breaking existing users
+5) free trials work for new users once billing is enabled
+Do NOT guess—verify by reading code, checking API routes, DB schema, and simulating flows.
+
+========================================================
+A) REQUIRED ACCOUNT MODEL + ROLE LOGIC
+========================================================
+
+1) Define and enforce these concepts in code + database:
+- Business/Workspace (one tradie business)
+- Users (owner, admin/manager, worker)
+- Membership (user belongs to business with a role)
+- Subscription tier (FREE / PRO / TEAM)
+- Subscription status (beta_free, trialing, active, past_due, canceled)
+- Trial end timestamp (trial_ends_at)
+- Seats: number of active worker memberships (for TEAM plan)
+
+2) Role rules (must be enforced server-side, not just UI):
+- Owner/admin can: billing, business settings, invite/remove members, see map/team locations (if enabled), export data
+- Worker can: assigned jobs, job updates, time tracking, photos, job chat
+- Worker cannot: billing, delete business, see all financials unless allowed by role permissions
+
+3) Verify ALL checks are server-side:
+- API endpoints must verify role before allowing actions
+- Frontend gating alone is not enough
+
+========================================================
+B) PLAN TIERS — WHAT EACH PLAN CAN DO
+========================================================
+
+Implement clear plan gating with a single source of truth:
+- A function like canUseFeature(business, featureKey) used across web+mobile+API
+
+Required plan behavior:
+
+FREE (Beta mode for now)
+- Core workflow works
+- Basic quotes/invoices/PDF/email sending works
+- Basic job tracking works
+- BUT some advanced features can be limited (e.g. advanced automations, advanced branding, team size caps)
+
+PRO
+- Adds branding (logo/header/footer templates)
+- Removes “Powered by TradieTrack”
+- Automations (reminders/follow-ups)
+- Additional templates / document customization
+- (Optional) Accounting export (CSV)
+
+TEAM
+- Everything in PRO
+- Multiple members (seats)
+- Team map + locations
+- Group chat + job chat for teams
+- Dispatch/assignment board
+- (Optional) advanced permissions + audit logs
+
+IMPORTANT:
+- If a feature is visible but not available in the current plan, show a clean upgrade modal.
+- Do NOT show broken / unimplemented “Upgrade to unlock” flows.
+
+========================================================
+C) BILLING MODES: BETA OFF → LIVE ON (CRITICAL)
+========================================================
+
+We need a “billing mode” switch that allows:
+
+MODE 1: BETA (billing disabled)
+- Everyone can use PRO/TEAM features for free (or controlled access)
+- No Stripe charges or paywalls shown during Apple review if that risks rejection
+- Any upgrade UI should be hidden or clearly marked “Beta: billing not enabled yet”
+
+MODE 2: LIVE (billing enabled)
+- New users start trial (e.g. 14 or 30 days)
+- Collect card at trial start is OPTIONAL; implement it as a setting:
+  - collect_card_on_trial_start = false for now
+  - later can be true
+- After trial ends: enforce paywall for gated features
+- Existing beta users should be handled cleanly:
+  - Either grandfather them with beta_free status until you migrate them
+  - Or start their trial from the day billing is enabled
+
+Implement:
+- A single config flag (ENV or DB setting):
+  BILLING_MODE = "beta" | "live"
+- Ensure BOTH web + mobile respect this
+
+Add an admin-only “Billing Mode” indicator in settings (not visible to customers).
+
+========================================================
+D) STRIPE SETUP (SUBSCRIPTIONS) — MUST BE SAFE
+========================================================
+
+1) Confirm Stripe keys are server-side only (env vars).
+2) Create/verify subscription products:
+- PRO monthly price
+- TEAM base monthly price
+- TEAM seat price per worker (metered or quantity-based)
+3) Seat counting rules (TEAM plan):
+- Count active worker memberships in the business (excluding owner/admin if desired)
+- Enforce seat limit or auto-increase Stripe subscription quantity
+- Seat changes must sync to Stripe (upgrade/downgrade quantity)
+4) Webhooks:
+- subscription created/updated/canceled
+- invoice.payment_succeeded / failed
+- trial will end reminders (optional)
+- On webhook, update subscription_status in DB (source of truth)
+
+CRITICAL:
+- Do not mark a user “paid/active” from the client side.
+- Only webhooks or verified Stripe subscription states can do that.
+
+========================================================
+E) TEAM INVITES — MUST WORK PERFECTLY (WEB + MOBILE)
+========================================================
+
+Implement and verify end-to-end:
+
+1) Owner invites member:
+- via email invite link OR invite code
+- invite record stored in DB with expiry
+- role assigned (worker/admin)
+2) Invite acceptance:
+- If invitee has no account → they create account then accept invite
+- If invitee already has account → they log in then accept invite
+3) After acceptance:
+- Membership created
+- Correct permissions applied immediately
+- App navigation updates accordingly (worker vs owner UI)
+4) Resend/revoke invite works
+5) Prevent security issues:
+- Invite tokens single-use
+- Expire after X days
+- Must match intended email (or confirm email after login)
+
+Also verify:
+- Team features (map, chat, assignments) only appear when TEAM plan is enabled OR when BILLING_MODE=beta allows it.
+
+========================================================
+F) APPLE REVIEW SAFETY CHECK (NON-NEGOTIABLE)
+========================================================
+
+Do a compliance pass focused on App Store review:
+- No misleading claims (“free” if it’s not free)
+- If subscriptions exist:
+  - clear explanation in app (pricing page, trial terms)
+  - restore purchases (if using IAP; if not, ensure external purchase is handled correctly)
+- Do not block core app behind broken paywalls
+- No “fake” buttons / placeholders in review build
+- Provide a demo/test mode if needed:
+  - stable demo account
+  - seeded demo data
+  - no payment required during review
+
+If any feature is incomplete:
+- hide it from navigation for beta/review builds
+- OR label it “Coming soon” and make it non-clickable
+
+========================================================
+G) OUTPUT REQUIRED: QA REPORT + FIX LIST
+========================================================
+
+After scanning and fixing, output a detailed report including:
+
+1) ✅ What is confirmed working:
+- Free/pro/team gating
+- Billing mode switching
+- Trial creation rules
+- Stripe subscription + seat logic
+- Team invites (web + mobile)
+- Role-based dashboards
+
+2) ⚠️ What is partially implemented and should be hidden for Apple review
+
+3) 🛠 Must-fix before charging users:
+- Anything that could cause wrong billing
+- Seat count mismatch
+- Broken invite acceptance
+- Missing server-side permission checks
+
+4) A “Go/No-Go” decision:
+- Is the app safe to submit to Apple as beta?
+- Is it safe to later enable billing with minimal code changes?
+
+Take your time and ensure this is done properly. Do not claim anything is done unless validated in code and by simulating the flows.
+
+Two key notes (so you don’t get stung later)
+	1.	“Charging later” is easiest if you store subscription fields now
+Even if BILLING_MODE=beta, you still want DB fields like tier, status, trial_ends_at, seats. Then flipping billing live is clean.
+	2.	Team pricing must count seats the same way everywhere
+UI, backend, Stripe quantity must match. No exceptions. That’s the #1 SaaS billing bug.
+
+⸻
+
+If you paste Replit’s response back here (especially anything it flags about Apple/IAP/trials), I’ll tell you the safest exact approach for App Store approval + charging later without getting rejected.

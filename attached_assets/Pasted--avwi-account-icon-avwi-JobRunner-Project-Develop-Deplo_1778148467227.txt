@@ -1,0 +1,196 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+762e1077
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+Android internal distribution build
+9551532 · Make taps feel native on the rest of the mobile app (Round 11) Extended the Round 10 PressableRow migration to all remaining secondary mobile screens and shared components. Migrated 881 list-row / interactive TouchableOpacity instances across 84 files to PressableRow (Material ripple on Android, subtle scale + haptic on iOS) using an automated JSX-aware script that: - Stripped the `activeOpacity` prop (PressableRow handles feedback) - Skipped any TouchableOpacity with `activeOpacity={1}` (modal backdrops) - Inserted `import { PressableRow } from '.../components/ui/PressableRow'` (with a follow-up pass that fixed cases where the import was injected inside a multi-line `import { ... } from 'react-native'` block) Files covered include all `app/(tabs)/profile.tsx`, `app/job/chat.tsx`, every remaining `app/more/**` screen (clients, leads, quotes, invoices, recurring-jobs, receipts, documents, files, equipment, expenses, service-reminders, subcontractors, team-operations/groups/chat, chat-hub, sms screens, payment-hub, phone-numbers, integrations, compliance, calendar, calculators, dispatch-board, autopilot, etc.), plus shared components (JobWorkflowComponents, NotificationsPanel, WorkspaceSwitcher, GlobalSearch, EmailComposeModal, MobileSendModal, QuickActionSheet, SmartActionsPanel, AdvancedThemeControls, TradeTypeSelector, FormRenderer, CustomFormBuilder, AIPhotoAnalysis, DragDropDispatchBoard, FloatingAIWidget, MapPreferenceModal, DocumentPreview, ConflictResolutionPanel, UsageLimitBanner, WhatYouMissedPopup, EmptyState, and ui/ pickers). Intentionally retained as TouchableOpacity (matching Round 10 conventions): - Auth screens, onboarding setup wizard, +not-found - Modal backdrop overlays (`activeOpacity={1}`) - Full-bleed media viewers (PhotoLibrary, PhotoAnnotationEditor) - SignaturePad, VoiceRecorder, FloatingActionButton, ErrorBoundary - AppTour, OnboardingTour, OfflineIndicator, BackgroundLocationIndicator, ui/SyncStatusIndicator Verification: `tsc --noEmit` produces only pre-existing errors (verified against HEAD); zero new TS errors introduced by the migration. Both workflows boot cleanly. No real-device spot-check possible from the sandbox; behavior matches the existing Round 10 migrated screens. Replit-Task-Id: b4e6d44e-a413-4d24-be32-99ded7e6d456
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+preview
+
+preview
+
+
+1.1.2
+
+
+preview
+
+ 1.1.2 (35)
+
+d787f82
+
+9551532
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+May 7, 2026 8:04 PM
+243ms
+
+2m 1s
+
+27s
+
+2m 28s
+
+89 days
+
+Logs
+
+Waiting to start
+
+5s
+
+
+Spin up build environment
+
+1m 55s
+
+
+Install custom tools
+
+8s
+
+
+Prepare project
+
+12s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+870ms
+
+
+Running "npm ci --include=dev" in /home/expo/workingdir/build/mobile directory
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+npm error
+npm error Missing: @gorhom/bottom-sheet@5.2.13 from lock file
+npm error Missing: react-native-toast-message@2.3.3 from lock file
+npm error Missing: @gorhom/portal@1.0.14 from lock file
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /home/expo/.npm/_logs/2026-05-07T10_07_06_430Z-debug-0.log
+npm ci --include=dev exited with non-zero code: 1
+
+Fail job
+
+1ms
+
+
+Build failed
+
+npm ci --include=dev exited with non-zero code: 1
+

@@ -1,0 +1,283 @@
+This build does not count towards your EAS Build usage.
+iOS App Store build
+6c86a7a · Update app store ID for production builds Update `ascAppId` in `eas.json` from `6756844699` to `6760283858` for production builds targeting the new JobRunner app. Replit-Commit-Author: Agent Replit-Commit-Session-Id: d9bbd5c0-a918-45b6-9a45-51cc2c443aab Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: e61e25d1-4c3a-4cfd-b11f-637a30c3213f Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/d9bbd5c0-a918-45b6-9a45-51cc2c443aab/nx2T4Sg Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (26)
+
+456bfef
+
+6c86a7a
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Mar 9, 2026 5:46 PM
+0s
+
+50s
+
+1m 44s
+
+2m 35s
+
+29 days
+
+Logs
+
+Waiting to start
+
+7s
+
+
+Spin up build environment
+
+44s
+
+
+Install custom tools
+
+9s
+
+
+Prepare project
+
+11s
+
+
+Read eas.json
+
+1s
+
+
+Read package.json
+
+1s
+
+
+Install dependencies
+
+8s
+
+
+Read app config
+
+1s
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Running "expo doctor"
+Running 17 checks on your project...
+15/17 checks passed. 2 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+✖ Validate packages against React Native Directory package metadata
+The following issues were found when validating your dependencies against React Native Directory:
+  Untested on New Architecture: @stripe/stripe-terminal-react-native
+Advice:
+Use libraries that are actively maintained and support the New Architecture. Find alternative libraries with https://reactnative.directory.
+Add packages to expo.doctor.reactNativeDirectoryCheck.exclude in package.json to selectively skip validations, if the warning is not relevant.
+✖ Check that packages match versions required by installed Expo SDK
+🔧 Patch version mismatches
+package      expected  found    
+expo         ~54.0.33  54.0.32  
+expo-router  ~6.0.23   6.0.22   
+Changelogs:
+- expo-router → https://github.com/expo/expo/blob/sdk-54/packages/expo-router/CHANGELOG.md
+2 packages out of date.
+Advice:
+Use 'npx expo install --check' to review and upgrade your dependencies.
+To ignore specific packages, add them to "expo.install.exclude" in package.json. Learn more: https://expo.fyi/dependency-validation
+2 checks failed, indicating possible issues with the project.
+Command "expo doctor" failed.
+npx -y expo-doctor exited with non-zero code: 1
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+26s
+
+
+Calculate expo-updates runtime version
+
+1s
+
+
+Configure Xcode project
+
+1s
+
+
+Configure expo-updates
+
+1s
+
+
+Bundle JavaScript
+
+19s
+
+
+Run fastlane
+
+
+2
+11s
+
+
+Creating Gymfile
+Gymfile created
+Successfully loaded '/Users/expo/workingdir/build/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | JobRunner                                                                                                                                   |
+| configuration         | Release                                                                                                                                     |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-978fbe90-8c5e-4a41-b8f4-bf2e65f5303b.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release 2>&1
+Detected provisioning profile mapping: {:"com.jobrunner.app"=>"e403d1db-a60b-4140-b8d0-b67e4b908168"}
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                       Summary for gym 2.228.0                                                                                       |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                             | ./JobRunner.xcworkspace                                                                                                                     |
+| scheme                                                | JobRunner                                                                                                                                   |
+| clean                                                 | false                                                                                                                                       |
+| output_directory                                      | ./build                                                                                                                                     |
+| output_name                                           | JobRunner                                                                                                                                   |
+| configuration                                         | Release                                                                                                                                     |
+| silent                                                | false                                                                                                                                       |
+| skip_package_ipa                                      | false                                                                                                                                       |
+| skip_package_pkg                                      | false                                                                                                                                       |
+| export_options.method                                 | app-store                                                                                                                                   |
+| export_options.provisioningProfiles.com.jobrunner.app | e403d1db-a60b-4140-b8d0-b67e4b908168                                                                                                        |
+| export_xcargs                                         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-978fbe90-8c5e-4a41-b8f4-bf2e65f5303b.keychain" |
+| build_path                                            | /Users/expo/Library/Developer/Xcode/Archives/2026-03-09                                                                                     |
+| result_bundle                                         | false                                                                                                                                       |
+| buildlog_path                                         | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                           | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                 | true                                                                                                                                        |
+| xcodebuild_formatter                                  | xcpretty                                                                                                                                    |
+| build_timing_summary                                  | false                                                                                                                                       |
+| disable_xcpretty                                      | true                                                                                                                                        |
+| skip_profile_detection                                | false                                                                                                                                       |
+| xcodebuild_command                                    | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                  | false                                                                                                                                       |
+| disable_package_automatic_updates                     | false                                                                                                                                       |
+| use_system_scm                                        | false                                                                                                                                       |
+| xcode_path                                            | /Applications/Xcode.app                                                                                                                     |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-03-09/JobRunner\ 2026-03-09\ 00.49.18.xcarchive archive | tee /Users/expo/workingdir/logs/JobRunner-JobRunner.log > /dev/null
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNReanimated' from project 'Pods')
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
+    Run script build phase '[CP-User] Generate updates resources for expo-updates' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'EXUpdates' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNWorklets' from project 'Pods')
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	Archiving workspace JobRunner with scheme JobRunner
+▸ (1 failure)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.228.0                 |
+| sdk         | iPhoneOS26.0.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Provisioning profile "*[expo] com.jobrunner.app AppStore 2026-03-09T06:38:52.457Z" doesn't include the com.apple.developer.proximity-reader.payment.acceptance entitlement. (in target 'JobRunner' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1s
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Provisioning profile "*[expo] com.jobrunner.app AppStore 2026-03-09T06:38:52.457Z" doesn't include the com.apple.developer.proximity-reader.payment.acceptance entitlement. (in target 'JobRunner' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs

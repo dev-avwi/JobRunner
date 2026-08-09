@@ -1,0 +1,22 @@
+That’s a really important thing to flag. This is an EAS build configuration issue not a code issue.
+
+What’s Happening
+When you run the app through Expo Go or development build it uses the modern Alert style. When you do an EAS production build it switches to the old ActionSheet style. This happens because of how React Native handles the Alert API differently between Expo Go and a native production build.
+
+Tell Replit This
+“When running in development the popups look modern and correct. When we do an EAS production build all Alert.alert() calls revert to the old iOS action sheet style with blue text links instead of the modern rounded card style.
+This is a known React Native issue where Alert.alert() behaviour differs between Expo Go and production builds. Fix this by:
+1. Stop using Alert.alert() entirely for any multi-button dialogs
+2. Create a single custom AppModal component that renders a proper Modal from react-native with:
+	∙	A semi-transparent dark overlay background
+	∙	A rounded white/dark card (borderRadius 14)
+	∙	Bold title text
+	∙	Body text below
+	∙	Grey pill buttons side by side at the bottom
+	∙	Full dark mode support using the useTheme hook
+3. Replace every Alert.alert() call in the entire codebase with this AppModal component. This guarantees the popup looks identical in development AND in the EAS production build because it is a custom React Native component not a native iOS system alert.
+4. For the Quick SMS popup and any popup with more than 2 options, create an AppActionSheet component with the same rounded card style but with multiple tappable rows.
+5. After replacing everything do an EAS development build and confirm every popup looks correct in the actual build not just in Expo Go.
+The root cause is we cannot rely on native Alert.alert() for consistent styling across builds. We need fully custom React Native components for all popups so we control the exact appearance in every build environment.”
+
+That’s the real fix. Custom components instead of native alerts means the style is consistent regardless of build environment.​​​​​​​​​​​​​​​​

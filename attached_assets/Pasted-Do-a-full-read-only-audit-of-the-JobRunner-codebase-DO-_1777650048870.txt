@@ -1,0 +1,135 @@
+Do a full read-only audit of the JobRunner codebase. DO NOT modify any files,
+DO NOT install packages, DO NOT run migrations. Only read and report.
+
+GROUND RULES:
+- Every claim must cite a file path and line number, e.g. "shared/schema.ts:77".
+- If you don't find evidence, say "NOT FOUND" — do not guess.
+- Use ripgrep (rg) and the read tool. Do not rely on prior knowledge of the project.
+- At the end of each section, list the exact files you consulted.
+
+DELIVER A REPORT IN THIS EXACT STRUCTURE:
+
+═══════════════════════════════════════════
+SECTION 1 — SUBSCRIPTION TIERS & PRICING
+═══════════════════════════════════════════
+1a. Read `shared/schema.ts` and find the PRICING constant. Report:
+    - Tier names, monthly prices in cents, base+seat structure for Team
+    - Whether a "Business" tier exists in code (yes/no, with line cite)
+1b. Find every Stripe product/price ID hardcoded in the repo:
+    - rg -n "price_|prod_" server/ shared/
+    - List each with its tier mapping
+1c. Find Apple IAP product IDs:
+    - rg -n "com\\.linkup2care|jobrunner.*\\.tier|productIdentifier" mobile/ server/
+1d. Find IS_BETA / beta-mode flag:
+    - rg -n "IS_BETA|isBeta|BETA_MODE" server/ shared/ client/
+    - Report current value AND list every code path that bypasses subscription
+      checks when it's true (with file:line for each)
+1e. Feature gating — for each tier, list which features are gated.
+    Search: rg -n "requireTeamPlan|requirePro|requireBusiness|hasTeamPlan|tier ===|tier !==" server/
+1f. Discrepancies between mobile UI fallback prices and the server PRICING constant:
+    - Read `mobile/app/more/subscription.tsx` and report any hardcoded $X strings
+    - Compare to shared/schema.ts PRICING
+
+═══════════════════════════════════════════
+SECTION 2 — WEB FEATURES
+═══════════════════════════════════════════
+List `client/src/pages/*.tsx`. For EACH page file, give a one-line description
+of the feature it implements. Group by category:
+  - Dashboard / Action Centre
+  - Jobs (create, schedule, recurring, complete)
+  - Quotes (multi-option, convert)
+  - Invoices + Payment Hub + Smart Chaser
+  - Chat Hub (team, two-way SMS, job chat)
+  - GPS / Dispatch Board / Live Map
+  - Team management (members, roles, invite codes, timesheets)
+  - Clients + Client Portal
+  - WHS / Safety (SWMS, incidents, training, compliance, AI hazard)
+  - Expenses + AI receipt scanning
+  - Reports / Analytics
+  - AI Receptionist (Vapi)
+  - Autopilot / Automations
+  - Booking Page
+  - Subcontractor management (NEW — magic-link + upgrade-to-account)
+  - Settings + Integrations
+  - Admin Dashboard
+  - Billing & Subscriptions
+For each feature, also flag if it's stubbed/incomplete (search for "TODO",
+"FIXME", "stub", "mock", "placeholder").
+
+═══════════════════════════════════════════
+SECTION 3 — MOBILE FEATURES & PARITY
+═══════════════════════════════════════════
+3a. List `mobile/app/**/*.tsx`. Build a parity matrix: for each web page in
+    Section 2, mark Mobile = YES / NO / PARTIAL.
+3b. Offline mode:
+    - rg -n "expo-sqlite|offlineQueue|sync.*queue|drizzle.*sqlite" mobile/
+    - Report which screens have offline support
+3c. Tap to Pay:
+    - rg -n "tapToPay|TapToPay|stripe-terminal|kStripeTerminalReader" mobile/ server/
+    - Report whether it's gated, enabled, or stubbed; cite Apple-approval status
+      string if any
+3d. Dark mode:
+    - rg -n "useTheme|darkMode|isDark|colorScheme" mobile/src/lib/theme.tsx
+    - Report whether dark mode is implemented system-wide
+3e. App version: read `mobile/app.json` — report version + buildNumber
+3f. EAS config: read `mobile/eas.json` — report appVersionSource, autoIncrement,
+    and EXPO_PUBLIC_API_URL per profile
+
+═══════════════════════════════════════════
+SECTION 4 — INTEGRATIONS
+═══════════════════════════════════════════
+For each integration below, report: (a) is it present, (b) what file initialises
+it, (c) is it production-ready or stubbed:
+  - Stripe (payments + subscriptions): server/billingService.ts, server/stripeSync*
+  - Apple IAP: rg -n "react-native-iap|appstore_notification" mobile/ server/
+  - Twilio (SMS + voice webhooks): rg -n "twilio" server/ — list webhooks
+  - Vapi (AI receptionist): rg -n "vapi" server/ — list endpoints + config
+  - Xero, MYOB, QuickBooks: rg -n "xero|myob|quickbook" server/
+  - Google Calendar: rg -n "google.*calendar|googleapis" server/
+  - SendGrid: rg -n "sendgrid|@sendgrid" server/
+  - Retell: rg -n "retell|RETELL" server/ — confirm if removed or still wired
+For each: report whether webhook signature verification is implemented (cite line).
+
+═══════════════════════════════════════════
+SECTION 5 — KNOWN ISSUES & TECH DEBT
+═══════════════════════════════════════════
+5a. TODOs / stubs:
+    - rg -n "TODO|FIXME|XXX|HACK|STUB" server/ client/src/ mobile/ | head -50
+    - Group by severity (block-launch / important / nice-to-have)
+5b. Security:
+    - Helmet: rg -n "helmet" server/
+    - Rate limiting: rg -n "rateLimit|express-rate" server/
+    - Session cookie config: read server/index.ts session setup
+    - Webhook signature verification: rg -n "constructEvent|verifyWebhook|x-twilio-signature" server/
+5c. routes.ts size: wc -l server/routes.ts — flag if over 3000 lines
+5d. Bundle size: report client/dist or mobile bundle size if available
+5e. Replit dev URLs: rg -n "replit\\.dev|repl\\.co|worf\\.replit" server/ client/ mobile/
+    - Any production URLs that point to dev are red flags
+5f. Demo account cleanup: rg -n "DEMO_USER|demo@jobrunner|cleanupDemo" server/demoData.ts
+    - Report whether demo data is reseeded on every restart (good) or persists
+      stale across deploys (bad)
+5g. Pre-existing TS errors: cd workspace && npx tsc --noEmit -p tsconfig.json 2>&1 | wc -l
+    - Report count, do not list
+
+═══════════════════════════════════════════
+SECTION 6 — TECH STACK SUMMARY
+═══════════════════════════════════════════
+6a. Frontend web: read package.json, list React + Vite + UI lib + state lib + routing
+6b. Mobile: read mobile/package.json, list Expo SDK version, expo-router, key libs
+6c. Backend: confirm Express + tsx, list ORM, list DB driver
+6d. Real-time:
+    - WebSocket: rg -n "ws|WebSocket|socket\\.io" server/
+    - List endpoints/screens still on polling: rg -n "refetchInterval|setInterval.*fetch" client/src mobile/
+6e. Hosting:
+    - Read .replit and replit.nix
+    - Confirm prod domain (jobrunner.com.au) and how it's served
+
+═══════════════════════════════════════════
+FINAL SUMMARY
+═══════════════════════════════════════════
+Top 5 things that are TRULY ready to ship.
+Top 5 things that LOOK ready but actually have a hidden gotcha.
+Top 5 things still genuinely unfinished.
+
+Be brutally honest. The owner is preparing to launch and would rather know now
+than find out from an angry customer.

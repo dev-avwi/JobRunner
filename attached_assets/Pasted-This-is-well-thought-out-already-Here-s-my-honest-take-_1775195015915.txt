@@ -1,0 +1,58 @@
+This is well thought out already. Here's my honest take on what to actually do:
+
+---
+
+**Build Both Options But Keep It Simple**
+
+The magic link option (Option A) is actually your killer feature for subbies. No app download, no signup friction, just a tap and they're in. That's genuinely better than what Tradify and ServiceM8 offer for one-off subcontractors.
+
+The full team option (Option B) for regulars is already mostly built.
+
+---
+
+**Tell Replit This Brief**
+
+*"Build the subcontractor mobile experience as a single task covering both workflows:*
+
+*For regular subbies — Option B is mostly built already. Just make sure:*
+- *The Subcontractor role on mobile only shows assigned jobs, no financials, no other team members*
+- *They can switch between multiple businesses if they work for several builders*
+- *Push notifications fire when they get assigned a new job*
+- *They can update job status, add photos, add notes, track time*
+
+*For one-off subbies — Option A via magic link:*
+- *On the assign worker screen, owner can type any phone number not just existing team members*
+- *System sends an SMS: "Mike's Construction has assigned you a job. Tap to view details: [magic link]"*
+- *Magic link opens a mobile-friendly web page — no app download needed*
+- *They can see job address, description, start time, contact details*
+- *They can tap to update status to In Progress and Done*
+- *They can upload photos from their phone camera*
+- *If they complete 3+ jobs via magic link, prompt them to download the app and join properly*
+
+*The assign worker flow on mobile should be:*
+*1. On any job tap Assign Worker*
+*2. See a list of existing team members and subbies*
+*3. Or type a phone number to send a magic link to someone new*
+*4. System automatically determines which flow to use based on whether they're an existing team member*
+
+*Keep it simple — the owner should never have to choose between Option A or B. They just assign a person and the system handles it."*
+
+---
+
+**The Multiple Business Switching**
+
+This is important and worth flagging separately. A subbie who works for three different builders needs to be able to switch between those businesses in the app easily. Tell Replit:
+
+*"Make sure the mobile app supports switching between multiple business accounts for users with the Subcontractor role. There should be a clear business switcher in the profile or settings so a subbie can see 'Mike's Construction' and 'Dave's Plumbing' and switch between them with one tap."*
+
+---
+
+**Is This A Pre-Launch Priority?**
+
+Honest answer — probably not for your very first customer. Your first pilot tradies are likely solo operators or small teams with direct employees. Subcontractor management is more relevant for construction businesses with 5+ regular subbies.
+
+Get your first 10 customers. When one of them asks about subcontractors — and they will — then build it properly with real feedback driving the design.
+
+Unless your mate's dad is one of your first pilot customers, in which case build it now and use him as your test case.
+
+Is he someone you're planning to approach as a pilot customer?

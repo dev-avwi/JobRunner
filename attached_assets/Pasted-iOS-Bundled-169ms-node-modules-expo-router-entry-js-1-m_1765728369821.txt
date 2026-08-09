@@ -1,0 +1,85 @@
+iOS Bundled 169ms node_modules/expo-router/entry.js (1 module)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ LOG  [StripeTerminal] SDK not available - using simulation mode
+ LOG  [useStripeTerminal] SDK not available, using simulator
+ LOG  [StripeTerminal] SDK not available - using fallback mode
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/auth/me
+ LOG  [Notifications] Push token: ExponentPushToken[TbvLzVNHjArGbycCTzJAkj]
+ LOG  [API] POST /api/push-tokens
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/auth/me
+ LOG  [Notifications] Token registered with backend
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ WARN  expo-background-fetch: This library is deprecated. Use expo-background-task instead.
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [OfflineStorage] Background sync registered
+ LOG  [Location] Initialized successfully
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ ERROR  [ReferenceError: Property 'pageShell' doesn't exist] 
+
+Code: index.tsx
+  1047 |   },
+  1048 |   contentContainer: {
+> 1049 |     paddingHorizontal: pageShell.paddingHorizontal,
+       |                        ^
+  1050 |     paddingTop: pageShell.paddingTop,
+  1051 |     paddingBottom: pageShell.paddingBottom,
+  1052 |   },
+Call Stack
+  createStyles (app/(tabs)/index.tsx:1049:24)
+  useMemo$argument_0 (app/(tabs)/index.tsx:629:44)
+  DashboardScreen (app/(tabs)/index.tsx:629:25) 
+
+Code: _layout.tsx
+   6 |   
+   7 |   return (
+>  8 |     <Tabs
+     |     ^
+   9 |       screenOptions={{
+  10 |         headerShown: false,
+  11 |         tabBarStyle: { display: 'none' },
+Call Stack
+  TabLayout (app/(tabs)/_layout.tsx:8:5)
+  RootLayoutContent (app/_layout.tsx:179:9)
+  RootLayout (app/_layout.tsx:210:13)
+ LOG  [API] GET /api/business-settings
+ ERROR  [TypeError: Notifications.removeNotificationSubscription is not a function (it is undefined)] 
+
+Code: notifications.ts
+  327 |   cleanup(): void {
+  328 |     if (this.notificationListener) {
+> 329 |       Notifications.removeNotificationSubscription(this.notificationListener);
+      |                                                   ^
+  330 |     }
+  331 |     if (this.responseListener) {
+  332 |       Notifications.removeNotificationSubscription(this.responseListener);
+Call Stack
+  NotificationService#cleanup (src/lib/notifications.ts:329:51)
+  <anonymous> (src/hooks/useServices.ts:333:34) 
+    at ServicesInitializer (<anonymous>)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [OfflineStorage] Cached auth data for offline access
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 1 quotes
+ LOG  [OfflineStorage] Cached 0 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [OfflineStorage] Cached auth data for offline access
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [OfflineStorage] Cached auth data for offline access

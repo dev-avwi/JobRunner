@@ -1,0 +1,220 @@
+
+
+
+AI
+
+Gate every action by role so workers and subs never see buttons they can't use
+
+Main version
+JobRunner
+
+New task
+
+Gate every action by role so workers and subs never see buttons they can't use
+Waiting for main agent - #183 ·
+now
+
+Filters
+
+Plans
+
+Tasks
+
+ME
+Created by me
+
+
+Open task board
+Library
+
+File tree
+Search
+
+New
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+JobRunner — Complete Application Deep Brief
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+Feature Graphic (1024x500) - With your logo and branding
+Feature Graphic (1024x500) - With your logo and branding
+Image
+
+JobRunner Play Store feature graphic
+JobRunner Play Store feature graphic
+Image
+
+#183 - RBAC Proactive Gating Sweep
+What & Why
+Today, workers, subcontractors, managers and office admins can see buttons, menu items, FABs, quick-create options and even open screens for actions they don't actually have permission to perform. The block happens only at the final API call, which feels broken and unprofessional. We need every entry point — navigation, dashboards, lists, dropdowns, FABs, inline "create" buttons inside forms — to be gated up-front from the same permission source the backend uses, so the user either doesn't see the action at all, or sees a clear, premium "locked by your team owner" affordance instead of a dead-end error.
+
+The goal is consistent, premium permission UX across web and mobile that makes the subcontractor + multi-role workspace actually feel solid.
+
+Done looks like
+For every role (Owner, Manager, Office Admin, Worker, Subcontractor):
+Sidebar / bottom-nav only lists pages the role can actually use.
+Dashboard quick-create sheet (the screenshot: New Job / New Quote / New Invoice / New Client / AI Assistant / Collect Payment) only shows actions the role is allowed to perform. A worker never sees "New Job" or "New Client" there.
+Floating Action Button on Jobs / Quotes / Invoices / Clients / Documents pages is hidden (or its items filtered) when the role can't create that entity.
+Row-level action menus (Edit, Delete, Duplicate, Invoice, Schedule, Start, Complete, Restore, Convert to Invoice, Send, Mark Paid, etc.) only render items the user can actually execute on that record.
+Inline "+ New Client" / "+ New Item" buttons inside Quote / Invoice / Job forms are hidden when the user lacks the corresponding create permission.
+Detail screens (Job, Quote, Invoice, Client) don't show edit / status-change / payment / send / delete controls the role can't use.
+Attempting to deep-link to a forbidden route (typed URL, old notification, magic link) lands on a clean "You don't have access to this — ask your team owner" screen, not a blank page or a silent redirect.
+A single shared helper (can(action, record?)) is used by every gating decision on both web and mobile, sourced from the same permission map the backend enforces. No more ad-hoc role === 'worker' string checks scattered through components.
+Where a user genuinely needs the action but their role blocks it, the UI shows a subtle lock affordance with a one-line explanation ("Only the team owner can do this") instead of just hiding silently in places where hiding would be confusing (e.g. on a record the user owns or is assigned to).
+Backend permission checks remain the source of truth and are unchanged in strictness — UI gating is additive, never a replacement.
+The matrix of who-can-do-what is captured in one place (doc + code constant) so future screens stay consistent.
+Out of scope
+Adding new permissions or new roles. We're gating the existing permission set, not redesigning it.
+Changing backend permission enforcement (already correct).
+Per-record fine-grained sharing rules (e.g. "this specific job is shared with this specific sub"). Only role + existing assignment rules.
+Redesigning the dashboards themselves — only the action affordances on them.
+Mobile native modules / build config.
+Steps
+Permission matrix + shared can() helper. Produce a single authoritative matrix (entity × action × role) that mirrors what the backend already enforces, and expose it through one can(action, record?) helper for web and one for mobile. Replace ad-hoc role string checks with this helper as each surface is touched in the steps below.
+
+Navigation + route guards. Audit web sidebar, mobile bottom nav, and the route guard / protected-route components so forbidden routes are filtered from nav AND deep-links land on a proper "no access" screen instead of erroring or silently redirecting.
+
+Dashboards + Quick Create. Gate the dashboard Quick Create sheet (New Job, New Quote, New Invoice, New Client, AI Assistant, Collect Payment) and all dashboard action tiles / shortcut buttons per role on both Owner/Manager and Worker/Tradie dashboards, web and mobile.
+
+Floating Action Buttons + list-level create. Make every FAB and "+ New X" header button on Jobs, Quotes, Invoices, Clients, Documents, Catalog, Team, SWMS, etc. consult can() and hide entire FAB when no items remain. Cover both web and mobile.
+
+Row action menus on lists. Sweep every list dropdown (Jobs, Quotes, Invoices, Clients, Documents, Catalog, Team, Timesheets, etc.) so each menu item — Edit, Delete, Duplicate, Convert, Schedule, Start, Complete, Restore, Send, Mark Paid, Issue Refund, Void, Share, Download, etc. — is conditionally rendered through can().
+
+Detail / editor screens. Sweep Job, Quote, Invoice, Client, SWMS, Document, Catalog detail and edit screens on web and mobile to hide edit, status-change, payment, send, sign, lock/unlock, delete and inline "+ New Client / + New Item" controls the role can't use.
+
+Locked affordance + empty states. Where simply hiding is confusing (e.g. a worker viewing their own assigned job, or a sub viewing a shared quote), show a subtle lock icon + tooltip / sheet explaining who can do it, instead of a dead button. Update empty states ("No jobs yet") so they don't suggest creating one to roles that can't create.
+
+Cross-role smoke pass. For each role (Owner, Manager, Office Admin, Worker, Subcontractor) walk the full app on web and mobile and confirm no surfaced action leads to a permission-denied error. Capture screenshots into the report.
+
+Regression guard. Add a lightweight test / lint check that asserts every API mutation route has a corresponding can() entry, so a new create/edit/delete endpoint can't ship without UI gating data.
+
+Relevant files
+shared/schema.ts
+server/permissions.ts
+server/routes.ts
+client/src/lib/permissions.ts
+client/src/lib/permission-map.ts
+client/src/hooks/use-user-role.ts
+client/src/hooks/use-app-mode.ts
+client/src/components/ProtectedRoute.tsx
+client/src/components/RouteGuard.tsx
+client/src/components/AppSidebar.tsx
+client/src/components/FloatingActionButton.tsx
+client/src/components/JobsList.tsx
+client/src/pages/WorkPage.tsx
+client/src/components/QuotesList.tsx
+client/src/components/InvoicesList.tsx
+client/src/components/dashboards/OwnerManagerDashboard.tsx
+client/src/components/dashboards/TeamOwnerDashboard.tsx
+client/src/components/dashboards/StaffTradieDashboard.tsx
+client/src/pages/Dashboard.tsx
+mobile/src/hooks/useWorkerPermission.ts
+
+Attached Image
+i feel like theres still lots of logic problems/buttons and screens that workers and things shouldnt see liek you allow create of these things but see in job and document pages you cant create, like fucking hell fix all options for workers, managers and subcontractors like dont wait till they get to that screen and blcok it. block/show that you cant open or whatever due to permissions from team owner or whatever, like we actually if we want sub contractor side and businesses to cooperate within the app we need permissions and set obstacles to be fucking solid and premium. like make JobRunners logic as good as every other app and product out there
+
+9 minutes ago
+
+4 actions
+
+Proposed 1 task
+
+Worked for 1 minute
+Task approved
+
+AV
+admin3404
+Started task
+Gate every action by role so workers and subs never see buttons they can't use
+Today, workers, subcontractors, managers and office admins can see buttons, menu items, FABs, quick-create options and even open screens for actions they don't actually have permission to perform. The block happens only at the final API call, which feels broken and unprofessional. We need every entry point — navigation, dashboards, lists, dropdowns, FABs, inline "create" buttons inside forms — to be gated up-front from the same permission source the backend uses, so the user either doesn't see the action at all, or sees a clear, premium "locked by your team owner" affordance instead of a dead-end error.
+
+The goal is consistent, premium permission UX across web and mobile that makes the subcontractor + multi-role workspace actually feel solid.
+
+
+View plan
+
+Checkpoint made
+7 minutes ago
+
+23 actions
+I have enough context. Let me implement the gating foundation + sweep key surfaces in parallel.
+
+
+4 actions
+Now wire useCan into FABs and JobCard, then add the regression guard script.
+
+
+7 actions
+Now gate JobCard's status/quote/invoice quick actions, then add the regression guard.
+
+
+9 actions
+The TS errors are pre-existing (not related to my changes). Fix the audit script to use argv-array form instead of shell:
+
+
+5 actions
+Both offenders are non-UI-gating (a role label display in JobInvite and auth-store owner detection). Allowlist them, then verify clean.
+
+
+4 actions
+My changes typecheck clean (xero errors are pre-existing baseline). Let me finalize.
+
+
+2 actions
+
+Checkpoint made
+just now
+
+Worked for 6 minutes
+
+Scroll to latest
+Waiting for main agent before applying changes…
+
+Cancel applying changes
+
+Message agent…
+
+
+Power
+
+
+
+
+JobRunner - Replit

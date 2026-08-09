@@ -1,0 +1,483 @@
+what would you say is the best ai receptionists builders out there
+
+If you’re looking at AI receptionists specifically (AI that answers calls, talks to customers, books jobs, etc.), there are really two categories:
+
+Turn-key AI receptionist platforms (easy to deploy)
+
+Developer platforms (used to build your own AI receptionist like what you’re thinking for JobRunner)
+
+Since you’re thinking about connecting an AI receptionist → website → JobRunner, the second category is actually what matters most for you.
+
+🧠 Best AI Receptionist Platforms (2026)
+1️⃣ Retell AI (Best developer platform)
+
+Probably the best right now for building AI phone agents.
+
+Why it’s good
+
+Real-time AI phone conversations
+
+Interruptions handled well
+
+Natural voices
+
+Good APIs
+
+Built specifically for AI phone agents
+
+Use cases
+
+AI receptionist
+
+booking calls
+
+customer support
+
+➡️ Used by many startups building AI receptionists.
+
+Stack example
+
+Phone number (Twilio)
+      ↓
+Retell AI
+      ↓
+Your backend
+      ↓
+JobRunner API
+2️⃣ Synthflow (Best no-code AI voice builder)
+
+Good if you don’t want to code much.
+
+Features
+
+drag-and-drop voice flows
+
+appointment booking
+
+CRM integrations
+
+LLM powered conversations
+
+It raised $20M funding recently, showing strong adoption in voice automation.
+
+3️⃣ Smith.ai (Best hybrid AI + human)
+
+This is a real commercial receptionist service.
+
+Features
+
+AI answers calls
+
+real humans step in if needed
+
+appointment booking
+
+call summaries
+
+Popular for law firms, contractors, small businesses.
+
+4️⃣ My AI Front Desk
+
+Great for simple AI receptionist setups.
+
+Features
+
+booking
+
+lead qualification
+
+simple deployment
+
+small business focus
+
+Often used by salons and service businesses.
+
+5️⃣ RingCentral AI Receptionist
+
+Best if the company already uses RingCentral phone system.
+
+Features
+
+built-in phone system
+
+call routing
+
+AI receptionist
+
+analytics
+
+But it’s more corporate / call center style.
+
+⚙️ Best Platforms If You Want To BUILD Your Own
+
+This is the category you care about most for your idea.
+
+Platform	Why it's good
+Retell AI	Best real-time AI phone conversations
+ElevenLabs Conversational AI	Best voice quality
+Twilio Voice + AI	Full control
+Synthflow	No-code builder
+Voiceflow	Good conversation design
+
+These tools let you create:
+
+Business phone number
+↓
+AI answers
+↓
+Collects job details
+↓
+Creates job in JobRunner
+↓
+Texts confirmation
+
+Exactly the system you described earlier.
+
+🚀 The BEST setup for your idea (seriously)
+
+If I were building JobRunner AI receptionist:
+
+Stack
+Twilio (phone numbers)
++
+Retell AI (conversation AI)
++
+ElevenLabs (voice)
++
+Your backend (JobRunner API)
+
+Flow:
+
+Customer calls
+↓
+AI receptionist answers
+↓
+"Hi this is John's Plumbing, how can I help?"
+↓
+Collects
+- name
+- job type
+- address
+- urgency
+↓
+Creates job in JobRunner
+↓
+Texts business owner summary
+↓
+Books appointment
+
+This is exactly the "AI business operating system" idea you were describing.
+
+💡 Important insight for your business idea
+
+Most AI receptionist tools DO NOT connect deeply into business software.
+
+They usually only:
+
+answer calls
+
+take messages
+
+maybe book appointments.
+
+But your idea is:
+
+AI receptionist
++ website
++ job management
++ quoting
++ scheduling
++ invoicing
+
+That’s a full operating system for tradies.
+
+And honestly — ServiceM8 and Tradify don’t do that yet.
+
+✅ Your system idea actually has real potential:
+
+Website
+↓
+Phone number
+↓
+AI receptionist
+↓
+JobRunner creates job automatically
+↓
+tradie opens app → job already logged
+
+That saves hours per week.
+
+💡 If you want, I can also show you something very interesting:
+
+The 5 AI receptionist startups that are exploding right now (and what they’re missing that JobRunner could do better).
+
+It will help you position your product way smarter.
+
+how the hell would you get retell ai and twilio and elevenlabs working together or do you mean the voices inside retell ai
+Thought for 18s
+
+Yeah — in the setup I meant, ElevenLabs is usually just the voice provider inside Retell, not a separate thing you wire into the live phone call yourself.
+
+The clean way to think about it is:
+
+Twilio = phone line / telephony
+Retell = call brain + conversation flow + orchestration
+ElevenLabs = voice used by the Retell agent
+
+Retell officially supports both Twilio telephony and custom voices from ElevenLabs. Its docs show a Twilio deployment path, support for imported/custom phone numbers, and voice providers including ElevenLabs.
+
+So the normal architecture is:
+
+Caller
+  ↓
+Twilio phone number
+  ↓
+Retell AI agent
+  ↓
+ElevenLabs voice selected inside Retell
+  ↓
+Your backend / JobRunner API / SMS / booking logic
+
+In other words, Retell is the runtime.
+Twilio gets the call to Retell.
+Retell speaks using an ElevenLabs voice you selected in Retell.
+
+Your screenshot actually matches that. In Retell’s voice picker, you’re under Custom Providers → ElevenLabs, which means you’re choosing an ElevenLabs voice within Retell. Retell’s docs also say you can add custom/community voices and that supported providers include ElevenLabs.
+
+The simplest setups
+
+Option 1 — easiest
+Use a Retell-managed number and pick an ElevenLabs voice inside Retell.
+No need to touch Twilio unless you want your own existing number or custom telephony. Retell docs say you can purchase numbers directly from Retell, and those numbers are managed by Retell.
+
+Option 2 — business-grade
+Use your Twilio number, route calls into Retell, and still use an ElevenLabs voice inside Retell.
+Retell documents Twilio deployment and imported/custom phone number support, including SIP trunk details for Twilio.
+
+So do you need all three?
+
+Not always.
+
+For your use case, it’s really:
+
+Need Retell: yes
+
+Need Twilio: only if you want your own phone number, existing telecom setup, SMS workflows, or tighter phone control
+
+Need ElevenLabs separately: usually no, because you can choose it inside Retell
+
+Best recommendation for you
+
+For a JobRunner AI receptionist MVP, I’d do this:
+
+Phase 1
+
+Build the receptionist fully in Retell
+
+Use a Retell number first
+
+Choose an Australian-sounding voice in Retell
+
+Connect Retell functions/webhooks to your backend so it can create jobs, take leads, send summaries
+
+Phase 2
+
+Move to Twilio when you want:
+
+your own branded number
+
+call routing / forwarding rules
+
+SMS from the same number
+
+more telecom control
+
+So yes — when I said Retell + Twilio + ElevenLabs, I mostly meant ElevenLabs voices inside Retell. You usually do not build some separate Retell-to-ElevenLabs live audio pipeline yourself.
+
+For you, the most practical version is:
+
+Business Number
+→ Retell answers
+→ Retell uses ElevenLabs voice
+→ Retell calls your webhook
+→ JobRunner creates/updates the lead or job
+
+If you want, I can map out the exact MVP stack for JobRunner’s AI receptionist and tell you what each part should do without overcomplicating it.
+
+nah the retell number isnt australian, its only available to america and canada so ill do phase 2
+Thought for 14s
+
+Yeah, that makes sense. Phase 2 is the right move for Australia.
+
+Retell’s own docs say they offer international numbers, but availability is limited by country and inventory, so if you need an Australian business number, using Twilio + Retell custom telephony is the practical path. Retell also documents a dedicated Twilio SIP trunking setup for connecting your own Twilio number to a Retell agent.
+
+So your real stack becomes:
+
+Customer calls AU Twilio number
+→ Twilio receives call
+→ Twilio SIP trunk sends call to Retell
+→ Retell runs the AI conversation
+→ Retell uses chosen voice (including ElevenLabs voice inside Retell)
+→ Retell webhook/function calls your backend
+→ JobRunner creates lead/job/update
+What each tool does
+
+Twilio
+
+gives you the Australian number
+
+handles telecom/compliance/porting
+
+can also handle SMS if you want that later
+Twilio has Australia-specific voice and regulatory docs, including requirements for AU local/mobile numbers.
+
+Retell
+
+handles the AI receptionist logic
+
+conversation flow
+
+function calling / webhooks
+
+call transfers
+
+selected voice provider
+Retell’s custom telephony docs explicitly say you can integrate your own telephony provider and use your own numbers, with SIP trunking as the deployment method.
+
+ElevenLabs
+
+usually just provides the voice inside Retell
+
+not the phone infrastructure itself
+Your screenshot is basically showing that exact model already.
+
+The setup you’d actually build
+1. Buy or port an AU number into Twilio
+
+Could be:
+
+local Cairns-style number
+
+mobile number
+
+national number depending on what works best for your business model
+
+Twilio supports business phone numbers and porting/hosting options, but Australia has documentation and address/identity requirements depending on number type.
+
+2. Create a SIP trunk in Twilio
+
+Retell’s Twilio guide says to connect Twilio to sip.retellai.com via SIP trunking.
+
+3. Point the Twilio number at that trunk
+
+So every inbound call on your AU number gets sent straight into the Retell agent.
+
+4. Build the Retell agent
+
+Inside Retell:
+
+greeting
+
+collect caller name
+
+ask what they need
+
+extract job details
+
+decide urgency
+
+transfer if needed
+
+send summary if missed
+
+5. Use Retell functions/webhooks
+
+When the AI finishes collecting info:
+
+send name
+
+phone
+
+address
+
+issue
+
+preferred time
+
+urgency
+to your backend / JobRunner API
+
+6. Optional extras later
+
+SMS confirmations from Twilio
+
+after-hours mode
+
+emergency transfer rules
+
+missed call text-backs
+
+call recordings / QA
+
+number masking / branded caller ID flows
+Retell also documents caller ID and SIP header options around telephony flows.
+
+The main thing to avoid
+
+Don’t try to make:
+
+Twilio do the AI brain
+
+ElevenLabs do the phone routing
+
+Retell do Australian number ownership if the number inventory doesn’t suit you
+
+The clean split is:
+
+Twilio owns the number
+Retell owns the conversation
+ElevenLabs owns the voice inside Retell
+
+Best MVP for you
+
+For JobRunner, I’d keep it dead simple:
+
+Inbound only
+
+AU Twilio number
+
+Retell receptionist
+
+Australian voice in Retell
+
+webhook into JobRunner
+
+owner gets SMS + dashboard lead created
+
+That gives you the full demo-worthy system without overbuilding it.
+
+Recommended first build
+
+For a tradie receptionist, your first call flow should be:
+
+“Hi, you’ve reached [Business Name], how can I help today?”
+
+capture service type
+
+capture suburb/address
+
+capture urgency
+
+capture caller name + mobile
+
+ask best time for callback or booking
+
+create lead/job in JobRunner
+
+send business owner summary
+
+if emergency, transfer call
+
+That alone is already strong.
+
+If you want, I’ll lay out the exact Twilio + Retell + JobRunner architecture in plain English so you know exactly what needs building first.

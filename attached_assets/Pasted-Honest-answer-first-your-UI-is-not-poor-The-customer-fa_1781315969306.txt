@@ -1,0 +1,45 @@
+Honest answer first: your UI is not poor. The customer-facing dashboard (Mike's Plumbing) is genuinely solid — clear hierarchy, the "$13,917 owed" hero card is exactly the right thing to lead with, and the Action Centre is a smart feature. This is already better than a lot of shipped trade software (ServiceM8, Tradify territory). A full redesign would be wasted money and risk — Replit rebuilds tend to break things.
+
+So my recommendation is option B: keep the structure, fix specific weaknesses. The admin console is the weaker of the two screens, and there are a handful of polish issues on both.
+
+## What's actually wrong (specifics, not vibes)
+
+**Admin console (dark):**
+- Double navigation — there's a left sidebar (Overview, Revenue, Users…) *and* a horizontal tab bar with mostly the same items plus more. Pick one. The tab bar is also overflowing off-screen ("He…" is cut off), which is the single most "unfinished" thing visible.
+- The users table has dead columns — Business and Trade are mostly "–". Empty columns make a table feel broken.
+- Dates wrap awkwardly ("02 Jun 2026" across three lines). Fixed-width date column, single line.
+- Destructive delete (red trash) sits one accidental click away from view/edit with no visual separation.
+- Actions column sits between Name and Email — actions conventionally go last.
+
+**Customer dashboard (light):**
+- "Revenue $0" and "This Week $0" directly under "$13,917 owed" is contradictory at a glance — if those are zero because of a date filter, label the period ("Revenue (this month)").
+- The Action Centre and the Today's Schedule panel both shout about overdue invoices — duplication. Today's Schedule should show today's schedule; when it's empty say "No jobs scheduled today" with a + button, not repeat the invoice warning.
+- Six stat cards with mixed icon colours feels a bit carnival; jobs Today "0" probably shouldn't get equal billing with money metrics.
+- Sidebar has 14 items flat — grouping (Work / Money / People / Insights) would help, but that's optional.
+
+## Questions worth asking Replit (only the useful ones)
+
+1. Is the design built on a component library (shadcn/ui, Tailwind components?) with a central theme file, or are colours/spacing hardcoded per page? (Tells you whether small changes are safe.)
+2. Why does the admin console have both a sidebar and a tab bar — are they wired to the same routes? Can the tab bar be removed without losing pages?
+3. Are the dark-mode colours derived from the same design tokens as light mode, or is the admin console a separately styled area? (The two screens look like different products right now.)
+4. What's driving "Revenue $0" on the dashboard when $13,917 is owed — what date range is it computing?
+
+## Paste-ready prompt for Replit
+
+```
+Don't redesign JobRunner — the layout and structure are good. Make these targeted fixes only, changing nothing else:
+
+ADMIN CONSOLE:
+1. Remove the horizontal tab bar (Overview/Revenue/Comms/Users/Kanban/etc) and move ALL of those destinations into the left sidebar, grouped under headings. The tab bar currently overflows off-screen.
+2. Users table: move the Actions column to the far right. Add a divider or overflow menu (⋯) so the red delete icon isn't directly beside view/edit. Hide the Business and Trade columns when empty, or merge them into one "Profile" column. Keep dates on a single line (e.g. "02 Jun 2026").
+3. Make the admin dark theme use the same accent blue, border radius, and spacing tokens as the main app so it feels like the same product.
+
+MAIN DASHBOARD:
+4. Today's Schedule panel: only show schedule content. If no jobs today, show "No jobs scheduled" with an Add Job button — don't repeat the overdue-invoice warning (Action Centre already covers it).
+5. Label the Revenue card with its period, e.g. "Revenue (June)" — "$0" next to "$13,917 owed" looks like a bug.
+6. Unify the six stat-card icons to one accent colour, reserving red/amber only for Overdue.
+
+Do not change the colour palette, sidebar layout, fonts, or any functionality.
+```
+
+The "do not change" line at the end matters most — without it Replit will happily repaint everything and you'll spend a week getting back to where you are.

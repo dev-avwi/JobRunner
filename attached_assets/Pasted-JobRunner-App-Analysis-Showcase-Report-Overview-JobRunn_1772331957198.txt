@@ -1,0 +1,78 @@
+JobRunner App Analysis & Showcase Report
+
+Overview
+
+JobRunner is a sophisticated, full-stack business management platform designed specifically for the Australian trade industry. It effectively bridges the gap between on-site fieldwork and back-office administration, providing a seamless workflow from initial client request to final payment.
+
+
+
+
+Core Features & Technical Highlights
+
+1. Comprehensive Dashboard & Action Centre
+
+•
+Real-time Insights: Provides an immediate overview of business health, including revenue, active jobs, and quotes out.
+
+•
+Action Centre: Intelligently identifies "revenue at risk" and pending tasks, ensuring no job or invoice is forgotten.
+
+•
+Today's Schedule: A clear, chronological view of the day's work with direct links to maps and job details.
+
+2. Advanced Job Management
+
+•
+Status Tracking: A visual pipeline from "Request" and "Scheduled" to "In Progress," "Completed," and "Invoiced."
+
+•
+On-Site Tools: Includes "On My Way" notifications, job-specific chat, and the ability to log site updates and variations instantly.
+
+•
+Geofencing: Automated time tracking based on GPS coordinates, a high-end feature for professional trade apps.
+
+3. Integrated Client & Team Operations
+
+•
+Client CRM: A centralized database with full communication history and job associations.
+
+•
+Team Ops: A live operations center featuring a team map (using Leaflet/OpenStreetMap) and real-time status tracking for all members.
+
+•
+Autopilot (Automations): Sophisticated triggers for quote follow-ups, job reminders, and auto-invoicing, significantly reducing manual admin work.
+
+4. Financial & Insights Engine
+
+•
+Professional Documentation: Integrated quoting and invoicing with GST compliance.
+
+•
+Business Intelligence: Detailed reports on gross profit, labor costs, and material margins, providing a "big picture" view of business growth.
+
+
+
+
+Technical Strengths for Work Experience Pitch
+
+When presenting JobRunner to agencies like RJ New Designs or Mustard AU, highlight these key technical aspects:
+
+•
+Modern Stack & Environment: Built using a modern development workflow (Replit, AI-assisted tools), demonstrating agility and a forward-thinking approach to software engineering.
+
+•
+User-Centric Design: The interface is clean, intuitive, and clearly designed with the specific needs of "tradies" in mind (e.g., large buttons, clear status indicators).
+
+•
+Complex Logic Implementation: Successfully managing the relationship between clients, jobs, team members, and financial data requires strong database and logic skills.
+
+•
+Integration Ready: The inclusion of Stripe and Xero integrations shows an understanding of how professional software must live within a larger ecosystem.
+
+
+
+
+Conclusion
+
+JobRunner is not just a "project"; it is a viable, professional-grade tool. For a 15-year-old developer, it represents an extraordinary level of technical competence, problem-solving ability, and industry insight. This app serves as a powerful portfolio piece that will undoubtedly impress any digital agency in Cairns.
+

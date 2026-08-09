@@ -1,0 +1,68 @@
+Here's exactly what to send to Replit — copy this across:
+
+---
+
+Please do a full audit of the entire Android mobile app (React Native / Expo). I want you to go through every screen and check the following:
+
+**Layout & Padding**
+- Check all screens have consistent padding and margins — nothing touching screen edges, no content getting cut off
+- Check that safe area insets are applied correctly for Android (status bar, navigation bar)
+- Check that bottom tab navigation doesn't overlap content
+- Check all modals and bottom sheets have correct padding
+- Check scroll views don't have content hidden behind fixed headers or footers
+
+**Buttons & Touchables**
+- All buttons have adequate touch targets (minimum 44x44px)
+- Button states work correctly — pressed, disabled, loading
+- No buttons are hidden, overlapping, or unreachable
+- Floating action buttons not obscured by navigation
+- All CTAs are visible and tappable across different Android screen sizes
+
+**Colours & Theming**
+- Check text contrast — nothing unreadable on coloured backgrounds
+- Check that brand colours render correctly on Android (sometimes differs from iOS)
+- Check dark mode if supported — no invisible text on dark backgrounds
+- Status bar colour matches app header
+- Check coloured badges, pills, and tags — text readable on coloured backgrounds
+
+**Typography**
+- No text getting clipped or truncated incorrectly
+- Font sizes render correctly on different screen densities (hdpi, xhdpi, xxhdpi)
+- No text overflowing containers
+
+**Navigation**
+- Back button behaviour works correctly on Android hardware back button
+- Deep links resolve correctly
+- Tab bar icons and labels display correctly
+- Header titles don't overflow or get truncated
+
+**Specific Screens to Check**
+- Dashboard / home screen
+- Job creation and edit forms
+- Job detail screen
+- Quote and invoice screens
+- Team dispatch board and map view
+- GPS tracking / live map
+- Client list and detail
+- Settings screens
+- Onboarding wizard
+- Chat / SMS hub
+- WHS / compliance screens
+- Payment screens
+
+**Forms & Inputs**
+- Keyboard doesn't cover input fields when typing
+- Input fields have correct keyboard types (numeric, email, phone)
+- Form validation messages visible and readable
+- Date pickers and dropdowns work correctly on Android
+
+**Images & Icons**
+- No broken image placeholders
+- Icons render sharply at all screen densities
+- Logo displays correctly
+
+Please go screen by screen, flag anything that looks wrong, needs fixing, or could look better. List all issues found with the screen name and what needs to be fixed.
+
+---
+
+Paste that across and share what comes back. This will give you a clean Android audit before you go live on Google Play.

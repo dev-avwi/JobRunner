@@ -1,0 +1,14 @@
+Full legal audit done. The PDF is attached. Here is the honest summary:
+The Good News: You Are 90% There
+Your legal documents are genuinely impressive for an Early Access product. The Privacy Policy correctly handles GPS tracking data, the Notifiable Data Breaches scheme, the AI/ML data processing disclosure, SMS consent under the Spam Act 2003, and the Fair Work Act record-keeping requirements. The Terms of Service correctly handles Australian Consumer Law guarantees, the Stripe payment flow, AI Receptionist liability, and Early Access disclaimers. Most SaaS products launched by funded startups do not have documents this thorough.
+The 4 Things That Could Get You Sued — Fix These
+1. Stripe Connect Boilerplate (Critical — financial liability)
+Because tradies accept payments from homeowners through your platform, Stripe legally requires you to include specific text in your Terms binding each tradie to the Stripe Connected Account Agreement. Without it, if a tradie commits fraud through your platform, Stripe can hold you partially liable. The exact text to copy-paste into Section 10 of your Terms is in the PDF report.
+2. Call Recording Consent (Critical — criminal liability)
+Under the Telecommunications (Interception and Access) Act 1979, recording or transcribing a phone call without the caller's knowledge is a criminal offence in Australia. Your AI Receptionist (Vapi.ai) transcribes every call. Your Terms say callers will be told it is "an automated system" — but they must also be explicitly told the call is being recorded and transcribed. Add one sentence to Section 24A.
+3. Homeowner Data Deletion Requests (Medium — privacy complaint risk)
+If a homeowner whose details are stored in a tradie's JobRunner account emails you asking to delete their data, you cannot legally just delete it — that data belongs to the tradie's business account. You need a clause that says: "If you are a client of a business using JobRunner, contact that business directly." Without this, you are caught in the middle of privacy complaints that are not your responsibility.
+4. Signup Page Consent Notice (Medium — APP 5 compliance)
+Australian Privacy Principle 5 requires you to notify users at the moment of data collection. The signup form needs a small line above the submit button: "By creating an account you agree to our Terms of Service and Privacy Policy." Both words must be clickable links. This is also a mandatory requirement for App Store and Google Play approval.
+One Important Observation
+The contact email across both documents is admin@avwebinnovation.com. Once you are taking real money from real businesses, this should be updated to a @jobrunner.com.au address. It looks unprofessional and could undermine trust if a tradie notices their legal contact is a different company name entirely.

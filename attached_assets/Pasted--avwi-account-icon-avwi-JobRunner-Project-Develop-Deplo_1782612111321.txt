@@ -1,0 +1,220 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+7a67ca07
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+Android Play Store build
+4653440 · Published your App Replit-Commit-Author: Deployment Replit-Commit-Session-Id: 790c8277-1ae1-4213-80b2-a5b2447806a2 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 22ddb5bf-7eb3-48d3-8bc3-3039574b3559 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/790c8277-1ae1-4213-80b2-a5b2447806a2/i3AMbIn Replit-Commit-Deployment-Build-Id: 1586a688-23ec-4d30-9e8a-abee02dbfbf2 Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.3
+
+
+production
+
+ 1.1.3 (39)
+
+bbdb383
+
+4653440*
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Jun 28, 2026 11:58 AM
+9s
+
+4s
+
+59s
+
+1m 13s
+
+29 days
+
+Logs
+
+Waiting to start
+
+14s
+
+
+Spin up build environment
+
+10ms
+
+
+Install custom tools
+
+10s
+
+
+Prepare project
+
+15s
+
+
+Read eas.json
+
+1ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+19s
+
+
+Read app config
+
+
+1
+494ms
+
+
+Run expo doctor
+
+
+1
+5s
+
+
+Prebuild
+
+2s
+
+
+- Creating native directory (./android)
+✔ Created native directory
+- Updating package.json
+✔ Updated package.json | no changes
+- Running prebuild
+Error: ENOENT: no such file or directory, open '/home/expo/workingdir/build/mobile/google-services.json'
+    at async open (node:internal/fs/promises:639:25)
+    at async Object.readFile (node:internal/fs/promises:1246:14)
+    at async copyFilePathToPathAsync (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/utils/fs.js:25:19)
+    at async setGoogleServicesFile (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/android/GoogleServices.js:97:5)
+    at async /home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/android/GoogleServices.js:81:5
+    at async action (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:199:23)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async action (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/createBaseMod.js:60:21) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/home/expo/workingdir/build/mobile/google-services.json'
+}
+- Running prebuild
+✖ Prebuild failed
+Error: [android.dangerous]: withAndroidDangerousBaseMod: Cannot copy google-services.json from /home/expo/workingdir/build/mobile/google-services.json to /home/expo/workingdir/build/mobile/android/app/google-services.json. Ensure the source and destination paths exist.
+Error: [android.dangerous]: withAndroidDangerousBaseMod: Cannot copy google-services.json from /home/expo/workingdir/build/mobile/google-services.json to /home/expo/workingdir/build/mobile/android/app/google-services.json. Ensure the source and destination paths exist.
+    at setGoogleServicesFile (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/android/GoogleServices.js:100:11)
+    at async /home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/android/GoogleServices.js:81:5
+    at async action (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:199:23)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async action (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/createBaseMod.js:60:21)
+    at async interceptingMod (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/withMod.js:104:21)
+    at async evalModsAsync (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/mod-compiler.js:206:25)
+    at async compileModsAsync (/home/expo/workingdir/build/mobile/node_modules/@expo/config-plugins/build/plugins/mod-compiler.js:123:10)
+Error: "google-services.json" is missing, make sure that the file exists. Remember that EAS Build only uploads the files tracked by git. Use EAS environment variables to provide EAS Build with the file.
+Fail job
+
+1ms
+
+
+Build failed: "google-services.json" is missing, make sure that the file exists. Remember that EAS Build only uploads the files tracked by git. Use EAS environment variables to provide EAS Build with the file.

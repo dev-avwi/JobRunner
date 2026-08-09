@@ -1,0 +1,771 @@
+Skip to content
+
+AI
+
+JobRunner
+Search tasks…
+
+
+
+
+
+Library
+
+File tree
+Search
+
+New
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+JobRunner — Complete Application Deep Brief
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+Feature Graphic (1024x500) - With your logo and branding
+Feature Graphic (1024x500) - With your logo and branding
+Image
+
+JobRunner Play Store feature graphic
+JobRunner Play Store feature graphic
+Image
+
+JobRunner Play Store icon
+JobRunner Play Store icon
+Image
+
+Videos
+
+~/workspace
+: 
+bash
+
+
+
+Enable "Accessible Terminal" in Workspace Settings to use a screen reader with the shell.
+Task #91 — Round-4 review fixes (Xero codes vs IDs, QBO line semantics, webhook dedupe).
+
+
+
+Show previous messages
+
+2 messages & 4 actions
+
+Checkpoint made
+2 hours ago
+
+Worked for 39 seconds
+theres lots of problems with jobrunner in android like still padding problems and the title of jobrunner when inside the app its just missing
+
+also when assigning workers doesnt work, so i feel like slide up screens dont work in android, how do all the top apps make it more consistent between ios and android cause ios just looks and feels so much better compared to android
+
+and why is the FAB buttpon have different layout from ios to android
+
+2 hours ago
+overall theres a big premium difference between android/ios like just look at these screenshots and problems ive said
+
+like the native popups are terrible on android and i feel like the app should do better to adapt to android more
+
+theres lots of problems with jobrunner in android like still padding problems and the title of jobrunner when inside the app its just missing
+
+also when assigning workers doesnt work, so i feel like slide up screens dont work in android, how do all the top apps make it more consistent between ios and android cause ios just looks and feels so much better compared to android
+
+and why is the FAB buttpon have different layout from ios to android
+
+2 hours ago
+
+Attached Image
+overall theres a big premium difference between android/ios like just look at these screenshots and problems ive said
+
+like the native popups are terrible on android and i feel like the app should do better to adapt to android more
+
+theres lots of problems with jobrunner in android like still padding problems and the title of jobrunner when inside the app its just missing
+
+also when assigning workers doesnt work, so i feel like slide up screens dont work in android, how do all the top apps make it more consistent between ios and android cause ios just looks and feels so much better compared to android
+
+and why is the FAB buttpon have different layout from ios to android
+
+2 hours ago
+
+6 messages & 53 actions
+
+Checkpoint made
+2 hours ago
+
+Worked for 4 minutes
+when i say something loits of the thing suse same thing, like lots of other things in android app use the slide up sheet that didnt work but i said one thing, so do a full scan make everyuthing make sense "Assign Worker" slide-up now works on Android — two bugs:
+
+AppBottomSheet non-scrollable mode had no flex: 1 on the inner container, so on Android the content collapsed to zero height and the sheet looked empty/broken.
+The Assign Worker sheet had a regular <ScrollView maxHeight: 400> nested inside the bottom sheet — that conflicts with @gorhom's gesture handler on Android. Swapped it for BottomSheetScrollView which plays nice with the gesture system.
+
+fab was also for some reason not a 4 icon row it was 3 icons then 1 underneath the new client so it got pushed down but anyways i feel we just gotta do full scans of android to maek sure its all premium and that everythings working solidly
+
+
+Show more
+2 hours ago
+
+8 messages & 32 actions
+Ayden Vogler started: Full iOS readiness pass — audit, polish & TestFlight build
+
+1 message & 2 actions
+
+Checkpoint made
+2 hours ago
+
+Worked for 4 minutes
+i feel like the typography isnt the same as JobRunner ios like you can see a clear diffrence and also the way things are spaced and sized
+
+theres a clear difference in premiumness between android and ios you see
+
+2 hours ago
+
+Attached Image
+
+Attached Image
+i feel like the typography isnt the same as JobRunner ios like you can see a clear diffrence and also the way things are spaced and sized
+
+theres a clear difference in premiumness between android and ios you see
+
+Look at the screenshots for example the first one is iOS and second one is android as you can see the typography and sizing and padding is different yet it makes a big difference
+
+1 hour ago
+
+4 messages & 24 actions
+
+Checkpoint made
+1 hour ago
+
+Worked for 5 minutes
+Completed: Full iOS readiness pass — audit, polish & TestFlight build
+Updated environment
+
+Checkpoint made
+1 hour ago
+should we do expo go to use or somethin instead of doing so many builds
+
+1 hour ago
+Short answer: no, Expo Go won't work for JobRunner.
+
+Your app uses too many native modules that aren't in the Expo Go shell:
+
+Stripe + Stripe Terminal (Tap to Pay)
+Twilio voice/Vapi.ai SDKs
+@gorhom/bottom-sheet with reanimated/gesture-handler (works, but...)
+Sentry native, expo-notifications with custom config, IAP, location background tracking, SQLite offline, etc.
+Expo Go gives you a fixed bundle of modules — anything custom (or any version mismatch) just crashes or silently no-ops. You'd spend more time fighting "this works in Expo Go but not production" than just doing builds.
+
+Better options that skip the 20-minute EAS rebuild loop
+1. Development Build + hot reload (recommended) — Build the dev client once, then iterate via Metro:
+
+eas build --platform android --profile development
+
+Install that .apk on your phone one time. After that, run npx expo start --dev-client and your phone reloads JS instantly on save — same speed as Expo Go, but with all your real native modules. You only need a new build when you add/upgrade a native package or change app.json native config.
+
+2. EAS Update (OTA) for JS-only changes — For pure UI/JS tweaks (like the font fix I just shipped), publish an OTA:
+
+eas update --branch production --message "Android typography fix"
+
+Existing installs pull it in seconds. No store review, no build wait. Native config changes still need a real build.
+
+3. Local Android build — If you have Android Studio, npx expo run:android builds and installs on your device in ~3 minutes vs EAS's 15-20.
+
+What I'd recommend for you specifically
+Given how many polish rounds we're doing:
+
+Make a development build once (option 1) — then every font/layout/JS change is live in <2 seconds
+Push OTA updates (option 2) for the changes already merged so you can see them on your existing install without waiting for build #38
+Want me to add a "dev" profile to eas.json if it's not already there, and walk through the dev-client setup? That single change would save you hours over the next few rounds.
+
+
+2 tasks started, 1 completed
+Updated environment
+
+Checkpoint made
+1 hour ago
+Ayden Vogler completed: Integrations health pass + de-hardcode key values (Xero, MYOB, QBO, Google Calendar, Stripe)
+Updated environment
+
+Checkpoint made
+1 hour ago
+are we surwe he integatiosn of Xero MYOB, QBO is as advanced as other apps like do a full brief making sure its fully advanced the way opeople want it
+
+56 minutes ago
+
+1 message & 3 actions
+
+Worked for 2 minutes
+yeqah lets get another round sorted, making sure its all perfect
+
+53 minutes ago
+
+4 actions
+Let me draft the plan.
+
+
+Created .local/tasks/integrations-parity-round-2.md
+
+Proposed 1 task
+
+Worked for 1 minute
+Ayden Vogler completed: Accounting integrations parity round 2 (webhooks, mapping UI, PDF attach, Xero tenant + quotes)
+Updated environment
+
+Checkpoint made
+6 minutes ago
+Optimized Agent memory
+Ayden Vogler started: Pick your timezone so calendar events show the right time when you're not in Sydney
+
+Scroll to latest
+Suggested next tasks
+
+Accounting integrations parity round 2 (webhooks, mapping UI, PDF attach, Xero tenant + quotes) has been applied to main. What's next?
+Switch all quote pushes to use the real Xero Quotes API
+
+
+Start
+Surface mapping & webhook health on the Integrations page
+
+
+Start
+
+View more in the task board
+
+Make, test, iterate…
+
+
+Power
+
+
+
+Drafts
+28
+Suggested
+
+Show less
+
+Edit
+Switch all quote pushes to use the real Xero Quotes API
+Planned by Agent - #93 ·
+36m
+
+
+Start
+
+View plan
+Surface mapping & webhook health on the Integrations page
+Planned by Agent - #94 ·
+36m
+
+
+Start
+
+View plan
+Let users pick which QuickBooks line item invoices push to
+Planned by Agent - #88 ·
+1h
+
+
+Start
+
+View plan
+Show MYOB users the credit-note workaround when they try to void an invoice
+Planned by Agent - #89 ·
+1h
+
+
+Start
+
+View plan
+Show real per-call response time from the AI receptionist's call history
+Planned by Agent - #87 ·
+1h
+
+
+Start
+
+View plan
+Ship the iOS TestFlight build for the readiness pass
+Planned by Agent - #83 ·
+2h
+
+
+Start
+
+View plan
+Run the mobile TypeScript check and fix iOS-blocking errors
+Planned by Agent - #84 ·
+2h
+
+
+Start
+
+View plan
+Cache the rest of the hot reads (catalog, rate cards, dashboard) for snappier app loads
+Planned by Agent - #80 ·
+2d
+
+
+Start
+
+View plan
+Add an end-to-end load test that exercises real user flows under sign-in
+Planned by Agent - #81 ·
+2d
+
+
+Start
+
+View plan
+Replace ad-hoc card-styled Views with the shared Card component
+Planned by Agent - #77 ·
+2d
+
+
+Start
+
+View plan
+Add safe-area aware bottom padding to the Profile tab
+Planned by Agent - #78 ·
+2d
+
+
+Start
+
+View plan
+Make all mobile screens spacing-consistent with design tokens
+Planned by Agent - #76 ·
+2d
+
+
+Start
+
+View plan
+Replace remaining native Alert popups with the new themed action sheet & confirm dialog
+Planned by Agent - #72 ·
+2d
+
+
+Start
+
+View plan
+Apply bottom inset coverage to the remaining sticky-bottom screens
+Planned by Agent - #73 ·
+2d
+
+
+Start
+
+View plan
+Sweep mobile screens to use the new themed AppText wrapper
+Planned by Agent - #74 ·
+2d
+
+
+Start
+
+View plan
+Give modal close buttons the same native feel as the rest of the app
+Planned by Agent - #69 ·
+2d
+
+
+Start
+
+View plan
+Set up an automated Android build for testing on real phones
+Planned by Agent - #68 ·
+2d
+
+
+Start
+
+View plan
+Adopt the shared button style across remaining mobile screens
+Planned by Agent - #59 ·
+3d
+
+
+Start
+
+View plan
+Replace remaining info-style alerts with the new toast system
+Planned by Agent - #60 ·
+3d
+
+
+Start
+
+View plan
+Fix long-standing type errors in mobile job and dashboard screens
+Planned by Agent - #61 ·
+3d
+
+
+Start
+
+View plan
+Make WHS hub colors fully accessible in dark mode
+Planned by Agent - #56 ·
+4d
+
+
+Start
+
+View plan
+Audit other screens for hardcoded white text colors
+Planned by Agent - #53 ·
+4d
+
+
+Start
+
+View plan
+Polish remaining bottom padding edge cases on tablets
+Planned by Agent - #52 ·
+4d
+
+
+Start
+
+View plan
+Apply consistent bottom-nav padding to remaining More screens
+Planned by Agent - #50 ·
+4d
+
+
+Start
+
+View plan
+Alert the team when a forged webhook hits production
+Planned by Agent - #45 ·
+6d
+
+
+Start
+
+View plan
+Add automated nightly check that webhook secrets are configured
+Planned by Agent - #46 ·
+6d
+
+
+Start
+
+View plan
+Test the rating prompt and subscription links work in production builds
+Planned by Agent - #44 ·
+6d
+
+
+Start
+
+View plan
+Tell users about new app updates after install
+Planned by Agent - #43 ·
+6d
+
+
+Start
+
+View plan
+
+Show less
+Active
+1
+Pick your timezone so calendar events show the right time when you're not in Sydney
+Active - #90 ·
+now
+
+Ready
+0
+No tasks
+Done
+75
+Accounting integrations parity round 2 (webhooks, mapping UI, PDF attach, Xero tenant + quotes)
+Done - #91 ·
+6m ago
+
+Integrations health pass + de-hardcode key values (Xero, MYOB, QBO, Google Calendar, Stripe)
+Done - #86 ·
+1h
+
+Show real AI receptionist latency on mobile (not the hardcoded 1600ms)
+Done - #85 ·
+1h
+
+Full iOS readiness pass — audit, polish & TestFlight build
+Done - #82 ·
+1h
+
+Scale backbone for 100 concurrent users
+Done - #79 ·
+2d
+
+Round 14: App-wide Android padding consistency + inset coverage sweep
+Done - #75 ·
+2d
+
+Round 13: Android typography parity + universal inset coverage + action sheets
+Done - #71 ·
+2d
+
+Round 12: Inter typography + Android layout/inset fixes
+Done - #70 ·
+2d
+
+Make taps feel native on the rest of the mobile app
+Done - #66 ·
+2d
+
+Verify Android 13+ themed icon & edge-to-edge layout in a real build
+Done - #67 ·
+2d
+
+Polish migrated sheets so the dark backdrop and inner spacing feel native
+Done - #64 ·
+2d
+
+Mobile Round 10 — Android Production Hardening (config + material ripple)
+Done - #65 ·
+2d
+
+Mobile Round 9 — Bottom Sheet Migration (top 20 modals)
+Done - #62 ·
+3d
+
+Mobile Round 8 — Premium Foundation (Toast system + Button adoption on top 5 screens)
+Done - #58 ·
+3d
+
+Android Round 7 — True Final Sweep (Colors, Time-Tracking Palette, Misc)
+Done - #57 ·
+4d
+
+Android Round 6 — Final Polish (Colors, Forms, FABs)
+Done - #55 ·
+4d
+
+Android Round 5 — Modal Back-Button & FAB Polish Sweep
+Done - #54 ·
+4d
+
+Android Round 4 — Bottom Padding & Dark Mode Sweep
+Done - #51 ·
+4d
+
+Android Round 3 — Layout Polish & Deep Links
+Done - #49 ·
+4d
+
+Android Round 2 — Dark Mode & Modal Cleanup
+Done - #48 ·
+4d
+
+Android Round 1 Critical Fixes
+Done - #47 ·
+4d
+
+Mobile submission blockers (API host + IAP guards)
+Done - #40 ·
+6d
+
+Today dashboard aggregate endpoint
+Done - #42 ·
+6d
+
+Webhook signature audit (SendGrid, Apple IAP, Xero)
+Done - #41 ·
+6d
+
+Team flows audit & fix (owner / worker / subcontractor)
+Done - #37 ·
+1w
+
+Multi-Number Support (Multiple Dedicated Numbers Per Business)
+Done - #36 ·
+4w
+
+Website Addon — Click-to-Call, AI Chat Widget & Booking Form
+Done - #34 ·
+4w
+
+Number Porting (Bring Your Own Number)
+Done - #35 ·
+4w
+
+Call Recording Playback & Caller Sentiment Scoring
+Done - #32 ·
+4w
+
+Auto-SMS After AI Calls & Push Notifications
+Done - #31 ·
+4w
+
+Smart Call Routing (Per-Day Hours, Breaks, Holidays)
+Done - #33 ·
+4w
+
+Unified Number Purchase & AI Receptionist Flow
+Done - #30 ·
+4w
+
+Smart Operational Action Center (real-time alerts for managers)
+Done - #28 ·
+4w
+
+Job Transition Flow Enhancement (wrap-up prompts + seamless next-job flow)
+Done - #29 ·
+4w
+
+Worker State System (Available / On Job / Travelling / Delayed / Needs Help)
+Done - #27 ·
+4w
+
+Subcontractor Invoicing System
+Done - #24 ·
+1mo
+
+Timesheet Dispute Workflow
+Done - #26 ·
+1mo
+
+Client Deposit Payment in Portal
+Done - #25 ·
+1mo
+
+Quick Fixes — Guided Journey, Duplicate Job, Helmet CSP
+Done - #23 ·
+1mo
+
+Subcontractor purpose-built dashboard
+Done - #22 ·
+1mo
+
+Onboarding role split & invite code system
+Done - #21 ·
+1mo
+
+Magic link assign & one-off subcontractor portal
+Done - #18 ·
+1mo
+
+Subcontractor mobile role & restricted view
+Done - #17 ·
+1mo
+
+Privacy-aware location tracking for subcontractors
+Done - #19 ·
+1mo
+
+Multi-business workspace switching for subcontractors
+Done - #20 ·
+1mo
+
+App Store Review Compliance Audit & Fix
+Done - #16 ·
+1mo
+
+Xero Marketplace certification prep
+Done - #15 ·
+1mo
+
+Add-on Plan Gating & Security Fixes (Pre-Launch)
+Done - #14 ·
+1mo
+
+Trade-Aware Onboarding & Demo Job Experience
+Done - #13 ·
+1mo
+
+AI Receptionist Enhancement (Knowledge Bank, Voice Requests, Add-ons)
+Done - #12 ·
+1mo
+
+AI Receptionist Auto-Provisioning (Stripe → Twilio → Vapi Pipeline)
+Done - #11 ·
+1mo
+
+Website Add-on (Preview, Domain Status, Change Requests)
+Done - #10 ·
+1mo
+
+Admin Super-Dashboard (Shadow Mode, Kanban, Health, AI Approval Queue)
+Done - #9 ·
+1mo
+
+Production-Ready Polish & Family Launch
+Done - #8 ·
+1mo
+
+Offline Sync Engine Hardening
+Done - #6 ·
+1mo
+
+Collaborative Job Editing
+Done - #7 ·
+1mo
+
+Polling to WebSocket Migration
+Done - #4 ·
+1mo
+
+Tradify & ServiceM8 CSV Import Tool
+Done - #3 ·
+1mo
+
+Mobile App Store Submission Prep
+Done - #5 ·
+1mo
+
+AI Receptionist — Settings UI & Call Logs
+Done - #2 ·
+1mo
+
+AI Receptionist — Backend Foundation (Vapi Integration)
+Done - #1 ·
+1mo
+
+
+Archived
+
+Cancelled
+
+Plan a new task...
+
+
+JobRunner - Replit

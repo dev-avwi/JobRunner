@@ -1,0 +1,251 @@
+
+Assistants
+3
+
+Docs
+
+Create Assistant
+
+Search Assistants
+
+
+
+Mike's Plumbing
+
+636c9d6e-f1b8-4e25-82d7-c2be0a025c08
+
+
+Talk
+
+
+Published
+
+
+
+
+
+
+
+
+
+Cost
+~$0.12 /min
+Latency
+~1300 ms
+MODEL
+
+Model
+Configure the behavior of the assistant.
+
+Provider
+
+OpenAI
+Model
+
+GPT 4.1
+First Message Mode
+
+Assistant speaks first
+First Message
+Hey, thanks for calling Mike's Plumbing, I'm the virtual assistant. How can I help you today?
+System Prompt
+# Identity & Purpose
+You are a friendly virtual receptionist for Mike's Plumbing, 
+a local plumbing business in Cairns. Your only job is 
+to collect the caller's details so the owner can follow up. 
+You do not quote prices. You do not confirm bookings. 
+You do not make promises about timing.
+
+# Voice & Tone
+- Warm, casual, natural Australian tone
+- Short sentences, natural pauses
+- Say "no worries", "sure thing", "beauty"
+- Never say you are an AI unless directly asked
+- If asked if you are a real person say: 
+  "I'm the phone assistant for Mike's Plumbing — 
+   I'll make sure someone gets back to you."
+
+# Conversation Flow
+Follow these steps in order. One question at a time.
+
+Step 1 — Greet and listen
+"Hey thanks for calling Mike's Plumbing, 
+ I'm the virtual assistant. How can I help you today?"
+Listen fully. Do not interrupt.
+
+Step 2 — Get their name
+"No worries, I can help get that sorted. 
+ Can I grab your name?"
+
+Step 3 — Get their suburb
+"And what suburb are you in?"
+
+Step 4 — Check urgency
+"Is this something urgent that needs sorting today, 
+ or are you right to book in over the next few days?"
+
+Step 5 — Confirm number
+"Perfect. Is this the best number to reach you on?"
+
+Step 6 — Close
+"Beauty. I've got all your details — Mike will 
+ give you a call back shortly. Thanks for calling 
+ Mike's Plumbing, have a good one."
+
+# Emergency Detection
+If the caller says: flooding, burst pipe, gas leak, 
+no power, emergency, can't wait, urgent —
+Say: "That sounds urgent — let me try to get someone 
+on the line for you right now. Just bear with me."
+Then transfer to owner mobile: 0400 000 000
+
+# What You Never Do
+- Never quote prices or availability
+- Never confirm a booking time
+- Never go off topic
+- Never repeat the same question twice
+- Keep the whole call under 90 seconds
+Files
+Max Tokens
+250
+Temperature
+0.5
+VOICE
+
+Voice Configuration
+Select a voice from the list, or sync your voice library if it's missing. If errors persist, enable custom voice and add a voice ID.
+
+Stability
+0.5
+More Variable
+More Stable
+Clarity + Similarity
+0.75
+Low
+High
+Speed
+1
+Slower
+Faster
+Style Exaggeration
+0
+None (Fastest)
+Exaggerated
+Optimize Streaming Latency
+N/A
+More Latency
+Less Latency
+Use Speaker Boost
+Boost the similarity of the synthesized speech and the voice at the cost of some generation speed.
+
+
+Auto Mode
+Reduces latency for complete sentences but may affect quality with partial phrases.
+
+
+
+Additional Configuration
+Configure additional settings for the voice of your assistant.
+
+
+Fallback Voices
+No fallbacks configured - If primary voice fails, these providers will be tried in order.
+
+TRANSCRIBER
+
+Transcriber
+This section allows you to configure the transcription settings for the assistant.
+
+
+Fallback Transcribers
+No fallbacks configured - If primary transcriber fails, these providers will be tried in order.
+
+TOOLS
+
+Tools
+Tools enable voicebots to perform actions during calls. Add tools from the Tools Library to connect with Make.com or GHL workflows, or create custom tools with your backend.
+
+
+Predefined Functions
+We've pre-built functions for common use cases. You can enable them and configure them below.
+
+
+Custom Functions
+Define your custom functions here to enhance your assistant's capabilities. You can use your own code or tools like Pipedream or Make for the setup.
+
+ANALYSIS
+
+Structured Outputs
+Extract structured data from call conversations. Use this to capture success metrics, call summaries, sentiment analysis, customer details, and more.
+
+
+Attached Monitors
+6
+Oversee performance of your agent calls across multiple categories.
+Summary
+Category
+Transcriber Request Failed
+Monitors when transcriber request failed occurs
+Enabled
+Technical
+
+Tool Failed
+Monitors when tool failed occurs
+Enabled
+Technical
+
+Model Request Failed
+Monitors when model request failed occurs
+Enabled
+Technical
+
+Voice Request Failed
+Monitors when voice request failed occurs
+Enabled
+Technical
+
+Transfer Failed
+Monitors when transfer failed occurs
+Enabled
+Technical
+
+Call Ended (Error)
+Monitors when call ended (error) occurs
+Enabled
+Technical
+
+COMPLIANCE
+
+Recording Consent Plan
+Enterprise
+Ask for consent at the start of the call without storing recordings, logs or transcripts until the user consents.
+
+ADVANCED
+
+Privacy
+This section allows you to configure the privacy settings for the assistant.
+
+
+Start Speaking Plan
+This is the plan for when the assistant should start talking.
+
+
+Voicemail Detection
+Configure how the assistant detects and handles voicemail.
+
+
+Stop Speaking Plan
+This is the plan for when the assistant should stop talking.
+
+
+Call Timeout Settings
+Configure when the assistant should end a call based on silence or duration.
+
+
+Keypad Input Settings
+Configure whether a user can input digits via the keypad, and when to process the input.
+
+
+Messaging
+Message configuration for messages that are sent to and from the assistant.
+

@@ -1,0 +1,728 @@
+Notes from YouTube videos on building, validating, and growing mobile apps. Cross-referenced against your projects: **JobRunner**, **Criti**, **Kindred**, and **Healthcare App**.
+
+---
+
+# 🎥 Video 1 — "I Built a $800K/Month App Without Code"
+
+**Channel:** Jason | **App:** Recipe Snap (ReciMe clone)
+
+https://www.youtube.com/watch?v=9atd5lczG2k&list=LL&index=4
+
+## What He Built & How
+
+A recipe-saving app that lets you paste a YouTube/website link or scan a physical recipe — AI extracts everything into a clean card. Built entirely through conversation with Claude, no code written manually.
+
+## The Exact Workflow
+
+1. **Plan** → paste competitor app URL into Claude Code (Opus), ask for feature list + page breakdown formatted to copy-paste
+2. **Design** → bring that prompt into Claude Design + a Pinterest screenshot reference → gets you ~95% polished UI in one shot vs ~50% doing it in Claude Code directly
+3. **Build** → download design as zip, bring into Claude Code (Sonnet), wire up Expo React Native + Node.js backend + OpenAI API. API keys go in `.env` file — never in chat
+4. **Test** → Expo Go app on phone, scan QR code, live preview
+5. **Infra** → Supabase (database), RevenueCat (subscriptions), Apple Dev account ($99/yr)
+
+## Key Tips
+
+- Use **Opus for planning**, **Sonnet for building** — Sonnet is faster and uses fewer tokens. Matters on the $20 plan
+- Ask Claude "give me 10 wow-factor feature ideas" when you want differentiators
+- Niche by demographic doesn't mean less revenue — Cookpad (Japan only) makes $900K/mo
+- Marketing playbook: TikTok UGC → find viral format → scale with paid ads behind the winning video
+- Have an 18-point App Store checklist before submitting — vibe-coded apps are getting rejected for missing security layers
+
+## Business Model Notes
+
+- Sticky by design: once users have 20–30 recipes saved, cancelling means losing everything → low churn
+- Apps like this sell for 2–4x annual profit. At 50% margin on $800K/mo → ~$9.6M exit at 2x
+
+## Apply to Your Apps
+
+- **All apps** — if you're not using Claude Design for UI first, you're doing extra work. The Pinterest reference image trick is underrated
+- **Kindred** — the sticky data model (can't leave without losing your relationship memory) is exactly what Kindred has. Lean into this in your paywall copy
+- **JobRunner** — `.env` pattern and Supabase should be standardised across your stack if not already
+- **Marketing gap** — none of your apps have a TikTok UGC system yet. This is the lowest-hanging fruit
+
+---
+
+# 🎥 Video 2 — Nicole: $150K/Month × 4 Apps
+
+**Channel:** Starter Story | **Apps:** Glam Up (beauty AI), Sprout/Prep AI (job apps AI)
+
+https://www.youtube.com/watch?v=32vqaJa90kw&list=LL&index=29&t=190s
+
+## Who She Is
+
+Built 4 apps in 2 years. Handles everything non-code: design, distribution, creator management. Co-founder does the dev. Hit 1M users in 6 months on Glam Up, 250K MRR on Sprout in 8 months. Currently 400–500M monthly views across TikTok, Instagram, YouTube Shorts.
+
+## Growth Philosophy
+
+> "Design the app to be innately viral for social media. The design IS part of your distribution."
+> 
+- Hard paywall on all apps — weekly or monthly subscription only
+- Try a content format for 2–3 weeks, exhaust every variation, then rotate if it's not working
+- Once you find what works, double down and scale — don't keep experimenting
+
+## Her UGC System (The Real Playbook)
+
+### Step 1 — Source Creators
+
+- Match creator type to content style: talkers for talking-head, expressive faces for reaction videos
+- **Inbound**: application forms posted in UGC group chats, Instagram, Reddit, Syift
+- **Outbound**: VAs doing outreach to micro-influencers
+
+### Step 2 — Onboard
+
+- Interview first — vibe check, make sure they're taking it seriously
+- Then a full **creator course**: Typeform → video modules → quiz at end of each module
+- 50%+ of creators who complete the course go viral within 2 weeks
+- Course is completely app-specific — walks through the content bank, what good looks like
+
+### Step 3 — Manage
+
+- Discord channel, bi-weekly feedback calls
+- Top performers get promoted to manage other creators
+- At peak: managing 200 active creators simultaneously
+
+### Step 4 — Systemise
+
+- Referral system for creators
+- Analytics dashboards for performance
+- Scale referral program once you have momentum
+
+## Tech Stack
+
+React Native, RevenueCat, Superwall (paywall UI), PostHog (analytics), Syift (UGC recruiting), Atio (CRM)
+
+## Apply to Your Apps
+
+- **JobRunner vs Sprout** — Sprout is almost the same market as JobRunner (job seekers, college students, higher purchasing power). Nicole validated this at 250K MRR. Study Sprout's TikTok content — the UGC format that works for them will likely work for JobRunner
+- **Criti** — before/after critique is inherently shareable. Faceless "roast my UI" style content would perform well and requires zero face time
+- **Kindred** — emotion-driven app = perfect for talking-head or personal story UGC. "I used this app for 30 days and here's what happened to my relationships" format
+- **Gap vs Nicole** — you have no creator course, no onboarding doc, no system. Before reaching out to any UGC creator, write a one-page brief: what the app does, what good content looks like, 3 example hooks
+
+---
+
+# 🎥 Video 3 — Brian: $20K/Month in 83 Days with "Once"
+
+**Channel:** Starter Story | **App:** Once (disposable camera for events/weddings)
+
+https://www.youtube.com/watch?v=r4R_Hlw7sbo&list=LL&index=48&t=791s
+
+## The Core Idea
+
+Digital disposable camera — guests join an event, take photos, photos reveal after a set time like a real disposable. Charges by number of guests ($2 for 10 people, $50 for 150). 10–12K weekly active users, ~$22K MRR at 3 months.
+
+## The Commitment Metric Framework
+
+> "Don't write a single line of code until you hit your commitment metric."
+> 
+
+The big insight: **AI tools make it too easy to build instead of validate.** You can vibe-code something in an afternoon, feel productive, and skip the hard part — talking to real people.
+
+### His 5-Step Validation Playbook
+
+1. **Define your commitment metric** — a specific number + specific date. Commitment doesn't have to be payment. For Once it was: *10 events with an actual date and actual intent to use it before writing any code*. Hosting an event where your friends and family will be there = big enough commitment = almost proxy to payment
+2. **Exhaust personal network** — open X, LinkedIn, Instagram simultaneously. Go through your contacts, circle everyone with a relevant upcoming event. Brian found 4 friends this way: Halloween party, birthday, wedding, networking event
+3. **Build a quick mockup** — max 2–3 days. Figma or any AI tool. Doesn't need to be perfect
+4. **Go where your users live** — Reddit, TikTok, cold DMs. "If you haven't been banned from a platform at least twice, you haven't tried hard enough"
+5. **Get your signal** — whatever count of commitments gives you enough confidence. Then build
+
+### The Mom Test
+
+When validating with friends/family, apply the Mom Test — your mum will love anything you build. Make sure you're getting honest signal, not encouragement. Ask about their existing behaviour, not their hypothetical interest in your product.
+
+## Build Notes
+
+- Built a web app first (1–2 weeks), tested at a real Halloween party, it broke several times, but validated the core concept
+- Threw out the v1 entirely after validation — started fresh for the real build
+- **Never used AI for design** — "consumer apps are a craft. Design requires taste. The more opinionated, the better"
+- Uses **Conductor** to run multiple Claude Code instances across different work trees simultaneously
+
+## Tech Stack
+
+Figma (design — no AI), Claude Code + Conductor (multi-instance), Supabase (DB + backend), Vercel (web)
+
+## Apply to Your Apps
+
+- **JobRunner** — did you hit a commitment metric before building? If not, go validate now. Cold DM 20 active job hunters on LinkedIn. Ask them to commit to logging their next 5 applications in it. Real commitment = real signal
+- **Criti** — commitment metric could be: 20 designers/devs agree to submit actual work for critique before you build the full review flow
+- **Kindred** — harder to pre-validate for emotion-driven apps, but you could get 10 people to commit to a 30-day relationship-building challenge using it
+- **Conductor** — if you're juggling Kindred, Criti, and JobRunner at the same time in Claude Code, running parallel instances would save a lot of context-switching. Worth trying
+
+---
+
+# 🎥 Video 4 — Chris: Complete Guide from Idea to App
+
+**Channel:** Chris (productivity apps) | **Apps:** Ellie (daily planner), Amy (calorie tracker), personal CRM
+
+https://www.youtube.com/watch?v=cXIWx1eYA9w&t=220s
+
+## Who He Is
+
+Built multiple productivity apps, 1000+ paying customers, runs 5 Claude Code instances simultaneously. His apps are used by thousands weekly.
+
+## Building Workflow (His Exact Setup)
+
+- **Cursor** on the left — file browser, git history, GitHub PRs, BugBot
+- **Claude Code** on the right — terminal pulled down to the right side of Cursor
+- Model: **Opus 4.5** for Claude Code. "90% of what I ask it to do, it does effectively"
+- Always uses **plan mode** (Shift+Tab) — reviews the plan before execution. "I don't read every line of code, but I always read the plan"
+- Keyword **`ultrathink`** → Claude Code uses ~40K thinking tokens instead of ~1K. Noticeably better at hard problems
+- **Frontend design plugin** for Claude Code → 20–30% better design, follows screenshots more closely. Install via slash command
+- When stuck after 2–3 attempts: use `/re` to revert to a previous message and start the branch over — don't keep pushing forward
+- **Cursor BugBot** ($40/mo) — automatically reviews pull requests for bugs and security issues. As a solo dev with no one reviewing your PRs, this is worth it
+- $200/mo Claude Code plan running 5 instances, $60/mo Cursor
+
+## Ideation Advice
+
+- Look for problems in your own life first — every app he built came from a personal pain point
+- If stuck: look at apps you use and ask "could I make this simpler, faster, or more tailored?"
+- If really stuck: just clone a simple app. The goal is getting reps in — ideas and pain points become clearer once you've shipped something
+- Even saturated categories work if your workflow is differentiated. His daily planner app has 1000+ paying users despite thousands of competitors
+
+## Analytics — Set It Up on Day 1
+
+> "You are flying blind if you don't have analytics."
+> 
+- Uses **PostHog** — free tier covers almost everyone watching
+- Also tracks **LLM observability in PostHog** — cost per user for AI features, so you can spot if something's burning money
+
+### His Example
+
+Calorie app: analytics showed 40% of users dropped at the signup screen. Added Google + Apple login → signup rate went from 60% to 100%. Would never have caught this without PostHog.
+
+### North Star Metric: Week 1 Retention
+
+- How many people who signed up are still using your app 7 days later
+- His calorie app Amy: ~3% (actively trying to improve it)
+- His planning app Ellie: started at 3%, now at 30% after iterating on onboarding
+- Everything he builds is in service of moving this number
+
+## Marketing Channels (Easiest → Hardest)
+
+| Channel | Effort | Cost | Notes |
+| --- | --- | --- | --- |
+| App Store organic | Very low | Free | More competitive niche = more free downloads paradoxically |
+| Reddit/forums | High | Free | Play the long game. Participate weeks before plugging your app |
+| Build in public (Twitter/TikTok) | Medium | Free | Attracts builders first, but compounds and expands over time |
+| UGC | Medium | $ | Pay creators. He's experimenting with this now |
+| Paid ads | High | $$ | Hard to get right. He tried it and it didn't work for him |
+
+### App Store Optimisation Tips
+
+- Great screenshots
+- Up-to-date description
+- Constantly collect reviews — ask beta testers and support ticket senders directly
+- 10 quality five-star reviews boosts rankings significantly
+
+## For Beginners (Relevant if You're Helping Others)
+
+- Don't start with Claude Code/Cursor — too much non-coding complexity (terminal, deploys, security, API keys)
+- Start with **Lovable / Bolt / anything.com** — they handle all that, teach you to prompt properly
+- Graduate to Claude Code when you've hit the ceiling
+
+## Apply to Your Apps
+
+- **`ultrathink`** — use this whenever Claude Code is spinning on a hard problem in any project. Should be standard for complex architecture decisions
+- **Plan mode (Shift+Tab)** — if you're not already doing this, start now. Prevents the AI running off in the wrong direction
+- **PostHog + Week 1 Retention** — this is the most actionable thing from this video. Set it up for all 3 apps. What % of JobRunner users are still logging jobs on day 7? What % of Kindred users are still opening the app?
+- **BugBot** — you're a solo dev. No one is reviewing your PRs. $40/mo is cheap insurance
+- **Build in public** — you're building 3+ interesting apps simultaneously. That's a compelling story. Even just tweeting progress a few times a week costs nothing and compounds
+- **App Store listings** — are screenshots actually good? Are you prompting users for reviews inside the app?
+
+---
+
+# 🎥 Video 5 — 5 Essential Skills to Become a Mobile App Developer
+
+**Channel:** Code with Mosh | **Focus:** Career roadmap for mobile dev
+
+https://www.youtube.com/watch?v=yye7rSsiV6k
+
+## The Core Decision: Native vs Cross-Platform
+
+**Native** = build separately for iOS (Swift) and Android (Kotlin). Full platform control, best performance, but two codebases, two sets of bugs.
+
+**Cross-platform** = one codebase for both. Most companies prefer this now to reduce costs. The main options:
+
+| Framework | Language | Made By | Big Apps Using It |
+| --- | --- | --- | --- |
+| React Native | JavaScript + React | Facebook (2015) | Microsoft Office, Skype, Facebook |
+| Flutter | Dart | Google (2017) | eBay, Alibaba, Google Pay |
+| Kotlin Multiplatform | Kotlin | JetBrains | McDonald's, Netflix, Cash App |
+| MAUI | C# / .NET | Microsoft | Enterprise apps |
+
+**Which to choose:**
+
+- Already know JavaScript/React → React Native (easiest transition)
+- Starting fresh → Flutter recommended (Dart is cleaner than JS, fewer quirks)
+- Job market: React Native and Flutter have the most open positions
+- No "best" framework — each has real quirks you only discover building beyond tutorials
+
+## The 5 Skills (Roadmap)
+
+### 1. Language — JavaScript or Dart
+
+- Commit to one. Don't hop between them
+- 3–5 hours/day → learn the essence in ~2 months
+
+### 2. Version Control — Git
+
+- Not a programming language, it's a tool for tracking changes and collaborating
+- You don't need all of it — 80/20 rule applies. 20% of Git features cover 80% of daily use
+- 1–2 weeks of practice is enough to get functional
+
+### 3. Data Structures & Algorithms
+
+- Where self-taught devs most commonly skip and feel the pain later
+- Covered in tech interviews at Apple, Google, Microsoft
+- ~1–2 months of study gives you a strong programming foundation
+- Don't skip this even if you're vibe-coding — it matters when debugging complex logic
+
+### 4. Design Patterns
+
+- Proven solutions to common software design problems
+- 23 classic patterns from the "Gang of Four" book — many are used inside mobile frameworks
+- Knowing them = understanding *why* React Native and Flutter work the way they do
+- ~2 months to get solid understanding
+- The Gang of Four book is dense and C++ — better to find a modern course with real app examples
+
+### 5. Mobile Framework
+
+- Learn Flutter (if Dart) or React Native (if JavaScript)
+- With a solid programming background: ~2 months
+
+**Total roadmap to entry-level job: 8–12 months at a few hours/day**
+
+## Apply to Your Apps
+
+- **You're already past this** — you're building real apps. But this roadmap is useful context for *why* things break
+- **Design patterns** — if you're hitting architecture problems in Kindred or JobRunner (e.g. state management getting messy, data flow confusion), this is the root. It's worth skimming what Repository pattern, Observer pattern, and Singleton pattern do — Claude Code uses these under the hood
+- **React Native** — all your apps use RN. Knowing it was built by Facebook for JS/React devs explains why certain web patterns translate and others don't
+- **Git discipline** — if you're running multiple Claude Code instances (Conductor), branching strategy matters more. Make sure you're not just committing to main every time
+- **DS&A** — not urgent for vibe-coding, but when you hit a performance issue (slow list rendering in JobRunner, search in Criti) knowing array vs hash map tradeoffs will save you from asking Claude to fix the wrong thing
+
+---
+
+# 🎥 Video 6 — Flo: $300/Month to $35K/Month with One Influencer
+
+**Channel:** Starter Story | **App:** Monai (expense tracking, native iOS)
+
+https://www.youtube.com/watch?v=rGLXc1GmsaI
+
+## The Story
+
+Flo (Germany) built Monai — a minimalist AI-powered expense tracker. Voice input, Apple Pay automation, AI reports. Spent 1.5 years grinding solo: $300 MRR. Then a Colombian content creator reached out after finding Flo's social handles in the app. One partnership later: $35K+ MRR in 12 months. 10,000% growth.
+
+> "The only thing wrong with your app is that nobody was seeing it."
+> 
+
+## What Makes Monai Different
+
+- No tabs, minimal UI — shows only what matters (expense distribution + list)
+- Voice input: say "coffee at Starbucks $5" → auto-creates and categorises the transaction
+- Apple Pay shortcut automation → expense logged automatically on payment
+- AI reports: ask "where should I cut $300/month?" → analyses your data and responds
+- Hard paywall with 7-day free trial (A/B tested — beat the freemium model)
+
+## The Influencer Partnership Model
+
+### Structure
+
+- **1 influencer, 3 videos/month** — quality over quantity, not a TikTok army
+- **Profit-share + fixed monthly retainer** (changed from revenue share — revenue share doesn't scale, profit share aligns incentives)
+- Influencer has skin in the game → constantly thinking about what's best for the app, not just delivering content
+- Influencer owns the creative direction — Flo doesn't brainstorm video ideas
+- Videos are **story-driven**, not walkthroughs. Takes time to produce, converts at high rate
+
+### Results from individual videos
+
+- Video 1 (simple walkthrough): $300 → $8K MRR in one month
+- Video 2 (short, story-driven): +$5K → $13K MRR
+- Apple WWDC invite video: 1.7M views, +$5K MRR
+- Latest feature video: grew to $35K+ MRR
+
+## His 5-Step Influencer Outreach Playbook
+
+### Step 1 — Find aligned partners
+
+- Lifestyle + tone + audience must match your product
+- Look for: charisma, replies to comments (important if your app needs explanation), not purely tech — tech + lifestyle crossover
+- Why: their audience cares about their life story, not just specs. That makes conversions higher
+
+### Step 2 — Warm up the relationship
+
+- Follow them, comment on their videos consistently — they notice recurring names
+- If you don't have time to do this genuinely, be upfront. Don't fake it
+
+### Step 3 — Be specific in your outreach
+
+- Don't send: *"I love your content, let's collab"* — too generic, ignored
+- Do: reference a specific video, a specific moment, a joke they made
+- Example: *"I really liked how you made that small detail look so cinematic in your video on [product]"*
+- Shows you actually watch their content and care about what they do
+
+### Step 4 — Connect the dots to your product
+
+- Show alignment, not a transaction
+- Don't say "I want to pay you to make something" — say "I think there's a real overlap between what your audience values and what my product does"
+- For Flo: audience values aesthetics + nice tech → Monai is minimal, aesthetic, AI-powered
+
+### Step 5 — Signal willingness to pay early (most important)
+
+- Lead with making it clear they'll be compensated — sets you apart immediately
+- Show them what's possible: look up similar apps on Sensor Tower, show revenue potential
+- Example pitch line: *"I understand the value of what you do. You can reach millions with a single video. I'd love a long-term profit-share partnership. Other apps in this niche make $50–100K/month with the right distribution."*
+- Gives them a mental model of the upside, not just a one-off deal
+
+### Final Tips
+
+- **Be brief** — these creators get hundreds of emails/week. One punchy paragraph max
+- **Send a personalised video** — mention their name and specific content in it. Almost nobody does this
+- **Add your social handles inside your app** — this is how Flo's partner found him. Make it easy for creators to reach you
+- **Look outside the US** — huge opportunity in Colombia, France, Argentina, and other markets. Flo is German, his partner is Colombian. The app store is global
+
+## Tech Stack (Native iOS only)
+
+- **Xcode** — native iOS, no React Native. Built for iOS only
+- **Claude Code** — Max plan ($100/mo)
+- **RevenueCat** — revenue stats + A/B testing paywall (~$400/mo at this scale)
+- **AppWrite** — backend, authentication, database ($25/mo)
+- **OpenAI** — easier AI tasks (voice parsing, categorisation)
+- **Anthropic API** — deeper analysis (AI reports feature)
+- Combined AI costs: ~$200/mo
+- **Helm** — makes App Store Connect less painful. $175 lifetime
+- **Figma** — design, free plan
+- **Meta Ads** — just started, already seeing results using influencer videos as ad creative
+
+## Key Insight: Repurpose Influencer Content as Ad Creative
+
+> "My creator makes great videos. Those videos you can use to experiment with Meta ads very easily."
+> 
+- The organic content that converts also converts as paid ads
+- Flo wishes he'd started Meta ads sooner — the content was already there, just needed budget behind it
+- Playbook: organic influencer content → find what converts → put paid spend behind it
+
+## Apply to Your Apps
+
+- **JobRunner** — one aligned influencer who's a job seeker / career content creator is worth more than 50 TikTok posts. Who is the Colombian equivalent for the job-hunting niche? Look at YouTube/TikTok creators posting job search content, resume tips, grad life
+- **Kindred** — relationship/self-improvement niche has massive creator presence. One lifestyle creator who genuinely connects with their audience (replies to comments, story-driven content) could be the unlock
+- **Criti** — design/dev Twitter and YouTube is where your users already are. Creators like designers who post "rate my UI" content already have the exact audience
+- **The social handles in app tip** — are your socials linked inside your apps right now? Flo's partner found him this way. This is free and takes 5 minutes to add
+- **Native vs React Native note** — Flo builds native iOS only (Swift/Xcode). If you ever want to go iOS-only for a premium feel, this is the stack. For cross-platform (your current approach) RN is still the right call
+- **Profit-share model** — if you find a creator who's a good fit but money is tight, offer profit-share instead of upfront fees. Aligns incentives and lowers your risk
+- **Meta ads** — once you have influencer content that converts organically, that same video as a Meta ad is the next step. Don't start ads with nothing — start with proven content
+
+---
+
+# 🧠 Cross-Video Synthesis — What These Founders Do That You Should Adopt
+
+| Practice | Jason | Nicole | Brian | Chris | Your Apps |
+| --- | --- | --- | --- | --- | --- |
+| Opus for planning / Sonnet for building | ✅ | — | — | ✅ | ? |
+| Plan mode (Shift+Tab) | — | — | — | ✅ | ? |
+| `ultrathink` keyword | — | — | — | ✅ | ? |
+| PostHog from day 1 | — | ✅ | — | ✅ | ❌ |
+| Week 1 retention as north star | — | — | — | ✅ | ❌ |
+| Hard paywall | — | ✅ | — | — | Kindred ✅ |
+| Commitment metric before building | — | — | ✅ | — | ? |
+| Creator onboarding course/brief | — | ✅ | — | — | ❌ |
+| UGC system | ✅ | ✅ 200 creators | — | experimenting | ❌ |
+| Build in public | — | — | — | ✅ | ? |
+| BugBot / automated PR review | — | — | — | ✅ | ❌ |
+| Supabase | ✅ | — | ✅ | — | ? |
+| RevenueCat | ✅ | ✅ | — | — | Kindred ✅ |
+| Multi-instance Claude Code (Conductor) | — | — | ✅ | ✅ 5 instances | ❌ |
+| Claude Design for UI first | ✅ | — | — | — | ? |
+| React Native (cross-platform) | ✅ | ✅ | — | ✅ | ✅ all apps |
+| Git branching discipline | — | — | — | ✅ | ? |
+
+---
+
+# 🎯 Action Items
+
+## JobRunner
+
+- [ ]  Set up PostHog — what % of users are still logging applications on day 7?
+- [ ]  Study Sprout (Nicole's job-seeker app) TikTok — nearly identical market, proven UGC format
+- [ ]  Cold DM 20 active job hunters on LinkedIn for real feedback (not builder feedback)
+- [ ]  App Store: are screenshots optimised? Are you asking for reviews?
+
+## Criti
+
+- [ ]  Commitment metric: get 20 designers/devs to commit to submitting work before building more features
+- [ ]  PostHog setup — track what % submit a second piece of work (the real retention signal)
+- [ ]  "Roast my UI" faceless content is ready-made UGC format — start with 2–3 test videos yourself
+
+## Kindred
+
+- [ ]  PostHog — week 1 retention. Hard paywall + RevenueCat ✅ but what happens before they hit the paywall?
+- [ ]  Emotion-driven = great for talking-head UGC. Personal story format: "30 days using this app"
+- [ ]  Write a one-page creator brief before reaching out to anyone on Syift
+
+## All Apps
+
+- [ ]  Turn on plan mode in Claude Code (Shift+Tab) — always
+- [ ]  Use `ultrathink` when stuck on hard problems
+- [ ]  Look into Conductor for multi-instance Claude Code
+- [ ]  Set up Cursor BugBot ($40/mo) — no one is reviewing your PRs
+- [ ]  Pick one app, start posting build-in-public updates on Twitter/X
+
+---
+
+# 📚 Tech Stack Reference
+
+| Tool | Purpose | Who Uses It |
+| --- | --- | --- |
+| Claude Code (Sonnet) | Building / coding | All |
+| Claude Code (Opus) | Planning / architecture | Jason, Chris |
+| Claude Design | UI design from prompts | Jason |
+| Expo + React Native | Cross-platform mobile | Jason, Nicole |
+| Supabase | Database + backend | Jason, Brian |
+| RevenueCat | Subscription management | Jason, Nicole |
+| Superwall | Paywall UI | Nicole |
+| PostHog | Analytics + LLM cost tracking | Nicole, Chris |
+| Figma | Human-crafted design | Brian, Chris |
+| Conductor | Multi-instance Claude Code | Brian |
+| Cursor + BugBot | Code review + PR security | Chris |
+| Syift | UGC creator recruiting | Nicole |
+| Lovable / Bolt | Beginner no-code AI apps | Chris recommends |
+| React Native | Cross-platform mobile framework (JS) | Jason, Nicole, Chris — your stack |
+| Flutter | Cross-platform mobile framework (Dart) | Alternative to RN — Google-backed |
+| Git / GitHub | Version control + collaboration | Every dev — essential |
+
+---
+
+# 🎥 Video 7 — $6K/Month Passive Income Building APIs (Developer Monetization)
+
+**Channel:** (developer creator) | **Focus:** APIs as a passive income model, RapidAPI marketplace, how to pick a niche and price it
+
+https://www.youtube.com/watch?v=aUtFn-qS7Xk
+
+## The Core Idea
+
+Stop trading time for money as a developer. APIs are the one model where you write something once and it scales infinitely — a million people can use it without you writing another line of code. The creator built a handful of APIs over a year, some in just a few days, and they now generate $6,000+/month with no marketing and no cold outreach.
+
+## Why APIs Work as a Business
+
+- Companies don't want to reinvent the wheel for data they need (weather, sports scores, product listings, stock prices, language translation, calories, currency conversion, sentiment analysis)
+- If an existing API solves their problem, they'll pay for it — especially when it's cheaper than internal development time
+- You list on **RapidAPI** and sell to a pre-existing audience of developers and companies actively searching for APIs
+
+## What Makes a Profitable API
+
+**You don't need to be original. You need to be useful.**
+
+The most profitable APIs are simple — they do one thing well:
+
+- Return calorie info for food items
+- Convert currencies
+- Analyse headlines
+- Return sports scores for a specific league
+
+The secret is three things:
+
+1. Pick a niche with demand that's on the come-up
+2. Keep your endpoints clean and readable
+3. Price it in a way that maximises revenue while still being a good deal for companies
+
+## The Platform: RapidAPI
+
+- List your API once
+- RapidAPI has a pre-existing audience of developers and companies already searching for APIs
+- The marketplace effectively does the distribution for you — no cold outreach, no marketing needed
+- APIs "basically sell themselves" once listed to the right audience
+
+## How to Pick a Niche
+
+- Look for data that apps commonly need but don't want to build themselves
+- Find niches that are on the come-up (growing developer interest, underserved supply)
+- Simpler is better — one endpoint that does one thing well outperforms complex multi-feature APIs in terms of maintainability and adoption
+
+## Pricing Logic
+
+- Price must be high enough to maximise your revenue
+- Price must still be a clear deal for companies vs. building it themselves (developer time is expensive — $100–150+/hour is standard)
+- Most APIs use tiered pricing: free tier for low usage, paid tiers for higher volume
+
+## Apply to Your Projects
+
+- **This is a parallel revenue stream** — if you're building apps, you're already building backend logic. Some of that logic (specific data processing, niche calculations, content transformation) could be packaged as an API and listed on RapidAPI separately
+- **JobRunner**: any job data processing or matching logic you build could potentially be an API product
+- **The "one thing well" principle** — directly applies to app feature prioritisation. The most successful APIs are ruthlessly focused. Same applies to apps: one core valuable thing done exceptionally well beats a feature-bloated product
+- **RapidAPI as distribution** — worth knowing this marketplace exists. If any of your apps needs external data (job market data, salary data, company data), checking RapidAPI first before building your own data pipeline could save weeks of work
+
+---
+
+# 🎥 Video 8 — Real Data: My First $400 Facebook/Instagram Ad Campaign for an App
+
+**Channel:** (indie dev creator) | **Focus:** Honest breakdown of campaign metrics, income, and whether paid ads are worth it
+
+https://www.youtube.com/watch?v=1cFVO6EnhwA
+
+## The Numbers (Two-Week Campaign, $400 Spend)
+
+| Metric | Result |
+| --- | --- |
+| Impressions | ~300,000 |
+| Reach | ~150,000 |
+| Clicks to website | ~7,000 |
+| App downloads / accounts created | ~2,400 |
+| In-app purchases | 4 users |
+| Revenue from IAP | ~$40 (after tax/fees) |
+| Revenue from in-app ads | ~$20 |
+| **Total revenue** | **~$60** |
+| **Net campaign cost** | **~$340** |
+
+**Cost per install**: ~$0.17. Revenue per install: ~$0.025. Not yet profitable, but this is experiment 1.
+
+## Key Setup Details
+
+- **Campaign type**: pay-per-click (only paid when someone clicked through to the website, not for views)
+- **Backend**: Firebase (used to track new user sign-ups as the install metric)
+- **Monetisation**: two streams — in-app ads shown to users, and in-app purchases
+
+## What Went Wrong: The Ad Frequency Problem
+
+Users complained about too many ads being shown in the app. They started leaving 1-star reviews on the App Store and Play Store.
+
+**Fix**: applied a **frequency cap** — limits the number of times the same ad is shown to the same person per minute. Easy to implement via most ad SDKs.
+
+> "You need to listen to your customers."
+> 
+
+This is a critical lesson: ad revenue tempts you to show more ads, but if it kills retention and ratings, you lose far more than you gain.
+
+## The Mindset
+
+- Not expecting overnight success
+- This is experiment 1 of many — next campaign will change variables to improve results
+- A project might fail — that's a real possibility, and you have to accept it
+- But don't give up too easily either. If the product is good, word spreads over time.
+
+## Apply to JobRunner
+
+- **$400 is a real, testable budget** — this is the minimum viable paid experiment. The data you get (click-through rate, cost per install, conversion from click to download) is worth more than the $400 itself
+- **Firebase for tracking installs** — if you're not already tracking new account creations as your install metric, set this up before running any paid campaign
+- **The frequency cap lesson** — any time you add an ad monetisation layer to JobRunner, cap the frequency from day one. Bad reviews from aggressive ads compound fast and are hard to recover from
+- **Revenue per install is your north star for paid ads** — once you know what each install generates in lifetime value (RevenueCat makes this easy), you know the maximum you can pay per install and still be profitable
+
+---
+
+# 🎥 Video 9 — The 4-Step Blueprint to Your First 10,000 App Users
+
+**Channel:** (app growth creator) | **Focus:** Reddit, viral message, UGC creators via Posted, paid ads — the full system
+
+https://www.youtube.com/watch?v=e_t1gYkvZkI
+
+## The Core Insight
+
+Most founders make content *about their product*. Nobody on social media cares about your product. They care about what it can do for them.
+
+> "Don't sell the features. Sell the transformation."
+> 
+
+And critically — **your content only has to do one job**: get them interested enough to go to the App Store. Your App Store listing gets them to download. Your onboarding gets them to purchase. Don't try to do all three jobs in one video.
+
+---
+
+## The Cheat Code: Reddit First
+
+Post your product on relevant subreddits **today** — this takes one hour and can drive real users immediately.
+
+**Best subreddits for founders**:
+
+- r/SideProject (43K members)
+- r/SaaS (300K members)
+- r/programming (6.8M members)
+- r/PlaygroundProduct (1.3K members)
+
+**How to do it right**: don't spam your product link. Be helpful, be real, share your experience as a founder, provide value to the community. Some Reddit posts go viral and hit the homepage — one friend of the creator generated hundreds of thousands of dollars purely through Reddit.
+
+**For JobRunner specifically**: r/jobs, r/cscareerquestions, r/jobsearch, r/recruitinghell — these are communities of the exact person JobRunner is built for.
+
+---
+
+## Step 1 — Identify Your Viral Marketing Message
+
+**Do market research first**:
+
+- Go to TikTok, search your app's core problem (e.g. "quit vaping", "track calories", "job search")
+- Sort by most popular of all time
+- Study what the top-performing videos have in common — the format, the hook, the transformation being shown
+- You're not copying the video, you're learning what *concept* makes people stop scrolling
+
+**Trending sounds**: every day there's a viral sound on TikTok/Instagram. If you can integrate your product naturally into a trending sound video, you get views from the trend itself. Example: "a win is a win" sound used for a quit-vaping app → 33K views just from the trend.
+
+**The funnel mindset**:
+
+1. TikTok/Instagram video → get them to **go to the App Store**
+2. App Store listing → get them to **download**
+3. Onboarding → get them to **purchase**
+
+Each step only has to complete one job. Don't try to sell the whole product in the video.
+
+---
+
+## Step 2 — Scale with UGC Creators (Posted.app)
+
+Once you know what type of content works, hire creators to make more of it.
+
+**Platform: Posted.app** (postedapp.com)
+
+- Creators watch your brief, make a video, submit with a bid (how much they want)
+- You watch the video **before paying** — completely risk-free
+- If you like it and the bid is fair, you accept and pay
+- You own the content for life (MP4 file + TikTok Spark Ad code)
+
+**Two pricing models**:
+
+- **Deals**: creator names a flat fee, you review before paying
+- **CPM**: creator gets paid per 1,000 views they generate — maximum risk-free option
+
+**Real results from the demo**: 4,000 downloads in one week, $1,500 spent across 17 accepted videos = **$0.37 per download**. Creator with only 769 followers had a video hit 40,000 views.
+
+**Your brief**: upload the viral videos you found from market research as examples. Creators will replicate the concept for your brand.
+
+---
+
+## Step 3 — Scale Winners with Paid Ads
+
+Once you know which organic videos are driving installs, take those winners and run them as paid ads.
+
+**Why paid ads beat organic at scale**:
+
+- Organic videos need to be exceptional to get someone to leave TikTok and search your app
+- Paid ads have a direct call to action — conversion rate is dramatically higher for the same content
+- Don't sleep on paid ads just because organic is trendy
+
+**The math problem**:
+
+- Go to RevenueCat → Realized LTV per download → set customer lifetime to Unbounded
+- This tells you exactly what each install is worth to you
+- As long as you can acquire installs for less than that number, you're profitable
+
+**Example**: PuffCount's LTV per download = ~$1. As long as installs cost less than $1, the campaign makes money. That's it. That's the whole calculation.
+
+---
+
+## The System Never Ends
+
+This isn't a one-time setup. Throughout your app's life:
+
+- Always be looking for new viral marketing messages
+- Always be doing market research on TikTok/Instagram
+- Always be testing new content creators
+- Always be optimising and scaling your paid ads
+
+> "The hardest downloads to get are the first few. If you can get 10 users, you can scale to a million."
+> 
+
+---
+
+## Apply to JobRunner
+
+**Reddit immediately**: post in r/jobs, r/jobsearch, r/cscareerquestions, r/recruitinghell. Share your story as a founder building this, not just a product link. Ask for feedback. These communities are your exact target user.
+
+**The viral message research**: go to TikTok, search "job search tips", "how I got the job", "resume hack" — sort by all time. Study what formats get millions of views. The transformation for JobRunner is "I was sending 50 applications and getting ignored → now I'm getting callbacks." That's the story worth showing.
+
+**Posted.app for UGC**: when you're ready to spend, this is cheaper than traditional influencer deals and risk-free. Brief creators with the viral video examples you found from research.
+
+**RevenueCat LTV calculation**: you already have RevenueCat. Pull up Realized LTV per download (unbounded lifetime) right now. That number tells you the maximum you can spend per install on paid ads and still be profitable. This is the single most important number for your paid growth strategy.

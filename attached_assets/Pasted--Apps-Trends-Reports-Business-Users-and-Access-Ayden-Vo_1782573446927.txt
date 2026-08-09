@@ -1,0 +1,165 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+AI Receptionist
+AI Receptionist
+SaveSubmit for Review
+Reference Name?
+AI Receptionist
+49
+
+Status
+
+Missing Metadata
+
+Apple ID?
+
+6785036894
+
+Product ID?
+
+com.jobrunner.aireceptionist.monthly
+
+Subscription Duration?
+
+1 monthEdit
+Group Reference Name
+
+AI Receptionist
+
+Family Sharing?
+
+Allow family members to share this subscription without having to use each other's accounts.
+
+Turn On
+
+Availability
+All countries or regions selectedEdit
+
+Remove from Sale
+
+Subscription Prices
+All Prices and Currencies
+
+Below is a summary of your current pricing and any upcoming changes.
+
+
+Current Pricing for New Subscribers
+All Countries or Regions 
+Countries or Regions (175)
+Price
+Introductory Offers (0)
+Upcoming Changes (0)
+Afghanistan (USD)
+$39.99
+Albania (USD)
+$49.99
+Algeria (USD)
+$39.99
+Angola (USD)
+$39.99
+Anguilla (USD)
+$39.99
+Antigua and Barbuda (USD)
+$39.99
+Argentina (USD)
+$39.99
+Armenia (USD)
+$49.99
+Australia (AUD)
+$59.99
+Austria (EUR)
+€44.99
+Azerbaijan (USD)
+$49.99
+Bahamas (USD)
+$39.99
+Bahrain (USD)
+$39.99
+Barbados (USD)
+$49.99
+Belarus (USD)
+$49.99
+Belgium (EUR)
+€44.99
+Belize (USD)
+$39.99
+Benin (USD)
+$49.99
+Bermuda (USD)
+$39.99
+Bhutan (USD)
+$39.99
+Bolivia (USD)
+$39.99
+Bosnia and Herzegovina (EUR)
+€44.99
+Botswana (USD)
+$39.99
+Brazil (BRL)
+R$249.90
+British Virgin Islands (USD)
+$39.99
+Brunei (USD)
+$39.99
+Bulgaria (EUR)
+€44.99
+Burkina Faso (USD)
+$39.99
+Cambodia (USD)
+$39.99
+Cameroon (USD)
+$49.99
+Canada (CAD)
+$49.99
+Cape Verde (USD)
+$39.99
+View all Subscription Pricing
+
+Localization
+
+The localized display name and description for your subscription will appear on the App Store.
+
+Localizations
+Display Name
+Subscription Description
+Status
+?
+English (Australia)
+AI Receptionist
+AI answers calls & books jobs while you work.
+Prepare for Submission
+
+Image (Optional)
+Add a 1024 x 1024 pixel image that best represents this subscription. It will be used for any win-back offers or offer code redemptions for this subscription. If you enable App Store Promotion for this subscription, this image will also appear on your app's product page. Learn More
+
+No file chosen
+Choose File
+Tax Category?Edit
+You’re responsible for selecting and maintaining accurate tax categories and all applicable attributes. This subscription will use the app’s tax category unless you choose a different one. Changing the tax category for this subscription won’t affect the tax category for your app or any other in-app purchase or subscription. Any changes will only affect future sales. Learn More
+
+Category
+Match to parent app
+
+Review Information
+Screenshot?
+No file chosen
+SOURCE
+
+Review Notes (Optional)?
+4000
+
+Delete This Subscription
+
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

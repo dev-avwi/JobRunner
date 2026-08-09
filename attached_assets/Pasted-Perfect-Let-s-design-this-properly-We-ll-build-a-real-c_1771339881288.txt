@@ -1,0 +1,329 @@
+Perfect. Let’s design this properly.
+
+We’ll build a **real crane business workflow**, end-to-end, and make sure JobRunner handles everything better than Visual Dispatch — but cleaner and easier.
+
+This example assumes:
+
+* Business: Elite Crane Hire
+* Owner: Sarah
+* Operator: Tom
+* Dogman/Rigger: Josh
+* Subcontracted transport truck: Metro Heavy Haul
+* Equipment: Liebherr LTM 1060 (60T crane)
+* Client: BuildCorp Pty Ltd
+
+---
+
+# 🏗 FULL CRANE JOB WORKFLOW (JobRunner)
+
+---
+
+# 1️⃣ Client Calls → Job Created
+
+### Step 1: Owner Creates Job
+
+Owner (Sarah) opens JobRunner → New Job:
+
+```
+Client: BuildCorp Pty Ltd
+Site: 25 Wharf Street, Brisbane
+Job Type: Steel lift
+Date: 18 March
+Start Time: 7:00 AM
+Estimated Duration: 6 hours
+```
+
+Adds:
+
+* Estimated crane size required
+* Notes: “Lift 4 steel beams to Level 3”
+* Uploads lift plan PDF
+
+Presses: Save
+
+---
+
+# 2️⃣ Assign Equipment + Crew
+
+Inside Job:
+
+### Equipment Assignment
+
+Select:
+
+* Liebherr LTM 1060
+* Hourly Rate: $350/hr
+* Travel Fee: $450
+
+### Crew Assignment
+
+* Tom (Operator) – $110/hr
+* Josh (Dogman) – $90/hr
+* Metro Heavy Haul (Subcontractor truck)
+
+System checks:
+
+✅ Is crane already booked?
+❌ If yes → show conflict warning.
+
+---
+
+# 3️⃣ Dispatch Confirmation
+
+Press: Dispatch Job
+
+What happens automatically:
+
+### To Workers
+
+Tom receives:
+
+> You have been assigned to Job #482 – BuildCorp – 7:00 AM tomorrow.
+
+With:
+
+* Map
+* Job notes
+* Contact details
+
+Josh receives same.
+
+### To Subcontractor (No App Required)
+
+Metro Heavy Haul receives SMS:
+
+> You’ve been assigned to transport Liebherr LTM 1060 for Job #482.
+> View details: secure link (OTP protected)
+
+---
+
+# 4️⃣ Client Confirmation SMS
+
+Client receives:
+
+> Elite Crane Hire has scheduled your lift for 18 March at 7:00 AM.
+> View job details & track crew: secure link
+
+This link is Uber-style tracking.
+
+---
+
+# 5️⃣ Morning of Job – “On My Way”
+
+Tom opens JobRunner → clicks “On My Way”.
+
+System does:
+
+* Starts location tracking
+* Calculates ETA
+* Updates client portal
+
+Client now sees:
+
+🗺 Map:
+
+* Tom (Operator)
+* Josh (Rigger)
+* Crane icon
+* ETA: 22 mins
+
+Status:
+
+> Operator en route
+
+---
+
+# 6️⃣ Geofence Auto Clock-In
+
+When Tom enters site radius (100m):
+
+System:
+
+* Auto clock-in
+* Status updates to: “On Site”
+* Client sees: “Crew has arrived”
+
+No manual time entry required.
+
+---
+
+# 7️⃣ During Job
+
+Tom logs:
+
+* 6.5 hours worked
+* Adds:
+
+  * Extra lifting spreader attachment
+  * 2 extra lift cycles
+* Uploads site photos
+* Uploads signed SWMS
+
+Subcontractor uploads:
+
+* Transport docket
+* Arrival photo
+
+All synced to job timeline.
+
+---
+
+# 8️⃣ Real-Time Owner Dashboard
+
+Owner sees:
+
+```
+LIVE JOBS:
+#482 – On Site
+Crane: Active
+Operator: 4.3 hours logged
+Dogman: 4.3 hours logged
+Subcontractor: Completed transport
+```
+
+No calls needed.
+
+---
+
+# 9️⃣ Job Completion
+
+Tom presses: Complete Job.
+
+System:
+
+* Stops timer
+* Calculates total hours
+* Applies:
+
+  * Crane rate
+  * Operator rate
+  * Dogman rate
+  * Travel
+  * Extras
+* Generates invoice draft
+
+---
+
+# 🔟 Automatic Invoice Breakdown
+
+Invoice shows:
+
+```
+Liebherr LTM 1060 – 6.5 hrs @ $350/hr = $2,275
+Operator (Tom) – 6.5 hrs @ $110/hr = $715
+Dogman (Josh) – 6.5 hrs @ $90/hr = $585
+Travel Fee = $450
+Spreader Attachment = $180
+Total: $4,205 + GST
+```
+
+Time logs attached.
+
+Audit trail included.
+
+---
+
+# 1️⃣1️⃣ Client Portal View
+
+Client clicks link.
+
+They see:
+
+* Job timeline
+* Arrival time
+* Completion time
+* Photos
+* Documents
+* Invoice
+* Pay Now button
+
+They can’t dispute:
+Everything is visible.
+
+---
+
+# 1️⃣2️⃣ Payment
+
+Client pays via Stripe.
+
+System:
+
+* Marks Paid
+* Updates dashboard
+* Sends receipt
+
+Owner sees:
+
+> Job #482 Paid – $4,205
+
+---
+
+# 🔒 What Makes This Better Than Visual Dispatch
+
+You win by:
+
+### 1️⃣ Cleaner UI
+
+No 2000s enterprise software look.
+
+### 2️⃣ Uber-style live map
+
+Most crane software does not show client-facing live tracking.
+
+### 3️⃣ Automatic invoice calculation
+
+No retyping hours.
+
+### 4️⃣ Subcontractor web access
+
+Without full account.
+
+### 5️⃣ Audit protection
+
+Edited times logged.
+
+### 6️⃣ Everything mobile-first
+
+Visual Dispatch is heavy desktop-first.
+
+---
+
+# ⚙️ Behind The Scenes (Reliability Requirements)
+
+To truly run crane businesses:
+
+You must have:
+
+* Equipment availability engine
+* Conflict detection
+* Offline time tracking
+* Sync retry queue
+* Audit logs
+* Invoice lock after payment
+* GPS fallback handling
+
+Without this, crane businesses won’t trust it.
+
+---
+
+# 🚨 The Big Difference
+
+Visual Dispatch is:
+
+> Enterprise heavy.
+
+JobRunner should be:
+
+> Enterprise capability. Startup simplicity.
+
+---
+
+# 🎯 If You Want To Go Deeper
+
+Next we can:
+
+* Design the exact Equipment Management module structure
+* Or build the dispatch board UI layout
+* Or create a “Worst Day Scenario” stress test for crane companies
+
+Which one do you want?

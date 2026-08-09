@@ -1,0 +1,24 @@
+Got it. Here's exactly what to paste into Replit:
+
+---
+
+**Team Operations — redesign to match the Insights page style:**
+
+The Team Operations screen needs to match the exact design language of the Insights page. Specifically:
+
+1. **Header** — Same layout as Insights: large bold title "Team Operations" on the left, small gray subtitle below it ("12 team members"), and a live green dot + "Updated just now" on the subtitle line
+2. **Tab bar** — Replace the current tabs with pill-style tabs exactly like the Insights page (Profit/Cashflow/Efficiency style). The three pills should be: Live Ops (with a pulse/waveform icon), Scheduling (calendar icon), Performance (bar chart icon)
+3. **Live Ops tab** — Replace the 4 giant stat cards with a single compact stat row (4 numbers in one card, divided by thin lines): Online · On Job · Unassigned · Total. Below that, an orange alert banner for unassigned jobs. Then a worker list — each worker is a card with their avatar circle, name, current job + location as a subtitle, and a status pill (On Job / En Route / Available / Offline)
+4. **Scheduling tab** — Remove the "select a team member" empty state entirely. Replace with: a 7-day week strip at the top (today highlighted in blue), then a horizontal timeline grid where each row is a worker and job blocks sit in the time slots. Below the grid, show the unassigned queue with inline "Assign →" buttons
+5. **Performance tab** — Add a Today/This week/This month period selector at the top. Replace the 4 zero stat cards with a 2×2 metrics grid (smaller, tighter). Below that, individual worker rows with a progress bar and stats (done · active · rating · revenue)
+
+---
+
+**Dispatch Board — redesign to match the Insights page style:**
+
+1. **Header** — Same as above: large bold "Dispatch Board", subtitle "Manage job assignments and scheduling", live dot
+2. **Tab bar** — Pill style matching Insights: Schedule (list icon), Kanban (grid icon), Map (map icon)
+3. **Ops Health widget** — Shrink it from a big card into a single compact stat row (same pattern as Team Ops above): Conflicts · Overdue · Unassigned · Today — all in one card with dividers. Add two smaller pills below for In Progress and Completed counts
+4. **Schedule tab** — The job cards need a coloured left border (green = in progress, blue = assigned, orange = overdue). Each card shows: job name, time, address, assigned worker avatar + name, and an "Assign" button with a dashed blue border if unassigned
+5. **Kanban tab** — Add two more columns: In Progress and Completed (currently only has Unassigned and Assigned). Each column has a coloured dot + label + count badge. Job cards get a matching left border colour per stage
+6. **Map tab** — When a job pin is tapped, show a bottom sheet card with job details and a "Nearby workers" row showing worker avatars + distance

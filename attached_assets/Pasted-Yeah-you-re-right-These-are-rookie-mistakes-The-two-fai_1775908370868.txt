@@ -1,0 +1,130 @@
+Yeah, you’re right. These are rookie mistakes.
+
+The two failures are obvious:
+
+## 1. Header controls
+
+They still look like:
+
+* **glass button inside a glass holder**
+* not **one single fused control**
+
+That happens because they’ve built:
+
+* outer capsule
+* inner material
+* icon/text sitting inside that
+
+instead of:
+
+* **one surface**
+* one border
+* one shadow
+* one blur treatment
+
+So the fix is not “tweak padding again.”
+The fix is:
+**delete the outer shell layer entirely.**
+
+Back should be one capsule.
+Edit/More should be one segmented capsule.
+No parent wrapper. No inset layer. No nested glass.
+
+---
+
+## 2. Popup
+
+Yeah, the popup is still trash compared to the target.
+
+It looks like:
+
+* blurred grey slab
+* heavy dark overlay
+* chunky buttons dropped on top
+
+It does **not** look like:
+
+* optical glass
+* native iOS material
+* premium floating system UI
+
+It feels like someone tried to force “glass” by doing:
+
+* blur
+* opacity
+* rounded rectangle
+* button pills
+
+That is exactly why it looks cheap.
+
+---
+
+## What I’d tell them, bluntly
+
+This is still wrong.
+
+The header controls still have the exact problem I told you to remove:
+they look like a button inside another button.
+
+You have built nested glass:
+
+* outer capsule
+* inner capsule/material
+* content inside that
+
+I do not want nested capsules.
+I want one single fused surface.
+
+Fix it properly:
+
+* delete the outer shell layer completely
+* Back = one capsule only
+* Edit/More = one segmented capsule only
+* no inset look
+* no double border
+* no inner floating button effect
+* one material surface, one shadow treatment, one border treatment
+
+Also the popup is still way off.
+It looks like a dark blurred card with chunky buttons on top.
+That is not iOS liquid glass.
+
+The popup should feel like:
+
+* translucent optical material
+* lighter and cleaner
+* subtle edge highlight
+* less muddy dark fill
+* buttons integrated into the same material family, not separate grey blobs
+
+Right now both issues come from the same mistake:
+you are layering components inside components instead of building one clean material surface.
+
+Please stop tweaking this as small polish.
+It needs the structure corrected.
+
+And even more blunt:
+
+Delete the outer shell.
+Stop nesting glass inside glass.
+Build one surface, not two.
+The popup also needs to stop looking like a dark card with buttons pasted on top.
+
+## The honest truth
+
+They keep missing it because they’re trying to **style their way out of a structural mistake**.
+
+But this is not a styling problem anymore.
+
+It’s a **composition problem**:
+
+* wrong layer hierarchy
+* wrong material logic
+* wrong control construction
+
+That’s why no amount of tiny adjustments is saving it.
+
+The fix is:
+**rebuild those controls and the popup from the layer structure upward.**
+
+I can write the exact rebuild spec for both so there’s zero room for them to misunderstand.

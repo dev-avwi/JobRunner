@@ -1,0 +1,195 @@
+Good. This is the stage most founders never reach.
+
+You’ve:
+	•	✅ Secured the domain
+	•	✅ Locked the new name
+	•	✅ Got the logo
+	•	✅ Nearly finished the app
+
+Now we shift from building mode to launch discipline mode.
+
+This next phase is what separates “cool side project” from “real SaaS.”
+
+⸻
+
+🚀 What’s Next (In Order)
+
+1️⃣ Product Lock-In (No More Feature Creep)
+
+Before launch you need to say:
+
+“These are the core features. Everything else waits.”
+
+For your MVP relaunch, the core should be:
+	•	Job creation
+	•	Scheduling
+	•	Time tracking
+	•	Quote → Invoice generation
+	•	Basic client details
+	•	Team accounts (if stable)
+
+If it does those cleanly and reliably, you’re ready.
+
+Not perfect. Reliable.
+
+⸻
+
+2️⃣ Production Readiness (Critical)
+
+You’ve talked a lot about competing with ServiceM8 and Tradify.
+That means you must check:
+
+🔐 Accounts & Payments
+	•	Subscriptions logic works?
+	•	Free → Paid transition works?
+	•	Stripe live mode ready?
+	•	Trial logic correct?
+
+📱 Mobile + Web
+	•	Responsive?
+	•	No layout breaking?
+	•	No obvious UI bugs?
+
+📩 Email
+	•	Invoice emails sending correctly?
+	•	Branded correctly?
+	•	SPF/DKIM configured?
+
+💾 Data Integrity
+	•	No duplicate jobs?
+	•	No invoice miscalculations?
+	•	No timer drift?
+
+You don’t launch until this is clean.
+
+⸻
+
+3️⃣ Landing Page (This Is Massive)
+
+Your landing page should now:
+
+Clear Headline
+
+Not:
+
+“Powerful all-in-one solution for trade professionals”
+
+But:
+
+“Jobs. Quotes. Invoices. Done.”
+
+One Clear CTA
+
+“Start Free Trial”
+
+Short Demo Video (real UI)
+
+Looped hero video builds trust instantly.
+
+⸻
+
+4️⃣ Relaunch Strategy (Soft First)
+
+Don’t blast ads yet.
+
+Start with:
+
+Phase 1 – Controlled Launch
+	•	5–10 local tradies
+	•	Your crane contact
+	•	Your existing testers
+
+Watch:
+	•	Where they hesitate
+	•	What confuses them
+	•	What they complain about
+
+That feedback is gold.
+
+⸻
+
+5️⃣ Relaunch Content
+
+You need:
+
+🎥 1 Main Video (60 sec)
+
+Real UI.
+Clear voice.
+Confidence.
+
+📱 3 Short Hooks
+
+Example:
+
+Hook 1
+“Still writing quotes on paper?”
+
+Hook 2
+“Stop chasing unpaid invoices.”
+
+Hook 3
+“This is how tradies should run jobs.”
+
+Simple. Real. Clean.
+
+⸻
+
+6️⃣ Pricing Psychology
+
+This is important.
+
+At relaunch:
+	•	Keep it simple.
+	•	Don’t overcomplicate tiers.
+	•	Make the Pro tier feel obvious.
+
+Example:
+
+Free → Solo tradie
+Pro → $39–$59/month
+Team → higher
+
+Clarity > complexity.
+
+⸻
+
+🧠 The Real Shift You Need Now
+
+You’re not “building an app” anymore.
+
+You’re building:
+	•	Trust
+	•	Positioning
+	•	Perceived reliability
+
+That’s what makes someone move from:
+“I’ll try it”
+to
+“I’ll run my business on this.”
+
+⸻
+
+⚠️ What You Should NOT Do Now
+
+❌ Add 5 more features
+❌ Redesign UI again
+❌ Change brand again
+❌ Overthink perfection
+
+Your job now is:
+
+Polish → Test → Launch → Iterate
+
+⸻
+
+🔥 Honest Question
+
+Right now, what feels weakest?
+	•	The UI polish?
+	•	The onboarding?
+	•	The pricing logic?
+	•	The marketing?
+	•	The confidence to launch?
+
+Tell me that and we’ll focus exactly there.

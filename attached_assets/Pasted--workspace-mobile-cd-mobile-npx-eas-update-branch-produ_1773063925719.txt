@@ -1,0 +1,129 @@
+~/workspace/mobile$ cd mobile && npx eas update --branch production
+bash: cd: mobile: No such file or directory
+~/workspace/mobile$ npx eas update --branch production.
+✔ Provide an update message: … Improve mobile app design and fix voice transcription security vulnerability
+
+Enhance UI elements for invoices and SMS conversations, update loading screen, and secure the voice transcription endpoint by adding validation for audio URLs.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: d9bbd5c0-a918-45b6-9a45-51cc2c443aab
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 79cb92e3-ce48-496d-857c-65fbde801ecc
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/d9bbd5c0-a918-45b6-9a45-51cc2c443aab/nx2T4Sg
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 71.1% (1462/3182)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 70.3% (1270/1515)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.0% (3829/3849)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (3865/3865)
+[expo-cli] iOS Bundled 22528ms node_modules/expo-router/entry.js (3849 modules)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.0% (3829/3849)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (3865/3865)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (3865/3865)
+[expo-cli] Android Bundled 35263ms node_modules/expo-router/entry.js (3865 modules)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (3865/3865)
+[expo-cli] Creating asset map
+[expo-cli] 
+[expo-cli] › Assets (52):
+[expo-cli] assets/jobrunner-logo-header.png (120 kB)
+[expo-cli] assets/jobrunner-logo.png (2.11 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/AntDesign.ttf (130 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Entypo.ttf (66.2 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/EvilIcons.ttf (13.5 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf (55.6 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf (166 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf (134 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf (33.7 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf (203 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Brands.ttf (209 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Regular.ttf (68 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Solid.ttf (424 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf (314 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Foundation.ttf (57 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf (390 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf (1.31 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf (357 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Octicons.ttf (69.4 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/SimpleLineIcons.ttf (54.1 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Zocial.ttf (25.8 kB)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.png (653 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon.png (8 variations | 359 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/clear-icon.png (4 variations | 425 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/close-icon.png (4 variations | 235 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/search-icon.png (7 variations | 592 B)
+[expo-cli] node_modules/expo-router/assets/arrow_down.png (9.46 kB)
+[expo-cli] node_modules/expo-router/assets/error.png (469 B)
+[expo-cli] node_modules/expo-router/assets/file.png (138 B)
+[expo-cli] node_modules/expo-router/assets/forward.png (188 B)
+[expo-cli] node_modules/expo-router/assets/pkg.png (364 B)
+[expo-cli] node_modules/expo-router/assets/sitemap.png (465 B)
+[expo-cli] node_modules/expo-router/assets/unmatched.png (4.75 kB)
+[expo-cli] 
+[expo-cli] › ios bundles (2):
+[expo-cli] _expo/static/js/ios/entry-2aabc670f34ae4150ca9bfdc3cb19831.hbc (7.35 MB)
+[expo-cli] _expo/static/js/ios/entry-2aabc670f34ae4150ca9bfdc3cb19831.hbc.map (20.9 MB)
+[expo-cli] 
+[expo-cli] › android bundles (2):
+[expo-cli] _expo/static/js/android/entry-8283eda1e6ce9f22a9d400720a39ef49.hbc (7.36 MB)
+[expo-cli] _expo/static/js/android/entry-8283eda1e6ce9f22a9d400720a39ef49.hbc.map (21 MB)
+[expo-cli] 
+[expo-cli] › Files (2):
+[expo-cli] assetmap.json (21.7 kB)
+[expo-cli] metadata.json (6.16 kB)
+[expo-cli] 
+[expo-cli] Exported: dist
+✔ Exported bundle(s)
+✔ Uploaded assetmap.json 
+✔ Uploaded 2 app bundles
+✔ Uploading assets skipped - no new assets found
+ℹ 48 iOS assets, 48 Android assets (maximum: 2000 total per update). Learn more about asset limits: https://expo.fyi/eas-update-asset-limits
+✔ Computed project fingerprints
+✔ Published!
+Branch             production.
+Runtime version    1.1.0
+Platform           android, ios
+Update group ID    dbd012f8-576e-47c1-9c37-493df9c6749c
+Android update ID  019cd2d0-d531-7b91-95a9-9bf9700da3f3
+iOS update ID      019cd2d0-d531-7b4b-a90b-fc5dd0db8d26
+Message            Improve mobile app design and fix voice transcription security vulnerability
+
+Enhance UI elements for invoices and SMS conversations, update loading screen, and secure the voice transcription endpoint by adding validation for audio URLs.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: d9bbd5c0-a918-45b6-9a45-51cc2c443aab
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 79cb92e3-ce48-496d-857c-65fbde801ecc
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/d9bbd5c0-a918-45b6-9a45-51cc2c443aab/nx2T4Sg
+Replit-Helium-Checkpoint-Created: true
+Commit             2d26cd6919f10638b2d60fbc669bb8b5098353b8
+EAS Dashboard      https://expo.dev/accounts/avwi/projects/tradietrack/updates/dbd012f8-576e-47c1-9c37-493df9c6749c
+
+~/workspace/mobile$ cd mobile && npx eas update:list
+bash: cd: mobile: No such file or directory
+~/workspace/mobile$ npx eas update:list
+✔ Which branch would you like to view? › production.
+
+Branch:
+Name  production.
+ID    019cd2d0-c205-7b1d-ad2a-eae5b0e83ca1
+
+Recent update groups:
+
+Platforms                 android, ios
+Runtime Version           1.1.0
+Message                   "Improve mobile app design and fix voice transcription security vulnerability
+
+Enhance UI elements for invoices and SMS conversations, update loading screen, and secure the voice transcription endpoint by adding validation for audio URLs.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: d9bbd5c0-a918-45b6-9a45-51cc2c443aab
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 79cb92e3-ce48-496d-857c-65fbde801ecc
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot..." (8 minutes ago by avwi)
+Code Signing Key          N/A
+Is Roll Back to Embedded  No
+Rollout Percentage        N/A
+Group ID                  dbd012f8-576e-47c1-9c37-493df9c6749c
+~/workspace/mobile$ 

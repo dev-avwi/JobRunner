@@ -1,0 +1,37 @@
+Both need work. Let me be direct about what's wrong with each.
+
+**Image 1** — the dark navy with the logo sitting dead centre top and a massive empty void in the middle looks like a loading screen, not a premium welcome moment. All the content is squashed at the top and bottom with nothing in between. It needs visual weight distributed across the whole screen.
+
+**Image 2** — the MY STATUS card feels generic. The pills are good but the card itself has no personality — it's just a grey box. The "MY STATUS" label is too small and the card border blends into the page background.
+
+Paste this into Replit:
+
+---
+
+Fix two screens:
+
+**1. Welcome/setup screen — complete redesign**
+
+The current dark navy with logo top and text bottom looks like a generic loading screen. Redesign it properly:
+
+- Full screen dark navy background #0F172A
+- Large subtle radial gradient behind the centre — #2B7DE9 at 8% opacity, like a soft glow
+- Logo and "JobRunner" wordmark centred at the top quarter of the screen, same as now
+- In the middle of the screen: a large bold personalised greeting — "Welcome," on one line, then the user's first name on the next line in a heavier weight, larger font (~48px, bold 800). Below that the business name in #2B7DE9 blue, ~20px medium weight
+- Below the business name: a thin horizontal divider line in white at 10% opacity
+- Below the divider: three rows, each with a blue checkmark icon on the left and white text on the right describing what's been set up — "Your business profile is ready", "Your trade templates are configured", "Your team workspace is live". Each row 44px tall, 16px text, grey at 70% opacity. These animate in one by one with a 0.4s stagger as the progress bar fills
+- Progress bar pinned to the very bottom of the screen above the safe area — thin (4px height), full width, #2B7DE9, animates left to right over 6 seconds
+- Cycling status message just above the progress bar in small grey text, same as before
+
+This makes the middle of the screen feel alive instead of empty.
+
+**2. MY STATUS card**
+
+The card looks generic. Make it feel more considered:
+
+- Give the card a very subtle blue tint to the background — #F0F7FF instead of plain grey/white, so it reads as distinct from the other cards
+- The "MY STATUS" label should be #2B7DE9 blue, not grey — matching the section label colour used elsewhere like "MY STATS"
+- Add a small status indicator in the top right corner of the card showing the currently selected status as a coloured dot + text, e.g. "● Available" in green. This updates when you switch status so you always see your current state at a glance even if the pills scroll out of view
+- The pills themselves — give the unselected pills a white background with a slightly more visible border (2px, #D1D5DB) so they have more presence against the blue-tinted card background
+
+---

@@ -1,0 +1,39 @@
+Good audit. Let me tell you what actually matters here versus what can wait.
+
+---
+
+**Fix These Before App Store Submission**
+
+**ABN validation** — this is Australia-specific and Apple reviewers might notice if you can enter an obviously wrong ABN. 11 digits, specific checksum algorithm. Tell Replit: *"Add Australian ABN validation to the ABN field — must be exactly 11 digits and pass the standard ABN checksum validation."*
+
+**Currency formatting inconsistency** — showing $1,234 in one place and $1,234.00 in another looks unfinished. Tell Replit: *"Standardise all currency formatting across the mobile app using a single utility function. Invoice and payment amounts should always show two decimal places. Dashboard summary amounts can show without decimals."*
+
+**Token inconsistencies** — radius 12 vs 14, font size 10 vs 11. These are small but noticeable to Apple reviewers who look at polish. Tell Replit: *"Fix design token inconsistencies — standardise PressableCard border radius to match Card at 14, fix Badge font size to match the design token of 11, replace all hardcoded shadow values with theme tokens."*
+
+---
+
+**Can Wait Until After Launch**
+
+Splitting large files — Dashboard at 4,500 lines is a maintainability issue but doesn't affect users. Fix in month one post-launch.
+
+Fifth tab for Money — good idea but a UI change this close to submission risks introducing bugs. Do it in the first update.
+
+Skeleton loading states — nice to have, not blocking.
+
+Map defaulting to Google Maps on iOS — minor, fix in first update.
+
+---
+
+**The One Brief To Give Replit**
+
+*"Three quick fixes before App Store submission:*
+
+*1. Add ABN validation — 11 digits, Australian checksum algorithm*
+*2. Standardise currency formatting — single utility function, invoices always show two decimal places*
+*3. Fix design token inconsistencies — PressableCard radius to 14, Badge font size to 11, replace hardcoded shadows with theme tokens*
+
+*Everything else can wait until post-launch."*
+
+---
+
+That's probably 2-3 hours of work. Get those done then rebuild and submit. How's the EAS build going?

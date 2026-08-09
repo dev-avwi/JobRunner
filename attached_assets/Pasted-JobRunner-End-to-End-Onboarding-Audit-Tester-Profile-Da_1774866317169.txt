@@ -1,0 +1,121 @@
+JobRunner End-to-End Onboarding
+Audit
+Tester Profile: Dave Mitchell, Plumber, Cairns (2 workers) Date: March 30, 2026
+Executive Summary
+Overall Onboarding Rating: 8.5 / 10
+The JobRunner onboarding experience is genuinely one of the best in the trade
+software market. The transition from “Beta” to “Early Access” and the addition of the
+“Try the Demo” button on the homepage are massive improvements. The “Life of a
+Job” walkthrough and the pre-seeded demo data (which intelligently adapts to the
+selected trade) provide immediate value without requiring the user to do any heavy
+lifting.
+However, there are still a few friction points and edge cases that need tightening
+before a full public launch.
+The Top 5 Things to Fix Immediately
+1. Email Verification Hard Block: If a user signs up but misses the verification
+email, they are completely blocked from logging in, with a generic error message.
+There is no “Resend Verification Email” button on the login failure screen.
+2. Missing Loading States: When navigating between complex views (like Insights
+or Team Management), the app shows a generic, unbranded browser-level
+loading spinner on a white screen. This feels unpolished compared to the rest of
+the app.
+3. Duplicate Email Error UI: When trying to sign up with an existing email, the API
+returns an error, but the UI needs to clearly guide the user to the Login page or
+offer a Password Reset option right there.
+4. “What You Missed” Popup: This popup appears immediately on the demo
+dashboard. While the feature is cool, it blocks the user’s first view of the
+dashboard. It should be delayed or minimized for first-time users.
+5. Mobile App Store Links: While the web onboarding is excellent, the App Store
+and Google Play links are still returning 404s. A tradie who tries to download the
+app immediately after signing up will hit a dead end.
+Dealbreakers (What would make a tradie give up)
+The Verification Wall: Tradies often sign up on their phone while on site, but
+their work email might be on their office computer. If they can’t verify
+immediately, they will close the app. Allowing a 24-hour grace period before
+forcing email verification would significantly increase conversion.
+Part 1 — Web App Sign Up & First Run
+Step 1: The Homepage
+Status: PASS
+Screenshot: step01_homepage.webp
+What Dave thinks: “Looks clean. ‘Early Access’ sounds like I’m getting in on
+something new. I see plumbing jobs on the phone preview (Kitchen Tap, Pipe
+Burst). That tells me this is actually for me, not just generic.”
+Friction: None. The “Try the Demo” button is a great addition for those who
+don’t want to hand over an email yet.
+Step 2: The Sign Up Page
+Status: PASS
+Screenshot: step03_signup_page.webp
+Copy: “Create your free account”, “First Name”, “Last Name”, “Email”,
+“Password”.
+What Dave thinks: “Standard form. Glad it doesn’t ask for my credit card or ABN
+yet.”
+Friction: The form is clean, but offering Google/Apple sign-in prominently here
+would save time.
+Step 3: Email Verification Pending
+Status: PASS (with a caveat)
+Screenshot: step05_verify_pending.webp
+Copy: “Check your email”, “We’ve sent a verification link to…”, “Link expires in 24
+hours.”
+What Dave thinks: “Alright, I’ll go check my emails.”
+Friction: If Dave’s email is on his iPad in the truck, he might close the tab and
+forget. A “Skip for now (24h grace period)” option would keep the momentum
+going.
+Step 4: The Demo Dashboard
+Status: PASS
+Screenshot: step08_demo_dashboard.webp
+Copy: “Good morning, Mike”, “4 jobs on today”, “$13,855 owed across 10
+invoices”.
+What Dave thinks: “Wow, it’s already full of data. I can actually see what a busy
+day looks like. The jobs are plumbing jobs — Kitchen Tap Replacement, Pipe
+Burst Emergency. This is exactly what my board looks like.”
+Friction: The “What You Missed” popup appeared immediately upon loading the
+demo. It’s a great feature, but it obscures the “Wow” moment of seeing the full
+dashboard for the first time.
+Step 5: Exploring the Demo Data (Jobs & Schedule)
+Status: PASS
+Screenshots: step10_jobs_list.webp , step11_job_detail.webp ,
+step12_schedule.webp
+What Dave thinks: “The schedule view is mint. Drag and drop looks easy. The job
+detail shows exactly what I need — client, address, map, and status.”
+Friction: None. The pre-seeded data is the strongest part of the onboarding. It
+immediately demonstrates value.
+Step 6: Settings & Integrations
+Status: PASS
+Screenshots: step14_settings.webp , step13_integrations.webp
+What Dave thinks: “Ah, I see Xero and Stripe. And there’s a button to import from
+ServiceM8 and Tradify. That means I don’t have to type all my clients in
+manually.”
+Friction: QuickBooks and MYOB say “Coming Soon”. If Dave uses MYOB, he might
+pause here, but Xero is the market leader anyway.
+Part 2 — Edge Cases & Error Handling
+Step 7: Duplicate Email Sign Up
+Status: FAIL
+Copy: {"error": "User with this email already exists"} (API Response)
+What Dave thinks: “I think I signed up for this a month ago… how do I log in?”
+Friction: The UI needs to catch this error and gracefully say: “Looks like you
+already have an account! [Click here to log in] or [Reset Password]”.
+Step 8: Unverified Email Login Attempt
+Status: FAIL
+Copy: "Please verify your email address before logging in. Check your
+email for verification instructions."
+What Dave thinks: “I can’t find the email. Can you just send it again?”
+Friction: There is no “Resend Email” button on the login screen. If the user lost
+the email, they are permanently locked out.
+Step 9: Loading States (Insights & Team Management)
+Status: FAIL
+Screenshots: step17_loading_state.webp , step21_insights_loading.webp
+What Dave thinks: “Is my internet dropping out, or is the app broken?”
+Friction: When navigating to heavy pages like Insights, the screen goes
+completely white with a generic blue loading spinner. It breaks the illusion of a
+snappy, native app. Skeleton loaders (gray boxes shaped like the UI) should be
+used instead.
+The Verdict
+JobRunner is 90% of the way to a flawless onboarding experience. The core product
+logic — specifically the trade-aware demo data — is brilliant. A plumber sees plumbing
+jobs; an electrician sees electrical jobs. That personalization is what converts trials
+into paying users.
+To get to 100%, you need to fix the edge cases. Tradies are impatient. If they hit a white
+loading screen, or get locked out because they can’t find a verification email, they will
+bounce back to ServiceM8. Fix the verification flow, add skeleton loaders, and handle
+duplicate emails gracefully, and you will have the highest-converting funnel in the
+industry.

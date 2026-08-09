@@ -1,0 +1,195 @@
+Alright Ayden — here is the perfect MVP feature list for TradieTrack, crafted specifically so you can launch fast, impress early users, and avoid getting overwhelmed.
+
+This is EXACTLY how the top SaaS founders plan successful MVPs:
+
+Tier 1 → must build BEFORE launch
+
+Tier 2 → build after real users onboard
+
+Tier 3 → premium features that come later
+
+I’m laying it out like a roadmap, so you know exactly what to build.
+
+🧱 TRADIETRACK MVP (TIER 1)
+
+🔥 If you build ONLY this, you can already charge $20–$39/month and compete with Tradify Lite.
+
+✅ 1. Core Job Management (Launch Critical)
+
+These screens MUST be perfect:
+
+Create job
+
+Job details
+
+Add photos
+
+Status (Quote → Scheduled → In Progress → Done)
+
+Notes
+
+Rules:
+
+Should take < 5 taps to add a job.
+
+Offline saving must work.
+
+Instant photo upload (EXPO Camera).
+
+✅ 2. Client Management (Simple)
+
+Keep it minimal:
+
+Name
+
+Address
+
+Phone
+
+Email
+
+Job history
+
+Don’t overcomplicate with custom fields yet.
+
+✅ 3. Basic Scheduling (Launch Critical)
+
+This is just enough to be useful:
+
+Assign job to a day
+
+Assign to a technician (even if 1 user)
+
+Calendar view (list or simple weekly overview)
+
+NO drag-and-drop needed yet.
+NO team calendar yet (that’s Tier 2).
+
+✅ 4. Quotes (Simple but Fast)
+
+Create quote
+
+Add line items
+
+Auto total
+
+Convert quote → job
+
+Don’t add:
+❌ deposit invoicing
+❌ materials catalogue
+❌ saved pricing libraries
+❌ multi-page quotes
+
+Keep it simple and FAST.
+
+✅ 5. Invoices (Basic)
+
+MVP invoice should include:
+
+Invoice number
+
+Job description
+
+Labour + materials
+
+Total
+
+Send via email
+
+Not needed yet:
+❌ payment gateways
+❌ reminders
+❌ deposit invoices
+❌ progress invoices
+
+✅ 6. Photo Upload + Before/After View
+
+This is HUGE for tradies.
+
+You NEED:
+
+Quick photo capture
+
+Photo gallery in job
+
+Before/after layout
+
+DO NOT worry yet about:
+❌ markup tools
+❌ drawing on photos
+
+✅ 7. AI Feature (ONE ONLY) — MUST HAVE
+
+Pick ONE AI feature for MVP:
+
+Option A (best): AI job summary
+
+User adds photos + notes
+
+AI writes:
+
+job description
+
+invoice wording
+
+report summary
+
+Option B: AI quote item suggestions
+
+User uploads photos
+
+AI suggests materials/labour items like:
+
+“Replace mixer tap”
+
+“Labour 1hr”
+
+DO NOT build both yet.
+ONE AI feature is enough to make your MVP feel next-gen.
+
+✅ 8. Instant “Create Job From Anything”
+
+This is a cheat code for MVP success.
+
+Allow job creation from:
+
+Phone call notes
+
+Copy/paste message
+
+Voice note → transcribed
+
+This becomes your viral moment:
+
+“I can create a full job in 10 seconds from a client message.”
+
+Neither Tradify nor ServiceM8 do this well.
+
+MVP Deliverable Summary (Tier 1)
+
+With Tier 1, you can launch + charge users.
+
+MVP includes:
+
+Jobs
+
+Clients
+
+Scheduling
+
+Quotes
+
+Invoices
+
+Photos
+
+1 AI feature
+
+Offline mode
+
+Sync
+
+Push notifications (minimal)
+
+This is enough to onboard your first 30–100 businesses.

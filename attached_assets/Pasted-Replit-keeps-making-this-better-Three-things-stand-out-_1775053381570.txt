@@ -1,0 +1,74 @@
+Replit keeps making this better. Three things stand out from this response.
+
+**The coordinate problem is the one nobody had fully solved**
+
+This is the most important new insight in Replit's entire response. When Claude analyses a screenshot and says "button at bottom centre has a problem" — how does that become a precise SVG annotation drawn at the right coordinates?
+
+The answer is in the prompt. You need to explicitly ask Claude to return bounding box coordinates as percentages of the screenshot dimensions. Not text descriptions. Actual numbers.
+
+The JSON Claude returns needs to look like this:
+
+```json
+{
+  "issue": "CTA button label is ambiguous",
+  "severity": "critical",
+  "bbox": {
+    "x": 0.42,
+    "y": 0.78,
+    "width": 0.18,
+    "height": 0.06
+  }
+}
+```
+
+Percentages not pixels because the screenshot might be 1280x800 but the video player renders at 780x490. Percentages scale correctly to any display size automatically.
+
+Replit's honest note — Claude's spatial reasoning is decent but not pixel perfect. You might get coordinates 20-30px off. For a hand-drawn annotation style that's actually fine and might even feel more natural. But if the circle lands on the completely wrong element that destroys trust immediately.
+
+This needs to be tested in week zero alongside prompt quality. Not just is the feedback useful — is the bbox accurate enough to land on the right element.
+
+**The annotation timing solution is elegant and simple**
+
+Replit solved this clearly. During Playwright replay, record the video timestamp when each new screen appears. Claude analyses each screenshot and returns issues with coordinates. When composing playback you have a simple map — screen 3 appears at timestamp 00:24, Claude found issues on screen 3, so at 00:24 plus a 1 second delay, trigger the SVG animations at the returned coordinates.
+
+It works exactly like subtitle tracks in a video player. A sorted list of annotation events with timestamps. As the video plays, check currentTime against the event list and trigger animations when the timestamp matches. The HTML5 video timeupdate event fires frequently enough for smooth timing. This is genuinely simple once the batch architecture is in place.
+
+**The extension trust barrier is real**
+
+15-20% of users will hesitate to install a Chrome extension. That's not a small number. Your onboarding needs to be crystal clear — what the extension accesses, what it doesn't, why it's needed. One sentence that does the job: "The extension records your clicks and scrolls on your own tab. It cannot access any other tab, any passwords, or any data outside the recording session."
+
+Replit's bookmarklet idea for V1.1 is worth keeping. Zero friction, less capable. Offer both and let users choose. Some will prefer the extension for accuracy. Some will try the bookmarklet first. Either way they're in the product.
+
+**The updated week zero checklist**
+
+Before building anything:
+
+Test 10 real app URLs, 5 manual screenshots each. Grade Claude feedback honestly — 7 out of 10 useful is the bar.
+
+In the same test, explicitly request bounding box coordinates in the prompt. Check if Claude's bbox values land on the correct elements. Grade separately from feedback quality.
+
+Write the exact prompt structure that requests both useful feedback AND accurate coordinates in a single Claude call. This is the hardest prompt engineering challenge in the whole product and it needs to be solved before the crawler exists.
+
+**What to send Replit now**
+
+"Everything in your response is right. Three additions to week zero:
+
+Test Claude coordinate accuracy alongside prompt quality. Prompt must request bbox as percentage values — x, y, width, height as decimals. Test if annotations land on correct elements. Grade separately from feedback quality.
+
+Update analysis prompt to return this exact JSON structure per finding — issue description, severity, bbox coordinates, confidence score. Lock this structure before any pipeline code is written because everything downstream depends on it.
+
+For annotation timing — confirmed approach. Record video timestamp per screen during Playwright replay. Sorted event list with timestamps. HTML5 timeupdate events trigger SVG animations. Same concept as subtitle tracks.
+
+Extension trust barrier — add bookmarklet option for V1.1. Onboarding copy needs one clear sentence about what the extension does and doesn't access.
+
+Timeline confirmed at 10-12 weeks. Week zero is prompt testing and coordinate validation. No code until that's done.
+
+Ready to go the moment JobRunner ships."
+
+**The honest overall picture**
+
+Every conversation with Replit has made this product better and more buildable. The original vision was right. The original architecture had three significant problems. All three are now solved. What's left — coordinate accuracy, prompt quality, extension friction — are engineering challenges not fundamental blockers.
+
+The spec is genuinely ready. The vision is intact. The architecture is sound.
+
+Finish JobRunner. This is waiting for you.

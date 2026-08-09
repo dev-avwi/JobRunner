@@ -1,0 +1,119 @@
+Skip to content
+
+AI
+
+
+
+Library
+Search
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+JobRunner — Complete Application Deep Brief
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+Feature Graphic (1024x500) - With your logo and branding
+Feature Graphic (1024x500) - With your logo and branding
+Image
+
+Option A — Calm Minimal
+Option A — Calm Minimal
+Image
+
+Option B — premium tweaks applied
+Option B — premium tweaks applied
+Image
+
+Option C — Warm Human (real screenshot)
+Option C — Warm Human (real screenshot)
+Image
+
+JobRunner Play Store feature graphic
+JobRunner Play Store feature graphic
+Image
+
+JobRunner Play Store icon
+JobRunner Play Store icon
+Image
+
+generated_image
+Image
+
+
+
+
+/
+
+
+
+AV
+admin3404
+Started task
+Job card submission export (CSV/TSV)
+Owners/managers create job cards and forms; workers fill them in on jobs (including offline, syncing later). There is currently no way to export the completed submissions in bulk. Add a CSV/TSV export so owners/managers can pull all submissions for a form into Excel.
+
+
+25 actions
+Now I'll implement. First the storage method:
+
+
+3 actions
+Now the storage implementation:
+
+
+57 actions
+Export endpoint verified: owner gets a CSV with headers (200), worker gets 403. Let me check with actual submission data to verify field columns render.
+
+
+7 actions
+Export works end-to-end. One polish: "section" heading fields shouldn't become empty columns. Let me check how the route builds columns.
+
+
+Working
+
+Scroll to latest
+
+Message agent…
+
+
+
+
+
+
+JobRunner - Replit

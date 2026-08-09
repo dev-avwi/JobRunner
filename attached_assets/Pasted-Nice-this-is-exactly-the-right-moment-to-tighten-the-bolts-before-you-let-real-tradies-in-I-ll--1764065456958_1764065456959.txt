@@ -1,0 +1,546 @@
+Nice, this is exactly the right moment to “tighten the bolts” before you let real tradies in.
+
+I’ll give you one big Replit prompt you can paste in that tells it:
+
+what parts of the app are probably still “prototype-y”
+
+how to find / fix them
+
+exactly what to do for quotes + invoices + business settings + legitimacy
+
+and how to make the whole flow clean + simple for tradies
+
+I’ll write it as if you are speaking directly to Replit.
+
+🧠 MASTER “DE-PROTOTYPE” PROMPT FOR REPLIT
+
+(Copy–paste all of this into Replit’s AI)
+
+I’m building a SaaS app called TradieTrack for tradies (jobs, quotes, invoices, clients, chat, etc.).
+
+I’ve already built a lot of the app, but some parts are still prototype-style:
+
+mock data
+
+placeholder UIs
+
+missing validations
+
+half-finished quote/invoice flows
+
+no proper PDFs
+
+basic status handling
+
+I want you to go through the codebase and help me move from “prototype” → legit, production-ready app, especially for:
+
+Quotes
+
+Invoices
+
+Business settings
+
+Document generation
+
+Customer-facing quote acceptance
+
+Please follow these instructions as my source of truth.
+
+1️⃣ First: Find everything that’s still prototype-style
+
+Scan the project and:
+
+Identify any places where we:
+
+use hardcoded / mock data (arrays in code, placeholder objects)
+
+have TODO/“stub” comments
+
+show incomplete/ugly UI just for testing
+
+skip validation or show “coming soon”
+
+fake things like quote acceptance or invoice payments
+
+For each of these, tell me briefly:
+
+where it is (file + component)
+
+what it does now
+
+what you recommend to make it real/legit
+
+Then, prioritise fixes for:
+
+Quotes
+
+Invoices
+
+Business details/settings
+
+PDFs
+
+The customer-facing quote acceptance flow
+
+Those must feel professional and ready for real clients.
+
+2️⃣ Upgrade the quote + invoice system to be “business-grade”
+
+Use this spec as the definitive blueprint:
+
+2.1 Required fields for every Quote
+
+Make sure each quote has:
+
+Company name
+
+Logo
+
+ABN
+
+Business address
+
+Phone
+
+Email
+
+Client name
+
+Client address
+
+Quote number (auto-generated, like Q-1001)
+
+Issue date
+
+Expiry date
+
+Clear description / summary
+
+Line items:
+
+description
+
+quantity
+
+unit price
+
+line total
+
+GST calculation (10% if enabled)
+
+Final total
+
+Notes/terms section
+
+Acceptance button or link (for client)
+
+“Accepted by: [name] at [timestamp]” stored in the database
+
+Optional signature (we can leave this for later but design the data structure to support it)
+
+PDF export
+
+Instructions:
+
+Replace any mock quote numbers with auto-generated incremental IDs.
+
+Make a small helper/service that generates the next quote number (e.g., based on a sequence or latest record).
+
+Enforce validation on the quote form:
+
+quantity must be numeric
+
+unit price must be numeric
+
+no negative values
+
+total must be correctly recalculated on each change
+
+Show GST clearly:
+
+Subtotal
+
+GST (10%)
+
+Total (incl. GST)
+
+2.2 Required fields for every Invoice
+
+Every invoice must include:
+
+Invoice number (auto-generated, like INV-1001)
+
+Business name
+
+Logo
+
+ABN
+
+Business address
+
+Phone
+
+Email
+
+Client name
+
+Client address
+
+Issue date
+
+Due date
+
+Payment instructions (bank details, etc.)
+
+Summary of work / job reference
+
+Line items, same structure as quotes
+
+GST label: “GST included” / “GST added”
+
+Total amount
+
+Status:
+
+Draft
+
+Sent
+
+Paid
+
+Overdue
+
+Timestamp of when marked as paid
+
+Payment reference (optional)
+
+Clean PDF layout
+
+Instructions:
+
+Replace any mock invoice numbers with proper auto-generated IDs.
+
+Ensure invoice totals are 100% correct and consistent with GST.
+
+When an invoice is marked Paid, store:
+
+paid_at timestamp
+
+payment_reference (string)
+
+optional payment_method (e.g., “bank transfer”, “cash”, “card”)
+
+Keep the UI simple and clean so tradies can’t mess up the numbers.
+
+3️⃣ Business Settings → Source of truth for documents
+
+Create or improve a Business Settings page that lets the owner set:
+
+Business name
+
+Logo upload
+
+ABN
+
+Business address
+
+Phone
+
+Email
+
+Default payment notes (e.g., “Pay via bank transfer: BSB / Account”)
+
+Default terms & conditions
+
+Default quote expiry (e.g., 14 days from issue)
+
+Default GST settings:
+
+“GST registered?” (yes/no)
+
+“Show GST on all quotes/invoices?”
+
+Instructions:
+
+Make sure quotes/invoices always pull these values instead of hardcoding.
+
+If some data is missing (e.g., no ABN yet), show a subtle warning on the quote/invoice preview:
+
+“Add your ABN in Business Settings to make this document fully compliant.”
+
+This makes documents feel consistent and professional.
+
+4️⃣ Professional PDF templates (no more “hacky” output)
+
+Replace any basic or hacky quote/invoice displays with standardised PDF templates.
+
+Instructions:
+
+Implement a reusable PDF layout for:
+
+Quotes
+
+Invoices
+
+The layout should include:
+
+Header:
+
+Logo
+
+Business name
+
+ABN
+
+Contact info
+
+Document title:
+
+“QUOTE” or “INVOICE”
+
+Document number
+
+Issue date
+
+(For invoices) due date
+
+Client block:
+
+Client name
+
+Address
+
+Line item table:
+
+Description
+
+Qty
+
+Unit price
+
+Line total
+
+Totals:
+
+Subtotal
+
+GST
+
+Total
+
+Notes / Terms
+
+Optional footer with:
+
+“Generated securely by TradieTrack”
+
+Website or small “Powered by TradieTrack” (for free plan)
+
+You can use any PDF solution you think fits the current stack (e.g., react-pdf, server-side generation, or HTML → print-ready), but the result must be a downloadable PDF that looks clean and professional.
+
+5️⃣ Client-facing quote acceptance flow
+
+Right now, any “quote acceptance” might be fake or prototype-y.
+
+I want a real acceptance flow:
+
+Frontend:
+
+A shareable link for each quote:
+e.g. /public/quote/:token
+
+Page shows the full quote nicely:
+
+Business info
+
+Client info
+
+Items
+
+Totals
+
+Terms
+
+CTA buttons:
+
+“Accept Quote”
+
+“Decline Quote”
+
+On Accept:
+
+Ask for:
+
+Name (pre-filled if we already know it)
+
+Optional note (“Any extra info?”)
+
+When confirmed:
+
+Update quote status to accepted
+
+Save:
+
+accepted_by_name
+
+accepted_at timestamp
+
+acceptance_ip or user-agent if available (for extra legitimacy)
+
+(Optionally) auto-create a job from this quote
+
+Insert an in-app notification for the business owner
+
+Trigger email to tradie/owner via SendGrid (if email layer exists or stub for now)
+
+On Decline:
+
+Ask for reason (optional)
+
+Update status to declined
+
+Log declined_at and optional notes
+
+Notify owner
+
+Make sure this flow is secure and doesn’t allow random people to approve/decline unrelated quotes (use a secure token tied to that specific quote).
+
+6️⃣ History, status tracking & disputes
+
+For both quotes and invoices, add or confirm:
+
+Status field with clear transitions:
+
+Quotes: draft → sent → accepted/declined
+
+Invoices: draft → sent → paid/overdue
+
+Keep basic history / audit trail:
+
+who changed status
+
+when they changed it
+
+At a minimum, store timestamps:
+
+sent_at
+
+accepted_at
+
+declined_at
+
+paid_at
+
+This helps with disputes and makes the system feel serious.
+
+7️⃣ Anti-sketchy UX polish
+
+Go through quotes + invoices UI and:
+
+Replace any temporary copy like:
+
+“Test quote”
+
+“Mock client”
+
+“Lorem ipsum”
+
+“Coming soon”
+
+“Prototype”
+
+Use real, plain English labels:
+
+“Create Quote”, “Send Quote”, “Mark as Paid”, “Download PDF”
+
+Add helper text where needed:
+
+“Add your ABN in settings to appear here.”
+
+“Your client will see this description on their quote.”
+
+Make error states friendly:
+
+“We couldn’t save this quote. Please check your internet and try again.”
+
+Not just “Error”.
+
+Make everything feel calm, clear, and trustworthy for tradies and their customers.
+
+8️⃣ Make it easy for tradies to use (no over-complication)
+
+Wherever possible:
+
+Default fields sensibly:
+
+Use today’s date automatically
+
+Suggest standard payment terms (e.g., “Pay within 7 days”)
+
+Auto-fill client details if selected from existing client list
+
+Avoid overwhelming forms:
+
+Group fields logically (Client, Job, Amount, Terms, etc.)
+
+Use section headings
+
+Make the flow linear:
+
+Add client
+
+Create quote
+
+Send quote
+
+Client accepts
+
+Convert to job
+
+Create invoice
+
+Mark as paid
+
+Double-check the UI so a non-tech tradie can follow this without explanation.
+
+9️⃣ After you update the code, suggest tests
+
+For every major change above, suggest (and if possible, create):
+
+Unit tests for:
+
+quote/invoice total calculation
+
+GST calculation
+
+auto-generated IDs
+
+Integration tests for:
+
+creating a quote
+
+accepting a quote (status + timestamps)
+
+converting an accepted quote to a job & invoice
+
+End-to-end test scenarios:
+
+Owner creates & sends quote → client accepts via public link → owner sees updated status and can create invoice
+
+🔟 Goal
+
+By the end of this, I want:
+
+Quotes and invoices that look professional and trustworthy
+
+No obvious “prototype” shortcuts in the quote/invoice flow
+
+A clean business settings page controlling all key document info
+
+Real quote acceptance with tracking
+
+Downloadable PDFs that a tradie would be proud to send a client
+
+Everything simple enough for a busy tradie to understand in 1–2 minutes
+
+Use this spec as the truth source and adjust my current code to match it as closely as possible.

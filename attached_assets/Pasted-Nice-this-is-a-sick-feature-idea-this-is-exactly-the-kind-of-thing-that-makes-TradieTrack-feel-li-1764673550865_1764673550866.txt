@@ -1,0 +1,292 @@
+Nice, this is a sick feature idea – this is exactly the kind of thing that makes TradieTrack feel like a *real system* for teams, not just a job list.
+
+Here’s a **single Replit master prompt** you can copy–paste that focuses JUST on:
+
+* the **Map page** (jobs plotted on a map, with status + details)
+* **location tracking** for jobs + tradies
+* **team & job chat** (group + 1:1 owner↔tradie)
+* making sure it’s **fully wired**, not just pretty UI
+
+---
+
+## 🧠 REPLIT PROMPT — MAP VIEW + LOCATION TRACKING + TEAM/JOB CHAT CHECK & IMPLEMENT
+
+I’m building a SaaS app called **TradieTrack** for tradies (jobs, scheduling, quotes, invoices, chat, etc.).
+
+I want you to **focus on one big feature area**:
+
+> A real **Map & Team system** where owners can see:
+>
+> * all jobs on a map in their region
+> * job statuses (scheduled, in progress, completed) as markers
+> * where their tradies are (if location sharing is on)
+> * team and job chat linked into this
+
+Your job is to **check what already exists** in the codebase and then **upgrade/finish it** so this is a **proper, working feature**, not just UI.
+
+Please follow this spec carefully:
+
+---
+
+### 1️⃣ Map Page for Owners & Managers
+
+Create or verify a **Map** page, e.g. `/map` or a “Map” tab, that:
+
+* Is only visible to **owner/manager** roles (not normal tradies by default).
+* Shows a map of the **business region** (e.g. city/area where most jobs are).
+* Plots **all jobs** for that business as markers.
+
+**For each job marker:**
+
+* Use a different **color or icon** based on job status:
+
+  * New / Unscheduled
+  * Scheduled
+  * In Progress
+  * Completed
+* Tooltip or small popup on click should display:
+
+  * Client name
+  * Job title/description
+  * Status
+  * Scheduled date/time
+  * Assigned tradie(s)
+  * A “View job” link/button that goes to the job detail page.
+
+**Filtering:**
+
+Add simple filters on the map:
+
+* By status (checkboxes or dropdown: All / New / Scheduled / In Progress / Completed)
+* By date range (Today / This week / All)
+* By assigned tradie (dropdown)
+
+If any of this is partially implemented or stubbed, finish wiring it to the real job data in the database.
+
+---
+
+### 2️⃣ Job Location Data (NOT just UI text)
+
+Make sure job location is properly modelled & stored, not only shown as text.
+
+Check the data model for jobs and ensure:
+
+* Each job has:
+
+  * `address` (string)
+  * `suburb` / `city` (if applicable)
+  * `lat` (float)
+  * `lng` (float)
+
+If lat/lng are **not** present:
+
+* Implement geocoding on job create/update:
+
+  * Either via server-side function (e.g. Google Maps / Mapbox geocode) or a placeholder that can be wired later.
+  * For now you can simulate with a helper that fills example lat/lng from known suburbs, but structure the code so real geocoding can plug in later.
+
+In the **job create/edit forms**:
+
+* Make sure:
+
+  * Address input is saved.
+  * If you use a map/autocomplete, its coordinates are saved to `lat` and `lng`.
+* Validate that job location is actually stored in the DB and used by the Map view.
+
+---
+
+### 3️⃣ Tradie Live Location (Basic Version)
+
+I don’t need full real-time GPS with sockets, but I do want a **basic architecture** in place so it can be extended.
+
+Check if there is any “current location” / “track location” feature or field.
+
+If missing, implement:
+
+* A table or fields for tradie location, e.g. in `users` or `staff`:
+
+  * `last_lat`
+  * `last_lng`
+  * `last_seen_at`
+* A simple API endpoint/function to **update current location** (to be called by the mobile app later).
+* On the **Map page**, if user is owner/manager:
+
+  * Show tradies as separate markers (different icon vs jobs).
+  * Tooltip: tradie name, last seen time, maybe current job.
+
+If there are any existing “Track location” or “Use current location” buttons:
+
+* Make sure they call real APIs and store data.
+* If not implemented fully, either:
+
+  * Finish the implementation, or
+  * Hide/mark as “coming soon” for beta (but then do NOT show it on live maps).
+
+---
+
+### 4️⃣ Team Chat & Job Chat System
+
+You must ensure:
+
+* **Team chat group(s)** exist and work.
+* **Job-specific chats** exist and are linked to the correct job.
+* **1:1 chats** between owner/manager ↔ tradie are possible or at least architected.
+
+Check the data model:
+
+* A `messages` or `chat_messages` table with fields like:
+
+  * `id`
+  * `business_id`
+  * `channel_id` OR `job_id`
+  * `sender_id`
+  * `recipient_id` (nullable for group chat)
+  * `message`
+  * `created_at`
+* A `channels` / `chat_channels` table for:
+
+  * general/team channel (e.g. “Team Chat”)
+  * optionally per-job channels
+
+If this exists, verify:
+
+* Team chat:
+
+  * All members of a business can post/read.
+* Job chat:
+
+  * Messages are tied to `job_id`.
+  * Only users assigned to that job + owner/manager can see them.
+* 1:1 (if supported):
+
+  * Messages with `recipient_id` are only visible to that pair of users.
+
+**UI Check:**
+
+* In the **job detail page**, there should be a **Job chat** section.
+* There should also be a **Team chat** somewhere (global chat page or tab).
+* Ensure send message UI:
+
+  * Actually calls an endpoint
+  * Writes to DB
+  * Updates UI (not just fake messages in local state)
+
+---
+
+### 5️⃣ Map + Chat Integration (Linking them)
+
+We don’t need chat physically overlaid onto the map, but the flows must be well connected.
+
+For jobs:
+
+* From the map marker popup:
+
+  * The “View job” link should go to a job page where job chat is visible.
+* From a job page:
+
+  * The address should have an “Open in Map view” or “View on map” button that:
+
+    * Opens the Map page and focuses/centers on that job marker.
+
+For tradies:
+
+* From the map marker of a tradie:
+
+  * The popup should include:
+
+    * “Message tradie” (owner/manager only) ➜ opens 1:1 chat or pre-filters the chat page to that user.
+* From chat:
+
+  * In a job chat, show job location and a small “View job on map” link.
+
+Make sure these are **actual links/routes wired**, not just text placeholders.
+
+---
+
+### 6️⃣ Permissions & Security
+
+Double-check access control:
+
+* Only users from the same business see **their** jobs and tradies on the map and in chat.
+* One tradie/biz cannot see another business’s jobs or locations.
+* Owner/manager:
+
+  * Can see full map of all jobs + all tradies.
+* Tradie:
+
+  * If you allow them access to the map:
+
+    * They should see only their own assigned jobs
+    * Possibly their own location & maybe other team members, depending on your permission model.
+
+Check any RLS / auth middleware / backend filters to make sure this holds true for:
+
+* Map jobs data endpoint
+* Map tradie location data endpoint
+* Chat messages
+
+---
+
+### 7️⃣ UI/UX Polish for Map & Chat (not just code)
+
+Make sure the UX is simple and tradie-friendly:
+
+**Map page:**
+
+* Clean layout.
+* Filters are easy to find and use.
+* Markers are visually distinct (jobs vs tradies).
+* Legend or small note indicating colors/icons.
+
+**Chat:**
+
+* Clear separation between:
+
+  * Team chat
+  * Job chat
+  * 1:1 (if available)
+* Each message should show:
+
+  * Sender name
+  * Time
+* New messages auto-scroll to bottom.
+
+No empty pages — provide **empty states** like:
+
+> “No jobs found in this area yet.”
+> “No messages yet. Start the conversation!”
+
+---
+
+### 8️⃣ Final Map & Chat Beta Readiness Summary
+
+At the end, produce a short summary (in comments or console) with:
+
+1. ✅ What’s fully implemented for:
+
+   * Map (jobs + filters + markers + status)
+   * Job location storage (lat/lng)
+   * Tradie location (if implemented)
+   * Team chat
+   * Job chat
+   * 1:1 chats (if applicable)
+
+2. ⚠️ What is partially implemented and should be marked as “coming soon” in UI (not visible as if it worked).
+
+3. 🎯 Any MUST-FIX items before letting a real tradie team use:
+
+   * Map view to coordinate jobs
+   * Chat to coordinate team work
+
+Use the existing codebase and models as the starting point, and do whatever refactor/implementation is needed to make the **Map + Location + Chat system** genuinely usable and not just cosmetic.
+
+---
+
+You can paste that whole block straight into Replit AI.
+
+If you want after that, I can write you a **“Real-World Testing Script”** for your phone like:
+
+* “Stand in one suburb as Owner, pretend your tradie is in another, move pins”
+* “Make a job, see it appear on the map, chat about it, mark it completed”
+
+so you can literally walk around Cairns and test it like a real tradie boss 😄

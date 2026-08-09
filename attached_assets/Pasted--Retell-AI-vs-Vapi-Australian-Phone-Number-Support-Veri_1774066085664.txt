@@ -1,0 +1,97 @@
+# Retell AI vs. Vapi: Australian Phone Number Support Verification
+
+**Date:** March 21, 2026
+**Author:** Manus AI
+
+## 1. Executive Summary
+
+This report verifies the capabilities of Retell AI and Vapi to support Australian phone numbers for the purpose of building an AI receptionist for JobRunner. The investigation confirms that **both platforms can be used with Australian Twilio numbers**, but they have different integration methods, advantages, and potential blockers.
+
+**The final recommendation is to use Vapi.** While Retell AI has a latency advantage, Vapi's simpler and more direct Twilio integration process presents a lower risk of setup friction and delays, making it the more practical choice for immediate development.
+
+| Feature | Retell AI | Vapi | Winner |
+|---|---|---|---|
+| **Native AU Numbers** | No | No | Tie |
+| **AU Twilio Integration** | Yes (via SIP Trunk) | Yes (Direct Import) | **Vapi** |
+| **Integration Simplicity** | Complex | Simple | **Vapi** |
+| **Known Blockers** | Yes (Manual support action required for outbound calls) | Yes (Inbound webhook configuration required) | **Vapi** |
+| **Latency** | ~800ms | ~1,000-1,500ms | **Retell AI** |
+| **Recommendation** | | | **Vapi** |
+
+---
+
+## 2. Retell AI: Australian Number Verification
+
+Retell AI does not offer native Australian phone numbers for purchase. However, it officially supports using Australian numbers from third-party providers like Twilio through a **SIP (Session Initiation Protocol) trunk**. [1]
+
+### Integration Method
+
+The process involves:
+1.  Purchasing an Australian number from Twilio.
+2.  Creating an "Elastic SIP Trunk" within Twilio.
+3.  Configuring the trunk's "Termination" (for outbound calls) and "Origination" (for inbound calls) settings to point to Retell's servers.
+4.  Importing the number into the Retell AI dashboard. [2]
+
+This method is technically sound but is more complex than a direct integration.
+
+### Identified Blockers
+
+A critical blocker was identified in a Retell community forum post from March 2026. A user reported that all outbound calls to Australian numbers were failing with a `SIP 403` error, indicating a permission issue. [3]
+
+> **Error from Detail Logs:**
+> `Error dialing to user, SIP status code: 403 SIP error category: telephony_provider_permission_denied sip status: 403: Dialed number +61... is not included in whitelisted countries USA,CAN D13`
+
+This error occurred because of an **account-level country whitelist** that defaults to only the US and Canada. The user had to contact Retell support to manually add Australia to their account's whitelist. This represents a significant potential friction point and delay in the setup process, as it relies on manual intervention from the Retell team.
+
+---
+
+## 3. Vapi: Australian Number Verification
+
+Vapi, like Retell, does not offer native Australian numbers. Their documentation explicitly states that free numbers are for US use only and that international numbers must be imported from Twilio. [4]
+
+### Integration Method
+
+Vapi offers a much simpler, more direct integration method:
+1.  Purchase an Australian number from Twilio.
+2.  Use the "Import" function in the Vapi dashboard.
+3.  Enter the Twilio phone number, Account SID, and Auth Token. [5]
+
+Vapi then uses the Twilio credentials to automatically configure the number for use on their platform. This is significantly less complex than the manual SIP trunking process required by Retell.
+
+### Identified Blockers
+
+While the import process is simple, a potential blocker for **inbound calls** was identified in a Skool community post. A user successfully imported an Australian Twilio number and made outbound calls, but inbound calls failed. [6]
+
+The solution was to manually configure the number's webhook settings within the Twilio console. When a call comes in, the webhook must be set to `https://api.vapi.ai/twilio/inbound_call`.
+
+This is a one-time technical configuration step. Unlike the Retell blocker, it does not require waiting for a support team and can be resolved immediately by the developer during setup.
+
+---
+
+## 4. Head-to-Head Comparison & Recommendation
+
+| Factor | Retell AI | Vapi | Analysis |
+|---|---|---|---|
+| **Setup Simplicity** | Low | High | Vapi's direct import is far simpler than Retell's manual SIP trunking. |
+| **Setup Blockers** | **High Risk.** Requires manual support intervention and waiting for an account-level change. | **Low Risk.** A one-time, self-service configuration fix is required for inbound calls. |
+| **Latency** | **Excellent (~800ms).** Optimized for low-latency, which is critical for a natural-sounding receptionist. | **Good (~1000-1500ms).** More flexible but less optimized. May be noticeable in conversation. |
+| **Community & Docs** | Good. Official docs are clear, but community posts reveal critical blockers. | Excellent. Larger community and more tutorials available, with clear solutions to known issues. |
+
+### Final Recommendation
+
+For the JobRunner AI Receptionist, **Vapi is the recommended platform to start with.**
+
+The primary reason is the **lower risk of setup friction.** The Retell requirement for manual support intervention to enable outbound Australian calls is a significant, unpredictable blocker. A developer could be stuck for days waiting for a support ticket to be resolved.
+
+Vapi's inbound call configuration is a known, solvable technical step that a developer can handle in minutes. While Retell's lower latency is attractive, the immediate and predictable path to a working Australian number with Vapi makes it the more pragmatic choice to begin development without delay.
+
+---
+
+## 5. References
+
+[1] Retell AI. (2026). *International Calling and Fees*. [https://docs.retellai.com/deploy/international-call](https://docs.retellai.com/deploy/international-call)
+[2] Retell AI. (2026). *Twilio*. [https://docs.retellai.com/deploy/twilio](https://docs.retellai.com/deploy/twilio)
+[3] Retell AI Community. (2026). *Account-level country whitelist blocking outbound calls to Australia (AUS) — SIP 403*. [https://community.retellai.com/t/account-level-country-whitelist-blocking-outbound-calls-to-australia-aus-sip-403/990](https://community.retellai.com/t/account-level-country-whitelist-blocking-outbound-calls-to-australia-aus-sip-403/990)
+[4] Vapi. (2026). *Phone Calling*. [https://docs.vapi.ai/phone-calling](https://docs.vapi.ai/phone-calling)
+[5] Vapi. (2026). *Import number from Twilio*. [https://docs.vapi.ai/phone-numbers/import-twilio](https://docs.vapi.ai/phone-numbers/import-twilio)
+[6] Skool. (2024). *Hi - New here and have a question already! Twilio + Vapi?* [https://www.skool.com/brendan/hi-new-here-and-have-a-question-already](https://www.skool.com/brendan/hi-new-here-and-have-a-question-already)

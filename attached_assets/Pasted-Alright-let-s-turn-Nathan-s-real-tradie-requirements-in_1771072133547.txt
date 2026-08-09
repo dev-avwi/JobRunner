@@ -1,0 +1,267 @@
+Alright—let’s turn Nathan’s “real tradie” requirements into a solid build plan that makes your time + GPS + dispatch + JobRunner portal feel bulletproof, not hacky.
+
+I’ll give you:
+	1.	What “rock solid” means for time + geofencing
+	2.	The exact feature split: Visual Dispatch vs JobRunner
+	3.	The data + event system that makes it reliable
+	4.	A Replit-ready build checklist
+
+⸻
+
+1) What Nathan meant by “rock solid” (translated into engineering rules)
+
+A) Time Tracking must be legally defensible
+
+Nathan’s fear: timer bugs = lawsuits.
+
+So “rock solid” means:
+	•	Monotonic time source: don’t rely only on device wall-clock time (can change).
+	•	Every time entry stores:
+	•	start_at_utc
+	•	end_at_utc
+	•	duration_seconds (calculated)
+	•	device_time_offset (optional)
+	•	Timer must survive:
+	•	app kill
+	•	phone lock
+	•	offline
+	•	low power mode
+	•	All edits must create an audit event, not overwrite history.
+
+✅ Rule: time entries are append-only logs + “final computed timesheet” derived from logs.
+
+⸻
+
+B) GPS must be “good enough + honest”
+
+Nathan’s point: GPS is proof, but it’s not perfect.
+
+So “rock solid” means:
+	•	Track states, not constant GPS spam:
+	•	ON_MY_WAY (travel tracking)
+	•	ARRIVED (stop travel tracking)
+	•	IN_PROGRESS (optional low-frequency location)
+	•	Always log:
+	•	GPS accuracy reading
+	•	signal loss events
+	•	time of last good fix
+
+✅ Rule: Never claim certainty. Show:
+
+“Location last updated 3 mins ago • Accuracy ±25m”
+
+That protects you.
+
+⸻
+
+C) Geofencing must never “auto clock” without confirmation (MVP)
+
+Nathan wants auto, but for MVP you do:
+	•	If worker enters job radius (e.g. 150m):
+	•	notification: “You’ve arrived at Job A. Start timer?”
+	•	If worker leaves radius:
+	•	notification: “You’ve left Job A. Clock out or switch job?”
+
+✅ Rule: You don’t auto-change timesheets silently. You prompt + log.
+
+⸻
+
+D) Materials must be captured with minimal friction
+
+Nathan’s real flow includes leaving for materials and adding receipts.
+
+So you need:
+	•	“Add Materials” quick action:
+	•	item name
+	•	qty
+	•	cost
+	•	markup (optional)
+	•	receipt photo
+	•	supplier tag (Bunnings, Reece, etc.)
+	•	Materials can be added:
+	•	during job
+	•	at end-of-day review
+
+✅ Rule: Materials must attach to a job and optionally to an invoice.
+
+⸻
+
+2) Feature Split: Visual Dispatch vs JobRunner (clear separation)
+
+Think of it like this:
+
+✅ Visual Dispatch = internal ops (owner/manager/team)
+
+Used by Owner/Manager daily to run the business.
+
+Visual Dispatch includes:
+	•	Job calendar + timeline
+	•	Drag-and-drop job assignment
+	•	Live status board (Assigned → On My Way → Arrived → Working → Done)
+	•	Team map (where workers are right now)
+	•	Alerts:
+	•	worker off-route
+	•	late arrival
+	•	no clock-in after arrival
+	•	Approvals:
+	•	timesheets
+	•	edits
+	•	overtime
+	•	Job profitability snapshot:
+	•	time cost vs billed
+	•	materials cost vs billed
+
+Visual Dispatch’s goal:
+
+“Owner sees the whole day at a glance.”
+
+⸻
+
+✅ JobRunner = client experience + external link portal
+
+Used by Clients and Workers for “Uber-like” updates.
+
+JobRunner includes:
+	•	“On My Way” trigger → SMS/email to client
+	•	Client portal link:
+	•	business name/logo
+	•	worker name + phone (optional)
+	•	owner name + phone
+	•	live ETA
+	•	map (travel only)
+	•	before/after photos
+	•	documents
+	•	job updates timeline
+	•	Post-job:
+	•	completion summary
+	•	invoice / receipt pack
+
+JobRunner’s goal:
+
+“Client feels informed, trusts you, and stops calling.”
+
+⸻
+
+3) The System that makes it “solid”: Event-driven job timeline
+
+To make this all reliable, build around events.
+
+Everything becomes an event
+	•	JOB_CREATED
+	•	WORKER_ASSIGNED
+	•	ON_MY_WAY_PRESSED
+	•	LOCATION_PINGED
+	•	ARRIVED_CONFIRMED
+	•	CLOCK_IN
+	•	MATERIAL_ADDED
+	•	PHOTO_BEFORE_UPLOADED
+	•	JOB_NOTE_ADDED
+	•	CLOCK_OUT
+	•	PHOTO_AFTER_UPLOADED
+	•	INVOICE_GENERATED
+	•	CLIENT_LINK_OPENED
+	•	GPS_SIGNAL_LOST
+	•	TIME_EDITED
+
+✅ Why this matters:
+	•	Offline? events queue and sync later.
+	•	Disputes? show timeline.
+	•	Bugs? audit trail proves what happened.
+
+This is exactly the “cover yourself” part Nathan kept pushing.
+
+⸻
+
+4) “Rock solid” time tracking + geo plan (MVP → Phase 2)
+
+MVP Plan (safe + reliable)
+	•	Manual clock in/out
+	•	Prompt-based geofence reminders
+	•	Travel tracking only during On My Way
+	•	Low-frequency pings (every 30–60s during travel)
+	•	Stop tracking when Arrived pressed (or after arrival geofence)
+
+Phase 2 (stronger automation)
+	•	Auto “arrived” detection with confirmation
+	•	Auto “leave site” detection with confirmation
+	•	Smart job switching suggestion (“You’re closer to Job B now — switch?”)
+
+Phase 3 (AI autopilot)
+	•	Auto timesheet suggestion
+	•	Auto invoice draft with confidence score
+
+⸻
+
+5) Replit “Make it solid” Checklist (copy/paste)
+
+Time Tracking (Bulletproof)
+	•	Use server timestamps for start/stop events
+	•	Persist timer state locally + restore on app relaunch
+	•	Offline queue for all events
+	•	Audit log for edits (old/new + reason)
+	•	Prevent double clock-ins (can’t run 2 timers unless multi-job mode enabled)
+	•	End-of-day “Review & Confirm” screen before invoice send
+
+GPS + Geofence (MVP Safe)
+	•	On My Way → enable travel tracking
+	•	Use job radius (configurable)
+	•	Enter radius → prompt “Arrived? Start timer?”
+	•	Exit radius while clocked in → prompt “Clock out / Switch job”
+	•	Log GPS accuracy, last update, and signal loss events
+	•	Auto-stop travel tracking once arrived
+
+Materials (Fast)
+	•	Quick add materials with optional receipt photo
+	•	Materials attach to job, and include in invoice
+	•	Track supplier + taxable flag
+	•	Allow markup (optional)
+
+Visual Dispatch (Owner/Manager)
+	•	Dispatch board (status columns)
+	•	Map view of active workers
+	•	Timeline/day view
+	•	Assign jobs + reassign
+	•	Alerts (late, not clocked in, GPS lost)
+	•	Approve timesheets + edits
+	•	Job summary + profitability
+
+JobRunner (Client Portal)
+	•	Token-based portal link per job
+	•	Link expires and can be revoked
+	•	Shows worker name, ETA, map, before/after photos, docs
+	•	Shows owner contact always
+	•	Shows worker phone optionally
+	•	Shows update timeline (events)
+
+Messaging
+	•	SMS templates w/ variables:
+{BusinessName, WorkerName, ETA, PortalLink, OwnerName, OwnerPhone}
+	•	Trigger SMS on:
+	•	On My Way
+	•	Arrived
+	•	Job Completed (with link)
+	•	Email templates mirror SMS
+
+⸻
+
+6) What to build FIRST so it feels perfect
+
+If you want it to “work solid and perfectly,” build in this order:
+	1.	Event system + offline queue (foundation)
+	2.	Time tracking (persist + restore + audit logs)
+	3.	Job statuses + On My Way → Arrived flow
+	4.	Client portal link
+	5.	Travel tracking + ETA
+	6.	Materials + receipts
+	7.	Visual dispatch board + map
+
+Most apps fail because they build UI before the event/log foundation.
+
+⸻
+
+If you want, I’ll now write:
+	•	A permissions matrix (Owner/Manager/Worker) for dispatch + portal
+	•	Exact SMS templates for each trigger (copy/paste)
+	•	A clean database schema for events, jobs, locations, materials, photos, portal tokens
+
+Which one do you want first?

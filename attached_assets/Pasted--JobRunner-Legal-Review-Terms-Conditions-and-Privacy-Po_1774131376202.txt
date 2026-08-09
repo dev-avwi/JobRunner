@@ -1,0 +1,61 @@
+# JobRunner Legal Review: Terms & Conditions and Privacy Policy
+
+**Author:** Manus AI
+**Date:** March 21, 2026
+
+**Disclaimer:** *This review is for informational purposes only and does not constitute legal advice. You should consult with a qualified Australian solicitor to review your final legal documents.* 
+
+## 1. Executive Summary
+
+This report provides a detailed legal review of JobRunner's Terms and Conditions (T&Cs) and Privacy Policy. The existing documents are comprehensive and well-drafted, covering most key areas required for a SaaS business operating in Australia. However, there are several critical gaps and high-risk clauses that need to be addressed to ensure compliance with Australian law and to protect the business from potential disputes.
+
+**The key findings are:**
+
+*   **High-Risk Clauses:** The Class Action Waiver is likely unenforceable in Australia and should be removed. The dual Dispute Resolution clauses (one for consumers, one for arbitration) are contradictory and create ambiguity.
+*   **Missing Protections:** The T&Cs lack specific clauses for handling price changes, service modifications, and intellectual property for user-provided feedback.
+*   **Privacy Policy Gaps:** The policy needs to be more explicit about the *purpose* of collecting sensitive data (like GPS), user rights under the APPs, and the process for handling data breaches.
+
+Overall, the documents are a strong starting point but require targeted amendments to become legally robust and ready for a public launch.
+
+## 2. Terms & Conditions: Gap Analysis & Recommended Fixes
+
+| Clause | Current Status | Risk Level | Recommended Fix |
+| :--- | :--- | :--- | :--- |
+| **Governing Law** | Queensland, Australia | **Low** | Correct. This is clear and appropriate. |
+| **Australian Consumer Law (ACL)** | Included | **Low** | Good. The specific mention of consumer guarantees is best practice. |
+| **Dispute Resolution** | Contradictory | **High** | **CRITICAL:** Clause 20 (ACL) directs users to the ACCC. Clause 22 (Arbitration) forces binding arbitration. This is a major contradiction. **Remove Clause 22 entirely.** Rely on the dispute resolution process outlined in the ACL clause (negotiation, then ACCC/state agency). For business-to-business disputes, the Queensland courts (as per Governing Law) are the appropriate venue, not mandatory arbitration. |
+| **Class Action Waiver** | Included (Clause 23) | **High** | **CRITICAL:** Class action waivers are generally unenforceable in Australian consumer contracts and are considered an unfair contract term [1]. The High Court has confirmed this position [2]. **Remove this clause entirely.** It offers no real protection and signals bad faith. |
+| **Limitation of Liability** | Capped at 12 months' fees | **Medium** | This is a standard and reasonable cap. However, it should be explicitly stated that this limitation does not apply to breaches of Consumer Guarantees under the ACL, where remedies are statutory. Add the sentence: *"This limitation does not exclude or limit your rights under the Australian Consumer Law."* |
+| **Price & Plan Changes** | Not specified | **Medium** | The T&Cs need a clause that allows you to change your pricing and plan features. You must specify a notice period (e.g., 30 days' notice via email) and state that continued use of the service after the notice period constitutes acceptance of the new terms. |
+| **Service Modification / Discontinuation** | Not specified | **Medium** | You need a clause that allows you to modify, suspend, or discontinue parts of the service (e.g., sunsetting an old feature). Again, you must provide reasonable notice to users. |
+| **Intellectual Property (Feedback)** | Not specified | **Low** | Add a clause stating that if a user provides feedback, ideas, or suggestions, they grant JobRunner a perpetual, royalty-free, worldwide license to use and implement that feedback without compensation. This prevents future claims if you build a feature based on a user's idea. |
+| **Termination** | Included | **Low** | The clause is good but could be strengthened by specifying that upon termination, the user is still liable for any outstanding fees. |
+
+## 3. Privacy Policy: Gap Analysis & Recommended Fixes
+
+| Clause | Current Status | Risk Level | Recommended Fix |
+| :--- | :--- | :--- | :--- |
+| **Compliance Statement** | Mentions APPs & Privacy Act | **Low** | Good. This sets the right tone. |
+| **Information Collected** | Comprehensive list | **Low** | Excellent. The list is specific and covers all data points, including GPS, time tracking edits, and device info. |
+| **Purpose of Collection (APP 6)** | General | **Medium** | The policy lists *how* data is used, but it needs to be more explicit about the *purpose* of collecting sensitive data. For **GPS & Location Data**, state the purpose is: *"to enable core platform features such as job scheduling, dispatch mapping, and automated timesheet verification, which provides a direct benefit to the user by reducing administrative work."* This is a key requirement under APP 6. |
+| **User Rights (Access & Correction)** | Mentioned | **Medium** | The policy states users have the right to access and correct their data, but it doesn't say *how*. Add a sentence: *"You can access and update most of your personal information directly through the 'Settings' section of your JobRunner account. For any information you cannot access yourself, or to request deletion, please contact our Privacy Officer at support@jobrunner.com.au."* |
+| **Data Breach Notification (NDB Scheme)** | Included | **Low** | Good. The policy correctly references the NDB scheme and the OAIC. |
+| **Overseas Disclosure** | Mentions US providers | **Low** | Good. The policy is transparent about data being processed in the US. |
+| **Employee Records Exemption** | Not mentioned | **Medium** | The Privacy Act's *employee records exemption* means that data handled in the context of a direct employment relationship (i.e., your own employees) is exempt from the APPs. However, this exemption **does not apply** to the data of your customers' employees that you process. Your Privacy Policy should clarify this to avoid ambiguity. Add a section stating: *"This Privacy Policy applies to all personal information collected and processed by the JobRunner platform. The employee records exemption under the Privacy Act 1988 does not apply to the data of our customers' employees that we handle as part of providing our service."* [3] |
+| **Privacy Officer Contact** | Included | **Low** | Good. A specific contact point is provided. |
+
+## 4. Final Recommendation
+
+The legal documents for JobRunner are well-developed for a pre-launch startup. By implementing the specific, high-priority fixes recommended in this report — particularly removing the class action waiver and contradictory dispute clauses — the business will be in a much stronger legal position. The remaining suggestions are best-practice improvements that will further reduce risk and enhance user trust.
+
+**Next Step:** After making these changes, engage a qualified Australian solicitor for a final sign-off before launch.
+
+---
+
+## 5. References
+
+[1] Australian Competition and Consumer Commission (ACCC). (2026). *Unfair contract terms*. [https://www.accc.gov.au/consumers/buying-products-and-services/contracts](https://www.accc.gov.au/consumers/buying-products-and-services/contracts)
+
+[2] K&L Gates. (2024). *Australian Unfair Contract Terms Laws and International Business: High Court Finds Global Contract Subject to Australian Laws and Class Action Waiver Clause to be Unfair*. [https://www.klgates.com/Australian-Unfair-Contract-Terms-Laws-and-International-Business-High-Court-Finds-Global-Contract-Subject-to-Australian-Laws-and-Class-Action-Waiver-Clause-to-be-Unfair-1-17-2024](https://www.klgates.com/Australian-Unfair-Contract-Terms-Laws-and-International-Business-High-Court-Finds-Global-Contract-Subject-to-Australian-Laws-and-Class-Action-Waiver-Clause-to-be-Unfair-1-17-2024)
+
+[3] Office of the Australian Information Commissioner (OAIC). (2026). *Employee records exemption*. [https://www.oaic.gov.au/privacy/privacy-guidance-for-organisations-and-government-agencies/organisations/employee-records-exemption](https://www.oaic.gov.au/privacy/privacy-guidance-for-organisations-and-government-agencies/organisations/employee-records-exemption)

@@ -1,0 +1,199 @@
+Got it — **no redesign**. You want **production-ready**, “a real business can run on this daily” reliability.
+
+Here’s the exact checklist + the exact way to tell Replit to harden it (Expo/React Native).
+
+---
+
+## What “production ready” actually means for JobRunner
+
+Not “more features”.
+
+It means:
+
+* **No data loss**
+* **No crashes**
+* **Fast + consistent**
+* **Secure**
+* **Works on bad internet**
+* **Handles edge cases**
+* **Recoverable when something goes wrong**
+* **Supportable** (logs, monitoring, updates)
+
+---
+
+# ✅ Production Readiness Checklist (Mobile + Backend)
+
+## 1) Auth + Security (must)
+
+* Token refresh + expiry handling
+* Secure storage (no tokens in AsyncStorage if avoidable)
+* Role-based access (owner/admin/worker)
+* Server-side validation for EVERYTHING (never trust client)
+* Rate limits + basic abuse protection
+* Sensitive data redaction in logs
+
+## 2) Data Integrity (must)
+
+* Strong database constraints (unique IDs, foreign keys, status enums)
+* Idempotency for critical actions (creating invoices, payments)
+* Prevent duplicates if user taps twice or network retries
+* Transaction safety for multi-step updates (job complete → timer stop → invoice draft)
+
+## 3) Offline + Bad Internet behavior (critical for tradies)
+
+* App works with no signal:
+
+  * view job list + job details cached
+  * add notes/photos queued
+  * timer events queued
+* Sync engine:
+
+  * retry with exponential backoff
+  * conflict resolution rules (last write wins OR server merges)
+  * “Sync status” indicator (quiet but visible)
+* “Optimistic UI” with rollback if server rejects
+
+## 4) Performance (must)
+
+* Fast first load
+* FlatList virtualization (no lag)
+* Image compression + upload in background
+* Avoid huge re-renders (memoization, proper state slice)
+* Pagination everywhere (jobs, invoices, clients)
+
+## 5) Reliability + Crash handling (must)
+
+* Global error boundary
+* Friendly error UI (“Something went wrong. Retry.”)
+* Network timeout handling
+* Graceful degradation (features disable instead of crash)
+* Background task safety (location, uploads)
+
+## 6) Observability (non-negotiable for real businesses)
+
+* Crash reporting (Sentry is common)
+* Event logging (key actions: create job/invoice/payment)
+* Audit trails for business-critical events
+* “Support bundle” export (device info + logs + last sync time)
+
+## 7) Payments + Finance safety (high stakes)
+
+* Never trust client amounts — server calculates totals
+* Payment recorded vs payment processed must be clearly separated
+* Reconciliation-friendly records (status, timestamps, references)
+* GST rules consistent
+* No double-charging / double-recording (idempotency keys)
+
+## 8) Permissions + Location (if using tracking)
+
+* Clear permission flow
+* Handles “Allow once” / “While using” / “Always”
+* Background location requirements documented in-app
+* Battery safeguards + adjustable tracking frequency
+
+## 9) Deployment + Updates
+
+* EAS Build (production)
+* EAS Update strategy (staged rollouts)
+* Versioning + changelog
+* Environment separation:
+
+  * dev / staging / production
+  * separate API keys + databases
+
+## 10) Legal + Business basics
+
+* Terms + privacy (especially location tracking)
+* Data retention rules
+* Backup strategy
+* Admin export (CSV/PDF)
+
+---
+
+# ✅ Exactly what to tell Replit (copy/paste)
+
+Use this prompt:
+
+```text
+We are NOT changing the UI/UX or adding new major features.
+Goal: make JobRunner production-ready for real businesses (reliability, security, performance, offline, monitoring).
+
+Do a full production readiness audit for:
+- Expo/React Native mobile app
+- Backend/API + database
+- Storage (photos/files)
+- Payments/invoicing flows
+- Location/time tracking (if enabled)
+
+Deliverables:
+1) A prioritized checklist with severity: Blocker / High / Medium / Low
+2) Implement all Blockers and High items.
+3) Add tests + monitoring + logging so issues are detectable.
+
+Requirements:
+A) Stability
+- Add global error boundary + safe fallback screens
+- Handle network timeouts, retries, and offline states
+- Prevent duplicate actions (double taps, retries)
+
+B) Data Integrity
+- Use idempotency keys for: invoice creation, payment record, job completion
+- Server-side validation for all inputs
+- Database constraints and transactions where needed
+
+C) Offline + Sync
+- Cache critical data locally (jobs/clients)
+- Queue offline writes (notes, photos, status updates, time logs)
+- Sync engine with retry/backoff + conflict rules
+- Surface a “sync status” indicator
+
+D) Performance
+- Optimize FlatLists (virtualization, keyExtractors)
+- Pagination for large lists
+- Image compression + resumable uploads
+- Reduce unnecessary re-renders
+
+E) Observability
+- Integrate crash reporting (e.g., Sentry)
+- Structured logging for critical actions
+- Audit trail for job/invoice/payment status changes
+- Add a support-debug screen (app version, device, last sync, user id)
+
+F) Release pipeline
+- Ensure EAS production build works
+- Separate dev/staging/prod environment variables
+- Add smoke tests and sanity checks before release
+
+Start with an audit report, then implement the fixes in order.
+Do not stop after mobile—cover backend + database as well.
+```
+
+That’s a *real* production hardening brief.
+
+---
+
+# Quick reality check: why mobile can feel “less advanced” than web
+
+Even if features match, mobile often lacks:
+
+* caching + offline + sync (this is the big one)
+* bulk actions
+* deeper filtering
+
+But since you don’t want UI changes — we’ll focus on **reliability + parity behind the scenes**, not “more screens”.
+
+---
+
+## If you want the fastest path:
+
+Tell Replit to focus on **these 5 production blockers first**
+
+1. Offline queue + sync status
+2. Idempotency on invoices/payments
+3. Crash reporting + error boundary
+4. Pagination + list performance
+5. Environment separation + EAS production build
+
+---
+
+If you tell me what backend you’re using (Supabase/Firebase/custom Node/Express, etc.), I’ll tailor that prompt to the exact stack and the exact failure points to harden first.

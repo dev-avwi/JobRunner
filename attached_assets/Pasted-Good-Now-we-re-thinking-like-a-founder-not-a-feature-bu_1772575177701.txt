@@ -1,0 +1,375 @@
+Good.
+
+Now we’re thinking like a founder — not a feature builder.
+
+I’m going to structure this properly so you can actually execute on it.
+
+---
+
+# 🔎 1️⃣ Which Features Actually Drive Revenue?
+
+Not all features are equal.
+
+Some are “cool”.
+Some are “sellable”.
+Some are “retention drivers”.
+
+Let’s break JobRunner down properly.
+
+---
+
+## 💰 Tier 1 – Direct Revenue Drivers (Core Selling Points)
+
+These are what someone will actually pay for.
+
+### 1. Job → Quote → Invoice Workflow
+
+If this isn’t 10/10 smooth, nothing matters.
+
+Revenue impact: ⭐⭐⭐⭐⭐
+Why: Replaces paperwork & admin time.
+
+---
+
+### 2. Time Tracking + Rate Calculations
+
+Tradies care about:
+
+* Billable hours
+* Crew rates
+* Travel fees
+* Extras
+
+Revenue impact: ⭐⭐⭐⭐⭐
+Why: Stops undercharging.
+
+---
+
+### 3. Payment Collection (Stripe, tap-to-pay, payment links)
+
+Cash flow is king.
+
+Revenue impact: ⭐⭐⭐⭐⭐
+Why: Faster payments = emotional value.
+
+---
+
+### 4. GPS Proof + Client Transparency
+
+This is actually interesting.
+
+If positioned correctly:
+
+> “Protect yourself from client disputes.”
+
+Revenue impact: ⭐⭐⭐⭐
+Differentiator: Strong.
+
+---
+
+### 5. Mobile App That Works Offline
+
+Tradies don’t care about “React Native”.
+They care about:
+
+> “Does it work when I have no signal?”
+
+Revenue impact: ⭐⭐⭐⭐
+Retention impact: ⭐⭐⭐⭐⭐
+
+---
+
+## 🧲 Tier 2 – Retention Features
+
+These keep users, but don’t sell the product alone.
+
+* Client portal
+* Subcontractor portal
+* Recurring jobs
+* Templates hub
+* Compliance tracking
+* Inventory
+
+Revenue impact: ⭐⭐–⭐⭐⭐
+Retention impact: ⭐⭐⭐⭐
+
+---
+
+## 🧠 Tier 3 – Nice To Have (Doesn’t Sell It)
+
+Be honest here.
+
+* AI photo analysis
+* Fancy dashboards
+* Complex reporting
+* 81 templates
+* 13 trade customisations
+
+These don’t close deals.
+They enhance perception.
+
+Revenue impact: ⭐⭐
+Polish impact: ⭐⭐⭐
+
+---
+
+### 🔥 Conclusion
+
+Your MVP revenue drivers are:
+
+1. Clean job workflow
+2. Accurate quoting
+3. Fast invoicing
+4. Easy payment collection
+5. Mobile reliability
+6. Basic time tracking
+
+Everything else is secondary.
+
+---
+
+# 📈 2️⃣ Fastest Path to 20 Paying Customers
+
+You live in Cairns.
+
+This is your unfair advantage.
+
+Do not try to go national yet.
+
+---
+
+## Step 1 – Pick 1 Trade Only
+
+Not 13.
+
+Pick:
+
+* Electricians
+  OR
+* Plumbers
+  OR
+* HVAC
+
+Why?
+Focus converts.
+
+---
+
+## Step 2 – Build a “Local Hero” Positioning
+
+Not:
+
+> “Enterprise trade management platform.”
+
+Instead:
+
+> “Built for Cairns electricians who want to get paid faster.”
+
+Specific wins.
+
+---
+
+## Step 3 – Direct Local Outreach Strategy
+
+You already talked about Google Maps lead hunting.
+
+Do this:
+
+1. Find businesses with:
+
+   * 4.5+ rating
+   * 20+ reviews
+   * No modern website
+   * Or messy admin
+
+2. Call them.
+   Not email.
+
+Script:
+
+> “Hey, I’m a local developer in Cairns building a job and invoicing app specifically for electricians. I’m looking for 5 local businesses to trial it free for 30 days in exchange for feedback.”
+
+You’re not selling.
+You’re recruiting beta partners.
+
+---
+
+## Step 4 – Charge Early
+
+After trial:
+
+* $39/month early adopter
+* Lock it in for 12 months
+
+You need paying validation.
+Not “looks cool bro”.
+
+---
+
+## Step 5 – Obsess Over 5 Users
+
+Your first 5 users matter more than 50 random ones.
+
+Watch:
+
+* Where they get stuck
+* What they don’t use
+* What they complain about
+* What they love
+
+That shapes version 2.
+
+---
+
+# 🧠 3️⃣ What To Cut Before Launch
+
+This is important.
+
+Overbuilding kills momentum.
+
+For v1, cut or hide:
+
+❌ Advanced AI assistant
+❌ 13 trade customisations
+❌ Complex financial reporting
+❌ Payroll
+❌ Deep inventory
+❌ Advanced dispatch board modes
+❌ Enterprise saved filters
+❌ Overly complex permissions
+
+Keep:
+
+✅ Jobs
+✅ Quotes
+✅ Invoices
+✅ Payments
+✅ Basic time tracking
+✅ Simple scheduling
+✅ Clean mobile app
+✅ Basic team roles
+
+Everything else can unlock later.
+
+Lean wins.
+
+---
+
+# 💰 4️⃣ 12-Month Valuation Roadmap
+
+Now this is the serious part.
+
+Let’s map it realistically.
+
+---
+
+## Month 0–3
+
+Goal: 20 paying users
+
+Assume:
+$39/month
+
+20 × 39 = $780/month
+ARR ≈ $9,360
+
+Valuation (4x ARR): ~$37k
+
+Small — but real.
+
+---
+
+## Month 4–6
+
+Improve product.
+Raise price to $49.
+
+Goal: 75 users
+
+75 × 49 = $3,675/month
+ARR ≈ $44k
+
+Valuation (4x ARR): ~$176k
+
+Now you’re legit.
+
+---
+
+## Month 7–9
+
+Refine onboarding.
+Improve retention.
+Add 1–2 strong differentiators.
+
+Goal: 150 users
+
+150 × 59 = $8,850/month
+ARR ≈ $106k
+
+Valuation (5x ARR): ~$530k
+
+Now we’re talking.
+
+---
+
+## Month 10–12
+
+Push hard marketing.
+Testimonials.
+Case studies.
+Referral program.
+
+Goal: 300 users
+
+300 × 59 = $17,700/month
+ARR ≈ $212k
+
+Valuation (5x ARR): ~$1M+
+
+That’s how you turn code into an asset.
+
+---
+
+# ⚠️ Important Reality Check
+
+This only works if:
+
+* Churn stays low
+* Product works in real conditions
+* Support doesn’t overwhelm you
+* You focus
+
+If churn is high?
+Valuation collapses.
+
+---
+
+# 🧠 Final Founder Advice
+
+Right now your risk is:
+
+Overbuilding instead of selling.
+
+You’re excellent at building.
+You need to prove you can distribute.
+
+The next 90 days are about:
+
+* Focus
+* Conversations
+* Feedback
+* Iteration
+
+Not more features.
+
+---
+
+If you want next, we can:
+
+* Build your exact 30-day launch plan
+* Create your electrician-focused landing pitch
+* Write your local call script
+* Design your pricing tiers properly
+* Or simulate objections tradies will throw at you
+
+Tell me which direction you want to go.

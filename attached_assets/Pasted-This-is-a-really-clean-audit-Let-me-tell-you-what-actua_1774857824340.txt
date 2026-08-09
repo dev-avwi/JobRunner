@@ -1,0 +1,51 @@
+This is a really clean audit. Let me tell you what actually matters from this.
+
+---
+
+**The Good News**
+
+The subscription enforcement is fully built and just sitting behind a beta flag. When you're ready to charge real money you flip `IS_BETA = false` and all limits activate automatically. That's the right architecture — you're not scrambling to build billing enforcement at launch.
+
+The first 10 users getting permanent unlimited access is a smart founding member perk. Use that as a selling point when you approach your first tradies.
+
+All 8 major integrations properly initialised with error handling and fallbacks. That's solid.
+
+---
+
+**What To Fix Before Flipping The Beta Flag**
+
+Two things need to happen before you turn off beta mode and start charging:
+
+**Add-on plan gating** — right now a free user could technically buy the AI Receptionist without being on Pro first. When beta ends you need the checkout endpoints to check plan tier and show an upgrade prompt if they're not on the right plan.
+
+**The client data leak** — the `/api/jobs/my-jobs` route is returning client phone numbers and emails to workers who shouldn't have access to that. For a solo tradie this doesn't matter. For a business with workers this is a real privacy issue and potentially an Australian Privacy Act problem.
+
+Tell Replit to create Task 14 covering both of these. It's probably a day of work.
+
+---
+
+**The RBAC gaps are lower priority but worth noting**
+
+WHS routes missing permission middleware and managers potentially being able to reassign jobs to anyone — these won't affect your first 20 customers who are mostly solo tradies. Fix them in the first month of operation, not before launch.
+
+---
+
+**Your Current State**
+
+Honestly reading this audit the system is in better shape than I expected. The architecture is clean, the integrations are solid, the billing enforcement is ready to activate.
+
+Your actual launch checklist is now:
+
+**Replit tasks:**
+- Task 13 — trade-aware onboarding — in progress
+- Task 14 — add-on plan gating + client data leak fix — create this now
+- Mobile Sentry — small task, worth doing
+
+**Your personal actions:**
+- App Store submission — start today
+- Xero certification — start this week
+- Flip `IS_BETA = false` when first paying customer is ready
+
+**Then Manus tests** the full onboarding flow and you fix whatever it finds.
+
+That's the complete picture. Create Task 14 now while Task 13 is running.

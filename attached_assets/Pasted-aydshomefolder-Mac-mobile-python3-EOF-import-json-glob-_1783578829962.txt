@@ -1,0 +1,57 @@
+aydshomefolder@Mac mobile % python3 - <<'EOF'
+import json, glob, os
+f = sorted(glob.glob(os.path.expanduser("~/Library/Logs/DiagnosticReports/JobRunner-*.ips")), key=os.path.getmtime)[-1]
+print("FILE:", f)
+raw = open(f).read().split("\n", 1)[1]
+d = json.loads(raw)
+print("REASON:", d.get("asi"))
+print("EXCEPTION:", d.get("exception"))
+imgs = d["usedImages"]
+ft = d["faultingThread"]
+t = d["threads"][ft]
+print("THREAD:", t.get("name") or t.get("queue"))
+for fr in t["frames"][:30]:
+    img = imgs[fr["imageIndex"]]
+    name = img.get("name") or img.get("CFBundleIdentifier") or "?"
+    print(" ", name, fr.get("symbol") or hex(fr.get("imageOffset", 0)))
+lb = d.get("lastExceptionBacktrace")
+if lb:
+    print("LAST EXCEPTION BACKTRACE:")
+    for fr in lb[:30]:
+        img = imgs[fr["imageIndex"]]
+        name = img.get("name") or img.get("CFBundleIdentifier") or "?"
+        print(" ", name, fr.get("symbol") or hex(fr.get("imageOffset", 0)))
+EOF
+FILE: /Users/aydshomefolder/Library/Logs/DiagnosticReports/JobRunner-2026-07-09-162822.ips
+REASON: None
+EXCEPTION: {'codes': '0x0000000000000000, 0x0000000000000000', 'rawCodes': [0, 0], 'type': 'EXC_CRASH', 'signal': 'SIGABRT'}
+THREAD: com.meta.react.turbomodulemanager.queue
+  libsystem_kernel.dylib __pthread_kill
+  libsystem_pthread.dylib pthread_kill
+  libsystem_c.dylib abort
+  StripeTerminal 0x12cedd8
+  StripeTerminal 0xe1d18
+  StripeTerminal 0xe27c8
+  JobRunner.debug.dylib StripeTerminalReactNative.discoverReaders(params:resolver:rejecter:)
+  JobRunner.debug.dylib @objc StripeTerminalReactNative.discoverReaders(params:resolver:rejecter:)
+  CoreFoundation __invoking___
+  CoreFoundation -[NSInvocation invoke]
+  CoreFoundation -[NSInvocation invokeWithTarget:]
+  React invocation function for block in facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)
+  React facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1::operator()() const
+  React decltype(std::declval<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>()()) std::__1::__invoke[abi:de180100]<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>(facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&)
+  React void std::__1::__invoke_void_return_wrapper<void, true>::__call[abi:de180100]<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&>(facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1&)
+  React std::__1::__function::__alloc_func<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1>, void ()>::operator()[abi:de180100]()
+  React std::__1::__function::__func<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1, std::__1::allocator<facebook::react::ObjCTurboModule::performMethodInvocation(facebook::jsi::Runtime&, bool, char const*, NSInvocation*, NSMutableArray*)::$_1>, void ()>::operator()()
+  React std::__1::__function::__value_func<void ()>::operator()[abi:de180100]() const
+  React std::__1::function<void ()>::operator()() const
+  React invocation function for block in (anonymous namespace)::ModuleNativeMethodCallInvoker::invokeAsync(std::__1::basic_string<char, std::__1::char_traits<char>, std::__1::allocator<char>> const&, std::__1::function<void ()>&&)
+  libdispatch.dylib _dispatch_call_block_and_release
+  libdispatch.dylib _dispatch_client_callout
+  libdispatch.dylib _dispatch_lane_serial_drain
+  libdispatch.dylib _dispatch_lane_invoke
+  libdispatch.dylib _dispatch_root_queue_drain_deferred_wlh
+  libdispatch.dylib _dispatch_workloop_worker_thread
+  libsystem_pthread.dylib _pthread_wqthread
+  libsystem_pthread.dylib start_wqthread
+aydshomefolder@Mac mobile %  

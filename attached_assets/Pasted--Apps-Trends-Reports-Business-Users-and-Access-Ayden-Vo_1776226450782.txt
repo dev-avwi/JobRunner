@@ -1,0 +1,87 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.0 (62)
+
+App Version
+Rejected
+2.5.4 Performance: Software Requirements
+
+Edit
+
+Messages (1)
+
+AppleToday 2:10 PM
+Hello,
+
+Thank you for your resubmission. Upon further review, we identified additional issues that need your attention. See below for more information.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+Submission ID: 76612d4a-6324-4c0c-9f1d-f278252f23ff
+Review date: April 15, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0
+
+Guideline 2.5.4 - Performance - Software Requirements
+
+Issue Description
+
+The app declares support for location in the UIBackgroundModes key in your Info.plist file but we are unable to locate any features besides employee tracking that require persistent location. 
+
+Using the location background mode for the sole purpose of tracking employees is not appropriate.
+
+Next Steps
+
+If the app has a feature besides tracking employees that requires persistent location, reply to this message and let us know how to locate this feature. Otherwise, it would be appropriate to revise the app to include additional features for your users that require the persistent use of real-time location updates while the app is in the background.
+
+If tracking your employees' locations is your only intended use of background location, it would be appropriate to review the other distribution options available for apps designed for specific businesses or organizations and choose a distribution option that works for the app and users. You can review these app distribution options on Apple Developer.
+
+Resources 
+
+- Learn more about software requirements in guideline 2.5.4.
+- Review documentation for the UIBackgroundModes key.
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review
+
+Date Submitted
+Apr 15, 2026 at 1:04 PM
+Submission ID
+76612d4a-6324-4c0c-9f1d-f278252f23ff
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

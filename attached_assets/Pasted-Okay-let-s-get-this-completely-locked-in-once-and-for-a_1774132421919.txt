@@ -1,0 +1,175 @@
+Okay let's get this completely locked in once and for all. Here's the full clean picture:
+
+---
+
+**Your Current Numbers**
+
++61 485 013 993 — your one active Australian Twilio number. Currently handling platform SMS.
+
+JobRunner alphanumeric — active for Australia, one-way outbound only.
+
+---
+
+**The Problem Right Now**
+
+Your shared number's Voice webhook is still pointing to `demo.twilio.com/welcome` — Twilio's placeholder. That means if anyone calls that number right now they get Twilio's generic demo message. That needs fixing immediately.
+
+---
+
+**The Complete Clean Architecture**
+
+**Alphanumeric "JobRunner"**
+
+Used for system notifications TO business owners only. Never to customers. Things like:
+
+- Your trial ends in 3 days
+- Payment failed — please update your card
+- Your subscription renews tomorrow
+- New feature available
+
+Tone should be clean and professional. Examples:
+
+```
+JobRunner: Your 14-day trial ends in 3 days. 
+Add your payment details to keep access. 
+jobrunner.com.au/billing
+```
+
+```
+JobRunner: Payment failed for your Pro plan. 
+Update your card to avoid losing access. 
+jobrunner.com.au/billing
+```
+
+**Shared +61 485 013 993**
+
+Used for business-to-customer SMS on Solo and Team plans. Things like:
+
+- Invoice sent notification to customer
+- Quote follow up to customer  
+- Job confirmation to customer
+- Chat Hub messages
+
+The Voice webhook on this number needs to be updated from demo.twilio.com to something useful. Two options:
+
+Option A — Point it to your JobRunner support Vapi assistant so if someone calls this number they get your AI support line.
+
+Option B — Point it to a TwiML that says "This number is for SMS only, please visit jobrunner.com.au for support" and hangs up.
+
+Option A is better and more professional.
+
+**New number (buy today) — JobRunner Support Line**
+
+This is the number you import into Vapi for your JobRunner support assistant. When someone wants help with the app they call this number. The AI answers, handles their question, transfers to you if needed.
+
+**Dedicated numbers per business — auto-provisioned**
+
+When a business upgrades to Solo+AI, Team+AI or Full Bundle — Replit's code automatically buys them a new Australian number, imports it into Vapi, creates their custom AI assistant, and links everything together. They never touch Twilio. They just see their number in JobRunner settings.
+
+---
+
+**The SMS Tone And Quality**
+
+Every SMS that goes out from JobRunner needs to feel premium. Here are the templates for every scenario:
+
+**Trial expiry reminders — via alphanumeric JobRunner**
+
+```
+Day 10: JobRunner: Your free trial ends in 4 days. 
+Add payment details to keep access to all your jobs, 
+quotes and invoices. jobrunner.com.au/billing
+```
+
+```
+Day 13: JobRunner: Your trial ends tomorrow. 
+Don't lose access to your data — upgrade now. 
+jobrunner.com.au/billing
+```
+
+**Payment failed — via alphanumeric JobRunner**
+
+```
+JobRunner: We couldn't process your payment for 
+[Plan Name]. Update your card to keep access. 
+jobrunner.com.au/billing
+```
+
+**Subscription cancelled — via alphanumeric JobRunner**
+
+```
+JobRunner: Your subscription has been cancelled. 
+You have access until [date]. Your data is kept 
+for 12 months. Reactivate anytime at jobrunner.com.au
+```
+
+**Job confirmed to customer — via shared or dedicated number**
+
+```
+Hi [Name], [Business Name] has confirmed your job. 
+Someone will be in touch shortly with details.
+Reply to this message to chat with the team.
+```
+
+**Quote sent to customer — via shared or dedicated number**
+
+```
+Hi [Name], [Business Name] has sent you a quote. 
+View and approve it here: [link]
+```
+
+**Invoice sent to customer — via shared or dedicated number**
+
+```
+Hi [Name], [Business Name] has sent you an invoice 
+for [amount]. Pay securely here: [link]
+```
+
+**AI receptionist job captured — via dedicated number**
+
+```
+Hi [Name], thanks for calling [Business Name]. 
+We have your details and will call you back shortly.
+Track your job at: jobrunner.com.au/portal
+```
+
+---
+
+**What To Tell Replit**
+
+Give Replit this complete brief:
+
+*"Please make these changes to the SMS and communications system:*
+
+*1. Update the Voice webhook on our shared Twilio number +61 485 013 993 to point to our Vapi JobRunner support assistant instead of demo.twilio.com. This means if someone calls that number they get the JobRunner AI support assistant.*
+
+*2. Confirm the alphanumeric JobRunner sender is used ONLY for these system notifications to business owners — trial reminders, payment alerts, subscription confirmations. Never for customer-facing messages.*
+
+*3. Update all SMS templates to use this exact wording:*
+
+*Trial ending day 10: 'JobRunner: Your free trial ends in 4 days. Add payment details to keep access to all your jobs, quotes and invoices. jobrunner.com.au/billing'*
+
+*Trial ending day 13: 'JobRunner: Your trial ends tomorrow. Don't lose access to your data — upgrade now. jobrunner.com.au/billing'*
+
+*Payment failed: 'JobRunner: We couldn't process your payment for [Plan Name]. Update your card to keep access. jobrunner.com.au/billing'*
+
+*Subscription cancelled: 'JobRunner: Your subscription has been cancelled. You have access until [date]. Your data is kept for 12 months. Reactivate anytime at jobrunner.com.au'*
+
+*Job confirmed to customer: 'Hi [Name], [Business Name] has confirmed your job. Someone will be in touch shortly. Reply to chat with the team.'*
+
+*Quote sent to customer: 'Hi [Name], [Business Name] has sent you a quote. View and approve it here: [link]'*
+
+*Invoice sent to customer: 'Hi [Name], [Business Name] has sent you an invoice for [amount]. Pay securely here: [link]'*
+
+*AI receptionist job captured: 'Hi [Name], thanks for calling [Business Name]. We have your details and will call you back shortly. Track your job at: jobrunner.com.au/portal'*
+
+*4. Make sure every SMS from the alphanumeric sender has a maximum of 160 characters to avoid split messages.*
+
+*5. Make sure every customer-facing SMS includes the business name so the customer knows who is contacting them."*
+
+---
+
+**The One Thing To Do Right Now Yourself**
+
+Go to Twilio and buy one new Australian mobile number. Label it JobRunner Support Line. That's the number you import into Vapi for your support assistant. Everything else Replit handles in code.
+
+That one purchase — $2/month — completes your entire number architecture.

@@ -1,0 +1,143 @@
+You have one new message.
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+1 of 1,941
+[JobRunner ERROR] frontend: Client error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefine
+External
+Inbox
+
+JobRunner <noreply@jobrunner.com.au>
+14:48 (13 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+    at  (/home/runner/workspace/server/routes.ts:37535:16)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/server/routes/middleware.ts:477:14)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at strategy.pass (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:355:9)
+    at SessionStrategy.authenticate (/home/runner/workspace/node_modules/passport/lib/strategies/session.js:126:10)
+    at attempt (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:378:16)
+    at authenticate (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:379:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at initialize (/home/runner/workspace/node_modules/passport/lib/middleware/initialize.js:98:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/server/routes.ts:279:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:913:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:796:5
+Time: 2026-06-03T04:48:04.611Z
+
+Alerts are throttled to one every 5 minutes.
+
+
+
+JobRunner <noreply@jobrunner.com.au>
+14:48 (13 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=p7Rtt_LCswgr' is invalid.
+    at  (/home/runner/workspace/server/routes.ts:37535:16)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/server/routes/middleware.ts:477:14)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+Time: 2026-06-03T04:48:25.793Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+15:01 (0 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=xpp0P4PN4Cql' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=xpp0P4PN4Cql' is invalid.
+
+Error: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=xpp0P4PN4Cql' is invalid.
+    at  (/home/runner/workspace/server/routes.ts:37535:16)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/server/routes/middleware.ts:477:14)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at strategy.pass (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:355:9)
+    at SessionStrategy.authenticate (/home/runner/workspace/node_modules/passport/lib/strategies/session.js:126:10)
+    at attempt (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:378:16)
+    at authenticate (/home/runner/workspace/node_modules/passport/lib/middleware/authenticate.js:379:7)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at initialize (/home/runner/workspace/node_modules/passport/lib/middleware/initialize.js:98:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/server/routes.ts:279:5)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at trim_prefix (/home/runner/workspace/node_modules/express/lib/router/index.js:328:13)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:286:9
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:913:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///home/runner/workspace/node_modules/express-rate-limit/dist/index.mjs:796:5
+Time: 2026-06-03T05:01:13.358Z
+

@@ -1,0 +1,299 @@
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+Account
+
+Project
+
+Overview
+
+Insights
+
+Usage
+
+Develop
+
+Workflows
+
+Development builds
+
+Deploy
+
+Builds
+
+Submissions
+
+
+Over-the-air updates
+
+
+Hosting
+
+Push notifications
+
+Entities
+
+Fingerprints
+
+Project settings
+
+General
+
+Credentials
+
+Environment variables
+
+Hosting
+
+GitHub
+
+
+User menu
+avwi
+
+Builds
+
+1f602e44
+
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+2875c23 · Update core dependencies to improve stability and compatibility Upgrade `@sentry/react-native` to v7.2.0 to address compatibility issues with the New Architecture and remove the custom `fix-folly-coroutines` plugin. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 2c087163-b996-4ad1-9892-45b5d75923c3 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/tXre0oF Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (40)
+
+ed687ab
+
+2875c23
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 5, 2026 12:16 PM
+226ms
+
+42s
+
+2m 54s
+
+3m 37s
+
+30 days
+
+Logs
+
+Waiting to start
+
+5s
+
+
+Spin up build environment
+
+37s
+
+
+Install custom tools
+
+27s
+
+
+Prepare project
+
+22s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+6s
+
+
+Read app config
+
+327ms
+
+
+Run expo doctor
+
+
+1
+2s
+
+
+Running "expo doctor"
+Running 17 checks on your project...
+16/17 checks passed. 1 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+✖ Validate packages against React Native Directory package metadata
+The following issues were found when validating your dependencies against React Native Directory:
+  Untested on New Architecture: @stripe/stripe-terminal-react-native
+Advice:
+Use libraries that are actively maintained and support the New Architecture. Find alternative libraries with https://reactnative.directory.
+Add packages to expo.doctor.reactNativeDirectoryCheck.exclude in package.json to selectively skip validations, if the warning is not relevant.
+1 check failed, indicating possible issues with the project.
+Command "expo doctor" failed.
+npx -y expo-doctor exited with non-zero code: 1
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+25s
+
+
+Calculate expo-updates runtime version
+
+208ms
+
+
+Configure Xcode project
+
+42ms
+
+
+Configure expo-updates
+
+3ms
+
+
+Bundle JavaScript
+
+20s
+
+
+Run fastlane
+
+
+1
+51s
+
+
+Clean up credentials
+
+802ms
+
+
+Fail job
+
+3ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- value of type 'Terminal' has no member 'clearCachedCredentials'
+- value of type 'Terminal' has no member 'supportsReaders'
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+Command line invocation:
+
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -destination generic/platform=iOS -archivePath "/Users/expo/Library/Developer/Xcode/Archives/2026-04-04/JobRunner 2026-04-04 19.19.23.xcarchive" archive
+
+​
+
+User defaults from command line:
+
+    IDEArchivePathOverride = /Users/expo/Library/Developer/Xcode/Archives/2026-04-04/JobRunner 2026-04-04 19.19.23.xcarchive
+
+    IDEPackageSupportUseBuiltinSCM = YES
+
+​
+
+Prepare packages
+
+​
+
+ComputeTargetDependencyGraph
+
+note: Building targets in dependency order
+
+note: Target dependency graph (148 targets)
+
+    Target 'JobRunner' in project 'JobRunner'
+
+        ➜ Implicit dependency on target 'Pods-JobRunner' in project 'Pods' via file 'Pods_JobRunner.framework' in build phase 'Link Binary'
+
+        ➜ Implicit dependency on target 'Expo' in project 'Pods' via options '-lExpo' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoModulesCore' in project 'Pods' via options '-lExpoModulesCore' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ReactAppDependencyProvider' in project 'Pods' via options '-lReactAppDependencyProvider' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EASClient' in project 'Pods' via options '-framework EASClient' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXAV' in project 'Pods' via options '-framework EXAV' in build setting 'OTHER_LDFLAGS'
+
+
+Build Details — 1f602e44-eba3-4a1c-b0e7-921507f0e0f3 — @avwi/tradietrack — Expo

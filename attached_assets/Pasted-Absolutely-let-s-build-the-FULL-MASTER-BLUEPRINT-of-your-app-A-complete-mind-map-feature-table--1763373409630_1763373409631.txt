@@ -1,0 +1,276 @@
+Absolutely — let’s build the FULL MASTER BLUEPRINT of your app:
+A complete mind-map + feature table + UI/UX flow + system logic for every feature in TradieTrack.
+
+This is the kind of product document companies use for investors, developers, and designers.
+Yours will be clean, simple, and genuinely professional.
+
+⭐ TRADIETRACK — FULL FEATURE SYSTEM BLUEPRINT
+
+(Mind map + table + UI/UX flow)
+
+🧠 MIND MAP — Full App Ecosystem Overview
+TradieTrack
+│
+├── 1. Authentication & Onboarding
+│     ├── Email login (code-based)
+│     ├── Business setup
+│     ├── Solo vs Team onboarding
+│     ├── Owner/Manager/Tradie roles
+│     └── Invite team members
+│
+├── 2. Dashboard (Role-Based)
+│     ├── Owner/Manager dashboard
+│     │      ├── Jobs Today
+│     │      ├── Open Jobs
+│     │      ├── Revenue This Month
+│     │      ├── Activity Feed
+│     │      └── AI Suggestions
+│     └── Tradie dashboard
+│            ├── Next Job
+│            ├── My Jobs Today
+│            └── Quick Actions
+│
+├── 3. Jobs System
+│     ├── Jobs List
+│     ├── Filters (Status)
+│     ├── Job Detail
+│     │     ├── Overview
+│     │     ├── Timeline
+│     │     ├── Photos (Before/After)
+│     │     ├── File Attachments (PDFs)
+│     │     ├── Notes
+│     │     ├── Checklists
+│     │     ├── Time Tracking
+│     │     └── Job Chat
+│     ├── Statuses (Draft → Scheduled → In Progress → Completed → Invoiced → Paid)
+│     └── Google Maps integration
+│
+├── 4. Clients
+│     ├── Client List
+│     ├── Client Detail
+│     │     ├── Contact Info
+│     │     ├── Job History
+│     │     ├── Quotes
+│     │     ├── Invoices
+│     │     └── Files
+│     └── AI Overview Summary
+│
+├── 5. Quotes
+│     ├── Quotes List
+│     ├── Quote Detail
+│     │     ├── Line items
+│     │     ├── GST toggle
+│     │     ├── Accept / Decline
+│     │     └── Convert to Job / Invoice
+│     └── PDF (later)
+│
+├── 6. Invoices
+│     ├── Invoices List
+│     ├── Invoice Detail
+│     │     ├── Line items
+│     │     ├── GST toggle
+│     │     ├── Mark as Paid
+│     │     └── PDF export
+│     └── Payment reminders (V2)
+│
+├── 7. Calendar
+│     ├── Month View
+│     ├── Week View
+│     └── Tap → Open Job
+│
+├── 8. Messaging
+│     ├── Team Chat
+│     └── Job Chat (per-job)
+│
+├── 9. Team Management
+│     ├── Invite Team
+│     ├── Manage Roles
+│     └── Edit or Remove Members
+│
+├── 10. AI Helpers
+│     ├── Rewrite Job Description
+│     ├── Summarise Notes
+│     ├── Suggest Line Items
+│     ├── Draft Invoice Email
+│     └── Dashboard Suggestions
+│
+└── 11. Settings
+      ├── Profile
+      ├── Business Settings
+      ├── Team Settings
+      └── App Preferences
+
+📘 FEATURE TABLE (WHAT IT IS + WHY IT’S GOOD + HOW IT WORKS)
+
+This is a deep breakdown of every core feature.
+
+1. AUTHENTICATION & ONBOARDING
+Feature	What It Is	Why It's Good	How It Works
+Email Login	Code-based login (no passwords)	Fast, simple, perfect for tradies	User enters email → receives code → enters code → logged in
+Business Setup	Enter business name, trade type, phone	Personalizes experience	Saves to user profile
+Solo vs Team	Choose work mode	Simple onboarding	If team: extra “invite team” step
+Roles	Owner / Manager / Tradie	Controls permissions	Stored in user object
+Invite Team	Send invites	Helps teams get onboarded instantly	Creates “pending” users
+2. DASHBOARDS
+Dashboard	What It Shows	Why It's Good	System Logic
+Owner/Manager	Jobs today, revenue, activity	High-level view of business	Pulls from job + invoice data
+Tradie	Next job, jobs today	Straight to work	Fetches assigned jobs
+AI Suggestions	Tasks to complete	Makes owner more productive	Placeholder for now, static messages
+3. JOB SYSTEM
+Feature	What It Does	Why It's Good	How It Works
+Jobs List	View all jobs	Quick access	Sorted by upcoming
+Job Detail	Full job info	Everything in one place	Tabs: overview, photos, notes
+Photos (Before/After)	Upload job evidence	Tradies use this a lot	Local upload → preview
+File Attachments	Upload PDFs, plans	Highly requested	Local previews
+Notes	Add job notes	Essential	Saves to job local state
+Checklists	Tick items	Safety + organisation	Local storage
+Time Tracking	Start/finish job	Track labor	Saves timestamps
+Job Chat	Chat per job	Teams communicate clearly	Scoped by jobId
+Maps	Navigate quickly	Tradies love fast navigation	open maps link
+4. CLIENTS
+Feature	Why It's Good	How It Works
+Client List	Quick lookup	Table list
+Client Detail	Full history	Pulls all jobs/quotes/invoices linked
+AI Summary	Overview	Placeholder (static message)
+5. QUOTES
+Feature	Why It's Good	Logic
+Quotes List	Track all quotes	Status sorted
+Accept/Decline	Client decisions	Updates status
+GST Toggle	Aussie standard	Adds 10%
+Convert to Job	Smooth workflow	Creates job entry
+6. INVOICES
+Feature	Why It's Good	Logic
+Invoice List	Track money	Status sorted
+Mark as Paid	Essential	Update invoice state
+PDF Export	Professional	Mock now, real later
+7. CALENDAR
+Feature	Why It's Good	Logic
+Month/Week View	Tradies love visual schedule	Pull from jobs
+Tap → Job	Fast access	Navigate
+8. TEAM CHAT
+Feature	Why It’s Good	Logic
+Team Chat	Keeps team connected	Global messages
+Job Chat	Per-job	Scoped by jobId
+9. TEAM MANAGEMENT
+Feature	Why It’s Good	Logic
+Invite	Quick setup	Add team member to list
+Roles	Permissions	Control access
+Remove	Team management	Simple delete
+10. AI HELPERS
+Feature	Why It’s Good	Logic
+Rewrite Job Description	Professional descriptions	Static for now
+Summarise Notes	Faster updates	Placeholder
+Suggest Line Items	Saves time quoting	Placeholder
+Draft Invoice Email	Makes emailing easy	Placeholder
+📱 UI/UX WORKFLOW OVERVIEW (SIMPLE + CLEAR + FAST)
+Onboarding UX
+
+Start → Login with email
+
+Enter verification code
+
+Choose solo/team
+
+Enter business details
+
+Invite team (optional)
+
+Go to dashboard
+
+Why it’s great:
+SUPER FAST → tradies don’t want long setup.
+
+Dashboard UX
+
+Simple cards
+
+Big buttons
+
+Clean layout
+
+"Today" at top
+
+AI suggestions for productivity
+
+Why it’s great:
+Tradies get EXACTLY what they need in 5 seconds.
+
+Jobs UX
+
+Big list with job statuses
+
+Tap job → everything in one place
+
+Tabs for (Overview, Files, Photos, Notes, Chat, Time)
+
+Start/finish job button at top
+
+Why it’s great:
+One screen contains the entire job.
+
+Quotes + Invoices UX
+
+Simple table list
+
+Clean detail screen with line items
+
+GST toggle
+
+Accept/Decline on quotes
+
+Mark Paid on invoices
+
+Why it’s great:
+The simplest quoting/invoicing flow in Australia.
+
+Chat UX
+
+Slack-style but simpler
+
+Clear timestamps
+
+Group chat + job chat
+
+Easy quick messages
+
+Keyboard-friendly on mobile
+
+Team UX
+
+Add/edit/remove users
+
+Roles clearly shown
+
+Pending invites marked
+
+Settings UX
+
+Profile
+
+Business
+
+Team
+
+Preferences
+
+Logout
+
+🧩 SUMMARY — WHY YOUR APP IS GOOD
+
+Your design is:
+
+Clean → Not cluttered like ServiceM8
+
+Logical → Dashboard → Jobs → Job Detail → Invoice
+
+Fast → Minimal setup
+
+Mobile-first → tradies love it
+
+Chat-enabled → unique & useful
+
+AI-powered → standout feature
+
+Simple → the #1 reason tradies switch apps
+
+Your system flow makes TOTAL sense and feels beautifully straightforward.

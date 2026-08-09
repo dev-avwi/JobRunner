@@ -1,0 +1,1397 @@
+iOS Bundled 2948ms node_modules/expo-router/entry.js (2120 modules)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/store.ts -> src/hooks/use-user-role.ts -> src/lib/store.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [StripeTerminal] SDK not available - using simulation mode
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ LOG  [useStripeTerminal] SDK not available, using simulator
+ LOG  [StripeTerminal] SDK not available - using fallback mode
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [Notifications] No valid projectId available - push notifications disabled in dev
+ LOG  [Notifications] To enable, add EAS projectId to app.config or run eas build
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [Location] Running in Expo Go - location tracking requires native build
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/auth/me
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/jobs/job-mike-5
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] GET /api/jobs/job-mike-5/photos
+ LOG  [API] GET /api/jobs/job-mike-5/voice-notes
+ LOG  [API] GET /api/jobs/job-mike-5/signatures
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/time-entries?jobId=job-mike-5
+ LOG  [API] GET /api/jobs/job-mike-5/activity
+ LOG  [API] GET /api/clients/client-mike-2
+ LOG  [API] Error 404: {"error": "Time entry not found"}
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] GET /api/jobs/job-mike-5/form-submissions
+ LOG  [API] Warning: Non-JSON response for /api/jobs/job-mike-5/activity
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/team/locations
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 15 clients
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/stripe/terminal-location
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Stripe Connect account not set up"}
+ LOG  [StripeTerminal Simulator] Initializing...
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe/create-terminal-payment-intent
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Stripe Connect account not set up"}
+ ERROR  [useStripeTerminal] Collect payment error: [Error: Stripe Connect account not set up] 
+
+Code: useServices.ts
+  192 |           ? intentResponse.error 
+  193 |           : (intentResponse.error as any)?.message || JSON.stringify(intentResponse.error) || 'Failed to create payment intent';
+> 194 |         throw new Error(errorMsg);
+      |                        ^
+  195 |       }
+  196 |
+  197 |       const clientSecret = intentResponse.data.clientSecret;
+Call Stack
+  collectPayment (src/hooks/useServices.ts:194:24)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal Simulator] Canceling collection
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/stripe-connect/balance
+ LOG  [API] GET /api/stripe-connect/payouts
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/stripe/account
+ LOG  [API] GET /api/analytics/payments
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  [API] Error 400: {"error": "Connect account not set up", "payouts": []}
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Warning: Non-JSON response for /api/stripe/account
+ LOG  [API] Warning: Non-JSON response for /api/analytics/payments
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [API] GET /api/invoices/test-invoice-mike-001
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ ERROR  [ReferenceError: Property 'X' doesn't exist] 
+
+Code: [id].tsx
+  437 |           <View style={styles.modalHeader}>
+  438 |             <TouchableOpacity onPress={() => setShowSendModal(false)}>
+> 439 |               <X size={24} color={colors.foreground} />
+      |                ^
+  440 |             </TouchableOpacity>
+  441 |             <Text style={styles.modalTitle}>Send Invoice</Text>
+  442 |             <View style={{ width: 24 }} />
+Call Stack
+  InvoiceDetailScreen (app/more/invoice/[id].tsx:439:16) 
+
+Code: _layout.tsx
+   6 |   
+   7 |   return (
+>  8 |     <Stack
+     |     ^
+   9 |       screenOptions={{
+  10 |         headerShown: false,
+  11 |         contentStyle: {
+Call Stack
+  MoreLayout (app/more/_layout.tsx:8:5)
+  RootLayoutContent (app/_layout.tsx:179:9)
+  RootLayout (app/_layout.tsx:210:13)
+Unable to resolve asset "./assets/splash.png" from "splash.image" in your app.json or app.config.js
+iOS Bundled 161ms node_modules/expo-router/entry.js (1 module)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/store.ts -> src/hooks/use-user-role.ts -> src/lib/store.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [StripeTerminal] SDK not available - using simulation mode
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ LOG  [useStripeTerminal] SDK not available, using simulator
+ LOG  [StripeTerminal] SDK not available - using fallback mode
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [Notifications] No valid projectId available - push notifications disabled in dev
+ LOG  [Notifications] To enable, add EAS projectId to app.config or run eas build
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [Location] Running in Expo Go - location tracking requires native build
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/photos
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/voice-notes
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/signatures
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/time-entries?jobId=9d362ba8-1e0f-48eb-9ae7-4acc0b56606c
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/activity
+ LOG  [API] Error 404: {"error": "Time entry not found"}
+ LOG  [API] GET /api/clients/client-mike-3
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] GET /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/form-submissions
+ LOG  [API] Warning: Non-JSON response for /api/jobs/9d362ba8-1e0f-48eb-9ae7-4acc0b56606c/activity
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/team/locations
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/ai/suggestions
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/clients/9a4cb557-f403-4ee0-8ab9-0475d8eefcbf
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 1 invoices
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Cached 15 clients
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/invoices/test-invoice-mike-001
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ ERROR  [ReferenceError: Property 'X' doesn't exist] 
+
+Code: [id].tsx
+  437 |           <View style={styles.modalHeader}>
+  438 |             <TouchableOpacity onPress={() => setShowSendModal(false)}>
+> 439 |               <X size={24} color={colors.foreground} />
+      |                ^
+  440 |             </TouchableOpacity>
+  441 |             <Text style={styles.modalTitle}>Send Invoice</Text>
+  442 |             <View style={{ width: 24 }} />
+Call Stack
+  InvoiceDetailScreen (app/more/invoice/[id].tsx:439:16) 
+
+Code: _layout.tsx
+   6 |   
+   7 |   return (
+>  8 |     <Stack
+     |     ^
+   9 |       screenOptions={{
+  10 |         headerShown: false,
+  11 |         contentStyle: {
+Call Stack
+  MoreLayout (app/more/_layout.tsx:8:5)
+  RootLayoutContent (app/_layout.tsx:179:9)
+  RootLayout (app/_layout.tsx:210:13)
+ LOG  [API] Error 404: {"error": "Not a team member"}
+Unable to resolve asset "./assets/splash.png" from "splash.image" in your app.json or app.config.js
+iOS Bundled 146ms node_modules/expo-router/entry.js (1 module)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/store.ts -> src/hooks/use-user-role.ts -> src/lib/store.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [StripeTerminal] SDK not available - using simulation mode
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ LOG  [useStripeTerminal] SDK not available, using simulator
+ LOG  [StripeTerminal] SDK not available - using fallback mode
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [Notifications] No valid projectId available - push notifications disabled in dev
+ LOG  [Notifications] To enable, add EAS projectId to app.config or run eas build
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [Location] Running in Expo Go - location tracking requires native build
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/team/roles
+ LOG  [API] GET /api/team/permissions
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs/job-mike-4
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] GET /api/jobs/job-mike-4/photos
+ LOG  [API] GET /api/jobs/job-mike-4/voice-notes
+ LOG  [API] GET /api/jobs/job-mike-4/signatures
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/time-entries?jobId=job-mike-4
+ LOG  [API] GET /api/jobs/job-mike-4/activity
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/clients/client-mike-1
+ LOG  [API] Error 404: {"error": "Time entry not found"}
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] GET /api/jobs/job-mike-4/form-submissions
+ LOG  [API] Warning: Non-JSON response for /api/jobs/job-mike-4/activity
+ LOG  [API] POST /api/jobs/job-mike-4/photos
+ LOG  [API] Error 400: {"error": "fileName, fileBase64, and mimeType required"}
+ ERROR  [Error: Calling the 'constructor' function has failed
+→ Caused by: Received 2 arguments, but 3 was expected] 
+
+Code: VoiceRecorder.tsx
+  38 |   // Some expo-audio versions have issues with null/undefined sources
+  39 |   const audioSource = recordedUri ? { uri: recordedUri } : null;
+> 40 |   const player = useAudioPlayer(audioSource);
+     |                                ^
+  41 |   const playerStatus = useAudioPlayerStatus(player);
+  42 |
+  43 |   const isRecording = recorderState?.isRecording ?? false;
+Call Stack
+  AudioPlayer (:1:68)
+  VoiceRecorder (src/components/VoiceRecorder.tsx:40:32) 
+
+Code: [id].tsx
+  2405 |           
+  2406 |           {showVoiceRecorder ? (
+> 2407 |             <VoiceRecorder
+       |             ^
+  2408 |               onSave={handleUploadVoiceNote}
+  2409 |               onCancel={() => setShowVoiceRecorder(false)}
+  2410 |               isUploading={isUploadingVoiceNote}
+Call Stack
+  JobDetailScreen (app/job/[id].tsx:2407:13)
+  RootLayoutContent (app/_layout.tsx:179:9)
+  RootLayout (app/_layout.tsx:210:13)
+Unable to resolve asset "./assets/splash.png" from "splash.image" in your app.json or app.config.js
+iOS Bundled 139ms node_modules/expo-router/entry.js (1 module)
+ WARN  SafeAreaView has been deprecated and will be removed in a future release. Please use 'react-native-safe-area-context' instead. See https://github.com/th3rdwave/react-native-safe-area-context
+ WARN  Require cycle: src/lib/store.ts -> src/hooks/use-user-role.ts -> src/lib/store.ts
+
+Require cycles are allowed, but can result in uninitialized values. Consider refactoring to remove the need for a cycle.
+ LOG  [StripeTerminal] SDK not available - using simulation mode
+ WARN  expo-notifications: Android Push notifications (remote notifications) functionality provided by expo-notifications was removed from Expo Go with the release of SDK 53. Use a development build instead of Expo Go. Read more at https://docs.expo.dev/develop/development-builds/introduction/.
+ WARN  `expo-notifications` functionality is not fully supported in Expo Go:
+We recommend you instead use a development build to avoid limitations. Learn more: https://expo.fyi/dev-client.
+ LOG  [useStripeTerminal] SDK not available, using simulator
+ LOG  [StripeTerminal] SDK not available - using fallback mode
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [Notifications] No valid projectId available - push notifications disabled in dev
+ LOG  [Notifications] To enable, add EAS projectId to app.config or run eas build
+ LOG  [API] GET /api/auth/me
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Initialized successfully
+ LOG  [Location] Running in Expo Go - location tracking requires native build
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/jobs
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/quotes
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/stripe-connect/balance
+ LOG  [API] GET /api/stripe-connect/payouts
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  [API] Error 400: {"error": "Connect account not set up", "payouts": []}
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/stripe-connect/dashboard
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  [API] GET /api/stripe-connect/dashboard
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/stripe-connect/dashboard
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  [API] GET /api/stripe/account
+ LOG  [API] GET /api/analytics/payments
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Warning: Non-JSON response for /api/analytics/payments
+ LOG  [API] Warning: Non-JSON response for /api/stripe/account
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] POST /api/stripe-connect/account-link
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 400: {"error": "Connect account not created yet"}
+ LOG  [API] GET /api/stripe-connect/dashboard-link
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] Error 400: {"error": "Connect account not set up"}
+ LOG  No Stripe Connect URL available: Connect account not created yet
+ LOG  [API] GET /api/expense-categories
+ LOG  [API] GET /api/expenses
+ LOG  [API] GET /api/jobs
+ LOG  [OfflineStorage] Cached 20 jobs
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/team/roles
+ LOG  [API] GET /api/team/permissions
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/jobs/job-mike-5
+ LOG  [API] GET /api/time-entries/active
+ LOG  [API] GET /api/jobs/job-mike-5/photos
+ LOG  [API] GET /api/jobs/job-mike-5/voice-notes
+ LOG  [API] GET /api/jobs/job-mike-5/signatures
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/time-entries?jobId=job-mike-5
+ LOG  [API] GET /api/jobs/job-mike-5/activity
+ LOG  [API] Error 404: {"error": "Time entry not found"}
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/clients/client-mike-2
+ LOG  [API] GET /api/custom-forms
+ LOG  [API] GET /api/jobs/job-mike-5/form-submissions
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Warning: Non-JSON response for /api/jobs/job-mike-5/activity
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] GET /api/automations
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team-chat
+ LOG  [API] GET /api/direct-messages/conversations
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/team/members
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] PATCH /api/business-settings
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/stripe/account
+ LOG  [API] GET /api/analytics/payments
+ LOG  [API] Warning: Non-JSON response for /api/analytics/payments
+ LOG  [API] Warning: Non-JSON response for /api/stripe/account
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/team/my-role
+ WARN  "palette" is not a valid icon name for family "feather"
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [API] GET /api/team-chat
+ LOG  [API] GET /api/direct-messages/conversations
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/team/members
+ LOG  [API] GET /api/team/colors/available
+ LOG  [Location] Running in Expo Go - location tracking requires native build
+ LOG  [OfflineStorage] No pending changes to sync
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/clients
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [OfflineStorage] Cached 20 jobs
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ WARN  "palette" is not a valid icon name for family "feather"
+ LOG  [API] GET /api/auth/me
+ LOG  [OfflineStorage] Cached 15 clients
+ LOG  [OfflineStorage] Cached 0 quotes
+ LOG  [OfflineStorage] Cached 1 invoices
+ LOG  [OfflineStorage] Full sync complete
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/business-settings
+ LOG  [API] GET /api/jobs/today
+ LOG  [API] GET /api/jobs
+ LOG  [API] GET /api/quotes
+ LOG  [API] GET /api/invoices
+ LOG  [API] GET /api/clients
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [API] GET /api/team/my-role
+ LOG  [API] Error 404: {"error": "Not a team member"}
+ LOG  [StripeTerminal] Running in fallback mode (Expo Go)
+ LOG  [OfflineStorage] Cached 15 clients

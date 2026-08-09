@@ -1,0 +1,40 @@
+Yeah this is genuinely bad. White background, logo with the orange border box again, massive empty void in the middle, checklist card floating at the bottom. It looks like a broken splash screen not a premium welcome moment.
+
+The core problem is Replit keeps making it white and minimal when it needs to be dark and immersive. Stop asking Replit to "redesign" it — give it an exact visual prescription.
+
+Paste this into Replit:
+
+---
+
+The setup screen still looks terrible. Stop trying to be minimal and white — that's not working. I'm giving you exact specifications, follow them precisely.
+
+**Background:** Full screen, `backgroundColor: '#0A1628'` — deep dark navy. Not white. Not light grey. Dark.
+
+**Top section — logo area:**
+- JobRunner logo mark centred horizontally, top 80px from safe area
+- NO orange border box around the logo — just the logo image itself, no container, no border, no rounded rectangle. Just the raw logo asset.
+- "JobRunner" wordmark below it, "Job" in `#2B7DE9`, "Runner" in `#F28C28`, fontSize 28, fontWeight 700
+- Small gap then a single line of text: "For Australian Tradies" in `#94A3B8`, fontSize 13, letterSpacing 2, textTransform uppercase
+
+**Middle section — greeting:**
+- Positioned at 42% from top of screen
+- "WELCOME" in `#2B7DE9`, fontSize 11, letterSpacing 4, textTransform uppercase, fontWeight 600
+- First name on next line, fontSize 52, fontWeight 800, color `#FFFFFF`
+- Business name below, fontSize 18, fontWeight 500, color `#2B7DE9`
+
+**Checklist section:**
+- NO card container — remove the grey rounded rectangle entirely
+- Three rows, each row: green checkmark icon (✓ in a filled circle `#22C55E`) on left, white text on right, fontSize 15, color `#E2E8F0`
+- Rows separated by a 1px line in white at 8% opacity
+- Each row 52px tall
+- This section sits below the greeting with 32px margin top
+
+**Bottom:**
+- Progress bar: 3px height, full width, `#2B7DE9`, animates 0 to 100% over 6 seconds, sits 32px above bottom safe area
+- Status message text just above the bar: fontSize 12, color `#64748B`, textAlign center
+
+Remove the progress bar track/background — just show the filled portion on the dark background, no grey track.
+
+Do not use white anywhere except the name text. Do not add any card containers or borders. Follow this exactly.
+
+---

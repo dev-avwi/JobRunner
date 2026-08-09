@@ -1,0 +1,82 @@
+
+
+Organization (Twilio Customer)’s Letterhead
+
+
+
+Date : 08/02/26
+To : 	Twilio Inc 
+101 Spear Street, 5th Floor
+San Francisco, California 94105, United States of America
+
+Subject: Request for Registration of Sender IDs by Organization on behalf of Third Parties
+
+Dear Sir/Madam:
+
+We, the Twilio customer described in the following table (“Organization”), request Twilio Inc. to register the sender IDs listed in Annex 1 (“Listed Sender IDs”) for use in Australia on behalf of the corresponding brandowner entities listed in Annex 1 (“Listed Brandowners”).
+
+Organization Legal Name	Linkup2care
+Place of Incorporation	Queensland, Australia
+Registration Number	692 409 448
+Website Address	jobrunner.com.au
+Contact Name	Nicole Ramsamy
+Contact Title	Founder/CEO
+Contact Email	admin@linkup2care.com.au
+Contact Mobile Number	0419728425
+
+By signing this sender ID registration request, I, the undersigned, hereby certify, represent and warrant that:
+
+1.	I am authorised to represent the Organization; 
+2.	The Organization has been duly authorized by the Listed Brandowners to register the corresponding Listed Sender IDs with Twilio Inc., its affiliated companies and any applicable third parties, including but not limited to sender ID registries (collectively, “Sender ID Registers”);
+3. 	The Organization is authorised to use the Listed Sender IDs on behalf of the Listed Brandowners;
+4.	Each of the Listed Brandowners has a valid use case for each of the corresponding Listed Sender IDs; and
+5. 	The information in the table above and in Annex 1 is true, accurate, and complete.
+
+I acknowledge and agree that I, the Organization, and each of the Listed Brandowners may be contacted by any one or more of the Sender ID Registers in relation to this sender ID registration request.
+
+For and on behalf of Linkup2care
+ 
+
+SSSNicole Ramsamy
+CEO/Founder
+admin@linkup2care.com.au
+ 
+Annex 1
+
+Brandowners’ Particulars and Sender IDs
+
+●	For each brandowner, please replicate the rows for “Sender ID [x] for Registration” and “Valid Use Case for Sender ID [x]” for each sender ID to be registered for the brandowner. 
+●	You can also use our Excel/bulk version to provide the details of all brandowners and sender IDs to be registered, accessible at: https://support.twilio.com/hc/en-us/articles/13111723633691-Documents-Required-and-Instructions-to-Register-Your-Alphanumeric-Sender-ID-in-Australia 
+●	Note that supporting documents must be provided for each of the use cases selected below.
+
+Brandowner 1
+Organization Legal Name	Linkup2care
+Place of Incorporation	Queensland, Australia
+Registration Number	692 409 448
+Website Address	jobrunner.com.au
+Contact Name	Nicole Ramsamy
+Contact Title	CEO/Founder
+Contact Email	admin@linkup2care.com.au
+Contact Mobile Number	0419728425
+Sender ID 1 for Registration	JobRunner
+Account SID	AC94be6afbfec97b8330574f4737e782ba
+Sample Message	Hi Ryan, your plumber Jake is on the way to 31 Maple Court. Should arrive in about 20 mins. - JobRunner
+Proof of Valid use case	Certificate of Registration - Linkup2care.pdf
+Valid Use Case for Sender ID 1	Select from the following what the valid use case is based on & provide the supporting document (multiple selections are allowed, but supporting documents must be provided for each selection):
+◻	The Sole Trader name of the Brandowner
+◻	The Company name of the Brandowner
+◻	The Partnership name of the Brandowner
+◻	The registered Trust name of the Brandowner
+◻	The Co-Operative name of the Brandowner
+◻	The Indigenous Corporation name of the Brandowner
+◻	The Registered Organisation name of the Brandowner
+◻	The personal name of the Brandowner
+◻	An Australian or international trademark registered by the Brandowner
+◻	The name of a Commonwealth, State or Territory government, government agency or entity of the Brandowner
+◻	The name of a foreign government, government agency or entity of the Brandowner
+ X      A product or service of the Brandowner
+◻	An acronym, initialism, or contraction of any of the above
+Other valid use case (please describe): 
+_________________________________________________________________________________________
+
+

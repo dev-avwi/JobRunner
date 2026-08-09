@@ -1,0 +1,247 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+7.05 Credits
+Logs
+
+Composer
+Refresh
+Export All
+
+
+
+
+
+
+Time Range
+
+
+Last 7 days
+Call ID
+
+Call ID
+Assistants
+
+Assistants
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant / Squad
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...5871
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 13, 2026, 07:14
+2m 50s
+$0.29
+
+019e...4476
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 8, 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
+-	
+-
+Web	
+Customer
+May 8, 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+05/13/2026 07:14 inboundPhoneCall
+Assistant
+Cost: $0.29
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 2m 50s
+019e1e0a-f0a...
+View detailed logs for this call session
+Recording
+00:00
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+0 / 25 selected
+
+Assistant
+Good day. Thanks for calling Mike's Plumbing Services. How can I help you today?
+7:14:55 AM(+00:01.04)
+User
+Hello. So I've got a leaking tab.
+
+7:15:01 AM(+00:07.44)
+
+Assistant
+Sorry to hear you've got a leaking tap. May I have your name and phone number, please? And is this a quote request?
+7:15:05 AM(+00:11.46)
+User
+Aiden Bogler. a y d k, Vebolo, v e o g l e r, and phone number is o four five eight three zero zero zero five one.
+
+7:15:14 AM(+00:19.68)
+
+Assistant
+Thanks for that, Aidan. Just to confirm, your phone number is o four five eight three hundred o five one. And is this a request for a quote? are you wanting to book a job to fix the leaking tap?
+7:15:26 AM(+00:31.54)
+User
+Yeah. I want a job.
+
+7:15:37 AM(+00:43.40)
+
+Assistant
+Also,
+7:15:37 AM(+00:43.40)
+User
+Fixed.
+
+7:15:40 AM(+00:45.64)
+
+Assistant
+Got it. To help us organize the job, can you please tell me the address or suburb whether the leaking tap is located And how urgent is the job? Does it need to be fixed urgently sometime this week, this month, or is it flexible?
+7:15:42 AM(+00:47.87)
+User
+I'd say it's
+
+7:16:00 AM(+01:06.31)
+
+Assistant
+It seems your message got cut off. Could you please repeat how urgent it is to fix the leaking tap? Thanks.
+7:16:04 AM(+01:09.62)
+User
+It's pretty urgent.
+
+7:16:11 AM(+01:16.72)
+
+Assistant
+Thanks, Aidan. Can you also provide me with the address or suburb where the leaking tap is located This will help us get everything sorted.
+7:16:14 AM(+01:19.80)
+User
+Mobile.
+
+7:16:22 AM(+01:27.83)
+
+Capture Lead
+Completed successfully
+07:16 AM
+
+7:16:24 AM(+01:29.55)
+
+Check Availability
+Completed successfully
+07:16 AM
+
+7:16:24 AM(+01:29.55)
+
+Assistant
+One moment.
+7:16:24 AM(+01:30.25)
+
+Assistant
+Thanks for the in --
+7:16:26 AM(+01:32.36)
+User
+Cancel mobile cans.
+
+7:16:27 AM(+01:32.56)
+
+Assistant
+Thanks for the update. Just to make sure, did you wanna cancel the job request for the leaking tap repair?
+7:16:29 AM(+01:34.70)
+User
+No.
+
+7:16:47 AM(+01:52.55)
+
+Assistant
+Got it. So we're still going ahead with the job request for the leaking tap repair. I've captured all your details, and the team is available during standard business hours to assist you. Would you like me to transfer your call to one of our available team members, or shall I take a message for you?
+7:16:48 AM(+01:54.31)
+User
+Just take the message for me.
+
+7:17:08 AM(+02:14.47)
+
+Assistant
+Sure thing. I'll make sure the team gets your message about the urgent leaking tap repair. Just to confirm, I've noted down your name, Aidan Bogler. Phone number, zero four five eight three zero zero zero five one. Job request, leaking tap repair. Urgency, urgent. Address, mobile. Someone from our team will be in touch shortly to follow-up. Thanks for calling Mike's Plumbing Services, Aidan. Have a great day.
+7:17:11 AM(+02:16.92)
+User
+Thank you.
+
+7:17:43 AM(+02:49.20)
+Customer ended the call
+07:17 AM
+Close
+Precise time: 07:14:55:505
+5/13/2026
+Duration: 3999.00s
+Click to seek
+Precise time: 07:14:55:505
+5/13/2026
+Duration: 3999.00s
+Click to seek

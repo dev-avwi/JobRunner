@@ -1,0 +1,48 @@
+
+Loading Google Play Console
+Google Play Console logo
+Home
+Policy status
+Users and permissions
+Order management
+Download reports
+Developer account
+Activity log
+Settings
+Help
+Android developer verification
+Third-party app stores
+Starting on 22 July 2026, your US apps and games listing(s), including the name of your apps and games, their icons, their description and any screenshots and videos that you provided to Google Play, will be made available to third-party US Android app stores. (This is to comply with a US court order.) Third-party US Android app stores will be able to offer these apps to users, and the download of these apps will be completed through Google Play on the same terms as any other download that is made directly through the Google Play Store. Google Play's service fee will continue to apply to apps downloaded in this manner.
+
+Third-party US Android app stores are not governed by Google Play's content and other policies, and may have their own content and other policies.
+
+22 Jul
+If you don't make a choice by the deadline, your app listings will automatically be published to all third-party app stores on Play.
+
+Set your preferences for third-party app stores
+
+
+Apply this default setting to all app listings
+
+This preference will apply to all of your current and future app listings unless you choose to override the default setting for some apps.
+
+
+Publish all my app listings on all third-party app stores
+Your app listings will automatically be published to any third-party app stores that request access to Play's catalogue
+
+I'll manage all third-party app stores individually
+When a new third-party app store requests access to Play's catalogue, we'll ask if you'd like your app listings to be published on their store. If you don't make a choice within 30 days of being notified, we're required to publish your app listings to the third-party app store.
+
+Do not publish any of my app listings on any third-party app stores
+Nothing will change for your app listings
+
+Override default setting for some app listings
+
+
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

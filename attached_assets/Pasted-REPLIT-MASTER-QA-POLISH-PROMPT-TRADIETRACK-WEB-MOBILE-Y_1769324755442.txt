@@ -1,0 +1,240 @@
+REPLIT MASTER QA + POLISH PROMPT — TRADIETRACK (WEB + MOBILE)
+
+You are now acting as a senior QA engineer + senior product designer for TradieTrack. Your job is to take your time and verify the app is truly production/beta ready. Do NOT assume anything works—prove it by tracing code paths, API calls, database writes, and UI state changes. If anything is UI-only, incomplete, or clunky, fix it or hide it behind “Coming soon” for beta.
+
+GOAL:
+A technically solid beta that feels premium and trustworthy for real tradies, with a flawless core workflow and no broken/placeholder features.
+
+SCOPE:
+- Web app + Mobile app must be consistent (same flows, same logic, same data)
+- Use the API and DB as the source of truth
+- Confirm each UI action triggers a real backend effect
+- Confirm error handling + loading states
+- Confirm emails/PDFs/payments are real and reliable
+
+========================================================
+A) NON-NEGOTIABLE CORE FLOW — MUST BE PERFECT END-TO-END
+========================================================
+
+For EACH step below, do ALL of:
+1) Confirm UI exists and is usable in 1–3 taps/clicks
+2) Confirm the button triggers real API calls
+3) Confirm server route exists and does real DB writes/updates
+4) Confirm the UI updates correctly after success/failure
+5) Confirm it works on BOTH web + mobile with consistent behavior
+6) Add tests for the route/service (unit + integration) where possible
+
+CORE FLOW CHECKLIST:
+
+1) CREATE CLIENT
+- Validate required fields (name, email/phone, address optional)
+- Prevent duplicate clients (same email/phone) OR warn
+- Confirm /api/clients POST saves to DB
+- Confirm client appears instantly in lists & dropdowns
+- Confirm edit + delete behavior (soft delete recommended)
+
+2) CREATE QUOTE
+- Quote must attach to a client
+- Line items: qty, unit price, GST toggle, totals update correctly
+- Quote number auto-generated (unique)
+- Confirm /api/quotes POST saves quote + items to DB
+- Confirm quote preview matches saved data
+
+3) SEND QUOTE → ACCEPT → SIGNATURE
+IMPORTANT: “Accept” is NOT inside Gmail. The Accept button must open a secure hosted page.
+- Send quote via email:
+  - Email includes clear CTA button “View & Accept Quote”
+  - Includes PDF attachment OR a PDF link (choose one and make it consistent)
+  - Reply-To should be tradie email; From should be verified sender
+- Acceptance page:
+  - Shows quote details as a paper-like preview
+  - Customer can draw signature + type name
+  - Submit acceptance:
+    - Saves acceptance timestamp + signer name + signature image/vector
+    - Locks the quote version that was accepted (revision safe)
+    - Status becomes ACCEPTED
+- Confirm tradie app updates immediately:
+  - Quote shows accepted status + timestamp + signature stored
+- If signature feature is not fully implemented, hide it or label “Coming soon” (but do NOT leave a broken UI)
+
+4) CONVERT TO JOB
+- Convert accepted quote into a job (or link to an existing job)
+- Confirm conversion copies relevant data:
+  client, address, scope, line items, notes, attachments
+- Confirm /api/jobs created/updated correctly
+- Confirm job appears in Today/Upcoming/Board views
+
+5) TRACK JOB
+- Job statuses: Pending → Scheduled → In Progress → Done → Invoiced
+- Time tracking:
+  - Start/Stop time entry
+  - If no active entry exists, API should return empty state (NOT 404)
+  - Confirm /api/time-entries endpoints behave cleanly
+- Photos:
+  - Upload before/after images
+  - Confirm /api/jobs/:id/photos stores metadata + file storage
+- Location:
+  - Job address saved to DB
+  - If lat/lng exists (autocomplete/map), store it
+  - “Open in Maps” uses stored coordinates/address
+- Add proper loading states and error states on every action
+
+6) CREATE INVOICE
+- Create invoice from job/quote
+- Invoice number auto-generated (unique)
+- Totals and GST must be correct
+- Confirm /api/invoices POST saves invoice + items
+- Confirm invoice preview “paper view” matches saved data live
+
+7) SEND INVOICE
+- Invoice email must include:
+  - PDF attachment OR PDF link (consistent)
+  - Payment link button if online payments enabled
+  - Due date + amount due
+- Confirm email send endpoint exists and returns success/failure properly
+- Confirm UI shows sending progress + success toast + logs
+
+8) RECEIVE PAYMENT
+Two modes must exist:
+A) Online payment link (Stripe)
+B) Mark paid manually (cash/bank transfer/in-person)
+
+ONLINE:
+- Payment link opens a secure hosted payment page
+- On payment success:
+  - Stripe webhook verifies payment
+  - Invoice marked PAID in DB
+  - Paid timestamp saved
+  - Payment reference saved
+- Do NOT allow “paid” state without verified Stripe event
+
+MANUAL:
+- Mark paid flow requires:
+  method + date + optional ref
+- Saves in DB and updates UI immediately
+
+9) RECEIPT AUTO-SEND
+- After invoice marked paid (Stripe or manual):
+  - Receipt record auto-generated with receipt number
+  - Option to auto-email receipt
+  - Receipt email includes PDF attachment/link
+- Confirm DB links receipt to invoice/job/client
+- Confirm UI shows receipt status sent/not sent
+
+10) SYNC WEB ↔ MOBILE
+- Confirm same account sees same data instantly
+- Confirm caching/offline does not show stale “wrong” status
+- Confirm logout/login behaves correctly and clears sensitive cached data
+
+11) OFFLINE RELIABILITY (BASIC)
+- If offline:
+  - show offline banner
+  - allow view cached lists (jobs/clients/quotes/invoices)
+  - queue safe actions (draft saves) OR block dangerous actions with clear messaging
+- On reconnect:
+  - sync queued actions safely
+  - resolve conflicts (latest write wins OR prompt)
+
+12) NOTIFICATIONS RELIABILITY
+- Must work in dev build (not Expo Go limitations)
+- If permissions denied, show clear UX and fallback
+- Ensure notification triggers exist for:
+  quote accepted, invoice paid, new job assigned, reminders
+
+========================================================
+B) TECHNICAL STABILITY (NON-NEGOTIABLE)
+========================================================
+
+1) Crash-free mobile build
+- Run expo doctor and fix all peer dependency issues
+- Resolve react-native-worklets/reanimated issues properly
+- Ensure iOS + Android builds succeed in EAS
+
+2) Stripe stable
+- Fix any 500s in Stripe endpoints (e.g. terminal connection token)
+- Ensure env vars exist and are loaded server-side only
+- Add structured logging for payment endpoints and webhooks
+
+3) Email deliverability verified
+- Ensure SendGrid/Twilio email sender is verified
+- SPF/DKIM/DMARC documented (if required)
+- From/Reply-To behavior correct
+
+4) Maps reliable
+- Ensure map renders with correct bounds
+- Ensure job pins appear and update with status
+- Ensure team locations only show if enabled + permissions granted
+- If Expo Go limitations exist, clearly gate features
+
+5) No fake UI buttons
+- Audit all navigation items and buttons:
+  If route/API not implemented → hide or show “Coming soon”
+- Remove dead code and placeholders from visible UI
+
+6) Loading states everywhere
+- Every API call must have:
+  loading indicator, disable button, success/fail UI message
+
+7) Error messages clear
+- Replace raw errors with user-friendly messages
+- Log technical details server-side, not to user
+
+========================================================
+C) MAP PAGE + TEAM CHAT (TEAM FEATURES)
+========================================================
+
+MAP PAGE REQUIREMENTS:
+- Owner/manager sees a map of their region
+- Jobs plotted with pins
+  - Pin state reflects job status (scheduled/in progress/done)
+  - Pin click shows mini-card details + quick actions
+- Past jobs optional toggle (filter)
+- Team locations:
+  - shows last known location per member (if enabled)
+  - role-based: workers cannot see all workers unless permitted
+- Ensure job locations are real DB data (address + optional lat/lng)
+- Provide “Open in Maps” and “Navigate” actions
+
+TEAM CHAT REQUIREMENTS:
+- Group chat for a team
+- 1:1 DM owner ↔ worker
+- Job-specific chat threads (chat attached to a job)
+- Must include:
+  message persistence in DB
+  read receipts optional
+  attachments optional later
+- Role checks:
+  workers can’t access owner-only channels unless allowed
+- Notifications:
+  new message triggers notification (when available)
+
+If any part not implemented: hide it for beta rather than leaving broken UI.
+
+========================================================
+D) TESTING & OUTPUT REQUIREMENTS
+========================================================
+
+1) Automated tests
+- Add/expand tests for:
+  auth, clients, quotes, acceptance, invoices, payments, receipts, chat, map data endpoints
+- Include:
+  unit tests for core logic
+  integration tests for API routes
+  basic E2E tests (Playwright/Cypress for web if available)
+
+2) Seed data + demo accounts
+- Create seed script to generate:
+  owner account, worker accounts, clients, jobs, quotes, invoices
+- Make sure demo mode is safe and does not leak real data
+
+3) QA report (required output)
+At the end, output a QA report with:
+- ✅ Confirmed working end-to-end flows
+- ⚠️ Items partially implemented and hidden behind Coming Soon
+- 🛠 Must-fix blockers before real tradies
+- 📌 UX polish notes (tap counts, confusing labels, spacing issues)
+- 📱 Web vs Mobile parity check results
+- 🔐 Security notes (auth, permissions, role access)
+
+Do NOT mark anything “done” unless you verified it through code + runtime behavior.
+Take your time and make it truly beta-ready.

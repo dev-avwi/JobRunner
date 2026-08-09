@@ -1,0 +1,114 @@
+
+Loading Google Play Console
+Google Play Console logo
+
+JobRunner
+Dashboard
+Statistics
+Publishing overview
+Protected with Play
+Test and release
+Latest releases and bundles
+Production
+Testing
+Open testing
+Closed testing
+Internal testing
+Pre-launch report
+Internal app sharing
+Pre-registration
+App integrity
+Advanced settings
+Monitor and improve
+Grow users
+Monetise with Play
+Create closed testing release
+Create release
+2
+Preview and confirm
+Errors, warnings and messages
+5 Errors
+Error
+You must let us know whether your app uses any Foreground Service permissions.
+
+Error
+All developers requesting access to the photo and video permissions are required to tell Google Play about the core functionality of their app
+
+1 message for version code 35
+Error
+This APK will not be served to any users because it is completely shadowed by one or more APKs with higher version codes. Remove this APK from your release or review the targeting and version codes of the APKs that you are including in this release.
+
+1 message for version code 34
+Error
+This APK will not be served to any users because it is completely shadowed by one or more APKs with higher version codes. Remove this APK from your release or review the targeting and version codes of the APKs that you are including in this release.
+
+1 message for version code 33
+Error
+This APK will not be served to any users because it is completely shadowed by one or more APKs with higher version codes. Remove this APK from your release or review the targeting and version codes of the APKs that you are including in this release.
+
+3 Warnings
+1 message for version code 35
+Warning
+There is no deobfuscation file associated with this App Bundle. If you use obfuscated code (R8/proguard), uploading a deobfuscation file will make crashes and ANRs easier to analyse and debug. Using R8/proguard can help reduce app size. Learn more
+
+1 message for version code 34
+Warning
+There is no deobfuscation file associated with this App Bundle. If you use obfuscated code (R8/proguard), uploading a deobfuscation file will make crashes and ANRs easier to analyse and debug. Using R8/proguard can help reduce app size. Learn more
+
+1 message for version code 33
+Warning
+There is no deobfuscation file associated with this App Bundle. If you use obfuscated code (R8/proguard), uploading a deobfuscation file will make crashes and ANRs easier to analyse and debug. Using R8/proguard can help reduce app size. Learn more
+
+Release delivery
+Size for new installs
+52.7 MB
+Time to download
+30 s
+Size for updates
+New app bundles
+App bundle
+33 (1.1.0)
+26+
+35
+4
+4
+10
+App bundle
+34 (1.1.1)
+26+
+35
+4
+4
+10
+App bundle
+35 (1.1.2)
+26+
+35
+4
+4
+10
+App bundle
+45 (1.1.3)
+26+
+35
+4
+4
+10
+Release notes
+Default language – en-GB
+What's new in 1.1.3:
+• Faster, smoother quotes and invoices — send to clients in seconds
+• Live team map improvements for more accurate "On My Way" ETAs
+• Better client job portal with real-time arrival tracking
+• Smoother scheduling and dispatch board
+• Refreshed app icon and bug fixes across the app
+Release notes provided for 2 of 2 languages
+Show all
+To save, fix errors
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

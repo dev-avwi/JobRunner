@@ -1,0 +1,89 @@
+Good thinking — this is about making sure JobRunner doesn’t let a tradie down on a job site. Let me think through every realistic failure scenario first, then give you the Replit prompt.
+
+Every scenario that could go wrong
+
+GPS & Location
+
+	•	Phone loses signal mid-job (underground, rural, thick walls)
+	•	GPS drifts and shows tradie in wrong location
+	•	Worker forgets to enable location permissions
+	•	Battery saver mode kills background GPS
+
+Time Tracking
+
+	•	Timer keeps running after app crashes
+	•	Tradie forgets to start/stop timer
+	•	Two timers running at once accidentally
+	•	Time doesn’t sync if phone goes offline
+
+Jobs & Scheduling
+
+	•	Two workers booked to same job at same time
+	•	Job assigned to worker who’s already on another job
+	•	Customer cancels but worker still drives out
+	•	Job created with no address
+
+Payments & Invoicing
+
+	•	Stripe Tap to Pay fails on site (no signal)
+	•	Invoice sent but never received by customer
+	•	Duplicate invoice generated
+	•	Xero sync fails silently
+
+AI Receptionist
+
+	•	Vapi call drops mid-conversation
+	•	AI books a job for a time that’s already taken
+	•	Customer leaves voicemail but it never creates a job
+
+SMS & Comms
+
+	•	Twilio SMS fails to deliver
+	•	Customer replies to automated SMS but no one sees it
+	•	Wrong customer gets someone else’s job details
+
+Photos & Documents
+
+	•	Photo upload fails on slow connection
+	•	SWMS submitted without required hazard fields filled
+	•	Job completed but no photos attached as proof
+
+Offline
+
+	•	Tradie in a tunnel or rural area with no signal — can they still use the app?
+
+Replit Prompt
+
+Paste this:
+
+This is a read-only audit. Do not change anything. I need you to check how JobRunner handles failure scenarios that would affect tradies on job sites. For each scenario below, tell me: does the app handle it, handle it partially, or not at all?
+GPS & Location
+	1.	Phone loses GPS signal mid-job — does the app handle location loss gracefully or crash/freeze?
+	2.	Worker hasn’t granted location permissions — is there a prompt or error shown?
+	3.	Does GPS tracking have any fallback if background location is killed by battery saver?
+Time Tracking
+4. If the app crashes while a timer is running, does the timer survive or reset to zero?
+5. Can two job timers run simultaneously on the same worker account?
+6. If a worker goes offline, does the timer continue locally and sync when back online?
+Jobs & Scheduling
+7. Is there any validation preventing two workers being double-booked to the same time slot?
+8. Can a job be created with no address or no assigned worker — and if so, what happens?
+9. If a job is cancelled, is the assigned worker notified automatically?
+Payments & Invoicing
+10. If Stripe Tap to Pay fails (no signal), is there a fallback or retry flow?
+11. Is there any duplicate invoice prevention — what stops the same job being invoiced twice?
+12. If Xero sync fails, is the error surfaced to the user or does it fail silently?
+AI Receptionist & Comms
+13. If a Vapi call drops, is there any recovery or callback mechanism?
+14. If the AI Receptionist books a job at an already-taken time slot, is there a conflict check?
+15. If a Twilio SMS fails to deliver, is the sender notified of the failure?
+Photos & Documents
+16. If a photo upload fails mid-upload (poor signal), is the user notified and can they retry?
+17. Can a SWMS/WHS form be submitted with required hazard fields empty?
+18. Can a job be marked complete without any photos attached — and is there a warning?
+Offline
+19. If a tradie has zero signal, can they still view their assigned jobs and job details?
+20. Is there any offline mode or local caching of job data?
+Just report what you find for each — don’t fix anything yet.
+
+Once Replit reports back, share the results and I’ll prioritise which gaps are critical to fix before you go after paying customers.

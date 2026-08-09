@@ -1,0 +1,28 @@
+Tell Replit exactly this:
+
+“Before we move to any new tasks, I need you to do a full integration test of everything built in Tasks 17-22. These features all need to work together as one connected system, not as isolated features. Please test every scenario below and fix any broken connections:
+SCENARIO 1 — Full subbie onboarding to first job
+Start fresh as a new user. Select I’m a subcontractor on the role screen. Complete the subbie onboarding flow. Enter an invite code to connect to a test business. See the privacy explanation screen. Land on the subbie dashboard. Verify the dashboard shows today’s timeline, availability toggle, job requests section, and earnings summary.
+SCENARIO 2 — Business owner assigns to regular subbie
+Log in as a business owner. Go to a job. Tap Assign Worker. Select an existing subbie from the list. Verify the subbie gets a push notification. Verify the job appears in the subbie’s dashboard as a pending request. Verify the subbie can Accept or Decline. Verify if accepted the job appears in their today timeline colour coded by business.
+SCENARIO 3 — Business owner assigns via magic link
+Log in as a business owner. Go to a job. Tap Assign Worker. Enter a phone number that isn’t in the system. Send a magic link. Verify the SMS actually fires with a working link. Open the link and verify the subbie portal loads showing job details. Verify the subbie can update status, add photos, and add notes. Verify those updates appear on the owner’s job detail screen in real time.
+SCENARIO 4 — Privacy-aware location tracking
+Log in as a subbie connected to two businesses. Start a job for Business A. Verify Business A can see the subbie on their map with the “On job” label. Log in as Business B and verify they cannot see the subbie at all. Complete the job for Business A. Verify the subbie disappears from Business A’s map immediately. Verify the privacy banner showed correctly in the subbie app throughout.
+SCENARIO 5 — Multi-business subbie experience
+Log in as a subbie connected to two businesses. Verify the workspace switcher works correctly. Switch to Business B workspace. Verify only Business B’s jobs are visible. Verify location tracking is completely isolated between workspaces. Verify earnings show combined across both businesses on the dashboard. Verify if both businesses assign overlapping jobs the conflict warning fires.
+SCENARIO 6 — Team Operations page separation
+Log in as a business owner. Go to Team Operations. Verify the page clearly separates Your Team from Your Subbies. Verify subbies only appear on the map when they have an active job running. Verify subbies show as Available, Busy, or Unavailable based on their toggle. Verify the owner cannot see a subbie’s location when they are between jobs.
+SCENARIO 7 — Invite code end to end
+Log in as a business owner. Go to Team Management. Generate a Worker invite code and a Subcontractor invite code separately. Note both codes. Log out. Create a new account, select I was invited to a team, enter the Worker code. Verify correct role is assigned, correct business is connected, worker dashboard loads. Do the same for the Subcontractor code and verify subbie dashboard loads instead.
+SCENARIO 8 — Permission gates are solid
+Log in as a subbie. Try to navigate directly to /clients, /reports, /settings/business, /team. Verify all are blocked server-side not just hidden in the UI. Verify financial data like job costs, profitability, invoice amounts are completely absent from all API responses for subbie accounts. Verify the map only shows the subbie’s own location and their assigned job sites.
+SCENARIO 9 — Quote flow end to end
+Create a test client. Create a quote. Send it via SMS. Click the link in the SMS. Verify it opens directly on jobrunner.com.au with no SSL warning. Verify the client can view and accept the quote. Verify the owner sees the accepted status update. Edit the quote line items after sending. Verify status automatically reverts to Draft. Resend it. Verify the client gets the updated version.
+SCENARIO 10 — Magic link to app conversion
+Complete 3 jobs via magic link as a one-off subbie. Verify the portal shows a prompt to download the app after the 3rd completion. Verify the prompt links to the correct App Store and Play Store listings.
+For every scenario tell me: Pass or Fail. If fail, what specifically broke and fix it immediately. I want every scenario passing before we move to anything new. This integration test is mandatory before launch.”
+
+That brief covers every connection point between all the tasks. The scenarios are designed to find the gaps — places where two features were built separately and don’t quite talk to each other properly.
+The most likely failure points based on what was built are Scenario 4 (location isolation between businesses), Scenario 8 (server-side permission enforcement not just UI hiding), and Scenario 9 (the quote SSL fix working end to end).
+Send that to Replit now and don’t let them start anything new until every scenario passes.​​​​​​​​​​​​​​​​

@@ -1,0 +1,32 @@
+Here is the complete Replit-ready technical brief (attached as Markdown — the PDF converter timed out but the Markdown renders perfectly). Here is the full breakdown of everything covered:
+The Big Answer on Twilio Numbers
+Yes — tradies can buy a number straight through JobRunner, automatically. You do NOT need to manually buy numbers first. Here is exactly how it works:
+Tradie clicks "Add AI Receptionist" and pays via Stripe.
+Your backend receives the Stripe webhook (checkout.session.completed).
+Your server calls the Twilio API to search for available Australian mobile numbers: GET /AvailablePhoneNumbers/AU/Local.json
+It purchases the best available number: POST /IncomingPhoneNumbers.json
+It immediately imports that number into Vapi.ai: POST /phone-number/import
+The number is saved to that tradie's account in your database.
+The tradie sees their new number appear on screen — the whole thing takes about 10 seconds.
+The only thing to be aware of: Australian numbers may require a regulatory bundle (address verification) with Twilio. You need to pre-create one master regulatory bundle in your Twilio account that covers all your sub-numbers. This is a one-time setup, not per customer.
+The Three Systems Explained
+1. Website Add-on (Web + Mobile)
+An iframe preview of their live site, their domain status, and a "Change Request" form where they drop notes on what needs updating. Those notes flow directly into your Admin Dashboard as tickets. No drag-and-drop editor — that would be a nightmare to build and maintain. The notes system is cleaner and more honest about what the service is.
+2. AI Receptionist Add-on (Web + Mobile)
+After the automated provisioning above, the tradie gets a simple config screen:
+Their new number (e.g., +61 4XX XXX XXX)
+"Forward calls to my mobile" toggle
+"Business context" prompt textarea (what the AI says about their business)
+Business hours picker
+All of this maps directly to Vapi.ai's assistant configuration API. When they save changes, your backend calls PATCH /assistant/{id} on Vapi.
+3. Admin Super-Dashboard (Your Internal Workflow)
+This is the one that will transform your day-to-day:
+Global Activity Feed: Real-time stream of every new trial, payment, error, and website change request across all businesses.
+Shadow Mode / Impersonation: Click "Login as User" on any business account. Your backend generates a short-lived JWT with impersonator: true — you see exactly what they see, fix their AI prompt or debug their invoice, without ever touching their password. Every impersonation is logged in an audit table.
+Website Request Kanban: A simple To Do / In Progress / Done board for managing change requests.
+System Health Alerts: Failed Twilio provisioning, failed Stripe webhooks, and app errors all surface here.
+How to Feed This to Replit (In Order)
+Prompt 1 first: "Build the Admin Super-Dashboard including the global activity feed, Shadow Mode impersonation auth flow, and website change request Kanban board."
+Prompt 2 second: "Build the Website Add-on UI with iframe preview, domain status panel, and the Change Request form that sends tickets to the Admin Dashboard."
+Prompt 3 third: "Build the AI Receptionist Add-on — implement the Twilio API number search and purchase flow, then the Vapi.ai import, triggered automatically by a Stripe webhook. Show a provisioning loading state and then a configuration screen."
+Always build the Admin Dashboard first — it is the foundation that everything else reports into.

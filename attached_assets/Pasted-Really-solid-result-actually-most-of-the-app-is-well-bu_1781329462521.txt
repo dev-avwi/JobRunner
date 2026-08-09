@@ -1,0 +1,36 @@
+Really solid result actually — most of the app is well-built. Here’s how I’d prioritise the 5 gaps:
+
+Priority Order
+
+🔴 Fix immediately (before paying customers)
+
+	1.	Cancelled job → no worker notification — highest real-world risk. Tradie drives 45 mins to a job that got cancelled. That’s a 1-star review and a lost customer instantly.
+	2.	Double-booking not blocked server-side — UI warning isn’t enough. A direct API call bypasses it entirely. Needs a hard server reject.
+
+🟡 Fix soon (within a few weeks)
+
+	3.	SMS delivery failure not surfaced — customer never got their booking confirmation and nobody knows. Silent failure kills trust.
+	4.	Job completed with zero photos — your whole dispute-proof angle falls apart if tradies can just skip photos. At minimum a warning.
+
+🟠 Lower priority
+
+	5.	AI Receptionist can tentatively double-book — human confirms anyway so lower risk, but worth tightening.
+
+Replit Prompt
+
+Paste this:
+
+Fix these 5 issues in priority order. Match the existing code style and patterns throughout — don’t introduce new libraries or restructure anything.
+Fix 1 — Cancelled job worker notification
+When a job’s status is changed to cancelled, automatically send a push notification and SMS (via Twilio) to any assigned worker. Message should say something like: “Job #[ID] at [address] has been cancelled. Contact your manager for details.” This must trigger server-side whenever job status changes to cancelled, regardless of how the update is made (web, mobile, API).
+Fix 2 — Server-side double-booking block
+Add a server-side validation on job create and job update endpoints. Before saving, check if the assigned worker already has an active/scheduled job overlapping the requested time slot. If so, return a 409 error with a clear message explaining the clash. The existing UI warning can stay — this is an additional hard block at the API level.
+Fix 3 — SMS delivery failure notification
+Set up Twilio status callbacks so that if an SMS moves to “undelivered” or “failed” status, the failure is surfaced to the user who sent it — either a push notification, an in-app alert, or a badge on the message. Check how Twilio webhooks are currently configured in the codebase and extend that pattern.
+Fix 4 — Photo warning on job completion
+When a user attempts to mark a job as complete and zero photos are attached, show a warning modal before confirming. Something like: “No photos attached — photos help protect you in disputes. Complete anyway?” with Cancel and Complete Anyway buttons. Do not block completion — just warn.
+Fix 5 — AI Receptionist slot conflict hard check
+When the AI Receptionist creates a booking, add a hard check against existing confirmed jobs for that worker/time before saving. If there’s a confirmed clash, the AI should respond to the caller that the slot isn’t available and offer the next available time instead of creating a tentative booking.
+After each fix, confirm what was changed and where.
+
+Once these are done JobRunner is genuinely production-ready from a reliability standpoint. Share what Replit says and we’ll check the output.

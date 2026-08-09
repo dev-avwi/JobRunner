@@ -1,0 +1,163 @@
+Alright — Option B (subcontractor doesn’t have the app). Here’s the clean, realistic way to do it so it still feels pro, keeps everyone on the same page, and doesn’t wreck reliability.
+
+The core idea
+
+Subcontractors get a secure web job link (like “guest mode”) that lets them:
+	•	see job details
+	•	confirm they’re on the way / arrived / done
+	•	upload photos + receipts
+	•	add notes + materials
+	•	optionally add their hours (with approval)
+
+But true live tracking is limited unless they install the app. So we do a hybrid:
+	•	Location tracking: “check-in pings” via the web page (manual or periodic while open)
+	•	ETA: based on their last ping (not continuous GPS)
+
+This still gives the client a map experience, but clearly marked.
+
+⸻
+
+Example workflow (same job: worker + subcontractor + owner + client)
+
+Setup
+	•	Owner assigns:
+	•	Worker Ayden (in app)
+	•	Subcontractor Tom (web-only)
+
+1) Subcontractor assignment SMS (web-only)
+
+Tom receives SMS:
+
+“JobRunner — You’ve been assigned Job #2001 (Sarah Jones, 12 Coral St). Open job: https://jobrunner.com/s/{secure_token}
+Confirm: On my way / Arrived / Done. Upload photos. Dispatch: 07 xxxx xxxx”
+
+When Tom opens the link:
+	•	he must verify OTP (phone)
+	•	now he’s in Subcontractor Web View for that job only
+
+2) Tom’s web view features
+
+Buttons:
+	•	✅ Accept job (required first)
+	•	🚗 On my way
+	•	📍 Arrived
+	•	▶️ Start work (optional timer)
+	•	⏹ Finish work
+	•	📸 Upload photos
+	•	🧾 Upload receipt
+	•	➕ Add materials
+	•	📝 Notes
+
+3) How the map works for client
+
+Client tracking link is still ONE job link: /p/{job_token}
+
+Map shows:
+	•	Ayden (live GPS, continuous)
+	•	Tom (web pings):
+	•	shows as “Support Crew”
+	•	location updates only when Tom’s web link is open and he hits buttons (or periodic ping while page is open)
+	•	label: “Last update 4 mins ago”
+
+4) Client sees same page
+
+Client sees:
+	•	“Ayden – En route – ETA 12m (Live)”
+	•	“Support crew – En route – ETA approx 18m (Last update 6m ago)”
+
+No confusion, and it’s honest.
+
+5) After job
+
+Tom submits:
+	•	photos
+	•	materials
+	•	hours (if allowed)
+
+Manager approves Tom’s hours → invoice includes it.
+
+⸻
+
+Make this feel “real business” (rules)
+
+Security rules
+	•	Web link is job-scoped
+	•	Must OTP verify once before access
+	•	Token expires after job completion + 7 days
+	•	Rate limit OTP + actions
+
+Reliability rules
+	•	Every button press logs an event:
+	•	SUBBIE_ACCEPTED
+	•	SUBBIE_EN_ROUTE
+	•	SUBBIE_ARRIVED
+	•	SUBBIE_STARTED
+	•	SUBBIE_FINISHED
+	•	SUBBIE_PHOTO_UPLOADED
+	•	SUBBIE_MATERIAL_ADDED
+	•	If web page closes, tracking stops (expected)
+
+Visibility rules
+	•	Subcontractor details default:
+	•	Name hidden (Support Crew)
+	•	Phone hidden
+	•	Dispatch phone shown
+
+⸻
+
+What to tell Replit (copy/paste)
+
+Implement subcontractor “Web-Only Mode” (no app required):
+
+1) When assigning a subcontractor to a job, system generates:
+- SubcontractorSecureToken scoped to (job_id + subcontractor_contact)
+- SubcontractorWebLink: /s/{token}
+
+2) Access control:
+- Subcontractor must OTP verify via phone/email before seeing job details
+- After OTP, create SubcontractorSession for that token (short-lived, refreshable)
+- Token expires 7 days after job completion or can be revoked by manager
+
+3) Subcontractor Web View (/s/{token}) features:
+- Accept/Decline assignment (must accept before any actions)
+- Buttons: On My Way, Arrived, Start, Finish
+- Upload: photos, receipts, documents
+- Add materials (qty, cost, supplier, receipt)
+- Add notes
+- Submit hours (optional) -> requires manager approval
+
+4) Location behavior (web):
+- While page open, send location pings every 60s if user grants permission
+- If permission denied, allow manual “Update location” button on key events
+- Client tracking page should show subcontractor marker using last known ping
+- Label subcontractor location as “Last updated X mins ago” (NOT continuous live)
+
+5) Client Tracking (/p/{job_token}) remains one link per job and shows ONE MAP with ALL assigned markers:
+- Employees: continuous live tracking during EN_ROUTE
+- Web subcontractors: periodic pings while web page open
+- Show worker list with status + ETA:
+   - Employee ETA: normal
+   - Web subbie ETA: “Approx ETA” based on last ping
+- Privacy defaults:
+   - subcontractors: show “Support Crew”, hide phone
+   - always show dispatch contact
+
+6) Auditing:
+- Every subcontractor action writes an EventLog entry
+- Job timeline aggregates both app and web events
+- Manager can revoke subcontractor token anytime
+
+
+⸻
+
+Reality check (so expectations are right)
+
+With web-only subbies, you can still show them on the map, but it will be:
+	•	“semi-live” (pings), not perfect continuous tracking
+
+If you want “true Uber tracking” for subbies later:
+	•	add “Install app for live tracking” as an upsell path, but keep web mode as fallback.
+
+⸻
+
+If you want, I can design the exact subcontractor web page UI (super simple, mobile-first) so it looks clean and not clunky.

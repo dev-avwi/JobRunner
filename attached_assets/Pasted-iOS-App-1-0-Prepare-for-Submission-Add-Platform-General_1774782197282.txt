@@ -1,0 +1,182 @@
+iOS App
+1.0 Prepare for Submission
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+iOS App Version 1.0
+Save
+Add for Review
+The assets and metadata below appear on your app’s product page, when users install your app, and will be used for web engine search results once you release your app.
+
+English (Australia)
+?
+Previews and Screenshots
+?
+Adding accurate screenshots of your app on the newest devices can help you represent the app's user experience. Keep in mind that we'll use these screenshots for all display sizes and localizations. Screenshots are only required for iOS apps, and only the first 3 will be used on the app installation sheets.
+
+iPhone
+iPad
+Apple Watch
+View All Sizes in Media Manager
+
+iPhone
+6.5" Display
+
+
+
+
+
+
+
+
+
+
+0 of 3 App Previews
+
+5 of 10 Screenshots
+
+Choose File
+
+Delete All
+
+Promotional Text
+?
+The all-in-one app for Australian tradies. Manage jobs, track your team, send quotes & invoices, and get paid — all from your phone.
+38
+
+Description
+?
+JobRunner is the complete job management app built for Australian tradies and trade businesses.
+
+
+Run your entire business from your pocket:
+
+Jobs & Scheduling
+• Create, assign and track jobs from start to finish
+• Calendar view with week, month and dispatch board
+• Recurring jobs for regular clients
+• Job statuses from pending through to invoiced
+
+Live Team Tracking
+• See every tradie on a live map in real-time
+• "On My Way" alerts with ETA sent to clients via SMS
+• Client job portal with live arrival tracking
+
+Quotes & Invoices
+• Professional branded quotes in seconds
+• Convert quotes to invoices with one tap
+• Email or SMS quotes and invoices to clients
+• Online payment links for fast payment
+
+Payments
+• Tap to Pay on iPhone — accept contactless payments on-site
+• Stripe-powered secure payments
+• Track payment status across all jobs
+
+Time Tracking
+• One-tap job timers
+• Track hours per job and per team member
+• Timesheet reports for payroll
+
+Team Management
+• Add team members and subcontractors
+• In-app team chat and direct messages
+• Assign jobs and track workload
+
+Client Communications
+• SMS and email clients directly from the app
+• Automated job updates
+• Professional client portal
+
+Built in Australia, for Australian tradies.
+2,709
+
+Keywords
+?
+tradie,job management,trade,plumber,electrician,quotes,invoices,scheduling,team tracking,field
+6
+
+Support URL
+?
+https://jobrunner.com.au/support
+Marketing URL
+?
+https://jobrunner.com.au
+Version
+?
+1.0
+Copyright
+?
+2026 AV Web Innovation
+178
+
+Routing App Coverage File
+?
+No file chosen
+Choose File
+
+App Clip
+
+iMessage App
+?
+Build
+
+Upload your builds using one of several tools. See Upload Tools
+
+Add Build
+Game Center
+App Review Information
+Sign-In Information
+?
+Provide a user name and password so we can sign in to your app. We’ll need this to complete your app review.
+
+
+Sign-in required
+demo@jobrunner.com.au
+demo123
+Contact Information
+?
+Ayden
+Vogler
++61458300051
+admin@avwebinnovation.com
+Notes
+?
+Chinese law requires apps with news, religious, book, and magazine content to have relevant permits in order to be available on the App Store in China mainland. If applicable, enter information about your permits below. Learn More
+
+JobRunner is a job management app for Australian trade businesses. Demo account has sample jobs, clients, quotes, invoices and team members pre-loaded. The app requires an internet connection to function. Tap to Pay on iPhone feature requires a physical device with NFC capability running iOS 17.6+.
+3,701
+
+Attachment
+?
+No file chosen
+Choose File (Optional)
+App Store Version Release
+To make your app available on the App Store, you can automatically release it after it’s been approved by App Review. You can also manually release it on the App Store at a later date.
+
+
+Manually release this version
+
+Automatically release this version
+
+Automatically release this version after App Review, no earlier than
+Your local date and time.

@@ -1,0 +1,152 @@
+Yep — I can see the problems pretty clearly now.
+
+You’re basically trying to get both the header controls and the popup into the same modern iOS liquid-glass family, but right now they still feel inconsistent and half-finished.
+
+What’s wrong in these screenshots
+
+1. The popup has no real container
+
+The Safety Check popup now feels like:
+	•	text floating on the screen
+	•	buttons floating separately underneath
+	•	no proper dialog body
+	•	no strong “single component” feeling
+
+So instead of feeling like an iOS glass modal, it feels like:
+
+blurred background + loose text + three floating buttons
+
+That’s the biggest issue.
+
+2. The popup hierarchy is weak
+
+Right now:
+	•	title is okay
+	•	body text is readable
+	•	but the spacing between content and actions feels loose
+	•	the actions don’t feel attached to the dialog
+
+You want it to feel like one unified material surface.
+
+3. The buttons are too detached
+
+The action buttons look like separate pills placed on top of the page, not integrated into a dialog.
+
+Especially:
+	•	Complete Safety Docs
+	•	Start Anyway
+	•	Cancel
+
+They should feel like they belong to the same modal system, not three independent capsules.
+
+4. The header is still incomplete
+
+In the header screenshot:
+	•	the Back button looks much closer
+	•	but the right side only has one icon
+	•	it should be a grouped control with the correct actions
+	•	the spacing/balance feels off because the left side is fuller than the right
+
+So the header feels visually incomplete.
+
+5. The header still needs stronger “system” cohesion
+
+It’s close, but still looks like:
+	•	custom glass back control
+	•	plus a separate floating icon
+
+Instead of:
+
+one left glass control and one right glass control family that clearly belong together
+
+⸻
+
+What you actually want it to be like
+
+Popup target
+
+You want the popup to feel like:
+	•	one soft liquid-glass dialog
+	•	one unified container
+	•	text sitting naturally inside it
+	•	bottom actions integrated into the same family
+	•	premium, calm, Apple-like
+	•	not heavy
+	•	not blocky
+	•	not loose floating pieces
+
+In plain English:
+
+the popup should feel like one floating glass sheet, not text and buttons scattered over blur
+
+⸻
+
+Header target
+
+You want the header to feel like:
+	•	Back on the left in its own glass capsule
+	•	Edit + More on the right in a matching grouped glass control
+	•	both sides visually balanced
+	•	same material language
+	•	same softness
+	•	same premium build quality
+
+In plain English:
+
+the header should feel like a matched pair of glass controls, not one finished side and one unfinished side
+
+⸻
+
+The exact problems to tell Replit
+
+Send this:
+
+I can now clearly see the remaining problems.
+
+1. The Safety Check popup is missing a proper unified dialog container.
+Right now it feels like text floating on blur with three detached buttons underneath.
+It does NOT feel like one premium iOS liquid-glass modal.
+
+2. The popup actions are too detached from the dialog.
+They feel like separate pills, not integrated modal actions.
+
+3. The header is still incomplete.
+The Back button is much closer, but the right side is wrong because it only has one icon and does not feel like the matching grouped glass control.
+
+What I want:
+
+POPUP:
+- one clear unified floating liquid-glass dialog surface
+- title + body + actions all feel part of the same component
+- bottom buttons integrated into the same modal family
+- not loose floating text and pills
+- premium modern iOS liquid-glass feel
+
+HEADER:
+- Back button left in glass capsule
+- Edit + More grouped glass control on right
+- matching family on both sides
+- balanced, premium, system-like
+
+In short:
+The popup needs stronger unified container structure.
+The header needs the correct right-side grouped control.
+
+
+⸻
+
+Short version of the diagnosis
+
+Popup problem:
+
+Not enough unified container
+
+Header problem:
+
+Right side is incomplete / wrong control set
+
+Overall problem:
+
+Still not one consistent liquid-glass component family
+
+If you want, I can turn this into one sharper Replit prompt that tells it exactly what to rebuild first: popup container or header right side.

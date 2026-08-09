@@ -1,0 +1,109 @@
+Request# 24984749 | Sender Id JobRunner requested for country AU | -
+External
+Inbox
+AI Overview
+Admin requested registration for the Sender ID "JobRunner" for use in Australia (AU).
+Sharmila initially confirmed the application was under review for Ticket #24984749.
+Sharmila confirmed the Sender ID "JobRunner" is registered but noted mandatory re-registration under new ACMA rules starting March 2026.
+By Gemini; there may be mistakes. Learn more
+
+Sharmila K (Twilio SenderID) <senderid@twilio.com>
+02:44 (13 hours ago)
+to me
+
+## In replies all text above this line is added to the ticket ##
+View your ticket: https://help.twilio.com/tickets/24984749
+
+	
+Sharmila K (Twilio)
+
+Feb 8, 2026, 8:44 AM PST
+
+Hi,
+ 
+Thank you for applying SenderID with us.
+ 
+We are in midst of reviewing your application.
+ 
+We will keep you updated on the status of the registration soon.
+Regards,
+Sharmila K
+Product Operation Specialist
+
+
+	
+admin@avwebinnovation.com
+
+Feb 8, 2026, 4:19 AM PST
+
+A SenderId request has been submitted by AC94be6afbfec97b8330574f4737e782ba with the following details:
+
+Requested Country: AU
+
+Requested Sender Id: JobRunner
+
+Traffic scope: DOMESTIC
+
+Sender Id Purpose: TRANSACTIONAL
+
+Sub-account: no
+
+Parent AccountSid: Not applicable
+
+Average SMS per month: 1000
+
+Sender Id Use case description: We will use the Sender ID to send job status updates, appointment reminders, quote notifications, and invoice reminders to our plumbing service customers.
+
+Sender Id Sample SMS Message: Hi Ryan, your plumber Jake is on the way to 31 Maple Court. Should arrive in about 20 mins. - JobRunner
+
+Sender Id associated with company brand or product: yes
+
+Sender Id used for Twilio's Verify product: no
+
+Company subsidiary: no
+
+
+-------------------------
+Your Twilio Ticket ID # 24984749
+Encoded ID # [7RPJNV-50WX5]
+Your Ticketing System's ID # (if we have recorded one): -
+
+This email is a service from Twilio. Delivered by Zendesk.
+[7RPJNV-50WX5]
+
+Sharmila K (Twilio SenderID) <senderid@twilio.com>
+12:54 (3 hours ago)
+to me
+
+## In replies all text above this line is added to the ticket ##
+View your ticket: https://help.twilio.com/tickets/24984749
+
+	
+Sharmila K (Twilio)
+
+Feb 8, 2026, 6:54 PM PST
+
+Hi admin@avwebinnovation.com,
+ 
+Thanks for your patience. I'm writing to let you know that the Alphanumeric Sender ID you requested has been properly registered for use towards Australia. Please ensure you pass your exact registered Alphanumeric Sender ID in the “From” parameter when you send a message. Keep in mind that registered senders are case-sensitive.
+
+Sender ID configured: JobRunner
+Account SID(s) configured:AC94be6afbfec97b8330574f4737e782ba
+ 
+Please refrain from using emojis in your message contents because the carriers heavily filter for them even for registered message templates.
+ 
+Please make sure to review the Country SMS Guidelines page to be aware of the local regulations and best practices.
+ 
+Resources:
+Know more about Default sender ID feature and how to use it
+Know more about the Multi-sender ID feature
+How to Use an Alphanumeric Sender IDs
+Note: 
+If you'd like to set the Default sender ID you can reach out to our team through senderid@twilio.com. You can also set the Default sender ID on your console through the step-by-step instructions here.
+There might be instances where our downstream providers require additional documents to be submitted at any point of time, we may reach out to you via the same thread to request for the documents.
+ 
+Disclaimer: Although your Sender ID is currently registered, all alphanumeric Sender IDs will need to be re-registered under the new Australia SMS Sender ID Register regulations starting March 2026. This is required by the Australian Communications and Media Authority (ACMA) to ensure compliance and protect consumers from fraudulent or misleading SMS traffic.
+
+Feel free to give it a try and let me know if you have any questions.
+
+[7RPJNV-50WX5]

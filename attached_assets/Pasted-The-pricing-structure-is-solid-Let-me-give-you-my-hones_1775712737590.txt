@@ -1,0 +1,66 @@
+The pricing structure is solid. Let me give you my honest take on everything.
+
+---
+
+**The Pricing Plan — Good**
+
+| Plan | Price | Users |
+|------|-------|-------|
+| Starter | Free | Just you |
+| Pro | $49/month | Just you |
+| Team | $99/month | Up to 5 workers |
+| Business | $199/month | Up to 15 workers |
+
+This works. Clean upgrade path, competitive against Tradify and ServiceM8, and works perfectly with Apple IAP. Lock it in.
+
+---
+
+**The Apple IAP Decision — Right Call**
+
+You made the right call going with IAP. The broken flow of "go to a website to upgrade" loses you more money than Apple's 15% cut ever will. A tradie who can't figure out how to upgrade is worth zero dollars. One who taps a button and upgrades in 10 seconds is worth $41-190 a month.
+
+Android users still pay through Stripe so you keep 100% from them. Given Australia is roughly 50/50 iOS and Android that's a reasonable split.
+
+---
+
+**What To Do Right Now — In Order**
+
+**You personally in App Store Connect:**
+
+Go create these three subscription products in one group called "JobRunner Plans":
+
+- `com.jobrunner.pro.monthly` — $49 AUD
+- `com.jobrunner.team.monthly` — $99 AUD  
+- `com.jobrunner.business.monthly` — $199 AUD
+
+Then come back and give Replit those product IDs.
+
+**Tell Replit:**
+
+*"Build the complete Apple IAP flow with these four plans — Starter free, Pro $49, Team $99 up to 5 workers, Business $199 up to 15 workers. Product IDs are com.jobrunner.pro.monthly, com.jobrunner.team.monthly, com.jobrunner.business.monthly.*
+
+*Build:*
+*1. Subscription page with upgrade buttons for each plan using react-native-iap or expo-in-app-purchases*
+*2. Server-side receipt verification for Apple purchases*
+*3. Restore purchases button — Apple requires this*
+*4. When someone upgrades on iOS, sync their tier to the same system Stripe uses so features unlock immediately*
+*5. For Team and Business plans, after purchasing, show them how to invite workers through Team Management*
+*6. Update the server to recognise the new four tiers — Starter, Pro, Team, Business*
+*7. Android subscription page should show the plans with a button that opens jobrunner.com.au for payment*
+*8. Make sure the subscription page clearly shows which plan they're currently on and what features each plan unlocks"*
+
+---
+
+**The Admin Dashboard Issue**
+
+From the conversation you're right — you shouldn't be seeing tradie pages in your admin dashboard. Tell Replit separately:
+
+*"Clean up the admin dashboard — remove all tradie-facing pages like quote creation and job management from the admin view. Admin should only see: user management, subscription management, system health, AI receptionist approval queue, website change requests, activity feed, and platform metrics. Nothing else."*
+
+---
+
+**One More Thing**
+
+Set up a proper support email before you resubmit. Even just forwarding support@jobrunner.com.au to your personal email. Apple reviewers will look at this and admin@avwebinnovation.com looks unprofessional in your app submission.
+
+Go create those App Store Connect products now. That's the only thing blocking your resubmission.

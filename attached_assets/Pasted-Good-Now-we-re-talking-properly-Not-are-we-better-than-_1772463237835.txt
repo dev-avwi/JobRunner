@@ -1,0 +1,261 @@
+Good.
+
+Now we’re talking properly.
+
+Not “are we better than billion-dollar companies?”
+
+But:
+
+**How does JobRunner actually become real?**
+
+I’m going to lay this out like a founder roadmap — not a school project.
+
+---
+
+# 🚀 JobRunner: 5-Stage Journey Plan
+
+This is how real vertical SaaS companies grow.
+
+Not hype.
+Not pitch decks.
+Execution.
+
+---
+
+## 🥇 Stage 1 — Survival & Proof (0 → 20 paying users)
+
+**Goal:**
+Prove that tradies will:
+
+* Use it
+* Stick with it
+* Pay for it
+
+Nothing else matters yet.
+
+### 🎯 Focus
+
+* ONE trade
+* ONE region
+* ONE killer workflow
+
+Example:
+
+> Electricians in Cairns
+
+Not Australia.
+Not 13 trades.
+Not enterprise.
+
+Just dominate a niche.
+
+---
+
+### 🔑 What Must Be Perfect
+
+Only these:
+
+1. Create Job
+2. Add Photos
+3. Track Time
+4. Generate Invoice
+5. Send Invoice
+6. Get Paid
+
+If that loop is flawless, you have a foundation.
+
+Everything else is noise right now.
+
+---
+
+### 💰 Target
+
+* 10–20 real paying users
+* Not free testers
+* Paying
+
+Even $49/month.
+
+That’s validation.
+
+---
+
+## 🥈 Stage 2 — Retention & Refinement (20 → 200 users)
+
+Now we ask:
+
+Do they stay?
+
+Retention > acquisition.
+
+### 🔍 Measure
+
+* Do they send invoices weekly?
+* Are they logging jobs daily?
+* Do they refer someone?
+
+If they churn in 30 days → you have product problems.
+
+---
+
+### 🛠 Improvements Now Matter
+
+Now you refine:
+
+* Onboarding simplification
+* Cleaner dashboard
+* Smoother mobile UX
+* Faster quote templates
+* Dispute Shield polish
+
+Not new features.
+
+Polish.
+
+---
+
+## 🥉 Stage 3 — Positioning & Expansion (200 → 1,000 users)
+
+Now we sharpen your identity.
+
+You don’t market as:
+
+> “AI trade software”
+
+You market as:
+
+> “The tradie operating system that protects your money.”
+
+This is when:
+
+* Trade-specific landing pages go live
+* Testimonials appear
+* Case studies show invoice increases
+* Referral loops kick in
+
+Now you expand into:
+
+* Plumbers
+* HVAC
+* Builders
+
+One trade at a time.
+
+---
+
+## 🏗 Stage 4 — Infrastructure & Trust (1,000 → 5,000 users)
+
+Now the game changes.
+
+You need:
+
+* Proper support system
+* SLA uptime
+* Payment reliability
+* Accounting integrations
+* Secure document storage
+* Legal terms tightened
+
+Now you’re not a builder.
+You’re an operator.
+
+---
+
+## 🌍 Stage 5 — Scale or Specialize
+
+Two options:
+
+### Option A: National Scale
+
+* Paid ads
+* Partnerships
+* Industry expos
+* Accounting firm integrations
+
+### Option B: Deep Specialization
+
+* Become #1 in 2–3 trades
+* Add deeper AI automation
+* Add financing tools
+* Add supplier integrations
+
+Both are valid.
+
+---
+
+# 🧠 The Most Important Rule
+
+You are at Stage 1.
+
+So don’t act like Stage 4.
+
+Your current risk:
+
+Building for scale before earning trust.
+
+---
+
+# 🎯 Your Immediate 90-Day Plan
+
+Let’s simplify brutally.
+
+### Month 1:
+
+* Lock core workflow
+* Remove feature clutter
+* Get 5 tradies testing
+
+### Month 2:
+
+* Convert 3–5 into paying
+* Fix friction
+* Improve onboarding
+
+### Month 3:
+
+* Reach 10–15 paying users
+* Capture testimonials
+* Build referral program
+
+If you hit that?
+
+You’re not a dreamer.
+You’re a founder.
+
+---
+
+# 🧱 The Mindset Shift
+
+Right now you compare to:
+
+* ServiceTitan
+* BuildOps
+* Jobber
+
+Wrong comparison.
+
+Your real competition today is:
+
+> “Pen and paper”
+> “Notes app”
+> “Excel”
+> “Tradify free trial”
+
+Win there first.
+
+---
+
+# 🔥 Now I’m Going to Ask You Something Important
+
+Be honest.
+
+If I gave you 10 electricians in Cairns tomorrow…
+
+Is JobRunner stable enough for them to run their business on?
+
+No excuses.
+No “almost.”
+
+Would you trust it with your dad’s income?
+
+Answer that — and we plan next steps properly.

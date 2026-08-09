@@ -1,0 +1,169 @@
+
+Ideas/Brainstorm
+/
+Claude finished the response
+
+Cult of Mac Search Subscribe News Reviews How-To Deals Buying guides Guides John Ternus Folding iPhone MacBook Neo Apple rumors Editor’s picks Apple history Videos Podcast Newsletters News Reviews How-To Deals Buying guides Guides John Ternus Folding iPhone MacBook Neo
+
+pasted
+
+
+AU Skip navigation Search Create 6 Avatar image M6 MacBook Ultra vs M5 MacBook Pro: Should You Wait or Buy Now? Bytes & Bets 2.78k subscribers Subscribe 69 Share Save Download 3,015 views 2 May 2026 Apple's biggest MacBook Pro redesign in years is comi
+
+pasted
+
+should i wait for m6 or just get m5 pro, cause i think like i want to optimise using m5 pro at the JCU Work Experience, so should i wait to get M6 or nahLevel up with [MacSparky Field Guides: Master Your Apple Tech, One Field Guide at a Time](https://learn.macsparky.com/)
+
+[Join The MacSparky Labs for Insider Access](https://www.macsparky.com/join/)
+
+[About](https://www.macsparky.com/about/)
+[Blog](https://www.macsparky.com/)
+[Field Guides](https://www.macsparky.com/fieldguides/)
+[MacSparky Labs](https://www.macsparky.com/join/)
+[Podcasts](https://www.macsparky.com/podcasts/)
+[Newsletter](https://sparky-media-inc.ck.page/profile/posts)
+[More](https://www.macsparky.com/screencasts/)
+Search The M5 vs. M6 MacBook Pro Buyer’s Dilemma [This post](https://www.macsparky.com/blog/2026/02/why-the-m5-matters-if-you-run-ai-locally/) brought even more questions about M5 vs M6 MacBooks Pro. The timing is weird this year. The M5 MacBook Pro arrives soon. ([Likely March 4](https://www.macrumors.com/2026/02/16/apple-announces-special-event-in-new-york/)!) The M6 arrives later in the year with a completely new design and OLED display. You could buy in spring or wait until fall. The M5 is a massive jump in AI performance. 4X over M4. Apple engineered the GPU specifically for running language models locally. The M6 is a design refresh. New chassis. OLED display. Probably some GPU improvements too, but nothing as dramatic as the M5 jump. This is a use case decision. If you’re running local AI models or doing development work that benefits from GPU acceleration, buy the M5. The performance gain is real and the wait costs you months of productivity. If you’re doing video editing, color grading, or anything where display quality matters to your actual work, the M6 OLED is worth waiting for. If you’re mostly doing text-based work, this choice barely matters. The M5 is more than sufficient. Now the money angle. Apple usually signs long-term memory contracts. RAM is getting expensive. Memory prices are likely to go up. An M5 with 32GB might be $2,400 now. The same RAM in an M6 could be $2,600 in September. Prettier design, better display, faster GPU. But you might pay more for the same memory. My recommendation: Buy the M5 if you need the performance now. You’ll regret waiting more than you’ll regret missing the design refresh. Wait for the M6 only if display quality or industrial design are actually important to your work. Not aspirationally important. Actually important. Regardless of whether you go M5 or M6, you’re going to get a helluva Mac.
+posted in [local AI](https://www.macsparky.com/blog/tag/local-ai/), [M5](https://www.macsparky.com/blog/tag/m5/), [M6](https://www.macsparky.com/blog/tag/m6/) on [February 19, 2026](https://www.macsparky.com/blog/2026/02/the-m5-vs-m6-macbook-pro-buyers-dilemma/)
+PREVIOUS POST
+[← DEVONthink AI-Assisted Naming and Filing](https://www.macsparky.com/blog/2026/02/devonthink-ai-assisted-naming-and-filing/)
+NEXT POST
+[The Red Badge Won →](https://www.macsparky.com/blog/2026/02/the-red-badge-won/)
+
+Show more
+10:16
+
+Weighed immediate work experience needs against waiting for newer model
+Weighed immediate work experience needs against waiting for newer model
+Given you want it for JCU Work Experience (which sounds like it's coming up soon), the answer leans pretty clearly toward buying the M5 Pro now. Here's why:
+
+The timing argument alone settles it for you. You have a specific, near-term use case. The M6 is realistically late 2026 or early 2027 — that's potentially a year of waiting and missing out on having the machine during your actual work experience.
+
+The M5 Pro is genuinely excellent for work. It's not a "settling" purchase — it's a powerhouse, especially for anything involving AI, development, or creative work. The M5 generation brought a 4x GPU performance jump over M4, which is massive.
+
+The M6 comes with caveats worth knowing:
+
+It'll almost certainly cost more (Apple raises prices on redesign years)
+The Pro/Max versions might not even land until early 2027
+OLED and touchscreen are exciting, but unless display quality is central to your actual work, they're nice-to-haves
+Burn-in is a real consideration with OLED on a work machine (as one commenter in those sources noted)
+The practical reality: the best Mac is the one in your hands when you need it. You'd be arriving at JCU work experience with a top-tier, current-gen machine that'll handle anything thrown at it.
+
+What kind of work will you be doing at JCU? That might help confirm the decision.
+
+well i can improve my app at JCU, imma be working on other projects with other people. so i dont quite know, what will be cool apparently m6 might have the dynamic island, i really like that idea. i dont know if the m5 already ahs that or not
+
+10:19
+
+Clarified Dynamic Island availability across M5 and M6 models
+Clarified Dynamic Island availability across M5 and M6 models
+The M5 MacBook Pro does not have Dynamic Island — it still has the regular notch (same design since 2021). Dynamic Island on Mac is one of the M6 rumours, tied to the hole-punch camera redesign.
+
+That said, here's an honest take on it for your situation:
+
+Dynamic Island on Mac is unproven. On iPhone it's genuinely useful because it shows notifications, timers, music etc. on a small screen where space is precious. On a 14–16" laptop screen, it's much less clear how useful it'd actually be day-to-day — you've got a whole menu bar and dock already doing that job.
+
+For your actual use case — improving your app, collaborating on projects at JCU — Dynamic Island won't affect your productivity at all. The M5 Pro will handle app development, Xcode, running local models, collaboration tools, everything, without breaking a sweat.
+
+The honest question to ask yourself is: are you drawn to the M6 because it'll genuinely help your work, or because it's the shinier new thing? Both are valid reasons to buy a laptop, but if JCU is coming up soon and you need the machine now, waiting 6-12+ months for a feature that may not even work as excitingly on a laptop as it does on iPhone is a tough trade-off.
+
+If JCU is still months away though — when does it actually start?
+
+probabbly im drawn to m6 cause if im already spending this money i should get the better version right. JCU starts tomorrow, and i can get the M5 Pro today so what do you think
+
+10:20
+
+Weighed immediate availability against long-term value proposition
+Weighed immediate availability against long-term value proposition
+Get the M5 Pro today. That decision makes itself honestly.
+
+You need it tomorrow, it's available today, and the M6 is at minimum 6+ months away — possibly over a year for the Pro version specifically. There's no version of "wait for the better one" that works when you literally start tomorrow.
+
+And reframe the "spending this money, should get the better version" thinking — the M5 Pro is the better version of what exists right now. The M6 is hypothetical, unconfirmed, and likely more expensive when it does arrive.
+
+Go get it today, set it up tonight, and walk into JCU tomorrow ready to actually build things. That's the move.
+
+1778977333925_image.png
+tell me how good the m5 pro is i want to compare it to this laptop im usingfor school which is how im talking to you right now
+
+also do you think the m5 pro macbook, is better than my alienware pc thats number 13 i think with 3080 gpu
+
+10:21
+
+Thinking about comparing M5 Pro MacBook performance to current school laptop and Alienware PC with RTX 3080
+Thinking about comparing M5 Pro MacBook performance to current school laptop and Alienware PC with RTX 3080
+Let me look up the specs on both machines to give you a proper comparison!
+
+
+Weighed M5 Pro against school laptop and gaming desktop comprehensively
+Weighed M5 Pro against school laptop and gaming desktop comprehensively
+Good news — I've got the specs on both. Here's how the M5 Pro stacks up against each:
+
+vs Your Dell Pro 14 (PC14250) — not even close
+
+Your Dell runs an Intel Core Ultra 7 with integrated Intel 4-core graphics, and its display only covers about 51% of the sRGB colour gamut — which is genuinely poor for any creative or detailed work. The M5 Pro would be a night-and-day upgrade in every single category: CPU, GPU, display quality, battery life, everything. 
+Notebookcheck
+Laptopmedia
+
+vs Your Alienware R13 with RTX 3080 — depends what you're doing
+
+The R13 is a serious machine — 12th Gen Intel i9, 32GB DDR5 RAM, and a 10GB RTX 3080, so it's genuinely powerful. Here's the honest breakdown: 
+Best Buy
+
+Gaming: The Alienware wins. The RTX 3080 is still a dedicated desktop GPU beast for gaming.
+App development & coding: M5 Pro wins. It's specifically optimized for this kind of work, and Xcode on Apple silicon is significantly faster.
+AI/ML tasks: M5 Pro wins. The M5 chip has a 4x GPU performance jump over M4, built specifically for running models locally.
+Display: M5 Pro wins massively — the Liquid Retina XDR display is stunning compared to any gaming monitor for actual work.
+Portability: M5 Pro obviously — your Alienware is a desktop, so you can't take it to JCU at all.
+For your actual use case — building your app, collaborative projects at JCU — the M5 Pro is the better tool even compared to the Alienware, because the work is happening at JCU, not at your desk at home.
+
+wait i want to compare weight, and everything like stats and performance. so give me detailed grpahs of the three computers side by side, bar graph type thing on every thing. also tell me the weight of the school computer and the macbook m5 pro so i can like feel like how heavy the m5 pro is going to be, also compare m5 air in there too. so 4 detailed graphs with numerous stats and performance
+
+10:23
+
+Pivoted visualization strategy to artifact format
+Pivoted visualization strategy to artifact format
+V
+
+visualize
+Here's the full breakdown across all 9 charts! A few key takeaways to highlight:
+
+vs your Dell Pro 14: The MBP M5 Pro wins in literally every single category — CPU, GPU, display brightness (4x brighter!), resolution (2.5x sharper), battery (almost double). Your school Dell is actually heavier than the MacBook Air M5, which is wild.
+
+vs your Alienware R13: The Alienware still wins GPU by a landslide (RTX 3080 is a beast for gaming), and has the most RAM and storage. But the MBP M5 Pro actually beats or matches it on CPU — Apple silicon is genuinely that fast. And of course the Alienware scores zero on portability, battery, and display since it's a desktop.
+
+Weight reality check: Your Dell is 1.36 kg. The MBP M5 Pro is 1.59 kg — only 230g more than what you're already carrying to school every day. You won't notice that difference in a bag.
+
+
+Device comparison
+Code · HTML 
+okay cool and so do you think like m5 pro can run most of what i do normally and more. maybe use it for a little gaming a tiny bit
+
+10:42
+
+Evaluated M5 Pro's capability for daily tasks and casual gaming
+Evaluated M5 Pro's capability for daily tasks and casual gaming
+Yeah, the M5 Pro will handle basically everything you throw at it. Let me break it down for your actual use case:
+
+App development at JCU — this is where it genuinely shines. Xcode on Apple silicon is dramatically faster than on Intel. Building, compiling, running simulators — all smooth.
+
+Everyday stuff — browsing, documents, video calls, multitasking with loads of tabs open — the M5 Pro laughs at this. You've got 24GB of unified memory which is way more than most people ever need.
+
+Gaming — here's the honest truth though. It depends on what you play:
+
+Mac-native games (there are more than people think — Baldur's Gate 3, No Man's Sky, Resident Evil series, Death Stranding, Lies of P, many indie titles) — runs them really well
+Light/older PC games via CrossOver or Parallels — works fine
+Heavy modern Windows exclusives (like Call of Duty, Valorant competitive, the latest AAA stuff) — this is where the M5 Pro hits a wall. It's not a gaming GPU. Your Alienware RTX 3080 will still destroy it for that kind of gaming
+So the real picture: if gaming is a tiny bit like you said — casual sessions, not hardcore competitive — the M5 Pro handles it fine and you'll be surprised what it can run natively now. But your Alienware stays king for serious gaming sessions at home. Think of the MacBook as your work + light gaming machine, and the Alienware as your dedicated gaming rig when you're at your desk. That's actually a perfect combo.
+
+
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+
+

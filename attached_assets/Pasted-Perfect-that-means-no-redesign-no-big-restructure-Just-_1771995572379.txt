@@ -1,0 +1,137 @@
+Perfect — that means no redesign, no big restructure. Just: make the current app feel premium + more advanced.
+
+Here’s exactly how to do that with Replit.
+
+⸻
+
+What “upgrade how it is now” means (the goal)
+
+Keep:
+	•	Your current navigation
+	•	Your current pages
+	•	Your current layout patterns
+
+Upgrade:
+	•	Visual polish (premium feel)
+	•	Depth (more actions + smarter screens)
+	•	Interactions (feels native, not web-in-a-shell)
+	•	Parity (close the gap with web)
+
+⸻
+
+The 3 upgrades that will make it feel instantly more premium
+
+1) Make every screen have a “Hero + Context”
+
+Right now some pages are “Title + empty card”.
+
+Upgrade rule:
+	•	Every screen starts with either:
+	•	a hero metric (count / money / status), or
+	•	a hero action (“Create Invoice”, “Add Document”), or
+	•	a hero summary (“3 issues need attention”)
+
+2) Add “Contextual actions” everywhere
+
+Premium mobile apps feel advanced because you can do stuff without digging.
+
+Examples:
+	•	Long press job card → quick actions (Start, Invoice, Message, Navigate)
+	•	Swipe invoice → Send reminder / Mark paid
+	•	Tap & hold team member → Call / Message / View jobs
+
+3) Add “native feel”
+	•	Haptics on primary actions
+	•	Smooth transitions
+	•	Loading skeletons instead of blank spinners
+	•	Pull-to-refresh
+	•	Sticky section headers
+	•	Bottom sheets for secondary actions (instead of new screens)
+
+⸻
+
+Copy-paste prompt to Replit (use this)
+
+Use this EXACTLY:
+
+Prompt:
+
+“Upgrade the existing JobRunner mobile app (do NOT redesign navigation or change the overall layout).
+Goal: make the app feel premium, more native, and closer to the web app’s functionality.
+
+Do a screen-by-screen audit and refactor.
+
+Deliverables
+	1.	A checklist of issues per screen:
+
+	•	Visual hierarchy problems (no hero, too flat, too empty)
+	•	Missing ‘advanced’ functionality vs web
+	•	Missing contextual actions
+	•	Missing native interaction patterns
+
+	2.	Implement improvements across ALL screens:
+
+Visual polish rules
+	•	Introduce a hero section at top of every screen (metric / summary / primary action)
+	•	Use background layering to separate sections (subtle tinted background blocks)
+	•	Add subtle elevation (soft shadow) and consistent corner radius
+	•	Enforce consistent spacing rhythm (24px between major sections, 16px inside cards)
+	•	Improve empty states with illustration + clear next action + short guidance
+
+Native feel rules
+	•	Add pull-to-refresh where lists exist
+	•	Add skeleton loaders for loading states
+	•	Add haptic feedback on primary actions
+	•	Replace secondary actions with bottom sheets (ActionSheet) instead of pushing new screens
+	•	Add swipe actions on list items where appropriate (e.g., invoice reminders, mark complete)
+
+Feature depth rules (match web where possible)
+	•	Add advanced filtering + sorting on key lists
+	•	Add bulk actions on lists (multi-select)
+	•	Add quick actions on cards (long press / kebab menu)
+	•	Add deep linking between modules (job → invoice → payment → client)
+	•	Add inline editing for small fields (status, notes, tags)
+
+Constraints
+	•	Keep the current navigation tabs and overall structure
+	•	Keep current brand colors and typography direction
+	•	Focus on premium feel + advanced workflow depth
+	•	Make changes consistent across every screen, not just one
+
+Start by producing the audit checklist, then implement changes iteratively.”
+
+⸻
+
+How to make sure Replit doesn’t “half do it”
+
+Add this line at the end:
+
+“Do not stop after one screen. Continue until every screen has been reviewed and upgraded. Provide before/after notes and confirm each screen meets the rules above.”
+
+This prevents the classic “I updated the dashboard only” problem.
+
+⸻
+
+What to send Replit with screenshots
+
+When you send your screenshots, add:
+
+“These are my best screens (Dashboard + Map).
+Use them as the visual reference for premium feel: spacing, hierarchy, layering, and clean modules.
+Make the weaker screens match this level.”
+
+That anchors it.
+
+⸻
+
+If you want the fastest win
+
+Tell Replit to prioritize these first (highest impact):
+	1.	Compliance + Autopilot (empty-state polish + hero + guidance)
+	2.	Reports/Insights (hero metric + better hierarchy + charts)
+	3.	Action Center (more native interactions + swipe/quick actions)
+	4.	Files (better rhythm + quick actions + filters)
+
+⸻
+
+If you want, tell me what stack you’re using for mobile (Expo/React Native? Flutter? SwiftUI?) and I’ll tailor that Replit prompt to the exact components (ActionSheet, haptics, gestures, animations) that match your codebase — without changing your structure.

@@ -1,0 +1,117 @@
+Yeah — kind of, but not in the simple “just flip a switch” way.
+
+The blunt answer
+
+You can get much closer to the real iOS Liquid Glass material, but you usually can’t just grab a built-in React Native “latest iOS 26 glass header button” component and drop it in everywhere.
+
+Why:
+	•	React Native’s built-in Alert gives you the real iOS system alert styling for alerts.  ￼
+	•	Apple’s new design language uses Liquid Glass as a material, and Apple documents it as a dynamic material system, not as “here are magic ready-made custom header buttons for every framework.”  ￼
+	•	In Expo / React Native land, the closest thing to a real native iOS glass material is Expo’s GlassEffect, which renders native iOS liquid glass using UIVisualEffectView.  ￼
+
+So the real answer is:
+
+For alerts / sheets
+
+You can use real system-native things where React Native exposes them:
+	•	Alert.alert()
+	•	ActionSheetIOS
+	•	share sheets
+Those come from iOS itself.  ￼
+
+For your custom header buttons
+
+There is not a stock React Native component that says:
+
+“render the exact latest iOS 26 floating glass back button + grouped action controls”
+
+That part still has to be:
+	•	custom built, or
+	•	bridged to native SwiftUI/UIKit, or
+	•	built using native-material wrappers like Expo GlassEffect / Expo UI.  ￼
+
+So can you “just do it”?
+
+Not with plain default React Native components alone.
+
+But you can do one of these:
+
+Option 1: Use real native system components where available
+
+Good for:
+	•	alerts
+	•	action sheets
+	•	pickers
+	•	share sheets
+
+Bad for:
+	•	your exact custom header cluster
+
+Option 2: Use native iOS glass material in custom controls
+
+This is probably what you actually want.
+
+Best route:
+	•	use Expo GlassEffect for the glass material itself, since it uses native iOS liquid glass rendering.  ￼
+	•	keep your custom layout for:
+	•	back capsule
+	•	grouped right-side pill
+	•	inner blue/red action circles
+
+This gets you much closer to:
+
+“custom layout, real native glass material”
+
+Option 3: Go even more native with Expo UI / SwiftUI
+
+Expo UI lets you build more directly with native UI technologies like SwiftUI from React.  ￼
+
+That’s the more serious path if you want:
+	•	truly native-feeling custom controls
+	•	better alignment with Apple’s newest material behavior
+	•	less fake-looking React-style recreation
+
+The important distinction
+
+What you want is really:
+
+custom controls that use native iOS glass material and native-like interaction
+
+Not:
+
+generic React Native buttons with blur slapped on
+
+That’s why it still feels wrong right now.
+
+Best practical direction for JobRunner
+
+If I were steering this, I’d say:
+
+For the popup
+
+Use real system-native alert/action sheet if the layout can fit your content needs.
+If your popup needs long custom content and multiple styled CTA blocks, it probably has to stay custom, but use native material where possible.  ￼
+
+For the header
+
+Stop trying to fake it with flat tinted View/Pressable styling alone.
+
+Instead:
+	•	build the layout custom
+	•	use native glass material for the capsules via Expo GlassEffect
+	•	add much better motion/press behavior on top
+
+That’s the closest path to what you’re describing.  ￼
+
+Short version
+
+Can you use a real React Native built-in iOS 26 glass button component?
+Not really.
+
+Can you use real native iOS glass material inside your custom header?
+Yes, much more realistically.  ￼
+
+Is that probably the correct solution?
+Yes.
+
+If you want, I can write you the exact Replit prompt telling it to stop faking the header with flat custom buttons and instead rebuild those capsules using Expo GlassEffect / native iOS material.

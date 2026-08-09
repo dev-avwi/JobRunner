@@ -1,0 +1,699 @@
+
+Ideas/Brainstorm
+/
+Claude finished the response
+
+Cult of Mac Search Subscribe News Reviews How-To Deals Buying guides Guides John Ternus Folding iPhone MacBook Neo Apple rumors Editor’s picks Apple history Videos Podcast Newsletters News Reviews How-To Deals Buying guides Guides John Ternus Folding iPhone MacBook Neo
+
+pasted
+
+
+AU Skip navigation Search Create 6 Avatar image M6 MacBook Ultra vs M5 MacBook Pro: Should You Wait or Buy Now? Bytes & Bets 2.78k subscribers Subscribe 69 Share Save Download 3,015 views 2 May 2026 Apple's biggest MacBook Pro redesign in years is comi
+
+pasted
+
+should i wait for m6 or just get m5 pro, cause i think like i want to optimise using m5 pro at the JCU Work Experience, so should i wait to get M6 or nahLevel up with [MacSparky Field Guides: Master Your Apple Tech, One Field Guide at a Time](https://learn.macsparky.com/)
+
+[Join The MacSparky Labs for Insider Access](https://www.macsparky.com/join/)
+
+[About](https://www.macsparky.com/about/)
+[Blog](https://www.macsparky.com/)
+[Field Guides](https://www.macsparky.com/fieldguides/)
+[MacSparky Labs](https://www.macsparky.com/join/)
+[Podcasts](https://www.macsparky.com/podcasts/)
+[Newsletter](https://sparky-media-inc.ck.page/profile/posts)
+[More](https://www.macsparky.com/screencasts/)
+Search The M5 vs. M6 MacBook Pro Buyer’s Dilemma [This post](https://www.macsparky.com/blog/2026/02/why-the-m5-matters-if-you-run-ai-locally/) brought even more questions about M5 vs M6 MacBooks Pro. The timing is weird this year. The M5 MacBook Pro arrives soon. ([Likely March 4](https://www.macrumors.com/2026/02/16/apple-announces-special-event-in-new-york/)!) The M6 arrives later in the year with a completely new design and OLED display. You could buy in spring or wait until fall. The M5 is a massive jump in AI performance. 4X over M4. Apple engineered the GPU specifically for running language models locally. The M6 is a design refresh. New chassis. OLED display. Probably some GPU improvements too, but nothing as dramatic as the M5 jump. This is a use case decision. If you’re running local AI models or doing development work that benefits from GPU acceleration, buy the M5. The performance gain is real and the wait costs you months of productivity. If you’re doing video editing, color grading, or anything where display quality matters to your actual work, the M6 OLED is worth waiting for. If you’re mostly doing text-based work, this choice barely matters. The M5 is more than sufficient. Now the money angle. Apple usually signs long-term memory contracts. RAM is getting expensive. Memory prices are likely to go up. An M5 with 32GB might be $2,400 now. The same RAM in an M6 could be $2,600 in September. Prettier design, better display, faster GPU. But you might pay more for the same memory. My recommendation: Buy the M5 if you need the performance now. You’ll regret waiting more than you’ll regret missing the design refresh. Wait for the M6 only if display quality or industrial design are actually important to your work. Not aspirationally important. Actually important. Regardless of whether you go M5 or M6, you’re going to get a helluva Mac.
+posted in [local AI](https://www.macsparky.com/blog/tag/local-ai/), [M5](https://www.macsparky.com/blog/tag/m5/), [M6](https://www.macsparky.com/blog/tag/m6/) on [February 19, 2026](https://www.macsparky.com/blog/2026/02/the-m5-vs-m6-macbook-pro-buyers-dilemma/)
+PREVIOUS POST
+[← DEVONthink AI-Assisted Naming and Filing](https://www.macsparky.com/blog/2026/02/devonthink-ai-assisted-naming-and-filing/)
+NEXT POST
+[The Red Badge Won →](https://www.macsparky.com/blog/2026/02/the-red-badge-won/)
+
+Show more
+10:16
+
+Weighed immediate work experience needs against waiting for newer model
+Weighed immediate work experience needs against waiting for newer model
+Given you want it for JCU Work Experience (which sounds like it's coming up soon), the answer leans pretty clearly toward buying the M5 Pro now. Here's why:
+
+The timing argument alone settles it for you. You have a specific, near-term use case. The M6 is realistically late 2026 or early 2027 — that's potentially a year of waiting and missing out on having the machine during your actual work experience.
+
+The M5 Pro is genuinely excellent for work. It's not a "settling" purchase — it's a powerhouse, especially for anything involving AI, development, or creative work. The M5 generation brought a 4x GPU performance jump over M4, which is massive.
+
+The M6 comes with caveats worth knowing:
+
+It'll almost certainly cost more (Apple raises prices on redesign years)
+The Pro/Max versions might not even land until early 2027
+OLED and touchscreen are exciting, but unless display quality is central to your actual work, they're nice-to-haves
+Burn-in is a real consideration with OLED on a work machine (as one commenter in those sources noted)
+The practical reality: the best Mac is the one in your hands when you need it. You'd be arriving at JCU work experience with a top-tier, current-gen machine that'll handle anything thrown at it.
+
+What kind of work will you be doing at JCU? That might help confirm the decision.
+
+well i can improve my app at JCU, imma be working on other projects with other people. so i dont quite know, what will be cool apparently m6 might have the dynamic island, i really like that idea. i dont know if the m5 already ahs that or not
+
+10:19
+
+Clarified Dynamic Island availability across M5 and M6 models
+Clarified Dynamic Island availability across M5 and M6 models
+The M5 MacBook Pro does not have Dynamic Island — it still has the regular notch (same design since 2021). Dynamic Island on Mac is one of the M6 rumours, tied to the hole-punch camera redesign.
+
+That said, here's an honest take on it for your situation:
+
+Dynamic Island on Mac is unproven. On iPhone it's genuinely useful because it shows notifications, timers, music etc. on a small screen where space is precious. On a 14–16" laptop screen, it's much less clear how useful it'd actually be day-to-day — you've got a whole menu bar and dock already doing that job.
+
+For your actual use case — improving your app, collaborating on projects at JCU — Dynamic Island won't affect your productivity at all. The M5 Pro will handle app development, Xcode, running local models, collaboration tools, everything, without breaking a sweat.
+
+The honest question to ask yourself is: are you drawn to the M6 because it'll genuinely help your work, or because it's the shinier new thing? Both are valid reasons to buy a laptop, but if JCU is coming up soon and you need the machine now, waiting 6-12+ months for a feature that may not even work as excitingly on a laptop as it does on iPhone is a tough trade-off.
+
+If JCU is still months away though — when does it actually start?
+
+probabbly im drawn to m6 cause if im already spending this money i should get the better version right. JCU starts tomorrow, and i can get the M5 Pro today so what do you think
+
+10:20
+
+Weighed immediate availability against long-term value proposition
+Weighed immediate availability against long-term value proposition
+Get the M5 Pro today. That decision makes itself honestly.
+
+You need it tomorrow, it's available today, and the M6 is at minimum 6+ months away — possibly over a year for the Pro version specifically. There's no version of "wait for the better one" that works when you literally start tomorrow.
+
+And reframe the "spending this money, should get the better version" thinking — the M5 Pro is the better version of what exists right now. The M6 is hypothetical, unconfirmed, and likely more expensive when it does arrive.
+
+Go get it today, set it up tonight, and walk into JCU tomorrow ready to actually build things. That's the move.
+
+1778977333925_image.png
+tell me how good the m5 pro is i want to compare it to this laptop im usingfor school which is how im talking to you right now
+
+also do you think the m5 pro macbook, is better than my alienware pc thats number 13 i think with 3080 gpu
+
+10:21
+
+Thinking about comparing M5 Pro MacBook performance to current school laptop and Alienware PC with RTX 3080
+Thinking about comparing M5 Pro MacBook performance to current school laptop and Alienware PC with RTX 3080
+Let me look up the specs on both machines to give you a proper comparison!
+
+
+Weighed M5 Pro against school laptop and gaming desktop comprehensively
+Weighed M5 Pro against school laptop and gaming desktop comprehensively
+Good news — I've got the specs on both. Here's how the M5 Pro stacks up against each:
+
+vs Your Dell Pro 14 (PC14250) — not even close
+
+Your Dell runs an Intel Core Ultra 7 with integrated Intel 4-core graphics, and its display only covers about 51% of the sRGB colour gamut — which is genuinely poor for any creative or detailed work. The M5 Pro would be a night-and-day upgrade in every single category: CPU, GPU, display quality, battery life, everything. 
+Notebookcheck
+Laptopmedia
+
+vs Your Alienware R13 with RTX 3080 — depends what you're doing
+
+The R13 is a serious machine — 12th Gen Intel i9, 32GB DDR5 RAM, and a 10GB RTX 3080, so it's genuinely powerful. Here's the honest breakdown: 
+Best Buy
+
+Gaming: The Alienware wins. The RTX 3080 is still a dedicated desktop GPU beast for gaming.
+App development & coding: M5 Pro wins. It's specifically optimized for this kind of work, and Xcode on Apple silicon is significantly faster.
+AI/ML tasks: M5 Pro wins. The M5 chip has a 4x GPU performance jump over M4, built specifically for running models locally.
+Display: M5 Pro wins massively — the Liquid Retina XDR display is stunning compared to any gaming monitor for actual work.
+Portability: M5 Pro obviously — your Alienware is a desktop, so you can't take it to JCU at all.
+For your actual use case — building your app, collaborative projects at JCU — the M5 Pro is the better tool even compared to the Alienware, because the work is happening at JCU, not at your desk at home.
+
+wait i want to compare weight, and everything like stats and performance. so give me detailed grpahs of the three computers side by side, bar graph type thing on every thing. also tell me the weight of the school computer and the macbook m5 pro so i can like feel like how heavy the m5 pro is going to be, also compare m5 air in there too. so 4 detailed graphs with numerous stats and performance
+
+10:23
+
+Pivoted visualization strategy to artifact format
+Pivoted visualization strategy to artifact format
+V
+
+visualize
+Here's the full breakdown across all 9 charts! A few key takeaways to highlight:
+
+vs your Dell Pro 14: The MBP M5 Pro wins in literally every single category — CPU, GPU, display brightness (4x brighter!), resolution (2.5x sharper), battery (almost double). Your school Dell is actually heavier than the MacBook Air M5, which is wild.
+
+vs your Alienware R13: The Alienware still wins GPU by a landslide (RTX 3080 is a beast for gaming), and has the most RAM and storage. But the MBP M5 Pro actually beats or matches it on CPU — Apple silicon is genuinely that fast. And of course the Alienware scores zero on portability, battery, and display since it's a desktop.
+
+Weight reality check: Your Dell is 1.36 kg. The MBP M5 Pro is 1.59 kg — only 230g more than what you're already carrying to school every day. You won't notice that difference in a bag.
+
+
+Device comparison
+Code · HTML 
+okay cool and so do you think like m5 pro can run most of what i do normally and more. maybe use it for a little gaming a tiny bit
+
+10:42
+
+Evaluated M5 Pro's capability for daily tasks and casual gaming
+Evaluated M5 Pro's capability for daily tasks and casual gaming
+Yeah, the M5 Pro will handle basically everything you throw at it. Let me break it down for your actual use case:
+
+App development at JCU — this is where it genuinely shines. Xcode on Apple silicon is dramatically faster than on Intel. Building, compiling, running simulators — all smooth.
+
+Everyday stuff — browsing, documents, video calls, multitasking with loads of tabs open — the M5 Pro laughs at this. You've got 24GB of unified memory which is way more than most people ever need.
+
+Gaming — here's the honest truth though. It depends on what you play:
+
+Mac-native games (there are more than people think — Baldur's Gate 3, No Man's Sky, Resident Evil series, Death Stranding, Lies of P, many indie titles) — runs them really well
+Light/older PC games via CrossOver or Parallels — works fine
+Heavy modern Windows exclusives (like Call of Duty, Valorant competitive, the latest AAA stuff) — this is where the M5 Pro hits a wall. It's not a gaming GPU. Your Alienware RTX 3080 will still destroy it for that kind of gaming
+So the real picture: if gaming is a tiny bit like you said — casual sessions, not hardcore competitive — the M5 Pro handles it fine and you'll be surprised what it can run natively now. But your Alienware stays king for serious gaming sessions at home. Think of the MacBook as your work + light gaming machine, and the Alienware as your dedicated gaming rig when you're at your desk. That's actually a perfect combo.
+
+can it run rocket league you think, or minecraft, roblox or fortnite
+
+10:47
+
+Synthesizing game compatibility details across four titles
+Synthesizing game compatibility details across four titles
+Here's the honest breakdown on all four:
+
+Minecraft ✅ — works perfectly. Java Edition has always been Mac native, runs brilliantly on Apple Silicon. No workarounds needed.
+
+Roblox ✅ — works great. Roblox launched native Apple Silicon support, bringing improved performance to Mac users with Apple Silicon devices. It's fully optimised for the M-series chips, so it'll run better on your M5 Pro than on most Windows laptops. 
+Roblox Developer Forum
+
+Fortnite ⚠️ — complicated. Fortnite is not natively available on macOS as of 2026. Although Fortnite briefly returned to the iOS App Store in May 2025, Epic has not released a Mac version since 2020 due to the Epic vs Apple dispute. Your best bet is Xbox Cloud Gaming — you just play it in a browser for free, no download needed. Works fine, though you need decent internet. 
+MacHow2
+
+Rocket League ⚠️ — also complicated. Rocket League is not officially supported on macOS anymore — Psyonix removed Mac support in 2020. However, a tool called Whisky can run Rocket League on Apple Silicon Macs, though results vary. Cloud gaming is the more reliable workaround here too. 
+Eloking
+MacHow2
+
+So the quick summary:
+
+Game	M5 Pro?
+Minecraft	✅ Native, runs great
+Roblox	✅ Native, runs great
+Fortnite	⚠️ Cloud gaming (free, browser)
+Rocket League	⚠️ Workaround or cloud gaming
+For Fortnite and Rocket League, your Alienware at home is honestly just the easier option. Save those for when you're at your desk.
+
+
+Officeworks is Australia’s leading online store for Office Supplies, Stationery, Office Furniture, and much more. macbook m5 pro 4870 | Cairns O... Store Locator Login 0 Cart Home Technology Laptops MacBooks All MacBooks Macbook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black
+
+pasted
+
+would you say like this is the one to get the m5 pro
+
+10:52
+Yeah, that's the exact right one to get. The MacBook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black at $3,438 from your Cairns Officeworks is the sweet spot.
+
+A few things worth noting from that page:
+
+Why this specific model over the others listed: The step up to the 18-core CPU version is $4,378 — that's $940 more for a chip upgrade most people genuinely never need. For app development and your use case, the 15-core is more than enough.
+
+Why 1TB over 2TB: The 2TB version jumps to $3,997 — $559 more. Unless you're storing massive amounts of footage or files locally, 1TB is plenty especially when you can always use external drives or cloud storage.
+
+Space Black is a great call — looks sharp and the darker finish resists fingerprints better than Silver.
+
+The bonus: It says available today with 2-hour Click & Collect at Cairns, and only 4 in stock. Given you start JCU tomorrow, that timing is perfect — you could grab it today, set it up tonight.
+
+Go get it.
+
+would you say like i want to know how can i use m5 pro to the best of the ability with you replit and xcode i want checklist to know what i can do and how does xcode work, and how good is xcode for workflow and everything
+
+10:53
+Great question — let me give you a proper rundown on all three together.
+
+How Xcode works first, since it sounds like it might be new to you:
+
+Xcode is Apple's free all-in-one development environment. It handles everything in one app — you write code, design your UI visually by dragging elements around, run your app in a simulator (fake iPhone/iPad on your screen), debug it, and submit it to the App Store, all without leaving Xcode. The M5 Pro makes it significantly faster — builds that take minutes on older machines take seconds.
+
+How good is the workflow? Genuinely excellent on Apple Silicon. The simulator runs buttery smooth, you can test on a real iPhone by just plugging it in, and tools like SwiftUI let you see your UI update live as you type code. It's one of the tightest dev environments on any platform.
+
+Here's your checklist for getting the most out of the M5 Pro with Xcode, Replit and me:
+
+Day one setup
+
+ Download Xcode from the Mac App Store (free, ~10GB)
+ Sign in with your Apple ID in Xcode to get a free developer certificate
+ Install Homebrew (package manager, you'll need it constantly)
+ Set up Replit desktop or just use it in Safari — both work great
+ Sign into iCloud so your files sync across devices
+Xcode workflow
+
+ Learn the simulator — you can run iPhone, iPad, Apple Watch apps without a real device
+ Plug in your iPhone via USB at least once to test on a real device (way more satisfying than the simulator)
+ Learn SwiftUI basics — it's the modern way to build Apple apps and the live preview feature is genuinely magic
+ Use the built-in Git integration so your code is version controlled without leaving Xcode
+ Learn breakpoints for debugging — click the line number to pause your app mid-run and inspect everything
+Using me effectively while coding
+
+ Paste your code directly into chat and ask specific questions — "why is this crashing" or "how do I make this button animate"
+ Ask me to explain Xcode errors — Swift error messages can be cryptic and I can translate them
+ Use me to plan features before you build them — talk through the logic first, then code it
+ Ask me to review your code structure, not just fix bugs
+ When you're stuck, describe what you want the app to do, not just what's broken — I can often suggest a better approach entirely
+Using Replit alongside Xcode
+
+ Use Replit for backend stuff — if your app needs a server, API, or database, Replit handles that side while Xcode handles the iOS front end
+ Replit is great for quick experiments in Python or JavaScript without setting up a full project
+ The M5 Pro runs both simultaneously without breaking a sweat — keep Xcode and Replit open at the same time
+M5 Pro specific things to actually use
+
+ Keep plugged in when doing big builds but know the battery easily lasts a full day of coding unplugged
+ Use the three Thunderbolt 5 ports — plug in an external monitor for a two-screen setup which massively helps when coding (code on one screen, simulator on the other)
+ The 24GB unified memory means you can have Xcode, Replit, Safari with 30 tabs, Figma, and Spotify all open and it won't slow down
+ Use Stage Manager in macOS to switch between your coding workspace and other tasks cleanly
+Habits that will level up your workflow
+
+ Commit your code to GitHub regularly — get the habit early
+ Use Xcode's built-in documentation (hold Option and click any function to see docs instantly)
+ Learn a handful of keyboard shortcuts — ⌘+R to run, ⌘+B to build, ⌘+. to stop — they save a lot of time
+ Break features into small pieces and test each one before moving on
+The honest truth is the M5 Pro will never be your bottleneck. The machine is going to outpace your learning curve for years. Focus on learning Xcode and Swift deeply — that's where the real gains are.
+
+but how does xcode work with replit, is it ai agent operated. how will i decide fixes that need to be made and stuff like give me use case scenarios and also other things for web design maybe. what does macbook do that any other laptop doesnt do
+
+10:54
+Really good questions — let me break each one down properly.
+
+Xcode and Replit don't directly connect — they're separate tools you use for different parts of your project. Here's how they actually work together in practice:
+
+Xcode = your iOS/Mac app front end (what users see and tap)
+Replit = your backend server (the brain behind the scenes)
+
+So your app in Xcode makes requests to code running on Replit, like fetching data, handling logins, storing information. They talk to each other over the internet via APIs — Replit hosts the server, Xcode talks to it.
+
+Is it AI agent operated? Not by default — but this is where I come in. Neither Xcode nor Replit have strong built-in AI that actually understands your whole project. The workflow that works really well is:
+
+You write code → something breaks or you want a feature → you bring it to me → I help you fix or build it → you put it back in Xcode or Replit.
+
+Think of me as your senior developer on call 24/7.
+
+Real use case scenarios:
+
+Scenario 1 — Bug you can't figure out Your app crashes when a user taps a button. You've stared at it for 20 minutes. You paste the error message and the relevant code into chat with me, I identify that you're trying to use a variable before it's been given a value, show you the fix, and explain why it happened so you don't make the same mistake again.
+
+Scenario 2 — Building a new feature You want to add a login screen to your app. You've never done authentication before. You ask me to walk you through it step by step — I explain the concept, give you the Swift code for the UI in Xcode, then give you the Python code for the backend on Replit that checks usernames and passwords, and explain how the two talk to each other.
+
+Scenario 3 — You're at JCU collaborating Your team decides the app needs a new feature by end of day. You're not sure how to approach it architecturally. You describe the feature to me, I help you plan the structure before anyone writes a line of code, saving your team hours of going in the wrong direction.
+
+Scenario 4 — Code review You've built something that works but feels messy. You paste it to me and ask "is this good code?" I tell you honestly what's clean, what's inefficient, and what would confuse another developer trying to read it.
+
+Scenario 5 — Web design on Replit You want a website to go alongside your app. You build it on Replit using HTML, CSS and JavaScript. You ask me to help make it look professional — I write you clean responsive layouts, help with animations, fix why your navbar breaks on mobile, all of it.
+
+For web design specifically, your stack on the MacBook would look like:
+
+Replit handles hosting and running your website code. You'd write HTML and CSS for structure and styling, JavaScript for interactivity, and possibly a framework like React if you want to get more advanced. I can help you build entire pages, debug layout issues, and explain why things look wrong. The MacBook's XDR display is genuinely useful here because colours are accurate — what you design actually looks correct, which matters for web work.
+
+What the MacBook does that other laptops genuinely don't:
+
+This is actually a real and meaningful list, not marketing fluff.
+
+iPhone Mirroring — you can see and control your actual iPhone on your MacBook screen. For app development this is huge — you can demo your app, test interactions, and record your screen without touching your phone.
+
+iOS Simulator that actually works — on Windows you cannot run a proper iOS simulator. Full stop. If you want to build iPhone apps, Mac is the only real option. The simulator on M5 Pro runs at full speed, feels like a real device.
+
+Handoff and Continuity — you copy something on your iPhone, paste it on your Mac. You start typing a message on your Mac, pick it up on your iPhone. These sound small but in a real workflow they save constant friction.
+
+Universal clipboard, AirDrop, AirPlay — sharing files between Apple devices is instant and wireless, no cables, no accounts, no apps. AirDropping a file from your MacBook to your iPhone takes about 2 seconds.
+
+Battery that actually lasts — 18 hours is real-world usable. Windows laptops advertise similar numbers but throttle performance to get there. The M5 Pro delivers full performance AND that battery life at the same time, which no x86 laptop currently matches.
+
+macOS stability — genuinely fewer random crashes, driver issues, update problems compared to Windows. For a developer this matters because your environment staying stable means you spend time building, not troubleshooting your own machine.
+
+The display — 1,600 nits peak brightness, ProMotion 120Hz, P3 wide colour. Web design, UI design, and just working in general looks dramatically better. You notice it most when you go back to any other screen.
+
+The honest summary: if you're building iOS apps, the Mac isn't just better — it's the only real option. For web dev and general coding it's excellent but not exclusive. The ecosystem integration with your iPhone is the thing that genuinely has no equivalent on any Windows machine.
+
+ive already built my whole app in replit though, im not trying to rebuild it all in claude code, so what im wondering is how can claude code work with me. like i dont get it
+
+wait i love the handoff and continuity, also airdrop, airplay
+
+also i love how it runs the app within the macbook this is great, as i dont have to do as many screenshots as i noramlly do you know
+
+10:57
+Totally get the confusion — let me clear it up properly.
+
+You don't need to rebuild anything. Claude Code works with your existing Replit project, not instead of it. Here's what it actually is:
+
+Claude Code is a terminal tool you run on your MacBook. You point it at your code files (which you can sync from Replit, or just keep a local copy of your project), and it can read your entire codebase at once — not just one file you paste, but everything. It understands how your files connect to each other.
+
+So the workflow looks like this — you pull your Replit project files onto your Mac, open Claude Code in terminal, and now instead of copying and pasting individual bits of code to me in chat, Claude Code can see the whole picture and make changes directly in the files. Then you push those changes back to Replit.
+
+But honestly? For where you're at right now, just keep using me in chat. Claude Code is more powerful but also more setup. Paste your code here, I fix it, you put it back in Replit. That workflow is completely valid and what most people starting out do.
+
+And yes to everything you said about the Mac stuff —
+
+The handoff and continuity genuinely becomes second nature fast. You'll be on your phone, see something you want to use in your project, and it'll just be on your clipboard on the Mac already. Feels like magic the first few times.
+
+AirDrop is the one that kills me on Windows — the amount of time people waste emailing files to themselves or using WhatsApp just to move something between devices. On Mac it's just... done in two seconds.
+
+And the simulator thing you mentioned is actually huge for your workflow. Think about what changes for you specifically:
+
+Right now on your Dell you probably build something, screenshot it, send it to your phone somehow, check it, go back and fix it, repeat. That loop takes ages.
+
+On the MacBook you run your app in the iOS simulator, see it instantly on screen at full size, interact with it with your mouse like a real phone, spot the problem, fix the code, hit run again. The whole loop is maybe 10 seconds instead of several minutes.
+
+And when you do want to test on your actual iPhone rather than the simulator, you just plug it in via USB once to trust the computer, and after that it can even do it wirelessly. Your app appears on your real phone in seconds straight from Xcode.
+
+For someone actively building and iterating on an app, that speed difference is genuinely one of the biggest quality of life improvements you'll notice day one.
+
+so okay cool anything else mac does that would be genuinely useful to me, maybe anything related to schoolwork or web design
+
+10:58
+Yeah there's actually quite a bit that's genuinely useful beyond the dev stuff —
+
+For schoolwork specifically:
+
+Apple Intelligence writing tools — built into every text field on the Mac. You highlight anything you've written — an essay, an email, a report — right click, and you get options to proofread, rewrite, make it shorter, change the tone. It's not a separate app, it's just there everywhere. Really useful for assignments when you've written something but it sounds rough.
+
+Spotlight Search is insane — press Command+Space and you can find any file, any note, any email, any app, do calculations, convert units, all without opening anything. Once you use it you'll never go back to hunting through folders.
+
+Notes app syncs everywhere — lecture notes on your Mac appear on your iPhone instantly. You can write, add images, draw, make checklists. Basic but genuinely reliable.
+
+Stage Manager — lets you group apps together into workspaces. So you could have one workspace that's Xcode + Replit + me, another that's Safari + Notes for research, another for schoolwork. Swipe between them like switching contexts. Really cleans up a cluttered desktop.
+
+PDF annotation built in — Preview (the default Mac PDF viewer) lets you highlight, annotate, sign, and fill forms in PDFs without any extra software. For uni readings this is all you need.
+
+Focus modes — you can set a "study" focus that silences all notifications except specific apps. Huge for actually getting work done without your phone blowing up.
+
+For web design specifically:
+
+Safari Web Inspector — Safari has a built-in developer tool that's actually really good for web design. You can inspect any element on any webpage, see exactly how it's styled, tweak CSS live in the browser and see changes instantly without touching your code. Great for figuring out why something looks wrong.
+
+Colour picker built into the OS — there's a system-wide colour picker you can pull up anywhere. For web design this means you can grab the exact hex code of any colour on your screen, from any app, instantly. No extensions needed.
+
+Screenshot and screen recording tools are exceptional — Command+Shift+4 lets you drag to capture exactly what you want. Command+Shift+5 gives you a full screen recording tool with options to record just a window, the whole screen, or a portion. For web design this is perfect for recording how your site looks and sharing it with collaborators at JCU or showing me something that's hard to describe.
+
+Continuity Camera — this one's underrated. Your iPhone camera is so much better than any laptop webcam. On Mac you can use your iPhone as a webcam for video calls automatically, no app needed. But also — you can hold your iPhone up and instantly import a photo or scan a document directly into whatever Mac app you're in. So if you sketch a UI wireframe on paper, you can scan it straight into your notes or Figma in about 3 seconds.
+
+Figma and design tools run beautifully — Figma is the industry standard web and UI design tool and it runs in the browser on Mac perfectly. The display colour accuracy on the M5 Pro means what you design actually looks correct. A lot of designers specifically use Macs because colours on Windows screens are often slightly off.
+
+The one that'll probably surprise you most is how much the little things compound. None of them individually are life changing, but after a week of using the Mac you'll notice you're spending way less mental energy on your computer and more on actually building things. That friction reduction is real and it adds up across a full day of work.
+
+
+Officeworks is Australia’s leading online store for Office Supplies, Stationery, Office Furniture, and much more. macbook m5 pro 4870 | Cairns O... Store Locator Login 1 Cart Home Technology Laptops MacBooks All MacBooks Macbook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black
+
+pasted
+
+jus tmaking sure this is the one right, the exact one i want
+
+11:03
+Yes that's exactly the one. You've already added it to cart — the MacBook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black at $3,438 from Cairns Officeworks.
+
+It even says pickup available today from Cairns. Go get it.
+
+One quick note on what they're trying to upsell you in the cart — you don't need any of it right now:
+
+AirPods Pro 3 ($429) — nice but not essential today, get them another time.
+
+Magic Keyboard ($179) — the MacBook keyboard is excellent, skip this.
+
+USB-C Digital AV Adapter ($115) — only if you need to plug into a monitor or projector. Worth thinking about for JCU but not urgent.
+
+240W Cable ($45) — the Mac comes with a cable already, skip.
+
+Microsoft 365 ($157) — you don't need this, Mac comes with Pages, Numbers and Keynote free, and they open Word/Excel files fine.
+
+Norton ($39) — Mac has built-in virus protection, don't waste money on this.
+
+Extra Cover ($249) — this one is actually worth considering. It's Officeworks' repair/replacement plan. Apple's own AppleCare+ is worth comparing though — check that price before deciding.
+
+Checkout, pick it up today, you're good.
+
+should i get with officeworks +
+
+11:04
+Honestly
+
+Claude's response was interrupted.
+
+Officeworks is Australia’s leading online store for Office Supplies, Stationery, Office Furniture, and much more. macbook m5 pro 4870 | Cairns O... Store Locator Login 0 Cart Home Technology Laptops MacBooks All MacBooks Macbook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black
+
+pasted
+
+should i get with officeworks +
+
+11:04
+Skip it. The numbers don't make sense.
+
+You're paying $3,438 for the Mac. With Officeworks Upgrade+ you'd pay $73/month for 36 months plus $843 at the end to keep it — that works out to $3,675 minimum, meaning you're paying $237 extra just for the privilege of paying in instalments. And that's before the $10.95 monthly Latitude credit card fee, which adds another $394 over 36 months.
+
+All up you could end up paying close to $4,070 for a $3,438 laptop.
+
+Just pay the $3,438 outright today and own it immediately with no strings attached. You start JCU tomorrow — you don't want a monthly payment plan hanging over you on top of everything else.
+
+should i get 18 core or 16 core
+
+11:13
+16 core. Don't even think twice.
+
+The 18 core version is $4,378 — that's $940 more for a chip upgrade you will genuinely never notice in your day to day use. App development, Replit, web design, schoolwork, even light gaming — the 15 core CPU / 16 core GPU handles all of it without breaking a sweat.
+
+The 18 core makes sense for people rendering 8K video professionally or running massive AI training jobs locally. That's not you right now.
+
+Get the 16 core, save $940, go to JCU tomorrow.
+
+so we're complete with this one right Review items
+
+Customer details
+Delivery preferences
+Payment Express Checkout Click & Collect from Cairns Officeworks Update Check out with By proceeding you are agreeing to the Officeworks [Terms of Use](https://www.officeworks.com.au/information/policies/terms-of-use) and [Privacy Policy](https://www.officeworks.com.au/information/policies/privacy-policy). Review item1 item [Macbook Pro 14" M5 Pro 15C CPU/16C GPU 24GB/1TB Space Black](https://www.officeworks.com.au/shop/officeworks/p/macbook-pro-14-m5-pro-15c-cpu-16c-gpu-24gb-1tb-space-black-mbp5pfc21b)MBP5PFC21B $3,438.00 Unit price: $3,438.00 Extra Cover Repair $2001 - $6000 optional Show description $249.00 Before You Checkout $14.00 Mentos Fruit Individually Wrapped 200 Pack $14.00 Mentos Mint Individually Wrapped 200 Pack $20.00 Sharpie Fine Permanent Markers Black 24 Pack $98.00 Kleenex Compact Hand Towel Refill 90 Sheet 24 Pack The Australian Literacy and Numeracy Foundation (ALNF) ALNF is dedicated to raising language, literacy and numeracy standards in Australia, specifically for Indigenous communities. Donate Today: $2$5$10$20 Empty Cart Continue checkout Customer details Delivery preferences Payment Sub total Including GST ($312.55) $3,438.00 Click & Collect FREE Total (incl. GST) $3,438.00 [Privacy Policy & Collection Statement](https://officeworks.com.au/information/policies/privacy-policy)[Terms of Use](https://officeworks.com.au/information/policies/terms-of-use)[PCI Compliance](https://officeworks.com.au/information/policies/pci-faqs)[Whistleblower Policy](https://officeworks.com.au/information/policies/whistleblower-policy) Officeworks Ltd. We accept:
+Show more
+11:14
+Yes that's perfect. Just the MacBook at $3,438, Click & Collect from Cairns, free pickup. Clean order.
+
+Skip the Extra Cover $249 — get AppleCare+ directly from Apple instead, it's better coverage and you can add it within 60 days of purchase so no rush today.
+
+Checkout, pick it up, you're done. Good decision all the way through.
+
+
+AU Skip navigation Search Create 6 Avatar image  Xcode just got smarter design prism 24.7k subscribers Subscribe 10 Share Save Download 1,433 views 28 Feb 2026 Today Apple added OpenAI GPT Codex and Clude integrations for Xcode. This is huge for peopl
+
+pasted
+
+AU
+Skip navigation
+Create
+6
+Vibe Coding with ChatGPT in Xcode: Build Smarter, Code Faster
+[AppStuff](https://www.youtube.com/@appstuff)
+42.9k subscribers
+Join
+Subscribe
+216
+Share
+Save
+16k views  10 months ago  [#SwiftConcurrency](https://www.youtube.com/hashtag/swiftconcurrency) [#iOSDevelopment](https://www.youtube.com/hashtag/iosdevelopment) [#AsyncAwait](https://www.youtube.com/hashtag/asyncawait)
+Apple just brought the vibe to iOS development — and I’m here for it.  In this video, I’ll show you how to use the new ChatGPT-powered feature inside Xcode to build an app that fetches data f …
+Comments
+All
+From your search
+Xcode
+Mobile app development
+AI
+[Checking out the ASUS ProArt P16 👀](https://www.youtube.com/shorts/kMN4OCvneXQ)
+813k views
+[How the most promising striker’s career got ruined at Newcastle!😳💔](https://www.youtube.com/shorts/jnb_4H0gVCk)
+832k views
+[Donnarumma is a FRAUD😨](https://www.youtube.com/shorts/0KhjX1MWb3k)
+1.8m views
+[Why Corner Flags Don’t Break Anymore 😳⚽ #shortsfeed #shorts #football](https://www.youtube.com/shorts/QB2yBGULVXc)
+1.8m views
+[The Perfect Accessories For Your MacBook Air 🍎](https://www.youtube.com/shorts/HZ8Bkn65FZs)
+14m views
+[Kvaratskhelia Explains How to Beat Defenders 🔥](https://www.youtube.com/shorts/0fm1vIgfIQQ)
+118k views
+[9:53](https://www.youtube.com/watch?v=iltdFNpl73I&pp=ugUEEgJlbg%3D%3D)
+[900+ hours of Learning Claude Code/Cursor in 10 minutes](https://www.youtube.com/watch?v=iltdFNpl73I&pp=ugUEEgJlbg%3D%3D)
+Andrew Codesmith
+455k views•3 months ago
+[21:16](https://www.youtube.com/watch?v=uqpXAfNEY4g&pp=ugUEEgJlbg%3D%3D)
+[I Vibe Coded a $50K Website in One Weekend Using AI](https://www.youtube.com/watch?v=uqpXAfNEY4g&pp=ugUEEgJlbg%3D%3D)
+JavaScript Mastery
+174k views•2 months ago
+[8:01](https://www.youtube.com/watch?v=0PV_ucjUaxs&pp=ugUEEgJlbg%3D%3D)
+[How To Improve Your Mechanics Stupidly Fast](https://www.youtube.com/watch?v=0PV_ucjUaxs&pp=ugUEEgJlbg%3D%3D)
+Reeqo.
+190k views•2 months ago
+[9:35](https://www.youtube.com/watch?v=dMqg3wMH-mc)
+[Codex + Xcode = iOS Apps Without Writing a Line of Code (Full Setup)](https://www.youtube.com/watch?v=dMqg3wMH-mc)
+Zach Sells AI
+1.4k views•3 weeks ago
+[2:00:00](https://www.youtube.com/watch?v=qiUBxbi_0Bk)
+[4K Framed TV Art Screensaver for Smart TV | Luxury Classical Oil Painting TV Wallpaper Display](https://www.youtube.com/watch?v=qiUBxbi_0Bk)
+Gallery Atmosphere
+7.5k views•2 months ago
+[15:37](https://www.youtube.com/watch?v=fwBOcE6Ty2Y&pp=ugUHEgVlbi1VUw%3D%3D)
+[Creating and Posting Carousels on Instagram with Claude Code (Complete Tutorial + Skill)](https://www.youtube.com/watch?v=fwBOcE6Ty2Y&pp=ugUHEgVlbi1VUw%3D%3D)
+Pedro Almeida | Automações e IA
+156 views•1 day ago
+New
+Auto-dubbed
+[16:40](https://www.youtube.com/watch?v=J8-CdK4215Y)
+[I Tested Every "Top" Coding Agent. Only One Survived Xcode.](https://www.youtube.com/watch?v=J8-CdK4215Y)
+Better Stack
+9.7k views•3 months ago
+[15:24](https://www.youtube.com/watch?v=RB1JKf2PeWY&pp=ugUEEgJlbg%3D%3D)
+[I Spent $8,700 on a MacBook. The M5 Made It Obsolete.](https://www.youtube.com/watch?v=RB1JKf2PeWY&pp=ugUEEgJlbg%3D%3D)
+ThisIsE
+238k views•1 month ago
+[8:46](https://www.youtube.com/watch?v=EdZWPB1fIJc)
+[Should You Learn Coding Now? Anthropic CEO Explains](https://www.youtube.com/watch?v=EdZWPB1fIJc)
+Nikhil Kamath Clips
+555k views•2 months ago
+[5:51](https://www.youtube.com/watch?v=PzpNM051bpw&pp=ugUEEgJlbg%3D%3D)
+[Mbappe Is What Zlatan Warned Us About](https://www.youtube.com/watch?v=PzpNM051bpw&pp=ugUEEgJlbg%3D%3D)
+Becir
+243k views•5 days ago
+New
+[2:27](https://www.youtube.com/watch?v=EsAubhcrums)
+[Kane Hat-Trick In Title Celebration! | FC BAYERN - 1. FC KÖLN | Highlights | Matchday 34 Bundesliga](https://www.youtube.com/watch?v=EsAubhcrums)
+Bundesliga
+384k views•9 hours ago
+New
+[6:32](https://www.youtube.com/watch?v=3cIAdulmcPI&pp=ugUEEgJlbg%3D%3D)
+[10 Mac Apps That Make Using My Computer Fun](https://www.youtube.com/watch?v=3cIAdulmcPI&pp=ugUEEgJlbg%3D%3D)
+Sean Oulashin
+58k views•4 months ago
+[5:23](https://www.youtube.com/watch?v=J-N4oxxc-ng)
+[I'm 17 and Make $1,500. What Should I Do With It?](https://www.youtube.com/watch?v=J-N4oxxc-ng)
+The Ramsey Show Highlights
+315k views•4 years ago
+[18:35](https://www.youtube.com/watch?v=-ldzZ6D5cwY)
+[The EASIEST way to build iOS apps with Claude Code (Opus 4.5)](https://www.youtube.com/watch?v=-ldzZ6D5cwY)
+Alex Finn
+65k views•5 months ago
+[3:02:54](https://www.youtube.com/watch?v=03cjY9rLtEo)
+[Framed TV Art - Winter Mountains - No Music](https://www.youtube.com/watch?v=03cjY9rLtEo)
+Bristle and Hue
+21k views•2 years ago
+[16:15](https://www.youtube.com/watch?v=tK4NQtzfZbM&pp=ugUHEgVlbi1VUw%3D%3D)
+[Vibe Coding Has A Security Problem (And How To Fix It)](https://www.youtube.com/watch?v=tK4NQtzfZbM&pp=ugUHEgVlbi1VUw%3D%3D)
+Chris Raroque
+112k views•2 months ago
+[21:07](https://www.youtube.com/watch?v=wMR_lJJqdG0)
+[Beer showers & trophy handover: FC Bayern's championship celebrations | Behind the scenes](https://www.youtube.com/watch?v=wMR_lJJqdG0)
+FC Bayern München
+6.2k views•1 hour ago
+New
+[13:26](https://www.youtube.com/watch?v=CwHD6Fg-Mjs&pp=ugUHEgVlbi1VUw%3D%3D)
+[I vibe coded a $20K/month mobile app in 14 days](https://www.youtube.com/watch?v=CwHD6Fg-Mjs&pp=ugUHEgVlbi1VUw%3D%3D)
+Starter Story
+514k views•6 months ago
+[23:55](https://www.youtube.com/watch?v=MyRF01zzKvE&pp=ugUEEgJlbg%3D%3D)
+[100 hours of Vibe Coding lessons in 20 minutes](https://www.youtube.com/watch?v=MyRF01zzKvE&pp=ugUEEgJlbg%3D%3D)
+Mikey No Code
+33k views•2 weeks ago
+[22:22](https://www.youtube.com/watch?v=Pq_gP9GEDeo&pp=ugUEEgJlbg%3D%3D)
+[How I Created & Shipped a Full iOS App With AI (With VibeCode App)](https://www.youtube.com/watch?v=Pq_gP9GEDeo&pp=ugUEEgJlbg%3D%3D)
+Riley Brown
+22k views•6 months ago
+
+do you think like xcode paired with claude code is better than replit, i want to know what should i use for apps int he future, should i build inside xcode with claude code, and then pull git to replit to deploy it
+
+Show more
+11:28
+This is a really good question and the timing is perfect because the landscape just changed — that first video shows Claude and Codex were literally just added directly into Xcode in February 2026, so this is brand new territory.
+
+Let me break down what each setup actually means for you:
+
+What you're currently doing — Replit Replit is great for getting started fast. Everything is in the browser, deployment is built in, you don't need to set up anything locally. Your whole app lives there and it just works. The downside is it's a bit limited for serious iOS app development because it's not really built for native apps.
+
+Xcode + Claude Code — what this unlocks This is the professional setup. Claude Code runs in your terminal on the MacBook, can see your entire codebase at once, and now Claude is also directly inside Xcode itself. So the workflow becomes — you describe a feature in natural language, Claude Code understands the full context of your project and writes the code directly into your files, you hit run in Xcode and see it live on the simulator instantly. It's a genuinely tight loop.
+
+Your specific question — should you pull from Xcode to Replit via Git Yes, actually this makes a lot of sense for your situation. Here's how it would work cleanly:
+
+Your iOS app front end lives in Xcode. Your backend server stays on Replit since it's already there and working. You use Git to keep everything versioned and connected. Claude Code helps you build the Xcode side, and you continue using me in chat for the Replit backend side. The two talk to each other via your API like they always have — nothing about that changes.
+
+What I'd actually recommend for you going forward
+
+For your existing Replit app — don't touch it. Keep it running exactly as is. You've built something, it works, leave it.
+
+For future app projects, especially anything iOS native — start in Xcode with Claude Code. The simulator alone justifies it, and having Claude directly inside Xcode now makes the workflow genuinely powerful. You build the iOS front end in Xcode, keep Replit for your backend, connect them via API, and you have a proper professional setup.
+
+The honest truth is you're about to have the perfect machine for exactly this. The M5 Pro running Xcode with Claude Code built in, paired with your existing Replit backend knowledge, is a legitimately serious development setup that most people would pay a lot to have. Use all of it.
+
+
+Xcode OverviewWhat’s NewResources Download Xcode betas Xcode Xcode Xcode offers the tools you need to develop, test, and distribute apps for Apple platforms, including predictive code completion, generative intelligence powered by the best coding models and agents, advanced profiling and
+
+pasted
+
+so with the macbook m5 pro this is going to be amazing with my workflow, do you think i should stick with replit. or kind of start building with claude code and xcode more
+
+11:35
+
+Weighed transition timing against existing progress and new capabilities
+Weighed transition timing against existing progress and new capabilities
+Honestly, here's the real talk on this:
+
+Don't abandon Replit right now. You start JCU tomorrow, you have a working app, today is not the day to switch your entire workflow. Get settled first.
+
+But yes, gradually start moving toward Xcode + Claude Code. Here's why the timing is actually perfect for you:
+
+That Xcode page confirms agentic coding is built into Xcode 26.3 — meaning Claude is literally inside Xcode natively now on your brand new M5 Pro out of the box. You don't even need to set much up. This is the most powerful version of this workflow that has ever existed, and you're getting the MacBook on day one of it being mainstream.
+
+The practical transition plan for you:
+
+Right now — keep your existing Replit app running exactly as is. It's your backend, leave it alone.
+
+First few weeks at JCU — get comfortable with macOS, learn Xcode basics, run your Replit app alongside it, get the feel of the simulator.
+
+After you're settled — start your next feature or your next project natively in Xcode with Claude built in. Don't rewrite what exists, just build new things the new way.
+
+The honest reason to make the shift eventually is what that Xcode page shows — previews, simulator, instruments, testing, debugging, Xcode Cloud, all in one place, all on your M5 Pro running at full speed with Claude inside it. Replit is a great starting point but it simply can't match that for serious iOS development.
+
+You're at exactly the right moment. New machine, new tools, new environment at JCU. Let it evolve naturally rather than forcing a switch overnight.
+
+im only at JCU for a week by the way
+
+11:36
+Oh that changes things a bit — a week is short, so the priority is showing up with a working setup and being productive from day one rather than learning new tools under pressure.
+
+So the plan is even simpler:
+
+This week at JCU — use what you know. Replit, me in chat, your existing workflow. You know how it works, it works, don't overcomplicate it during a week where you want to impress people and actually get stuff done on your app.
+
+After JCU — that's when you take a breath, set up Xcode properly on the new MacBook, start learning Claude Code in the terminal, and begin building the next version of things the right way. You'll have time, no pressure, and a brand new $3,438 machine purpose built for exactly that.
+
+The MacBook will still be just as powerful in two weeks. You don't have to use every feature on day one.
+
+Go to JCU, do good work, come back and level up your setup properly. That's the move.
+
+eventually when building apps would you say claude code is better than replit
+
+11:36
+Yes, for serious app development Claude Code is genuinely better than Replit. Here's the honest breakdown of why:
+
+What Replit is great at
+
+Getting started fast with zero setup
+Backend servers and APIs
+Quick experiments and prototypes
+Sharing and deploying web stuff instantly
+Perfect when you're learning
+Where Claude Code beats it
+
+It sees your entire codebase at once, not just one file. So when something breaks it understands how everything connects — it doesn't just fix the one file you paste, it understands that changing this function affects that other file which affects this screen. That's huge for real apps that grow complex.
+
+It works directly in your actual files on your machine. No browser, no limitations, no Replit environment quirks. Your code is just your code.
+
+Paired with Xcode it becomes a complete professional loop — Claude Code writes and edits files, Xcode compiles and runs them, simulator shows you the result, you give feedback, repeat. That cycle is faster than anything Replit can match for native apps.
+
+It handles the stuff Replit can't — submitting to the App Store, running tests, managing dependencies, working across multiple files simultaneously.
+
+The honest summary
+
+Replit got you started and that's genuinely valuable — don't dismiss that. But Claude Code is what professional developers are moving to right now. The videos you were watching earlier show exactly that transition happening in real time across the industry.
+
+You're getting the right machine at exactly the right moment to make that jump when you're ready.
+
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+
+
+
+
+
+
+
+
+
+
+
+

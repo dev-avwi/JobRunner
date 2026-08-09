@@ -1,0 +1,366 @@
+Got you. I’ll do three things:
+
+answer your “do tradies actually use Tradify daily?” question properly (realistic + non-hype)
+
+give you a clean Xero integration flow (AU GST-friendly)
+
+give you a Replit prompt that makes it check the whole app journey + Xero flow so nothing is “UI-only”
+
+Then I’ll also fix your Expo/EAS build error (react-native-worklets + version mismatches).
+
+1) Do tradies actually use Tradify daily?
+
+Yes — the tradies who pay for Tradify/ServiceM8 types of tools usually use them every day, because it replaces:
+
+job diary / calendar
+
+quotes + invoicing
+
+client database
+
+getting paid
+
+job photos
+
+team scheduling
+
+But switching is hard. A tradie will only fully switch if you nail these 5 “daily” moments:
+
+The 5 moments that decide if they stay
+
+“I can find today’s jobs in 2 taps.”
+
+“I can quote fast without thinking.”
+
+“Customer receives a legit PDF + pay link.”
+
+“I can mark paid + it’s recorded properly.”
+
+“It doesn’t break when reception drops.”
+
+If TradieTrack makes those smoother than Tradify/ServiceM8, they will switch — especially smaller Cairns teams. But the biggest lock-in is accounting integrations + history.
+
+So yeah: your UI can be better, but switching happens when the workflow is safer + faster + more reliable, and when the accounting side is painless.
+
+2) Xero integration flow (the “correct” way for AU tradies)
+What you’re building
+
+Two types of Xero integration:
+
+A) Bookkeeping sync (quotes/invoices/payments in TradieTrack → automatically appear in Xero)
+
+B) Contacts sync (clients in TradieTrack ↔ contacts in Xero)
+
+Minimum viable Xero integration (what actually matters)
+
+Core objects
+
+Contacts (customers)
+
+Invoices (ACCREC)
+
+Payments (optional but very valuable)
+
+Items / Products (optional)
+
+Tax rates (GST on/off)
+
+Recommended AU workflow
+
+Step 0 — Onboarding toggle
+During onboarding (Owner only):
+
+“Do you use Xero?” Yes/No
+
+If Yes → “Connect Xero” (OAuth)
+
+Select:
+
+default GST behaviour (GST registered or not)
+
+default revenue account code (e.g. 200 Sales)
+
+payment account (bank account in Xero) if syncing payments
+
+optional tracking categories (e.g. “Trade Type”, “Team Member”)
+
+Step 1 — Map TradieTrack → Xero fields
+When you generate an invoice in TradieTrack:
+
+Client → Xero Contact
+
+Invoice line items → Xero LineItems
+
+GST → Xero TaxType
+
+Invoice number → Reference/InvoiceNumber (be consistent)
+
+Job ID → Xero “Reference” field (super useful)
+
+Status: Draft / Authorised (you decide)
+
+Usually: Draft in Xero until paid OR “Authorised when sent”
+
+Step 2 — Sync triggers
+You need clear rules:
+
+On “Send Invoice” → create/update Xero invoice
+
+On “Mark Paid” OR Stripe webhook success → create Xero payment
+
+On “Edit client” → update Xero contact (optional)
+
+Step 3 — Conflict rules
+If invoice exists in Xero:
+
+if TradieTrack is source-of-truth → update Xero
+
+if Xero is source-of-truth → lock invoice edits in TradieTrack once pushed
+
+For tradies, the simplest:
+✅ TradieTrack owns invoices until exported/pushed
+✅ once pushed, lock invoice fields except “notes” and “attachments”
+
+Step 4 — Accounting safety
+
+Store the Xero tenant ID
+
+Store contact IDs + invoice IDs
+
+Add sync status badges:
+
+“Not connected”
+
+“Ready to sync”
+
+“Synced”
+
+“Sync error” (with message + retry)
+
+Step 5 — First version shortcut (if you want to ship faster)
+Before full OAuth sync, ship:
+
+“Export invoice to Xero CSV”
+
+“Export payments report CSV”
+That alone wins trust quickly while you finish OAuth.
+
+3) Replit Master QA Prompt (updated to include Maps + Team + Xero flow)
+
+Copy/paste this into Replit:
+
+Act as a senior QA engineer + product tester for TradieTrack (web + mobile). 
+Goal: prove the app is a technically solid beta: nothing is “UI-only”, all workflows are fully wired to backend, reliable, and fit a real tradie daily routine.
+
+————————————
+0) TEST ACCOUNTS TO CREATE (must work)
+————————————
+Create/seed these accounts via API/DB seeds or UI flows:
+
+A) OWNER account (Business owner)
+- Email: owner+test@tradietrack.app
+- Role: OWNER
+- Business: Cairns Coast Plumbing
+- Plan: Free first, then Pro
+- Business settings set: ABN, address, logo, GST enabled, invoice footer terms
+
+B) MANAGER account
+- Email: manager+test@tradietrack.app
+- Role: MANAGER
+
+C) WORKER/TRADIE account
+- Email: tradie+test@tradietrack.app
+- Role: WORKER
+- Limited access permissions (cannot edit billing, cannot edit business settings)
+
+All 3 must be in same team/business and permissions must be enforced.
+
+————————————
+1) CORE DAILY JOURNEY TESTS (must be end-to-end)
+————————————
+1. Create client -> Create job -> Schedule job -> Add location -> Start time tracking -> Add photos -> Mark complete
+2. From job: Create quote -> live preview -> send to client email -> client accepts -> quote becomes accepted -> convert to invoice
+3. Send invoice -> client email gets PDF and/or view link -> Stripe payment -> invoice status updates to Paid -> receipt email sent
+4. Offline behavior: simulate network drop during job save, quote save, time start/stop. Ensure no crashes, clear error, retry works.
+
+Confirm: every visible button hits a real API route and updates DB; no placeholders.
+
+————————————
+2) MAP PAGE / DISPATCH + LOCATION SYSTEM (owner/team)
+————————————
+Build/verify an Owner Map page:
+- Uses Google Maps (or Mapbox) properly
+- Shows all jobs as pins clustered by zoom level
+- Each pin shows status badge (Scheduled/In Progress/Completed/Overdue)
+- Clicking pin opens job preview card (client name, job title, status, quick actions)
+- Job location is NOT UI-only:
+  - On job create/edit: address saved to DB
+  - If geocode enabled: save lat/lng too
+  - Map uses lat/lng for pin placement
+  - “Open in Maps” uses stored data correctly
+
+Team location sharing:
+- /api/team/locations returns members with lastKnownLat/lng + timestamp
+- Worker app can optionally share location (if enabled + permitted)
+- Map shows team members separately from job pins
+- Privacy: worker can toggle share on/off; owner sees status
+
+Dispatch board (if present):
+- Drag jobs to assign worker
+- Changes persist, reflect in worker view immediately
+- Role enforcement: WORKER cannot reassign others unless allowed
+
+Expo limitation check:
+- If running in Expo Go, location tracking should show “requires development build” not break.
+- In dev build, ensure permission prompts and background location config exist.
+
+————————————
+3) TEAM CHAT + JOB CHAT (must be real-time / stored)
+————————————
+Verify:
+- Team group chat room for the business
+- Job-specific chat threads attached to each job
+- Owner/Manager can DM specific tradie
+- Permissions:
+  - Worker can read only their assigned job chats + team chat
+  - Owner/Manager can see all
+- Messages:
+  - Stored in DB (not client-only)
+  - Read receipts optional
+  - Push notifications planned: if not fully working, hide toggle or mark “coming soon”
+- Attachments optional: if present, ensure uploaded file persists and permission enforced
+
+————————————
+4) EMAIL + PDF SYSTEM (SendGrid) (must be legit)
+————————————
+Ensure “Send Quote” and “Send Invoice” buttons:
+- Generate PDF successfully (no broken layout)
+- Attach PDF OR provide secure link
+- Email sends via SendGrid server-side only
+- Verified sending domain used
+- Reply-To set to tradie email
+- Templates exist: quote sent, invoice sent, receipt sent
+
+Pro branding:
+- If Plan=Pro: logo/header/footer applied on emails + PDFs
+- If Plan=Free: show “Powered by TradieTrack” and no custom branding
+
+PDF correctness tests:
+- Long descriptions wrap properly
+- Multi-page invoice works
+- GST totals accurate
+- ABN + business details always present
+
+————————————
+5) STRIPE (subscriptions + customer payments)
+————————————
+Subscription billing:
+- Stripe webhooks update subscription tier/status correctly
+- No UI-only upgrade screens
+
+Customer invoice payments:
+- Stripe checkout/payment intent works
+- Invoice marked Paid only after Stripe success webhook
+- Store transaction ref + paid timestamp
+
+Stripe Terminal:
+- If terminal endpoints error (500), show proper error and disable feature until configured.
+- Do not leave “Collect payment” button working if token creation fails.
+
+————————————
+6) XERO INTEGRATION FLOW (design + verify)
+————————————
+If Xero integration is enabled:
+- Owner can connect Xero via OAuth
+- Store tenant id and tokens securely
+- Map fields:
+  - TradieTrack client -> Xero Contact
+  - TradieTrack invoice -> Xero ACCREC invoice
+  - Tax/GST mapping correct for AU
+- Sync triggers:
+  - On Send Invoice -> create/update Xero invoice
+  - On Paid -> create Xero payment (optional)
+- Provide sync badges: Not connected / Ready / Synced / Error
+- If not implemented fully: hide UI or label as “coming soon (beta)” and prevent broken flows
+
+————————————
+7) “NO HALF-DONE FEATURES” AUDIT (critical)
+————————————
+Scan every page and every CTA:
+- If it doesn’t hit backend + persist data -> remove/hide from beta
+- Create a list of all UI items that are placeholders and either implement or hide
+
+————————————
+8) OUTPUT
+————————————
+Give me:
+- ✅ confirmed working flows
+- ❌ broken flows with root cause
+- ⚠️ risky areas (offline, auth, webhooks, background tasks)
+- A “must-fix before publish” list (top 10)
+- A “safe for beta, improve later” list
+Make changes in code to fix critical issues.
+
+4) Your EAS build error (why it’s happening + fix)
+
+Your logs are super clear:
+
+The real build blocker
+
+react-native-reanimated needs react-native-worklets and it’s missing.
+
+Run this in the mobile folder:
+
+npx expo install react-native-worklets
+
+
+Then fix the version mismatches:
+
+npx expo install --check
+
+
+Or explicitly:
+
+npx expo install expo-audio@~1.1.0
+npx expo install @types/react@~19.1.10
+npm i -D typescript@~5.9.2
+
+
+Then rebuild:
+
+eas build --profile development --platform ios
+
+
+(That should remove the Podfile/Reanimated validation failure.)
+
+5) Real-world “phone testing script” (Owner vs Tradie in different suburbs)
+
+Use this exactly:
+
+Scenario: Owner in Cairns City, tradie in Smithfield
+
+Log in as Owner
+
+Create client + job with address in Smithfield
+
+Assign job to WORKER account
+
+Open Map page (Owner) → confirm job pin appears + status badge
+
+Log in as Worker on another device (or logout/login)
+
+Worker opens job → taps “Start time tracking”
+
+Worker shares location ON (if enabled)
+
+Owner map should now show the tradie location marker moving (or timestamp updating)
+
+In job chat: Owner messages “Confirm you’re on site?”
+
+Worker replies + uploads a photo
+
+Worker marks job completed
+
+Owner sees job status change and pin updates (Completed)
+
+If any part doesn’t sync immediately → that’s exactly what to fix before launch.

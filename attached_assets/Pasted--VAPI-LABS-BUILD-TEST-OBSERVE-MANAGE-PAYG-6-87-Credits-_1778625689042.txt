@@ -1,0 +1,207 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+6.87 Credits
+Logs
+
+Composer
+Refresh
+Export All
+
+
+
+
+
+
+Time Range
+
+
+Last 7 days
+Call ID
+
+Call ID
+Assistants
+
+Assistants
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant / Squad
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...f1bb
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+13 May 2026, 07:49
+1m 55s
+$0.18
+
+019e...5871
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+13 May 2026, 07:14
+2m 50s
+$0.29
+
+019e...4476
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+8 May 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
+-	
+-
+Web	
+Customer
+8 May 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+05/13/2026 07:49 inboundPhoneCall
+Assistant
+Cost: $0.18
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 1m 55s
+019e1e2a-c44...
+View detailed logs for this call session
+Recording
+00:00
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+0 / 14 selected
+
+Assistant
+Good day. Thanks for calling Mike's Plumbing Services. How can I help you today?
+7:49:40 AM(+00:00.58)
+User
+Hello. I've got a leaking tap.
+
+7:49:46 AM(+00:06.71)
+
+Assistant
+Good day. Sorry to hear you've got a leaking tap. May I have your name and phone number, please? Could you tell me the
+7:49:49 AM(+00:09.90)
+User
+Agent. Aiden Bogler, and phone number is o four five eight three zero zero zero five one.
+
+7:49:57 AM(+00:17.52)
+
+Assistant
+Thanks, Iden. Is this a quote request for the leaking tap repair, or would you like to book a job? or is it a general inquiry? Also, could you please let me know the address or suburb where the work is needed? and how urgent it is.
+7:50:05 AM(+00:25.70)
+User
+It's urgent, and it's in verbal cans.
+
+7:50:21 AM(+00:41.68)
+
+Assistant
+Thanks for that, Aidan. Just to confirm, you mentioned it's an urgent job for a leaking tap in verbal cans. I'll make sure to capture those details. Is there anything specific you'd like us to know about the tap or the situation?
+7:50:25 AM(+00:45.92)
+User
+It's it's underneath the the tap. Yeah.
+
+7:50:42 AM(+01:02.22)
+
+Assistant
+Got it, Aden. So we have an urgent leaking tap repair needed underneath the tap in verbal cans. I'll capture these details now. Just a quick confirmation. Do you also need the repair done at a specific time, or is any time that works best for our team?
+7:50:46 AM(+01:06.60)
+User
+Any top would be best for you.
+
+7:51:03 AM(+01:23.84)
+
+Capture Lead
+Completed successfully
+07:51
+7:51:06 AM(+01:26.21)
+
+Assistant
+This will just take a sec. Thanks for confirming, Aden. I've got your details and the urgent leaking tap repair noted for the verbal cans area. Someone from the team will be in touch with you shortly to sort it out. Is there anything else I can assist you with today?
+7:51:06 AM(+01:26.92)
+User
+Yeah. So good. Thank you.
+
+7:51:25 AM(+01:45.19)
+
+Assistant
+You're very welcome. Thanks for giving us a shout at Mike's Plumbing Services. Have a great day.
+7:51:27 AM(+01:47.54)
+Customer ended the call
+07:51
+Close

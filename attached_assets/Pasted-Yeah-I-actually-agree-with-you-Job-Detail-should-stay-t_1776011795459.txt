@@ -1,0 +1,311 @@
+Yeah — I actually agree with you.
+
+Job Detail should stay the command center.
+That’s one of JobRunner’s strengths. The fix is not stripping everything out. The fix is making it feel like:
+
+“everything is here, but only the right things are loud right now.”
+
+How to keep everything on Job Detail without it feeling heavy
+
+The answer is progressive reveal + state-driven priority.
+
+Right now it sounds like the screen is trying to show:
+	•	what exists
+	•	what’s possible
+	•	what matters now
+
+all at once.
+
+Instead, split it into 3 layers.
+
+Layer 1: Hero zone
+
+This is the top part and should change hard by status.
+
+For a Scheduled job, the hero should be:
+	•	Start Job
+	•	On My Way
+	•	client/location
+	•	safety blocker if needed
+
+For In Progress:
+	•	timer
+	•	team on site
+	•	Complete Job
+	•	quick note/photo update
+
+For Done:
+	•	work summary
+	•	Create Invoice
+
+For Invoiced:
+	•	payment status
+	•	collect payment / mark paid
+
+That way the screen still contains everything, but the top always answers:
+
+“what do I do now?”
+
+Layer 2: Quick context
+
+This is compact information you often need but not as the star:
+	•	client
+	•	address
+	•	scheduled time
+	•	description
+	•	urgency
+
+These should be collapsed or one-row style unless tapped.
+
+Layer 3: Deep admin/detail
+
+This is all the powerful stuff:
+	•	proof pack
+	•	portal
+	•	profitability
+	•	expenses
+	•	variations
+	•	compliance history
+	•	full notes/docs
+
+Still there. Just lower or tucked into tabs/expanders.
+
+So the idea is:
+don’t remove depth, remove visual competition.
+
+⸻
+
+What offline should do
+
+Your instinct is right: for a tradie app, offline should be seriously capable, not just “view cached screen.”
+
+But not everything should behave the same way offline.
+
+Think of offline in 3 buckets.
+
+1. Should work fully offline
+
+These are things the app should let you do with confidence, then sync later.
+
+This should include:
+	•	view existing jobs, clients, invoices, quotes, notes
+	•	create a new job
+	•	edit a job
+	•	add notes
+	•	add photos/files metadata
+	•	start/stop timers
+	•	clock in / out
+	•	complete jobs
+	•	create draft invoices / quotes
+	•	mark checklist / SWMS steps
+	•	assign status changes
+	•	create expenses/material entries
+	•	internal chat drafts / queued messages
+	•	delete things that are clearly local-to-business records
+
+These should all feel normal offline.
+
+The app should just:
+	•	save locally first
+	•	show queued/syncing state
+	•	sync when connection returns
+
+That is the right philosophy for JobRunner.
+
+2. Should work offline, but as queued actions
+
+These are actions that users can trigger offline, but they must be clearly shown as “pending sync.”
+
+Examples:
+	•	sending SMS
+	•	sending email
+	•	invoice delivery
+	•	portal link generation
+	•	payment reminders
+	•	assigning someone if they’re another device user who hasn’t synced yet
+	•	deleting records that may affect other records heavily
+	•	file uploads that need cloud storage
+	•	customer-facing messages
+
+These should not silently fail.
+They should say something like:
+
+“Queued. Will send when back online.”
+
+That’s the pro version.
+
+3. Should not pretend to work offline
+
+Some things should be visibly unavailable or limited offline, because faking them is worse.
+
+Examples:
+	•	live payment collection via Stripe
+	•	AI receptionist
+	•	live AI quote generation if cloud-only
+	•	real-time external integrations like Xero/MYOB sync
+	•	exact cloud-backed portal state
+	•	anything that needs server truth immediately
+	•	phone number provisioning
+	•	webhooks / external delivery confirmation
+
+These should say:
+
+“Requires connection.”
+
+That’s cleaner than pretending.
+
+⸻
+
+My recommendation for JobRunner’s offline philosophy
+
+Make JobRunner a local-first field app, cloud-synced business system.
+
+That means:
+
+On site, offline:
+
+tradie can still do the job
+
+When connection returns:
+
+business system catches up
+
+That’s the winning model.
+
+If a tradie is on bad signal, they should still be able to:
+	•	open the job
+	•	update it
+	•	log time
+	•	add notes
+	•	add photos
+	•	finish work
+	•	draft invoice
+
+That is what makes the app feel serious.
+
+⸻
+
+What deletion should do offline
+
+This is the one area I’d be a bit careful with.
+
+I would not let every delete instantly behave as if it’s final truth with no guardrails.
+
+Best approach:
+
+Soft delete offline
+
+If offline and user deletes:
+	•	mark as deleted locally
+	•	hide from main UI
+	•	queue deletion for sync
+	•	allow undo until synced if possible
+
+Why this is good:
+	•	feels instant
+	•	safer
+	•	avoids weird conflict disasters
+
+This is especially smart for:
+	•	jobs
+	•	clients
+	•	invoices
+	•	quotes
+	•	notes
+	•	files
+
+For tiny local things like a draft note, you can be more aggressive.
+For business-critical records, soft delete is better.
+
+⸻
+
+What should be visible in the UI when offline
+
+This is very important.
+
+Don’t just let things “kind of work.”
+Make the state obvious.
+
+You want:
+	•	Offline badge
+	•	Syncing badge
+	•	Failed to sync badge
+	•	Queued actions list
+	•	Retry failed actions button
+
+If a tradie edits 8 things offline, they should feel:
+
+“Sweet, the app has it.”
+
+Not:
+
+“I hope that saved…”
+
+That trust matters.
+
+⸻
+
+Best practical rule
+
+Ask this for every action:
+
+“If a tradie is on a job site with crap signal, should this still work?”
+
+If yes, local-first it.
+If no, mark it clearly online-only.
+
+⸻
+
+My ideal split for JobRunner
+
+Must work offline
+	•	jobs
+	•	notes
+	•	timers
+	•	status changes
+	•	checklists / SWMS progress
+	•	client details already cached
+	•	photos captured
+	•	expenses/materials
+	•	draft invoice/quote creation
+	•	internal operational updates
+
+Queue offline
+	•	SMS
+	•	emails
+	•	portal/customer messages
+	•	cloud uploads
+	•	multi-user changes needing server reconciliation
+	•	delete/archive sync
+
+Online only
+	•	payments
+	•	AI receptionist
+	•	external integrations
+	•	real-time AI cloud features
+	•	provisioning / delivery confirmation
+
+⸻
+
+For the Job Detail screen specifically
+
+If you keep everything there, I’d do this:
+
+Top = hero actions
+Middle = compact context
+Tabs = deep detail
+Offline = every editable thing either:
+	•	works now
+	•	queues clearly
+	•	or is visibly disabled with reason
+
+That gives you:
+	•	power
+	•	clarity
+	•	trust
+
+Which is exactly what tradies need.
+
+If you want, I can map out a Job Detail offline matrix for you like:
+
+feature → should work offline / queue / online only / why

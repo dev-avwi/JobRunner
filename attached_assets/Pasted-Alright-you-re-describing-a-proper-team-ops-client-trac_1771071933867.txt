@@ -1,0 +1,363 @@
+Alright — you’re describing a proper “team ops + client tracking portal” system, like a mini Uber experience for tradies, but still simple.
+
+Here’s a bulletproof spec + checklist you can hand to Replit. I’ll structure it so it’s implementable and avoids the usual “team account chaos”.
+
+⸻
+
+1) Account Types and What Each Can Do
+
+Roles (RBAC)
+
+You need Role-Based Access Control with these roles:
+
+Owner (Company Owner)
+	•	Full access to company settings, billing, plans
+	•	Create/edit users + roles
+	•	View all jobs, all time entries, all invoices
+	•	Approve timesheets
+	•	Send client links (tracking portal)
+	•	Manage templates (SMS/email, docs)
+	•	Change branding (logo, name, contact, ABN)
+	•	Audit logs
+
+Manager (Ops/Admin)
+	•	Create/edit jobs
+	•	Assign workers/subcontractors
+	•	View all team schedules + locations (if enabled)
+	•	Approve/reject time entries (optional permission)
+	•	Send client links
+	•	Upload docs/photos
+	•	Cannot change billing/plan/ownership
+	•	Cannot delete company
+
+Worker (Employee)
+	•	See only assigned jobs
+	•	Clock in/out, job notes, photos, receipts
+	•	Share ETA updates (optional)
+	•	Cannot view company finance unless allowed
+	•	Cannot see other workers unless “team view” is enabled
+
+Subcontractor (External Worker)
+	•	Same as Worker, but:
+	•	Restricted to jobs they’re assigned
+	•	Limited access duration
+	•	Optional: can only upload docs + time, cannot edit job details
+
+Client (External Viewer)
+	•	No login required
+	•	Views “JobRunner Link Portal”
+	•	Sees only what you allow
+
+✅ Key idea: Permissions aren’t just roles — you need a “permissions matrix” so an Owner can make a Manager limited or powerful.
+
+⸻
+
+2) Team Structure That Never Breaks
+
+Company → Teams → Users
+	•	Company has many users
+	•	Users belong to exactly 1 company (for now; multi-company later)
+	•	Users have:
+	•	role
+	•	status (active, suspended)
+	•	verified phone/email
+	•	optional 2FA
+
+Job Assignment Model
+
+A job can have:
+	•	1 assigned primary worker
+	•	optional additional workers
+	•	optional supervisor/manager
+
+Rule: Workers only sync jobs they’re assigned to (privacy + performance).
+
+⸻
+
+3) “Perfect Sync” Rules (So Data Never Gets Messy)
+
+Offline-first rules
+
+Workers often lose service, so enforce:
+	•	Time entries are created locally first
+	•	Photos/receipts upload when online
+	•	GPS pings queue locally if offline
+	•	Sync is “append-only” for logs (no overwriting history)
+	•	Conflicts resolved with:
+	•	last-write-wins for editable fields
+	•	logs preserved for audit fields
+
+Audit Trail Required
+
+Every important change must log:
+	•	who did it
+	•	when
+	•	before vs after
+	•	device id (optional)
+	•	location (optional)
+
+Track changes for:
+	•	time edits
+	•	job assignment changes
+	•	invoice edits
+	•	client portal link creation / resend
+	•	photo deletions
+	•	status changes
+
+⸻
+
+4) Team Operations Flows (How They Interact)
+
+A) Dispatch flow (Owner/Manager)
+	1.	Create job
+	2.	Add address + scope + scheduled window
+	3.	Assign worker(s)
+	4.	Attach any docs (plans PDFs etc.)
+	5.	Click “Send Client Updates”
+	6.	System generates Client Portal Link
+	7.	Sends SMS + email with link
+
+B) Worker flow (On the day)
+	1.	Worker opens job
+	2.	Press “On my way”
+	3.	App begins:
+	•	ETA tracking
+	•	location sharing to portal (if enabled)
+	4.	Worker arrives → “Arrived”
+	5.	Clock in (or auto prompt)
+	6.	Upload before photos
+	7.	Update notes/materials
+	8.	Clock out
+	9.	Upload after photos
+	10.	Mark job complete
+
+C) Owner/Manager oversight
+	•	Live map view of active jobs (optional)
+	•	Sees worker statuses: On my way, Arrived, In progress, Done
+	•	Can message worker inside app (ChatHub)
+	•	Can message client via portal updates
+
+⸻
+
+5) Client “Uber-Style” Job Portal Link
+
+This is the BIG feature you described.
+
+Portal (No-login)
+
+Client clicks a link from SMS/email and sees:
+
+Header
+	•	Business name + logo
+	•	Owner name + phone
+	•	(Optional) company ABN
+	•	Emergency contact
+
+Job summary
+	•	Job title / booking reference
+	•	Scheduled window
+	•	Address (if appropriate)
+	•	Status (On my way / Arrived / Working / Completed)
+
+Worker card
+	•	Worker name + profile photo (optional)
+	•	Worker phone number (optional toggle)
+	•	“Message worker” button (routes through masked number if you want privacy)
+	•	Live ETA
+	•	Live map tracking (optional, with consent + time-limited)
+	•	“Last updated X mins ago”
+
+Progress
+	•	Before photos gallery
+	•	Notes/updates
+	•	Checklist milestones (Arrived, Started, Materials purchased, Finished)
+
+Documents
+	•	Quotes
+	•	Invoices
+	•	Certificates
+	•	PDF plans
+	•	Receipts (optional)
+
+Job duration estimate
+You mentioned “estimate from before photos”. That’s heavy AI. For MVP:
+	•	Worker selects a simple estimate:
+	•	30–60 mins / 1–2 hrs / half day / full day
+	•	Portal displays it and updates if changed
+
+✅ IMPORTANT: Portal must be token-based, expiring, and scoped to 1 job.
+
+⸻
+
+6) Security and Privacy Requirements (Non-negotiable)
+
+Link Security
+	•	Portal link contains a long random token
+	•	Token expires (default 7 days after job completion)
+	•	Token can be revoked instantly by Owner/Manager
+	•	Token is read-only unless client action is allowed
+	•	Optional PIN view for sensitive jobs
+
+Location Sharing Safety
+	•	Location sharing only during:
+	•	“On my way” → “Arrived”
+	•	Stops automatically at arrival OR after max time (e.g., 2 hours)
+	•	Client never sees full worker history—only job route
+	•	Worker can pause sharing (with audit log)
+
+Photo Safety
+	•	Before/after photos only visible to that job’s link
+	•	Deleting photos requires Owner/Manager permission OR creates an audit log
+
+⸻
+
+7) ChatHub: Team Messaging + Client Messaging
+
+Team Chat (Internal)
+	•	Job-based chat rooms (recommended)
+	•	“Job #1042 chat”
+	•	Supports:
+	•	text
+	•	photos
+	•	quick actions (“Arrived”, “Need approval”, “Call client”)
+
+Client Messaging
+
+Don’t give clients direct chat login for MVP.
+Instead:
+	•	Client portal has “Send message” form → goes to Owner/Manager inbox
+	•	OR client replies to SMS (two-way SMS) and it routes to job thread
+
+⸻
+
+8) SMS + Email System You Want (Templates + Data)
+
+Trigger events (SMS)
+
+To client
+	•	Booking confirmed
+	•	Worker on the way
+	•	Worker arrived
+	•	Job started
+	•	Delay update
+	•	Job completed + invoice link
+
+To owner/manager
+	•	Worker pressed On my way
+	•	Worker arrived
+	•	Worker clocked out
+	•	Client opened link (optional)
+	•	Client replied
+
+To worker
+	•	New job assigned
+	•	Address updated
+	•	Client message received
+
+⸻
+
+9) “On My Way” Button → JobRunner SMS + Link (Exactly what you asked)
+
+When worker taps On My Way, system sends client SMS from your “JobRunner” sender.
+
+SMS content must include:
+	•	Worker name
+	•	Business name
+	•	ETA range
+	•	Tracking portal link
+	•	Owner contact fallback
+	•	Optional worker contact
+
+Example SMS (client):
+
+JobRunner: [BusinessName] update — [WorkerName] is on the way to [JobShortName]. ETA [ETA]. Track progress + photos here: [PortalLink]. Need help? Call [OwnerName] on [OwnerPhone].
+
+Portal link shows:
+	•	Worker location + ETA
+	•	Before photos once uploaded
+	•	Job status updates
+	•	Contacts
+	•	Docs
+
+⸻
+
+10) Sending Documents (Quotes/Invoices/Plans)
+
+Document types
+	•	Quote PDF
+	•	Invoice PDF
+	•	Plan PDF
+	•	Compliance/Certificate PDF
+	•	Receipt images
+
+Delivery methods
+	•	Client portal (best)
+	•	Email with portal link + attached PDF (optional)
+	•	SMS with portal link (never attach in SMS)
+
+Permissions
+	•	Worker can upload docs/photos
+	•	Manager/Owner can publish them to client portal
+	•	Optional: Worker uploads → Manager approves → visible to client
+
+⸻
+
+11) Replit “Bulletproof Checklist” (Copy/Paste)
+
+Paste this to Replit as tasks:
+
+Accounts & Roles
+	•	Implement RBAC roles: Owner, Manager, Worker, Subcontractor, ClientViewer
+	•	Add permissions matrix (view/edit jobs, approve time, send portal links, billing access)
+	•	Add user status + invite flow (email/SMS invite + role assignment)
+
+Team + Job Sync
+	•	Workers can only see assigned jobs
+	•	Offline-first time tracking + photo upload queue
+	•	Append-only event logs (audit)
+	•	Conflict handling rules (last-write-wins + preserve logs)
+
+Worker Status System
+	•	Job statuses: Assigned → On My Way → Arrived → In Progress → Completed
+	•	“On My Way” triggers location sharing + ETA updates
+
+Client Portal Link
+	•	Generate token-based portal link per job
+	•	Token expiring + revokable
+	•	Portal shows: business info, worker card, status, ETA, map, photos, docs, contacts
+	•	Location sharing only active during travel window
+
+SMS/Email Templates
+	•	Build templated messages with variables:
+{BusinessName, WorkerName, OwnerName, OwnerPhone, ETA, PortalLink, JobName}
+	•	Trigger events: booking, on-my-way, arrived, started, completed
+
+Documents & Photos
+	•	Upload before/after photos per job
+	•	Allow worker upload + manager publish
+	•	Portal shows photo gallery + docs list
+	•	Add audit logs for deletions
+
+ChatHub
+	•	Internal job-based chat thread (owner/manager/assigned workers)
+	•	Optional: route client SMS replies into job thread
+
+⸻
+
+12) One Big Question You Don’t Need to Answer Now (But I’ll Decide for You)
+
+For MVP: keep it simple and strong.
+
+✅ Do one-way client portal link + status updates
+✅ Do internal job chat for team
+✅ Add two-way SMS later (it’s more complex + costs)
+
+You can still feel “Uber-like” without two-way SMS on day 1.
+
+⸻
+
+If you want, I can now turn this into:
+	•	A proper permissions matrix table (every role vs every action)
+	•	Exact SMS templates for each trigger (copy/paste ready)
+	•	The client portal UI layout (sections + components)
+	•	A database schema outline so Replit implements it cleanly

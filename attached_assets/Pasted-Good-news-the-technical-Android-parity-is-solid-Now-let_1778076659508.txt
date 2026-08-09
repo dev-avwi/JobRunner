@@ -1,0 +1,73 @@
+Good news — the technical Android parity is solid. Now let's push Replit on the premium feel. Copy this across:
+
+---
+
+I want you to do a thorough premium UI/UX audit of the entire mobile app — both iOS and Android. Not just "does it work" but "does it look and feel genuinely premium." I want this to feel as polished as the best apps on the App Store. Go screen by screen and be brutally honest about anything that looks cheap, rushed, or inconsistent.
+
+**Visual polish**
+- Are spacing and padding consistent across every screen — same margins, same gaps, nothing that feels off?
+- Do all cards have consistent border radius, shadow/elevation, and border treatment?
+- Are colours consistent — same shade of every colour used everywhere, no slightly-off greys or blues?
+- Does every screen have a clear visual hierarchy — is it obvious what to look at first?
+- Are empty states designed properly with helpful messaging and illustrations, not just blank white screens?
+- Loading states — do all screens have proper skeleton loaders or spinners, nothing that just flashes blank?
+
+**Typography**
+- Is font sizing consistent — same heading sizes, same body sizes, same label sizes everywhere?
+- Are there any screens where text feels too small, too large, or too cramped?
+- Are all headings, labels, and body text using the correct weight — nothing that looks too thin or too heavy?
+- Any text truncation issues — long business names, long job titles, long client names breaking layouts?
+
+**Buttons & interactive elements**
+- Do all primary buttons look the same across every screen — same height, same border radius, same font size?
+- Do all secondary buttons and ghost buttons look consistent?
+- Are destructive actions (delete, cancel) clearly styled differently in red?
+- Do all buttons have proper loading states when tapping triggers an async action?
+- Are icon buttons the right size and properly aligned?
+
+**Forms & inputs**
+- Do all text inputs look consistent — same height, same border, same focus state?
+- Are placeholder texts helpful and consistent in tone?
+- Are error states clear and well-styled — red border, error message below?
+- Are required field indicators consistent?
+- Do dropdowns and selects look native and polished?
+
+**Navigation & headers**
+- Are all screen headers consistent — same height, same title style, same back button treatment?
+- Are tab bar icons crisp and well-chosen for each section?
+- Do all bottom sheets and modals feel premium — correct handle bar, correct backdrop, correct animation?
+- Are all swipe-to-dismiss and pull-to-refresh interactions smooth?
+
+**Lists & cards**
+- Do all job cards look consistent across dashboard, job list, and dispatch board?
+- Do all client cards look consistent?
+- Are list separators consistent — same colour, same thickness?
+- Do all list items have proper press states — subtle highlight on tap?
+- Are avatars and initials circles consistent in size and colour generation?
+
+**Specific screens I want reviewed in detail**
+- Onboarding wizard — does each step feel premium and confidence-inspiring?
+- Dashboard — does it feel like a real business cockpit or cluttered?
+- Job detail screen — is all the information clear and well-organised?
+- Quote and invoice preview — does it look professional enough to send to a client?
+- Dispatch board — does the kanban and map view feel polished?
+- WHS hub — does it feel serious and trustworthy for compliance work?
+- Chat / SMS hub — does it feel as good as iMessage?
+- Payment screens — do they inspire trust and confidence?
+- Settings — is everything organised logically and does it feel clean?
+
+**Micro-interactions**
+- Do success states feel satisfying — good confirmation animations or messages?
+- Are haptic feedbacks used appropriately on key actions?
+- Do transitions between screens feel smooth?
+
+**Overall feel**
+- If a tradie downloaded this alongside ServiceM8 and Tradify, would they immediately feel this is the premium option?
+- What are the top 10 things that would make this feel more expensive and polished?
+- What are the top 5 things that currently make it feel less premium than it should?
+
+Please be completely honest. Flag every issue you find, rank them by visual impact, and tell me what to fix first.
+
+---
+
+This will give you a genuine premium audit. Share everything Replit comes back with.

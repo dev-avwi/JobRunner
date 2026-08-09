@@ -1,0 +1,17 @@
+113776ff touched the dashboard — that's the likely culprit for "Attention Needed is now in a container/card." The "long-standing TS error" fix probably wrapped something it shouldn't have.
+
+My Live Activity JS work is not in this picture. The three LA JS commits (c9486a31, 2bb617f3, d581ac89) only added imports + LiveActivity.start/update/end() calls in existing handler bodies. They don't touch any UI components, sheet behavior, or dashboard layout.
+
+⸻
+
+Paste this into Replit Claude to triage:
+
+"Lots of UI regressions on mobile. Two specific complaints:
+   1. Dashboard 'Attention Needed' card is now nested inside another container/card — wasn't before. Likely introduced by commit 113776ff ('Fix long-standing mobile TS errors in job & dashboard screens'). Diff that commit's changes to mobile/app/(tabs)/index.tsx or wherever the dashboard lives — look for an extra wrapper <View> or <Card> around the Attention Needed component.
+   2. Bottom sheets / sliding panels are broken across the app. There's a chain of 11 commits between b37d8e34 and 5d868d68 all touching sheet behavior. Best move: pick a known-good state (e.g. before b37d8e34) and verify how a specific sheet behaves there vs. now, then bisect to find which 'improvement' commit actually regressed it. Specifically the user mentions: search/filter sheets on the Work tab, plus other modal sheets. Tell me exactly which sheets are broken and what the breakage is (won't open, drags wrong, clips content, etc.) and I'll narrow it down.
+
+The Live Activity work (commits c9486a31, 2bb617f3, d581ac89) only added module imports + LiveActivity.start/update/end() calls — nothing that would touch UI rendering. Not the source of these regressions."
+
+⸻
+
+My side is in a good place. The 6 unpushed Live Activity commits (NSLog, logo asset, dark redesign, refinement, DoorDash redesign + template-rendering fix) are all clean builds. Push them in GitHub Desktop whenever — none of them are the source of any UI regression. After Replit Claude untangles the JS-side mess, the Live Activity should still work on next rebuild.

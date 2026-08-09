@@ -1,0 +1,32 @@
+Both mockups are now live on the canvas, side-by-side at y=400 with their tops aligned.
+
+Quick walkthrough of what the comparison shows:
+
+Left — "Current" captures today's clutter:
+
+5 separate Team-related sidebar entries highlighted in a red outline ("5 entries — cluttered")
+9-tab page (Members, Pending Invites, Roles & Permissions, Skills, Availability, Time Off, Performance, Permission Requests, Activity Log)
+Footer note pointing out subcontractors live in a totally different place (Jobs page)
+Generic table with mixed roles (members + one subcontractor jammed together)
+Right — "Proposed" is the unified premium version:
+
+Single "Team" entry in the sidebar with a green "Unified" tag
+Breadcrumb topbar with ⌘K command palette and notification dot
+4 stat cards with sparklines (Active members, Pending invites, Subcontractors, Hours/wk)
+Just 2 main tabs: Members and Subcontractors, with secondary "Roles & permissions" and "Activity log" demoted to the right
+Pill-style sub-filters (All / Active / Pending / On time off / Inactive)
+Premium table with status dots on avatars, tinted role badges, "live now" indicators, hover row reveal
+3-tile Add chooser at the bottom showing the three paths: Invite member (Team), Magic-link sub (Pro+), Account subcontractor (Team)
+The Pro+ tag on magic-link subs in the chooser is one of the open pricing decisions we still need to lock in before I start building this for real — happy to leave it Pro+ as shown, or move it to Team-only.
+
+A few things I'd love your call on before I move into implementation:
+
+Pricing for magic-link subs — keep Pro+ (as shown) or make it Team-only?
+Add chooser — three tiles like in the mockup, or simplify to two (Member vs Subcontractor) and pick the sub type after?
+Anything in the Proposed view that feels off — the stat cards, the table density, the colour of the "Unified" tag, the topbar treatment?
+Once you give me the green light (and the answers above), the build order will be:
+
+Patch the gating audit findings (missing requireAuth on POST /api/team/permission-requests, plus the endpoints missing requireTeamPlan)
+Collapse the 5 sidebar entries into 1 in navigation-config.ts + AppSidebar.tsx
+Build the unified Team page with the Members/Subcontractors tabs
+Wire up the Add chooser with the correct plan-gating

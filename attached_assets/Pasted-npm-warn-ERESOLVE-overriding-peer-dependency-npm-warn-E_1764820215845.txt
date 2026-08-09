@@ -1,0 +1,74 @@
+npm warn ERESOLVE overriding peer dependency
+npm warn ERESOLVE overriding peer dependency
+npm warn While resolving: @react-native/virtualized-lists@0.81.5
+npm warn Found: @types/react@18.3.27
+npm warn node_modules/@types/react
+npm warn   dev @types/react@"~18.3.0" from the root project
+npm warn   29 more (@radix-ui/react-collection, @radix-ui/react-slot, ...)
+npm warn
+npm warn Could not resolve dependency:
+npm warn peerOptional @types/react@"^19.1.0" from @react-native/virtualized-lists@0.81.5
+npm warn node_modules/@react-native/virtualized-lists
+npm warn   @react-native/virtualized-lists@"0.81.5" from react-native@0.81.5
+npm warn   node_modules/react-native
+npm warn
+npm warn Conflicting peer dependency: @types/react@19.2.7
+npm warn node_modules/@types/react
+npm warn   peerOptional @types/react@"^19.1.0" from @react-native/virtualized-lists@0.81.5
+npm warn   node_modules/@react-native/virtualized-lists
+npm warn     @react-native/virtualized-lists@"0.81.5" from react-native@0.81.5
+npm warn     node_modules/react-native
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: lucide-react-native@0.344.0
+npm error Found: react@19.1.0
+npm error node_modules/react
+npm error   peer react@"^19.2.1" from react-dom@19.2.1
+npm error   node_modules/react-dom
+npm error     peerOptional react-dom@"*" from @expo/metro-runtime@6.1.2
+npm error     node_modules/@expo/metro-runtime
+npm error       peerOptional @expo/metro-runtime@"*" from expo@54.0.25
+npm error       node_modules/expo
+npm error         expo@"~54.0.25" from the root project
+npm error         22 more (@expo/metro-config, @expo/metro-runtime, ...)
+npm error       1 more (expo-router)
+npm error     peer react-dom@"^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc" from @radix-ui/react-collection@1.1.7
+npm error     node_modules/@radix-ui/react-collection
+npm error       @radix-ui/react-collection@"1.1.7" from @radix-ui/react-roving-focus@1.1.11
+npm error       node_modules/@radix-ui/react-roving-focus
+npm error         @radix-ui/react-roving-focus@"1.1.11" from @radix-ui/react-tabs@1.1.13
+npm error         node_modules/@radix-ui/react-tabs
+npm error     10 more (@radix-ui/react-dialog, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peer react@"^16.5.1 || ^17.0.0 || ^18.0.0" from lucide-react-native@0.344.0
+npm error node_modules/lucide-react-native
+npm error   lucide-react-native@"^0.344.0" from the root project
+npm error
+npm error Conflicting peer dependency: react@18.3.1
+npm error node_modules/react
+npm error   peer react@"^16.5.1 || ^17.0.0 || ^18.0.0" from lucide-react-native@0.344.0
+npm error   node_modules/lucide-react-native
+npm error     lucide-react-native@"^0.344.0" from the root project
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/runner/.npm/_logs/2025-12-04T03_49_42_968Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-12-04T03_49_42_968Z-debug-0.log
+Error: npm install exited with non-zero code: 1
+Error: npm install exited with non-zero code: 1
+    at ChildProcess.completionListener (/home/runner/workspace/mobile/node_modules/@expo/spawn-async/build/spawnAsync.js:42:23)
+    at Object.onceWrapper (node:events:639:26)
+    at ChildProcess.emit (node:events:524:28)
+    at maybeClose (node:internal/child_process:1104:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+    ...
+    at spawnAsync (/home/runner/workspace/mobile/node_modules/@expo/spawn-async/build/spawnAsync.js:7:23)
+    at NpmPackageManager.runAsync (/home/runner/workspace/mobile/node_modules/@expo/package-manager/build/node/BasePackageManager.js:41:42)
+    at /home/runner/workspace/mobile/node_modules/@expo/package-manager/build/node/NpmPackageManager.js:36:20
+    at /home/runner/workspace/mobile/node_modules/@expo/package-manager/build/utils/spawn.js:14:34

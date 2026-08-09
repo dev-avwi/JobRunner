@@ -1,0 +1,105 @@
+I'll audit TradieTrack against our public promise. Let me first fix the workflow and then systematically check each requirement.
+Based on my analysis, I have enough information to produce the audit report. Let me compile the findings:
+TradieTrack UX Audit Report
+"Does our product match our public promise?"
+
+A) PASS/FAIL TABLE
+#	Requirement	Status	Notes
+1. Activity Timeline			
+1.1	Single job timeline showing all events	✅ PASS	"Activity History" card exists in JobDetailView
+1.2	Quote sent (timestamp)	✅ PASS	Tracked via quote_sent activity type
+1.3	Note added (timestamp + author)	❌ FAIL	Notes are single text field, not timestamped entries
+1.4	Photo added (timestamp + uploader)	❌ FAIL	Photos exist but don't create activity log entries
+1.5	Voice note added (timestamp)	❌ FAIL	Voice notes exist but no activity log entry created
+1.6	Status changes tracked	✅ PASS	job_status_change activity type exists
+2. "Paper Trail" Checks			
+2.1	Can answer "what was agreed?"	⚠️ PARTIAL	Quote shows line items, but no separate "agreement" record
+2.2	Can answer "when did it change?"	❌ FAIL	No variations/change orders feature exists
+2.3	Can answer "who changed it?"	⚠️ PARTIAL	Team member tracking on photos/voice notes, not on note edits
+3. UX Clarity - Dedicated Sections			
+3.1	Site observations / Notes tied to moment	❌ FAIL	Only single overwritable notes field
+3.2	Photos from site	✅ PASS	JobPhotoGallery with categories (before/after/progress)
+3.3	Changes / Variations	❌ FAIL	Feature does not exist
+3.4	No "reads plans" or "catches mistakes" language	✅ PASS	Recently cleaned up
+4. Evidence Linkage			
+4.1	Quote shows related notes/photos	❌ FAIL	Quote detail doesn't show job photos/notes from that time
+4.2	Variation shows reason + photos + notes	❌ N/A	Variations don't exist
+B) PRIORITY FIXES (5-10 Concrete Changes)
+HIGH PRIORITY (Core to "record of reality" promise)
+1. Create Job Notes Table & "Notes tied to the moment" UX
+
+Files: shared/schema.ts, server/storage.ts, server/routes.ts, client/src/components/JobDetailView.tsx
+Change: Add jobNotes table with: id, jobId, userId, content, createdBy, createdAt
+UI: Add "Site Notes" section in JobDetailView with timestamped note cards instead of single textarea
+Impact: Users can see when notes were added and by whom
+2. Add Activity Log Entries for Photo Uploads
+
+Files: server/routes.ts (line ~18939)
+Change: After successful photo upload, call storage.createActivityLog() with type photo_added
+Impact: Photos appear in job timeline with "Photo uploaded by [name] at [time]"
+3. Add Activity Log Entries for Voice Notes
+
+Files: server/routes.ts (voice note upload endpoint)
+Change: Create activity log with type voice_note_added
+Impact: Voice notes appear in job timeline
+4. Add Activity Log Entries for Note Changes
+
+Files: server/routes.ts (job update endpoint, line ~24013)
+Change: When notes field changes, create note_updated activity log
+Impact: Note edits appear in timeline (even with single-field design)
+MEDIUM PRIORITY (Strengthens paper trail)
+5. Create Variations/Change Orders Feature
+
+Files: shared/schema.ts, server/storage.ts, server/routes.ts
+New Table: jobVariations with: id, jobId, title, description, reason, additionalAmount, status (draft/sent/approved/rejected), photos, createdAt, sentAt, approvedAt, approvedBy
+UI: New "Variations" tab in JobDetailView
+Impact: Changes to scope are tracked, timestamped, and can be approved/signed
+6. Quote Detail - Show Job Context
+
+Files: client/src/components/QuoteDetailView.tsx
+Change: Add collapsible section showing job photos and notes from quote creation date
+Impact: "When viewing a quote later, I can see the photos/notes from that time"
+LOWER PRIORITY (Polish)
+7. Add Activity Icon for Photos in Timeline
+
+Files: client/src/components/JobDetailView.tsx (line ~344)
+Change: Add photo_added to activityIcons map with Camera icon
+Impact: Photos have distinct visual in timeline
+8. "What was agreed" Summary Card
+
+Files: client/src/components/JobDetailView.tsx
+Change: Add card showing: linked quote total, deposit paid, key scope items
+Impact: Quick answer to "what was agreed"
+C) BUGS FOUND
+Bug	How to Reproduce	Severity
+No bugs found during audit	—	—
+D) MISSING INSTRUMENTATION (Optional)
+Event	Purpose
+photo_viewed	Track when photos are accessed (proof they were available)
+quote_viewed_by_client	Track client opens (in addition to sent)
+variation_created, variation_approved	For future variations feature
+note_history_viewed	Track when timeline is accessed
+SUMMARY
+What we DO have:
+
+✅ Job Activity Timeline (shows status changes, emails, quotes sent)
+✅ Photo gallery with categories (before/after/progress) and timestamps
+✅ Voice notes with transcription
+✅ Quote → Job linkage
+✅ Clean language (no "smart/AI" claims)
+What we DON'T have (gaps in our promise):
+
+❌ Notes "tied to the moment" - just one overwritable field
+❌ Photo/voice note uploads don't appear in activity timeline
+❌ Variations / Change Orders (critical for "what changed and when")
+❌ Evidence linkage (can't see job context when viewing old quote)
+Minimum viable fix to match our public promise:
+
+Add activity logs for photo/voice note uploads (2 hours)
+Add activity log for note changes (1 hour)
+These 3 changes would let us honestly say "photos tied to jobs, notes tied to moments, changes tracked as they happen"
+For full feature parity with the promise:
+4. Job Notes table with timestamped entries (4-6 hours)
+
+Variations/Change Orders feature (8-12 hours)
+Would you like me to implement the high-priority fixes (activity logs for photos, voice notes, and note changes)? That's the quickest path to matching our public promise.

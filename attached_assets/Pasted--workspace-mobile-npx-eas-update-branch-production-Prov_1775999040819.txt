@@ -1,0 +1,252 @@
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Update time picker to use native iOS component for smoother experience
+
+Replaces the custom scroll wheel time picker with the native '@react-native-community/datetimepicker' component in `mobile/app/job/[id].tsx` for improved performance and consistency with iOS UI.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 589ba3c4-d674-400c-9d2a-a4fcc5dd22c5
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/MlikgM1
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓░░░░░░░░░░░░ 27.0% (334/643)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 94.3% (3922/4038)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4312/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.3% (4271/4307)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4312/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4317/4317)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4312/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4322/4322)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4313/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4322/4322)
+[expo-cli] Android Bundled 42956ms node_modules/expo-router/entry.js (4322 modules)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4318/4318)
+[expo-cli] iOS Bundled 59467ms node_modules/expo-router/entry.js (4318 modules)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4318/4318)
+[expo-cli] Creating asset map
+[expo-cli] 
+[expo-cli] › Assets (52):
+[expo-cli] assets/jobrunner-logo-header.png (120 kB)
+[expo-cli] assets/jobrunner-logo.png (2.11 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/AntDesign.ttf (130 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Entypo.ttf (66.2 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/EvilIcons.ttf (13.5 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf (55.6 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf (166 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf (134 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf (33.7 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf (203 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Brands.ttf (209 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Regular.ttf (68 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Solid.ttf (424 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf (314 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Foundation.ttf (57 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf (390 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf (1.31 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf (357 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Octicons.ttf (69.4 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/SimpleLineIcons.ttf (54.1 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Zocial.ttf (25.8 kB)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.png (653 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon.png (8 variations | 359 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/clear-icon.png (4 variations | 425 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/close-icon.png (4 variations | 235 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/search-icon.png (7 variations | 592 B)
+[expo-cli] node_modules/expo-router/assets/arrow_down.png (9.46 kB)
+[expo-cli] node_modules/expo-router/assets/error.png (469 B)
+[expo-cli] node_modules/expo-router/assets/file.png (138 B)
+[expo-cli] node_modules/expo-router/assets/forward.png (188 B)
+[expo-cli] node_modules/expo-router/assets/pkg.png (364 B)
+[expo-cli] node_modules/expo-router/assets/sitemap.png (465 B)
+[expo-cli] node_modules/expo-router/assets/unmatched.png (4.75 kB)
+[expo-cli] 
+[expo-cli] › android bundles (2):
+[expo-cli] _expo/static/js/android/entry-7383dd2f47d05bb5babdd8efbbfd1f22.hbc (8.61 MB)
+[expo-cli] _expo/static/js/android/entry-7383dd2f47d05bb5babdd8efbbfd1f22.hbc.map (25 MB)
+[expo-cli] 
+[expo-cli] › ios bundles (2):
+[expo-cli] _expo/static/js/ios/entry-58d78700ef695980f6e1dffe22d0005e.hbc (8.61 MB)
+[expo-cli] _expo/static/js/ios/entry-58d78700ef695980f6e1dffe22d0005e.hbc.map (24.9 MB)
+[expo-cli] 
+[expo-cli] › Files (2):
+[expo-cli] assetmap.json (21.7 kB)
+[expo-cli] metadata.json (6.16 kB)
+[expo-cli] 
+[expo-cli] Exported: dist
+✔ Exported bundle(s)
+✔ Uploaded assetmap.json 
+✔ Uploaded 2 app bundles
+✔ Uploading assets skipped - no new assets found
+ℹ 48 iOS assets, 48 Android assets (maximum: 2000 total per update). Learn more about asset limits: https://expo.fyi/eas-update-asset-limits
+⌛️ Computing the project fingerprints is taking longer than expected...
+⏩ To skip this step, set the environment variable: EAS_SKIP_AUTO_FINGERPRINT=1
+✔ Computed project fingerprints
+✔ Published!
+
+Branch             production
+Runtime version    1.1.0
+Platform           android, ios
+Update group ID    7829a302-2f5a-42df-9c08-98d4a24e19db
+Android update ID  019d812e-94d0-79c7-8a43-0b0fc155feab
+iOS update ID      019d812e-94d0-7dde-a19c-aa3ca9d68420
+Message            Update time picker to use native iOS component for smoother experience
+
+Replaces the custom scroll wheel time picker with the native '@react-native-community/datetimepicker' component in `mobile/app/job/[id].tsx` for improved performance and consistency with iOS UI.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 589ba3c4-d674-400c-9d2a-a4fcc5dd22c5
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/MlikgM1
+Replit-Helium-Checkpoint-Created: true
+Commit             7b8262c3623851ca7b572882dea219c897932dce
+EAS Dashboard      https://expo.dev/accounts/avwi/projects/tradietrack/updates/7829a302-2f5a-42df-9c08-98d4a24e19db
+
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Enhance job scheduling, map alerts, and document display
+
+This commit updates the TimePicker component for real-time scrolling and 5-minute intervals, redesigns the map alerts panel to group and summarize activity, and simplifies the SWMS documents card for a cleaner look.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: bccb1ba7-a8e4-495b-9b8f-77a4ea719623
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/2h9JpOM
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 79.3% (3346/3758)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 32.1% (419/739)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 97.9% (4201/4246)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4313/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4318/4318)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] iOS Bundled 42128ms node_modules/expo-router/entry.js (4318 modules)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4318/4318)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4322/4322)
+[expo-cli] Android Bundled 60403ms node_modules/expo-router/entry.js (4322 modules)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4322/4322)
+[expo-cli] Creating asset map
+[expo-cli] 
+[expo-cli] › Assets (52):
+[expo-cli] assets/jobrunner-logo-header.png (120 kB)
+[expo-cli] assets/jobrunner-logo.png (2.11 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/AntDesign.ttf (130 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Entypo.ttf (66.2 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/EvilIcons.ttf (13.5 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Feather.ttf (55.6 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome.ttf (166 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Brands.ttf (134 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Regular.ttf (33.7 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome5_Solid.ttf (203 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Brands.ttf (209 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Regular.ttf (68 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/FontAwesome6_Solid.ttf (424 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf (314 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Foundation.ttf (57 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.ttf (390 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.ttf (1.31 MB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialIcons.ttf (357 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Octicons.ttf (69.4 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/SimpleLineIcons.ttf (54.1 kB)
+[expo-cli] node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Zocial.ttf (25.8 kB)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.png (653 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/back-icon.png (8 variations | 359 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/clear-icon.png (4 variations | 425 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/close-icon.png (4 variations | 235 B)
+[expo-cli] node_modules/@react-navigation/elements/lib/module/assets/search-icon.png (7 variations | 592 B)
+[expo-cli] node_modules/expo-router/assets/arrow_down.png (9.46 kB)
+[expo-cli] node_modules/expo-router/assets/error.png (469 B)
+[expo-cli] node_modules/expo-router/assets/file.png (138 B)
+[expo-cli] node_modules/expo-router/assets/forward.png (188 B)
+[expo-cli] node_modules/expo-router/assets/pkg.png (364 B)
+[expo-cli] node_modules/expo-router/assets/sitemap.png (465 B)
+[expo-cli] node_modules/expo-router/assets/unmatched.png (4.75 kB)
+[expo-cli] 
+[expo-cli] › ios bundles (2):
+[expo-cli] _expo/static/js/ios/entry-1cf3b73515ed166efc444aba57533e74.hbc (8.61 MB)
+[expo-cli] _expo/static/js/ios/entry-1cf3b73515ed166efc444aba57533e74.hbc.map (24.9 MB)
+[expo-cli] 
+[expo-cli] › android bundles (2):
+[expo-cli] _expo/static/js/android/entry-0ba623150a48c4d0744574cec7d9ff0e.hbc (8.61 MB)
+[expo-cli] _expo/static/js/android/entry-0ba623150a48c4d0744574cec7d9ff0e.hbc.map (25 MB)
+[expo-cli] 
+[expo-cli] › Files (2):
+[expo-cli] assetmap.json (21.7 kB)
+[expo-cli] metadata.json (6.16 kB)
+[expo-cli] 
+[expo-cli] Exported: dist
+✔ Exported bundle(s)
+✔ Uploaded assetmap.json 
+✔ Uploaded 2 app bundles
+✔ Uploading assets skipped - no new assets found
+ℹ 48 iOS assets, 48 Android assets (maximum: 2000 total per update). Learn more about asset limits: https://expo.fyi/eas-update-asset-limits
+⌛️ Computing the project fingerprints is taking longer than expected...
+⏩ To skip this step, set the environment variable: EAS_SKIP_AUTO_FINGERPRINT=1
+✔ Computed project fingerprints
+✔ Published!
+
+Branch             production
+Runtime version    1.1.0
+Platform           android, ios
+Update group ID    51cfe84e-1ec5-4459-b7ea-795cba1cb889
+Android update ID  019d8158-d934-7762-aa61-6473bed6e344
+iOS update ID      019d8158-d934-7dc8-84dd-5ace5b673aad
+Message            Enhance job scheduling, map alerts, and document display
+
+This commit updates the TimePicker component for real-time scrolling and 5-minute intervals, redesigns the map alerts panel to group and summarize activity, and simplifies the SWMS documents card for a cleaner look.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: bccb1ba7-a8e4-495b-9b8f-77a4ea719623
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/2h9JpOM
+Replit-Helium-Checkpoint-Created: true
+Commit             b50a8b75156d4378a8ee0bc311b42ada988a3520
+EAS Dashboard      https://expo.dev/accounts/avwi/projects/tradietrack/updates/51cfe84e-1ec5-4459-b7ea-795cba1cb889
+
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Add authentication and rate limiting to protect API endpoints
+
+Adds authentication to address search endpoints, implements rate limiting for the bug report endpoint, and fixes a broken navigation link.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 4ba686b6-9347-450d-9b74-24f9aa3896e0
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/Al1nAJk
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 31.6% (431/767)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 70.4% (1376/1640)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.2% ( 656/1320)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.1% (4141/4225)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4311/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.5% (4250/4286)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4311/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] Android Bundling failed 25524ms node_modules/expo-router/entry.js (4317 modules)
+[expo-cli] SyntaxError: SyntaxError: /home/runner/workspace/mobile/app/more/time-tracking.tsx: Unexpected token, expected "," (1506:22)
+[expo-cli] 
+[expo-cli]   1504 |                         </View>
+[expo-cli]   1505 |                       </View>
+[expo-cli] > 1506 |                       {entry.isDisputed && entry.disputeReason && !entry.disputeResolvedAt && (
+[expo-cli]        |                       ^
+[expo-cli]   1507 |                         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs }}>
+[expo-cli]   1508 |                           <Text style={{ fontSize: 11, color: '#ef4444' }} numberOfLines={2}>
+[expo-cli]   1509 |                             Reason: {entry.disputeReason}
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

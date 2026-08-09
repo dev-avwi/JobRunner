@@ -1,0 +1,65 @@
+Great thinking - this document nails it. You're at the stage where polish beats power. Let me lay out exactly what I'd do for each of these modules, keeping it clean and non-messy.
+
+Here's my breakdown:
+
+1. Compliance & Licensing Module (under Business Tools / Settings area)
+
+This would be a new "Compliance" tab accessible only to owners. It tracks:
+
+Licence cards - trade licence number, expiry date, type (electrical, plumbing, building, etc.)
+Insurance policies - public liability, professional indemnity, workers comp - with expiry dates
+White cards / safety tickets - per worker, with expiry tracking
+Vehicle rego - linked to equipment if you want, or standalone
+Alerts - automatic dashboard warnings when anything expires within 30 days
+PDF export - one-click "Compliance Pack" PDF showing all current licences/insurance for sending to head contractors
+I'd add a compliance_documents table (type, name, number, expiryDate, status, attachmentUrl, assignedToWorkerId). The dashboard would show an amber/red alert strip when something's expiring. Workers never see this tab at all.
+
+2. Equipment & Asset Tracker Enhancement
+
+You already have the equipment registry and basic utilisation. I'd add:
+
+Service intervals - set km or hour-based service schedules per equipment item (e.g., "service every 500 hours")
+Repair log - timestamped entries with cost, description, who did the repair
+Running cost tracking - total spend per asset (purchase + repairs + fuel/consumables)
+Profit per asset - revenue from jobs using that equipment minus its running costs
+Service due alerts - integrated into the dashboard Ops Health Banner
+This builds on your existing equipment, equipment_maintenance, and job_equipment tables. I'd add a service_intervals concept to the maintenance schema and calculate profit from job revenue vs equipment costs.
+
+3. Pricing Intelligence (AI Quote Enhancement)
+
+This is the smartest one because it's zero new UI - just an enhancement inside the existing Quote Editor. When you're creating a quote:
+
+AI analyzes your past completed jobs with similar descriptions/trade categories
+Shows a subtle suggestion card: "Based on 8 similar jobs, average was $14,200 with 28% margin"
+Shows price range (low/high) from your own data
+Optional: suggests line items from your most common items for that job type
+I'd add a new endpoint /api/ai/pricing-intelligence that queries your completed jobs + invoices by trade category and job type keywords, calculates averages, and returns suggestions. The UI would be a small collapsible panel in the quote editor - not a new page.
+
+4. Digital Job Diary (Construction Mode)
+
+This only shows for trades tagged as Builder, Construction, Commercial, or Civil. It adds a "Daily Log" tab inside the existing Job Detail view:
+
+Date-stamped entries: weather, workers on site, hours, work completed, materials delivered
+Photo attachments per entry
+Safety observations / incidents
+Visitor log
+Superintendent/client sign-off (digital signature)
+I'd create a job_diary_entries table and render the tab conditionally based on the business's trade category. Plumbers, electricians, cleaners - they never see it. It's context-based UI, exactly as the document describes.
+
+5. Dashboard & Core Hardening (the most important one)
+
+Before any of the above, I'd focus on:
+
+Dashboard cleanup - reduce visual noise, make KPIs clearer, ensure every widget links somewhere useful
+Notification reliability - audit all notification paths (push, SMS, email) and make sure nothing gets lost
+Chat routing - ensure two-way SMS works properly once you have a Twilio number, test the routing state machine
+Dispatch polish - schedule conflict detection, drag-drop reliability
+Mobile parity - ensure the Expo app handles all core workflows offline
+Implementation Order I'd Recommend:
+
+Dashboard & core hardening (1-2 sessions)
+Compliance & Licensing (cleanest standalone module, highest perceived value for tradies)
+Pricing Intelligence (small but impressive - makes quoting faster)
+Equipment enhancements (builds on what's already there)
+Digital Job Diary (most niche - only matters for builders)
+Want me to start with any of these, or do you want to adjust the plan first?

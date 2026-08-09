@@ -1,0 +1,42 @@
+Here's what I'm planning for each feature:
+
+1. Payment Scheduling (Recurring Payment Plans)
+What it does: Allows tradies to set up installment payment plans for larger invoices (e.g., a $3,000 kitchen renovation paid as 3 x $1,000 monthly payments).
+
+What I'll build:
+
+Add a paymentSchedules table to track: invoice ID, total installments, payment amounts, due dates, payment status
+Add API endpoints: create schedule, get schedule, mark installment paid
+Add UI in InvoiceDetailView to set up a payment plan when sending an invoice
+Auto-generate reminders for upcoming installment due dates (using existing automation system)
+Track partial payments against the schedule
+Files I'll modify:
+
+shared/schema.ts - Add paymentSchedules table
+server/storage.ts - Add CRUD operations
+server/routes.ts - Add API endpoints
+client/src/components/InvoiceDetailView.tsx - Add "Set up payment plan" option
+2. Technician Utilization Metrics
+What it does: Shows owners how efficiently their team members are being used - billable hours vs available hours, jobs completed per day, etc.
+
+What I'll build:
+
+New API endpoint /api/reports/utilization that calculates:
+Billable hours (from time entries) vs working hours per team member
+Jobs completed per day/week/month
+Average job duration
+Utilization percentage (billable / available)
+Add a "Team Utilization" section to the existing dashboard or reports page
+Show charts/metrics per team member with date range filtering
+Files I'll modify:
+
+server/routes.ts - Add utilization report endpoint
+client/src/pages/AdminDashboard.tsx or create a new Reports page section - Add utilization charts
+Summary:
+
+Feature	New Tables	New Endpoints	UI Changes
+Payment Scheduling	1 (paymentSchedules)	3-4	Invoice detail + setup modal
+Utilization Metrics	0	1	Dashboard section with charts
+Both are relatively contained changes that build on existing infrastructure (time entries, invoices, automation).
+
+Do you want me to proceed with both, or tackle them one at a time?

@@ -1,0 +1,64 @@
+Yes. This screenshot makes it clear.
+
+This is the version/family you want.
+The popup and the header controls here are the correct direction.
+
+The problem is they keep trying to recreate it instead of matching this exact construction.
+
+Send Replit this exactly:
+
+Stop experimenting. Rebuild the popup and header controls to match the exact iOS-style material in this screenshot.
+
+This screenshot is the target.
+
+What I want:
+	•	the popup surface should use the same iOS material family as the header controls
+	•	the popup should feel like one native translucent sheet
+	•	the header Back button should be one single native glass capsule
+	•	the Edit/Delete segmented control should be one single native glass segmented capsule
+	•	no nested layers
+	•	no extra fake shell
+	•	no custom muddy blur card
+	•	no chunky button blobs
+
+Rebuild rules:
+
+HEADER
+	•	Back button = one clipped native material capsule only
+	•	Edit/Delete = one clipped native material segmented capsule only
+	•	no inner button inside outer button
+	•	no extra wrapper layer creating a double-surface look
+	•	size, radius, opacity, and visual weight should match this screenshot closely
+
+POPUP
+	•	rebuild it as one native iOS material sheet
+	•	use the same material family as the header controls, just scaled up
+	•	no dark fog overlay
+	•	no flat grey card
+	•	no fake “glass” recreation
+	•	no separate background shell on top of blur
+	•	the popup itself must be the material surface
+
+POPUP BUTTONS
+	•	action buttons should sit within the same material language
+	•	no heavy grey pill buttons
+	•	they should feel native, embedded, and restrained
+	•	hierarchy should match the screenshot:
+	•	primary action strongest
+	•	destructive action red but clean
+	•	cancel clear and native
+
+IMPORTANT
+Do not “improve” this.
+Do not redesign it.
+Do not reinterpret it.
+Match this screenshot’s construction and feel as closely as possible.
+
+This screenshot is the reference. Build to this.And this is the blunt one-line correction:Use this screenshot as the exact visual target. Stop recreating it differently and just match the same native material construction.What’s happening is simple:
+	•	Your target screenshot = restrained native material
+	•	Their broken versions = custom blur card + extra wrappers + fake glass styling
+
+That is why theirs keeps looking wrong.
+
+The fix is not more tuning.
+The fix is: copy the construction language of this exact reference.

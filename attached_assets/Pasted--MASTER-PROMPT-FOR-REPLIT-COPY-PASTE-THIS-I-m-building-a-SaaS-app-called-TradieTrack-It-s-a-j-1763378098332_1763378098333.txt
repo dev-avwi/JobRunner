@@ -1,0 +1,1014 @@
+🧠 MASTER PROMPT FOR REPLIT (COPY–PASTE THIS)
+
+I’m building a SaaS app called TradieTrack.
+
+It’s a job, quote, invoice, team, and communication platform for tradies (plumbers, sparkies, etc.), with a modern UI, team chat, job chat, and AI helpers. I want you to look at my existing codebase and:
+
+Align it with the spec below
+
+Tell me what’s missing / inconsistent
+
+Suggest improvements
+
+Help implement missing features step by step
+
+Add tests where appropriate
+
+I’ll describe the full product, frontend, backend, and integrations I want.
+Use this as the source of truth when improving or generating code.
+
+1. TECH STACK
+
+Use / assume:
+
+Frontend: React (TypeScript preferred), React Router, modern component structure
+
+Backend: Supabase (Auth + Postgres + Storage + Realtime)
+
+Server/Logic: Supabase Edge Functions or serverless functions for Stripe & SendGrid
+
+Payments: Stripe (subscriptions, later invoice payments)
+
+Emails: SendGrid (transactional emails)
+
+Testing: Vitest + React Testing Library for unit/integration, Playwright or Cypress for E2E
+
+If my project already uses something similar, adapt to that, but keep the architecture consistent with what I describe.
+
+2. CORE PRODUCT CONCEPT
+
+TradieTrack is:
+
+A multi-tenant SaaS for tradies (each business has its own workspace)
+
+Role-based (Owner / Manager / Tradie)
+
+Mobile-first, clean UI (like Notion / Linear vibes)
+
+Features:
+
+Jobs, clients, quotes, invoices, calendar
+
+Team management
+
+Time tracking
+
+Checklists
+
+Job chat + team chat
+
+Notifications (in-app + email)
+
+Stripe subscriptions
+
+SendGrid email sending
+
+Optional upsell to my web agency services
+
+3. FRONTEND — PAGES & FLOWS
+3.1 Auth & Onboarding
+
+I want an email-based login:
+
+Screen 1: Enter email → “Continue with Email”
+
+Screen 2: Enter 6-digit code → “Verify & Continue”
+
+Use mocked functions for now (or Supabase Auth if wiring it in):
+
+requestLoginCode(email)
+
+verifyLoginCode(email, code)
+
+After first login, show onboarding:
+
+Step 1 – Work style
+
+Question: “How do you work?”
+
+Options:
+
+“I work on my own” → mode = "solo"
+
+“I have a team” → mode = "team"
+
+Step 2A – Solo
+
+Fields:
+
+Business Name
+
+Your Name
+
+Phone Number
+
+Trade Type (Plumbing, Electrical, Carpentry, Landscaping, General Handyman, Other)
+
+Step 2B – Team
+
+Fields:
+
+Business Name
+
+Your Name
+
+Your Role (Owner / Manager / Admin)
+
+Business Phone
+
+Trade Type
+
+Team Size (1–3, 4–10, 11+)
+
+Step 3B – Invite Team (optional)
+
+Repeatable rows: Name, Email, Role (Tradie / Office / Manager)
+
+Buttons:
+
+“Send invites & Finish”
+
+“Skip for now”
+
+On completion, create a currentUser object in frontend state / auth context with:
+
+{
+  id: string;
+  email: string;
+  fullName: string;
+  role: "owner" | "manager" | "tradie";
+  business: {
+    id: string;
+    name: string;
+    tradeType: string;
+    subscriptionTier: "free" | "starter" | "pro";
+  }
+}
+
+
+Then route to /dashboard.
+
+3.2 Layout & Navigation
+
+Desktop:
+
+Left sidebar:
+
+Logo + “TradieTrack”
+
+Nav items:
+
+Dashboard
+
+Jobs
+
+Clients
+
+Quotes
+
+Invoices
+
+Calendar
+
+Team Chat
+
+Settings
+
+(Optional) Resources / Add-ons (for my web agency upsell)
+
+Top bar:
+
+Page title
+
+Optional subtitle
+
+Profile menu
+
+Notification bell (with unread badge)
+
+Mobile:
+
+Bottom nav:
+
+Dashboard
+
+Jobs
+
+Clients
+
+Invoices
+
+More (Calendar, Team Chat, Settings, Resources inside)
+
+Design language:
+
+Primary #007AFF, accent #00C853, background #F5F7FA
+
+White cards with soft shadow, 10–12px radius
+
+Modern sans-serif, consistent spacing
+
+If my current layout doesn’t match this, refactor towards:
+
+AppLayout with:
+
+<Sidebar />
+
+<TopBar />
+
+<main> with page content (<Outlet />)
+
+3.3 Role-based dashboards
+
+Owner/Manager Dashboard:
+
+Greeting: “Good morning, {name}” + business name
+
+Stats row (cards):
+
+Jobs today
+
+Open jobs
+
+Overdue invoices
+
+Revenue this month (mock sum initially)
+
+“Jobs today” table:
+
+Job title
+
+Assigned to
+
+Time
+
+Status
+
+“Recent activity” feed:
+
+e.g. “Sarah completed Job #102”, “Invoice INV-023 marked as Paid”
+
+“AI suggestions” panel (static suggestions for now):
+
+“Draft reminders for 3 overdue invoices”
+
+“Review 2 unscheduled jobs”
+
+Quick link to Billing / Plans
+
+Tradie Dashboard:
+
+Greeting: “Good morning, {name}”
+
+“Next job” card:
+
+Title
+
+Time
+
+Address
+
+Button “Open job”
+
+“My jobs today” list as cards
+
+Quick actions:
+
+“View all jobs”
+
+“Open Team Chat”
+
+“Upload photos”
+
+Optional mini “This week’s jobs”
+
+Use currentUser.role to decide which dashboard view to show.
+
+3.4 Jobs
+
+Jobs List (/jobs):
+
+Filters:
+
+Status: All, Draft, Scheduled, In progress, Completed, Invoiced, Paid
+
+Search bar (job title/client name)
+
+Table:
+
+Job Title
+
+Client
+
+Status (colored pill)
+
+Date/Time
+
+Address
+
+Assigned To
+
+“+ New Job” button
+
+Job Detail (/jobs/:jobId):
+
+Header:
+
+Title
+
+Status pill
+
+Buttons:
+
+“Start job”
+
+“Finish job”
+
+“Create Quote”
+
+“Create Invoice”
+
+“Open in Maps” (https://maps.google.com/?q=address)
+
+Tabs/Sections:
+
+Overview
+
+Client info
+
+Address
+
+Description (with “🤖 Rewrite with AI” button placeholder)
+
+Timeline / Activity
+
+List of events (status changes, time tracking, etc.)
+
+Photos & Files
+
+Before/After areas
+
+Image grid
+
+“Upload photo”
+
+List of attached files (PDF, etc.)
+
+Notes
+
+Free text area
+
+“🤖 Summarise notes” button placeholder
+
+Checklists
+
+List of checklist items with checkboxes
+
+Time Tracking
+
+Show intervals from start/finish events
+
+Job Chat
+
+Per-job chat UI (see Messaging)
+
+Linked Documents
+
+Related quotes and invoices
+
+3.5 Clients
+
+Client List:
+
+Table/list:
+
+Name
+
+Phone
+
+Email
+
+Jobs
+
+Outstanding balance (mock)
+
+Client Detail:
+
+Contact info
+
+Job history
+
+Quotes
+
+Invoices
+
+Files
+
+“🤖 Summarise this client” button placeholder
+
+3.6 Quotes
+
+Quotes List:
+
+Columns:
+
+Quote #
+
+Client
+
+Job
+
+Date
+
+Total
+
+Status: Draft / Sent / Accepted / Declined
+
+Quote Detail:
+
+Header with status and actions:
+
+“Send quote”
+
+“Accept quote”
+
+“Decline quote”
+
+Line items table:
+
+Description
+
+Quantity
+
+Unit price
+
+Line total
+
+Subtotal, GST (10%) toggle, Total
+
+“🤖 Suggest line items” (placeholder)
+
+“Convert to Job” / “Convert to Invoice”
+
+3.7 Invoices
+
+Invoices List:
+
+Columns:
+
+Invoice #
+
+Client
+
+Job
+
+Due date
+
+Total
+
+Status: Draft / Sent / Paid / Overdue
+
+Invoice Detail:
+
+Header:
+
+Status
+
+Buttons:
+
+“Mark as sent”
+
+“Mark as paid”
+
+“Download PDF” (mock now)
+
+Line items table
+
+Subtotal, GST (10%), Total
+
+“🤖 Draft invoice email” (placeholder)
+
+3.8 Calendar
+
+Month/week view of jobs by date
+
+Clicking a job opens that job
+
+3.9 Messaging
+
+Team Chat (/team-chat):
+
+For entire business/team
+
+Messages with:
+
+sender name
+
+role
+
+timestamp
+
+content
+
+Input bar at bottom
+
+Messages stored in messages table with job_id = NULL
+
+Job Chat:
+
+Same UI but scoped by job_id
+
+On Job Detail page, “Job Chat” section
+
+Use Supabase Realtime later; mock frontend state initially if needed.
+
+3.10 Team Management (Settings → Team)
+
+List of team members:
+
+Name
+
+Email
+
+Role (Owner / Manager / Tradie / Office)
+
+Status: active/pending
+
+“Invite member” opens modal:
+
+Name
+
+Email
+
+Role
+
+On submit:
+
+Adds row to team_members table (or local mock), status “pending”
+
+Optionally triggers an email via SendGrid (later)
+
+3.11 Settings & Resources
+
+Settings (/settings):
+
+Profile (name, email)
+
+Business (business name, trade type, phone)
+
+Team (if owner/manager)
+
+Billing (Stripe subscription info, plan, renewal date) — even if just stub UI now
+
+Notification preferences (later)
+
+Resources / Add-ons (for my web agency upsell):
+
+Page listing extra services:
+
+Custom website build
+
+Branding/logo
+
+SEO for tradies
+
+Google My Business setup
+
+Each has CTA like “Request this service” → inserts row in agency_services (see backend below)
+
+Keep it professional and value-focused, not spammy
+
+4. BACKEND — SUPABASE SCHEMA & LOGIC
+
+Use Supabase as primary backend.
+
+4.1 Core tables (simplified model)
+business (
+  id uuid primary key,
+  name text,
+  trade_type text,
+  phone text,
+  subscription_tier text,      -- 'free', 'starter', 'pro'
+  subscription_status text,    -- 'active', 'past_due', 'canceled', etc.
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  current_period_end timestamptz,
+  created_at timestamptz default now()
+)
+
+users (
+  id uuid primary key,         -- matches auth.uid
+  email text unique,
+  full_name text,
+  role text,                   -- 'owner', 'manager', 'tradie'
+  business_id uuid references business(id),
+  created_at timestamptz default now()
+)
+
+team_members (
+  id uuid primary key,
+  user_id uuid references users(id),
+  business_id uuid references business(id),
+  role text,
+  status text,                 -- 'active', 'pending'
+  created_at timestamptz default now()
+)
+
+clients (
+  id uuid primary key,
+  business_id uuid references business(id),
+  name text,
+  phone text,
+  email text,
+  address text,
+  notes text,
+  created_at timestamptz default now()
+)
+
+jobs (
+  id uuid primary key,
+  business_id uuid references business(id),
+  client_id uuid references clients(id),
+  assigned_to uuid references users(id),
+  title text,
+  description text,
+  address text,
+  status text,                 -- 'draft', 'scheduled', 'in_progress', 'completed', 'invoiced', 'paid'
+  scheduled_at timestamptz,
+  created_at timestamptz default now()
+)
+
+job_timesheets (
+  id uuid primary key,
+  job_id uuid references jobs(id),
+  user_id uuid references users(id),
+  start_at timestamptz,
+  end_at timestamptz
+)
+
+quotes (
+  id uuid primary key,
+  business_id uuid references business(id),
+  job_id uuid references jobs(id),
+  client_id uuid references clients(id),
+  status text,                 -- 'draft', 'sent', 'accepted', 'declined'
+  gst_included boolean default true,
+  total numeric,
+  created_at timestamptz default now()
+)
+
+quote_items (
+  id uuid primary key,
+  quote_id uuid references quotes(id),
+  description text,
+  qty numeric,
+  unit_price numeric
+)
+
+invoices (
+  id uuid primary key,
+  business_id uuid references business(id),
+  job_id uuid references jobs(id),
+  client_id uuid references clients(id),
+  status text,                 -- 'draft', 'sent', 'paid', 'overdue'
+  gst_included boolean default true,
+  total numeric,
+  due_date timestamptz,
+  created_at timestamptz default now()
+)
+
+invoice_items (
+  id uuid primary key,
+  invoice_id uuid references invoices(id),
+  description text,
+  qty numeric,
+  unit_price numeric
+)
+
+messages (
+  id uuid primary key,
+  business_id uuid references business(id),
+  job_id uuid null,            -- null = team chat, non-null = job chat
+  sender_id uuid references users(id),
+  content text,
+  created_at timestamptz default now()
+)
+
+notifications (
+  id uuid primary key,
+  business_id uuid references business(id),
+  user_id uuid null,           -- null could mean “all owners”
+  type text,                   -- 'payment_success', 'job_assigned', 'invoice_overdue', etc.
+  title text,
+  body text,
+  related_type text,           -- 'job', 'invoice', 'subscription', etc.
+  related_id uuid null,
+  read boolean default false,
+  created_at timestamptz default now()
+)
+
+agency_services (
+  id uuid primary key,
+  business_id uuid references business(id),
+  service_type text,           -- 'website', 'branding', 'seo', etc.
+  status text,                 -- 'requested', 'in_progress', 'completed'
+  price numeric,
+  notes text,
+  created_at timestamptz default now()
+)
+
+4.2 Roles & RLS (high level)
+
+Owners/managers:
+
+Can see business where they belong
+
+Can see all jobs, clients, quotes, invoices, messages, notifications for that business
+
+Tradies:
+
+Can only see:
+
+jobs where assigned_to = auth.uid()
+
+messages in those jobs OR team chat
+
+Their own timesheets
+
+All queries must be scoped by business_id via RLS.
+
+You don’t need to implement every RLS rule in code here, but keep this logic in mind.
+
+5. STRIPE INTEGRATION — SUBSCRIPTIONS
+
+Use Stripe for subscription billing (Starter/Pro).
+
+Fields in business used:
+
+subscription_tier
+
+subscription_status
+
+stripe_customer_id
+
+stripe_subscription_id
+
+current_period_end
+
+5.1 Upgrade flow (frontend):
+
+Owner goes to Billing page.
+
+Picks plan (“Starter”, “Pro”).
+
+Clicks “Upgrade”.
+
+Frontend calls an Edge Function or API route:
+
+/api/create-checkout-session with:
+
+business_id
+
+user_id
+
+plan
+
+Backend creates Stripe Checkout Session with metadata:
+
+business_id
+
+plan
+
+Return URL → redirect user to Stripe checkout.
+
+5.2 Stripe webhooks (backend):
+
+Edge function /api/stripe-webhook handles:
+
+checkout.session.completed
+
+Get session & metadata
+
+Update business.subscription_tier, subscription_status='active', set current_period_end, save stripe_customer_id, stripe_subscription_id
+
+Insert into notifications:
+
+type: payment_success
+
+title: “Subscription activated”
+
+body: “Your {plan} plan is now active.”
+
+Optionally trigger email via SendGrid
+
+invoice.payment_failed
+
+Set subscription_status='past_due'
+
+Insert notifications + SendGrid email
+
+customer.subscription.deleted
+
+Set subscription_status='canceled', optionally downgrade to free
+
+Insert notifications + email
+
+Ensure webhook is idempotent (don’t double-process events).
+
+6. SENDGRID INTEGRATION — EMAILS
+
+Use SendGrid from backend only (Edge Functions).
+
+Emails to send:
+
+Quote sent to client
+
+Invoice sent to client
+
+Team invite emails
+
+Subscription alerts (payment succeeded/failed)
+
+Optional: job assignment emails
+
+Create a generic Edge Function like /api/send-email:
+
+Input:
+
+{
+  "to": "client@example.com",
+  "template": "quote_sent",
+  "data": {
+    "clientName": "Sarah",
+    "businessName": "Cairns Plumbing Co",
+    "quoteNumber": "Q-102",
+    "quoteTotal": "480.00"
+  }
+}
+
+
+Backend chooses template or constructs HTML and calls SendGrid.
+
+Important: For any major event that triggers email, also insert a notifications row so the app can show it inside the UI.
+
+7. NOTIFICATIONS SYSTEM — APP + EMAIL
+
+Schema: notifications table above.
+
+Sources of notifications:
+
+Stripe webhooks:
+
+payment_success
+
+payment_failed
+
+subscription_canceled
+
+App actions:
+
+job_assigned
+
+quote_sent
+
+quote_accepted / declined
+
+invoice_sent
+
+invoice_overdue (via cron/Edge function)
+
+new_agency_service_request
+
+Optionally mention-based chat notifications later.
+
+UI:
+
+Bell icon in top bar:
+
+Show count of unread notifications.
+
+Dropdown or page showing list:
+
+title + body + time + link to related entity.
+
+Ability to mark notifications as read on click.
+
+8. WEB AGENCY UPSELL INTEGRATION (A.V Web Innovation)
+
+Add a Resources / Add-ons page and/or section in Settings:
+
+List services:
+
+Website build for tradies
+
+Branding/logo
+
+SEO
+
+Google My Business setup
+
+“Done-for-you” TradieTrack setup
+
+When a user clicks “Request Service”:
+
+Insert row in agency_services table.
+
+Insert notifications row (type: agency_service_requested).
+
+Optionally send an email to you (admin) via SendGrid.
+
+You don’t have to build a full UI for managing these services yet — just basic tracking and display.
+
+9. TESTING
+
+Set up:
+
+Vitest + React Testing Library
+
+Unit:
+
+invoice & quote total calculation
+
+GST application
+
+role-based component logic
+
+Integration:
+
+Jobs list renders with mock jobs
+
+Accept/decline quote updates status
+
+Dashboard shows correct view by role
+
+Playwright or Cypress for E2E:
+
+Flow 1: login → dashboard → create job → see it in list + calendar
+
+Flow 2: create quote → mark as sent → accept → convert to invoice
+
+Flow 3: start job → finish job → see time tracking updated
+
+Flow 4: send job message → see chat update
+
+(If possible) simulate Stripe checkout in test/sandbox or mock its result
+
+10. WHAT I WANT YOU (REPLIT) TO DO WITH ALL THIS
+
+Analyse my existing project and:
+
+Compare it to this spec.
+
+Tell me clearly:
+
+Which parts already match
+
+Which parts are partially implemented
+
+Which parts are missing
+
+For missing/partial parts:
+
+Propose a step-by-step implementation plan (in small, manageable tasks).
+
+Start by fixing layout & navigation to match the role-based, mobile-first design.
+
+Then help wire up:
+
+Auth & onboarding
+
+Role-based dashboard logic
+
+Jobs/quotes/invoices pages and flows
+
+Messaging (job chat, team chat)
+
+Notifications (UI first, then backend)
+
+Stripe billing (at least stub frontend + Edge function stubs)
+
+SendGrid email helper (stubs)
+
+Web agency “Resources/Add-ons” page with basic agency_services integration.
+
+For each major feature you help implement:
+
+Also:
+
+Suggest at least 1–2 unit tests
+
+Suggest 1 integration/E2E test for that feature
+
+Help write the initial test code if I ask
+
+Always keep the app:
+
+Simple for tradies
+
+Clean in UI
+
+Clear in workflow
+
+Ready to scale with Supabase, Stripe, SendGrid
+
+Use this prompt as the single source of truth for how TradieTrack should behave.

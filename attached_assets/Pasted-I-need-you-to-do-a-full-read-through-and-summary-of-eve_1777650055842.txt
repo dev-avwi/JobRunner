@@ -1,0 +1,62 @@
+I need you to do a full read-through and summary of everything currently in the JobRunner app. I want you to check every part of the codebase and give me a complete breakdown of the following:
+
+1. SUBSCRIPTION TIERS & PRICING
+   - What are the current plan names, prices, and feature limits for each tier?
+   - How are they set up in Stripe (product IDs, price IDs)?
+   - How are they set up in Apple IAP (product IDs)?
+   - Is IS_BETA still set to true (bypassing subscription checks)?
+   - What features are gated behind each tier?
+
+2. ALL FEATURES — WEB APP
+   List every feature/module currently built and working in the web app, including:
+   - Dashboard & Action Centre
+   - Jobs management (create, schedule, complete, recurring jobs)
+   - Quotes (multi-option, convert to invoice)
+   - Invoices & Payment Hub
+   - Smart Chaser (overdue invoice automation)
+   - Chat Hub (team chat, two-way SMS with clients, job chat)
+   - GPS tracking & Dispatch Board
+   - Team management (roles, permissions, invite codes, timesheets)
+   - Client management & Client Portal
+   - WHS/Safety (SWMS, incidents, training, compliance, AI hazard scan)
+   - Expenses & receipt scanning (AI)
+   - Reports & Analytics
+   - AI Receptionist (Vapi integration, call logs, voice config)
+   - Autopilot & Automations
+   - Booking Page
+   - Subcontractor Portal (OTP)
+   - Settings & Integrations (Xero, MYOB, QuickBooks, Google Calendar, Stripe, Twilio)
+   - Admin Dashboard
+   - Billing & Subscriptions page
+
+3. ALL FEATURES — MOBILE APP
+   - List everything available on mobile vs web
+   - Note any gaps in parity
+   - Confirm offline mode (SQLite + sync queue) status
+   - Confirm Tap to Pay status (Apple production approval)
+   - Dark mode status
+
+4. INTEGRATIONS
+   - Stripe (payments, subscriptions)
+   - Apple IAP
+   - Twilio (SMS, phone numbers, voice webhooks)
+   - Vapi (AI receptionist)
+   - Xero, MYOB, QuickBooks
+   - Google Calendar
+   - Retell (if still active)
+
+5. CURRENT KNOWN ISSUES / OUTSTANDING WORK
+   - What is unfinished, stubbed out, or flagged as TODO in the code?
+   - Any security flags (rate limiting, Helmet.js, session cookies, webhook signature verification)?
+   - Bundle size / performance issues?
+   - Any routes.ts or file size concerns?
+   - Demo account cleanup status?
+   - Replit dev URL references that should be jobrunner.com.au?
+
+6. TECH STACK SUMMARY
+   - Frontend (web + mobile framework, key libraries)
+   - Backend (server framework, DB, ORM)
+   - Real-time (WebSocket, polling — what's still on polling?)
+   - Hosting & deployment setup
+
+Please go through the actual code files — don't rely on memory. Check server/routes.ts, client-side components, mobile screens, Stripe config, Vapi/Twilio config, and any .env or secrets references. Give me the most accurate and up-to-date picture of where everything is at right now.

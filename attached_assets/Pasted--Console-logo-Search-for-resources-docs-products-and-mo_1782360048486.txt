@@ -1,0 +1,93 @@
+
+Console logo
+Search (/) for resources, docs, products and more
+
+APIs and services
+Edit API key
+Name
+Android key (auto created by Firebase)
+Use a unique name to identify your API key
+APIs that can be accessed using this key
+New key creation: To use Agent Platform (Vertex) or Gemini APIs with an API key, you must bind it to a service account by selecting 'Authenticate API calls through a service account' before applying the API restriction.
+
+Note: An organisation policy governs creating API keys bound to a service account for projects with a Google Cloud organisation. Learn more 
+Select API restrictions
+27 APIs
+This list includes only APIs enabled in this project. If you don't see the API that you need, visit the API Library to enable it.
+Selected APIs:
+Cloud Datastore API
+Cloud Firestore API
+Cloud Logging API
+Cloud SQL Admin API
+Cloud Storage for Firebase API
+FCM Registration API
+Firebase AI Logic API
+Firebase App Check API
+Firebase App Distribution API
+Firebase App Hosting API
+Firebase App Testers API
+Firebase Hosting API
+Firebase In-App Messaging API
+Firebase Installations API
+Firebase Management API
+Firebase ML API
+Firebase Phone Number Verification API
+Firebase Realtime Database Management API
+Firebase Remote Config API
+Firebase Remote Config Realtime API
+Firebase Rules API
+Firebase SQL Connect API
+Identity Toolkit API
+Maps SDK for Android
+Maps SDK for iOS
+ML Kit API
+Token Service API
+
+Key restrictions
+Add restrictions to reduce security risk and prevent unauthorised use. Learn more 
+
+Application restrictions
+
+None
+
+Websites
+
+IP addresses
+
+Android apps
+
+iOS apps
+Android restrictions
+Restricts API key usage to specified Android apps. Add the package name and SHA-1 certificate fingerprint for each app.
+
+Filter
+Package name
+Fingerprint
+Edit
+com.jobrunner.app
+5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25
+Note: It may take up to five minutes for settings to take effect.
+
+Additional information
+Creation date
+29 March 2026, 20:06:05 GMT+10
+How do I restrict my API key to specific Android applications?
+You can restrict an API key to specific Android applications by providing a debug certificate fingerprint or a release certificate fingerprint.
+
+Debug certificate fingerprint
+For Linux or macOS:
+
+$
+keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+For Windows:
+
+$
+keytool -list -v -keystore "%USERPROFILE%\.android\debug.keystore" -alias androiddebugkey -storepass android -keypass android
+Release certificate fingerprint
+$
+keytool -list -v -keystore your_keystore_name -alias your_alias_name
+Replace your_keystore_name with the fully qualified path and name of the keystore, including the .keystore extension. Replace your_alias_name with the alias that you assigned to the certificate when you created it.
+
+
+
+0 rows selected.

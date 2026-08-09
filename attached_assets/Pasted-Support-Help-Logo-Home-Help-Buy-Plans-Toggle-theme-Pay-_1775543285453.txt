@@ -1,0 +1,148 @@
+Support & Help
+Logo
+Home
+
+Help
+Buy Plans
+
+Toggle theme
+Pay-As-You-Go Managed Server Plan
+Pay-As-You-Go Plans provide you Managed Mac accounts and you will prepay for the the time of usage with automatic credit refill. Pay-As-You-Go plans are best for users who use the server infrequently and wish to quickly start development and tasks with pre-installed Mac Applications and Tools. If you need frequent system access, please review and select from our Managed Server Plans.
+
+These plans DO NOT provide you administrator/root access. You may submit support requests for installing additional applications and tools that require administrator access. Upon approval of these requests, our administrators will perform the installation for you. Notice that majority of App Store Apps and Mac Apps do not require administrator access to be installed.
+
+If you wish to obtain server's administrator/root access, the Managed Server Plans are not the right plans for your needs. Instead, please review and select from our Dedicated Server Plans.
+
+
+Preset - AI Projects
+General
+Xcode/iOS Dev
+Self Publishing
+AI Projects
+This preset of plan configuration provides support for AI tools such as ChatGPT, Claude, Cursor App, and other common AI tools. It is the recommended preset for AI related projects
+
+
+Platform - Mac Mini Silicon M4
+Mac Mini Silicon M4
+10-core M4 CPU (4P/6E*)
+10-core GPU
+16-core Neural Engine
+Mac Mini Silicon M2
+8-core M2 CPU (4P/4E*)
+10-core GPU
+16-core Neural Engine
+-AU$2.52
+
+Mac Mini Silicon M1
+8-core M1 CPU (4P/4E*)
+8-core GPU
+16-core Neural Engine
+-AU$7.56
+
+*P: Performance Cores; E: Efficiency Cores
+RAM
+RAM is integrated in Mac Mini Silicon. Future upgrade will require obtaining a fresh server account.
+
+
+16GB of RAM
+
+Location - North America West / Mid-West (Near Los Angeles)
+
+North America West / Mid-West (Near Los Angeles)
+
+North America Central (Near Dallas, Texas)
+
+North America East (Near New York)
+
+South America (From US East)
+
+Europe Central (Near Frankfurt, Germany)
+
+Operating System Version - macOS Sequoia
+
+New!!! macOS Tahoe 26.3.1 (Supports Xcode 26.3, Android Studio 2025 and Visual Studio for Mac with .NET 8, 9, 10, and Workloads)
+
+macOS Sequoia 15.7.2 (Supports Xcode 26.1 and 16.4, Android Studio 2025 and Visual Studio for Mac with .NET 8, 9, 10, and Workloads)
+Not seeing what you need? Click here to request a customized quote
+
+Login Time - 7-Day Pay-As-You-Go Credit
+PAYG by Days
+PAYG by Hours
+
+7-Day Pay-As-You-Go Credit
+
+14-Day Pay-As-You-Go Credit
++AU$65.77 (5% off)
+
+30-Day Pay-As-You-Go Credit
++AU$208.80 (10% off)
+Use up to the selected number of days included in the PAYG by Days Plan (a day is a consecutive 24-hour period). Each usage has a minimum period of twenty-four (24) consecutive hours. The prepaid plan will automatically refill once the usage is over the purchased credit limit. Unused credit will expire 60 calendar days after the last usage.
+
+
+Network Bandwidth Speed - 1Gbps Port Speed
+
+100Mbps Port Speed
+-AU$7.56
+
+1Gbps Port Speed
+
+Enable Remote Build Port - No SSH
+This addon is required for remote build, when connecting your Visual Studio to a Visual Studio for Mac.
+
+
+Enable SSH for Remote Build +AU$7.56
+Selection Overview
+Preset
+
+AI Projects
+Location
+
+North America West / Mid-West (Near Los Angeles)
+Operating System Version
+
+macOS Sequoia 15.7.2 (Supports Xcode 26.1 and 16.4, Android Studio 2025 and Visual Studio for Mac with .NET 8, 9, 10, and Workloads)
+Platform
+
+Mac Mini Silicon M4
+Payment Cycle
+
+PAYG by Days
+Login Time
+
+7-Day Pay-As-You-Go Credit
+RAM
+
+16GB of RAM
+Network Bandwidth Speed
+
+1Gbps Port Speed
+Enable Remote Build Port
+
+No SSH
+
+Total Price Per Day
+
+AU$10.44
+
+Prepaid Login Time
+
+
+x 7 Days
+
+Due Today
+
+
+AU$73.08
+
+
+Quantity: 1
+
+Australian Dollar AU$
+Add to Cart
+
+Buy Now
+2011-2026 © Moboware Inc. All rights reserved. Please review our Privacy Policy
+
+Apple, Mac OS X, macOS, iOS, Xcode, Mac and the Mac logo are trademarks of Apple, Inc.; registered in the U.S. and other countries.
+
+v1.189.2

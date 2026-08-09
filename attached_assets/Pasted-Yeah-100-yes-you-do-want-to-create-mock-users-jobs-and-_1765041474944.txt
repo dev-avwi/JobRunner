@@ -1,0 +1,414 @@
+Yeah, 100% **yes** — you *do* want to create mock users, jobs, and clients.
+Think of it like dress rehearsal before real tradies touch it.
+
+I’ll give you:
+
+1. ✅ What mock accounts/data to use
+2. ✅ A **single Replit “Simulate a tradie using my app” master prompt** (including new user creation, owner vs tradie roles, map, time tracking, quotes, invoices, Stripe, email, chat… everything).
+
+You can just **copy–paste the prompt** into Replit AI.
+
+---
+
+## 1️⃣ Mock users & data you should use
+
+Use the same fake people everywhere so flows stay consistent.
+
+### Owner account (business)
+
+* **Role:** Owner
+* **Business name:** Cairns Coast Plumbing
+* **ABN:** 12 345 678 910
+* **Email:** [cairnscoastplumbing.owner@example.com](mailto:cairnscoastplumbing.owner@example.com)
+* **Phone:** 0400 111 222
+* **Address:** 123 Sheridan St, Cairns QLD 4870
+* **Plan:** Start on Free → then switch to Pro in tests
+
+### Tradie team member
+
+* **Role:** Tradie / Field worker
+* **Name:** Jake Miller
+* **Email:** [jake.miller@example.com](mailto:jake.miller@example.com)
+
+### Clients
+
+1. **Client 1**
+
+   * Name: Sarah Thompson
+   * Email: [sarah.thompson@example.com](mailto:sarah.thompson@example.com)
+   * Address: 45 Lake St, Cairns QLD
+
+2. **Client 2**
+
+   * Name: Mark Evans
+   * Email: [mark.evans@example.com](mailto:mark.evans@example.com)
+   * Address: 28 Hoare St, Manunda QLD
+
+### Jobs (for testing flows)
+
+* **Job 1:** “Fix leaking shower” (Sarah, tomorrow 2:30 pm, Edge Hill)
+* **Job 2:** “Install new vanity” (Mark, Friday 10:00 am, Manunda)
+* **Job 3:** “Blocked kitchen sink” (Sarah, today 4:00 pm, CBD) – good for “Next job” card.
+
+Use these same names in Replit prompt so it all ties together.
+
+---
+
+## 2️⃣ Replit MASTER PROMPT – “Simulate a tradie using my app”
+
+Here’s the full thing to paste into Replit AI:
+
+---
+
+**PROMPT TO PASTE INTO REPLIT:**
+
+> I’m building a SaaS web app called **TradieTrack** for tradies (plumbers, sparkies, etc.) to manage:
+>
+> * jobs
+> * clients
+> * quotes
+> * invoices
+> * calendar/schedule
+> * team members (owner vs tradie)
+> * job chat & team chat
+> * time tracking
+> * map view with jobs
+> * Stripe payments
+> * SendGrid emails
+>
+> I want you to **simulate a real tradie and team using my app**, and verify that:
+>
+> * all flows are **fully wired**, not “UI only”
+> * the **owner** and **tradie** experiences both work
+> * the UX is coherent and data flows correctly between pages
+>
+> Act as:
+>
+> * a QA engineer
+> * a tradie product designer
+> * and a slightly picky plumbing business owner
+>
+> Use the following mock data consistently throughout your reasoning and changes:
+>
+> ---
+>
+> ### 1. Mock accounts & data to use
+>
+> **Owner account (business):**
+>
+> * Business: “Cairns Coast Plumbing”
+> * ABN: 12 345 678 910
+> * Email: [cairnscoastplumbing.owner@example.com](mailto:cairnscoastplumbing.owner@example.com)
+> * Phone: 0400 111 222
+> * Address: 123 Sheridan St, Cairns QLD 4870
+> * Plan: start Free, upgrade to Pro part-way through tests
+>
+> **Tradie team member:**
+>
+> * Name: Jake Miller
+> * Email: [jake.miller@example.com](mailto:jake.miller@example.com)
+> * Role: Tradie / Field worker
+>
+> **Clients:**
+>
+> 1. Sarah Thompson – [sarah.thompson@example.com](mailto:sarah.thompson@example.com) – 45 Lake St, Cairns QLD
+> 2. Mark Evans – [mark.evans@example.com](mailto:mark.evans@example.com) – 28 Hoare St, Manunda QLD
+>
+> **Jobs:**
+>
+> * Job 1: “Fix leaking shower” – Sarah – Edge Hill – tomorrow 2:30 pm
+> * Job 2: “Install new vanity” – Mark – Manunda – Friday 10:00 am
+> * Job 3: “Blocked kitchen sink” – Sarah – today 4:00 pm – CBD
+>
+> Use these same entities whenever you simulate flows.
+>
+> ---
+>
+> ### 2. New user onboarding & roles (owner vs tradie)
+>
+> 1. Find the **signup/onboarding flow** and confirm:
+>
+>    * A new owner can sign up and create a **business** (Cairns Coast Plumbing).
+>    * Onboarding collects key info: business name, trade type, location, team size, solo vs team.
+>    * After onboarding, the **owner dashboard** is different from a tradie dashboard (more controls, settings, billing).
+> 2. Confirm there is a way for the owner to:
+>
+>    * Invite a new user (Jake Miller) as a **Tradie**.
+>    * Assign role/permissions correctly.
+>    * Ensure the tradie dashboard is simplified (jobs assigned, schedule, map, chat – but no billing/settings).
+> 3. If any role-based views are **UI only** (no real role checks), implement or fix:
+>
+>    * Backend checks on who can see what.
+>    * Hiding owner-only pages from tradies.
+>
+> ---
+>
+> ### 3. Core daily tradie workflow (simulate real life)
+>
+> Simulate this exact sequence end-to-end in the code:
+>
+> **As Owner:**
+>
+> 1. Create client Sarah.
+> 2. Create Job 1 “Fix leaking shower” for Sarah, tomorrow 2:30 pm, in Edge Hill.
+> 3. Assign it to tradie Jake.
+> 4. Job status: New → Scheduled.
+> 5. Ensure job:
+>
+>    * appears on Jobs list,
+>    * appears on Calendar,
+>    * appears on Map with correct location.
+>
+> **As Tradie Jake:**
+> 6. Log in as Jake.
+> 7. Go to **Today / Activity** view:
+>
+> * See “Blocked kitchen sink” (Job 3) or nearest job as “next job”.
+>
+> 8. Open Jobs:
+>
+>    * See only jobs assigned to Jake.
+> 9. Open Job 1:
+>
+>    * See client, address, notes, attachments, time tracking, chat.
+>
+> **Do the actual work flow:**
+> 10. Start time tracking on Job 1 → work for a while → stop time.
+> 11. Add some job notes & maybe photos.
+> 12. Mark job status: In Progress → Completed.
+>
+> **Back as Owner:**
+> 13. From Job 1, create a **quote** for Sarah:
+> - Labour – 2 hrs @ $110/hr
+> - Parts – Mixer tap – $165
+> - GST 10%
+>
+> 14. Confirm:
+>
+>     * Quote pulls client + job correctly
+>     * Totals and GST are correct
+>     * Quote number like Q-1001
+> 15. Use the **live preview / PDF preview**:
+>
+>     * Changing line items updates preview
+>     * No broken layouts or missing fields
+> 16. Click **Send quote**:
+>
+>     * Ensure this calls a real backend email function (SendGrid), not just a fake UI toast.
+>
+> ---
+>
+> ### 4. Email, PDF & quote acceptance flow
+>
+> Check the SendGrid integration in code:
+>
+> * “Send quote” uses a real template.
+> * From address is a verified sender (e.g. [no-reply@tradietrack.app](mailto:no-reply@tradietrack.app)).
+> * Reply-to is the owner’s email ([cairnscoastplumbing.owner@example.com](mailto:cairnscoastplumbing.owner@example.com)).
+>
+> Ensure the **client experience** is correct:
+>
+> * Subject line is clear (“Your quote from Cairns Coast Plumbing via TradieTrack”).
+> * Email includes either:
+>
+>   * a link to a public quote page, or
+>   * a PDF attachment (or both).
+>
+> In the backend:
+>
+> * There is a **public quote view** route.
+> * Accepting the quote:
+>
+>   * updates quote status to Accepted,
+>   * stores accepted_at timestamp and accepted_by name/email,
+>   * optionally updates job status (e.g. Approved / Ready to schedule).
+>
+> If quote acceptance exists only in the UI but has no backend route or DB column, implement it or hide it for beta.
+>
+> ---
+>
+> ### 5. Convert to invoice & payment (Stripe)
+>
+> After quote acceptance:
+>
+> 1. Implement/verify **“Convert to invoice”**:
+>
+>    * Creates invoice INV-1001.
+>    * Copies all items & GST.
+>    * Links to same client and job.
+> 2. Ensure invoice PDF:
+>
+>    * shows business name, ABN, contact, client details
+>    * shows invoice number, issue date, due date
+>    * shows line items, subtotal, GST, total
+> 3. “Send invoice”:
+>
+>    * Calls SendGrid backend function.
+>    * Uses proper invoice email template.
+>    * Includes either payment link or PDF.
+> 4. Stripe:
+>
+>    * For subscriptions: business pays TradieTrack → Stripe test mode → webhooks update subscription_tier/status.
+>    * For invoice payments: client pays tradie:
+>
+>      * Use Stripe or Stripe Connect (depending on current implementation).
+>      * On successful payment, invoice.status = PAID and paid_at timestamp set.
+>
+> Make sure none of these are dummy buttons: every visible “Send”, “Pay now”, “Mark as paid” must be backed by logic.
+>
+> ---
+>
+> ### 6. Map page & location tracking
+>
+> As Owner, there should be a **Map page** that:
+>
+> * Shows a map (e.g. Google Maps / Leaflet) centred roughly on Cairns.
+> * Plots **job markers** for all active and recent jobs:
+>
+>   * Job 1 (Edge Hill)
+>   * Job 2 (Manunda)
+>   * Job 3 (CBD)
+>
+> For each marker:
+>
+> * Tooltip or small popup shows:
+>
+>   * job title
+>   * client name
+>   * status (New, Scheduled, In Progress, Completed)
+>
+> Location data:
+>
+> * Job creation/edit forms save address and, if implemented, lat/lng to the DB.
+> * Map uses that stored data, not just a string.
+>
+> Team locations (if implemented):
+>
+> * If there is any “View tradies on map / live location” feature:
+>
+>   * Confirm it calls a real endpoint or uses real stored coordinates.
+>   * If not fully implemented, hide or label “Coming soon” for beta.
+>
+> ---
+>
+> ### 7. Time tracking & job diary
+>
+> Confirm that for each job:
+>
+> * Time entries are stored in the DB (start, end, duration, user).
+> * They can be used in invoices (e.g. labour hours).
+> * Job diary shows:
+>
+>   * notes,
+>   * time entries,
+>   * uploaded files/photos.
+>
+> Make sure none of these sections are just static placeholders.
+>
+> ---
+>
+> ### 8. Chat: job chat + team chat + owner→tradie DMs
+>
+> Check the messaging system:
+>
+> * Job chat:
+>
+>   * Messages are linked to a specific job ID.
+>   * Owner and tradies on that job can see/post.
+>   * Stored in DB, ordered by timestamp.
+> * Team chat / group channels:
+>
+>   * General team chat for all team members.
+> * Direct messages:
+>
+>   * If there’s an owner → tradie or 1:1 chat UI, ensure:
+>
+>     * it writes to a real conversation/message model.
+>     * it’s filtered properly by participants.
+>
+> Confirm:
+>
+> * No “chat” screen is just a mocked list.
+> * Sending a message writes to the database and updates UI.
+>
+> ---
+>
+> ### 9. Owner vs Tradie dashboards & permissions
+>
+> Ensure:
+>
+> * Owner dashboard:
+>
+>   * Shows KPIs (jobs today, quotes pending, invoices unpaid, map overview).
+>   * Can access Settings, Billing, Team, Templates.
+> * Tradie dashboard:
+>
+>   * Focus on today’s jobs, next job, map, time tracking, job chat.
+>   * No access to Billing or business-wide settings.
+>
+> In code:
+>
+> * Routes/components check role before rendering.
+> * Not just hidden in UI, but actually protected.
+>
+> ---
+>
+> ### 🔟 UX + “no half-done features” pass
+>
+> Do a full pass over:
+>
+> * Nav items
+> * Buttons
+> * Pages
+> * Modals
+>
+> For beta:
+>
+> * Any major feature shown in the sidebar/top nav must be **fully implemented**.
+> * If something is half-done (just UI, no backend), either:
+>
+>   * finish it now, or
+>   * hide it and mark it as “coming soon” so tradies don’t click dead features.
+>
+> Also check:
+>
+> * Loading states (no blank screens).
+> * Error messages for failed network calls.
+> * No obvious console errors.
+>
+> ---
+>
+> ### 11. Final: is this a genuinely usable beta for a real tradie?
+>
+> At the end, provide (as comments or console.log) a short summary:
+>
+> 1. ✅ Which flows are now fully working end-to-end:
+>
+>    * new owner signup
+>    * onboarding
+>    * invite tradie
+>    * create client
+>    * create job
+>    * schedule job
+>    * map view
+>    * time tracking
+>    * job chat
+>    * create quote
+>    * send quote (email + PDF/link)
+>    * accept quote
+>    * convert to invoice
+>    * send invoice
+>    * Stripe payment
+>    * payment receipt
+>
+> 2. ⚠️ Which features are still prototype/rough and should be labelled “beta” or hidden.
+>
+> 3. 🛠 Critical MUST-FIX items before inviting 3–10 real tradies.
+>
+> Use my existing codebase as the source of truth and make whatever improvements are needed so that a real Cairns tradie could genuinely run their day-to-day workflow inside TradieTrack without hitting broken or fake features.
+
+---
+
+If you run that in Replit AI **and** then you personally do a quick manual Gmail/Stripe test like we discussed earlier, you’ll be in a really good spot to say to your dad (and to real tradies):
+
+> “This isn’t just a school project — it’s a real, working tool a plumbing business could run on.”

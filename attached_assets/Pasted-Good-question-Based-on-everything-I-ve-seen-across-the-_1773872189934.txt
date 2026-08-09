@@ -1,0 +1,101 @@
+Good question. Based on everything I've seen across the whole app, here's what I'd go through before touching the AI receptionist:
+
+---
+
+**Things Worth Going Through Properly**
+
+**1. The Full Job-to-Payment Flow**
+
+This is the most important one. Do the entire flow yourself right now as if you're a tradie:
+
+Create a job → schedule it → mark in progress → complete it → convert to invoice → send invoice → mark as paid
+
+If anything feels clunky or confusing at any step, fix it. This is the flow tradies will use every single day and it needs to be flawless.
+
+**2. Quote Flow End to End**
+
+Create a quote → add line items → send it to a real email address → open the client portal link → approve it → see it convert to a job
+
+Actually send it to your own email and go through it as a client would. Does the email look professional? Does the portal load fast? Can you approve it easily on mobile?
+
+**3. Invoice and Payment Flow**
+
+Create an invoice → send it → pay it using a test card in Stripe
+
+Check that the payment confirmation looks right, the invoice updates to paid, and the dashboard reflects it.
+
+**4. Team Member Experience**
+
+Invite a fake worker using a second email address. Log in as that worker. What do they see? Can they only see their assigned jobs? Does the limited permissions view make sense or is it confusing?
+
+**5. Mobile App on a Real Device**
+
+Not the simulator — a real phone. Go through the same job flow on mobile. Check:
+- Does it load fast?
+- Are buttons easy to tap?
+- Does the keyboard cover input fields?
+- Does it work on both iOS and Android?
+
+**6. Client Portal on Mobile**
+
+Send yourself a quote link and open it on your phone. Most tradies' customers will open this on a phone not a desktop. Does it look right?
+
+**7. Notifications**
+
+Create a job, complete it, send an invoice. Do the push notifications actually fire on the mobile app? Do the SMS notifications send correctly from the shared Twilio number?
+
+**8. Integrations Personally Verified**
+
+As we discussed — connect a real Xero demo account yourself and run through the sync. Same with Google Calendar. Don't trust Replit's automated tests on this.
+
+**9. Settings and Onboarding**
+
+Sign up with a completely fresh email address you've never used. Go through the onboarding wizard as a brand new user. Does it feel smooth? Does the business setup make sense? How long does it take to get to your first job?
+
+Time it. If it takes more than 5 minutes to go from signup to first job created, it needs simplifying.
+
+**10. Demo Account Cleanup**
+
+The things we flagged earlier:
+- Remove the 12 failed SMS messages from the old Replit dev URL
+- Remove duplicate templates in Templates Hub
+- Fix the doubled Edit SWMS header
+- Make sure all demo jobs and data look realistic and complete, not half-finished
+
+---
+
+**Things That Are Lower Priority Right Now**
+
+These matter eventually but don't block the AI receptionist build:
+
+- App Store submission
+- Advanced reporting
+- Zapier integration
+- MYOB integration
+- Multi-branch support
+
+---
+
+**The Honest Filter**
+
+For each thing you find, ask yourself one question:
+
+*"Would this stop a tradie from using the app or paying for it?"*
+
+If yes — fix it now.
+If no — put it on a list and do it after launch.
+
+The duplicate SWMS header — yes, fix it, looks broken.
+The WHS tab overflow — borderline, worth fixing.
+Quote version history — genuinely useful but not blocking.
+The empty form preview — annoying but not blocking.
+
+---
+
+**After You've Done All of That**
+
+Once you've personally gone through every flow above and fixed what you found — that's when you're ready to hand Replit the Retell brief and start the AI receptionist build.
+
+Realistically that's probably 3-5 days of focused testing and fixing. Do it properly and you'll go into the AI build with confidence that the foundation is solid.
+
+Want me to write you a proper testing checklist you can work through screen by screen?

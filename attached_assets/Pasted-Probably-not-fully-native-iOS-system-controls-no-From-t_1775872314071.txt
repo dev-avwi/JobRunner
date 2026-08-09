@@ -1,0 +1,112 @@
+Probably not fully native iOS system controls, no.
+
+From these screenshots, my honest read is:
+
+The header buttons
+
+These look like custom buttons styled to match Apple’s newer glassy feel, not true system-native iOS header controls.
+
+Why:
+	•	the right-side two-button cluster is a very specific grouped layout
+	•	the blue/red inner circles look deliberately branded/styled
+	•	the back button is in a custom white capsule, not the standard native nav back button
+	•	the spacing and grouping feel app-designed, not stock UIKit/SwiftUI system chrome
+
+So they’re likely:
+
+custom components borrowing from the iOS glass family
+not literal built-in Apple controls.
+
+⸻
+
+The popup
+
+Same story.
+
+It doesn’t read like a pure system alert to me.
+
+A real native iOS alert/action sheet usually has:
+	•	more standard action spacing
+	•	more standard button layout and typography behavior
+	•	less custom-feeling control over long body copy and stacked CTA styling
+
+Your popup feels like:
+
+a custom modal that was closer to Apple’s style language than the version you have now
+
+So again:
+	•	Apple-inspired? yes
+	•	true native iOS alert? probably no
+
+⸻
+
+The important distinction
+
+There are really 3 levels here:
+
+1. Truly native iOS
+
+Actual system components:
+	•	native navigation back button
+	•	native alert
+	•	native action sheet
+	•	native share sheet
+	•	native switch
+
+These are controlled by iOS itself.
+
+2. Custom but very Apple-like
+
+Built by you / React Native / Expo, but styled to feel like modern iOS.
+
+This is what your screenshots most likely are.
+
+3. Custom but off
+
+What you have now in some places, where the feel drifted away from that polished Apple-family look.
+
+⸻
+
+So were they “from the glass family of iOS26”?
+
+Visually, yes — probably inspired by that family.
+Technically, likely no — not actual built-in iOS system controls.
+
+That’s why this whole thing got confusing.
+
+You were probably seeing:
+
+“This feels like Apple’s new glass UI language”
+
+and Replit kept hearing:
+
+“This must be a native system component”
+
+Those are not the same thing.
+
+⸻
+
+Best way to think about it
+
+Your old version was likely:
+
+custom controls that matched the latest iOS glass language really well
+
+That is why:
+	•	it felt more premium
+	•	it felt more “Apple”
+	•	but it still could be broken/replaced by code changes
+
+If it were truly system-native, it usually wouldn’t morph around like this from your own component changes.
+
+⸻
+
+Super simple answer
+
+No, I don’t think those header buttons and popup were truly native iOS controls.
+I think they were custom components styled very close to Apple’s newer glassmorphism family, which is why they looked right before and wrong now.
+
+If you want, I can now give you the exact wording to send Replit that says:
+	•	stop calling these native
+	•	restore the old Apple-like custom components
+	•	keep the true native things only where they’re actually native.

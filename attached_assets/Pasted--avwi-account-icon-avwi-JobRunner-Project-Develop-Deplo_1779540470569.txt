@@ -1,0 +1,327 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+294dae4e
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+a9b0493 · Revert Liquid Glass — content was dropping out in Live Activity context Latest screenshots showed the status pill missing entirely from both lock-screen and expanded Dynamic Island, and the timer column also missing in some lock-screen presentations. The common factor: both elements were wrapped in `.glassEffect()` ViewModifiers. Liquid Glass material works for home-screen widgets and standalone SwiftUI views, but the Live Activity render context appears to reject it — the views end up with zero geometry instead of falling back gracefully. Reverting both `StatusPillBackground` and `TimerGlassBackground` to their pre-glass paths: - StatusPillBackground: always a capsule fill at 15% status colour opacity. Same as commit ac63567e's pre-glass design. - TimerGlassBackground: removed entirely. LiquidTimerColumn (name retained for diff readability) is now a plain trailing VStack at 92pt width with no backing — matches the original timer column from the polish pass. Removed inner .padding(.horizontal, 10) + .padding(.vertical, 6) from LiquidTimerColumn — those were sized for the now-removed glass backing, leaving the text floating with phantom padding. Card now matches the layout from commit ac63567e (the version the user described as "great progress"). The Liquid Glass demo is over — the iOS 26 material isn't viable here. Other polish (status pill shape, small caps tracking, brand halo removed, hairline separator) all stays. Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.3
+
+
+production
+
+ 1.1.3 (32)
+
+5f795e2
+
+a9b0493
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+May 23, 2026 10:44 PM
+215ms
+
+47s
+
+1m 37s
+
+2m 25s
+
+29 days
+
+Logs
+
+Waiting to start
+
+47s
+
+
+Spin up build environment
+
+42s
+
+
+Install custom tools
+
+9s
+
+
+Prepare project
+
+10s
+
+
+Read eas.json
+
+1ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+10s
+
+
+Read app config
+
+
+1
+347ms
+
+
+Run expo doctor
+
+
+1
+2s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+20s
+
+
+Calculate expo-updates runtime version
+
+194ms
+
+
+Configure Xcode project
+
+35ms
+
+
+Configure expo-updates
+
+6ms
+
+
+Bundle JavaScript
+
+21s
+
+
+Run fastlane
+
+
+2
+10s
+
+
+Creating Gymfile
+Gymfile created
+Successfully loaded '/Users/expo/workingdir/build/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | JobRunner                                                                                                                                   |
+| configuration         | Release                                                                                                                                     |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/eas-build-1e51f38f-ab97-4317-8ec2-1bffd16444cb.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| derived_data_path     | ./build                                                                                                                                     |
+| result_bundle         | true                                                                                                                                        |
+| result_bundle_path    | /var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/result-bundle-1779540372829.xcresult                                                       |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -derivedDataPath ./build
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -derivedDataPath ./build
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -derivedDataPath ./build 2>&1
+Detected provisioning profile mapping: {:"com.*********.app"=>"2931fb33-fd48-45b5-a52e-b38dab342520"}
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                       Summary for gym 2.231.1                                                                                       |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                             | ./JobRunner.xcworkspace                                                                                                                     |
+| scheme                                                | JobRunner                                                                                                                                   |
+| clean                                                 | false                                                                                                                                       |
+| output_directory                                      | ./build                                                                                                                                     |
+| output_name                                           | JobRunner                                                                                                                                   |
+| configuration                                         | Release                                                                                                                                     |
+| silent                                                | false                                                                                                                                       |
+| skip_package_ipa                                      | false                                                                                                                                       |
+| skip_package_pkg                                      | false                                                                                                                                       |
+| export_options.method                                 | app-store                                                                                                                                   |
+| export_options.provisioningProfiles.com.*********.app | 2931fb33-fd48-45b5-a52e-b38dab342520                                                                                                        |
+| export_xcargs                                         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/eas-build-1e51f38f-ab97-4317-8ec2-1bffd16444cb.keychain" |
+| build_path                                            | /Users/expo/Library/Developer/Xcode/Archives/2026-05-23                                                                                     |
+| derived_data_path                                     | ./build                                                                                                                                     |
+| result_bundle                                         | true                                                                                                                                        |
+| result_bundle_path                                    | /var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/result-bundle-1779540372829.xcresult                                                       |
+| buildlog_path                                         | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                           | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                 | true                                                                                                                                        |
+| xcodebuild_formatter                                  | xcpretty                                                                                                                                    |
+| build_timing_summary                                  | false                                                                                                                                       |
+| disable_xcpretty                                      | true                                                                                                                                        |
+| skip_profile_detection                                | false                                                                                                                                       |
+| xcodebuild_command                                    | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                  | false                                                                                                                                       |
+| disable_package_automatic_updates                     | false                                                                                                                                       |
+| use_system_scm                                        | false                                                                                                                                       |
+| generate_appstore_info                                | false                                                                                                                                       |
+| xcode_path                                            | /Applications/Xcode.app                                                                                                                     |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Release -derivedDataPath ./build -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-05-23/JobRunner\ 2026-05-23\ 05.46.16.xcarchive -resultBundlePath '/var/folders/51/y6phq4kx54bdjkgn5fc44z3m0000gn/T/result-bundle-1779540372829.xcresult' archive | tee /Users/expo/workingdir/logs/JobRunner-JobRunner.log > /dev/null
+    Run script build phase '[CP-User] Generate updates resources for expo-updates' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'EXUpdates' from project 'Pods')
+    Run script build phase 'Upload Debug Symbols to Sentry' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'JobRunner' from project 'JobRunner')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNReanimated' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNWorklets' from project 'Pods')
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	Archiving workspace JobRunner with scheme JobRunner
+▸ (1 failure)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.231.1                 |
+| sdk         | iPhoneOS26.2.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+582ms
+
+
+Fail job
+
+
+1
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+
+View in the browser

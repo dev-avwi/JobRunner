@@ -1,0 +1,285 @@
+Good question — this is where a lot of apps get messy, so let’s **lock it down cleanly** and remove the confusion.
+
+I’ll explain this in **plain, real-world terms**, from both **tradie** and **client** perspectives, and exactly **what the sender looks like** for email + SMS.
+
+---
+
+# The simple rule (memorise this)
+
+> **Documents (quotes, invoices, PDFs) are created once in TradieTrack.
+> They can be delivered via EMAIL, SMS, or BOTH.
+> The client always opens them in the PORTAL.**
+
+You are **not** sending two different documents.
+You are sending **two delivery methods to the same portal content**.
+
+---
+
+# 1️⃣ What the tradie sees (inside TradieTrack)
+
+When a tradie sends a **Quote** or **Invoice**, they see this:
+
+### Send Quote / Send Invoice modal
+
+☑️ Send via SMS
+☑️ Send via Email
+
+(Default: **both ON**, tradie can turn one off)
+
+Button: **Send**
+
+That’s it. No complexity.
+
+---
+
+# 2️⃣ What actually gets sent (under the hood)
+
+## A) SMS delivery (primary, fastest)
+
+### Sender appearance (this matters)
+
+**Sender name:**
+
+* `Mike’s Electrical` (Alphanumeric Sender ID)
+  or fallback:
+* A dedicated TradieTrack number (if region requires)
+
+✅ This looks professional
+✅ Not spammy
+✅ Matches the business name
+
+### Example SMS (Quote)
+
+> **Mike’s Electrical**
+> Your quote for Stove Repair is ready.
+> View & accept:
+> [https://tradietrack.com.au/portal/q/8K2X…](https://tradietrack.com.au/portal/q/8K2X…)
+
+That link:
+
+* Opens the **portal**
+* Shows the quote
+* Has buttons (Accept / Message / View PDF)
+
+---
+
+## B) Email delivery (secondary, backup + records)
+
+### Sender appearance (email)
+
+**From name:**
+
+> Mike’s Electrical via TradieTrack
+
+**From email:**
+
+> [invoices@tradietrack.com.au](mailto:invoices@tradietrack.com.au)
+> (or later: [mikes@tradietrack.com.au](mailto:mikes@tradietrack.com.au) if you want custom sender)
+
+This is very normal SaaS behaviour.
+
+### Email content (important)
+
+Subject:
+
+> Quote from Mike’s Electrical – Stove Repair
+
+Body:
+
+* Short explanation
+* “View Quote” button (portal link)
+* PDF attached (optional, see below)
+
+Footer:
+
+> Powered by TradieTrack
+
+---
+
+# 3️⃣ PDFs & documents — how they work (important clarity)
+
+### The PDF is NOT the main experience anymore
+
+The **portal is**.
+
+But you still support PDFs because:
+
+* Tradies expect them
+* Clients like saving them
+* Some accountants need them
+
+### How PDFs are handled
+
+When sending:
+
+* The **same quote/invoice** exists in:
+
+  * Portal (live)
+  * PDF (static snapshot)
+
+#### Email:
+
+* PDF attached ✅
+* Portal link included ✅
+
+#### SMS:
+
+* No PDF attachment (SMS can’t do that)
+* Portal link only ✅
+* Inside portal → “Download PDF” button
+
+So:
+
+* **Email = portal + PDF**
+* **SMS = portal**
+* Both point to the same source of truth
+
+---
+
+# 4️⃣ Client experience (what THEY actually see)
+
+## Scenario: Tradie sends quote with both enabled
+
+Sarah receives:
+
+### SMS first (usually within seconds)
+
+> Mike’s Electrical:
+> Your quote is ready.
+> View & accept: [portal link]
+
+She taps → sees quote → accepts.
+
+### Email shortly after
+
+Subject:
+
+> Quote from Mike’s Electrical
+
+She opens it later:
+
+* Sees same quote
+* Can download PDF
+* Can click portal again
+
+No duplication. No confusion.
+
+---
+
+# 5️⃣ What happens if tradie sends ONLY email?
+
+* Client gets email with:
+
+  * PDF
+  * Portal link
+* No SMS sent
+* Old-school, still works
+
+This keeps backward compatibility with your **current Apple-approved flow**.
+
+---
+
+# 6️⃣ What happens if tradie sends ONLY SMS?
+
+* Client gets SMS with portal link
+* Can:
+
+  * View quote/invoice
+  * Accept
+  * Pay
+  * Download PDF from portal
+
+No email needed.
+
+Perfect for fast payments.
+
+---
+
+# 7️⃣ Messaging + documents (how they coexist)
+
+Inside the **portal**, the client can:
+
+* View quote/invoice
+* Download PDF
+* Message tradie:
+
+  > “Can you itemise labour?”
+* Accept quote
+* Pay invoice
+
+Messages are tied to:
+
+* The quote or job
+* Not email threads
+* Not personal SMS chaos
+
+---
+
+# 8️⃣ How this avoids confusion (key design win)
+
+### You are NOT doing:
+
+❌ SMS = messages
+❌ Email = documents
+❌ Portal = something else
+
+### You ARE doing:
+
+✅ **Portal = single source of truth**
+✅ SMS + Email = delivery methods
+✅ PDF = optional export
+
+This is how ServiceM8 / Jobber / Tradify work internally — even if they don’t explain it well.
+
+---
+
+# 9️⃣ Security & sender trust (important)
+
+### SMS trust
+
+* Sender name = business name
+* Short, clear messages
+* One link
+* No attachments
+  → Looks legit, not scammy
+
+### Email trust
+
+* Business name in sender
+* PDF attachment
+* Familiar invoice format
+  → Feels safe to older clients
+
+### Portal trust
+
+* Branded with tradie logo
+* Same totals as PDF
+* Payment via Stripe
+
+---
+
+# 10️⃣ Final “mental model” (this removes confusion)
+
+Tell yourself (and future users):
+
+> “TradieTrack creates the document once.
+> Email and SMS are just how the client is notified.
+> The portal is where everything actually lives.”
+
+If you keep that model, the system stays clean.
+
+---
+
+## Final verdict (straight answer)
+
+✅ Yes — you can send **documents + PDFs**
+✅ Yes — you can send via **email, SMS, or both**
+✅ Sender looks professional and consistent
+✅ No duplication or conflicting info
+✅ Backwards-compatible with current app
+✅ Clear upgrade path to Phase 2
+
+If you want, next I can:
+
+* Write the exact **Send Quote / Send Invoice modal copy**
+* Or draft **real SMS + email templates** you can paste straight into code

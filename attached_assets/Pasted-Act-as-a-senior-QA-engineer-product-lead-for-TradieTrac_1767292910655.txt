@@ -1,0 +1,98 @@
+Act as a senior QA engineer + product lead for TradieTrack (web + mobile Expo). 
+Goal: make TradieTrack a technically solid beta ready for real tradies and app store standards.
+
+PART A — PRICING UPDATE (DO THIS FIRST)
+1) Update subscription tiers everywhere (UI + backend + Stripe config):
+   - Pro: $49/month
+   - Team: $59/month base + $29/month per additional worker
+2) Ensure pricing appears consistently in:
+   - Pricing page(s)
+   - Upgrade modal(s)
+   - Billing settings
+   - Stripe Products/Prices mapping
+   - Any plan checks (feature gates)
+3) Ensure plan entitlements match:
+   - Pro: removes “Powered by TradieTrack” or upgrades branding, adds custom email/PDF branding
+   - Team: enables team roles, team location/map, dispatch features, chat permissions
+
+PART B — FIND “UI-ONLY / HALF-DONE” FEATURES
+Scan the codebase and list every feature that is:
+- visible in UI but missing backend routes
+- has TODO / placeholder logic
+- returns mock data only
+For each, do ONE of:
+- implement fully
+- hide behind “Coming soon (beta)”
+- remove from navigation for beta
+
+PART C — END-TO-END WORKFLOWS (MUST PASS)
+Verify these flows are fully wired and tested:
+1) Auth: signup/login/me, session persistence, logout
+2) Roles:
+   - Owner/Manager vs Worker dashboards differ
+   - Workers cannot access billing/admin pages
+   - Owners can invite/manage team, set roles
+3) Job journey:
+   - create job with address + lat/lng
+   - job statuses: New/Scheduled/In Progress/Completed/Invoiced
+   - time tracking start/stop tied to job
+   - job photos upload + list + delete
+4) Map system:
+   - Map page shows all jobs as pins using stored lat/lng
+   - Pin shows job status badge (Completed/Scheduled/etc)
+   - Filter by status/date
+   - Clicking pin opens job detail
+   - Team locations appear if Team plan enabled
+   - Owner can see all; workers see only allowed scope
+5) Chat:
+   - Team group chat exists and persists
+   - Job-specific chat exists per job
+   - Direct chat Owner↔Worker exists
+   - Permissions are correct (workers only see their team + assigned jobs)
+6) Quotes:
+   - create from job, itemised lines, GST totals correct
+   - live preview matches final PDF
+   - quote number unique
+   - send quote email triggers SendGrid
+   - customer acceptance updates quote status + timestamp + (optional) job status
+7) Invoices:
+   - convert from quote, invoice number unique
+   - PDF generation clean (multi-page safe)
+   - send invoice email + payment link
+   - status updates Draft/Sent/Paid/Overdue
+8) Payments:
+   - Stripe subscriptions for TradieTrack (test mode) update business plan in DB via webhooks
+   - Client pays invoice via Stripe (and Connect if enabled) updates invoice to Paid + receipt email
+9) Offline / resilience:
+   - If offline, show OfflineBanner
+   - cache last data
+   - queue changes if possible (or clearly block with message)
+   - no crashes on failed requests; proper loading/error states
+
+PART D — APP STORE / PLAY STORE BETA READINESS
+1) Fix expo doctor issues:
+   - install react-native-worklets (required for Reanimated)
+   - align package versions to Expo SDK expectations
+2) Ensure iOS permissions have clear copy (camera, photos, location)
+3) Ensure secrets are server-side only (Stripe keys, SendGrid)
+4) Ensure Terms + Privacy Policy routes exist and are linked in-app
+5) Confirm no “Expo Go limitations” are relied on (use Dev Build)
+
+PART E — SERVICE M8 COMPARISON CHECKLIST
+Compare TradieTrack to ServiceM8 in these categories and report gaps:
+- fast daily workflow (today jobs, quick actions)
+- quote/invoice creation speed & preview polish
+- job status + scheduling feel
+- photo attachments
+- on-site payments options (Stripe Terminal later ok)
+- team dispatch + map view
+- professional templates + branding
+For each gap: propose the smallest fix to match or beat ServiceM8.
+
+OUTPUT REQUIRED
+Provide a Beta Readiness Report with:
+✅ Passed
+⚠️ Needs work (with exact file paths)
+❌ Broken (with exact file paths)
+Top 10 MUST-FIX before publishing
+Top 10 NICE-TO-HAVE after beta

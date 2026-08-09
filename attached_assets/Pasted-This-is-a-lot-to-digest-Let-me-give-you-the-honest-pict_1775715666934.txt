@@ -1,0 +1,84 @@
+This is a lot to digest. Let me give you the honest picture on everything.
+
+---
+
+**The Pricing — Lock It In**
+
+The four-tier structure is right. Don't second-guess it anymore.
+
+| Plan | Price | Workers |
+|------|-------|---------|
+| Starter | Free | Just you |
+| Pro | $49/month | Just you |
+| Team | $99/month | Up to 5 |
+| Business | $199/month | Up to 15 |
+
+Competitive, clean, works with IAP. Done.
+
+---
+
+**The Apple IAP Decision — Correct**
+
+You made the right call. The enterprise exemption argument was always a risk. IAP removes the uncertainty and gives tradies a smooth one-tap upgrade. Yes Apple takes 15% on iOS. Android users pay through Stripe and you keep everything from them. Net result is still better than having a broken upgrade flow.
+
+---
+
+**Free Trial — Go With Option A**
+
+Let Apple handle the 7-day free trial on iOS. Here's why:
+
+When someone taps "Start Free Trial" through Apple, they're already committed. Their card is on file. Conversion rates on Apple-managed trials are significantly higher than manual trials because the user has to actively cancel rather than actively pay. That psychology works in your favour.
+
+Tell Replit: *"Set up a 7-day free trial on the Pro subscription product in App Store Connect. For iOS users the trial is managed by Apple. For Android users keep the existing 7-day server-side trial. After the trial ends iOS users are auto-charged by Apple, Android users see an upgrade prompt to pay through Stripe."*
+
+---
+
+**The Worker Limit Flow — This Needs To Be Right**
+
+The scenario of an owner hitting their worker limit and getting prompted to upgrade is critical. Tell Replit:
+
+*"When a business owner tries to invite more workers than their plan allows, show a native iOS alert — not a custom popup — saying 'You've reached the worker limit on your Team plan. Upgrade to Business to add up to 15 workers.' With two buttons — Upgrade and Cancel. Upgrade button goes directly to the IAP subscription page. This must work on both iOS and Android."*
+
+---
+
+**The Things That Still Need Sorting**
+
+**Email address** — admin@avwebinnovation.com is still showing in places. Before you resubmit to Apple that needs to be support@jobrunner.com.au everywhere. Even just a forward to your personal email is fine.
+
+**Stripe products** — Once IAP is live you need to update your Stripe products to match the new four-tier pricing. Web and Android users will pay through Stripe so the products need to reflect Starter, Pro, Team, Business at the correct prices. Tell Replit to update the Stripe products when the IAP code is done.
+
+**The admin email for 15+ workers** — "Contact admin@avwebinnovation.com" for enterprise customers looks terrible. Change that to support@jobrunner.com.au or even just your personal number for now.
+
+---
+
+**The Signup and Onboarding Flow**
+
+What Replit described is correct and clean:
+
+Download app → Set Up Your Business → Email, password, business name → Starter plan → Onboarding collects trade type and team size → Lands on dashboard with demo data → Gets teased by locked features → Upgrades in one tap
+
+The key thing that makes this work is the teasing. Every locked feature should show a preview of what it does with a clear "Upgrade to Pro" prompt. Not a wall that says Feature Locked — a genuine preview that makes them want it.
+
+Tell Replit: *"Every locked feature should show a brief description of what it does and why it's valuable before showing the upgrade prompt. Don't just say Plan Required — say what they're missing. For example, 'AI Quote Generation — describe a job out loud and JobRunner creates the line items automatically. Available on Pro.' Then show the upgrade button."*
+
+---
+
+**What To Do Right Now**
+
+In order:
+
+**You in App Store Connect** — Set the pricing on all three subscription products (they show Missing Metadata). Set the 7-day free trial on Pro.
+
+**Tell Replit** — Build the complete IAP purchase flow with those three product IDs. Server-side receipt verification. Restore purchases button. Sync Apple subscription status to the same tier system Stripe uses.
+
+**Then** — EAS build, upload, send the new Apple reply saying IAP is implemented.
+
+---
+
+**The Honest Bottom Line**
+
+You've gone from Apple rejection to a proper solution in one session. The pricing is right, the IAP approach is right, the trial approach is right.
+
+The only thing left is Replit building the code and you doing the build.
+
+Go set the Missing Metadata on those three subscription products in App Store Connect right now. That's your immediate action.

@@ -1,0 +1,143 @@
+This build does not count towards your EAS Build usage.
+iOS App Store build
+a1c5522 · Update app configuration to support mobile payment processing Add Bluetooth background mode configuration to the Stripe Terminal plugin in app.json. Replit-Commit-Author: Agent Replit-Commit-Session-Id: d9bbd5c0-a918-45b6-9a45-51cc2c443aab Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: af52dd10-a014-4dab-ba62-493f794077d9 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/d9bbd5c0-a918-45b6-9a45-51cc2c443aab/nx2T4Sg Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (24)
+
+8c6b672
+
+a1c5522
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Mar 9, 2026 4:44 PM
+0s
+
+50s
+
+27s
+
+1m 18s
+
+29 days
+
+Logs
+
+Waiting to start
+
+8s
+
+
+Spin up build environment
+
+41s
+
+
+Install custom tools
+
+8s
+
+
+Prepare project
+
+12s
+
+
+Read eas.json
+
+1s
+
+
+Read package.json
+
+1s
+
+
+Install dependencies
+
+1s
+
+
+Running "npm ci --include=dev" in /Users/expo/workingdir/build/mobile directory
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+npm error
+npm error Missing: @stripe/stripe-terminal-react-native@0.0.1-beta.29 from lock file
+npm error Missing: base-64@1.0.0 from lock file
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /Users/expo/.npm/_logs/2026-03-09T06_45_25_296Z-debug-0.log
+npm ci --include=dev exited with non-zero code: 1
+
+Fail job
+
+1s
+
+
+Build failed
+
+npm ci --include=dev exited with non-zero code: 1

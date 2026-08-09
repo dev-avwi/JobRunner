@@ -1,0 +1,134 @@
+Integrations
+Connect your payment and communication services
+
+Ready to Accept Payments
+Your Stripe account is connected and ready. You can send invoices and collect payments!
+
+Live
+Payment Processing
+Accept payments via Stripe
+
+Connected
+AV Web Innovations
+Payments are processed and deposited directly to your bank account.
+
+View Stripe Dashboard
+Email - Ready to Go!
+Verified
+Send quotes and invoices from your Gmail
+
+Working
+No setup needed - it just works!
+
+Emails from your Gmail will land in your client's inbox, not spam. When you click "Send" on a quote or invoice, Gmail opens with everything ready.
+
+Setup Checklist
+
+Email delivery connected
+Quote templates ready
+Invoice templates ready
+Professional PDF generation
+Send Test Email
+Opens Gmail with a test message
+How it works:
+
+1
+Click "Send" on any quote or invoice
+2
+Gmail opens with a professional email + PDF attached
+3
+Review and hit "Send" in Gmail
+4
+Done! The email appears in your Sent folder
+
+Australian Compliance Tips
+Xero Accounting
+Sync invoices and contacts with Xero
+
+Not Connected
+Connect your Xero account to automatically sync invoices and contacts.
+
+Two-way sync: Contacts and invoices stay in sync
+
+Automatic updates: Changes sync between platforms
+
+Australian business: Works with Xero AU
+
+Connect to Xero
+Google Calendar
+Sync scheduled jobs to your calendar
+
+Not Connected
+Connect your Google Calendar to automatically sync scheduled jobs. Never miss an appointment again.
+
+One-way sync: Jobs sync from TradieTrack to Calendar
+
+Event details: Job title, client, address, and notes
+
+Reminders: Automatic 60min and 15min reminders
+
+Connect Google Calendar
+Communication Services
+Connect these services to automate client communications
+
+SMS Notifications
+Send SMS reminders and updates to clients
+
+Connected
+SMS integration is active
+
+Your clients will receive SMS notifications for appointments and updates.
+
+Active features:
+
+SMS reminders sent automatically
+Two-way texting with clients
+Appointment confirmations
+Update Settings
+Email Automation
+Automatic email sending for quotes & invoices
+
+Connected
+Email automation is active
+
+Quotes and invoices are sent automatically without opening Gmail.
+
+What happens when connected:
+
+Emails send instantly (no Gmail popup)
+Professional templates
+Delivery tracking
+Optional: Send Emails Automatically
+Want emails to send instantly without opening Gmail? Connect your email account below. This is optional - the Gmail method above works great for most tradies.
+
+Email Delivery
+Your Email Connected
+Gmail Connected
+Automatic
+Emails will be sent via your connected Gmail account.
+
+Quotes and invoices will be sent from your Gmail. Replies go directly to your inbox.
+
+Sending emails as: Gmail Account
+
+Display name: Gmail Connector
+
+Connection: GMAIL
+
+Test Connection
+Disconnect
+Quick Guide: Getting Paid
+1
+Connect Stripe
+
+Add your bank details so you can receive payments
+
+2
+Send Invoice
+
+Your client gets an email with a "Pay Now" button
+
+3
+Get Paid
+
+Money goes to your bank in 2-3 busi

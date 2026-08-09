@@ -1,0 +1,151 @@
+Gotcha – annoying layout bugs are the worst 😂
+If it still looks left-hugged with a big blank strip, that means some container is still constrained, and everything I said before is fighting that.
+
+Since I can’t see your code directly, I’ll do two things:
+
+Give you a very specific “nuke” layout fix you can drop in to force full-width, centered content.
+
+Tell you exactly what to look for so you can find the culprit (and if you want, you can paste your layout code here and I’ll edit it for you).
+
+1️⃣ “Nuke fix” layout you can drop in
+
+Find the component that wraps all your pages – usually something like AppLayout, Layout, MainContent, etc.
+
+JSX (structure)
+
+Your layout should roughly look like this:
+
+// AppLayout.tsx (or similar)
+import React from "react";
+import "./layout.css";
+
+export const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return (
+    <div className="app-shell">
+      {/* top bar / header if you have one */}
+      <header className="app-header">...</header>
+
+      {/* main scroll area */}
+      <main className="app-main">
+        <div className="page-container">
+          {children}
+        </div>
+      </main>
+
+      {/* bottom nav */}
+      <footer className="app-bottom-nav">...</footer>
+    </div>
+  );
+};
+
+CSS (force full width + center)
+/* layout.css */
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f7fa;
+}
+
+/* this is the area above the bottom nav */
+.app-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;   /* center child horizontally */
+}
+
+/* this is the actual page width */
+.page-container {
+  width: 100%;
+  max-width: 960px;          /* or 1200px if you want wider */
+  margin: 0 auto;            /* center within .app-main */
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+/* bottom nav should stay edge-to-edge */
+.app-bottom-nav {
+  border-top: 1px solid #e5e7eb;
+}
+
+
+Then, in every page (Dashboard, Jobs, etc.) remove any extra outer wrappers that try to “container” the page again, so your page starts like:
+
+export const Dashboard = () => {
+  return (
+    <>
+      <h1>Dashboard</h1>
+      {/* the rest of your content */}
+    </>
+  );
+};
+
+
+Not:
+
+// BAD – extra container that might be causing the narrow left column
+<div className="dashboard-page">
+  ...
+</div>
+
+
+If you want your own class, put styles on .page-container, not a second wrapper.
+
+2️⃣ What to hunt for (this is likely the real culprit)
+
+Open DevTools (right-click → Inspect) on the Dashboard page and check:
+
+Click the big content area.
+
+In the Styles pane, look for any of these on a parent element:
+
+max-width: 400px; / 500px etc
+
+width: 375px; or similar
+
+margin-right: auto; margin-left: 0;
+
+align-items: flex-start; on a horizontal flex container
+
+a grid like grid-template-columns: 360px auto; where your page is the first narrow column
+
+If you uncheck one of those and the page suddenly “snaps” to fill the screen, that’s the one.
+
+Because your More page looks fine, it probably:
+
+doesn’t use that narrow wrapper, or
+
+overrides it with full-width styles.
+
+Compare the DOM for Dashboard vs More in DevTools:
+
+See what <div class="something"> exists on Dashboard but not on More.
+
+Whatever that is, it’s your “left column” wrapper.
+
+3️⃣ Easiest way for me to fix it precisely
+
+If you’re happy to, paste these three things in your next message:
+
+Your layout file (AppLayout.tsx / App.tsx / whatever wraps all pages).
+
+The CSS (or Tailwind classes) used on the main layout + page wrapper.
+
+The top of your Dashboard page component (just the outer structure, not every card).
+
+I can then:
+
+point to the exact class/line that’s causing the blank column,
+
+rewrite the JSX/CSS properly,
+
+and you’ll have a clean, centered layout like your More page on every screen.
+
+Without that, I’m a bit blind – but the “nuke CSS” above + DevTools check should get you very close.

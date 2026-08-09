@@ -1,0 +1,257 @@
+# JobRunner Signup & Onboarding — QA Audit
+# Version: 1.0 | Scope: Web app (jobrunner.com.au) + iOS App Store build
+# Run this checklist top to bottom. Mark each item PASS / FAIL / BUG with notes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 1 — LANDING PAGE → SIGNUP ENTRY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] "Get Started Free" CTA (hero) → navigates to signup page
+[ ] "Get Started Free" CTA (nav) → same destination as hero CTA
+[ ] "Log In" link → navigates to login page, NOT signup
+[ ] "Try the Demo" → opens demo mode or correct demo flow
+[ ] "Client Portal" nav link → correct destination
+[ ] Page loads under 3s on desktop (Chrome, Safari, Firefox)
+[ ] Page loads under 5s on mobile (iPhone Safari, Android Chrome)
+[ ] Logo links back to homepage from all pages
+[ ] No broken images or console errors on landing page
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 2 — SIGNUP FORM (STEP 1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### 2A — Field Presence & Labels
+[ ] Full name field present and labelled
+[ ] Email field present and labelled
+[ ] Password field present and labelled
+[ ] Confirm password field present (or inline confirmation)
+[ ] Business name field present
+[ ] Phone number field present (Australian +61 format supported)
+[ ] Trade/industry selector present (plumber, electrician, builder, etc.)
+[ ] Terms & Conditions checkbox present with working link
+[ ] Privacy Policy link present and working
+[ ] "Already have an account? Log in" link present
+
+### 2B — Validation: Empty Submission
+[ ] Submitting blank form shows inline errors on ALL required fields
+[ ] Error messages are specific (not just "required") — e.g. "Email is required"
+[ ] Page does not scroll to top on failed validation
+[ ] Submit button shows loading state while processing
+
+### 2C — Email Validation
+[ ] Accepts: user@domain.com.au
+[ ] Accepts: user+tag@domain.com
+[ ] Rejects: missing @ symbol → inline error
+[ ] Rejects: no domain (user@) → inline error
+[ ] Rejects: no TLD (user@domain) → inline error
+[ ] Rejects: spaces in email → inline error
+[ ] Rejects: already-registered email → specific error "Email already in use"
+[ ] Case-insensitive: User@Domain.Com treated same as user@domain.com
+
+### 2D — Password Validation
+[ ] Min length enforced (8+ chars recommended) → error if too short
+[ ] Password strength indicator visible (weak/medium/strong)
+[ ] Password is masked by default
+[ ] Show/hide password toggle works
+[ ] Confirm password mismatch → inline error "Passwords do not match"
+[ ] Accepts special characters (!@#$%^&*)
+[ ] Does NOT accept passwords that are just spaces
+
+### 2E — Phone Number
+[ ] Accepts 04XX XXX XXX (Australian mobile)
+[ ] Accepts +61 4XX XXX XXX (international format)
+[ ] Rejects letters → inline error
+[ ] Rejects < 10 digits → inline error
+[ ] Rejects > 15 digits → inline error
+
+### 2F — Business Name
+[ ] Accepts special chars (O'Brien Plumbing, Smith & Sons)
+[ ] Accepts numbers (ABC Electrical 2024)
+[ ] Rejects empty → inline error
+[ ] Max character limit enforced (suggest 100 chars)
+
+### 2G — Terms Checkbox
+[ ] Cannot submit without ticking → inline error "You must accept the terms"
+[ ] Checkbox is keyboard-accessible (space bar toggles)
+
+### 2H — Duplicate Account Prevention
+[ ] Attempting to register with an existing email shows clear error
+[ ] Does NOT create a duplicate account silently
+[ ] Error appears inline (not as a full page redirect)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 3 — EMAIL VERIFICATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Verification email sent immediately after signup (< 60s)
+[ ] Email lands in inbox (not spam) for Gmail, Outlook, iCloud
+[ ] Email is from a branded address (e.g. no-reply@jobrunner.com.au)
+[ ] Email subject line is clear ("Verify your JobRunner account")
+[ ] Email body includes business name personalisation
+[ ] Verification link works and redirects to app
+[ ] Verification link expires after reasonable time (24–48h)
+[ ] Expired link shows clear message with resend option
+[ ] "Resend verification email" button present on holding screen
+[ ] Resend is rate-limited (cannot spam it 50 times)
+[ ] Verifying on a different device/browser from signup works
+[ ] Attempting to use same verification link twice → correct error
+[ ] Unverified user attempting to log in → directed to verify first
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 4 — ONBOARDING FLOW (POST-SIGNUP)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+### 4A — Welcome / Setup Wizard
+[ ] First login lands on onboarding/setup screen (not raw dashboard)
+[ ] Progress indicator visible (Step 1 of N)
+[ ] User's business name populated from signup
+[ ] Can navigate back through steps without losing data
+[ ] Can skip optional steps (marked clearly as optional)
+[ ] Skipped steps accessible later from settings
+
+### 4B — Business Profile Setup
+[ ] Business logo upload works (PNG, JPG, WEBP accepted)
+[ ] Rejects non-image files (PDF, EXE) → clear error
+[ ] Rejects images over size limit → clear error with limit stated
+[ ] ABN field present (Australian Business Number)
+[ ] ABN validates to 11-digit Australian format
+[ ] Business address autocomplete works (Google Places or similar)
+[ ] Business address accepts manual entry if autocomplete fails
+[ ] Trade/service type selection saves correctly
+[ ] GST registration toggle present (affects invoicing logic)
+
+### 4C — Team Setup (if multi-user plan)
+[ ] Can invite team members via email
+[ ] Invite email is sent successfully
+[ ] Invited user gets correct role (admin/tech/subcontractor)
+[ ] Can skip team setup if solo operator
+[ ] Role permissions enforced from first login
+
+### 4D — Integrations Setup (Xero, etc.)
+[ ] Xero connect prompt shown at appropriate onboarding step
+[ ] Connecting Xero completes OAuth flow correctly
+[ ] Skipping Xero doesn't break anything downstream
+[ ] Integration status shown clearly (connected / not connected)
+
+### 4E — Onboarding Completion
+[ ] Completing all steps lands on the main dashboard
+[ ] Completion message or celebration state shown
+[ ] Onboarding checklist doesn't re-appear after completion
+[ ] "Get started" / first-run tips shown on dashboard (dismissable)
+[ ] Dismissed tips don't reappear on next login
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 5 — LOGIN FLOW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Correct email + correct password → successful login
+[ ] Wrong password → "Incorrect email or password" (NOT which one is wrong)
+[ ] Non-existent email → same generic error (no account enumeration)
+[ ] Empty fields → inline validation before submit
+[ ] "Forgot password?" link present and working
+[ ] Remember me / stay logged in checkbox (if present) works
+[ ] Redirect to originally intended page after login (deep link)
+[ ] Session persists on browser refresh
+[ ] Session expires after appropriate idle time
+[ ] Login works on: Chrome, Safari, Firefox, Edge
+[ ] Login works on: iPhone Safari, Android Chrome
+
+### 5A — Forgot Password
+[ ] Entering registered email → reset email sent
+[ ] Entering unregistered email → shows same success message (no enumeration)
+[ ] Reset email arrives within 60s
+[ ] Reset link is single-use (second click shows "link already used")
+[ ] Reset link expires (suggest 1–2 hours)
+[ ] New password must meet same strength rules as signup
+[ ] After reset, old password no longer works
+[ ] After reset, redirected to login with success message
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 6 — PLAN SELECTION & SUBSCRIPTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Free plan: full signup with no payment info required
+[ ] Upgrade prompt appears at appropriate feature limits
+[ ] Plan comparison shown clearly (Free / Pro $49 / Team $99 / Business $199)
+[ ] Stripe payment form loads correctly
+[ ] Test card (4242 4242 4242 4242) processes successfully in test mode
+[ ] Declined card shows human-readable error
+[ ] Incomplete card number → inline error
+[ ] Expired card → inline error
+[ ] Wrong CVV → inline error
+[ ] GST included in displayed pricing (Australian compliance)
+[ ] Receipt/invoice emailed after successful payment
+[ ] AI Receptionist add-on ($60/mo) can be added separately
+[ ] Downgrade path exists and works
+[ ] Cancel subscription flow exists (even if redirects to contact)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 7 — SECURITY & EDGE CASES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] XSS test: enter <script>alert(1)</script> in name field → no execution
+[ ] SQL injection test: enter ' OR 1=1-- in email → no error dump
+[ ] HTTPS enforced on all pages (no mixed content warnings)
+[ ] Passwords not visible in URL or network request params
+[ ] Password field not autocompleted on public/shared device warning
+[ ] Rate limiting on login (lockout or CAPTCHA after 5+ failed attempts)
+[ ] Rate limiting on signup (cannot create 100 accounts in 1 minute)
+[ ] CSRF protection on form submissions
+[ ] Logout clears session cookie (cannot go back with browser back button)
+[ ] Multiple simultaneous sessions handled correctly
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 8 — MOBILE & RESPONSIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] Signup form usable on 375px wide (iPhone SE)
+[ ] Signup form usable on 390px wide (iPhone 14)
+[ ] No horizontal scroll on any signup/login screen
+[ ] Keyboard does not obscure active input field on mobile
+[ ] "Next" button on mobile keyboard advances to next field
+[ ] Email keyboard type shown for email field (@ visible)
+[ ] Number keyboard shown for phone field
+[ ] Password field shows correct mobile keyboard
+[ ] Touch targets are at least 44x44px
+[ ] iOS App: all of the above applies natively in the app
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 9 — COPY, BRAND & UX POLISH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[ ] No spelling or grammar errors on any signup/onboarding screen
+[ ] All error messages are human-readable (no raw API errors shown)
+[ ] Brand colours correct: Primary Blue #2B7DE9, Accent Orange #F28C28
+[ ] Logo displays correctly at all screen sizes
+[ ] Loading states shown for all async actions (spinners/skeletons)
+[ ] No orphaned UI elements or misaligned buttons
+[ ] Consistent font usage (SF Pro on iOS, system default web)
+[ ] Onboarding progress bar matches actual step count
+[ ] Back button works as expected on every step
+[ ] Browser tab title is correct on every screen
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+## SECTION 10 — CRITICAL SCENARIO MATRIX
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Run each scenario end-to-end and confirm PASS/FAIL:
+
+[ ] SCENARIO A: New solo tradie, Free plan, desktop Chrome, completes full onboarding
+[ ] SCENARIO B: New business, Pro plan, pays via Stripe, skips Xero, invites 1 staff
+[ ] SCENARIO C: Returning user, forgets password, resets it, logs back in
+[ ] SCENARIO D: User signs up, doesn't verify email, tries to log in
+[ ] SCENARIO E: User signs up with same email twice
+[ ] SCENARIO F: User completes signup on desktop, verifies on iPhone Safari
+[ ] SCENARIO G: User begins onboarding, closes browser halfway, returns next day
+[ ] SCENARIO H: User on Team plan, invites subcontractor who creates their own account
+[ ] SCENARIO I: User upgrades from Free to Pro mid-onboarding
+[ ] SCENARIO J: User enters ABN in wrong format, get

@@ -1,0 +1,106 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.1 (68)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+Screenshot-0425-144756.pngDownload
+Edit
+
+Messages (9)
+
+Apple2026-04-20 11:47 AM
+
+Ayden Vogler2026-04-20 5:08 PM
+
+Apple2026-04-22 5:57 PM
+
+Ayden Vogler2026-04-22 8:20 PM
+
+Ayden Vogler2026-04-22 8:24 PM
+
+Apple2026-04-23 10:21 PM
+
+Ayden Vogler2026-04-23 11:14 PM
+
+AppleYesterday 11:42 PM
+
+AppleYesterday 11:48 PM
+Hello,
+
+Thank you for your efforts to follow our guidelines. There are some outstanding issues that still need your attention.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+Submission ID: 73a653e8-2aca-42fb-8625-4951807fa3b3
+Review date: April 25, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0 (68)
+
+Guideline 2.1(a) - Performance - App Completeness
+
+Issue Description
+
+The submission includes content that is not complete and final. 
+
+Specifically, the app's Tap to Pay returns a coming soon message.
+
+Users expect the apps they download to be ready for public use and should not include incomplete or placeholder content. Apps shouldn't include placeholder or incomplete content or information.
+
+Next Steps
+
+Revise the app and metadata so that all of its content is complete and final.
+
+Resources 
+
+Learn about app completeness requirements in guideline 2.1(a).
+
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Request an App Review Appointment at Meet with Apple to discuss your app's review. Appointments subject to availability during your local business hours on Tuesdays and Thursdays.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review
+
+Date Submitted
+Apr 20, 2026 at 5:10 PM
+Submission ID
+73a653e8-2aca-42fb-8625-4951807fa3b3
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

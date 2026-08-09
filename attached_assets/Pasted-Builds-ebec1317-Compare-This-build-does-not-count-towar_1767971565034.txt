@@ -1,0 +1,284 @@
+Builds
+
+ebec1317
+
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+68674ef · Force push local changes to the remote repository to resolve sync issues Force push local commits to the 'main' branch of the remote repository to synchronize changes, overwriting remote history. Replit-Commit-Author: Agent Replit-Commit-Session-Id: c27b61db-a457-4a74-a280-88751285f107 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: c77ecf81-5d43-4064-ae4a-2b3e4e03a9ba Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/c27b61db-a457-4a74-a280-88751285f107/YJWewom
+
+
+Profile
+
+
+Environment
+
+SDK version
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+54.0.0
+
+ 1.0.0 (15)
+
+2790a85
+
+68674ef
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Jan 10, 2026 1:09 AM
+0s
+
+1m 2s
+
+1m 49s
+
+2m 52s
+
+29 days
+
+Logs
+
+Waiting to start
+
+18s
+
+
+Spin up build environment
+
+43s
+
+
+Install custom tools
+
+10s
+
+
+Prepare project
+
+14s
+
+
+Read package.json
+
+1s
+
+
+Install dependencies
+
+8s
+
+
+Read app config
+
+1s
+
+
+Run expo doctor
+
+
+1
+2s
+
+
+Running "expo doctor"
+Running 17 checks on your project...
+15/17 checks passed. 2 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+✖ Validate packages against React Native Directory package metadata
+The following issues were found when validating your dependencies against React Native Directory:
+  Untested on New Architecture: @stripe/stripe-terminal-react-native
+Advice:
+Use libraries that are actively maintained and support the New Architecture. Find alternative libraries with https://reactnative.directory.
+Add packages to expo.doctor.reactNativeDirectoryCheck.exclude in package.json to selectively skip validations, if the warning is not relevant.
+✖ Check that packages match versions required by installed Expo SDK
+🔧 Patch version mismatches
+package                expected  found    
+expo                   ~54.0.31  54.0.30  
+expo-audio             ~1.1.1    1.1.0    
+expo-constants         ~18.0.13  18.0.12  
+expo-linking           ~8.0.11   8.0.10   
+expo-notifications     ~0.32.16  0.32.15  
+expo-router            ~6.0.21   6.0.19   
+expo-splash-screen     ~31.0.13  31.0.12  
+react-native-worklets  0.5.1     0.5.2    
+Changelogs:
+- expo-audio → https://github.com/expo/expo/blob/sdk-54/packages/expo-audio/CHANGELOG.md
+- expo-constants → https://github.com/expo/expo/blob/sdk-54/packages/expo-constants/CHANGELOG.md
+- expo-linking → https://github.com/expo/expo/blob/sdk-54/packages/expo-linking/CHANGELOG.md
+- expo-notifications → https://github.com/expo/expo/blob/sdk-54/packages/expo-notifications/CHANGELOG.md
+- expo-router → https://github.com/expo/expo/blob/sdk-54/packages/expo-router/CHANGELOG.md
+- expo-splash-screen → https://github.com/expo/expo/blob/sdk-54/packages/expo-splash-screen/CHANGELOG.md
+8 packages out of date.
+Advice:
+Use 'npx expo install --check' to review and upgrade your dependencies.
+To ignore specific packages, add them to "expo.install.exclude" in package.json. Learn more: https://expo.fyi/dependency-validation
+2 checks failed, indicating possible issues with the project.
+Command "expo doctor" failed.
+npx -y expo-doctor exited with non-zero code: 1
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+32s
+
+
+Configure Xcode project
+
+1s
+
+
+Bundle JavaScript
+
+18s
+
+
+Run fastlane
+
+
+2
+10s
+
+
+Creating Gymfile
+Gymfile created
+Successfully loaded '/Users/expo/workingdir/build/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | TradieTrack                                                                                                                                 |
+| configuration         | Release                                                                                                                                     |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-dc793ff9-669a-4295-b9f7-d5f2e30968fd.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./TradieTrack.xcworkspace -scheme TradieTrack -configuration Release
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./TradieTrack.xcworkspace -scheme TradieTrack -configuration Release
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./TradieTrack.xcworkspace -scheme TradieTrack -configuration Release 2>&1
+Detected provisioning profile mapping: {:"com.tradietrack.app"=>"1261abeb-13ce-4e34-88ef-88969ad549f9"}
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                        Summary for gym 2.228.0                                                                                        |
++---------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                               | ./TradieTrack.xcworkspace                                                                                                                   |
+| scheme                                                  | TradieTrack                                                                                                                                 |
+| clean                                                   | false                                                                                                                                       |
+| output_directory                                        | ./build                                                                                                                                     |
+| output_name                                             | TradieTrack                                                                                                                                 |
+| configuration                                           | Release                                                                                                                                     |
+| silent                                                  | false                                                                                                                                       |
+| skip_package_ipa                                        | false                                                                                                                                       |
+| skip_package_pkg                                        | false                                                                                                                                       |
+| export_options.method                                   | app-store                                                                                                                                   |
+| export_options.provisioningProfiles.com.tradietrack.app | 1261abeb-13ce-4e34-88ef-88969ad549f9                                                                                                        |
+| export_xcargs                                           | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/eas-build-dc793ff9-669a-4295-b9f7-d5f2e30968fd.keychain" |
+| build_path                                              | /Users/expo/Library/Developer/Xcode/Archives/2026-01-09                                                                                     |
+| result_bundle                                           | false                                                                                                                                       |
+| buildlog_path                                           | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                             | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                   | true                                                                                                                                        |
+| xcodebuild_formatter                                    | xcpretty                                                                                                                                    |
+| build_timing_summary                                    | false                                                                                                                                       |
+| disable_xcpretty                                        | true                                                                                                                                        |
+| skip_profile_detection                                  | false                                                                                                                                       |
+| xcodebuild_command                                      | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                    | false                                                                                                                                       |
+| disable_package_automatic_updates                       | false                                                                                                                                       |
+| use_system_scm                                          | false                                                                                                                                       |
+| xcode_path                                              | /Applications/Xcode.app                                                                                                                     |
++---------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./TradieTrack.xcworkspace -scheme TradieTrack -configuration Release -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-01-09/TradieTrack\ 2026-01-09\ 07.11.40.xcarchive archive | tee /Users/expo/workingdir/logs/TradieTrack-TradieTrack.log > /dev/null
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	Archiving workspace TradieTrack with scheme TradieTrack
+▸ (1 failure)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.228.0                 |
+| sdk         | iPhoneOS26.0.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Provisioning profile "*[expo] com.tradietrack.app AppStore 2025-12-07T18:46:45.336Z" doesn't include the com.apple.developer.proximity-reader.payment.acceptance entitlement. (in target 'TradieTrack' from project 'TradieTrack')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1s
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Provisioning profile "*[expo] com.tradietrack.app AppStore 2025-12-07T18:46:45.336Z" doesn't include the com.apple.developer.proximity-reader.payment.acceptance entitlement. (in target 'TradieTrack' from project 'TradieTrack')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+
+View in the Browser

@@ -1,0 +1,273 @@
+Love this – this is the “does this feel like a real tool tradies can trust every day?” check. 🔧📱
+
+Here’s a single master prompt you can paste into Replit to make it:
+	•	Check mobile app vs web app for consistency (UI + features)
+	•	Check that everything is trustable, clear, and not just UI-only
+	•	Check that the mobile UX feels like TradieTrack, not a different app
+
+Just copy–paste this into Replit AI:
+
+⸻
+
+
+I’m building a SaaS product called **TradieTrack** for tradies (jobs, quotes, invoices, payments, maps, chat, etc.).
+
+I now have:
+
+- A **web app** version (desktop/mobile web)
+- A **mobile app** version
+
+I want you to act as:
+
+- A **QA engineer**
+- A **UX reviewer who understands tradies**
+- A **consistency checker** between web + mobile
+
+Your goals:
+
+1) Make sure the **mobile app matches the web app** in features and behaviour  
+2) Make sure **nothing is UI-only / half-finished**  
+3) Make the app feel **trustable, clear and appropriate** for real tradies  
+4) Make the **mobile UX feel like the same product as the web app**
+
+Use the existing codebase as the source of truth.
+
+------------------------------------------------
+1️⃣ FEATURE PARITY: WEB APP VS MOBILE APP
+------------------------------------------------
+Compare web and mobile for these core features:
+
+- Auth & onboarding
+  - Sign up, login, logout
+  - Onboarding questions (solo vs team, trade type, business info)
+- Dashboard / Activity screen
+- Jobs (list, detail, status updates)
+- Clients
+- Quotes (create, edit, preview, send)
+- Invoices (create/convert, preview, send)
+- PDFs (quote + invoice)
+- Job chat & team chat
+- Files/photos on jobs
+- Calendar/schedule
+- Map / location features
+- Time tracking
+- Settings (business, billing, payments, team)
+- Stripe flows (subscriptions + invoice payments)
+- SendGrid/email flows (quote sent, invoice sent, receipts)
+
+For each of these:
+
+- Confirm the **mobile app actually implements** the same feature as the web app.
+- Confirm the **backend calls / API logic** are wired (not just UI screens).
+- If mobile is missing something that web has (or vice versa), either:
+  - Implement it in mobile too, OR
+  - Hide/disable it on mobile for now and mark it clearly as “coming soon” in code comments.
+
+I do NOT want any screens or buttons that look finished but don’t do anything.
+
+------------------------------------------------
+2️⃣ TRUST & CLARITY: LANGUAGE + FLOWS
+------------------------------------------------
+Go through the MOBILE APP UI and check:
+
+- All labels, buttons, and error messages use **simple tradie-friendly language**.
+  - Example:
+    - “Create job”, “Send quote”, “Mark as paid”, “Complete job”
+    - NOT “Submit entity”, “Execute action”, etc.
+
+- Make sure **nothing is confusing or vague**:
+  - “Track location” should clearly explain *what* is tracked and *why*.
+  - Payment buttons should be clearly labelled:
+    - “Take card payment now”
+    - “Send payment link”
+    - “Record cash/bank transfer”
+
+- Check that key “trust” screens look professional:
+  - Quote preview
+  - Invoice preview
+  - Payment screen
+  - Email templates
+
+For each of those, check the text and layout so it looks like something a real business would send, not a test app.
+
+------------------------------------------------
+3️⃣ VISUAL CONSISTENCY: MOBILE FEELS LIKE TRADIETRACK
+------------------------------------------------
+Make the mobile app visually consistent with the web app:
+
+- Same colour palette (blues + orange from the TradieTrack logo)
+- Same general typography family (e.g. Manrope/Inter/SF Pro-like)
+- Same button shapes (rounded radius) and shadow style
+- Same icon style
+- Same spacing rules:
+  - Padding around cards
+  - Spacing between sections
+  - Consistent margins
+
+Check:
+
+- Buttons on mobile look like the same brand as web.
+- Bottom navigation on mobile uses the same sections as the web app:
+  - e.g. Activity / Jobs / Clients / Invoices / More (or whatever the current nav is)
+- Card styles and status chips (Scheduled, In Progress, Completed, Paid, etc.) use the same colours and shape logic.
+
+If you find any screens that look like a different app (different styling, colours, fonts), refactor them to match the main TradieTrack design system.
+
+------------------------------------------------
+4️⃣ SPECIFIC FEATURES TO VERIFY ARE FULLY IMPLEMENTED (NOT JUST UI)
+------------------------------------------------
+Check these carefully on BOTH web and mobile:
+
+A) Job → Quote → Invoice → Payment
+
+- Job creation:
+  - Actually writes to DB
+  - Status changes (New → Scheduled → In progress → Completed) work in backend AND UI.
+- Quote creation:
+  - Linked to a real job + client
+  - Items, GST, totals calculated
+  - Live preview uses the same PDF template logic as web app
+- Quote send:
+  - “Send quote” button triggers a valid SendGrid email OR queues it correctly
+  - Public quote link or PDF view is generated
+- Quote acceptance:
+  - Acceptance actually updates DB: status = Accepted
+  - Acceptance timestamp recorded
+  - Optional auto-update of job status
+
+- Invoice creation:
+  - Converting quote → invoice copies correct data
+  - Invoice numbers are unique and well-formatted
+- Invoice send:
+  - SendGrid email wired
+  - Payment link or PDF working
+
+- Stripe payment:
+  - Subscription: tradies paying for TradieTrack
+  - Invoice payment: clients paying tradies using Stripe/Stripe Connect
+  - Webhooks update invoice to Paid
+  - Mobile app reflects payment status changes correctly.
+
+B) PDFs (Quotes & Invoices)
+
+- Confirm mobile uses the same template engine as web, or at least the same layout logic.
+- PDFs must include:
+  - Business name, ABN, contact
+  - Client name + address
+  - Quote/Invoice number
+  - Dates
+  - Items + totals + GST
+- Ensure preview in mobile matches final PDF appearance closely enough.
+
+C) Maps & Location
+
+- Job address:
+  - Saved in DB (not just shown in UI).
+  - If geocoded, lat/lng stored.
+
+- Map page (owner):
+
+  - Shows jobs pinned on a map for their region/city.
+  - Pins show job status (e.g. coloured icon or label: Scheduled, In progress, Completed).
+  - Cluster behaviour or basic pin handling for many jobs.
+
+- Team/tradie location (if implemented):
+
+  - If you show where tradies are “right now”, make sure any “Track location” features:
+    - Actually call a function
+    - Send coordinates to backend
+    - Don’t fake data.
+
+  - If live tracking is not fully implemented, either:
+    - Remove it from mobile beta, or
+    - Clearly label as “Coming soon” and do NOT show fake data.
+
+D) Chat (Job & Team)
+
+- Job chat:
+
+  - Messages are stored in the database.
+  - Show which user sent each message.
+  - Timestamps show correctly in mobile.
+  - New message appears without hard refresh.
+
+- Team chat:
+
+  - Group channel exists for the business.
+  - Owner/manager can talk to specific tradie (1:1 chat) if that’s in the UI.
+  - Same behaviour on web and mobile (no “dead” chat screens on mobile).
+
+E) Roles & Onboarding (Owner vs Tradie)
+
+- Onboarding:
+
+  - Solo tradie vs Team owner vs Team member is captured during onboarding or in settings.
+  - That choice affects which dashboard and menu they see.
+
+- Owner dashboard:
+
+  - Sees team overview, more settings, map of jobs, maybe team location, billing, etc.
+
+- Tradie dashboard:
+
+  - Sees MY jobs, MY schedule, job chat, maybe quick actions.
+  - Does NOT see owner-only things like billing, global team settings, etc.
+
+- Confirm in code that role-based checks exist (not just hiding things in UI).
+
+------------------------------------------------
+5️⃣ MOBILE UX POLISH (iOS/Android FEEL)
+------------------------------------------------
+On mobile, check:
+
+- All interactive elements are big enough to tap.
+- No horizontal scrolling on key screens.
+- Bottom navigation is clear, not cluttered.
+- Text is readable (no tiny fonts).
+- Long job lists + quote lists are scrollable and performant.
+- Loading states and error states exist (not just blank screens).
+
+Make mobile feel like a first-class experience, not a cut-down version.
+
+------------------------------------------------
+6️⃣ “NO HALF-DONE FEATURES” PASS
+------------------------------------------------
+Do a final pass through:
+
+- All navigation items
+- All main buttons
+- All visible sections
+
+For each:
+
+- If there is UI, there must be working logic behind it.
+- If there is no time to implement logic, then:
+
+  - hide the feature for now in beta, OR
+  - clearly label it as “Coming soon” in UI and keep it out of primary flows.
+
+I do NOT want users to see a button, tap it, and nothing real happens.
+
+------------------------------------------------
+7️⃣ FINAL SUMMARY
+------------------------------------------------
+At the end, produce a summary (in comments or console) with:
+
+- ✅ List of flows that are now fully working on **both web and mobile**
+- ⚠️ List of features that are **web-only or mobile-only** and why
+- 🛠 Critical issues you found and fixed (UI-only parts, broken flows, missing backend wiring)
+- 🎯 Your judgement: Is TradieTrack now a **trustable, clear, technically solid beta** for real tradies on BOTH web and mobile?
+
+Please go through the codebase carefully, fix or hide incomplete things, and ensure web + mobile feel like ONE consistent, professional product that tradies can trust every day.
+
+
+⸻
+
+You can:
+	1.	Paste that into Replit AI.
+	2.	Let it refactor, wire missing things, and hide any fake/half-done bits.
+	3.	Then do your own manual test on your phone (login as owner + as tradie) and just feel:
+	•	Does this make sense?
+	•	Would a real tradie know what to do next on every screen?
+
+If you want, next I can write you a simple real-world “owner vs tradie” test script you can follow on your phone step-by-step.

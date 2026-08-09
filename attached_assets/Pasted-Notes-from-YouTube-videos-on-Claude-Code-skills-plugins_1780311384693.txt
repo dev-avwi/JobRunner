@@ -1,0 +1,502 @@
+Notes from YouTube videos on Claude Code skills, plugins, productivity tools, and workflows for building software faster and more reliably.
+
+---
+
+# 🎥 Video 1 — 6 Most Useful Claude Code Skills (Tim)
+
+**Channel:** Tim | **Focus:** G Stack, Hostinger MCP, Firecrawl, Humanizer, Composio, VibeSec
+
+https://www.youtube.com/watch?v=ZSvcxjNZdxk
+
+## The 6 Skills
+
+### 1 — G Stack (Gary Tan, YC President)
+
+A bundle of 23 skills designed for founders, CEOs, first-time Claude Code users, and tech leads. Built by Gary Tan specifically for building software products.
+
+**Key skills inside the bundle**:
+
+- `/office-hours` — describe what you want to build, G Stack asks clarifying questions about the pain and why you're building it
+- `/plan` — creates a structured build plan
+- `/ceo-review` — reviews the plan from a CEO/product perspective
+- `/review` — code review
+- `/qa` — quality assurance
+
+**How to install**: copy the installation paragraph from the G Stack repo (link in video description), paste into Claude Code terminal, press enter, say yes to proceed. It installs all 23 skills automatically.
+
+**When to use**: any software product build. The office-hours → plan → CEO review → engineering review → QA sequence prevents vibe-coded projects that aren't actually useful.
+
+---
+
+### 2 — Hostinger MCP
+
+Brings full deployment capability into Claude Code. Instead of leaving the terminal to buy a VPS or configure hosting, you just say "deploy my app" and Claude handles it.
+
+**What it can do**: create VPS, manage snapshots, buy domains, check domain availability, configure DNS, deploy sites — all from the terminal.
+
+**How to install**:
+
+1. Get a Hostinger account (Business plan recommended — up to 50 websites, free domain, Node.js support)
+2. Go to Hostinger API page → copy the MCP config
+3. In Claude Code: `add this MCP server to my configuration` + paste the config
+4. Generate an API token in Hostinger (never → generate → copy)
+5. Tell Claude Code to add the token to the MCP config
+6. Type `/new` then `/mcp` — Hostinger MCP should appear with 118 tools
+
+**Live demo**: told Claude "create a simple website that says Hi, my name is Tim and deploy to tim.[domain]" — site was live in seconds without touching a UI.
+
+**Note**: register your domain first (fill in contact info/registrant details) before pushing a site — this is required for the deployment to work.
+
+---
+
+### 3 — Firecrawl
+
+Lets Claude crawl and scrape the web far more reliably than its built-in browser. Solves: rate limiting, CAPTCHAs, blocks, and failed page loads that the native Claude browser hits.
+
+**What it does**: bypasses security features that block automated access, crawls at scale, extracts structured data from pages.
+
+**Example**: crawled 300+ pages from a Y Combinator company directory in ~10 minutes, extracted company names, founders, fundraising stage, what they do — all as a structured markdown file. Zero manual intervention.
+
+**Cost**: free tier = ~1,000 credits/month. 300 pages used ~312 credits. Paid tiers available if you need more volume.
+
+**How to install**: make a free account at firecrawl.dev, copy the skill file from the main page, paste into Claude Code with "can you add this skill for me" — it installs the pnpm CLI automatically.
+
+**How to use**: type `/firecrawl` to invoke it, then describe what to crawl and what to extract.
+
+---
+
+### 4 — Humanizer
+
+Makes Claude's text output sound more like a human. Flags overused AI patterns (m-dashes, recycled words, capitalisation) and rewrites in a more natural, lowercase, conversational register.
+
+**When to use**: emails, social media posts, client-facing responses, any text that shouldn't scream AI-generated.
+
+**How to install**: copy 2 lines from the git repo, tell Claude Code "add this skill", paste the lines.
+
+**How to use**: `/humanize` + paste any text → get a rewritten version.
+
+---
+
+### 5 — Composio
+
+Solves the tool bloat problem. Instead of connecting every tool (Gmail, Google Drive, Notion, Meta Ads, etc.) directly to Claude Code and bloating the context window with 200 tool definitions, you connect everything to Composio once. Claude Code then calls Composio on demand and only fetches the tool it needs at that moment.
+
+**Benefits**:
+
+- More token efficient — tools loaded on demand, not all at once
+- Higher accuracy — Claude discovers the right tool rather than confusing similar ones
+- Cross-machine persistence — connect tools once in Composio, works on any machine you install Claude Code on
+- Supports thousands of apps from one dashboard
+
+**Free tier**: 20,000 tool calls/month. Paid: ~$20/month.
+
+**How to install**: go to Composio (v4.1), connect apps you want, go to Install → Claude Code → copy the prompt with your API key → paste into Claude Code → restart session → test with a task.
+
+---
+
+### 6 — VibeSec
+
+Security audit skill. Scans your codebase for vulnerabilities before you deploy to production.
+
+**What it catches**: exposed API keys, unauthenticated data access, SQL injection risks, insecure routes, and other common vibe-coding security mistakes.
+
+**Key insight**: install it *before* you start building, not just at the end. It teaches Claude Code to think through vulnerabilities as it writes code, not just flag them after.
+
+**Demo result**: ran on a deployed accounting app (already live) → found multiple real vulnerabilities → auto-fixed them. "Good thing I ran this because I actually had this app deployed."
+
+**How to install**: copy the Claude Code installation instructions from the VibeSec repo, paste into Claude Code with "add this to my Claude Code skills". Then run `/vibesec` to audit any project.
+
+---
+
+## Apply to Your Projects
+
+- **G Stack** — use the `/office-hours` → `/plan` → `/review` → `/qa` sequence for every new JobRunner feature. Prevents building things that don't solve the actual problem.
+- **Hostinger MCP** — if you're deploying client sites as part of any web design work, this turns deployment into a single terminal command. No more leaving Claude Code to configure servers.
+- **Firecrawl** — for any research task at scale: crawl job boards for JobRunner market research, scrape competitor app stores, extract structured data from any website Claude's built-in browser can't reliably access.
+- **Humanizer** — run any AI-drafted outreach, app store copy, or user-facing text through `/humanize` before publishing. The m-dash alone is a dead giveaway.
+- **Composio** — if you're connecting multiple tools to Claude Code (Notion, Gmail, Google Drive are already connected), this is worth setting up to prevent context bloat as you add more.
+- **VibeSec** — install this globally before your next Claude Code session. Any app you're deploying publicly needs this audit, especially anything with user data, auth, or payments.
+
+---
+
+# 🎥 Video 2 — 6 Claude Code Skills That Actually Make Money (Business-Focused)
+
+**Channel:** (creator) | **Focus:** Skill Creator, Superpowers, GSD, /review + /ultra review, Context Mode, Claude Mem
+
+https://www.youtube.com/watch?v=eRS3CmvrOvA
+
+## The Premise
+
+After 400+ hours in Claude Code and working with real estate agencies, HVAC companies, coaches, and marketing agencies: businesses don't want fancy skills. They want skills that save time, save money, or remove mistakes. These six show up across every industry.
+
+> Sell the outcome (10 hours saved per week, fewer admin errors, more leads) not the workflow.
+> 
+
+---
+
+### Skill 1 — Skill Creator (Official Anthropic)
+
+The meta-skill. Builds every other skill. You describe what you want in plain English → Claude drafts the skill → tests it → iterates → packages it into a reusable `.md` file.
+
+**Why it matters**: most people try to write skills manually, hit a wall with formatting and structure, and give up. Skill Creator removes that wall entirely.
+
+**Install**: `/pluginstall skill-creator`
+
+**Install globally** (recommended) — then it's available in every project automatically.
+
+**Practical use**: describe any repeatable business process (e.g. "write property descriptions from these inputs") → Skill Creator packages it into a reusable skill → give that skill to the client or use it across all similar clients.
+
+> "Drop in an SOP and it turns that into a reusable skill."
+> 
+
+---
+
+### Skill 2 — Superpowers (150K+ GitHub stars)
+
+Forces Claude to work like a senior developer: plan first, write tests before code, work in an isolated environment, do two-stage review (does it match the spec? is the code quality good?). Prevents the #1 failure mode — code that looks fine but falls apart when clients run it.
+
+**Why it matters**: without a framework like this, Claude sprints to write code and misses edge cases. With Superpowers, you get from 60% → 80% on the first pass. Fewer debugging cycles = less time + lower token costs.
+
+**Install**: command shown on screen in video / in description.
+
+**When to use**: any production software. If a client's business depends on it working, run Superpowers.
+
+---
+
+### Skill 3 — GSD (Get Shit Done)
+
+Fixes context rot — the degradation that happens when Claude forgets requirements mid-session as the context window fills up.
+
+**How it works**: instead of one long session, GSD spawns fresh sub-agents for each task. Each sub-agent has a clean context window focused only on what it needs. Main session stays clean. Built-in quality gates catch scope reduction (when Claude silently drops a requirement you asked for) and security issues.
+
+**Also has**: autonomous mode — give Claude a spec, walk away, it plans/executes/commits without babysitting.
+
+**Token cost**: GSD uses more tokens (sub-agents cost tokens) but saves hours of rework from context rot. Net positive.
+
+**Install**: command in video description. Then `/gsd-help` inside Claude Code to see available commands.
+
+**How Superpowers + GSD work together**: Superpowers gives Claude the right process (plan, test, review). GSD gives Claude clean context so that process actually works every time.
+
+---
+
+### Skill 4 — /review and /ultra review (Built-in, no install needed)
+
+**`/review`** — fast, local, free (beyond normal usage tokens). Structured code review: bugs, edge cases, design issues. Run this after every meaningful coding session.
+
+**`/ultra review`** — launched with Opus 4.7. Uploads your branch to a cloud sandbox → spins up a fleet of parallel reviewer agents → each attacks from a different angle (logic, security, performance, edge cases) → bugs must be independently reproduced before they appear on your list. No false positives, no style nitpicks. Confirmed bugs only.
+
+**Requirements for /ultra review**: Claude Code version 2.1.86+, signed in with a Claude account (API key alone won't work).
+
+**Cost**: Pro/Max get 3 free runs. After that: $5–20 per run depending on codebase size.
+
+**When to use**: `/review` for everything. `/ultra review` before merging anything that touches payments, auth, database migrations, or major refactors.
+
+**The workflow**: plan with Superpowers → execute with clean context (GSD) → `/review` → `/ultra review` before merging anything critical.
+
+---
+
+### Skill 5 — Context Mode
+
+Solves two problems: garbage accumulating in your context window, and Claude forgetting what it was doing after a compaction.
+
+**Problem**: every tool call dumps raw data into context. A Playwright snapshot = 56KB. 20 GitHub issues = 59KB. After 30 minutes, 40% of your context is garbage Claude never needs to look at. When context compacts, Claude forgets files it was editing, tasks in progress, and your last request.
+
+**Solution — part 1 (garbage out)**: routes tool calls through a sandbox. Raw output captured, only what Claude actually needs comes back. Result from their benchmarks: 56KB Playwright snapshot → 299 bytes. 46KB access log → 155 bytes. Full session: 315KB → 5KB total.
+
+**Solution — part 2 (memory across compaction)**: tracks every meaningful event (file edits, decisions, errors, task states) in a local SQLite database. When Claude compacts, Context Mode rebuilds a session snapshot and injects it back. Claude picks up exactly where it left off.
+
+**Result**: sessions that used to fall apart at 30 minutes now run for 3 hours.
+
+**Install**: two commands in terminal → restart Claude Code. Plugin auto-installs MCP server, hooks, and routing instructions.
+
+**Check stats**: `/context-mode:ctx-stats` at any point to see your own compression numbers.
+
+---
+
+### Skill 6 — Claude Mem
+
+Carries knowledge across sessions, not just within one. Every new Claude Code session starts from scratch — you re-explain the project, re-establish context, waste tokens. Claude Mem fixes this.
+
+**How it works**: hooks into Claude's session lifecycle → captures file edits, decisions, bug fixes, commands → compresses into semantic summaries → stores in local SQLite with vector search → on new session start, relevant parts are automatically injected back in.
+
+**Also**: auto-generates and updates folder-level `claude.md` files as you work. Project documentation writes itself.
+
+**Retrieval efficiency**: 3-layer search (compact index → timeline → full details for the specific handoff needed). ~10x token savings on retrieval vs. dumping everything in at session start.
+
+**Result**: open a project you haven't touched in 2 weeks → Claude already knows what you were working on, what decisions you made, where you left off.
+
+**Install**: two specific commands (shown on screen). Warning from the repo: don't run just the npm install command — that installs the SDK library only and hooks never register. Use the two commands shown.
+
+---
+
+### Bonus — Front End Design Skill (Official Anthropic)
+
+Install globally. Makes anything Claude Code designs look significantly less AI-generated. Works alongside Claude Design — if you bring a Claude Design project back into Claude Code, you'll want this skill active.
+
+**Install**: command shown on screen. Install globally.
+
+---
+
+## The Complete Skill Stack (Priority Order)
+
+| Order | Skill | Why first |
+| --- | --- | --- |
+| 1 | Front End Design | Global, silent, every project benefits |
+| 2 | Skill Creator | Builds every other skill you'll ever need |
+| 3 | VibeSec | Security from the start, not an afterthought |
+| 4 | Superpowers | Code quality and process discipline |
+| 5 | GSD | Context integrity for longer sessions |
+| 6 | Context Mode | Token efficiency + session continuity |
+| 7 | Claude Mem | Cross-session memory |
+| 8 | Firecrawl | When you need web data at scale |
+| 9 | Composio | When you have multiple external tools |
+| 10 | G Stack | When building a structured software product |
+
+---
+
+## Apply to Your Projects
+
+- **Skill Creator** — turn any repeatable JobRunner workflow into a reusable skill. Example: "take these job listing details and write an optimised job seeker pitch" → skill → runs identically every time
+- **Superpowers + GSD together** — install both before your next major JobRunner feature build. This is the difference between code that works in demo and code that works in production
+- **/review after every session** — free, fast, catches things you'll miss when you're deep in a feature
+- **/ultra review before shipping anything touching user data or payments** — $5–20 is cheap compared to a production bug
+- **Context Mode** — if you've ever had a Claude Code session fall apart mid-way through a complex feature, this is the fix. Install it now.
+- **Claude Mem** — when you're context-switching between Kindred, Criti, and JobRunner across multiple sessions, this stops you paying the re-explanation tax every time you switch projects
+- **VibeSec** — install before your next session. Run it on existing codebases before you add any public-facing features or user accounts
+
+---
+
+# 🎥 Video 3 — The Front-End Design Skill in Action: Before/After Demo (Chris)
+
+**Channel:** Chris | **Focus:** Front-End Design skill installed live, baseline vs skill redesign vs screenshot-guided redesign
+
+https://www.youtube.com/watch?v=95_NJ-a-CMQ
+
+## What This Shows
+
+A live comparison of a Claude Code-built landing page — before the Front-End Design skill, with the skill but no guidance, and with the skill plus a Dribbble screenshot reference. The improvement is dramatic at each stage.
+
+## The Three-Stage Experiment
+
+### Stage 1 — Baseline (No Skill)
+
+Prompt: build a landing page for an AI agency. Result: the usual — bluey-purple gradients, generic layout, safe choices. "Not too bad, but it defaulted to that bluey purple as it always does."
+
+### Stage 2 — Front-End Design Skill, No Reference
+
+How to trigger it: after installing, just say **"use the front-end design skill to improve the design of this landing page."**
+
+Result without any screenshot or guidance:
+
+- Strong typography choices
+- Scroll-triggered glow effects
+- Fade-in animations and hover effects
+- Consistent padding and spacing
+- Black, white, and one accent colour — the designer's gold standard starting point
+- Subtle grid pattern behind cards
+
+Critique: the CTA button wasn't standing out on the dark background (needs to be the accent colour, nothing else). One section with text layout was still off. But the hero, cards section, contact form, and footer were genuinely good.
+
+> "This is way better than what it was before, and it's just from using the skill."
+> 
+
+### Stage 3 — Front-End Design Skill + Dribbble Screenshot
+
+Go to Dribbble, search for the style you want ("AI website design" — avoid purple gradients, look for clean modern). Screenshot a layout you like. Then prompt:
+
+> **"Use the front-end design skill to improve the design of this landing page following the attached screenshot."**
+> 
+
+Paste in the screenshot file.
+
+Result (described by Claude as going from "brutalist" to "soft modern"):
+
+- Black/white/cyan → soft gradients and pastels
+- Soft shadows with blur replacing harsh shadows
+- Sharp edges → rounded everything
+- Monospace fonts → modern sans-serif (Outfit)
+- Terminal aesthetic → premium SaaS feel
+- Data streams and grids → floating gradient blobs
+- Hard transitions → smooth animations
+- Soft scroll behaviour
+- Underline animations on links
+
+> "This is better than 99% of designs you're going to get from other AI tools without using this skill."
+> 
+
+## How to Install (Two Methods)
+
+**Method 1 — From GitHub zip:**
+
+1. Download the skill as a zip from the GitHub repo
+2. In Claude Code → Customize Skills → + → Create Skill → Upload a Skill → drop in the zip
+3. Make sure the toggle is **on** in the upper right
+4. Invoke with `/front-end-design` (use the slash command to ensure Claude actually uses it)
+
+**Method 2 — From the X post / description link:**
+
+1. Copy the install commands from the post
+2. Paste into Claude Code chat → it installs automatically
+
+## Editing the Skill
+
+You can customise the skill's instructions after installing. In the skills panel, open the dropdown → **Edit with Claude**. Example: "I only ever want to use sans-serif fonts. Examples are Geist, Google Sans, DM Sans." Claude adjusts the `.md` file accordingly. You're never locked into the defaults.
+
+## The Next Level: Design System
+
+The most powerful version of this workflow: create a full design system for your project, then tell Claude to use the Front-End Design skill *and* follow that design system. This yields even more consistent, brand-coherent results than the screenshot approach. (Covered in the Claude Design → Claude Code videos in App Design & UI.)
+
+## Apply to Your Projects
+
+- **Install the skill now if you haven't** — the before/after in this video alone justifies it
+- **Always use `/front-end-design` slash command** to make sure Claude actually invokes it, not just references it
+- **The "black, white, one colour" starting point** — this is the designer's default recommendation. Any time a new screen or landing page looks messy, reduce to this palette first, then add
+- **Screenshot + skill is the fastest path to a specific style** — for JobRunner, Criti, or Kindred landing pages, find 1-2 Dribbble references that match the brand feel, screenshot them, use with the skill
+- **The CTA button rule** — CTA colour used nowhere else on the page. This came up again here independently. It's the most consistently reinforced single design rule across the entire notes library.
+
+---
+
+# 🎥 Video 4 — Every Claude Code Design Skill Worth Using (Web Designer's Breakdown)
+
+**Channel:** (web design creator) | **Focus:** Full skill landscape — Front-End Design, Impeccable, UI UX Pro Max, Web Design Guidelines, skill libraries, building your own
+
+https://www.youtube.com/watch?v=jT5YdajTg6I
+
+## What a Skill Actually Is
+
+A skill = a saved instruction set that Claude reads before doing any work. A markdown file that holds your design system, preferences, stack, and client context. Write it once, Claude loads it automatically. Same prompt + same Claude + skill loaded = dramatically better output.
+
+> "It stops being a generic AI designer and starts feeling like a collaborator who knows your actual work."
+> 
+
+## The Four Essential Design Skills
+
+### 1 — Front-End Design (Anthropic-official)
+
+**What makes it work**: it explicitly tells Claude what *not* to do. "Never use generic AI-generated aesthetics like overused font families, clichéd colour schemes." Gives Claude a brief lesson on creativity and thoughtfulness. The result is consistently more editorial, bolder, and more unique.
+
+**Before**: purple gradients, white background, soft shadows, emojis, improper card alignment — screams AI-generated.
+
+**After**: custom cursor, fade-in scroll animations, nicely laid out cards with hover states, serif + sans-serif pairing, smooth scroll anchors that actually work.
+
+**Install via Claude Code**: download zip from GitHub → Customize Skills → + → Create Skill → Upload a Skill → drop the zip in. Toggle on. Use `/front-end-design` slash command.
+
+**Edit it**: open the dropdown → Edit with Claude → describe changes (e.g. "only use sans-serif fonts, examples: Geist, Google Sans, DM Sans") → Claude updates the `.md` file.
+
+---
+
+### 2 — Impeccable
+
+Teaches Claude about typography, colour and contrast, spatial design, responsiveness, interaction design, motion design, and UX writing — *before* any command runs.
+
+**22 slash subcommands**, including:
+
+- `/impeccable` — full redesign
+- `/impeccable:animate` — adds animations as it sees fit
+- `/impeccable:colorize` — adds colour intelligently
+- `/impeccable:quieter` — reduces visual loudness (gradient text, heavy weights, emojis) and adds elegance
+- `/impeccable:audit` — five-dimensional quality check with severity rankings
+- `/impeccable:document` — generates a `design.md` file capturing your full design system so any AI agent can read it every time
+
+**Install**: single one-line command from the Impeccable landing page, paste into Claude Code.
+
+**The "slob tab"**: Impeccable's landing page lists design patterns it teaches Claude *not* to use. Worth reading yourself — it's a crash course in what currently looks AI-generated (side tab accent borders, gradient text everywhere, emoji icons, heavy font weights on every heading).
+
+**Actively maintained**: creator is building `/live` — iterate on your UI directly in the browser.
+
+---
+
+### 3 — UI UX Pro Max
+
+Packed with: 57 UI styles, 95 colour palettes, 56 font pairings, 8 tech stacks. The main differentiator: **it tells Claude to think, not just do**. Claude searches its design database to find what aspects of the skill are relevant to what you're building, then generates code, then runs a quality checklist.
+
+**Key learning**: "You need to understand not just which skills are helpful, but how to use them by communicating exactly what you want." If Claude doesn't make a drastic change with the skill, tell it explicitly: "Use the skill to do a more drastic redesign. UI UX Pro Max has an extensive library of colour palettes and font pairings — use them to their full advantage."
+
+**Install**: single one-line command, paste into Claude Code.
+
+**Edit it**: you can open the `.md` file directly and delete patterns you never want (e.g. glassmorphism). Or just tell Claude via prompt: "never use glassmorphism again."
+
+---
+
+### 4 — Web Design Guidelines (Vercel Labs)
+
+Not for initial design — for auditing before you ship.
+
+Teaches Claude a comprehensive list of web interface guidelines: keyboard navigation works everywhere, never disable zoom, don't block paste, loading indicators for buttons, accessible forms, animation best practices, layout standards, and much more.
+
+**Best commands**:
+
+- Use the skill's slash command → "Review my UX and accessibility"
+- "Annotate the landing page itself with the issues" — Claude marks up the live page in orange with what's wrong and how many times it's happening in each area
+
+**What it found on the demo site**: no focus state on primary CTA, missing Aria labels on avatar groups and star ratings, mobile/keyboard users losing all anchor navigation in the navbar.
+
+> "Claude doesn't always do a great job at considering accessibility. Having a clear and extensive list of web interface guidelines makes it so much easier to prioritize."
+> 
+
+**Install**: from Vercel Labs skill repo.
+
+---
+
+## The Skill Libraries (Where to Find More)
+
+**UI Skills** (uiskills.dev or similar)
+
+- Lists Front-End Design, UI UX Pro Max, Impeccable, plus many more
+- Accessibility-focused: `fix-accessibility`, `wcag-audit-patterns`
+- Shadcn/UI component library skill — one install gives Claude full access to every Shadcn component
+- `design-taste-frontend` — similar to Front-End Design, enforces anti-slop decisions, tells Claude not to use generic names or placeholder avatars
+
+**Type UI**
+
+- Visual previews of what each skill produces
+- Pick a style direction visually before you start: elegant, modern sophisticated, neo-brutalism, and more
+- Best for when you have a visual direction in mind before laying out the page
+
+**MCP Market** → Agent Skills → Categories → Design Tools
+
+- Search "web design" for a focused list
+- Design systems, design reviewers, animation specialists, all free
+
+---
+
+## How to Build Your Own Skill
+
+In Claude Code → Customize Skills → + → Create Skill → **Create with Claude**
+
+Claude asks: what should the skill do? Answer in plain language. It then asks follow-up questions:
+
+- What should the skill govern?
+- Who's the primary audience for designs produced with this skill?
+- Spacing and sizing rules?
+- Preferred tech stack/output?
+
+Be thorough. Claude generates a detailed `.md` file, a references folder, Tailwind design tokens if you use Tailwind, and typography pairings.
+
+**Example custom skill output**: SaaS UI Design skill with instructions to always identify product type first (dashboard vs landing page vs mobile — different design principles), infer the goal of the screen before designing (what actions matter most, what should users notice first), default to restrained palette with neutral backgrounds, one primary body font + one display font for large headings.
+
+Result from a single prompt using the custom skill: a clean, sleek LLM startup landing page with a primary teal CTA, dynamically generated code-based graphics in the hero section. "I'm really happy with how it's looking from just a first prompt."
+
+---
+
+## The Design Skill Stack (In Order of Use)
+
+| When | Skill | Purpose |
+| --- | --- | --- |
+| Always on | Front-End Design | Baseline anti-slop, bolder creative choices |
+| Starting a build | UI UX Pro Max | Style direction, colour palette, font pairing |
+| Needs animation | Impeccable `/animate` | Adds motion intelligently |
+| Too loud/busy | Impeccable `/quieter` | Reduces visual noise, adds elegance |
+| Document the system | Impeccable `/document` | Generates `design.md` for future sessions |
+| Pre-ship audit | Web Design Guidelines | Accessibility + UX review with visual annotation |
+| Your own project | Custom skill | Brand guidelines, design preferences, stack |
+
+---
+
+## Apply to Your Projects
+
+- **Impeccable `/document`** — after you get a design you're happy with for any of your apps, run this. It generates a `design.md` capturing your full design system. Every future Claude Code session reads it automatically. This is how you maintain visual consistency across sessions without re-explaining everything.
+- **The `/quieter` command** — if any screen feels visually busy or overwhelming, this is the single fastest fix. One prompt, Claude audits the loudness and reduces it intelligently.
+- **Build a custom skill for each app** — Kindred, Criti, and JobRunner each have distinct brand personalities. A custom skill per app means every new screen starts from the right foundation without any prompting overhead.
+- **Web Design Guidelines before shipping any public page** — the annotation mode (marking up issues directly on the live page in orange) is the most efficient accessibility review workflow in the library. Run it before any landing page goes live.
+- **Type UI for visual direction** — when you're starting a new screen and know the feeling you want (editorial, bold, minimal, warm) but can't articulate it in design language, browse Type UI visually and pick the skill that matches.

@@ -1,0 +1,43 @@
+Yeah I get what you mean. Right now the status pills are just a label change — they don't actually *do* anything in the workflow. They need to be wired into real actions.
+
+Here's how it should actually work:
+
+**If currently on a job:**
+- Tap Break → pauses the job timer automatically, status shows Break, job card shows "On Break"
+- Tap Available again → resumes the job timer, status back to Available
+- Tap Delayed → pauses timer + prompts a quick "reason + ETA" so the client/admin can see why
+- Tap Help → sends an immediate alert to the business owner/admin that this tech needs assistance on the job they're currently on
+
+**If not on a job (between jobs, lunch etc):**
+- Tap Break → starts a break timer so admin can see how long they've been on break
+- Tap Delayed → just sets status, maybe asks for ETA back
+- Tap Help → alerts admin something is wrong
+
+The status needs to talk to the timer card directly below it — they should feel like one connected system not two separate widgets.
+
+Paste this into Replit:
+
+---
+
+The MY STATUS pills need to be wired into real workflow actions, not just label changes. Right now tapping them does nothing meaningful.
+
+**When the user is currently on an active job (job timer running):**
+
+- Tapping Break: pause the active job timer, update job status to "On Break", show a small banner on the timer card saying "Timer paused — on break" with a Resume button. The timer card should visually change to show it's paused (grey out the timer, show pause icon instead of running icon)
+- Tapping Available (from Break): resume the job timer, remove the paused banner, timer resumes from where it stopped
+- Tapping Delayed: pause the timer, show a small modal asking "Estimated delay?" with quick options (15 min, 30 min, 1 hour, Other) — saves the ETA against the job, notifies the job's assigned admin/owner
+- Tapping Help: immediately send a push notification to the business owner with the message "[Name] needs help on [Job Name]" and change the status indicator to red pulsing
+
+**When not on an active job:**
+
+- Tapping Break: start a standalone break timer shown in the timer card — "On break · 00:00" counting up so admin can see break duration
+- Tapping Available (from Break): stop the break timer
+- Tapping Delayed: just sets the status label, no timer interaction
+- Tapping Help: sends a push notification to business owner "[Name] needs assistance"
+
+**Timer card integration:**
+The timer card directly below MY STATUS should reflect the current status state — if on break it shows the paused state, if help is active it shows a red tint, if delayed it shows the ETA countdown.
+
+The status and timer card should feel like one connected system on the dashboard.
+
+---

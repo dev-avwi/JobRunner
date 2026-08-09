@@ -1,0 +1,54 @@
+
+Console logo
+Search (/) for resources, docs, products and more
+
+IAM and admin
+/
+/
+/
+play-publisher
+Details
+Permissions
+Keys
+Metrics
+Logs
+Principals with access
+Keys
+Service account keys could pose a security risk if compromised. We recommend that you avoid downloading service account keys and instead use the workload identity federation . Learn more about the best way to authenticate service accounts on Google Cloud .
+Google automatically disables service account keys detected in public repositories. You can customise this behaviour by using the 'iam.serviceAccountKeyExposureResponse' organisation policy. Learn more 
+Add a new key pair or upload a public key certificate from an existing key pair.
+
+Block service account key creation using organisation policies .
+Learn more about setting organisation policies for service accounts 
+
+Type
+Status
+Key
+Creation date
+Expiry date
+No rows to display	
+
+
+Create private key for ‘play-publisher’
+Downloads a file that contains the private key. Store the file securely because this key cannot be recovered if lost.
+
+Key type
+
+JSON
+
+Recommended
+
+P12
+
+For backward compatibility with code using the P12 format
+Service account key creation is disabled
+An organisation policy that blocks service accounts key creation has been enforced on your organisation.
+Enforced organisation policy IDs:
+iam.disableServiceAccountKeyCreation
+Possible causes: Your organisation policy administrator enforced the organisation policy to prevent security incidents related to service account keys. Alternatively, your organisation may have been automatically enforced with the policy as part of secure by default enforcements. 
+
+Recommended next steps: Service account keys are a security risk if not managed correctly. You should choose a more secure alternative  whenever possible. If you must authenticate with a service account key, an administrator with the 'Organisation Policy Administrator' (roles/orgpolicy.policyAdmin) role in the organisation needs to disable  the constraints mentioned above.
+
+Tracking number: c7668083565745660
+
+6 Access Approval results. 9 Access Context Manager results. 2 Actions results. 528 Other results. 246 Service agents results. 34 Vertex AI results. 6 AlloyDB results. 7 Analytics Hub results. 1 Android Management result. 3 API Gateway results. 24 Apigee results. 4 Apigee Registry results. 11 App Engine results. 1 Workspace Marketplace result. 11 Artifact Registry results. 2 Assured Workloads results. 4 AutoML results. 4 Recommendations AI results. 2 Organisation Policy results. 19 Backup and DR results. 25 Bare Metal Solution results. 6 BeyondCorp results. 28 BigQuery results. 5 Cloud Bigtable results. 1 Billing result. 11 Binary Authorisation results. 4 Project results. 4 Certificate Manager results. 4 Chat results. 14 Chronicle API results. 2 Cloud Asset results. 18 Cloud Build results. 49 Firebase Products results. 2 Cloud Debugger results. 11 Cloud Deploy results. 5 Cloud Functions results. 1 Cloud Hub result. 6 Cloud Talent Solution results. 30 Cloud KMS results. 5 Cloud Migration results. 8 Cloud Private Catalogue results. 4 Cloud Profiler results. 3 Cloud Scheduler results. 4 Cloud Security Scanner results. 7 Cloud SQL results. 4 Support results. 7 Cloud Tasks results. 3 Cloud Trace results. 4 Cloud Translation results. 25 Cloud Marketplace results. 10 Cloud Composer results. 53 Compute Engine results. 4 Infrastructure Manager results. 13 Cloud Connectors results. 9 Kubernetes Engine results. 9 Container Analysis results. 19 Data Catalog results. 5 Data Connectors results. 4 Dataflow results. 14 Dataform results. 6 Cloud Data Fusion results. 3 Cloud Data Labelling results. 2 Data migration results. 3 Data pipelines results. 48 Cloud Dataplex results. 2 Dataprep results. 8 Dataproc results. 17 Datastore results. 3 DataStream results. 9 Data Studio results. 7 Third-party Partner results. 5 Deployment Manager results. 21 Dialogflow results. 32 Cloud DLP results. 3 DNS results. 4 Document AI results. 3 Cloud Domains results. 5 Earth Engine results. 21 Edge Container results. 3 Edge Network results. 3 Enterprise Knowledge Graph results. 4 Error Reporting results. 9 Eventarc results. 1 Service Agents result. 3 Cloud Filestore results. 2 Cloud Financial Services results. 17 Firebase results. 11 Fleet Engine results. 4 Genomics results. 5 Backup for GKE results. 12 GKE Hub results. 4 Anthos Multi-cloud results. 3 GKE on-prem results. 5 Google Workspace Add-ons results. 31 Cloud Healthcare results. 19 IAM results. 2 Workforce Pools results. 2 Roles results. 10 Service Accounts results. 2 Workload Identity Pools results. 10 Cloud IAP results. 3 Cloud IDS results. 3 KRM API Hosting results. 4 Cloud Life Sciences results. 3 Live Stream results. 10 Logging results. 3 Looker results. 9 Cloud Managed Identities results. 2 Maps API Admin results. 3 MemoryStore Memcache results. 2 Mesh Management results. 13 Dataproc Metastore results. 4 Migration Centre results. 3 AI Platform results. 21 Monitoring results. 17 Network connectivity results. 6 Network Management results. 21 Network security results. 6 Network Services results. 6 AI Notebooks results. 6 Observability results. 2 On-Demand Scanning results. 4 Ops Config Monitoring results. 10 CA Service results. 4 PAM results. 7 Proximity Beacon results. 5 Pub/Sub results. 5 Pub/Sub Lite results. 4 reCAPTCHA Enterprise results. 98 Recommender results. 4 MemoryStore Redis results. 9 Resource Manager results. 1 Resource Settings result. 4 Risk Manager results. 3 Rapid Migration Assessment results. 13 Cloud Run results. 6 Secret Manager results. 14 Secure Source Manager results. 50 Security Centre results. 2 Cloud Services results. 4 Service Consumer Management results. 5 Service Directory results. 9 Service Management results. 4 Service networking results. 5 Service Usage results. 5 Source results. 13 Cloud Spanner results. 5 Stackdriver results. 22 Cloud Storage results. 5 Stream results. 11 Telemetry results. 3 Cloud TPU results. 3 Transcoder results. 2 Transfer Appliance results. 3 Video Stitcher results. 40 Vision AI results. 3 VMwareEngine results. 3 Serverless VPC Access results. 4 Workflows results. 4 Workload Certificate results. 9 Workload Manager results. 6 Cloud Workstations results. 4 qa.currentlyUsed results. 4 qa.basic results. 9 qa.jobFunction results. Out of 2303 results showing.

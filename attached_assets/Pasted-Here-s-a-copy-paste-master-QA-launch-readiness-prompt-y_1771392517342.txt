@@ -1,0 +1,96 @@
+Here’s a copy-paste “master QA + launch readiness” prompt you can give Replit. It tells them to stop feature-building and instead audit + harden everything end-to-end (onboarding, accounts, team/subcontractors, client portal, payments, offline, etc.).
+
+Use this exactly.
+
+JOBRUNNER — LAUNCH READINESS HARDENING SPRINT (NO NEW FEATURES)
+Goal: Make JobRunner production-ready for real tradie businesses. Prioritize stability, onboarding conversion, identity/account linking, and data integrity across web + mobile.
+
+Non-negotiables (definition of “ready”):
+1) A new user can sign up → finish onboarding → create job → send quote → schedule → track time → invoice → collect payment in < 10 minutes with no confusion.
+2) Identity is consistent across Email/Google/Apple and across Web + Mobile. No duplicate accounts, no lost sessions, no broken linking.
+3) Team model is perfect: Owner/Admin/Office/Admin/Worker/Subcontractor/Client portal permissions correct, predictable, testable.
+4) Payments/invoices are financially safe: locks, snapshots, audit logs, calculations correct, no edge-case corruption.
+5) Offline/sync never loses or duplicates work.
+
+WORKPLAN (do in this order)
+
+A) Write a “Critical User Journeys” test plan (manual + automated)
+Create a checklist of test scenarios and mark PASS/FAIL with screenshots/logs. Include:
+- New signup: Email/password, Google, Apple (web), Apple (mobile)
+- Duplicate detection: sign up with same email using different provider; confirm expected security dialog + linking path
+- Passwordless login code flow: ensure no ghost accounts created
+- Cross-platform session continuity: create account on iOS → login on web → same data; logout on one doesn’t corrupt the other
+- Onboarding: Free vs Pro vs Team flows; autosave resume; skipping steps; Stripe setup later; logo upload; sample data correctness (clearly labeled)
+- Invite flows: Team invites accepted/expired; resend invite; wrong email; already has account; role assignment
+- Subcontractor flows: (if supported) subcontractor invited/linked; permissions; can only see assigned jobs; invoicing rules; time tracking rules
+- Client portal: client can view quotes/invoices, approve/sign, pay; cannot access internal notes; cannot see other clients
+- Core workflow: Job → Quote → Accepted → Scope checklist → Timer → Done → Invoice → Pay → Receipt
+- Edge cases: partial payments, refunds/voids (if supported), invoice locking after payment, rate snapshot behavior, calculation verification
+- Timer integrity: overlaps blocked, negative durations blocked, open timer blocks completion, offline timer sync
+- Dispatch/map: job pins match list, worker locations permission-gated, reassign worker, drag schedule
+- Chat/SMS: send/receive; message dedupe; unknown number → create client/job link; attachments persist
+- Notifications: email/SMS/push events fire once, correct content, correct recipient
+
+B) Instrumentation & observability (must-have before launch)
+- Add Sentry (or equivalent) to web + mobile for crash/error monitoring
+- Add structured logs for auth linking, payments, sync, invites
+- Add health checks for critical services (db, queue/websocket, sms provider, payments)
+- Add “support bundle export” (user can export logs/diagnostics from settings) OR admin-only debug view
+
+C) Onboarding conversion hardening (remove “icky” feel)
+- Reduce steps to first value: ensure the fastest path gets user to “Create First Quote” ASAP
+- Ensure every onboarding step has: clear purpose text, primary CTA, secondary “do later”
+- Add “First quote in 10 minutes” guided path with checklist + progress
+- Ensure sample data is clearly marked “Sample” and removable in 1 click
+- Ensure pricing/plan limits are visible and not surprising
+
+D) Identity/account linking: make it bulletproof
+- Create a single canonical User identity model:
+  - one userId
+  - multiple authProviders linked (email/google/apple)
+  - prevent duplicates at DB level with unique constraints + safe merge policy
+- Test and fix: Apple on mobile + web parity (if web Apple uses redirect, ensure same subject/claims link to same user)
+- Implement safe “account merge” admin tool (internal-only) OR robust end-user linking flows
+- Add “Remember this device” + session refresh reliability (no random logouts)
+
+E) Permissions & role matrix (Owner/Admin/Office/Worker/Subcontractor/Client)
+- Define a permission matrix table in docs (role → allowed actions)
+- Enforce permissions server-side (not just UI)
+- Add tests for: worker cannot edit invoices unless permitted; subcontractor cannot see full client list; clients only see their docs
+- Ensure “assignment based access”: workers/subcontractors only see assigned jobs/time entries unless role allows broader
+
+F) Payments/invoice safety audit (financial integrity)
+- Verify: invoice locking after payment across all endpoints
+- Verify: rate snapshot and calculation hash logic cannot be bypassed
+- Verify: audit trails are immutable and correctly attributed (who/when/what)
+- Verify: reminders do not spam; idempotency keys used for Stripe operations
+- Run test suite for: deposits, partial payments, payment links, QR payments, receipt generation
+- Ensure failure states are clean: Stripe down, webhook delay, duplicate webhook, user refresh during payment
+
+G) Offline + sync correctness (highest churn risk)
+- Identify offline-capable entities: jobs, notes, time entries, photos, messages (if supported offline)
+- Ensure conflict resolution rules are defined and consistent
+- Add tests: create/edit while offline → reconnect → no duplicates; no lost changes; correct timestamps
+- Add a clear UI indicator when changes are pending sync
+
+H) Final “Launch Gate”
+Deliverables before we call it ready:
+1) PASS/FAIL checklist of critical journeys with evidence
+2) A prioritized bug list with severity (Blocker/Critical/Major/Minor)
+3) All Blocker/Critical fixed
+4) Regression tests added for anything fixed in auth/payments/sync
+5) App Store / production config sanity check (env vars, keys, redirect URLs, webhook secrets, GA4 events firing)
+
+Important rules:
+- Do NOT add new features during this sprint unless required to fix onboarding conversion or data integrity.
+- Focus on correctness, simplicity, and trust. Stability > feature count.
+
+Start by producing the Critical User Journeys checklist and run through it on both web and mobile, then fix failures in order of severity.
+
+Quick extra tip (so Replit doesn’t “half do it”)
+
+After you paste that, send this one-liner right after:
+
+If you have to choose, prioritize: (1) onboarding time-to-first-quote, (2) account linking correctness, (3) payments/invoice integrity, (4) offline/sync reliability, (5) permissions/roles.
+
+If you want, I can also create a role-permission matrix for you (Owner/Admin/Office/Worker/Subcontractor/Client) that you can hand to Replit so there’s zero ambiguity about what each role can do.

@@ -1,0 +1,151 @@
+Here’s a master prompt you can paste into Replit so it can’t miss anything about the Client Portal, and so the mobile app + web app stay identical (same features, same data, same permissions, same workflow).
+
+Paste this whole thing as one task.
+
+MASTER REQUIREMENT: CLIENT PORTAL + WEB/MOBILE PARITY + “NOTHING MISSED”
+
+We already have an app, but it must be upgraded so the Client Portal is complete, secure, and fully integrated with the tradie workflow. Web app and mobile app must be feature-parity (same capabilities, same screens, same data states), with only UI layout differences for screen size.
+
+PRIMARY GOALS
+1) Client Portal is complete and cannot miss any core client needs (quotes, jobs, invoices, payments, documents, photos, live tracking, messaging/updates).
+2) Tradie workflows must “feed” the client portal automatically (no manual copying).
+3) Web and Mobile must be parity:
+   - every key feature exists in both
+   - same API, same permissions, same results
+   - offline support on mobile where applicable
+4) Everything is reliable:
+   - audit logs, event timeline, offline queue, retry, idempotency
+
+A) DEFINE THE CLIENT EXPERIENCES (2 Layers)
+1) Public Job Tracking Page (No Login)
+- URL: /p/{job_token}
+- Read-only
+- One map showing all assigned workers/subcontractors (multi-pin)
+- ETA/status per person + last updated + “tracking paused” states
+- Shows business contact (dispatch phone), job status timeline (filtered)
+- Shows approved shareable photos/docs (optional)
+- Must include: “Open Client Portal” button (OTP required)
+
+2) Verified Client Portal (OTP)
+- Entry points:
+  a) From public website “Client Portal (Existing Clients)”
+  b) From /p/{job_token} “Open Client Portal”
+  c) From quote/invoice email “View in Portal”
+- OTP via SMS/email, no passwords
+- After verification, client sees full dashboard:
+  - Jobs: upcoming/current/past
+  - Quotes: view/download/accept (optional accept later)
+  - Invoices: view/download/pay
+  - Payments: receipts + history
+  - Documents: plans, certificates, receipts shared to client
+  - Photos: before/after shared
+  - Updates: timestamps/statuses
+  - Contacts: dispatch/owner contact
+- Payments must be only in verified portal (never on public tracking page)
+
+CLIENT PORTAL MUST NOT MISS THESE CORE FEATURES:
+- View quote PDF + job scope
+- View invoice PDF + line item summary
+- Pay invoice (Stripe hosted link or checkout)
+- Payment status updates via webhook
+- View job status + scheduled date/time window
+- View attached documents and photos (before/after)
+- View assigned crew summary (privacy controlled)
+- Easy support contact (call/text dispatch)
+- Job history (past work and invoices)
+
+B) PORTAL ELIGIBILITY + SAFETY
+- Portal access allowed only if phone/email matches an existing Client Profile (created by the tradie in the system).
+- If OTP verified but no client profile exists: show “Not found” + CTA (Request quote / Call dispatch).
+- If multiple client profiles match (shared phone/email): show selector.
+- OTP expiry 10 minutes, max attempts 5, rate limit sends.
+- Session token stored securely (httpOnly cookie), short-lived with refresh.
+- Tracking tokens expire 7 days after job completion and can be revoked.
+
+C) TRADIE WORKFLOWS MUST FEED CLIENT PORTAL AUTOMATICALLY
+Whenever tradie/crew does these actions, the portal must reflect it immediately:
+- Job created/updated
+- Quote created/sent
+- Job scheduled/rescheduled
+- Crew assigned changes
+- Worker status changes (On My Way/Arrived/Started/Finished)
+- Photos uploaded (and marked shareable)
+- Documents attached (and marked shareable)
+- Materials added (client sees summarized version if enabled)
+- Invoice generated
+- Invoice sent
+- Payment received
+
+Add “Client Visibility” controls:
+- On each photo/doc: share_to_client boolean
+- On each subcontractor assignment: show_name/show_phone flags
+- On invoice: show_per_worker_breakdown vs show_crew_summary (client-facing)
+
+D) WEB + MOBILE FEATURE PARITY REQUIREMENTS
+- Implement a single shared domain layer and API layer.
+- All features below must exist on BOTH web and mobile:
+  1) Clients list + client details
+  2) Job create/edit + schedule + status pipeline
+  3) Crew assignment (employee + subcontractor)
+  4) Quotes create/send + PDF generation
+  5) Invoices create/send + PDF generation + pay link
+  6) Photos/docs upload + share-to-client toggle
+  7) Materials + receipts (at least add/view)
+  8) Public tracking link generation + preview
+  9) Client portal preview (how client sees it)
+  10) Event timeline/audit log viewing
+- Any missing feature in mobile is a bug, not a “later”.
+
+Mobile-only enhancements allowed:
+- Offline queue + background location ping (if supported)
+But the user-visible workflow must still match web.
+
+E) RELIABILITY / “BULLETPROOF” REQUIREMENTS
+- Introduce append-only EventLog for all critical actions (job, assignment, portal, payment).
+- Idempotency keys for:
+  - sending SMS/email
+  - generating invoices
+  - creating portal tokens
+  - payment webhooks
+- Offline queue for mobile actions with retry and visible sync status.
+- Every edit to time/materials should create an “edit event”, not overwrite silently.
+
+F) SUBCONTRACTOR SUPPORT MUST BE COMPLETE
+- Subcontractors can be assigned like workers.
+- If subcontractor does not have the app, support web-only mode:
+  - /s/{sub_token} with OTP
+  - accept/decline
+  - status buttons (on my way/arrived/done)
+  - upload photos/docs
+  - optional hours submission (manager approval)
+- Public tracking page shows subcontractor pin using periodic web pings with “last updated” label (not continuous).
+
+G) QA / TEST MODE (PROVE NOTHING IS MISSED)
+Create a “Test Mode Seed” that generates:
+- Company, Owner, Manager, Worker, Subcontractor (web-only), Client
+- 1 job with quote + invoice
+- 1 tracking link
+Then implement an in-app QA checklist that verifies:
+- client can access portal from website without a tradie link (OTP)
+- client can access portal from tracking link (OTP)
+- quote appears + downloads
+- invoice appears + pays successfully
+- payment updates after webhook
+- photos/docs marked shareable appear in portal and tracking page
+- crew pins appear on tracking map with correct privacy
+- web and mobile screens both support all above actions
+
+DELIVERABLES
+1) A clear Client Portal module (website + in-app preview) that covers all client needs.
+2) Full web/mobile parity for all critical business workflows.
+3) A QA checklist + Test Mode seed to prove nothing is missing.
+
+One extra thing to make it “perfect” (strong suggestion)
+
+Add “Client Portal Preview” inside the tradie app:
+	•	on the job screen: button “View as Client”
+	•	opens exactly what the client will see (tracking + portal view)
+
+That stops mistakes like “oops we didn’t share the right photos”.
+
+If you want, I can also write a shorter “Replit sprint plan” version of this (like 10 tasks max) so it’s easier for them to execute.

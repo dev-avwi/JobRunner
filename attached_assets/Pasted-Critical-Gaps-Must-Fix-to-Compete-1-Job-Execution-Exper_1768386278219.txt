@@ -1,0 +1,46 @@
+Critical Gaps (Must Fix to Compete)
+1. Job Execution Experience is Fragmented
+ServiceM8's killer feature: One unified "job cockpit" where field staff see schedule, checklist, photos, forms, time tracking, and billing in ONE view
+Your gap: Staff bounce between multiple screens to complete a job. Too many taps, too much cognitive load
+Fix: Build a single "Active Job" screen that's the command center for field work
+2. Quote-to-Cash Flow Has Manual Steps
+When a client accepts a quote, it should automatically: collect deposit → create scheduled job → eventually convert to invoice
+Your gap: These are manual steps that tradies will forget
+Fix: Automate the revenue pipeline end-to-end
+3. Offline Mode is Not Real Yet
+ServiceM8's headline feature: Works in a shed with no signal, syncs when back online
+Your gap: Mobile app scaffolds exist but most forms still need live internet
+Fix: This is table-stakes for Australian tradies in rural areas
+4. Scheduling/Dispatch is Desktop-Only
+No drag-and-drop calendar for owners
+No visual dispatch board for assigning jobs
+Job assignment requests exist but don't surface prominently to owners
+Fix: Build a proper visual scheduler with drag-and-drop
+Features That Need Polish
+5. PDF Quotes/Invoices Need Branding Love
+Templates exist but don't feel premium
+E-signature flow isn't streamlined
+6. Payment Collection is Basic
+You have Stripe links, but no:
+Tap-to-pay from the field
+Stored cards for repeat clients
+Payment scheduling
+Instant receipts from the job site
+7. Reporting is Thin
+Dashboard shows metrics but missing:
+Quote win rate
+Job profitability
+Technician utilization
+Cashflow forecasting
+Per-trade analytics
+8. Client Comms Aren't Workflow-Bound
+SMS/email templates exist but don't auto-trigger (e.g., "On my way" when job starts, follow-up if quote not accepted in 3 days)
+UX Issues
+9. Onboarding is Overwhelming
+Multiple parallel onboarding flows create confusion
+No clear "first win" moment (schedule your first job in under 5 minutes)
+Heavy demo data seeding slows things down
+10. Mobile/Tablet Parity Incomplete
+Some screens still assume desktop layout
+5-tap rule violated on key workflows
+Forms don't autosave

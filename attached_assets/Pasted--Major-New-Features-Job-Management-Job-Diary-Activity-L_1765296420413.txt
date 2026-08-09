@@ -1,0 +1,49 @@
+🚀 Major New Features
+Job Management
+Job Diary/Activity Log - Track all job-related activities and history
+Job Costing & Profitability - Real-time profit tracking per job
+Job Chat - In-app messaging for job-related discussions
+Voice Notes - Hands-free audio recording for on-site job updates
+Recurring Jobs - Set up jobs that repeat on a schedule
+Job Forms - Pre-made safety checklists, site inductions, custom forms
+Job Photos & Signatures - Capture proof of work completion
+Time Tracking
+GPS Location Capture - Track start/stop locations for time entries
+Non-blocking GPS - Time tracking works even without GPS lock
+Trip Tracking - Auto-detect and log travel distance
+Quotes & Invoices
+Linked Documents - View linked job from invoice/quote details
+Quote-to-Invoice Conversion - Seamless workflow with error handling
+Invoice Sharing - Enhanced sharing capabilities
+Contact Interactions - Improved quote/invoice contact handling
+Mobile App (React Native/Expo)
+Complete Tab Navigation - Dashboard, Jobs, Map, More screens
+Role-Based Access Control (RBAC) - Staff see limited data, owners see all
+Offline Capabilities - Works without internet connection
+Background Location Tracking - Life360-style team tracking
+Push Notifications - Job reminders and action handling
+Document Scanner - Edge detection for receipts/documents
+PDF Generation - On-device quote/invoice PDFs
+Reports Screen - Job status, top clients, revenue charts
+Assets Management - Track business equipment/tools
+Price Book - Quick access to standard pricing
+Quick Messages - Pre-written response templates
+Team & Permissions
+Restrict Financial Data for Staff - Staff can't see revenue/profit
+Improve Team Management - Better role detection and permissions
+Team Invitations - Send invites during onboarding
+Calendar & Scheduling
+Google Calendar Sync - Two-way job synchronization
+Authentication & Security
+Google Sign-In - OAuth authentication
+Password Reset - Secure token-based reset flow
+Improved Role Detection - Accurate permission assignments
+UX/UI Improvements
+Illustrated Empty States - Friendly graphics when no data
+Sticky Headers - Better navigation in long lists
+Custom Brand Colors - Consistent theming throughout
+Mobile Dashboard Simplification - Focused on Today's Schedule
+Quick Add Client - Fast client creation from dashboard
+Platform Readiness
+Beta Launch Preparation - Core features verified
+ServiceM8 Feature Comparison - Documented competitive parity

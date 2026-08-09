@@ -1,0 +1,185 @@
+Technical Implementation Brief: Add-on Ecosystem & Admin Super-Dashboard
+
+Project: JobRunner
+Target Audience: Replit AI / Development Team
+
+This brief outlines the architecture, UX flows, and technical implementation for three interconnected systems within JobRunner:
+
+1.
+The Website Builder Add-on
+
+2.
+The AI Receptionist Add-on (with programmatic number provisioning)
+
+3.
+The Admin Super-Dashboard (for internal workflow and debugging)
+
+
+
+
+1. The Website Add-on (Web & Mobile App)
+
+Goal: Provide tradies with a centralized hub to view their website analytics, domain details, and request changes without needing a CMS login.
+
+UX/UI Flow
+
+•
+Live Preview: An <iframe> displaying their live website, scaled responsively for both the web dashboard and mobile app.
+
+•
+Domain & Analytics Panel: Displays domain status (e.g., "Active", "DNS Pending"), hosting status, and basic traffic analytics (via simple API integration like Plausible or Google Analytics).
+
+•
+Interactive "Change Request" Editor:
+
+•
+Instead of a drag-and-drop website builder (which is complex and prone to breaking), provide a "Change Request" interface.
+
+•
+The user can drop pins on the iframe or simply fill out a structured form: "What needs changing?" (e.g., "Update phone number to 0412 345 678").
+
+•
+Submitting this form creates a ticket that is instantly sent to the Admin Super-Dashboard.
+
+
+
+Technical Implementation
+
+•
+Database: Create a website_addons table linked to business_id storing domain_url, status, analytics_id, and monthly_fee.
+
+•
+Change Requests: Create a website_change_requests table. When a user submits a note, it triggers an internal notification to the Admin Dashboard.
+
+
+
+
+2. The AI Receptionist Add-on (Fully Automated Provisioning)
+
+Goal: When a tradie pays for the AI Receptionist, the system automatically buys an Australian phone number via Twilio, imports it to Vapi.ai, and links it to their account—zero manual work required.
+
+UX/UI Flow
+
+•
+Purchase: Tradie clicks "Add AI Receptionist ($60/mo)". They confirm payment via Stripe.
+
+•
+Provisioning Screen: A loading state says "Provisioning your new business number..." (takes ~10 seconds).
+
+•
+Configuration: Once provisioned, the UI shows their new number. They can configure:
+
+•
+"Forward calls to my mobile: [Input]"
+
+•
+"Business context/Prompt: [Textarea]"
+
+•
+"Business hours: [Time picker]"
+
+
+
+Technical Implementation (The Automation Pipeline)
+
+This must be a secure backend process triggered only after a successful Stripe webhook (checkout.session.completed).
+
+1.
+Search Twilio for AU Number:
+
+•
+GET https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/AvailablePhoneNumbers/AU/Local.json
+
+
+
+2.
+Purchase the Number:
+
+•
+POST https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/IncomingPhoneNumbers.json with the selected number.
+
+
+
+3.
+Import to Vapi.ai:
+
+•
+POST https://api.vapi.ai/phone-number/import using the Twilio credentials and the newly purchased number.
+
+
+
+4.
+Link to Business:
+
+•
+Save the twilio_sid, vapi_number_id, and the actual phone_number to the ai_receptionist_addons table linked to the business_id.
+
+
+
+
+
+
+3. The Admin Super-Dashboard (Your Internal Workflow )
+
+Goal: A sleek, centralized command center for you (the owner) to monitor trials, handle website change requests, and debug user accounts without asking for passwords.
+
+Core Features
+
+•
+Global Activity Feed: A real-time feed showing:
+
+•
+"New trial started: Bob's Plumbing"
+
+•
+"Payment failed: Smith Electrical"
+
+•
+"Website change request: Fix logo on homepage"
+
+
+
+•
+Website Request Kanban: A simple Trello-style board (To Do, In Progress, Done) for managing the website change requests submitted by users.
+
+•
+System Health & Errors: Alerts for failed webhooks (e.g., if Twilio fails to provision a number).
+
+•
+"Shadow Mode" (User Impersonation):
+
+•
+A critical feature for debugging. In the Admin list of businesses, add a "Login as User" button.
+
+•
+Implementation: The backend generates a temporary, short-lived JWT token for that specific business_id and user_id with an impersonator: true flag. This allows you to see exactly what they see, fix their AI prompt, or debug an invoice, without ever knowing their password.
+
+
+
+Security Implementation
+
+•
+The Admin Dashboard must be completely isolated from the standard frontend routes.
+
+•
+Require Role-Based Access Control (RBAC) where role === 'SUPER_ADMIN'.
+
+•
+Impersonation actions must be heavily logged in an audit_logs table (e.g., "Super Admin impersonated User X at [Timestamp]").
+
+
+
+
+Replit Prompting Strategy
+
+When feeding this to Replit, break it into three distinct prompts:
+
+1.
+"Build the Admin Super-Dashboard first, including the Shadow Mode/Impersonation auth flow and the global activity feed."
+
+2.
+"Build the Website Add-on UI with the iframe preview and the Change Request ticket system that feeds into the Admin Dashboard."
+
+3.
+"Build the AI Receptionist Add-on, specifically implementing the Twilio API purchase flow and Vapi.ai import flow triggered by a Stripe webhook."
+

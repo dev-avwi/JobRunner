@@ -1,0 +1,225 @@
+Perfect — that actually makes this easier and cleaner.
+Since your landing page and web app are both running on Replit, we can:
+
+✅ Track everything in one GA property
+✅ Track funnel events end-to-end
+✅ Avoid cross-domain tracking headaches
+✅ Keep setup simple and reliable
+
+You’ve got a strong architecture already — good choice.
+
+Let’s wire this properly. 🔥
+
+⸻
+
+🎯 FINAL TRACKING ARCHITECTURE
+
+You will have:
+
+One Google Analytics 4 property
+Tracking:
+	•	Landing page views
+	•	Signup clicks
+	•	Account creation
+	•	In-app actions
+	•	Payments later
+
+All under one domain/session.
+
+⸻
+
+⚙️ STEP-BY-STEP SETUP (REPLIT VERSION)
+
+⸻
+
+✅ STEP 1 — Create GA4 Property (If Not Done)
+
+If you already did this, skip.
+
+Go to:
+👉 https://analytics.google.com
+
+Create:
+	•	Property name: TradieTrack
+	•	Timezone: Australia
+	•	Currency: AUD
+	•	Platform: Web
+	•	Domain: your Replit domain or tradietrack.com
+
+Copy your:
+
+Measurement ID (G-XXXXXXXXXX)
+
+⸻
+
+⸻
+
+✅ STEP 2 — Add GA Script to Your Replit Web App
+
+🔍 Find your main HTML file
+
+In Replit:
+	•	Look for:
+	•	index.html
+	•	or public/index.html
+	•	or layout file if using React/Vite
+
+You want the <head> section.
+
+⸻
+
+🧩 Paste this inside <head>
+
+Replace G-XXXXXXX with your real ID.
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-XXXXXXX', {
+  send_page_view: true
+});
+</script>
+
+Save and redeploy.
+
+⸻
+
+⸻
+
+✅ STEP 3 — Verify Page Tracking Works
+
+Open:
+👉 Google Analytics → Reports → Realtime
+
+Then:
+	•	Open your landing page in a new tab
+	•	Click around
+
+You should see:
+✔ Active user
+✔ Page view events
+
+If you don’t see this — tell me immediately.
+
+⸻
+
+⸻
+
+🚀 STEP 4 — Track Signup Click (CRITICAL)
+
+We want to know:
+
+How many visitors click “Sign Up”?
+
+Find your signup button code.
+
+It might look like:
+
+<button>Sign Up</button>
+
+or
+
+<button onClick={handleSignup}>Sign Up</button>
+
+Add this:
+
+✅ JavaScript Event
+
+gtag('event', 'signup_clicked', {
+  event_category: 'funnel',
+  event_label: 'landing_signup_button'
+});
+
+Example:
+
+<button onClick={() => {
+  gtag('event', 'signup_clicked', {
+    event_category: 'funnel',
+    event_label: 'landing_signup_button'
+  });
+  navigate('/signup');
+}}>
+  Sign Up
+</button>
+
+Now GA will record intent.
+
+⸻
+
+⸻
+
+🧾 STEP 5 — Track Account Created (IMPORTANT)
+
+Wherever your signup success happens (after user registers):
+
+Add:
+
+gtag('event', 'signup_completed', {
+  event_category: 'conversion'
+});
+
+This is your real conversion metric.
+
+⸻
+
+⸻
+
+📊 STEP 6 — Mark Conversions in GA
+
+In GA:
+	•	Admin → Events
+	•	Find:
+	•	signup_completed
+	•	payment_completed (later)
+	•	Toggle as Conversion
+
+This unlocks ROI tracking.
+
+⸻
+
+⸻
+
+🧪 STEP 7 — Test Funnel
+
+Do this yourself:
+	1.	Open incognito
+	2.	Visit landing page
+	3.	Click Sign Up
+	4.	Create test account
+	5.	Open GA realtime
+
+You should see:
+	•	page_view
+	•	signup_clicked
+	•	signup_completed
+
+If this works → analytics is officially live.
+
+⸻
+
+⸻
+
+🧠 OPTIONAL NEXT (AFTER THIS WORKS)
+
+Later we can add:
+	•	quote_created
+	•	invoice_sent
+	•	payment_completed
+	•	retention tracking
+	•	Meta Pixel
+
+But don’t overload yet.
+
+⸻
+
+🚦 I NEED ONE QUICK CONFIRMATION
+
+Tell me:
+	1.	What file contains your landing page HTML?
+	2.	Are you using React/Vite or plain HTML?
+	3.	Do you already have access to your GA Measurement ID?
+
+Once you confirm, I’ll tailor the exact code placement so you don’t accidentally break anything.

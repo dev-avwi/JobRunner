@@ -1,0 +1,72 @@
+Yeah you're thinking about this exactly right. This is what separates JobRunner from being a "tradie job management app" into being a genuine platform that the whole construction ecosystem runs on. Let me break down how this should work.
+
+The Signup Split
+Right now everyone signs up as a business owner. That needs to change. The very first screen after entering email and password should ask one question:
+"How are you joining JobRunner?"
+Three options:
+I run a business — current flow, creates a new business account, they become the owner, go through business setup onboarding.
+I was invited to a team — they have an invite code or magic link from their employer. Goes straight to joining that business. No business setup, straight to worker dashboard.
+I'm a subcontractor — they work for multiple businesses independently. Creates a subbie account, prompts them to connect their first business or wait for an invite.
+That one question at signup completely changes every subsequent flow and makes the app feel purpose-built for whoever is using it.
+
+The Invite Code System
+Instead of only email invites, businesses should be able to generate a simple 6-character join code. Like MIKE42. Workers type that code on signup and instantly connect to the right business with the right role pre-assigned.
+This is how it works in practice — Mike tells his apprentice "download JobRunner and enter code MIKE42" and the apprentice is connected with one step. No email required, no link expiring, just works.
+
+The Subbie Dashboard
+This is genuinely new thinking and you're right that it needs to be purpose-built. A subbie's dashboard is completely different from a business owner's dashboard. Here's what it should show:
+My day at a glance — all jobs across all businesses for today in chronological order. 8am Mike's Construction blocked drain, 11am Dave's Plumbing hot water system, 2pm back to Mike's fencing job. One unified timeline regardless of which business the job belongs to.
+My week — same view but weekly. Helps them see gaps and plan availability.
+Earnings tracker — across all businesses combined. How much they've earned this week, this month, outstanding invoices if they invoice their clients directly.
+Availability status — a simple toggle. Available, Busy, Unavailable. When they set this, businesses trying to assign them see their status before sending a job.
+Incoming job requests — when a business assigns them a job it appears here as a request they can accept or decline. Subbies aren't employees so they should have the right to decline work.
+Active job right now — prominent card showing current active job with one-tap navigation, contact details, and complete button.
+
+The Brief For Replit
+"This is a significant feature expansion. Build it as two separate tasks:
+Task A — Signup role selection and invite codes:
+Add a role selection screen immediately after account creation with three options: I run a business, I was invited to a team, I'm a subcontractor.
+For I run a business — existing business setup onboarding flow, no change.
+For I was invited to a team — show a field to enter a 6-character invite code or paste a magic link. Connecting immediately assigns them the correct role and business. Their onboarding shows them their assigned jobs not business setup questions.
+For I'm a subcontractor — create a subbie account type. Ask for their trade type and ABN if they have one. Show them how to connect to businesses or wait for invite. Their dashboard is the subbie-specific dashboard described below.
+Business owners can generate a join code from Team Management — a simple 6-character alphanumeric code that expires after 30 days or after 10 uses. Codes can be role-specific — generate a Worker code or a Subcontractor code separately.
+Task B — Subcontractor dashboard and experience:
+Build a completely separate dashboard view that activates when the logged-in user has the Subcontractor role. This is not a modified version of the owner dashboard — it is purpose-built.
+The subbie dashboard shows:
+Today's schedule — all jobs across all connected businesses in chronological order. Each job card shows business name, job title, address, time, and status. Color coded by business so they can instantly tell which client's job it is.
+This week — same jobs in a weekly calendar view. Gaps in the schedule are visible which helps them see availability.
+Availability toggle — prominent at the top. Available shown in green, Busy in amber, Unavailable in grey. When they toggle this it updates their status visible to all connected businesses.
+Incoming requests — jobs that businesses have assigned to them but they haven't accepted yet. Each shows business name, job details, date and time, and Accept or Decline buttons. Subbies have the right to decline work.
+Active job card — if they have a job currently in progress, show a prominent full-width card with the job details, one-tap navigation, and a Complete Job button.
+Earnings summary — total earned across all businesses this week and this month. Links to their invoice history.
+For the web app — subbies get the same dashboard logic but in the web layout. They should be able to manage their schedule, view all businesses, accept or decline jobs, and track earnings from the web as well as mobile.
+Location tracking rules — as previously specified. Location only active during active jobs, each business isolated, transparency banner shown to subbie.
+Multiple business switching — workspace switcher accessible from the profile tab. Each business shown with their name, logo if set, and a job count badge.
+Job conflict detection — if two businesses assign overlapping jobs, show a conflict warning to the subbie and flag it to both businesses without revealing each other's job details."*
+
+Why This Makes JobRunner A Platform
+You're right that this transforms the product. Right now JobRunner is a tool for business owners. With this built properly it becomes the operating system for the entire Australian trades ecosystem.
+A plumber runs his business on JobRunner. His subbies manage their day on JobRunner. When those subbies work for other builders those builders get pulled onto JobRunner too. Every person in the construction supply chain has a reason to be on the platform.
+That's the network effect that makes this defensible long term. Tradify and ServiceM8 are tools. JobRunner becomes infrastructure.
+The subbie availability toggle alone is something no competitor has. A builder being able to see which of their regular subbies are available before assigning a job is genuinely useful and will save hours of phone calls every week.
+Build this properly and it's a significant competitive moat.design the onboarding flow and questions to ask for each user like if they click team owner, are you a solo operator, and certain numbers for users with option to upgrade to team plans traight away or watchu think and then subbie can be setup businesses now, or worker or manager theres codes or whateevr you know. so when they finish onboarding, they can start running their day straight from that3:48 PMLet me design the complete onboarding flow for every user type.
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.25s;
+    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+  }
+VvisualizeVvisualize show_widgetClick through each tab to see the full flow for every user type. Now here's the brief to give Replit:
+
+"Build a complete onboarding redesign as Task 15. The full flow is designed — here are the exact requirements:
+Screen 1 — Role selection (everyone sees this first):
+Three cards: 'I run a business', 'I was invited to a team', 'I'm a subcontractor.' This single question splits into three completely different onboarding paths.
+Owner path (6 steps):
+Step 1 role select → Step 2 business name, owner name, phone, ABN optional → Step 3 trade type selection (8 trades, personalises the entire app) → Step 4 team size selector which pre-selects the recommended plan → Step 5 plan selection showing Free, Solo $39, Team $49 with 14-day free trial CTA and Start Free option → Step 6 create first demo job pre-filled with trade data, then land on dashboard with demo jobs showing.
+Worker/Manager path (4 steps):
+Step 1 role select → Step 2 enter 6-character invite code which instantly connects to the right business with the right role → Step 3 just name and phone → Step 4 land directly on their worker dashboard showing today's assigned jobs. No plan selection, no business setup.
+Subcontractor path (5 steps):
+Step 1 role select → Step 2 name, phone, trade type, ABN optional → Step 3 connect first business via invite code — skippable → Step 4 privacy explanation screen showing exactly when location is and isn't shared — this is mandatory, not skippable → Step 5 land on the subbie-specific dashboard showing today's timeline, availability toggle, incoming job requests, and earnings summary.
+Invite code system:
+Business owners can generate 6-character alphanumeric codes from Team Management. Separate codes for Worker role and Manager role and Subcontractor role. Codes expire after 30 days or 10 uses. The code instantly assigns the right role when entered.
+After onboarding everyone should be running their day immediately — no blank screens, no confusion about what to do first."

@@ -1,0 +1,233 @@
+4.2 Clients (/clients + /clients/:id)
+
+Clients list:
+
+Columns:
+
+Name
+
+Phone
+
+Email
+
+Jobs
+
+Outstanding balance (mock)
+
+Client Detail:
+
+Header:
+
+Name
+
+Contact info
+
+Sections:
+
+Overview
+
+Jobs history
+
+Quotes
+
+Invoices
+
+Files
+
+Button: “🤖 Summarise this client” (placeholder)
+
+4.3 Quotes (/quotes + detail)
+
+Quotes list:
+
+Columns:
+
+Quote #
+
+Client
+
+Job
+
+Date
+
+Total
+
+Status (Draft / Sent / Accepted / Declined)
+
+Quote detail:
+
+Header:
+
+Quote #
+
+Status
+
+Buttons:
+
+“Send quote” (no backend, just change status to Sent)
+
+“Accept quote” (set status Accepted, create job or update job status)
+
+“Decline” (status Declined)
+
+Line items table:
+
+Description
+
+Quantity
+
+Unit price
+
+Line total
+
+Subtotal, GST (10% toggle), Total
+
+Button: “🤖 Suggest line items” (placeholder)
+
+4.4 Invoices (/invoices + detail)
+
+Invoices list:
+
+Columns:
+
+Invoice #
+
+Client
+
+Job
+
+Due date
+
+Total
+
+Status (Draft / Sent / Paid / Overdue)
+
+Invoice detail:
+
+Header:
+
+Invoice #
+
+Status
+
+Buttons:
+
+“Mark as sent”
+
+“Mark as paid”
+
+“Download PDF” (mock function, can just show a message)
+
+Line items table similar to quote
+
+Subtotal, GST, Total
+
+Button: “🤖 Draft invoice email” (placeholder text “Hi {Client}…”)
+
+4.5 Calendar (/calendar)
+
+Simple month or week view.
+
+Show jobs on their scheduled date.
+
+Clicking a job opens Job Detail.
+
+5. Team Management (Settings → Team)
+
+/settings with tabs:
+
+Profile – name, email
+
+Business – business name, trade type, phone
+
+Team (only for owner/manager)
+
+Team tab:
+
+Table of team members:
+
+Name
+
+Email
+
+Role (Owner / Manager / Tradie / Office)
+
+Status (Active / Pending)
+
+“Invite team member” button:
+
+Opens modal: Name, Email, Role
+
+Adding creates row with status “Pending”
+
+All of this can be local state + mock data.
+
+6. Messaging (Job Chat + Team Chat)
+
+Team Chat (/team-chat):
+
+Title: “Team Chat”
+
+Subtext: “Use this to coordinate with your team.”
+
+Chat window:
+
+Messages list:
+
+sender name
+
+role
+
+timestamp
+
+content
+
+Input at bottom: “Type a message…”
+
+“Send” button adds to messages list.
+
+Add unread badge on sidebar if there are messages marked unread (you can just mock this logic).
+
+Job Chat (inside Job Detail):
+
+Within Job Detail, add a “Job Chat” section.
+
+Works like Team Chat, but for that job only (jobId scoped).
+
+Mock an initial set of messages per job.
+
+No backend or real-time yet; just keep everything in state.
+
+7. Activity Feed
+
+On the Owner/Manager dashboard, show a card:
+
+“Recent activity”
+
+List items like:
+
+“John started Job ‘Leaking shower repair’”
+
+“Invoice INV-102 marked as Paid”
+
+“Quote Q-305 sent to Sarah Smith”
+
+Use mock data, update when user actions happen if easy.
+
+8. AI Helper Placeholders
+
+Add AI buttons:
+
+Job description: “🤖 Rewrite with AI”
+
+Notes: “🤖 Summarise notes”
+
+Quotes: “🤖 Suggest line items”
+
+Invoices: “🤖 Draft invoice email”
+
+Client page: “🤖 Summarise this client”
+
+Dashboard suggestions card: static suggestions
+
+For now, they can just call stub functions that update text with some placeholder content.

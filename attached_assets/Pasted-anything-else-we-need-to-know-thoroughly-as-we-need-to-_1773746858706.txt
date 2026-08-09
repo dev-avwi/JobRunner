@@ -1,0 +1,187 @@
+anything else we need to know thoroughly as we need to get legal stuff sorted and im still in year 10 how will i manage this
+
+9:24 PM
+Really important questions — let me break both down properly because they're very different problems.
+
+The Legal Stuff — What You Actually Need
+
+Don't overcomplicate this at your stage. Here's what genuinely matters before taking any money:
+
+Before pilot testing (free users) — you need:
+
+A simple Terms of Service and Privacy Policy on the app. Not perfect, just present. Use a service like Termly or iubenda — about $20-30/month, generates Australian compliant documents automatically. This protects you if something goes wrong during testing.
+
+Before first paying customer — you need:
+
+Your own ABN registered as sole trader — free, 10 minutes, abr.gov.au. Without this you legally can't take payments in your own name.
+
+Transfer the JobRunner business name from your mum's ABN to yours — needs her permission, done through asic.gov.au.
+
+A basic business bank account — CommBank, ANZ or Up Bank all have free ones. Keep JobRunner money completely separate from personal money from day one. Makes tax time infinitely simpler.
+
+Stripe account under your own ABN — so payments come to you not your mum's company.
+
+The AI specific legal stuff:
+
+Your Terms of Service needs to clearly state the AI receptionist is for information collection only and all job details are confirmed by the business owner. That one line protects you from almost every dispute.
+
+Call recording disclosure built into the AI greeting — "this call may be recorded for quality purposes." Required in most Australian states.
+
+Privacy Policy covering how customer phone numbers and call recordings are stored. Termly generates this automatically.
+
+What you don't need right now:
+
+A lawyer. Seriously. At your stage the documents from Termly are completely adequate. Get a proper legal review when you're making $5,000+ a month. That's when it makes financial sense.
+
+A company structure. Stay sole trader until you're consistently making real money. Pty Ltd costs money to set up and maintain and adds complexity you don't need right now.
+
+Being In Year 10 — The Real Talk
+
+This is actually less of a problem than you think but it does need managing properly.
+
+The genuine challenges:
+
+Time is your biggest constraint. School takes most of your week. Building a product, supporting customers and doing sales on top of study is genuinely hard. You need to be realistic about what you can ship and when.
+
+Contracts are complicated under 18. In Australia you generally can't enter binding contracts until you're 18. This means technically a business could dispute a contract with you because you're a minor. The practical solution is having your mum or another trusted adult as the legal account holder on things like Stripe, Twilio and Retell until you turn 18. This is the same reason JobRunner is currently under her ABN — it actually makes sense right now for legal reasons, not just practical ones.
+
+Taking meetings and cold calls while in school requires scheduling. You can't just call tradies at 10am on a Tuesday. You need to be disciplined about when you do business stuff versus school stuff.
+
+The genuine advantages of being in Year 10:
+
+No rent. No bills. No financial pressure. You can take risks and move slowly that a 25 year old founder with expenses simply can't afford.
+
+Every single person you talk to will be impressed. A 16 year old who built a real app and is pitching tradies is memorable. People will go out of their way to help you. Use that.
+
+You have time. JobRunner doesn't need to be a $1M business by next year. You have years to build this properly while your costs are zero.
+
+School itself is useful. Business studies, IT, maths — all directly relevant. Take it seriously.
+
+How to actually manage it week to week:
+
+Time	Focus
+School hours	School — no exceptions
+Afternoons 3:30-6pm	Building — coding, Retell setup, fixing bugs
+Evenings 7-9pm	Admin — emails, planning, research
+Weekend mornings	Sales — cold calls, outreach, pilot check-ins
+Weekend afternoons	Building or rest — you need both
+That's roughly 20-25 hours a week on JobRunner alongside school. That's enough to build this properly without burning out.
+
+The one thing that will derail you:
+
+Trying to do everything at once. You don't need the AI receptionist AND the website builder AND billing AND cold calling all happening simultaneously. Pick one thing, finish it, then move to the next. The build order in your Replit brief exists for a reason.
+
+The most important thing honestly:
+
+Tell your school about what you're building. Most schools have teachers who would love to support a student doing something like this. You might get flexibility on assignments, mentorship, or even recognition that helps your future. There's zero downside to being open about it.
+
+The Practical Next Steps In Order
+
+This week:
+
+Register your own ABN at abr.gov.au
+Sign up for Retell free tier
+Sign up for Termly and generate basic Terms of Service and Privacy Policy
+This month:
+
+Get the core call loop working in Retell
+Set up Termly documents on the app
+Have the conversation with your mum about the ABN and business name transfer plan
+Before first paying customer:
+
+ABN transferred or new one registered
+Business bank account open
+Stripe under your own ABN
+Terms of Service and Privacy Policy live on the app
+The Bottom Line
+
+Being in Year 10 is not a reason to slow down. It's a reason to be smart about how you manage your time and legal structure. Plenty of the most successful founders started exactly where you are.
+
+The legal stuff is genuinely simple at your stage — a Termly account and your own ABN solves 90% of it right now.
+
+The real question is just time management. Build in the afternoons, sell on weekends, study during school. Keep those three things separate and you'll be fine.
+
+You've already done the hardest part which is building something real. Everything else is just execution.
+
+What do you want to tackle first this week?
+
+im going to use my mums ABN of Linkup2care, and itd be like Linkup2care trading as JobRunner
+
+9:26 PM
+
+Weighed legitimacy and implications of trading-as structure
+Weighed legitimacy and implications of trading-as structure
+Yeah that actually works cleanly and is a legitimate structure in Australia. Here's what you need to know about it:
+
+What "Trading As" Actually Means
+
+LinkUp2Care Pty Ltd trading as JobRunner means:
+
+LinkUp2Care is the legal entity
+JobRunner is the brand name it operates under
+The ABN on invoices and Stripe would be 34 692 409 448
+Customers see "JobRunner" everywhere
+Legally it's LinkUp2Care behind it
+This is completely normal. Massive companies do this all the time.
+
+The Genuine Advantages For You Right Now
+
+You already have a registered company with an ABN rather than just a sole trader setup. A Pty Ltd actually offers more legal protection than a sole trader — if something goes wrong legally the company wears it, not you or your mum personally.
+
+The JobRunner business name is already registered under that ABN. So technically the structure is already in place. You don't need to do anything new.
+
+Stripe, Twilio, Retell can all be set up under LinkUp2Care's ABN trading as JobRunner. Completely legitimate.
+
+The One Critical Thing
+
+You need a clear written agreement with your mum about this. Not a formal legal document necessarily — just something that's clearly understood and ideally written down covering:
+
+JobRunner revenue goes to a separate bank account
+That account is controlled by you
+Profits from JobRunner are yours not LinkUp2Care's
+She's not liable for anything JobRunner does
+When you turn 18 you transition everything to your own entity
+This protects both of you. You don't want a situation where JobRunner makes money and it's unclear whose it is.
+
+The Bank Account Setup
+
+Open a separate bank account specifically for JobRunner under LinkUp2Care's ABN. Keep it completely separate from whatever LinkUp2Care normally uses. That way:
+
+JobRunner money is clearly JobRunner money
+Your mum's business finances stay clean
+Tax time is simple
+You can see exactly how JobRunner is performing
+Up Bank and CommBank both let you open additional accounts easily.
+
+How It Looks Professionally
+
+On your Terms of Service and invoices it would read:
+
+"JobRunner is a product of LinkUp2Care Pty Ltd (ABN 34 692 409 448)"
+
+Or simply:
+
+"LinkUp2Care Pty Ltd trading as JobRunner"
+
+That looks completely professional and legitimate. Nobody will question it.
+
+The Long Term Plan
+
+This works perfectly right now while you're under 18. When you turn 18 you have two clean options:
+
+Option 1 — Register your own company, transfer the JobRunner business name across and move on independently.
+
+Option 2 — Keep operating under LinkUp2Care if it's still making sense for both of you.
+
+Either way that's a future decision. Right now trading as JobRunner under LinkUp2Care is a clean, legal, zero cost solution that lets you move forward immediately.
+
+What To Do This Week
+
+Just two things:
+
+Have a proper conversation with your mum — make sure she's genuinely comfortable with JobRunner operating under her company, understands the implications, and agrees to keep finances separate.
+
+Open a dedicated JobRunner bank account under LinkUp2Care's ABN. Everything JobRunner related flows through that account and nothing else.
+
+That's it. You're legally set up and ready to go.
+

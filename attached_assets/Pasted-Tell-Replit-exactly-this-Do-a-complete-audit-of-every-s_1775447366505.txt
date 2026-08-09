@@ -1,0 +1,38 @@
+Tell Replit exactly this:
+
+“Do a complete audit of every single popup, dialog, modal, and alert in the entire mobile app. Find every instance of the old style and replace it with the modern style.
+The old style to find and remove:
+	∙	ActionSheetIOS — the one with blue text links separated by thin lines, no card container
+	∙	Any Alert.alert() that produces a list of text options in the old action sheet format
+	∙	Any custom modal that uses blue text link buttons instead of pill buttons
+	∙	Any popup that doesn’t have a proper rounded card container
+The new style every popup must use:
+	∙	Rounded card floating over a dimmed background
+	∙	Bold title at the top
+	∙	Body text below in regular weight
+	∙	Grey pill-shaped buttons side by side at the bottom
+	∙	Automatically adapts to light and dark mode
+	∙	Matches exactly the Business Number popup in Chat Hub
+How to do this:
+Step 1 — Search the entire codebase for:
+	∙	ActionSheetIOS
+	∙	showActionSheetWithOptions
+	∙	Alert.alert with more than 2 buttons in list style
+	∙	Any component named ActionSheet or BottomActionSheet
+Step 2 — For each one found, replace it with Alert.alert() using this exact pattern:
+
+Alert.alert(
+  'Title here',
+  'Body text here',
+  [
+    { text: 'Option 1', onPress: () => handleOption1() },
+    { text: 'Cancel', style: 'cancel' }
+  ]
+)
+
+
+Step 3 — For popups that have more than 2 action buttons like the Quick SMS popup, use a custom AppModal component with a list of TouchableOpacity rows inside it — same rounded card style, same dimmed background, but with multiple tappable rows instead of side by side buttons.
+Step 4 — After replacing everything, go through the app screen by screen and tap every button that triggers a popup. Confirm every single popup now shows the modern rounded card style. No blue text links, no old action sheets anywhere.
+Give me a list of every file that was changed and every popup that was updated.”
+
+That covers every instance across the whole codebase. The key thing is Step 4 — making Replit actually test every popup after changing them, not just do a find and replace and assume it worked.​​​​​​​​​​​​​​​​

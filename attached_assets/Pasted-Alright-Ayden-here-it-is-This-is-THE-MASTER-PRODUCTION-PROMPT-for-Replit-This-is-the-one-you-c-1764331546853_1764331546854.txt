@@ -1,0 +1,401 @@
+Alright Ayden — here it is.
+
+This is THE MASTER PRODUCTION PROMPT for Replit.
+
+This is the one you copy-paste straight into Replit AI so it:
+	•	fixes your app
+	•	finishes the backend
+	•	sets up production billing
+	•	sets up Connect payments
+	•	sets up SendGrid properly
+	•	fixes UI alignment
+	•	finalises all features
+	•	prepares the app for beta users
+	•	checks everything for you
+
+This is written to be extremely clear, following how AI builders like Replit expect instructions.
+
+Use this as your source of truth for turning TradieTrack into a real SaaS.
+
+⸻
+
+🚀 MASTER PRODUCTION PROMPT FOR TRADIETRACK
+
+I am building a SaaS app called TradieTrack.
+I need you to update the project into full PRODUCTION MODE with:
+
+✔ Stripe Billing (for my subscriptions)
+
+✔ Stripe Connect (for tradies to get paid by their customers)
+
+✔ SendGrid (emails for app + tradie customer emails)
+
+✔ Full backend validation & security
+
+✔ Fix unused layout columns + improve UI spacing
+
+✔ Add all final production pages and workflows
+
+Follow all instructions carefully and update all files accordingly.
+
+⸻
+
+🔵 1. GENERAL REQUIREMENTS
+
+1.1 Convert the entire project to production mode
+	•	Use environment variables instead of hardcoded keys
+	•	Remove console logs
+	•	Add error boundaries
+	•	Add proper loading states
+	•	Fix any development shortcuts
+	•	Remove placeholder data
+	•	Validate all DB queries
+
+1.2 Fix the UI spacing + unused right column problem
+
+There is currently a large unused right-column space on most pages, making the app look left-aligned.
+
+Fix:
+	•	Implement a responsive max-width layout (e.g., max-w-screen-lg mx-auto px-4)
+	•	Ensure pages use full available width
+	•	Remove/remap any unused columns or grid wrappers
+	•	Standardize all pages to the same layout component
+	•	Ensure mobile → desktop scaling is correct
+	•	The “More” page is correct — make all pages follow that layout
+
+⸻
+
+🔵 2. DATABASE STRUCTURE (REQUIRED FOR PRODUCTION)
+
+Ensure these tables and fields exist and are linked:
+
+2.1 business table
+
+business (
+  id uuid pk,
+  name text,
+  trade_type text,
+  phone text,
+  email text,
+  abn text,
+  address text,
+
+  subscription_tier text,         -- free | starter | pro | elite
+  subscription_status text,       -- active | past_due | canceled
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  current_period_end timestamptz,
+
+  stripe_connect_account_id text,
+  connect_charges_enabled boolean,
+  connect_payouts_enabled boolean,
+
+  email_verified boolean default false,
+
+  created_at timestamptz default now()
+);
+
+2.2 users table
+
+users (
+  id uuid pk,
+  email text unique,
+  full_name text,
+  role text,                -- owner | manager | tradie
+  business_id uuid references business(id),
+  created_at timestamptz default now()
+);
+
+2.3 invoices table
+
+invoices (
+  id uuid pk,
+  business_id uuid references business(id),
+  client_id uuid,
+  job_id uuid,
+  status text,              -- draft | sent | paid | overdue
+  total_cents integer,
+  currency text default 'aud',
+  gst_included boolean,
+  due_date timestamptz,
+
+  stripe_payment_intent_id text,
+  payment_method text,
+  payment_reference text,
+  paid_at timestamptz,
+
+  created_at timestamptz default now()
+);
+
+2.4 notifications table
+
+notifications (
+  id uuid pk,
+  business_id uuid,
+  user_id uuid,
+  type text,
+  title text,
+  body text,
+  related_type text,
+  related_id uuid,
+  read boolean default false,
+  created_at timestamptz default now()
+);
+
+Ensure foreign keys and RLS (Row Level Security) are configured so users cannot access other businesses’ data.
+
+⸻
+
+🔵 3. STRIPE — LAYER 1 (MY SUBSCRIPTION BILLING)
+
+Implement full subscription billing with Stripe Checkout.
+
+3.1 Add endpoint:
+
+POST /api/billing/create-checkout-session
+
+Inputs:
+
+{
+  "businessId": "...",
+  "userId": "...",
+  "plan": "starter" | "pro" | "elite"
+}
+
+Flow:
+	1.	Ensure the user belongs to the business
+	2.	Create Stripe customer if none exists
+	3.	Create checkout session (mode: subscription)
+	4.	Add metadata:
+	•	business_id
+	•	plan
+
+Return session.url.
+
+3.2 Add webhook:
+
+POST /api/stripe/subscription-webhook
+
+Handle:
+	•	checkout.session.completed
+	•	invoice.payment_succeeded
+	•	invoice.payment_failed
+	•	customer.subscription.deleted
+
+Update:
+	•	business.subscription_tier
+	•	business.subscription_status
+	•	business.current_period_end
+
+Add notifications + SendGrid emails.
+
+⸻
+
+🔵 4. STRIPE — LAYER 2 (TRADIE CUSTOMER PAYMENTS VIA STRIPE CONNECT)
+
+Add a Payments Settings page where the tradie can click “Connect Stripe”.
+
+4.1 Endpoint:
+
+POST /api/payments/create-connect-account-link
+
+Flow:
+	•	Create Stripe Connect Express account if needed
+	•	Store stripe_connect_account_id
+	•	Generate onboarding link
+	•	Return onboarding link URL
+
+4.2 Connect Webhook:
+
+POST /api/stripe/connect-webhook
+
+Handle:
+	•	account.updated
+
+Update:
+	•	connect_charges_enabled
+	•	connect_payouts_enabled
+
+4.3 Invoice PaymentIntents
+
+Add endpoint:
+
+POST /api/payments/create-payment-intent
+
+Flow:
+	•	Ensure invoice belongs to business
+	•	Ensure Connect is enabled
+	•	Create PaymentIntent with:
+
+application_fee_amount (1–2%)
+on_behalf_of: tradie’s stripe_connect_account_id
+transfer_data: { destination: stripe_connect_account_id }
+
+
+	•	Return client_secret
+
+Add payment success webhook:
+	•	Mark invoice as paid
+	•	Send notification
+	•	Send SendGrid receipt
+
+⸻
+
+🔵 5. SENDGRID — LAYER 1 (APP → TRADIES)
+
+Use:
+
+From: TradieTrack <no-reply@tradietrack.com>
+
+Emails needed:
+	•	welcome
+	•	email verification
+	•	subscription activated
+	•	payment failed
+	•	team invite
+
+Add:
+
+sendAppEmail(to, template, data) helper.
+
+⸻
+
+🔵 6. SENDGRID — LAYER 2 (TRADIE → THEIR CUSTOMERS)
+
+Use:
+
+From: TradieTrack for {BusinessName} <no-reply@tradietrack.com>
+Reply-To: tradie’s actual email
+
+Emails needed:
+	•	quote sent
+	•	invoice sent
+	•	payment receipt
+	•	job update
+
+Add helper:
+
+sendCustomerEmail(business, to, template, data).
+
+⸻
+
+🔵 7. UI/UX PRODUCTION SETUP
+
+7.1 Fix layout globally
+	•	Use a standard layout wrapper to fix left alignment
+	•	Remove unused columns
+	•	Ensure responsive grid for job cards / widgets
+	•	Ensure consistent spacing (padding/margins)
+	•	Add polished header + breadcrumbs
+	•	Add empty state illustrations for pages with no data
+
+7.2 Settings pages
+
+Add full sections:
+	•	Business Info
+	•	Billing
+	•	Payments (Stripe Connect)
+	•	Email Verification
+	•	Team
+
+⸻
+
+🔵 8. PDF GENERATION (PRODUCTION MODE)
+
+Create polished, professional PDF templates for:
+	•	Quotes
+	•	Invoices
+	•	Payment receipts
+
+Must include:
+	•	Business logo
+	•	Business details
+	•	ABN
+	•	Quote/invoice number
+	•	Issue date
+	•	Due date
+	•	Itemized line items
+	•	GST calculation
+	•	Terms
+	•	Footer
+	•	“Generated with TradieTrack” badge
+
+⸻
+
+🔵 9. SECURITY REQUIREMENTS
+	•	RLS on all tables
+	•	Only owners/managers can edit business settings
+	•	Rate limit login & signup
+	•	Validate all incoming API types
+	•	Ensure no secrets are exposed in frontend
+	•	Enable CORS only for production domain
+
+⸻
+
+🔵 10. TEST EVERYTHING
+
+Create a full test checklist in code comments:
+
+Tests:
+	•	Signup
+	•	Email verification
+	•	Business onboarding
+	•	Creating a job
+	•	Creating a quote
+	•	Sending a quote
+	•	Customer receiving quote email
+	•	Customer opening quote public page
+	•	Creating an invoice
+	•	Paying invoice via Stripe
+	•	Webhook updates DB
+	•	Notifications work
+	•	Subscription upgrades
+	•	Billing page shows correct info
+	•	Connect account onboarding
+	•	Connect account verification
+	•	Sending invoice emails
+	•	Payment receipts sent
+
+⸻
+
+🔵 11. FINAL GOAL
+
+After completing all updates:
+
+The app should be ready for a real beta launch, with:
+	•	Real Stripe billing
+	•	Real Connect payments
+	•	Real SendGrid emails
+	•	Production-ready database
+	•	Clean professional UI
+	•	Full security
+	•	No unused columns or broken layouts
+	•	Full responsive design
+	•	Reliable notifications
+	•	Legit quotes, invoices, and receipts
+
+Use this entire prompt as the definitive specification, update all code, and notify me of any missing files or conflicts.
+
+⸻
+
+DONE.
+
+If you paste that into Replit AI, it will understand the ENTIRE architecture and start fixing everything to production-level.
+
+If you want, I can now generate:
+
+✔ Production email templates
+
+✔ Clean invoice PDF design
+
+✔ Business Settings page UI
+
+✔ Payments (Stripe Connect) page UI
+
+✔ Billing page UI
+
+✔ Error messages + confirmation text
+
+✔ Empty states + placeholder illustrations
+
+Just tell me which one you want next.

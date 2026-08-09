@@ -1,0 +1,106 @@
+Preparing expo-dev-launcher Pods/expo-dev-launcher » expo-dev-launcher-Info.plist
+› Creating  expo-insights Pods/ExpoInsights » ExpoInsights.framework
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedSensorContainer.m
+› Compiling react-native-reanimated Pods/RNReanimated » ReanimatedSensor.m
+› Compiling react-native-reanimated Pods/RNReanimated » RCTUIView+Reanimated.m
+› Compiling react-native-reanimated Pods/RNReanimated » RNReanimated-dummy.m
+› Executing react-native-reanimated Pods/RNReanimated » Create Symlinks to Header Folders
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » RCTPackagerConnection+EXDevLauncherPackagerConnectionInterceptor.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherReactNativeFactory.mm
+› Compiling expo-updates Pods/EXUpdates » EXUpdates_vers.c
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncher_vers.c
+› Creating  react-native-reanimated Pods/RNReanimated » RNReanimated.framework
+› Compiling Pods/Pods-JobRunner » Pods_JobRunner_vers.c
+› Compiling Pods/Pods-JobRunner » Pods-JobRunner-dummy.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » expo-dev-launcher-dummy.m
+› Compiling expo-updates Pods/EXUpdates » EXUpdates-dummy.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherDeferredRCTRootView.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherUpdatesHelper.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherRCTDevSettings.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherRCTBridge.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherDevMenuExtensions.m
+› Compiling expo-updates Pods/EXUpdates » EXDeferredRCTRootView.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncher.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherManifestParser.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherRedBox.m
+› Compiling expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncherController.m
+› Creating  expo-updates Pods/EXUpdates » EXUpdates.framework
+› Creating  expo-dev-launcher Pods/expo-dev-launcher » EXDevLauncher.framework
+› Preparing Pods/Pods-JobRunner » Pods-JobRunner-Info.plist
+› Creating  Pods/Pods-JobRunner » Pods_JobRunner.framework
+› Executing JobRunner » [CP] Check Pods Manifest.lock
+› Executing JobRunner » [Expo] Configure project
+› Copying   ios/JobRunner/Supporting/Expo.plist ➜ ./Expo.plist
+› Copying   ./PrivacyInfo.xcprivacy ➜ ios/JobRunner/PrivacyInfo.xcprivacy
+› Linking   JobRunner » __preview.dylib
+› Compiling JobRunner » SplashScreen.storyboard
+› Compiling JobRunner » JobRunner_vers.c
+› Linking   JobRunner » JobRunner.debug.dylib
+› Linking   JobRunner » JobRunner
+› Executing JobRunner » Bundle React Native code and images
+› Generating debug JobRunner » JobRunner.app.dSYM
+› Executing JobRunner » [CP] Copy Pods Resources
+› Executing JobRunner » Upload Debug Symbols to Sentry
+› Preparing JobRunner » Info.plist
+› Executing JobRunner » [CP] Embed Pods Frameworks
+› Generating debug JobRunner » JobRunner.app.dSYM
+› Signing   JobRunner » JobRunner.debug.dylib
+› Signing   JobRunner » __preview.dylib
+› Signing   JobRunner » JobRunner.app
+    The CFBundleVersion of an app extension ('1') must match that of its containing parent app ('43').
+› Creating  JobRunner » JobRunner.app
+    Run script build phase '[CP-User] [Hermes] Replace Hermes for the right configuration, if needed' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'hermes-engine' from project 'Pods')
+    Run script build phase 'Upload Debug Symbols to Sentry' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'JobRunner' from project 'JobRunner')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'ReactCodegen' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNWorklets' from project 'Pods')
+    Run script build phase 'Create Symlinks to Header Folders' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'RNReanimated' from project 'Pods')
+    Run script build phase '[CP-User] Generate updates resources for expo-updates' will be run during every build because it does not specify any outputs. To address this issue, either add output dependencies to the script phase, or configure it to run in every build by unchecking "Based on dependency analysis" in the script phase. (in target 'EXUpdates' from project 'Pods')
+› Build Succeeded
+
+› 0 error(s), and 7 warning(s)
+
+Starting Metro Bundler
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ █ ▀▀▄ ▀▀▄ ▄▀█▄▄███▀ █▀█ ▄▄▄▄▄ █
+█ █   █ ███ ▄▄█ ▄▄ █▀█ ▄▄▀  ▄██ █   █ █
+█ █▄▄▄█ █ ▄▄ █▄▄ █▄██▄▄ ██▄▀█▀█ █▄▄▄█ █
+█▄▄▄▄▄▄▄█ █ ▀ █ ▀ █▄█▄█ █ █▄█ █▄▄▄▄▄▄▄█
+█  ▄▀▀ ▄▀▄▄ ██  ██▀▄▀██  ▀▀▄▀ ▄  ▄██  █
+█▀▄▄█ ▄▄ ▀█ ▄█▀█▄███  █ ▄▄▄▀▄▄▀▄▀▀ ██▄█
+██▄  ▀ ▄▄█▀▀▄ ▄█▄ █  █▄█▀ ██ ▀▀ ▄█▄█▀ █
+█ ▀  █ ▄▀▄ █▀ ▄ ▀ ██▄█▄ ▄▀█  ▀▄█▀▀▀▄▀ █
+█ ▀▄ ▄▄▄▀▄ ▀██  ███  ██▄▀█▀█▀ ▀ ▄█ █▄▀█
+█▀ ▄▄▀▀▄▄ ▀ ▄█▀█▄█▄   ▄▀▄ ▄█▄ ▄▄▄▀ ▄▄▄█
+██▀█▀▀█▄█ ██▄ ▄█▄ █▄▀▄█ ▀ ▀█▀ █ ██▄▀  █
+█▀▄▄▀▀▀▄▀▀▄ ▀ ▄ ▀ ▄▀ ▄█▄ ▄▄ ▄▀▀▀█▀▀▄█▄█
+███▀▀ █▄███ ██  █▄█  █▄█ ▀██  ▄  █ █ ▀█
+█▄▄█▄▀▀▄ ▄▄▄▄█▀█▄██ ▄███▄▀▄▀  ▀███▀▄▀▄█
+█▄▄▄▄█▄▄▄▀▄▄▄ ▄█ █▄█▀██▄ ▀▀█  ▄▄▄ ▀██ █
+█ ▄▄▄▄▄ █▀ ▀▀ ▄ ▄▄▄ ▄█▄▀ ▀██▀ █▄█  ▄█▄█
+█ █   █ ██▄ ██  ▀█▀  ██ ▀██▀ ▄ ▄▄ ██ ▄█
+█ █▄▄▄█ █  ▀▄█▀█▄▄▄▄  █▄ ▀▄██  █▀▄ ██▄█
+█▄▄▄▄▄▄▄█▄█▄▄▄▄█▄██▄▄▄▄██▄█▄█▄▄▄▄▄▄██▄█
+
+› Metro waiting on exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081
+› Scan the QR code above to open the project in a development build. Learn more: https://expo.fyi/start
+
+› Using development build
+› Press s │ switch to Expo Go
+
+› Press a │ open Android
+› Press i │ open iOS simulator
+› Press w │ open web
+
+› Press j │ open debugger
+› Press r │ reload app
+› Press m │ toggle menu
+› shift+m │ more tools
+› Press o │ open project code in your editor
+
+› Press ? │ show all commands
+
+› Installing /Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/Build/Products/Debug-iphoneos/JobRunner.app
+✔ Complete 100%
+
+› Logs for your project will appear below. Press Ctrl+C to exit.
+

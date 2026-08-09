@@ -1,0 +1,174 @@
+Yep — we can do this properly and **evidence-based**.
+
+Below is a grounded snapshot of the “big 4” (ServiceM8, Tradify, simPRO, AroFlo): **what they’re genuinely good at, what their biggest features are, and what users complain about**—using public review sources (Software Advice, Capterra, G2, Trustpilot) plus each vendor’s own feature pages.
+
+---
+
+## The baseline “must-match” feature set (to be taken seriously)
+
+If JobRunner wants to compete “on par or above”, these are table-stakes across the leaders:
+
+* **Quote → job → invoice** pipeline (fast, on mobile)
+* **Scheduling/dispatch** (calendar, team allocation)
+* **Job notes, photos, checklists, signatures**
+* **Payments** (or at least clean Stripe/Xero workflows)
+* **Accounting integrations** (Xero is huge in AU/NZ)
+* **Customer comms** (SMS/email)
+* **Reporting** (even if basic)
+* **Multi-user/team support**
+* Optional but high-value: **inventory/parts**, **assets/equipment registers**, **customer portal**, **automations**
+
+That set is basically what these products position around. ([servicem8.com][1])
+
+---
+
+# 1) ServiceM8
+
+### What it’s strongest at
+
+**Field-first mobile workflow.** It’s designed to let tradies quote/invoice onsite and capture job proof (photos, signatures, notes). ([servicem8.com][1])
+
+### Big features you’re competing with
+
+* Job & staff management, dispatch/scheduling
+* Onsite quoting/invoicing + PDF generation
+* Signatures, job documentation, photos/videos
+* “Track my arrival” style client comms
+* It’s also pushing “AI” in invoicing (Auto-Invoice) ([servicem8.com][1])
+
+### Common problems (from reviews)
+
+* Reports of **glitches / reliability issues** in some features and support limitations in resolving issues quickly ([Software Advice][2])
+* On G2, users mention **clunky/time-consuming invoicing navigation** and wanting a better customer portal / customization ([G2][3])
+
+**Takeaway for JobRunner:** if you want to beat ServiceM8, you win on **reliability + speed of invoicing + better portal + clearer support**—while staying mobile-first.
+
+---
+
+# 2) Tradify
+
+### What it’s strongest at
+
+**“Simple, works, quote-to-invoice” for small teams** (often marketed for 1–20 people). ([App Store][4])
+
+### Big features you’re competing with
+
+* Quoting + invoicing, branded docs, automated payment chasing (“smart invoices”)
+* Job management + scheduling
+* Timesheets/appointments workflows for time & materials invoicing ([tradifyhq.com][5])
+
+### Common problems (from reviews)
+
+* **Cost/value concerns**, plus **limited reporting/customisation** and automation gaps mentioned in reviews ([Software Advice][6])
+* Scheduling getting visually busy as team size grows (harder to see workload at a glance) ([Software Advice][6])
+* Some users complain about **device/platform quirks** (e.g., Chromebook experience) ([Software Advice][6])
+* Trustpilot review snippets include complaints around **Stripe fees / payment costs** ([Trustpilot][7])
+
+**Takeaway for JobRunner:** win on **better reporting dashboards + better scheduling clarity + deeper customisation** without making it complex.
+
+---
+
+# 3) simPRO
+
+### What it’s strongest at
+
+**Big, enterprise-style trade ops**: jobs + projects, deeper inventory/purchasing, stronger integrations. ([Simpro][8])
+
+### Big features you’re competing with
+
+* Inventory tracking + purchase orders and pushing supplier invoices to accounting ([Simpro][9])
+* Invoicing + accounting integrations workflows ([Simpro][8])
+* Add-ons and integrations ecosystem ([Simpro][10])
+
+### Common problems (from reviews)
+
+* Reviews describe it as **time-consuming / needing heavy data entry**, with complaints about onboarding and support quality ([Software Advice][11])
+* Reports of **inflexibility/customisation pain** and confusing invoice/tax presentation, plus inconsistent reports ([Capterra][12])
+
+**Takeaway for JobRunner:** don’t try to “out-enterprise” simPRO initially. Beat it with **simplicity, faster onboarding, fewer clicks, cleaner UX**, while still offering core depth.
+
+---
+
+# 4) AroFlo
+
+### What it’s strongest at
+
+**Feature breadth**: scheduling, inventory, assets, projects, quoting, subcontractors, reporting, integrations. ([aroflo.com][13])
+
+### Big features you’re competing with
+
+* Job management and workflow automation (including email-to-job import) ([aroflo.com][14])
+* Broader “platform” toolset (assets/property data/inventory/projects) ([aroflo.com][13])
+
+### Common problems (from reviews)
+
+* “**Overcomplicated / hard to learn**” and “too many fields we don’t use; can’t hide/turn off” ([Software Advice][15])
+* Reviews also mention **bugs / value concerns** on some platforms ([Capterra][16])
+* G2 mentions template/reporting not being straightforward and workflow quirks (e.g., purchasing steps) ([G2][17])
+
+**Takeaway for JobRunner:** your edge is **customisability without clutter** (“hide fields/modules”, role-based UI, clean defaults).
+
+---
+
+## The most consistent “pain themes” across all 4 (with evidence)
+
+If you want the *real* “where they suck”, the recurring themes from reviews are:
+
+1. **Complexity / too many clicks / steep learning curve** (simPRO, AroFlo) ([Software Advice][11])
+2. **Reporting & dashboards not good enough** (Tradify, simPRO, AroFlo users mention reporting difficulty/limitations) ([Software Advice][6])
+3. **Support / onboarding pain** (simPRO onboarding complaints; ServiceM8 support complaints) ([Software Advice][11])
+4. **Bugs / reliability** (ServiceM8, AroFlo reviews mention issues) ([Software Advice][2])
+5. **Scheduling visibility at scale** (Tradify scheduler “busy” when team grows) ([Software Advice][6])
+
+Also: your earlier “they aren’t AI-smart yet” needs updating—**ServiceM8 is actively marketing AI-based Auto-Invoice**. ([servicem8.com][18])
+
+---
+
+# What this means for JobRunner (practical competitor checklist)
+
+If your goal is “on par or above”, the clearest competitive spec is:
+
+### Match (table stakes)
+
+* Quote → job → invoice fast on mobile
+* Clean scheduling/dispatch
+* Proof of work (photos/checklists/signatures)
+* Xero integration
+* Team + roles + permissions
+
+### Beat them (where reviews show pain)
+
+* **Instant onboarding** (get value in first 15 minutes)
+* **A dashboard that tells the owner what to do next**
+* **Reporting that isn’t annoying** (profit per job, overdue invoices, top customers, unbilled time)
+* **UI that adapts** (hide fields/modules per trade + per role)
+* **Reliability + support workflow** (in-app diagnostics, fast fixes, status page)
+
+---
+
+If you want, I’ll turn this into a **“Feature Parity + Differentiation PRD”** for JobRunner:
+
+* one page per competitor (features to match)
+* a single master checklist
+* a “win plan” mapping each pain theme → JobRunner feature/UX solution
+
+Say the word and tell me which trade you’re prioritising first (plumbing/electrical/HVAC/etc.) and I’ll bias the checklist to that niche.
+
+[1]: https://www.servicem8.com/?utm_source=chatgpt.com "Smart Job Management Software | ServiceM8™"
+[2]: https://www.softwareadvice.com/field-service/servicem8-profile/reviews/?utm_source=chatgpt.com "ServiceM8 Reviews, Pros and Cons"
+[3]: https://www.g2.com/products/servicem8/reviews?qs=pros-and-cons&utm_source=chatgpt.com "ServiceM8 Pros and Cons | User Likes & Dislikes"
+[4]: https://apps.apple.com/nz/app/tradify-quote-invoice-tool/id984378901?utm_source=chatgpt.com "Tradify - Quote & Invoice Tool - App Store - Apple"
+[5]: https://www.tradifyhq.com/features?utm_source=chatgpt.com "The Best Features to Run a Business | Try Free! - Tradify"
+[6]: https://www.softwareadvice.com/field-service/tradify-profile/reviews/?utm_source=chatgpt.com "Tradify Reviews, Pros and Cons"
+[7]: https://au.trustpilot.com/review/tradifyhq.com?utm_source=chatgpt.com "Tradify Reviews | Read Customer Service ..."
+[8]: https://www.simprogroup.com/features?utm_source=chatgpt.com "Explore Simpro's Features to Take Your Field Service Business Higher"
+[9]: https://www.simprogroup.com/features/track-inventory?utm_source=chatgpt.com "Field Serivce Inventory Tracking Software - Simpro"
+[10]: https://www.simprogroup.com/features/add-ons?utm_source=chatgpt.com "Add‑Ons & Integrations for For Success with Simpro"
+[11]: https://www.softwareadvice.com/cafm/simpro-enterprise-profile/reviews/?utm_source=chatgpt.com "Simpro Reviews, Pros and Cons"
+[12]: https://www.capterra.com/p/10529/Simpro-Enterprise/reviews/?utm_source=chatgpt.com "Simpro Reviews 2026. Verified Reviews, Pros & Cons"
+[13]: https://aroflo.com/?utm_source=chatgpt.com "AroFlo: Job Management Software for Trades & Field Service"
+[14]: https://aroflo.com/features/job-management?utm_source=chatgpt.com "Job Management Software - Job Software for Tradies - AroFlo"
+[15]: https://www.softwareadvice.com/calendar-app/aroflo-profile/reviews/?utm_source=chatgpt.com "AroFlo Reviews, Pros and Cons"
+[16]: https://www.capterra.com/p/166811/AroFlo/reviews/?utm_source=chatgpt.com "AroFlo Reviews 2026. Verified Reviews, Pros & Cons"
+[17]: https://www.g2.com/products/aroflo/reviews?utm_source=chatgpt.com "AroFlo Reviews 2026: Details, Pricing, & Features"
+[18]: https://www.servicem8.com/us/articles/field-service-management-with-ai?utm_source=chatgpt.com "From Estimating to Invoicing: AI In Field Service Management"

@@ -1,0 +1,41 @@
+Here is the full audit report for JobRunner. Both the Markdown and PDF versions are attached below.
+The Honest Verdict: 5.8 / 10
+JobRunner is a genuinely exceptional product for a beta — but the engineering foundation needs to catch up with the product vision before it can safely scale to 1,000 businesses.
+The Big Wins
+Feature breadth is remarkable. Native SWMS/WHS compliance, AI Receptionist (Vapi.ai), AI quote generation, geofence clock-in/out, dispatch board, Stripe Connect, and a client/subcontractor portal — all in one app. No competitor offers this combination at this price point.
+Pricing model is excellent. The freemium entry with Pro at $39/mo and Team at $49/mo + $29/seat is perfectly calibrated for the AU SMB tradie market.
+Modern, clean UI. Radix UI + shadcn/ui + Tailwind is a solid, accessible component foundation.
+The Critical Issues (Fix These Now)
+Priority
+Issue
+Fix
+🔴 Critical
+4.45MB monolithic JS bundle — zero code splitting
+Configure Vite dynamic imports; target <500KB initial load
+🔴 Critical
+No rate limiting on /api/auth/login — brute force is trivially possible
+Add express-rate-limit + Redis store
+🔴 Critical
+No security headers — no CSP, no X-Frame-Options, no X-Content-Type-Options
+Enable Helmet.js in Express (one-line fix)
+🟠 High
+Replit dev banner script in production HTML
+Remove from index.html immediately
+🟠 High
+31 polling instances instead of WebSockets — will not scale to 1,000 businesses
+Migrate to Socket.io broadcast architecture
+🟠 High
+No error monitoring (no Sentry/Datadog)
+Integrate Sentry — takes ~2 hours
+🟡 Medium
+Session cookie missing HttpOnly/Secure/SameSite flags
+Fix Express session config
+🟡 Medium
+Apple OAuth redirect URI is a bug (comma-separated string)
+Fix to individual URI strings
+Competitive Summary
+vs. Tradify — JobRunner wins on features, loses on stability and market trust. Closest competitor.
+vs. ServiceM8 — JobRunner wins on Android parity and AI. ServiceM8 wins on iOS depth and offline reliability.
+vs. AroFlo — Different market; AroFlo is for complex commercial projects. JobRunner wins on simplicity and price.
+vs. ServiceTitan — Not competing in the same segment. JobRunner wins on price and innovation for SMBs.
+The full report covers all 7 audit areas in depth with specific code-level recommendations.

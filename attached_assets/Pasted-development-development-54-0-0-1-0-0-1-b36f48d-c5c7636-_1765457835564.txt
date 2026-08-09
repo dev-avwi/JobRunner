@@ -1,0 +1,169 @@
+development
+
+development
+
+54.0.0
+
+ 1.0.0 (1)
+
+b36f48d
+
+c5c7636
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Dec 11, 2025 10:51 PM
+0s
+
+47s
+
+44s
+
+1m 32s
+
+13 days
+
+Logs
+
+Waiting to start
+
+1s
+
+
+Spin up build environment
+
+46s
+
+
+Install custom tools
+
+12s
+
+
+Prepare project
+
+6s
+
+
+Read package.json
+
+1s
+
+
+Install dependencies
+
+7s
+
+
+Read app config
+
+1s
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+1s
+
+
+Using Expo modules
+[Expo] Enabling modular headers for pod ExpoModulesCore
+[Expo] Enabling modular headers for pod React-RCTAppDelegate
+[Expo] Enabling modular headers for pod React-RCTFabric
+[Expo] Enabling modular headers for pod ReactAppDependencyProvider
+[Expo] Enabling modular headers for pod React-Core
+[Expo] Enabling modular headers for pod ReactCodegen
+[Expo] Enabling modular headers for pod RCTRequired
+[Expo] Enabling modular headers for pod RCTTypeSafety
+[Expo] Enabling modular headers for pod ReactCommon
+[Expo] Enabling modular headers for pod React-NativeModulesApple
+[Expo] Enabling modular headers for pod Yoga
+[Expo] Enabling modular headers for pod React-Fabric
+[Expo] Enabling modular headers for pod React-graphics
+[Expo] Enabling modular headers for pod React-utils
+[Expo] Enabling modular headers for pod React-featureflags
+[Expo] Enabling modular headers for pod React-debug
+[Expo] Enabling modular headers for pod React-ImageManager
+[Expo] Enabling modular headers for pod React-rendererdebug
+[Expo] Enabling modular headers for pod React-jsi
+[Expo] Enabling modular headers for pod React-renderercss
+[Expo] Enabling modular headers for pod hermes-engine
+[Expo] Enabling modular headers for pod glog
+[Expo] Enabling modular headers for pod boost
+[Expo] Enabling modular headers for pod DoubleConversion
+[Expo] Enabling modular headers for pod fast_float
+[Expo] Enabling modular headers for pod fmt
+[Expo] Enabling modular headers for pod RCT-Folly
+[Expo] Enabling modular headers for pod SocketRocket
+[Expo] Enabling modular headers for pod ZXingObjC
+[Expo] Enabling modular headers for pod expo-dev-menu-interface
+[Expo] Enabling modular headers for pod EXManifests
+[Expo] Enabling modular headers for pod EXUpdatesInterface
+[Expo] Enabling modular headers for pod expo-dev-menu
+[Expo] Enabling modular headers for pod React-jsinspector
+[Expo] Enabling modular headers for pod expo-dev-launcher
+[Expo] Enabling modular headers for pod RNScreens
+[!] Invalid `Podfile` file: 
+[!] Invalid `RNWorklets.podspec` file: [Worklets] Worklets require the New Architecture to be enabled. If you have `RCT_NEW_ARCH_ENABLED=0` set in your environment you should remove it..
+ #  from /Users/expo/workingdir/build/mobile/node_modules/react-native-worklets/RNWorklets.podspec:9
+ #  -------------------------------------------
+ #  $new_arch_enabled = ENV['RCT_NEW_ARCH_ENABLED'] != '0'
+ >  worklets_assert_new_architecture_enabled($new_arch_enabled)
+ #  
+ #  -------------------------------------------
+.
+ #  from /Users/expo/workingdir/build/mobile/ios/Podfile:39
+ #  -------------------------------------------
+ #  
+ >    config = use_native_modules!(config_command)
+ #  
+ #  -------------------------------------------
+Error: Unknown error. See logs of the Install pods build phase for more information.
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1s
+
+
+Build failed: Unknown error. See logs of the Install pods build phase for more information.

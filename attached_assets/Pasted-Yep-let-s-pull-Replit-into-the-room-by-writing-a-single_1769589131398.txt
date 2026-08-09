@@ -1,0 +1,111 @@
+Yep — let’s “pull Replit into the room” by writing a single master message you can paste into Replit Agent (or your Replit project chat) so it works with my brain, not against it.
+
+Copy/paste this into Replit:
+
+You are Replit Agent working with me (Ayden) and my product strategist (ChatGPT). We are preparing TradieTrack for a real public launch. Follow this operating system:
+
+GOAL
+- Ship a polished, reliable MVP that real tradies will pay for.
+- No fake buttons. No placeholder flows. Everything must work end-to-end.
+
+NON-NEGOTIABLE CORE FLOW (must be perfect)
+1) Create Client
+2) Create Quote
+3) Send Quote -> Customer can view -> Accept -> Signature captured
+4) Convert Quote to Job
+5) Track Job (status, notes, photos/files)
+6) Create Invoice
+7) Send Invoice
+8) Receive Payment (Stripe)
+9) Receipt auto-send
+10) Sync data Mobile <-> Web
+11) Offline reliability (queue + retry)
+12) Notifications reliability
+
+TECH STABILITY REQUIREMENTS
+- Crash-free build
+- Stripe stable + webhooks correct
+- Email deliverability verified
+- Maps reliable (if used)
+- Loading states everywhere
+- Clear error messages
+- Secure auth + basic roles
+- Basic analytics logs (events for funnel)
+
+WHAT I NEED FROM YOU (Replit) RIGHT NOW
+A) Produce a “Launch Readiness Checklist” with pass/fail tests for each core flow step.
+B) Audit the codebase against the checklist and list:
+   - blockers (must fix before launch)
+   - high priority fixes
+   - nice-to-haves
+C) Implement fixes in the correct order:
+   1) Data correctness + payments + auth
+   2) Quote/Invoice sending reliability
+   3) Offline + sync + retry logic
+   4) UI polish + loading/error states
+D) Add a proper production configuration plan:
+   - env vars
+   - Stripe test vs live
+   - webhook endpoint + signature verification
+   - email provider config (SPF/DKIM/DMARC guidance)
+   - database migrations/backups
+E) Create a “Release Plan”:
+   - versioning
+   - staging vs production
+   - smoke tests
+   - rollback steps
+
+OUTPUT FORMAT (MANDATORY)
+1) Current State Summary (what works / what is risky)
+2) Checklist Table (Feature -> Test -> Status -> Fix needed)
+3) Fix Plan (ordered steps)
+4) PR-style Change Log (what you changed)
+5) Next Actions for Ayden (what I should do today)
+
+IMPORTANT RULES
+- If you are unsure, do not guess: create a task list and surface unknowns.
+- Prefer reliable boring solutions over clever ones.
+- No UI changes that break flow.
+- Always add tests or at least reproducible manual test steps.
+- Every change must be verifiable.
+
+Start now by generating the checklist and running the audit.
+
+
+Now, on my side, here’s how we run this “two-brain” workflow so it’s actually powerful:
+
+How you’ll use me + Replit together (simple loop)
+
+You paste that into Replit.
+
+Replit replies with its checklist + blockers.
+
+You paste Replit’s blockers list back to me.
+
+I’ll:
+
+prioritize what matters for launch
+
+tell you what’s “launch-stopping” vs “post-launch”
+
+write the exact messages to send back to Replit to implement fixes cleanly
+
+help you craft the launch + marketing steps (website, demo vid, pricing, first users)
+
+Getting ready to publish + “make it known” (what matters most)
+
+If you’re close to launch, the real priorities are:
+
+Payments + webhooks (no broken billing, no double charges)
+
+Quote/Invoice sending reliability (email deliverability + logs)
+
+Airtight onboarding (first user can succeed in 2 minutes)
+
+No clunky steps in your core flow (your checklist already nails this)
+
+Crash-free + offline safety (at minimum: queue actions, retry, clear errors)
+
+If you want, paste here what platform you’re launching first (web only vs mobile + web) and what stack you’re using (Firebase/Supabase/custom DB, Expo/React Native, etc.) — but you don’t have to. Easiest next step is:
+
+Send me whatever Replit returns after you paste the master prompt, and I’ll stitch our next move.

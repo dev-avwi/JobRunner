@@ -1,0 +1,166 @@
+Here’s a copy-paste Replit master prompt you can use to force a real production-readiness hardening pass (not just “polish UI”). It’s written for an Expo/React Native app + backend.
+
+⸻
+
+Replit Master Prompt — JobRunner Production Readiness Audit + Hardening
+
+Role: You are a senior mobile + backend engineer performing a production-readiness audit and hardening pass for my app “JobRunner”. This app will be used by real tradie businesses, so reliability and data integrity are non-negotiable.
+
+Non-negotiables
+	•	Do NOT add new features. Only fix bugs, edge cases, reliability, security, and performance issues.
+	•	Do NOT change the UX structure unless it is required to prevent data loss or critical user errors.
+	•	Prefer small, safe changes with clear reasoning.
+	•	Everything must be testable (manual test steps + automated tests where feasible).
+
+⸻
+
+Phase 0 — Baseline & Inventory (no changes yet)
+	1.	List the full system architecture:
+	•	Mobile (Expo/React Native) screens + flows
+	•	Backend services, DB schema, storage, authentication
+	•	Third party APIs (Twilio SMS, AI quote generator, maps/location, file storage)
+	2.	Identify the “money paths” and “trust paths”:
+	•	Quote → Job → Invoice
+	•	Payments / totals / GST calculations
+	•	Job Proof Pack timeline integrity
+	•	Messaging logs attached to jobs
+	3.	Output a risk register ranked: Critical / High / Medium / Low.
+
+Deliverable: PROD_AUDIT.md with architecture diagram (text), risk list, and what you will fix first.
+
+⸻
+
+Phase 1 — Data Integrity & Safety (Critical)
+
+Audit and fix anything that could cause:
+	•	Data loss
+	•	Duplicate records (jobs/quotes/invoices)
+	•	Incorrect totals
+	•	Incorrect timestamps
+	•	Overwrites from multi-device edits
+
+Required checks:
+	•	Database constraints: unique IDs, invoice numbering, foreign keys (where relevant)
+	•	Transaction safety on “Create invoice”, “Send invoice”, “Convert quote to job”
+	•	Concurrency: what happens if two users edit the same job?
+	•	Backups: confirm backup strategy or add minimal safe backup procedure
+	•	Audit trail: ensure Job Proof Pack entries are immutable/logged correctly
+
+Deliverable:
+	•	List each fix with file paths and a short explanation.
+	•	Add a DATA_INTEGRITY_TESTS.md with manual steps to verify.
+
+⸻
+
+Phase 2 — Financial Accuracy & Compliance (Critical)
+
+All financial math must be correct every time.
+
+Required checks:
+	•	GST calculation and rounding consistency
+	•	Line items, discounts, travel fees, extras, partial payments
+	•	Editing quote/job after invoice draft exists (what recalculates?)
+	•	Prevent “double send” or duplicate invoice creation
+	•	Validate currency formatting and totals match across screens and PDF/email
+
+Deliverable:
+	•	A FINANCE_TEST_PLAN.md with at least 20 test cases (inputs + expected outputs).
+	•	Add automated unit tests for calculation functions (if they exist; if not, extract them safely).
+
+⸻
+
+Phase 3 — Authentication, Roles & Security (High)
+
+Required checks:
+	•	Auth token storage (secure storage on mobile)
+	•	API authorization: users can’t access other businesses’ jobs (multi-tenant safety)
+	•	Rate limits / abuse controls for Twilio + AI endpoints
+	•	Input validation & sanitization (notes, job fields, customer fields)
+	•	Secrets are only in env vars; no keys in repo
+
+Deliverable: SECURITY_CHECKLIST.md + implemented fixes.
+
+⸻
+
+Phase 4 — Reliability Under Real Conditions (High)
+
+Tradies will use this in bad reception and on the go.
+
+Required checks:
+	•	Network failures: retries, timeouts, error states
+	•	Offline tolerance: at minimum, prevent data loss; queue writes if possible (don’t build a full offline system unless already present)
+	•	App crash resistance: guard nulls, safe async handling, prevent infinite loops
+	•	Battery & performance: location tracking sanity (no runaway updates), map rendering performance
+
+Deliverable: RELIABILITY_TESTS.md with real-world scenarios (airplane mode, bad signal, backgrounding app, etc.)
+
+⸻
+
+Phase 5 — Messaging & AI Safety (High)
+
+Twilio:
+	•	Ensure message send is idempotent (no accidental double send)
+	•	Log inbound/outbound messages to the correct job/customer
+	•	Failure handling: if Twilio fails, user sees clear status and can retry safely
+
+AI Quote:
+	•	Make AI output clearly “draft” and always editable
+	•	Add guardrails: don’t allow AI to set totals without user confirmation
+	•	Add usage caps / monitoring hooks (even if simple logging)
+
+Deliverable: INTEGRATIONS_HARDENING.md
+
+⸻
+
+Phase 6 — Observability & Debuggability (Medium → High)
+
+Required:
+	•	Structured logs for key actions (create job, convert quote, create invoice, send SMS)
+	•	Error reporting (at least console + server logs; ideally a basic error tracker if already used)
+	•	Health checks (backend)
+	•	Versioning: app version + API version visible for debugging
+
+Deliverable: OPS_RUNBOOK.md (how to diagnose common failures)
+
+⸻
+
+Final Output Requirements (must provide)
+	1.	A single “Go/No-Go” checklist with pass/fail items:
+	•	Data safety ✅/❌
+	•	Finance accuracy ✅/❌
+	•	Auth/security ✅/❌
+	•	Reliability ✅/❌
+	•	SMS/AI safety ✅/❌
+	2.	A prioritized list of remaining risks if any.
+	3.	A “pilot launch plan” for 3 businesses:
+	•	What to monitor
+	•	What to ask users
+	•	How to roll back if something breaks
+
+⸻
+
+Acceptance Criteria (definition of “usable”)
+	•	Can create job → quote → invoice without errors
+	•	GST/totals correct across screens and generated documents
+	•	No duplicate invoices/SMS from double taps or retries
+	•	Data persists across app restarts and bad network
+	•	Users cannot see other users’ business data
+	•	Proof Pack timeline entries are consistent and trustworthy
+
+⸻
+
+Start now
+
+Begin with Phase 0. Do not code anything until you provide the PROD_AUDIT.md risk register and the top 10 fixes you will implement first.
+
+⸻
+
+Quick tweak (important)
+
+If your Replit agent tends to “run off and rewrite stuff,” add this line at the top:
+
+“DO NOT refactor or rewrite large sections. Only minimal targeted fixes tied to the checklist.”
+
+⸻
+
+If you tell me what your backend stack is (Firebase? Supabase? custom Node/Express? DB?), I can tighten this prompt even more so it calls out the exact failure points for that stack.

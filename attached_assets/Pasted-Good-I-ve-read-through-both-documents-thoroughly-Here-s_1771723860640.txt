@@ -1,0 +1,88 @@
+Good, I've read through both documents thoroughly. Here's my analysis — thinking like a tradie's lawyer trying to find every angle to sue you:
+
+SCENARIO 1: "The timer didn't track my hours properly, and I lost $5,000 in billable time"
+
+A tradie clocks in for a 10-hour day but the app only records 6 hours due to a background app kill on their phone. They invoice their client based on the tracked time and lose money.
+
+Are you protected? Yes.
+
+Section 7 (Time Tracking Disclaimer) explicitly says time tracking can be affected by device performance, background app restrictions, GPS, battery, and connectivity. It says recorded hours are "a guide" and the user must verify before submitting timesheets or generating invoices.
+Section 15 (Disclaimer of Warranties) — "as is" and "as available," no warranty of being error-free.
+Section 25 (Beta) — platform may contain bugs.
+SCENARIO 2: "The AI wrote a quote description that was wrong, and my client is suing me for misrepresentation"
+
+AI generates a quote saying "includes full waterproofing to Australian Standards AS3740" when the tradie's scope doesn't actually include that. Client relies on it, work doesn't match, client sues tradie, tradie sues you.
+
+Are you protected? Yes.
+
+Section 24 (AI-Generated Content Disclaimer) — AI content is "a suggestion only," not professional/legal/trade advice. User is "solely responsible for reviewing, verifying, and approving" before use.
+Section 6 (Invoice & Document Accuracy) — user must review all documents before sending.
+SCENARIO 3: "GPS showed my worker was on-site but they weren't — I paid them for hours they didn't work"
+
+A business owner relies on JobRunner's GPS geofencing to verify a worker was at a job site. GPS was inaccurate (indoor, poor signal), worker was actually at a coffee shop 500m away.
+
+Are you protected? Yes.
+
+Section 8 (GPS & Location Data) — GPS may be inaccurate due to signal interference, indoor environments, weather. JobRunner is "not liable for disputes arising from GPS location discrepancies."
+Privacy Policy 5A — location data is collected when features are enabled, but accuracy isn't guaranteed.
+SCENARIO 4: "My invoice calculations were wrong and I undercharged GST — now the ATO is fining me"
+
+Tradie claims your GST calculation was wrong and they reported incorrect figures to the ATO.
+
+Are you protected? Yes.
+
+Section 6 (Invoice & Document Accuracy) — JobRunner "does not guarantee the accuracy of rates, quantities, totals, or GST calculations." User must verify before distribution.
+Section 11 (User Responsibilities) — user must "comply with all applicable Australian tax laws, including GST obligations."
+SCENARIO 5: "You lost all my business data — 3 years of invoices and client records gone"
+
+A database failure or service outage wipes their data.
+
+Are you protected? Yes.
+
+Section 14 (Limitation of Liability) — not liable for data loss from device failure, third-party outages, or events beyond control. Recommends users export critical data periodically.
+Section 21 (Service Availability) — no guarantee of uninterrupted access, not liable for losses from unavailability.
+Section 15 (Disclaimer of Warranties) — "as is," no warranty of being secure or error-free.
+SCENARIO 6: "Stripe held my money for 2 weeks and I couldn't pay my subbies"
+
+Stripe places a hold on funds, tradie blames you.
+
+Are you protected? Yes.
+
+Section 10 (No Escrow/Payment Intermediary) — JobRunner is not a financial intermediary. All payment processing is handled by Stripe. Stripe's terms apply.
+Section 21 (Third-Party Services) — not responsible for availability, performance, or policies of Stripe/SendGrid/Twilio.
+SCENARIO 7: "You shared my client list with a competitor" (privacy breach claim)
+
+Tradie alleges you sold or leaked their business data.
+
+Are you protected? Yes.
+
+Privacy Policy Section 4 — "We do not sell your personal information to third parties."
+Privacy Policy 9A — "We do not sell, share, or use your business data to train AI models."
+Privacy Policy Section 5 — encryption in transit and at rest, restricted access.
+Privacy Policy 6A — Notifiable Data Breaches scheme compliance (OAIC notification).
+SCENARIO 8: "500 tradies band together for a class action because the app was down for a whole day"
+
+Mass outage, group of tradies try to sue collectively.
+
+Are you protected? Yes.
+
+Section 23 (Class Action Waiver) — disputes must be resolved individually, no class actions/arbitrations.
+Section 22 (Arbitration) — forces disputes into ACICA arbitration in Sydney, not open court.
+Section 14 (Liability Cap) — maximum liability is whatever they paid you in the last 12 months (likely $39/month x 12 = $468 per tradie).
+SCENARIO 9: "You changed the price from free to $39/month without warning"
+
+Beta user was on a free plan, you start charging.
+
+Are you protected? Yes.
+
+Section 25 (Beta Program) — pricing is subject to change, but early adopters get "reasonable notice."
+Section 18 (Changes to Terms) — you can modify terms, continued use = acceptance.
+SCENARIO 10: "You tracked my location without my consent — that's surveillance"
+
+Employee claims employer used JobRunner to spy on them.
+
+Are you protected? Yes.
+
+Privacy Policy 5A — location data collected "only when time tracking or geofencing features are actively enabled." Can be disabled at any time through device settings or the app. Only accessible to business owner and authorised managers.
+Privacy Policy Section 2 — GPS collection is disclosed upfront.
+Terms Section 8 — GPS data usage is disclosed.

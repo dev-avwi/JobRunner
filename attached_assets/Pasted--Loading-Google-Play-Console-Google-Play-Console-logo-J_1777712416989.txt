@@ -1,0 +1,89 @@
+
+Loading Google Play Console
+Google Play Console logo
+
+JobRunner
+Dashboard
+Statistics
+Publishing overview
+Test and release
+Latest releases and bundles
+Production
+Testing
+Open testing
+Closed testing
+Internal testing
+Pre-launch report
+Internal app sharing
+Pre-registration
+App integrity
+Advanced settings
+Monitor and improve
+Grow users
+Monetise with Play
+Create closed testing release
+1
+Create release
+2
+Preview and confirm
+App integrity
+Automatic protection is on
+Releases signed by Google Play
+App integrity tools help you to ensure that users experience your apps and games the way that you intend
+
+App bundles
+Drop app bundles here to upload
+application-507ea9bd-e88f-4e63-9b45-f2c670c02757.aab
+App bundle
+35 (1.1.2)
+26+
+35
+4
+4
+10
+Release details
+Release name *
+35 (1.1.2)
+ 
+
+10 / 50
+Text is 10 characters out of 50
+This is so that you can identify this release, and isn't shown to users on Google Play. We've suggested a name based on the first app bundle or APK in this release, but you can edit it.
+Release notes
+<en-GB>
+Welcome to the first Android build of JobRunner — the complete job management app built for Australian tradies.
+
+WHAT'S INSIDE
+• Jobs, scheduling and a live dispatch board
+• Quotes and invoices in seconds, sent by SMS or email
+• Live team tracking with "On My Way" client alerts
+• Stripe-powered online payments
+• In-app team chat and direct messages
+• Subcontractor magic-link invites — no install required
+
+You're testing an early build — please report bugs to admin@avwebinnovation.com. Thanks for helping shape JobRunner.
+</en-GB>
+<en-AU>
+Welcome to the first Android build of JobRunner — the complete job management app built for Australian tradies.
+
+WHAT'S INSIDE
+• Jobs, scheduling and a live dispatch board
+• Quotes and invoices in seconds, sent by SMS or email
+• Live team tracking with "On My Way" client alerts
+• Stripe-powered online payments
+• In-app team chat and direct messages
+• Subcontractor magic-link invites — no install required
+
+You're testing an early build — please report bugs to admin@avwebinnovation.com. Thanks for helping shape JobRunner.
+</en-AU>
+Release note for en-GB is too long 
+
+Release notes provided for 2 of 2 languages
+Let users know what's in your release. Enter release notes for each language within the language tags.
+Product updates
+Status dashboard
+Help
+© 2026 Google
+Privacy
+Developer Distribution Agreement
+Terms of Service

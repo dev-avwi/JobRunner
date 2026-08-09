@@ -1,0 +1,65 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+Subscriptions
+JobRunner Plans
+You can create a subscription after you create a subscription group. All subscriptions must be a part of a group. Users can only subscribe to one subscription in a group at a time, but can change to another subscription in the same group. If they do, you'll still receive 85% of the proceeds in the second year (after tax, if applicable). Learn More
+
+Your first subscription must be submitted with a new app version. Create your subscription, then select it from the app’s In-App Purchases and Subscriptions section on the version page before submitting the version to App Review.
+
+Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted from the Subscriptions section. Learn More
+
+Subscriptions
+
+Arrange your subscriptions in descending order, starting with the option that offers the highest level of service. You can add more than one subscription to each level. This order will determine your subscription's upgrade and downgrade options. Learn more about subscription upgrades and downgrades.
+
+Edit Level
+Level
+Reference Name
+Product ID
+Duration
+Status
+1
+Business Monthly
+com.jobrunner.business.monthly
+1 month
+Missing Metadata
+2
+Team Monthly
+com.jobrunner.team.monthly
+1 month
+Missing Metadata
+3
+Pro Monthly
+com.jobrunner.pro.monthly
+1 month
+Missing Metadata
+Localization
+
+You can use different subscription group display names and app name display options for each localization. Users will see these names when they manage subscriptions on their devices. Learn More
+
+Localizations
+Subscription Group Display Name
+App Name
+Status
+English (Australia)
+JobRunner Plans
+JobRunner
+Prepare for Submission
+Subscription Group ID
+22022988
+
+Edit Subscription Group
+
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

@@ -1,0 +1,110 @@
+
+
+
+
+
+
+Products & Services
+
+Messaging
+
+Voice
+
+Email
+
+Numbers & senders
+Overview
+Alphanumeric senders IDs (legacy)
+Short Codes (legacy)
+Facebook Messenger
+Port and host
+Verified Caller IDs
+Released Numbers
+
+Trust Hub
+
+Video
+
+Verify
+
+Lookup
+
+Flex
+Templates
+
+Conversation Orchestrator
+
+Conversation Intelligence
+
+Conversation Memory
+
+Enterprise Knowledge
+
+Elastic SIP Trunking
+
+Proxy
+
+TaskRouter
+
+Studio
+
+Interconnect
+
+Conversations (classic)
+
+Chat
+
+Marketplace
+
+Notify
+
+My first Twilio account
+
+Active
+Available balance:
+$31.02
+Learn more
+
+
+
+
+Twilio
+
+Products & Services
+/
+Numbers & senders
+/
+Alphanumeric senders IDs (legacy)
+Twilio One Console
+Alphanumeric Senders
+Alphanumeric Sender ID registration
+Company information
+The Sender is the business or entity that is responsible for creating the content of the SMS messages and deciding when to send them.
+
+
+(required)
+Are you a Direct or Independent Software Vendor (ISV), reseller, partner?
+Direct Customer
+I use Twilio for internal communication with our customers
+Independent Software Vendor (ISV), reseller, partner
+I integrate Twilio in a product that I sell to my customers
+
+(required)
+Will you subassign this Alphanumeric Sender ID to your end customers?
+Yes
+No
+How would you like to register Sender IDs for Australia?
+Option A - Partner with Twilio
+Twilio will act as your Certified Telecommunication Provider and submit Sender ID registration applications to the ACMA Sender ID Register on behalf of your End Users.
+I appoint Twilio to act as Certified Telecommunications Provider for the submission and management of Sender ID registration applications on behalf of my End Users and agree to the Partnership Agreement
+.
+Option B - Manage Registration Independently
+You have arranged or will arrange registration independently. Twilio will not submit Sender ID registration applications for your End Users.
+I will manage Sender ID registration outside of Twilio and will inform Twilio of the same via senderid-notify@twilio.com.
+Select your compliance profile
+If you can't find a profile you want to use, create a new profile and come back to the page after the profile is approved. Create a new compliance profile
+
+Continue
+
+Back
+

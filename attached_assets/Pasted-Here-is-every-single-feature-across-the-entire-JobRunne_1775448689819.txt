@@ -1,0 +1,435 @@
+Here is every single feature across the entire JobRunner ecosystem. Give this to Replit and tell them to verify every item is working correctly.
+
+AUTHENTICATION & ACCOUNTS
+	∙	Email and password signup and login
+	∙	Google OAuth signup and login
+	∙	Apple Sign In (iOS)
+	∙	Email verification flow
+	∙	Forgot password and reset password
+	∙	Session management with secure cookies
+	∙	Account deletion flow with data warning
+	∙	Role-based access — Owner, Admin, Manager, Supervisor, Worker, Staff, Subcontractor
+	∙	Multi-business support — one account connected to multiple businesses
+	∙	Demo account with realistic seeded data
+	∙	Shadow mode — admin can impersonate any user for support
+
+ONBOARDING
+	∙	Role selection screen — three paths from first screen
+	∙	Owner path — business details, trade type, team size, plan selection, demo job creation
+	∙	Worker path — 6-character invite code, name and phone, straight to worker dashboard
+	∙	Subcontractor path — details, optional invite code, mandatory privacy screen, subbie dashboard
+	∙	Trade-specific demo data — plumbing jobs for plumbers, electrical for electricians etc
+	∙	Trade-specific template suggestions throughout the app
+	∙	First job guided journey with step indicators
+	∙	Start Fresh button to clear demo data
+	∙	Invite code system — role-specific 6-character codes, expire after 30 days or 10 uses
+
+DASHBOARD
+	∙	Personalised greeting with user name and plan badge
+	∙	Weather widget with real-time conditions based on GPS location
+	∙	KPI summary cards — jobs today, revenue this week, overdue invoices
+	∙	Active timer widget with elapsed time, job name, stop and pause controls
+	∙	Recent activity feed with timestamps
+	∙	Quick action buttons — New Job, Invoice, Time, Team Ops
+	∙	Day summary section
+	∙	Notification bell with unread count badge
+	∙	Action Centre alerts for urgent items
+	∙	First job guided journey cards for new users
+	∙	Demo data amber banner with Start Fresh option
+	∙	Trust banner showing plan status
+
+JOBS
+	∙	Create job with title, client, address, description, scheduled date, priority
+	∙	Job status workflow — Pending, Scheduled, In Progress, Done, Invoiced
+	∙	Job detail with tabbed view — Info, Docs, Stock, Photos, Notes, Chat
+	∙	Edit job details
+	∙	Delete job
+	∙	Duplicate job
+	∙	Recurring jobs with frequency settings
+	∙	Job scheduling and calendar view
+	∙	Assign job to team member or subcontractor
+	∙	Assign via magic link to one-off subcontractor
+	∙	GPS address autocomplete
+	∙	Job priority levels — Low, Medium, High, Urgent
+	∙	Job conflict detection for overlapping schedules
+	∙	AI-suggested job titles and descriptions based on client history
+	∙	Job photos — upload, view gallery, before and after
+	∙	Job notes — append only server side
+	∙	Job documents and file attachments
+	∙	Job stock and materials tracking
+	∙	Real-time collaborative editing with conflict resolution
+	∙	Presence indicators showing who else is viewing the job
+	∙	Field-level dirty tracking so edits don’t overwrite each other
+	∙	Optimistic locking with version conflict dialog
+	∙	Geofence auto clock-in when arriving at job site
+	∙	Running late detection with automatic client SMS
+	∙	On my way quick SMS
+	∙	Job complete workflow
+	∙	Next action suggestions after job completion
+	∙	Job value tracking with materials and labour
+	∙	Progress tracking bar through workflow stages
+	∙	Safety and compliance forms required indicator
+
+QUOTING
+	∙	Create quote with client, title, line items, notes, terms, validity period
+	∙	Line items with description, quantity, unit price, GST
+	∙	Multiple quote versions
+	∙	Quote templates — trade-specific suggestions
+	∙	AI voice note quote generation — describe job verbally and AI generates line items
+	∙	AI photo quote generation — take photo and AI generates line items
+	∙	PDF quote generation and preview
+	∙	Send quote via email
+	∙	Send quote via SMS with link
+	∙	Share quote link manually
+	∙	Client portal quote viewing and acceptance
+	∙	Client digital signature capture for acceptance
+	∙	Quote status tracking — Draft, Sent, Accepted, Rejected, Archived
+	∙	Auto-revert to Draft when line items edited after sending
+	∙	Resend to Client button on sent quotes
+	∙	Mark as Accepted button
+	∙	Quote edit history modal showing every version
+	∙	Convert accepted quote to invoice with one tap
+	∙	Batch quote sending
+
+INVOICING
+	∙	Create invoice with client, title, line items, notes, payment terms
+	∙	Invoice templates — trade-specific suggestions
+	∙	Smart pre-fill from job and accepted quote
+	∙	Expense line items from job expenses
+	∙	Recurring invoices and contracts
+	∙	Progress invoicing and milestone payments
+	∙	Partial payments with balance tracking
+	∙	PDF invoice generation and preview
+	∙	Send invoice via email
+	∙	Send invoice via SMS with link
+	∙	Payment link generation
+	∙	QR code payment
+	∙	Client portal invoice viewing and payment
+	∙	Invoice status tracking — Draft, Sent, Paid, Overdue
+	∙	Overdue highlighting in red
+	∙	Record payment — cash, card external, bank transfer
+	∙	Stripe online payment via payment link
+	∙	Receipt generation after payment
+	∙	Batch invoice creation for multiple jobs
+	∙	Invoice edit history
+
+PAYMENT HUB
+	∙	Central financial dashboard
+	∙	Total revenue, outstanding, overdue KPIs
+	∙	Average days overdue metric
+	∙	Collection rate percentage
+	∙	AI Payment Advisor for recommendations on overdue invoices
+	∙	Chase Queue with all overdue invoices prioritised
+	∙	Urgency levels — Critical, Final Notice, Firm, Friendly
+	∙	Tone selector — Friendly, Professional, Firm for chase messages
+	∙	Chase via SMS one tap
+	∙	Chase via email one tap
+	∙	Call client direct from payment hub
+	∙	Smart Chaser automated follow-ups
+	∙	Action Centre alerts for uninvoiced completed jobs
+	∙	Collect Payment screen — search jobs and invoices
+	∙	Quick Collect custom amount
+	∙	Tap to Pay via NFC on iPhone — contactless card payments
+	∙	Send Payment Link via SMS or email
+	∙	Show QR Code for payment
+	∙	Record on-site payment — cash, card, bank transfer
+	∙	Stripe Terminal integration
+	∙	Receipt detail with PDF share
+
+CHAT HUB
+	∙	Team Chat — group messaging for all team members
+	∙	Direct Messages — one to one with team members
+	∙	Job Chat — conversation tied to specific job, all assigned members
+	∙	SMS Conversations — two-way SMS with clients
+	∙	New SMS compose
+	∙	Client SMS filter view
+	∙	Search conversations
+	∙	Filter by Jobs, Team, Enquiries
+	∙	Filter by status — All, Pending, Scheduled, In Progress, Done
+	∙	Quick SMS — pre-written one-tap messages
+	∙	On my way, Running late, Job done, Send Photo
+	∙	Message delivery status — Sent, Delivered, Failed
+	∙	Read receipts
+	∙	Communications Hub audit log — all sent emails and SMS
+	∙	SMS connected number display
+	∙	Business number info and settings
+
+CLIENTS
+	∙	Create client with name, phone, email, address, type, referral source, tags, notes
+	∙	Client types — Residential, Commercial, Strata, Government
+	∙	Client list with search and filter
+	∙	Filter by type, VIP, outstanding invoices, inactive
+	∙	Client detail with full activity timeline
+	∙	Client jobs history
+	∙	Client quotes history
+	∙	Client invoices history
+	∙	Client portal — SMS verified access for clients to view and pay
+	∙	Client portal quote approval
+	∙	Client portal invoice payment
+	∙	Client portal job status viewing
+	∙	Client digital signature capture
+	∙	Client tags system
+	∙	VIP client flagging
+	∙	Client import via CSV
+
+TEAM MANAGEMENT
+	∙	Invite team member via email
+	∙	Invite team member via 6-character code
+	∙	Role-specific invite codes — Worker code, Manager code, Subcontractor code
+	∙	Active invite codes list with usage count, expiry, revoke option
+	∙	Team member list with avatars, roles, status
+	∙	Team member detail and edit
+	∙	Custom per-member permissions beyond base role
+	∙	Role presets — Owner, Manager, Worker
+	∙	Team groups — colour-coded groups with member management
+	∙	Team availability scheduling
+	∙	Time-off requests
+	∙	Performance stats — job completion rates
+	∙	Payroll reports
+
+SUBCONTRACTOR SYSTEM
+	∙	Subcontractor role with restricted access
+	∙	Only sees assigned jobs, no financials, no client list, no team management
+	∙	Server-side enforcement on all API endpoints
+	∙	Magic link assign — send SMS link to any phone number
+	∙	One-off subcontractor web portal via magic link
+	∙	Portal shows job details, status update, notes, photo upload
+	∙	Owner sees subbie updates in real time on job detail
+	∙	After 3 completions via magic link — prompt to download app
+	∙	Multi-business workspace switching — one account, multiple businesses
+	∙	Pending invite auto-detection on login
+	∙	Job conflict detection across businesses
+	∙	Full data isolation between workspaces
+	∙	Privacy-aware location tracking — job-scoped only
+	∙	Location only active during Start Job, stops on Complete Job
+	∙	Each business isolated from seeing other business tracking
+	∙	Privacy banner in app showing when tracking is active
+	∙	Subbies invisible between jobs on all maps
+	∙	Team Operations page separates Your Team from Your Subbies
+	∙	Availability toggle — Available, Busy, Unavailable
+	∙	Subcontractor purpose-built dashboard
+	∙	Today and This Week timeline across all businesses
+	∙	Colour-coded job cards per business
+	∙	Incoming job requests with Accept and Decline
+	∙	Active job card with live timer and navigation
+	∙	Earnings summary across all businesses
+
+GPS AND DISPATCH
+	∙	Live GPS tracking for team members
+	∙	Map view showing all team locations
+	∙	Team member status — Online, Driving, Offline
+	∙	Job pin markers colour-coded by status
+	∙	Dispatch Board with three views — Schedule, Kanban, Map
+	∙	Ops Health dashboard — Conflicts, Overdue, Unassigned, Today counts
+	∙	Assign jobs from dispatch board
+	∙	Drag and drop job assignment
+	∙	Route optimisation
+	∙	Saved routes
+	∙	Geofence clock-in and clock-out at job sites
+	∙	Running late detection with GPS
+	∙	Battery and speed info on team markers
+	∙	Map layers — Standard, Satellite, Dark
+	∙	Dark map style in dark mode
+
+SCHEDULING
+	∙	Calendar view — Week, Month, Today
+	∙	Job scheduling with date and time
+	∙	Reschedule from job detail
+	∙	Google Calendar sync — connect, disconnect, sync all jobs
+	∙	Conflict detection for overlapping jobs
+	∙	Service reminders — Due Soon, Overdue tags
+	∙	Recurring job schedule management
+
+TIME TRACKING
+	∙	Start, stop, pause timer per job
+	∙	Elapsed time display in real time
+	∙	Timer persists across app backgrounding
+	∙	Background GPS tracking during active timer
+	∙	Timesheet view — day by day log
+	∙	Weekly bar chart of hours worked
+	∙	Edit time entries
+	∙	Time entry approval workflow
+	∙	Payroll reports from time data
+	∙	Auto clock-in via geofencing
+
+EXPENSES
+	∙	Record expense with description, amount, GST, category, job link, vendor, date
+	∙	AI receipt scanner — camera captures receipt and auto-fills fields
+	∙	Expense categories
+	∙	Link expenses to specific jobs
+	∙	Expense list with category filter chips
+	∙	KPI cards — total expenses, categories, linked jobs
+	∙	Expenses appear as line item suggestions when creating invoice
+
+WHS AND SAFETY
+	∙	SWMS — Safe Work Method Statements creation and management
+	∙	SWMS templates — trade-specific
+	∙	AI hazard scanning from photos
+	∙	Risk matrix
+	∙	SWMS signing with GPS location recorded
+	∙	Incident reports — severity levels Minor to Critical
+	∙	JSA — Job Safety Analysis
+	∙	PPE checklists
+	∙	Training records — White Card, First Aid, certifications
+	∙	Expiry date tracking with alerts
+	∙	Emergency contacts and assembly points
+	∙	Compliance documents — Licence, Insurance
+	∙	Document capture via camera
+	∙	Compliance status — Active, Expiring, Expired
+	∙	Custom forms with drag and drop field editor
+	∙	Conditional logic for form fields
+	∙	Form templates — Site Safety Checklist, Electrical Compliance
+
+AI RECEPTIONIST
+	∙	Enable and disable toggle per business
+	∙	Mode selection — Off, After Hours, Always On Transfer, Always On Message, Selective
+	∙	Australian voice selection — Jess, Harry, Chris
+	∙	Custom greeting text
+	∙	Knowledge Bank — service descriptions, pricing, special instructions, FAQs
+	∙	Business hours configuration per day
+	∙	Transfer to owner mobile on emergency keywords
+	∙	Transfer priority list for team businesses
+	∙	Availability toggle per team member for transfer routing
+	∙	Call logs with caller name, phone, status, duration
+	∙	Call transcripts and audio recordings
+	∙	AI approval queue in admin dashboard
+	∙	Auto-provisioning pipeline — Stripe payment triggers Twilio number purchase and Vapi assistant creation
+	∙	Provisioning status indicators — Setting Up, Pending Review, Active
+	∙	Voice change requests with admin approval
+	∙	Per-business isolated assistant with business details injected
+	∙	Multi-business subbie sees only their active job tracked per business
+
+AUTOPILOT
+	∙	Automation rule builder — 4-step wizard
+	∙	Triggers — status changes, time delays, no response, payment received
+	∙	Actions — send email, send SMS, create job, create invoice, update status, push notification
+	∙	Smart Running Late detection toggle
+	∙	Auto-email on quote acceptance
+	∙	Auto-email on invoice payment
+	∙	11 automation templates available
+	∙	Activity log showing automation history
+	∙	Enable and disable individual automations
+
+REPORTS AND ANALYTICS
+	∙	Period selector — Week, Month, Quarter, Year
+	∙	Revenue overview chart
+	∙	Client revenue breakdown
+	∙	Profitability reports per job
+	∙	Cashflow report
+	∙	KPI snapshot
+	∙	Team performance stats
+	∙	Job completion rates
+	∙	Invoice collection rates
+	∙	Insights dashboard with bar charts and donut charts
+
+INVENTORY AND EQUIPMENT
+	∙	Inventory items with stock levels
+	∙	Stock indicators — Red zero, Orange reorder level
+	∙	Item transaction history — Stock In, Stock Out
+	∙	Categories management
+	∙	Low stock alerts
+	∙	Purchase orders
+	∙	Equipment tracking — Active, Maintenance, Retired
+	∙	Equipment detail — model, category, location, purchase price
+	∙	Equipment status — Available, In Use, Maintenance
+
+LEADS
+	∙	Lead pipeline — Active, New, Contacted, Quoted, Won, Lost
+	∙	Lead cards with estimated value
+	∙	Convert lead to client and job
+	∙	Lead source tracking
+
+SETTINGS
+	∙	Business name, trade type, ABN with validation, contact info, address
+	∙	Logo upload with preview
+	∙	Theme — Light, Dark, System
+	∙	Primary colour customisation per business with live preview
+	∙	Digital signature pad for documents
+	∙	Notification preferences per category
+	∙	Push notification permission flow
+	∙	Booking page settings — slug, title, services, availability, auto-confirm toggle
+	∙	Phone number management
+	∙	Integrations page — Xero, MYOB, QuickBooks, Google Calendar, Stripe
+	∙	Document template style selection — Modern, Minimal, Professional
+	∙	Business templates — email, SMS, terms, warranties
+	∙	Subscription management
+	∙	Plan upgrade flow via Stripe
+	∙	Seat management for Team plan
+	∙	Billing portal via Stripe Customer Portal
+
+INTEGRATIONS
+	∙	Xero — two-way sync contacts and invoices, token refresh with retry, health check, reconnect UI
+	∙	MYOB — accounting integration
+	∙	QuickBooks — accounting integration
+	∙	Google Calendar — job scheduling sync
+	∙	Google OAuth — login
+	∙	Apple Sign In — login
+	∙	Stripe — payments, subscriptions, Connect payouts
+	∙	Stripe Terminal — Tap to Pay
+	∙	Twilio — SMS, voice, AI receptionist
+	∙	SendGrid — transactional emails with jobrunner.com.au domain
+	∙	Vapi — AI voice assistant
+	∙	Sentry — error monitoring web, server, and mobile
+
+ADMIN SUPER-DASHBOARD
+	∙	Business overview with all metrics
+	∙	User management — subscription tiers, verification status
+	∙	Shadow mode — impersonate any user with 15 minute TTL and auto-revert
+	∙	Website change request Kanban board — To Do, In Progress, Done
+	∙	System health panel — Stripe, Twilio, Vapi event logging with severity
+	∙	AI Receptionist approval queue
+	∙	Activity feed — all platform events
+	∙	Demo refresh tool for App Store marketing screenshots
+
+WEBSITE ADD-ON
+	∙	Website preview via iframe
+	∙	Domain status display — Pending, Configuring, DNS Pending, Active, Error
+	∙	Hosting status tracking
+	∙	Change request form with priority — Low, Normal, Urgent
+	∙	Screenshot upload on change requests
+	∙	Change request history with status badges
+	∙	Admin Kanban board for managing all requests
+	∙	Upgrade prompt for businesses without website addon
+
+MOBILE EXCLUSIVE FEATURES
+	∙	Tap to Pay via NFC — contactless card payments on iPhone
+	∙	Background GPS tracking with 30-second intervals
+	∙	Auto clock-in and clock-out via 100m geofence
+	∙	SQLite offline mode with dependency-ordered sync queue
+	∙	Voice recorder for job notes
+	∙	Signature pad for on-site client sign-off
+	∙	Native push notifications
+	∙	Haptic feedback on interactions
+	∙	Live weather widget on dashboard
+	∙	Adaptive layout — sidebar on tablet, bottom tabs on phone
+	∙	Pull to refresh on all lists
+	∙	Swipeable list item actions
+
+LIFECYCLE EMAIL SYSTEM
+	∙	Day 3 — Add your first client nudge if no clients yet
+	∙	Day 7 — Send your first quote nudge if no quotes yet
+	∙	Day 14 — Send your first invoice nudge if no invoices yet
+	∙	Day 21 — Churn risk check-in if low activity
+	∙	Day 30 — Upgrade prompt for active free users
+	∙	Subscription trial expiry reminders — Day 10 and Day 13
+	∙	Payment failed notification
+	∙	Subscription cancelled confirmation with data retention notice
+	∙	All from noreply@jobrunner.com.au
+	∙	Fallback to mate if no first name set
+
+SECURITY
+	∙	Helmet.js security headers
+	∙	Rate limiting on auth — 10 attempts per 15 minutes
+	∙	Rate limiting on SMS, payments, and other sensitive endpoints
+	∙	Stripe webhook signature validation
+	∙	Twilio webhook signature validation
+	∙	Vapi HMAC SHA256 webhook validation
+	∙	Xero HMAC SHA256 webhook validation
+	∙	Session cookies with HttpOnly, Secure, SameSite
+	∙	Multi-tenant data isolation via effectiveUserId
+	∙	Server-side permission gates — not just UI hiding
+	∙	No API keys in frontend bundle
+	∙	x-powered-by Express header disabled
+	∙	Sentry error monitoring with user and business context
+
+Give that entire list to Replit and ask them to go through every single item and confirm it is working, partially working, or missing. Any that come back as missing or broken bring back here and we’ll prioritise the fix.​​​​​​​​​​​​​​​​

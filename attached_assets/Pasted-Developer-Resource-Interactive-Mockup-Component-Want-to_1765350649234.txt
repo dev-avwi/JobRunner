@@ -1,0 +1,43 @@
+Developer Resource
+Interactive Mockup Component
+Want to use this interactive "Device Switcher" on your own marketing site? Use the prompt on the right to generate this exact component, including the Web/Mobile toggle logic and full Dark Mode support.
+
+Feature 1: Device Toggle
+JavaScript-driven switching between a Browser Window mockup and a Mobile Phone mockup.
+
+Feature 2: High-Fidelity UI
+Includes realistic browser chrome (address bar, buttons) and mobile status bar details.
+
+Feature 3: Dark Mode Ready
+Fully styled with Tailwind's dark: modifier for instant theme switching.
+
+Generation Prompt
+Copy to Clipboard
+Create a responsive "Interactive Mockup" section for a SaaS landing page using HTML and Tailwind CSS.
+
+REQUIREMENTS:
+
+1. Structure & Layout:
+- A container with a centered "Toggle Switch" (Web App vs Mobile App).
+- A display area that swaps between two mockups based on the toggle.
+- Web Mockup: A div styled like a browser window (3 dots, address bar) containing a dashboard UI (sidebar, charts, tables).
+- Mobile Mockup: A div styled like a modern smartphone (rounded corners, bezel shadow, notch/status bar) containing a mobile app UI.
+
+2. Interactivity (JavaScript):
+- Implement the toggle logic to fade one mockup out and the other in using CSS transitions (opacity, transform).
+- Default to Web View.
+
+3. Dark Mode Support:
+- The entire component must support Tailwind's dark mode (`class="dark"` on html tag).
+- Include a specific requirement to use `dark:bg-slate-900`, `dark:text-white`, and `dark:border-slate-800` modifiers for all elements inside the mockups so they look perfect in both themes.
+- Include a separate Theme Toggle button (Sun/Moon icon) to test this functionality.
+
+4. Styling Specifics:
+- Use `slate` for neutrals, `blue` for primary web accents, and `orange` for mobile accents.
+- Use Lucide Icons (via CDN).
+- Font: Inter.
+- NO external CSS files, use Tailwind utility classes for everything (including shadows and transitions).
+
+OUTPUT:
+Provide the complete HTML file including the Head (with Tailwind CDN script and Config) and the Body with the Script tag containing the toggle logic.
+                        

@@ -1,0 +1,78 @@
+That is a bold ambition. To be the "breakthrough" against established giants like ServiceM8 and Tradify, JobRunner needs to solve the specific "pain points" that still plague tradies in 2026. 
+Intrflex
+Intrflex
+ +1
+Based on current market gaps, here is where JobRunner could actually beat them:
+1. Superior Offline Capability
+One of the biggest complaints against Tradify is its lack of a true offline mode—users often lose data or can't access job details when working in basements or rural areas. 
+ServiceM8
+ServiceM8
+ +1
+The Opportunity: If JobRunner has a "sync-later" engine that handles complex data (photos, signatures, and time logs) without an active connection, you solve a massive daily frustration. 
+ServiceTitan
+ServiceTitan
+2. True Android Parity
+ServiceM8 is famously built for iOS first, offering only a "Lite" version for Android users. 
+ServiceM8
+ServiceM8
+ +1
+The Opportunity: A huge portion of the trade market uses rugged Android devices (like Samsung XCover or Cat phones). If JobRunner offers a 100% native, full-featured experience on both Android and iOS, you win over entire teams that ServiceM8 ignores. 
+ServiceM8
+ServiceM8
+ +28
+3. Solving the "Overwrite" Bug
+Users of existing platforms often complain that when multiple people are on one job, the last person to hit "save" overwrites everyone else's notes or materials. 
+ServiceM8
+ServiceM8
+ +1
+The Opportunity: Real-time collaborative editing (like a Google Doc but for a job card) would be a game-changer for larger crews. 
+Intrflex
+Intrflex
+4. Transparent, Flat Pricing
+As businesses grow, per-user pricing (used by Tradify) can become prohibitively expensive. ServiceM8 uses "job-based" credits, which can be hard to predict. 
+ServiceM8
+ServiceM8
+ +2
+The Opportunity: A simple, predictable pricing model that doesn't penalise a tradie for hiring their first apprentice or taking on a busy month. 
+ServiceM8
+ServiceM8
+ +1
+Comparison of the "Big Three" vs. JobRunner Potential
+Feature 	ServiceM8	Tradify	JobRunner (Your Goal)
+Best Device	High-end iOS	Both (Web-based)	Native Android & iOS
+Offline Work	Good	Poor/Limited	Seamless Background Sync
+Pricing	Per Job (Tiered)	Per User ($45-$59)	Flat/Predictable
+Specialty	Automation & AI	Simplicity	Rugged Reliability & Collab
+What is the "one thing" JobRunner does differently right now—is it the speed of the interface, or perhaps a specific automation for a certain trade like sparkies or plumbers?
+
+
+
+
+
+undefined
+1 site
+I’ve had a look at JobRunner, and it’s clear you’re positioning it to tackle the exact "bloat" and setup fatigue that often turns tradies off from the bigger platforms. 
+jobrunner.com.au
+jobrunner.com.au
+ +2
+While ServiceM8 and Tradify have deep feature sets, they can be overwhelming to start. Your "Get up and running in minutes" pitch is a strong differentiator for the solo operator or small crew. 
+jobrunner.com.au
+jobrunner.com.au
+How JobRunner Stacks Up
+Based on your current site and features, here is how you are positioning to disrupt the market:
+The "No Training" Advantage: You’re leaning heavily into simplicity. Most competitors require a "partner" or consultant to set up correctly; if JobRunner remains truly plug-and-play, that’s a massive win for busy tradies.
+Visual Job Tracking: Your focus on visual status and photos on every job card mirrors what field workers actually need rather than just high-level accounting data.
+Accessibility: Unlike ServiceM8 which is heavily biased toward iOS, you're explicitly promoting a unified experience across iOS, Android, and Web from the start. 
+jobrunner.com.au
+jobrunner.com.au
+Pricing & Tiers
+Your pricing model is aggressive and very "tradie-friendly" compared to the per-user models that can get expensive quickly:
+Plan 	Price	Key Highlight
+Free	$0 /mo	Includes 25 jobs/invoices per month—plenty for a starting solo tradie.
+Pro	$39 /mo	Unlimited everything for solo operators, plus an AI Assistant.
+Team	$49 /mo + $29/seat	Includes live team tracking and a dispatch board.
+The "AI Assistant" Edge
+Mentioning an AI Assistant in your Pro plan is a smart move. If that assistant can do things like "auto-draft quotes from a voice memo" or "categorize receipts from a photo," you'll have a feature that makes Tradify and ServiceM8 look like older-generation tech. 
+jobrunner.com.au
+jobrunner.com.au
+Are you planning to focus JobRunner on a specific niche first (like residential maintenance), or are you going broad to take on everyone at once?

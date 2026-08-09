@@ -1,0 +1,45 @@
+Okay this is genuinely useful to look at. FieldPulse is a real, well-funded competitor and seeing their product properly helps you understand exactly where you stand.
+
+---
+
+**The Honest Comparison**
+
+FieldPulse is a serious platform. Look at that feature list — VoIP Phone System, 24/7 AI Dispatching, Fleet Tracking, Asset and Equipment Management, Maintenance Agreements, Financing, Inventory Management, Custom Workflows, Booking Portal. That's a deep product built over years with a proper team behind it.
+
+They also have "Field Intelligence" — their AI tools suite. And they're already positioned as a competitor to ServiceTitan, Jobber, FieldEdge, Housecall Pro. These are all US-focused platforms.
+
+---
+
+**Where This Actually Helps You**
+
+FieldPulse is almost entirely US-focused. Their pricing, their compliance features, their market positioning — all built for the American market. You're building specifically for Australian tradies with Australian phone numbers, Australian compliance like WHS and SWMS, Australian payment systems, AUD pricing.
+
+That's your moat. Not features — geography and specificity.
+
+A Queensland plumber doesn't care about a Dallas-based platform with US-centric support. They want something built for how Australian trade businesses actually work.
+
+---
+
+**What FieldPulse Has That You Should Note**
+
+A few things worth paying attention to:
+
+Their Booking Portal — customers can self-book directly. That's a feature worth adding to your roadmap eventually.
+
+Maintenance Agreements — recurring job contracts. Very relevant for tradies who do regular servicing.
+
+Their offline mode is specifically called out as a strength. You need to make sure your mobile app handles poor signal well because tradies work in basements, crawl spaces, remote areas.
+
+Their VoIP Phone System is separate from AI dispatching — they treat them as distinct products. You're combining them which is actually smarter.
+
+---
+
+**The Real Takeaway**
+
+FieldPulse confirms the market is real and growing. But they're a US company trying to be everything to everyone globally. You're an Australian product built specifically for Australian tradies.
+
+When a Cairns plumber googles "job management app Australia" you want JobRunner to come up, feel familiar, speak their language, and solve their specific problems — White Cards, SWMS, GST invoicing, Australian phone numbers.
+
+FieldPulse can't compete with that no matter how many features they have. Local specificity beats global feature depth for small businesses every single time.
+
+Stop worrying about FieldPulse and go get your first Cairns tradie using it.

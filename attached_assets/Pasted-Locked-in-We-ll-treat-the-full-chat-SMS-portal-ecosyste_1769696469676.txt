@@ -1,0 +1,323 @@
+Locked in ✅
+We’ll treat the full chat / SMS / portal ecosystem as your long-term product vision, and now design a lean, shippable MVP that:
+	•	🚀 Gets you to market fast
+	•	🧪 Validates real tradie demand
+	•	💸 Keeps infra + complexity under control
+	•	🧠 Avoids confusing UX
+	•	🔧 Is easy to iterate on once users arrive
+
+This is exactly how serious SaaS products win.
+
+⸻
+
+🧱 TradieTrack — Lean MVP Messaging & Workflow
+
+🎯 MVP Goal
+
+Allow a tradie to run a job end-to-end professionally with:
+	•	Simple client communication
+	•	Minimal automation
+	•	No confusion
+	•	No expensive infrastructure
+	•	Fast development
+
+If this works smoothly → we scale features later.
+
+⸻
+
+✅ What Stays in MVP (Non-Negotiable)
+
+These are the features that actually deliver value immediately.
+
+⸻
+
+1️⃣ Single Chat Per Job (No Direct Messages)
+
+Instead of:
+	•	Job Chat
+	•	Direct Messages
+	•	Team Chat
+
+👉 MVP has:
+
+✅ One Chat Thread per Job
+
+Everything related to that job lives in one place:
+	•	Messages
+	•	Photos
+	•	Updates
+
+No switching contexts.
+No confusion.
+
+⸻
+
+Tradie Chat UI
+
+Inside each job:
+	•	Message input
+	•	Attach photo button
+	•	Send button
+	•	No SMS toggle
+	•	No advanced settings
+
+Simple = fast adoption.
+
+⸻
+
+⸻
+
+2️⃣ Smart Default Messaging (Portal First, SMS Only When It Matters)
+
+MVP Logic
+
+Situation	Delivery
+Normal messages	Portal only
+Quote sent	SMS auto
+On My Way	SMS auto
+Invoice sent	SMS auto
+
+Tradie never decides delivery mode manually.
+
+This:
+	•	Removes cognitive load
+	•	Prevents accidental SMS charges
+	•	Prevents “why didn’t they see my message?” confusion
+
+⸻
+
+Example
+
+Tradie types:
+
+“I’ll bring the replacement valve.”
+
+→ Client sees it inside portal only.
+
+Tradie taps:
+
+“On My Way”
+
+→ Client receives SMS automatically with portal link.
+
+Zero thinking required.
+
+⸻
+
+⸻
+
+3️⃣ Lightweight Client Portal (Very Simple)
+
+MVP Portal Shows:
+	•	Business name
+	•	Job title
+	•	Status
+	•	Message feed
+	•	Photo upload
+	•	View invoice + pay
+
+❌ No live tracking
+❌ No contact cards
+❌ No worker profiles
+❌ No advanced UI
+
+Just:
+
+Open link → See job → Message → Upload photo → Pay
+
+Fast loading. Minimal bugs.
+
+⸻
+
+⸻
+
+4️⃣ Client Photo Upload → Auto Attach to Job
+
+This stays. It’s a huge differentiator.
+
+When client uploads:
+	•	Photos auto-save into Job Photos
+	•	Labeled “Client Upload”
+	•	Tradie sees instantly
+
+This alone adds real professional value.
+
+⸻
+
+⸻
+
+5️⃣ Only 3 Auto SMS in MVP
+
+SMS is powerful but expensive and risky early.
+
+MVP Auto SMS:
+
+✅ Quote Sent
+✅ On My Way
+✅ Invoice Sent
+
+That’s it.
+
+No reminders.
+No overdue flows.
+No completion messages.
+
+You can add later once traction exists.
+
+⸻
+
+⸻
+
+6️⃣ No Live GPS Tracking (Yet)
+
+For MVP:
+
+Instead of:
+
+Live moving map
+
+Use:
+
+Simple “On My Way” timestamp
+
+Example client sees:
+
+“Jake is on the way — ETA approx 15–25 mins.”
+
+This avoids:
+	•	Battery drain
+	•	Permission bugs
+	•	Legal issues
+	•	Infra costs
+
+You can layer live tracking later once revenue exists.
+
+⸻
+
+⸻
+
+7️⃣ Payments Flow Stays Simple
+
+MVP:
+	•	Invoice link
+	•	Pay Now button
+	•	Confirmation screen
+
+No:
+	•	Partial payments
+	•	Deposits
+	•	Escrow
+	•	Payment automation logic
+
+Simple conversion funnel.
+
+⸻
+
+⸻
+
+🧪 MVP Feature Checklist
+
+Core
+	•	✅ Create Client
+	•	✅ Create Job
+	•	✅ Send Quote (SMS auto)
+	•	✅ Accept Quote
+	•	✅ Job Chat
+	•	✅ Client Portal
+	•	✅ Photo Upload
+	•	✅ On My Way (SMS auto)
+	•	✅ Send Invoice (SMS auto)
+	•	✅ Pay Invoice
+	•	✅ Job History Saved
+
+⸻
+
+Explicitly NOT in MVP
+
+❌ Live GPS tracking
+❌ SMS toggles
+❌ Direct Messages
+❌ Team Chat
+❌ Reminder automations
+❌ Worker visibility controls
+❌ SMS credit dashboards
+❌ Advanced automation rules
+❌ Client profiles inside portal
+
+These come after validation.
+
+⸻
+
+⸻
+
+🧠 Why This MVP Is Strong
+
+✔️ Solves real tradie problems immediately
+✔️ Simple mental model
+✔️ Easy onboarding
+✔️ Low support burden
+✔️ Low infra costs
+✔️ Fast to ship
+✔️ Scales naturally later
+
+Most importantly:
+
+You can ship this in weeks — not months.
+
+⸻
+
+⸻
+
+🚦 Upgrade Path (Post-MVP Roadmap Teaser)
+
+Once users love MVP, you layer:
+
+Phase 2:
+	•	Appointment reminders
+	•	SMS credits
+	•	Worker profiles
+	•	Better automation
+
+Phase 3:
+	•	Live tracking
+	•	Team chat
+	•	Smart routing
+	•	Advanced analytics
+
+Phase 4:
+	•	AI automation
+	•	Predictive scheduling
+	•	Fleet insights
+
+You’re building a platform — not just an app.
+
+⸻
+
+⸻
+
+🧾 Brutal MVP Summary
+
+✅ One chat per job
+✅ Portal-first messaging
+✅ Only 3 auto SMS triggers
+✅ Simple client portal
+✅ Client photo uploads stay
+✅ No live tracking yet
+✅ No messaging complexity
+✅ Easy to ship and support
+✅ Designed for real tradies
+
+This keeps your vision intact while letting you actually launch and validate fast.
+
+⸻
+
+If you want next, we can:
+
+🔥 Design the exact MVP UI screens
+🔥 Map the database schema for MVP
+🔥 Create the Replit build prompt
+🔥 Define pricing tiers for MVP
+🔥 Build the feature lock system
+🔥 Plan the beta rollout strategy
+
+Your call.

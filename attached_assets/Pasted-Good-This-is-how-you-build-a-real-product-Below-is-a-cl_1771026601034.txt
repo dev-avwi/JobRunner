@@ -1,0 +1,345 @@
+Good. This is how you build a real product.
+
+Below is a **clear, structured Feature Specification Document** for your tradie app (based on the exact workflow Nathan described + what actually matters in the real world).
+
+You can paste this into Replit or your project docs.
+
+---
+
+# 📄 TRADIETRACK – CORE FEATURE SPECIFICATION DOCUMENT
+
+Version: MVP 1.0
+Objective: Replace diary, timesheets, and manual invoicing with a 5-minute daily admin workflow.
+
+---
+
+# 1️⃣ PRODUCT PRINCIPLE
+
+TradieTrack must:
+
+* Eliminate manual time recording
+* Eliminate double-entry (diary → computer → invoice)
+* Provide GPS-backed proof of hours
+* Convert tracked time into invoices instantly
+* Work for sole traders and teams
+* Reduce daily admin to under 5 minutes
+
+If a feature does not reduce admin or increase proof protection, it is not priority.
+
+---
+
+# 2️⃣ USER TYPES (ROLE SYSTEM)
+
+## 2.1 Sole Trader
+
+* Track own time
+* Create invoices
+* Send invoices
+* View reports
+
+## 2.2 Business Owner (Team Mode)
+
+* View all team members
+* Approve timesheets
+* Generate client invoices
+* Manage rates per employee
+
+## 2.3 Employee
+
+* Clock in/out
+* Switch jobs
+* Add notes
+* View personal hours
+
+## 2.4 Office/Admin (Optional Phase 2)
+
+* Access desktop dashboard
+* Send invoices
+* Export reports
+* View audit logs
+
+---
+
+# 3️⃣ CORE DAILY WORKFLOW FEATURES
+
+---
+
+# 3.1 TIME TRACKING SYSTEM
+
+### Functional Requirements:
+
+* Manual “Clock In” button
+* Manual “Clock Out” button
+* Background timer continues if:
+
+  * App closed
+  * Phone locked
+* Offline mode:
+
+  * Timer continues without service
+  * Syncs when online
+* Switch Job feature:
+
+  * Clock out of Job A
+  * Clock into Job B in one action
+* Add job notes while clocked in
+* Add material notes while clocked in
+
+### Data Logging Requirements:
+
+* Start timestamp
+* End timestamp
+* Total hours
+* GPS start location
+* GPS end location
+* Manual edit indicator
+* Edit reason field
+
+---
+
+# 3.2 GPS LOCATION TRACKING
+
+### Functional Requirements:
+
+* Record location while clocked in
+* Store arrival time
+* Store departure time
+* Show job map preview
+* Log GPS loss events
+
+### Legal Protection Requirement:
+
+If GPS signal drops:
+
+* Log: “GPS signal lost at [time]”
+* Mark tracking gap
+
+If time is manually edited:
+
+* Log original time
+* Log edited time
+* Store reason for edit
+
+---
+
+# 3.3 JOB MANAGEMENT SYSTEM
+
+### Functional Requirements:
+
+* Create Job:
+
+  * Client name
+  * Job address
+  * Job description
+  * Hourly rate
+* Multiple jobs per day supported
+* Job summary shows:
+
+  * Total hours
+  * Materials added
+  * Notes
+* Status:
+
+  * Active
+  * Completed
+  * Invoiced
+  * Paid
+
+---
+
+# 3.4 INVOICE GENERATION SYSTEM
+
+### Functional Requirements:
+
+* Generate invoice from tracked hours
+* Auto-calculate:
+
+  * Hourly total
+  * Materials total
+  * GST (if applicable)
+* Customizable invoice template:
+
+  * Add logo
+  * Change accent color
+  * Add business details
+* Download PDF
+* Share invoice link
+* Pre-written email template
+
+### Required Warning Screen Before Sending:
+
+User must confirm:
+
+> “I have reviewed this invoice and confirm accuracy.”
+
+This protects you legally.
+
+---
+
+# 3.5 DAILY SUMMARY SCREEN
+
+At end of day, user sees:
+
+* Job A – 4.5 hrs
+* Job B – 2 hrs
+* Materials added
+* Total billable amount
+* Quick “Generate Invoice” button
+
+Admin time target:
+Under 5 minutes.
+
+---
+
+# 4️⃣ TEAM SYSTEM (MULTI-USER SUPPORT)
+
+### Functional Requirements:
+
+* Add team member
+* Assign hourly rate per member
+* Each member clocks in separately
+* Owner sees:
+
+  * Individual hours
+  * Total combined hours
+* Owner must approve timesheet before invoicing
+
+### Audit Trail Required:
+
+Owner can see:
+
+* Manual edits
+* GPS signal gaps
+* Late clock-outs
+
+---
+
+# 5️⃣ DESKTOP + MOBILE SYNC
+
+### Requirements:
+
+* Same login works on:
+
+  * Mobile app
+  * Web dashboard
+* Data synced in real time
+* Desktop can:
+
+  * Generate invoices
+  * View reports
+  * Export CSV
+
+---
+
+# 6️⃣ LIABILITY & PROTECTION FEATURES
+
+These must be implemented inside the app:
+
+---
+
+## 6.1 Time Accuracy Disclaimer
+
+Before sending invoice:
+
+Checkbox:
+
+> “I acknowledge that I am responsible for verifying time accuracy.”
+
+---
+
+## 6.2 GPS Disclaimer
+
+In settings page:
+
+> GPS tracking may be affected by device battery, signal loss, or background restrictions.
+
+---
+
+## 6.3 Edit Log Viewer
+
+Admin panel must show:
+
+* Original time
+* Edited time
+* Timestamp of edit
+* Who edited it
+
+This protects against disputes.
+
+---
+
+# 7️⃣ SOFT LAUNCH MODE (CRITICAL)
+
+### Build a “Beta Mode” Toggle:
+
+* Free lifetime accounts for testers
+* Bug reporting button
+* Error logging system
+* Ability to track:
+
+  * Timer inconsistencies
+  * Crash reports
+  * Sync errors
+
+Do NOT skip this.
+
+---
+
+# 8️⃣ NOT INCLUDED IN MVP (PHASE 2+)
+
+* Smartwatch integration
+* AI auto-clock detection
+* Xero/MYOB integration
+* Auto-GPS job detection
+* Advanced AI summaries
+
+These are scaling features.
+
+---
+
+# 9️⃣ PERFORMANCE REQUIREMENTS
+
+* Timer accuracy ±1 second tolerance
+* Background tracking must survive:
+
+  * App minimization
+  * Screen lock
+* Invoice calculation must never miscalculate totals
+* Offline storage must sync without data loss
+
+---
+
+# 🔟 SUCCESS METRICS
+
+MVP success means:
+
+* User clocks in/out in under 3 seconds
+* Invoice generated in under 1 minute
+* No manual diary needed
+* No disputes over “you weren’t here”
+* No daily admin exceeding 5 minutes
+
+---
+
+# 🧠 What This Does Strategically
+
+This document turns your app from:
+
+“Cool AI project”
+
+Into:
+
+“Trade-ready workflow automation tool”
+
+That’s the difference between a toy and a SaaS business.
+
+---
+
+If you want next, I can:
+
+* 🔥 Design the exact screen-by-screen UX flow
+* 📊 Break this into a 6-week development roadmap
+* ⚖️ Write the proper legal clause wording for Australian compliance
+* 💰 Help you decide pricing tiers strategically
+
+What’s the next move?

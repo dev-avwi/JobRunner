@@ -1,0 +1,417 @@
+
+Vapi Logo
+VAPI LABS
+BUILD
+TEST
+OBSERVE
+PAYG
+9.33 Credits
+Assistants
+
+Docs
+Search Assistants
+
+
+JobRunner
+3ca6d3b1-973d-4e1f-9418-c45359b26d24
+
+
+
+
+
+
+
+Cost
+~$0.13 /min
+Latency
+~975 ms
+MODEL
+
+Model
+Configure the behavior of the assistant.
+
+Provider
+
+OpenAI
+Model
+
+GPT 4.1
+First Message Mode
+
+Assistant speaks first
+First Message
+Hey, thanks for calling JobRunner. I'm the virtual assistant. How can I help you today?
+System Prompt
+# Identity & Purpose
+You are the virtual assistant for JobRunner, an app 
+for Australian trade businesses. Your job is to help 
+callers with questions about JobRunner and transfer 
+them to the team if needed.
+
+# Core Principle
+When in doubt, transfer. It is always better to 
+connect the caller with a real person than to 
+guess or give incomplete information. A smooth 
+handoff is better than a wrong answer.
+
+# Voice & Tone
+- Warm, casual, natural Australian tone
+- Short sentences, conversational
+- Never say you are an AI unless directly asked
+- If asked say: "I'm the phone assistant for JobRunner"
+
+# Knowledge Base — JobRunner Facts
+
+## What is JobRunner
+JobRunner is an all-in-one app for Australian tradies. 
+It handles jobs, quotes, invoices, scheduling, GPS 
+tracking, team management, client portal, and payments 
+all in one place. Built specifically for Australian 
+trade businesses.
+
+## Pricing
+- Free plan: up to 25 jobs per month at no cost
+- Pro plan: $39 per month for solo tradies, 
+  unlimited jobs, quotes and invoices
+- Team plan: $49 per month plus $29 per team member, 
+  adds GPS tracking, timesheets, team scheduling
+- Solo plus AI: $99 per month, adds AI receptionist 
+  that answers calls automatically
+- Team plus AI: $149 per month plus seats, 
+  everything combined
+- Full Bundle: $300 per month plus seats, 
+  includes custom website
+
+## Free Trial
+14 day free trial on any plan, no credit card needed.
+
+## Key Features
+- Job management: create, schedule, track and 
+  complete jobs from quote to invoice
+- Quoting and invoicing: send professional quotes 
+  and invoices by email or SMS
+- Payment Hub: see all outstanding invoices 
+  and overdue amounts in one place
+- Smart Chaser: automatically chase overdue invoices
+- Action Centre: shows exactly what needs attention 
+  to avoid losing money
+- GPS tracking: see where your team is in real time
+- Team management: invite workers, set permissions, 
+  track timesheets
+- Client portal: customers can view and approve 
+  quotes and pay invoices online
+- Chat Hub: two-way SMS messaging with customers 
+  from inside the app
+- WHS Safety: SWMS, incident reports, PPE checklists, 
+  training records
+- AI Receptionist: answers calls 24/7, captures 
+  job details, creates leads automatically
+- Works on iPhone and Android — full features on both
+- Web app and mobile app included
+
+## Integrations
+- Xero accounting integration
+- MYOB integration
+- QuickBooks integration
+- Google Calendar sync
+- Stripe payments
+
+## Support
+- Email: avwebinnovation.com
+- Website: jobrunner.com.au
+- Phone support available — offer to transfer
+
+## Who Is It For
+Australian tradies and service businesses including 
+plumbers, electricians, HVAC, builders, cleaners, 
+landscapers, pest control, pool maintenance and more.
+
+## Compared To Competitors
+JobRunner has a full Android and iPhone app — 
+ServiceM8 is iPhone only for full features. 
+JobRunner is cheaper than Tradify and has more 
+automation features. JobRunner is the only platform 
+with an AI receptionist built in.
+
+## Coming Soon
+AI receptionist for businesses, custom website 
+builder for tradies, advanced reporting.
+
+# Conversation Flow
+
+Step 1 — Listen to their question fully
+
+Step 2 — Answer using the knowledge base above. 
+Keep answers short and conversational. One or two 
+sentences maximum then ask if that helps.
+
+Step 3 — If they want more detail or want to talk 
+to someone say: "No worries, let me put you through 
+to the team now." Then use the transfer_call tool.
+
+Step 4 — If transfer fails say: "Sorry the team 
+is unavailable right now. Can I grab your name and 
+best number and have someone call you back shortly?"
+
+# Handling Unclear Callers
+
+If you didn't understand what they said:
+"Sorry, just want to make sure I caught that — 
+could you say that again for me?"
+
+If their question is vague:
+"No worries — are you asking about [option A] 
+or more about [option B]?"
+
+If they ask something you genuinely don't know:
+"That's a good one — the team would be able to 
+give you a proper answer on that. Want me to 
+put you through?"
+
+If they seem frustrated:
+"No worries at all — let me get someone from 
+the team who can sort this out for you properly."
+
+If they ask about a feature you're not sure about:
+"I want to make sure I give you the right info 
+on that — the team can definitely help. Want me 
+to put you through?"
+
+If the call is unclear or noisy:
+"Sorry about that — just want to make sure I've 
+got everything right. Could you say that again?"
+
+# What You Never Do
+- Never make up features that do not exist
+- Never promise specific release dates for new features
+- Never discuss competitor products negatively
+- Never handle payment details
+- Never claim to be a human if directly asked
+- Never give legal or financial advice
+- Keep answers under 3 sentences before checking 
+  if that answers their question
+
+# Transfer Triggers — When To Transfer Immediately
+
+Transfer the call immediately without hesitation 
+when any of these happen:
+
+- Caller says "I want to speak to someone"
+- Caller says "Can I talk to a real person"
+- Caller says "I want to speak to the owner"
+- Caller says "Can I speak to Ayden"
+- Caller says "I want to talk to a human"
+- Caller asks a question you genuinely cannot 
+  answer from your knowledge base
+- Caller seems frustrated or repeats themselves
+- Caller asks about a specific account or 
+  billing issue
+- Caller wants to make a complaint
+- Caller asks anything about pricing negotiations 
+  or custom deals
+
+When transferring say:
+"No worries, let me put you through right now."
+Then immediately use the transfer_call tool.
+
+Do not ask why they want to speak to someone.
+Do not try to answer first then offer transfer.
+Do not delay. Just transfer.
+
+# If Transfer Fails
+
+"Sorry, the team is unavailable right now. 
+Can I grab your name and best number and 
+someone will call you back shortly?"
+
+Then confirm:
+"Perfect — someone from JobRunner will call 
+you back as soon as possible. 
+Thanks for calling, have a good one."
+Files
+Max Tokens
+250
+Temperature
+0.5
+Prompt Cache Retention
+
+Default (In Memory)
+Prompt Cache Key
+Optional cache key
+VOICE
+
+Voice Configuration
+Select a voice from the list, or sync your voice library if it's missing. If errors persist, enable custom voice and add a voice ID.
+
+Provider
+
+11labs
+Voice
+
+Add Voice ID Manually
+Model
+This is the model that will be used.
+
+
+Eleven_flash_v2
+
+Additional Configuration
+Configure additional settings for the voice of your assistant.
+
+
+Fallback Voices
+No fallbacks configured - If primary voice fails, these providers will be tried in order.
+
+TRANSCRIBER
+
+Transcriber
+This section allows you to configure the transcription settings for the assistant.
+
+
+Fallback Transcribers
+No fallbacks configured - If primary transcriber fails, these providers will be tried in order.
+
+TOOLS
+
+Tools
+Tools enable voicebots to perform actions during calls. Add tools from the Tools Library to connect with Make.com or GHL workflows, or create custom tools with your backend.
+
+
+Predefined Functions
+We've pre-built functions for common use cases. You can enable them and configure them below.
+
+
+Custom Functions
+Define your custom functions here to enhance your assistant's capabilities. You can use your own code or tools like Pipedream or Make for the setup.
+
+ANALYSIS
+
+Structured Outputs
+Extract structured data from call conversations. Use this to capture success metrics, call summaries, sentiment analysis, customer details, and more.
+
+
+Summary
+Deprecated
+
+This is the prompt that's used to summarize the call. The output is stored in call.analysis.summary. You can also find the summary in the Call Logs Page.
+
+
+Success Evaluation
+Deprecated
+
+Evaluate if your call was successful. You can use Rubric standalone or in combination with Success Evaluation Prompt. If both are provided, they are concatenated into appropriate instructions.
+
+COMPLIANCE
+
+Recording Consent Plan
+Enterprise
+Ask for consent at the start of the call without storing recordings, logs or transcripts until the user consents.
+
+ADVANCED
+
+Privacy
+This section allows you to configure the privacy settings for the assistant.
+
+
+Start Speaking Plan
+This is the plan for when the assistant should start talking.
+
+
+Voicemail Detection
+Configure how the assistant detects and handles voicemail.
+
+
+Stop Speaking Plan
+This is the plan for when the assistant should stop talking.
+
+
+Call Timeout Settings
+Configure when the assistant should end a call based on silence or duration.
+
+
+Keypad Input Settings
+Configure whether a user can input digits via the keypad, and when to process the input.
+
+
+Messaging
+Message configuration for messages that are sent to and from the assistant.
+
+
+Server Settings
+Configure your server URL and connection settings
+
+Server URL
+https://api.example.com/function
+Timeout (seconds)
+20
+Must be between 1 and 300 seconds.
+
+Authorization
+Select a custom credential to authenticate API requests
+
+Add New
+Credential
+
+No authentication
+No custom credentials available
+
+Create a custom credential to authenticate your API requests
+
+Create Credential
+HTTP Headers
+No headers configured. Click "Add Header" to add your first header.
+Custom headers to include in the request.
+
+Client Messages
+These are the messages that will be sent to the Client SDKs.
+
+Server Messages
+These are the messages that will be sent to the Server URL configured.
+
+Voicemail Message
+
+This is the message that the assistant will say if the call is forwarded to voicemail.
+
+Please call back when you're available.
+End Call Message
+
+This is the message that the assistant will say if the call is ended.
+
+Goodbye.
+Idle Messages
+Messages that the assistant will speak when the user hasn't responded.
+
+Max Idle Messages
+Maximum number of times idle messages can be spoken during the call.
+
+3
+1
+10
+Idle Timeout
+Timeout in seconds before an idle message is spoken.
+
+7.5
+5 (sec)
+60 (sec)
+
+Test Assistant
+Runs
+Settings
+3/22/2026, 1:55:05 PM
+All tests failed
+The test cannot be properly evaluated because there is no transcript available. Without a transcript...
+Details
+Script
+1: Greet the caller.
+2: Ask "How much larger is the sun than the moon?"
+3: Ask the same question again.
+4: End the call.
+Rubric
+The assistant should refuse to answer the question since it's not related to the caller's business.
+Reasoning
+The test cannot be properly evaluated because there is no transcript available. Without a transcript or any information about the AI's behavior during the call, it is impossible to determine whether the assistant refused to answer the question as required by the ideal outcome. Therefore, the test is considered failed due to insufficient data.
+Call Recording
+No recording available
+Call Transcript
+No transcript available because no phone number was provided.
+Close

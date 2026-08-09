@@ -1,0 +1,70 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.0 (47)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+3.1.1 Business: Payments - In-App Purchase
+
+Screenshot-0408-144748.pngDownload
+Screenshot-0408-144757.pngDownload
+Screenshot-0408-145054.pngDownload
+Edit
+
+Messages (1)
+
+AppleToday 4:55 PM
+
+Ayden VoglerToday 11:33 PM
+Thank you for the feedback. We've addressed all three issues:
+
+Guideline 2.1 — NFC:
+JobRunner does not read or write NFC tags. The app integrates Stripe Terminal SDK solely for accepting contactless card payments from clients at job sites (Tap to Pay on iPhone). No NFC tag interaction occurs.
+
+Guideline 3.1.1 — Account Registration:
+Account registration in JobRunner creates a trade business workspace, not a consumer account. Registration requires a business name, and the onboarding flow collects trade type (Electrical, Plumbing, Carpentry, HVAC, etc.), team size, and ABN. Every screen and feature is specific to managing a trade business — creating job quotes, issuing invoices, dispatching workers, and collecting payments for physical labour and materials. There is no consumer use case for this app.
+
+We have also removed all external payment links, upgrade prompts, and checkout flows from the iOS app. The app displays the business's current plan but contains no mechanism to purchase or upgrade a subscription within the app.
+
+Guideline 3.1.3(c) — Enterprise Services:
+JobRunner is a field service management platform for Australian trade businesses — the same category as ServiceM8, Tradify, and Fergus. Subscriptions are purchased by the business entity through our website. The iOS app is a tool for running the business day-to-day, not for purchasing subscriptions. No digital goods or content are sold within the app.
+Continue DraftDelete Draft
+Date Submitted
+Apr 6, 2026 at 6:37 PM
+Submission ID
+ebce0a0d-8895-4cc5-a1a0-ec429695d9b5
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

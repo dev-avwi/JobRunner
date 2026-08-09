@@ -1,0 +1,45 @@
+Here’s the full flow to send to Replit:
+
+DEMO VIDEO FLOW — JobRunner Split Screen
+Setup before recording:
+	•	iPhone logged in as business owner/manager account
+	•	Samsung logged in as worker account
+	•	Both phones on same wifi
+	•	Both phones fully charged and on Do Not Disturb except for JobRunner notifications
+	•	JobRunner app open on both phones
+	•	Screen recording running on both phones before starting
+
+SEQUENCE:
+Step 1 — iPhone (Owner)
+Open the dispatch board or job creation screen. Create a new job — client name, address, job type. Assign it to the worker account on Samsung. Tap confirm/send.
+Step 2 — Samsung (Worker)
+Push notification fires on Samsung instantly. Worker sees job assigned notification on lock screen or within app. Worker opens notification, sees full job details, taps Accept.
+Step 3 — iPhone (Owner)
+Owner can see worker has accepted. Job status updates in real time on dispatch board.
+Step 4 — Samsung (Worker)
+Worker taps Start Job or Start Timer. GPS tracking activates.
+Step 5 — iPhone (Owner)
+Owner opens GPS map view. Samsung worker’s live location dot appears on the map moving in real time.
+Step 6 — Samsung (Worker)
+Worker taps Complete Job.
+Step 7 — iPhone (Owner)
+Completed job notification fires on iPhone. Owner sees job flagged as complete and not yet invoiced. Owner taps Create Invoice — invoice auto-generates from time tracking data. Owner taps Send — client receives SMS payment link automatically.
+Step 8 — iPhone (Owner)
+Show the SMS firing to client. Briefly open the client payment portal link to show what the client sees. Client pays. Invoice status updates to Paid automatically. Receipt generated.
+
+What Replit needs to verify:
+	1.	Push notifications fire instantly from owner job assignment to worker Samsung — is there any delay
+	2.	GPS tracking activates on worker Samsung and shows live on owner iPhone map — does this work cross platform iOS to Android
+	3.	Job completion notification fires from Samsung to iPhone owner in real time
+	4.	Invoice auto-generates from time tracking data on job completion — does this pull the correct time
+	5.	SMS fires automatically to client when invoice is sent — is Twilio configured for this
+	6.	Client payment portal link works and shows correct invoice
+	7.	Payment confirmation fires back to the app and marks invoice as paid automatically
+
+Potential failure points to test:
+	•	Notification delay between Android and iOS
+	•	GPS accuracy and update frequency on Samsung
+	•	SMS delivery time via Twilio
+	•	Payment webhook firing correctly back to the app
+
+Send that to Replit and ask them to run through the full sequence end to end and confirm every step works before May 13. Do it at least two days before so you have time to fix anything.​​​​​​​​​​​​​​​​

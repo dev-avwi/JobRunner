@@ -1,0 +1,290 @@
+Here it is, Ayden — the **final MASTER PROMPT** you copy-paste into Replit to make it fully analyse *every single part* of your app and confirm it is **production-ready**, **beta-ready**, **feature-complete**, and free of “UI-only” or incomplete logic.
+
+This is the *highest-level professional QA prompt* you will ever need.
+
+Copy **everything** below exactly:
+
+---
+
+# ⭐ **TRADIETRACK – REPLIT MASTER PRODUCTION/BETA TESTING PROMPT**
+
+*(Copy + paste directly into Replit AI)*
+
+---
+
+**You are the QA Engineer, UX Auditor, and Senior Full-Stack Reviewer for the TradieTrack app.
+Your job is to thoroughly inspect the entire codebase, backend logic, UI/UX, integrations, and workflows to determine if the app is fully production/beta-ready.
+Do not assume anything — inspect all parts of the code and provide specific fixes, improvements, checks, and missing logic.**
+
+---
+
+## ✅ **1. GENERAL PRODUCTION READINESS CHECKS**
+
+Check the entire project for:
+
+* Proper file structure
+* Code cleanliness
+* Duplicate files or unused components
+* Missing error handling
+* Correct import usage
+* Proper environment variable handling
+* Rate limiting & API error resilience
+* Mobile responsiveness
+* Offline mode support
+* Cloud database sync
+* API schema consistency
+* Authentication robustness
+* Data validation & sanitising
+
+Mark each one as:
+✔ Done
+⚠ Needs Improvement
+❌ Missing
+
+And explain WHY.
+
+---
+
+## ✅ **2. AUTHENTICATION & ONBOARDING (FULL AUDIT)**
+
+Verify that:
+
+* Login works (email + password)
+* Google sign-in works (if included)
+* New users are stored in the database
+* Onboarding flow collects:
+
+  * Business name
+  * ABN
+  * Logo
+  * Team size
+  * Trade type
+  * Contact info
+* User roles are stored (Owner, Admin, Team)
+* Permissions are correctly applied everywhere
+* Session handling is secure
+
+If anything is incomplete → fix it.
+
+---
+
+## ✅ **3. QUOTES SYSTEM (PROFESSIONAL-GRADE CHECK)**
+
+Inspect the *full quote lifecycle*:
+
+1. Create quote
+2. Validate fields
+3. Line-item calculations
+4. GST calculation
+5. Quote numbering (`QT-1001`, `QT-1002`, etc.)
+6. PDF generation quality
+7. Email sending (SendGrid)
+8. Customer acceptance link
+9. Acceptance timestamp logging
+10. Auto-convert quote → job
+
+Check if anything is UI-only or missing backend logic.
+
+---
+
+## ✅ **4. INVOICE SYSTEM (FULL CHECK)**
+
+Verify the same production-level workflow:
+
+* Invoice numbering
+* Totals & GST
+* Payment status
+* Stripe payment link creation
+* Payment confirmation storage
+* Receipt email
+* PDF formatting
+* Overdue labels
+* Auto-mark as paid
+* Audit history (timestamps)
+
+If missing → tell me and fix.
+
+---
+
+## ✅ **5. JOB MANAGEMENT (WORKFLOW TEST)**
+
+Confirm the entire job workflow:
+
+* Create job
+* Assign user/team
+* Change status:
+
+  * New
+  * Scheduled
+  * In Progress
+  * Completed
+  * Invoiced
+* Attachments & images
+* Time tracking
+* Notes
+* Comments
+* Job → quote → invoice pathway
+
+Identify any broken links or UI-only elements.
+
+---
+
+## ✅ **6. TEAM SYSTEM (ROLE-BASED ACCESS)**
+
+Check:
+
+* Team member invite
+* Permissions:
+
+  * Owners: everything
+  * Admin: almost everything
+  * Staff: only their jobs & limited pages
+* Prevent access to restricted pages
+* Team chat + job chat data storage
+* Profile editing
+
+Flag missing or incomplete role logic.
+
+---
+
+## ✅ **7. CLIENTS SYSTEM (FUNCTIONALITY TEST)**
+
+Check that:
+
+* Clients can be added
+* Clients can be edited
+* Search works
+* Jobs link to clients
+* Quotes link to clients
+* Invoices link to clients
+
+Verify database relationships are correct.
+
+---
+
+## ✅ **8. FILE STORAGE & PHOTOS**
+
+Check:
+
+* Upload service works
+* Attachments persist
+* Files link to correct jobs
+* Preview works
+* Storage path is correct
+* Database references are saved
+
+---
+
+## ✅ **9. SENDGRID IMPLEMENTATION (EMAILS)**
+
+Verify that:
+
+* API keys are loaded via env
+* Welcome email
+* Quote sent email
+* Invoice email
+* Payment receipt email
+* Job update email
+* Email templates are cleaned
+* Emails are logged in database (optional)
+
+Fix any template or content issues.
+
+---
+
+## ✅ **10. STRIPE IMPLEMENTATION (PAYMENTS)**
+
+Confirm:
+
+* Stripe API keys are secured
+* Stripe Connect is set up
+* Owner can onboard Stripe
+* Customers receive a payment link
+* Payment events update invoice
+* Webhooks process correctly
+* Test mode vs production mode setup
+
+If anything is missing → fix code.
+
+---
+
+## ✅ **11. UI/UX AUDIT (IOS-POLISHED CHECK)**
+
+Inspect every page for:
+
+* Alignment
+* Spacing
+* Mobile responsiveness
+* Clean card layout
+* No unused columns
+* No empty white space
+* Consistent typography
+* iOS-style header spacing
+* Simple bottom navigation
+* Modern, minimal visual design
+
+Fix layouts that look “website-like” instead of “app-like”.
+
+---
+
+## ✅ **12. OFFLINE MODE & CLOUD BACKEND CHECK**
+
+Verify:
+
+* App doesn’t break offline
+* Local caching exists (if implemented)
+* Database sync works when online
+* Pages fail gracefully when offline
+
+If missing:
+Suggest adding localStorage or service workers later.
+
+---
+
+## ✅ **13. BUG + ERROR TESTING**
+
+Run simulation tests:
+
+* Create multiple jobs
+* Assign multiple staff
+* Approve quotes
+* Pay invoices
+* Send all emails
+* Upload files
+* Switch roles
+* Change job status
+* Attempt invalid actions
+
+Report:
+
+* Bugs
+* Errors
+* Missing validations
+* UI issues
+* Broken backend logic
+
+Fix everything.
+
+---
+
+## ✅ **14. FINAL VERDICT**
+
+After reviewing the entire codebase:
+
+* State clearly if the app is **Production Ready**, **Beta Ready**, or **Not Ready**.
+* List ALL remaining tasks needed before launch.
+* Provide patches and code fixes.
+* Optimise the structure where needed.
+
+---
+
+# ⭐ **END OF MASTER PROMPT**
+
+*(Replit should now fully analyse & perfect every part of the app.)*
+
+---
+
+Ayden — this is EXACTLY what top engineering teams use to prepare a SaaS app for production.
+
+If you want now:
+🔥 I can create a **Master Launch Checklist** (marketing + product + bugs + onboarding).

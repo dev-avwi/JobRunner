@@ -1,0 +1,195 @@
+END-TO-END ROLE TEST: One Job, All Roles
+
+GOAL:
+Test every role’s workflow on the SAME job:
+- Owner + Manager dispatch/approvals
+- Worker “On My Way” live map + ETA + time tracking + photos + materials
+- Subcontractor acceptance + optional masked phone + travel tracking
+- Client tracking link (read-only) + OTP Client Portal (quotes/invoices/payments)
+
+SEED USERS + SETTINGS
+Company: "JobRunner Electrical"
+Company settings:
+- dispatch_phone = 07 4000 0000
+- owner_phone = 04xx xxx xxx
+- enable_live_tracking = true
+- tracking_timeout_minutes = 120
+- default_geofence_radius_m = 150
+- client_portal_requires_otp = true
+- show_worker_phone_to_client default = true
+- show_subcontractor_phone_to_client default = false
+
+Users:
+1) Owner: Hans (OWNER) phone 04xx
+2) Manager: Nicole (MANAGER) phone 04xx
+3) Worker: Ayden (WORKER) phone 04xx default_rate $85/hr
+4) Subcontractor: Tom Subby (SUBCONTRACTOR) phone 04xx default_rate $95/hr; default show phone = false
+Client:
+5) Sarah Jones phone 04xx email sarah@example.com
+
+ONE JOB SETUP
+Job: J-2001
+- Client: Sarah Jones
+- Address: 12 Coral St, Cairns QLD (lat/lng stored)
+- Scheduled: Today 2:00pm–4:00pm
+- Scope: "Replace ceiling fan + check switchboard"
+- Job status starts: CREATED
+
+Quote: Q-2001
+- Amount: $420
+- Attach quote PDF
+- Status: SENT
+
+PHASE 1 — MANAGER + OWNER DISPATCH (before job day)
+1) Manager (Nicole) creates job J-2001 and quote Q-2001.
+2) Manager assigns BOTH:
+   - Primary Worker assignment A1 = Ayden
+   - Subcontractor assignment A2 = Tom Subby
+   (Job supports multiple assignments.)
+3) Owner (Hans) checks Dispatch Board:
+   - Job appears in ASSIGNED column
+   - Sees assigned workers list: Ayden + Tom
+4) System sends client “Booking Confirmed” email:
+   - Includes job summary
+   - Includes “Open Client Portal” button (OTP required)
+   - (Optional) includes “Track Job” link only after On-My-Way happens
+
+PHASE 2 — CLIENT PORTAL OTP (before job starts)
+5) Client Sarah clicks “Open Client Portal” from booking email.
+6) OTP flow triggers:
+   - Sarah receives 6-digit OTP via SMS
+   - enters OTP -> session created
+7) Client Portal shows:
+   - Job J-2001 with status ASSIGNED
+   - Quote Q-2001 view/download
+   - No invoice yet
+   - Contact: dispatch phone visible
+
+PASS CRITERIA:
+- Client cannot see any other clients/jobs.
+- Quote is viewable and downloadable.
+
+PHASE 3 — WORKER TRAVEL TRACKING (Uber-style)
+8) Worker Ayden opens job J-2001 and taps “On My Way”.
+Backend MUST:
+- validate assignment_id A1 belongs to Ayden
+- create/refresh PortalToken T1 scoped to A1
+- compute ETA based on Ayden location -> job location
+- send client SMS:
+
+"JobRunner — JobRunner Electrical: Ayden is on the way. ETA 12 mins. Track live: {TrackingLink}. Need help? Call 07 4000 0000. Open Client Portal from the link to view invoices."
+
+9) Client Sarah clicks tracking link.
+Tracking Page (/p/{token}) shows:
+- Status: ON THE WAY
+- Map: Ayden live location + destination pin
+- ETA: e.g., 12 mins
+- Last updated: "30s ago"
+- Accuracy shown
+- Button: “Open Client Portal (OTP)”
+
+PASS CRITERIA:
+- Worker name shown = Ayden (from assignment snapshot).
+- Map updates every 30–60 seconds while EN_ROUTE.
+- Tracking stops automatically on ARRIVED or timeout.
+
+PHASE 4 — ARRIVAL + TIME TRACKING + GEOFENCE PROMPTS
+10) Ayden arrives and taps “Arrived”.
+- Tracking stops
+- Client optionally gets ARRIVED SMS
+- App prompts: “Start timer?”
+11) Ayden clocks in and starts job.
+12) Ayden uploads BEFORE photos (2 photos).
+13) Ayden adds materials:
+- "Ceiling fan" qty 1 cost 180 markup 20%
+- Receipt photo attached
+14) Ayden adds job notes:
+- “Old fan wiring brittle, replaced connector.”
+
+PASS CRITERIA:
+- BEFORE photos visible on tracking page and client portal.
+- Materials visible internally under job cost.
+- Offline mode: if you toggle airplane mode, actions queue and sync later.
+
+PHASE 5 — SUBCONTRACTOR ACCEPTANCE + MASKED PHONE
+15) Subcontractor Tom opens job J-2001.
+- Must ACCEPT assignment A2 before action
+16) Tom taps Accept -> assignment_status ACCEPTED
+17) Tom taps “On My Way” (separate portal token T2 scoped to A2).
+System sends client SMS (or optionally does NOT if rule says only primary sends; choose one behavior and enforce it):
+
+If allowed:
+"JobRunner — JobRunner Electrical: Tom is on the way (support crew). Track: {TrackingLink}. Dispatch: 07 4000 0000."
+
+Tracking Page for Tom shows:
+- Worker name: Tom
+- Worker phone: HIDDEN (because subcontractor default hide)
+- Dispatch phone visible
+- Map + ETA works during travel only
+
+PASS CRITERIA:
+- Subcontractor cannot trigger On My Way before Accept.
+- Worker phone hidden for subcontractor portal.
+- Portal token scoped per assignment so correct worker appears.
+
+PHASE 6 — COMPLETION + INVOICE GENERATION + APPROVALS
+18) Ayden clocks out and marks job complete.
+19) Tom clocks out and marks his work complete.
+20) Manager reviews timesheets:
+- shows Ayden hours + Tom hours
+- sees any GPS loss events and edits
+- approves timesheets
+21) Manager generates invoice I-2001:
+Invoice must automatically include labour lines grouped by assignment:
+- Labour: Ayden 2.0 hrs x $85/hr = $170
+- Labour: Tom 1.0 hrs x $95/hr = $95
+- Materials line(s) from job with markup applied
+- Total + GST (if enabled)
+- “Proof link” optional: time/location report
+
+PASS CRITERIA:
+- Invoice uses RATE PRIORITY:
+  assignment rate override > user default rate > company default rate
+- Invoice line items show worker-based breakdown (or “Crew Labour” with internal breakdown option).
+- Invoice PDF generated and stored.
+
+PHASE 7 — CLIENT PAYS VIA VERIFIED CLIENT PORTAL
+22) Client Sarah opens Client Portal (OTP session).
+23) Sees:
+- Job J-2001 completed
+- Invoice I-2001 unpaid with “Pay Now”
+- Before/after photos available
+24) Client clicks Pay Now:
+- Redirect to Stripe hosted payment link
+- Payment succeeds
+25) Webhook updates invoice status to PAID.
+26) Client Portal updates to PAID and shows receipt/download.
+
+PASS CRITERIA:
+- Payment only accessible in OTP Client Portal (NOT on tracking link).
+- Invoice status updates after webhook.
+
+EDGE CASES TO TEST (IMPORTANT)
+A) Reassignment mid-travel:
+- Manager reassigns primary from Ayden to Tom while Ayden is EN_ROUTE.
+Expected:
+- Ayden tracking stops, token revoked.
+- Tom gets new token and new SMS only if manager triggers.
+
+B) GPS loss:
+- Worker disables location or loses service.
+Expected:
+- Portal shows last known location + “Tracking paused”
+- Logs GPS_LOST event
+- Invoice summary shows GPS interruptions count
+
+C) Duplicate SMS prevention:
+- Worker taps On My Way twice within 10 minutes.
+Expected:
+- Do not resend SMS automatically.
+- Portal continues updating.
+
+DELIVERABLES
+- Implement all endpoints and UI needed to run this exact script.
+- Provide a single “Test Mode” page or seed script to create the above dataset quickly.
+- Provide a QA checklist output in-app showing which pass criteria succeeded/failed.

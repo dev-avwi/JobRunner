@@ -1,0 +1,224 @@
+Yep — you want the “Uber moment”: client gets an SMS → taps link → sees live map + ETA + updates. To make it amazing (and not buggy), you need a tight design with safety rules.
+
+Here’s the exact spec + checklist for Replit to build it properly.
+
+⸻
+
+1) The “Uber Link” Experience (Client Portal Requirements)
+
+When client clicks the link, they should see:
+
+✅ Header
+	•	Business logo + business name
+	•	Owner name + phone
+	•	Job reference + booked window
+
+✅ Live status card
+	•	Status: On the way / Arrived / Working / Completed
+	•	Worker name + optional photo
+	•	Worker phone (optional toggle)
+	•	“Last updated: 1 min ago”
+
+✅ Live map (Uber-style)
+	•	Worker location (live during travel)
+	•	Job destination pin
+	•	Route line (optional)
+	•	ETA displayed clearly:
+	•	“ETA: 12 mins”
+	•	“Arriving ~ 4:18pm”
+
+✅ Updates timeline
+	•	“On my way”
+	•	“Arrived”
+	•	“Started job”
+	•	“Before photos uploaded”
+	•	“Completed”
+	•	“Invoice ready”
+
+✅ Before/after photos + docs
+	•	Before photos appear as soon as uploaded
+	•	After photos once done
+	•	Quote/invoice/cert PDFs download
+
+⸻
+
+2) Make Live Tracking Reliable (How to do it “perfect”)
+
+The #1 rule:
+
+Only track live location during travel.
+Not all day. It keeps privacy clean and reduces bugs.
+
+Tracking window
+
+Tracking turns ON when worker presses:
+	•	“On My Way”
+
+Tracking turns OFF when:
+	•	Worker presses “Arrived”
+	•	OR worker enters geofence radius and confirms arrival
+	•	OR time limit reached (failsafe like 2 hours)
+
+✅ This keeps it “Uber-like” and safe.
+
+⸻
+
+3) How ETA Should Work (Simple but accurate)
+
+MVP ETA approach (fast + reliable)
+
+Use:
+	•	Job address → coordinates
+	•	Worker current coordinates
+	•	Directions API to calculate ETA (driving time)
+
+Store:
+	•	eta_minutes
+	•	eta_updated_at
+	•	distance_km
+
+Update schedule:
+	•	Every 30–60 seconds while traveling
+	•	Or when worker moves > ~150m
+
+✅ Avoid spamming updates every second. That causes lag and costs.
+
+⸻
+
+4) “Portal Link” Security (must-have)
+
+You need token-based links like:
+
+https://jobrunner.app/j/abc123xyz
+
+Rules:
+	•	Token is long + random
+	•	Link expires automatically after job completion (e.g. 7 days)
+	•	Owner can revoke instantly
+	•	Link is read-only (client can’t edit anything)
+	•	Optional PIN for sensitive jobs
+
+✅ This is what makes it professional and safe.
+
+⸻
+
+5) SMS + Email Templates That Feel Like Uber
+
+On My Way SMS (client)
+
+JobRunner — {BusinessName} update: {WorkerName} is on the way. ETA {ETA}. Track live progress here: {PortalLink}. Need help? Call {OwnerName} on {OwnerPhone}.
+
+Arrived SMS (client)
+
+JobRunner — {WorkerName} has arrived on site for {JobName}. Track updates/photos here: {PortalLink}.
+
+Completed SMS (client)
+
+JobRunner — Job complete ✅. View photos + invoice here: {PortalLink}. Thanks for choosing {BusinessName}.
+
+Email should mirror SMS but with more detail + a button.
+
+⸻
+
+6) What the Worker App Must Do (so portal works)
+
+When worker taps “On My Way”:
+	•	Set job status = ON_MY_WAY
+	•	Start location sharing (travel mode)
+	•	Start ETA calculation job
+	•	Send SMS/email to client with portal link
+
+While traveling:
+	•	Send location pings at a controlled rate
+	•	Update ETA
+	•	Log last updated timestamp
+
+When worker arrives:
+	•	Stop location sharing
+	•	Send arrived update
+	•	Prompt clock-in if not started
+
+⸻
+
+7) What Makes It Feel “Amazing” (UX polish)
+
+Client portal polish checklist
+	•	Map loads fast (no lag)
+	•	Big “ETA” text at top
+	•	Simple status pill (On the way)
+	•	Smooth live updates without refreshing
+	•	Skeleton loaders while map loads
+	•	“Last updated X mins ago”
+	•	Fallback message if tracking pauses:
+“Tracking paused — last location update 6 mins ago.”
+
+Avoid creepy vibes
+
+Only show travel tracking. Not all-day tracking.
+Clients don’t need to watch tradies inside houses.
+
+⸻
+
+8) “Perfect” Reliability Checklist for Replit
+
+Copy/paste this:
+
+JobRunner Live Tracking
+	•	Token-based portal link per job (read-only)
+	•	Portal shows:
+	•	business info
+	•	worker card
+	•	status
+	•	live map + destination pin
+	•	ETA + last updated time
+	•	photos + docs
+	•	Travel tracking starts only on “On My Way”
+	•	Travel tracking stops on Arrived or timeout
+	•	Location updates:
+	•	every 30–60s OR >150m movement
+	•	ETA updates:
+	•	every 60s
+	•	Use WebSockets / realtime updates OR polling fallback
+
+Failure Handling
+	•	If GPS lost:
+	•	portal shows “Tracking temporarily unavailable”
+	•	last known location remains visible
+	•	If worker phone offline:
+	•	portal continues showing last update
+	•	If link opened:
+	•	log “client opened link” event
+
+⸻
+
+9) The “Perfect App” Strategy (so you don’t overbuild)
+
+Build it in 3 phases so it stays stable:
+
+Phase 1 (MVP Uber feel)
+
+✅ On My Way → live map + ETA
+✅ Arrived → stop tracking
+✅ Photos + docs on portal
+
+Phase 2 (Pro feel)
+
+✅ Client updates timeline
+✅ Delay notifications
+✅ Two-way messaging (optional)
+
+Phase 3 (Elite feel)
+
+✅ Smart geofence arrival suggestions
+✅ Predict job duration
+✅ Auto invoice summary
+
+⸻
+
+If you want, I’ll do the next step properly:
+
+A) Write the exact screen-by-screen UI flow for Worker + Owner + Client portal
+B) Write the exact backend data/events schema needed for location + ETA + portal tokens
+C) Write the exact SMS/email trigger rules (when to send, when not to spam)
+
+Pick A, B, or C.

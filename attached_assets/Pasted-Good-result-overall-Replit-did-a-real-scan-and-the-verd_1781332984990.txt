@@ -1,0 +1,119 @@
+Good result overall. Replit did a real scan and the verdict is solid. Here's what you actually need to do:
+One thing to do now (5 minutes, Google's dashboard):
+Go to console.cloud.google.com → APIs & Services → Credentials → click your Maps API key → under "Application restrictions" set it to your app's bundle ID (com.linkup2care.jobrunner or whatever it is). This stops anyone else using your key and running up a Maps bill. That's the only real money risk left.
+Already fixed by Replit:
+
+Sentry scrubbing — done, no action needed.
+Ignore:
+
+The 75 dependency vulnerabilities, the auth token logging, the Google key in the app bundle — all non-issues.
+Low priority, not urgent:
+
+mobile/credentials.json with your iOS signing password. Worth moving to an environment variable eventually, but it can't cause a bill and isn't exposed publicly.
+
+One question back to Replit worth asking while you have it open:
+
+"Is the Google Maps API key the only key in the mobile app bundle that isn't rate-limited or restricted at the provider level? Any others I should lock down in their respective dashboards?"
+
+That'll catch anything similar before you launch Android properly.16:37Claude responded: Good — you're in the right place.I notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block content (which is in English), here is my summary:
+
+Analyzed API credentials and identified security restriction gapsI notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block content (which is in English), here is my summary:
+
+Analyzed API credentials and identified security restriction gapsGood — you're in the right place. You've got three keys. Here's what to check for each:
+The "Restrictions" column showing "33 APIs", "27 APIs" etc. = API restrictions (which Google APIs the key can call). That's good but not enough.
+What you also need is Application restrictions — which apps can use the key. That's the one that stops bill abuse.
+Action: Click each key and check:
+Places API (the one Replit flagged — created by you manually) — click it and look for "Application restrictions". It probably says "None". You want to set it to:
+
+iOS apps → your bundle ID
+Android apps → your package name + SHA-1
+
+Android key & Browser key (auto-created by Firebase) — Firebase usually locks these automatically. Click each to verify "Application restrictions" isn't set to "None".
+The Places API one is the risk. If it says "None" under Application restrictions, anyone who finds that key can call the Places API on your bill.
+Click "Places API" → screenshot what you see under "Set an application restriction" and paste it here, and I'll tell you exactly what to fill in.You said: APIs and services[APIs and services](https://console.cloud.google.com/apis?project=jobrunner-8fe9d)
+Edit API key
+Name
+Use a unique name to identify your API key
+APIs that can be accessed using this key
+New key creation: To use Agent Platform (Vertex) or Gemini APIs with an API key, you must bind it to a service account by selecting 'Authenticate API calls through a service account' before applying the API restriction. Note: An [organisation policy](https://console.cloud.google.com/iam-admin/orgpolicies/iam-managed.disableServiceAccountApiKeyCreation?project=jobrunner-8fe9d) governs creating API keys bound to a service account for projects with a Google Cloud organisation. [Learn more](https://docs.cloud.google.com/docs/authentication/api-keys?hl=en_GB#api-keys-bound-sa)
+Select API restrictions
+33 APIs
+This list includes only APIs enabled in this project. If you don't see the API that you need, visit the [API Library](https://console.cloud.google.com/apis/library?project=jobrunner-8fe9d) to enable it.
+Selected APIs:Address Validation APIAerial View APIAir Quality APIDirections APIDistance Matrix APIGeocoding APIGeolocation APIMap Management APIMap Tiles APIMaps 3D SDK for AndroidMaps 3D SDK for iOSMaps Elevation APIMaps Embed APIMaps Grounding Lite APIMaps JavaScript APIMaps Platform Datasets APIMaps SDK for AndroidMaps SDK for iOSMaps Static APINavigation SDKPlaces Aggregate APIPlaces APIPlaces API (New)Places UI KitPollen APIRoads APIRoute Optimization APIRoutes APISolar APIStreet View Publish APIStreet View Static APITime Zone APIWeather API
+Key restrictions
+Add restrictions to reduce security risk and prevent unauthorised use. [Learn more](https://cloud.google.com/docs/authentication/api-keys?hl=en_GB#securing)
+Action recommended: This key can currently be used with any application. Restrict where it can be used to improve security. [Learn more](https://cloud.google.com/docs/authentication/api-keys?hl=en_GB#securing)
+Application restrictions
+None
+Websites
+IP addresses
+Android apps
+iOS apps
+Note: It may take up to five minutes for settings to take effect.
+Additional information
+Creation date
+5 June 2026, 22:24:48 GMT+10Show more16:38Claude responded: That "Action recommended" banner confirms it — this key is wide open.Identified unrestricted API key risks and debated optimal restriction strategyIdentified unrestricted API key risks and debated optimal restriction strategyThat "Action recommended" banner confirms it — this key is wide open. Anyone who finds it can call any of those 33 APIs on your bill.
+You need to pick ONE restriction type. The right one depends on where this key is actually used in JobRunner:
+Option A — Used in your backend (Node.js on Replit):
+
+→ Pick IP addresses, add Replit's outbound IP
+Option B — Used inside the mobile app bundle:
+
+→ You actually need to split it into two keys — one restricted to Android (package name + SHA-1), one to iOS (bundle ID) — because Google only lets you pick one app type per key
+Quick question before you change anything:
+Do you know where this Places API key is actually used? Check Replit — search the codebase for this key or for GOOGLE_MAPS_API_KEY / PLACES_API_KEY (or whatever it's named). Is it in:
+
+A .env file on the server (backend calls)?
+The mobile app's config/env?
+Both?
+
+Paste what you find and I'll give you the exact restriction to set. Picking the wrong one will break the feature, so worth taking 30 seconds to confirm first.16:39Claude responded: That's Replit Secrets — so this key is server-side only (backend calls from Node.Identified API key location and determined appropriate security restriction methodIdentified API key location and determined appropriate security restriction methodThat's Replit Secrets — so this key is server-side only (backend calls from Node.js). That makes the restriction easy.
+Set it to: IP addresses → Replit's outbound IP
+Here's how to find Replit's IP:
+
+In Replit, open the Shell and run:
+
+curl ifconfig.me
+
+Copy that IP address
+Back in Google Cloud on that Places API key → select IP addresses → paste it in → Save
+
+That locks the key to only work when called from your Replit server. Nobody else can use it.
+
+One follow-up: also search the mobile codebase for GOOGLE_MAPS_API_KEY — just to confirm it's not also embedded in the app. If the mobile app uses Google Maps/Places, it'd need its own separate key restricted to the app bundle ID. The Firebase Android/Browser keys you saw are likely handling the mobile side already, but worth confirming.16:39Claude responded: VITEGOOGLEMAPSAPIKEY is the problem one.Identified API key exposure vulnerability in frontend bundleIdentified API key exposure vulnerability in frontend bundleVITE_GOOGLE_MAPS_API_KEY is the problem one.
+VITE_ prefix means it gets bundled into the frontend and is fully visible in the browser — anyone can open DevTools and read it. That's the key that needs the website restriction.
+You likely have two different keys here (or possibly the same key in both):
+
+GOOGLE_MAPS_API_KEY → server-side → restrict by IP address
+VITE_GOOGLE_MAPS_API_KEY → browser/frontend → restrict by Website (your domain)
+
+For the VITE one, go back to Google Cloud and:
+
+Check if it's the same key as the Places API one or a different key
+If it's the same key — you have a problem, one key can't be restricted to both IP and website. You'd need to split into two keys.
+If it's a different key → set Application restriction to Websites → add jobrunner.com.au/* and *.jobrunner.com.au/*
+
+Quick way to check: click the eye icon on both and see if the actual key values match.
+What does the VITE one map to in Google Cloud — is it the same Places API key or one of the Firebase ones?You said: the vite one is different to google maps api key onethe vite one is different to google maps api key one16:40Claude responded: Perfect, that's the clean setup.Differentiated API key restrictions by deployment environmentDifferentiated API key restrictions by deployment environmentPerfect, that's the clean setup. Here's exactly what to do for each:
+GOOGLE_MAPS_API_KEY (server-side)
+
+→ In Google Cloud, find whichever key this value matches → Application restrictions → IP addresses → add Replit's IP (run curl ifconfig.me in Replit shell)
+VITE_GOOGLE_MAPS_API_KEY (frontend/browser)
+
+→ Find the matching key in Google Cloud (probably the Browser key Firebase created) → Application restrictions → Websites → add:
+jobrunner.com.au/*
+*.jobrunner.com.au/*
+Once both are done, your Google exposure is fully closed. That's the last real bill risk Replit flagged.
+Do the IP one first since it's simpler — run curl ifconfig.me in Replit shell now and paste the IP here and I'll confirm the exact format to enter in Google Cloud.You said: ~/workspace$ curl ifconfig.~/workspace$ curl ifconfig.me
+35.237.249.116~/workspace$16:41Claude responded: 35.Identified network address from command outputIdentified network address from command output35.237.249.116
+Go to Google Cloud → that Places API key → Application restrictions → IP addresses → add:
+35.237.249.116
+Leave the subnet mask as /32 (single IP). Save.
+One caveat: Replit's outbound IP can occasionally change if they migrate your repl. If Maps ever breaks mysteriously in the future, this is the first thing to check. Not common but worth knowing.
+Then do the VITE key with the website restriction and you're done. Both keys locked, zero bill risk remaining.16:41Claude responded: You're on the right page.The user prompt is empty, so I cannot determine the primary language. However, based on the thinking block alone, here is a summary:
+
+Navigated interface to configure security settingsThe user prompt is empty, so I cannot determine the primary language. However, based on the thinking block alone, here is a summary:
+
+Navigated interface to configure security settingsYou're on the right page. Scroll down past the API list — there's a "Key restrictions" / "Application restrictions" section below. Select IP addresses, add 35.237.249.116, then hit Save at the bottom.16:42Claude responded: Select IP addresses → a text field will appear → type 35.Select IP addresses → a text field will appear → type 35.237.249.116 → hit Save.You said: i did that but what was the point of thati did that but what was the point of that16:42Claude responded: Places API now shows "IP addresses, 33 APIs" — that's done.Deciphered the security rationale behind API key restrictionsDeciphered the security rationale behind API key restrictionsPlaces API now shows "IP addresses, 33 APIs" — that's done.
+The point: before, anyone who found that key could call any of those 33 Google APIs (Maps, Places, Routes, etc.) and the bill goes to your Google Cloud account. Now it only works when the request comes from Replit's IP (35.237.249.116). Someone steals the key → useless to them.
+Now do the VITE key. Click Browser key (auto created by Firebase) — verify that's the one matching VITE_GOOGLE_MAPS_API_KEY by checking the actual key value, then restrict it to Websites → jobrunner.com.au/*

@@ -1,0 +1,285 @@
+Got you. Two things to handle here:
+
+Yes, tradies do use apps like Tradify daily — but they only switch if you nail reliability + accounting sync + simple workflow.
+
+Here’s the exact Xero integration flow + a Replit prompt to implement + QA-check the full tradie journey (including owner/worker roles, map, chat, dispatch).
+
+Do tradies actually use Tradify daily?
+
+Yeah — the reason isn’t “the UI is pretty”. It’s because it becomes their daily operating system for:
+
+jobs + scheduling
+
+quotes → invoices → payments
+
+client records + job history
+
+bookkeeping handoff (Xero/MYOB/QBO)
+
+team coordination
+
+If TradieTrack does those without bugs, with clean PDFs/emails, and accounting sync, they’ll consider switching.
+
+The biggest switch-killers:
+
+syncing mistakes (double invoices, wrong GST, wrong status)
+
+anything that feels “half built”
+
+poor offline handling on site
+
+hard onboarding / too many steps
+
+Xero integration flow (the clean “TradieTrack → Xero” design)
+Goal
+
+Let tradies keep using TradieTrack daily, but Xero becomes the accounting backend.
+
+What you should sync (minimum)
+
+Entities
+
+Contacts: Client ↔ Xero Contact
+
+Items/Services (optional): TradieTrack service items ↔ Xero items
+
+Invoices: TradieTrack Invoice ↔ Xero Invoice
+
+Payments: TradieTrack paid status ↔ Xero Payments
+
+Tax/GST codes: map correctly (critical)
+
+Sync direction (best for MVP)
+
+One-way as default: TradieTrack → Xero
+
+Create/update invoices in Xero when user hits Send Invoice (or when “Approved”)
+
+Create contacts in Xero when first invoicing a client
+
+When Stripe marks invoice paid → push payment record into Xero (optional in MVP; nice to have)
+
+Then later (Phase 2):
+Two-way sync (Xero updates reflect back in TradieTrack)
+
+If invoice marked paid in Xero, update TradieTrack
+
+If contact updated in Xero, update TradieTrack
+
+Rules to avoid disasters
+
+Store xeroTenantId, xeroContactId, xeroInvoiceId on your records.
+
+Use an idempotency key for invoice creation so you never duplicate.
+
+Use a sync status on invoices:
+
+not_synced → syncing → synced → sync_failed
+
+Never “edit sent invoices” without creating a new revision / credit note path (or just block editing after “sent” in beta).
+
+OAuth connection flow
+
+Settings → Integrations → Xero
+
+Owner clicks “Connect Xero”
+
+OAuth consent (Xero)
+
+User selects organization/tenant (if multiple)
+
+Save tokens securely server-side (encrypted at rest)
+
+Run “Test connection” + show green check
+
+Optional: “Sync now” button
+
+Invoice creation mapping
+
+When TradieTrack invoice exists:
+
+Xero Invoice Type: ACCREC
+
+Contact: client
+
+Line items: description, qty, unit amount
+
+Tax: correct code (GST 10% for AU)
+
+Due date: from TradieTrack
+
+Status: Draft initially; set to “AUTHORISED” only when you’re confident (or keep Draft for MVP)
+
+Payment mapping
+
+When invoice is paid via Stripe:
+
+Create Xero Payment attached to invoice
+
+Use a clearing account (or let them choose in settings)
+
+Record reference: Stripe payment intent ID
+
+MYOB + QuickBooks plan
+
+Same architecture, different connectors:
+
+MYOB: similar OAuth + invoice/contact APIs
+
+QuickBooks Online: OAuth + Customer/Invoice/Payment objects
+
+Key point: build a single internal interface:
+AccountingProvider = XERO | MYOB | QBO
+and a common mapping layer so you don’t rewrite your whole app for each.
+
+IMPORTANT: Your current build error (why EAS is failing)
+
+Your EAS build is failing because react-native-reanimated wants react-native-worklets.
+
+Fix it in /mobile:
+
+npx expo install react-native-worklets
+npx expo install --check
+
+
+Then update the mismatched packages expo doctor flagged:
+
+npx expo install expo-audio@~1.1.0
+npx expo install typescript@~5.9.2 @types/react@~19.1.10
+
+
+Re-run:
+
+npx expo-doctor
+eas build --profile development --platform ios
+
+
+Also: Expo Go limitations you saw are real (notifications + background location). Use Development Build (which you already started doing) for proper testing.
+
+Replit Master Prompt: Xero + “is everything real or UI-only?”
+
+Paste this into Replit as ONE prompt:
+
+Act as a senior QA engineer + backend integrator for TradieTrack.
+
+Goal: Make TradieTrack a technically-solid beta where nothing is “UI only”.
+You must verify every visible feature has real backend implementation and real data integrity.
+
+PART A — TradieTrack Core Workflow QA (end-to-end)
+Test and verify these flows are FULLY wired:
+1) Auth + onboarding (owner vs worker vs admin role)
+- Create an OWNER account and complete onboarding: business name, ABN, address, timezone, logo, GST settings, invoice footer.
+- Create a TEAM and invite 2 workers.
+- Verify roles change UI and permissions:
+  OWNER: sees billing, integrations, team management, map, dispatch.
+  WORKER: sees assigned jobs, time tracking, job chat, location share toggle (if enabled).
+  ADMIN/MANAGER (if exists): sees scheduling + dispatch but not billing.
+
+2) Jobs → Quote → Send → Accept → Convert → Invoice → Pay → Receipt
+- Create job with real address + optional lat/lng.
+- Create quote from job, check live preview updates, generate PDF.
+- Send quote email (SendGrid): verify From, Reply-To, subject, attachment/link, and audit log.
+- Client acceptance updates quote status + stores timestamp + optionally updates job status.
+- Convert to invoice, send invoice email, verify PDF formatting and numbering.
+- Stripe payment marks invoice Paid and triggers receipt email + updates timeline.
+
+3) Offline / error handling
+- For key actions: save job, save quote, send invoice, start timer:
+  ensure loading states, retry, no crashes, and clear error messages.
+- Ensure offline storage does not overwrite newer cloud data incorrectly.
+
+PART B — Map Page + Location System (NOT UI text)
+Implement and/or verify:
+- Map page (OWNER/MANAGER view): Google Maps style showing:
+  - job markers across region
+  - marker color/status: Scheduled/In Progress/Completed/Overdue
+  - quick details card on tap
+- Jobs store:
+  - formatted address
+  - lat/lng if available
+  - status
+  - assigned worker
+- Team locations:
+  - workers can optionally share location (toggle)
+  - backend endpoint stores last known worker location with timestamp
+  - map shows worker pins separately from jobs
+- “Open in Maps” deep link uses stored lat/lng or encoded address.
+
+If any part is incomplete, hide it behind “Beta / Coming soon” and ensure the UI doesn’t expose dead buttons.
+
+PART C — Chat System
+Implement and/or verify:
+- Team Group Chat (all members)
+- Job Chat (per job)
+- Direct Chat (owner/manager ↔ worker)
+Requirements:
+- messages persist in DB
+- messages are scoped by permissions (workers cannot see other teams)
+- notifications: at least local in-app badge counts, and push if dev build supports it
+- attachments optional (v2) but message sending must be real (no mock UI)
+
+PART D — Dispatch Board
+Implement and/or verify:
+- Dispatch board shows jobs by date/status/assignee
+- Owner can assign/reassign jobs to workers
+- Worker sees updates immediately (re-fetch or realtime)
+- Role permissions enforced
+
+PART E — Xero Integration (MVP)
+Implement a real Xero integration flow:
+1) Settings → Integrations → Connect Xero (OAuth)
+- Store tokens securely server-side
+- Select tenant/organisation
+- Show “Connected” and “Test Connection” result
+
+2) Data mapping rules:
+- Client → Xero Contact (store xeroContactId)
+- Invoice → Xero Invoice (store xeroInvoiceId)
+- GST/tax mapping correct for AU
+- Prevent duplicates using idempotency keys and saved Xero IDs
+
+3) Sync triggers:
+- When user sends an invoice, create/update invoice in Xero
+- Sync status visible: not_synced / syncing / synced / failed with error details
+
+PART F — “UI-only” detector
+Scan the app for any navigation items, buttons, or pages that:
+- don’t hit working API endpoints
+- contain placeholder data
+- have TODO or fake flows
+Either implement fully OR hide for beta.
+
+OUTPUT REQUIRED
+At the end, produce:
+- A list of every endpoint used by mobile/web and whether it is working
+- A checklist of PASS/FAIL for each major workflow
+- The MUST-FIX items before inviting real Cairns tradies
+- The features safe to label “coming soon” without damaging trust
+
+Real-world test script you can do on your phone (quick but legit)
+
+Do this with two accounts on two devices (or one device + browser incognito):
+
+Owner in Cairns City, Worker in Smithfield (or just pretend)
+
+Owner creates job at a real address (e.g., “123 Sheridan St”)
+
+Worker opens app and sees assigned job
+
+Worker starts timer + adds a note + uploads a photo
+
+Owner sees it on job timeline + map pin updates status
+
+Quote + email test
+
+Owner generates quote → Send to your own Gmail alias as “client”
+
+Open on phone Gmail → check PDF and acceptance link → accept
+
+Owner sees acceptance + converts to invoice → send invoice email
+
+Payment test
+
+Pay invoice in Stripe test mode → confirm “Paid” status updates + receipt email sends
+
+If those 3 pass cleanly, you’re genuinely close to beta-ready.

@@ -1,0 +1,61 @@
+Comprehensive Analysis — JobRunner Mobile + Web
+CRITICAL ISSUES (Fix Now)
+1. Broken notification deep links in mobile app
+When a tradie taps a push notification, these routes go nowhere:
+
+SMS notification routes to /more/sms/${id} but the actual file is sms-conversation.tsx (should be /more/sms-conversation?id=...)
+Team notification routes to /more/team but the file is team-management.tsx
+Timesheet notification routes to /more/timesheets but no such file exists
+2. Client data not sanitized on detail endpoint
+The GET /api/clients/:id endpoint returns full client PII (phone, email, address) to any authenticated user, bypassing the role-based sanitizeClientData filter that's applied on the list endpoint. Workers who shouldn't see sensitive info can access it by requesting any client ID.
+
+3. Site photos endpoint leaks data
+GET /api/jobs/site-photos returns photos from all jobs in the business to any authenticated user — workers can see photos from jobs they aren't assigned to.
+
+HIGH PRIORITY (Should Fix Soon)
+4. Dual permission systems cause stale data
+The mobile app has two separate systems managing roles — useAuthStore and useUserRole with its own cache. If permissions change (e.g., a manager revokes a worker's access), one system might reflect the change while the other still holds stale data until restart.
+
+5. Offline sync can lose edits
+If a user makes two rapid offline edits to the same record, the second overwrites the first in the sync queue. The first change can be lost because only the latest "data" blob is kept.
+
+6. Offline ID reconciliation risk
+If the app crashes after a record is created on the server but before the local ID is updated, the next sync will try to create it again — potentially causing duplicate records if the server doesn't handle idempotency.
+
+7. Rate limiting is in-memory only
+The chat and portal rate limiters use in-memory Maps, which reset on every server restart and don't work if you ever scale to multiple instances.
+
+MEDIUM PRIORITY (Worth Addressing)
+8. "Coming soon" dead-ends visible in UI
+Some server features (SMS automations, certain online payment flows) return "coming soon" messages, but the buttons to trigger them are still visible in the frontend — leading to dead-end UX.
+
+9. Missing permission middleware on some endpoints
+Several API endpoints like GET /api/jobs/today and GET /api/jobs/my-jobs use requireAuth but skip the standardized permission middleware, relying on manual filtering instead. This is inconsistent and could lead to gaps.
+
+10. Optimistic UI updates don't always roll back
+Some Zustand store actions (like updateClient, updateQuote) optimistically update state but don't properly revert if both the API call and offline queue fail.
+
+11. Tab file naming inconsistency
+The "More" tab uses the file profile.tsx which is confusing. There's also a collect screen defined in the tab layout but no corresponding file.
+
+LOW PRIORITY (Nice to Have)
+12. Complex conflict merging is stubbed
+The offline conflict resolution supports "merged" mode but the actual field-level merge logic has a placeholder comment — it's not fully implemented for all entity types.
+
+13. Background sync failures are silent
+If background sync registration fails on the device, the user gets no notification that their data won't auto-sync.
+
+14. Web app frontend TODOs in server
+Microsoft Graph email sending and certain SMS automation integrations have TODO comments in the server code.
+
+15. Bulk action APIs missing
+No bulk delete/update endpoints for clients, quotes — the frontend has to make individual API calls in a loop.
+
+What's Working Well
+Offline architecture is solid — SQLite caching, delta sync, background fetch, attachment caching
+Push notifications are well-configured with platform-specific channels and deep link routing (aside from the broken routes above)
+Dark mode implementation is thorough on both web and mobile
+EAS build config is properly set up for development, preview, and production
+Deep linking covers the key flows (email verify, invite, password reset, Xero OAuth)
+The web app has no broken imports and consistent component patterns
+Which of these would you like me to tackle first? I'd recommend starting with the broken notification routes (#1) since those directly affect the tradie experience, followed by the security fixes (#2, #3).

@@ -1,0 +1,111 @@
+# The 2026 App Store Submission Guide for JobRunner
+
+**Date:** March 21, 2026
+**Author:** Manus AI
+
+## 1. Executive Summary
+
+This guide provides the exact process, requirements, and common pitfalls for submitting the JobRunner React Native Expo app to the Apple App Store and Google Play Store in 2026. Navigating this process correctly is critical to avoid launch delays.
+
+**The key takeaway is that both platforms now heavily scrutinize apps that use sensitive permissions, especially background location.** For a field service app like JobRunner, which relies on location for job tracking and team management, getting the permission requests and privacy declarations right is the single most important part of the submission process.
+
+| Platform | Review Timeline | Key Blocker | Recommendation |
+|---|---|---|---|
+| **Apple App Store** | 24-48 hours (initial), can be longer | **Privacy Manifest & Location Justification** | Submit for TestFlight review **2-3 weeks before launch** to de-risk this. |
+| **Google Play Store** | 3-7 days (initial), can be longer | **Background Location Declaration** | Submit to the Internal Testing track **2-3 weeks before launch** to get this approved early. |
+
+---
+
+## 2. The Pre-Submission Gauntlet: Your Checklist
+
+Complete every item on this list **before** your first submission to either store.
+
+- [ ] **1. Finalize `app.json`:** Ensure `bundleIdentifier` (iOS) and `package` (Android) are correct and unique. Set version and build numbers.
+- [ ] **2. Create App Store Connect & Google Play Developer Accounts:** These can take a few days to get approved. Do this now.
+- [ ] **3. Implement In-App Account Deletion:** Apple Guideline 5.1.1(v) now mandates that any app allowing account creation must also offer account deletion *within the app*. This is a common rejection reason. [1]
+- [ ] **4. Write Crystal-Clear Permission Strings:** For every permission (Location, Camera, Notifications), the pop-up message must explain *exactly* why you need it in the context of a field service app. Vague requests will be rejected.
+- [ ] **5. Configure iOS Privacy Manifest:** This is a new, mandatory requirement. You must declare the types of data your app collects and why you use certain sensitive APIs. [2]
+- [ ] **6. Prepare a Demo Account:** Reviewers need a fully-featured demo account to test all functionality. Provide login credentials in the submission notes.
+- [ ] **7. Record a Demo Video (for Google):** For the background location permission, you must submit a short video showing the feature in action and why it provides value to the user.
+- [ ] **8. Build with EAS Build:** Use Expo Application Services (EAS) to create your final `.ipa` (iOS) and `.aab` (Android) files. This handles all signing and provisioning profiles automatically. [3]
+
+---
+
+## 3. Apple App Store: The Walled Garden
+
+Apple's review process is notoriously strict, but it is predictable if you follow the rules.
+
+### Permissions That Trigger Scrutiny
+
+For JobRunner, these three will be examined closely:
+
+1.  **Location (`NSLocationWhenInUseUsageDescription`, `NSLocationAlwaysAndWhenInUseUsageDescription`):** This is the most scrutinized permission. You must justify *why* you need background location. The best justification for a field service app is for features like real-time job tracking for dispatchers or mileage tracking for workers. The description in your `app.json` must be user-facing and clear. Example:
+    > "JobRunner uses your location to show your position on the map for job dispatch and to track travel distance for timesheets. Your location is only shared with your team."
+
+2.  **Camera (`NSCameraUsageDescription`):** For attaching photos to jobs and quotes. This is usually approved easily if the reason is clear. Example:
+    > "JobRunner needs access to your camera to allow you to take and upload photos of your work to jobs, quotes, and invoices."
+
+3.  **Push Notifications:** Required for job alerts and chat messages. This is standard and rarely an issue.
+
+### The iOS 17+ Privacy Manifest (Mandatory)
+
+As of May 2024, all new apps and updates must include a `PrivacyInfo.xcprivacy` file. With Expo, you configure this in your `app.json`. [2] This file declares:
+
+*   **NSPrivacyTracking:** Set to `false` as JobRunner does not track users across other apps.
+*   **NSPrivacyCollectedDataTypes:** A list of all data you collect (e.g., Name, Email, Location, Photos).
+*   **NSPrivacyAccessedAPITypes:** You must declare *why* you use certain APIs. For example, `UserDefaults` is a common one that requires a reason code (e.g., `CA92.1` for accessing user defaults to read and write app-specific settings).
+
+**How to handle this:** Expo SDK packages that use these APIs now include their own privacy manifests. EAS Build will automatically aggregate them, but you are still responsible for declaring the reasons for any third-party libraries you use. The best way to test this is to submit a build to TestFlight; Apple will email you within minutes if any reasons are missing.
+
+### Top Rejection Reasons for Field Service Apps
+
+1.  **Guideline 5.1.1 - Vague Location Permission Request:** The #1 reason for rejection. The purpose string must be specific and user-focused.
+2.  **Guideline 2.1 - Crashes and Bugs:** The app must not crash. Test thoroughly on multiple physical devices.
+3.  **Guideline 4.0 - Design:** The app must look and feel like a native app, not a web page in a container. With React Native and Expo, this is rarely an issue if you use native components.
+4.  **Guideline 3.1.1 - In-App Purchase:** If you sell digital goods or subscriptions, you *must* use Apple's IAP system. JobRunner's SaaS subscription model falls under this. You cannot link out to your website for payment.
+5.  **Guideline 5.1.1(v) - No Account Deletion:** A common rejection since 2022. You must provide a button or link within the app to initiate account deletion.
+
+---
+
+## 4. Google Play Store: The Wild West with Rules
+
+Google's review is more automated but can be just as strict, especially regarding permissions.
+
+### The Background Location Declaration Form
+
+This is the biggest hurdle on Google Play. To use background location (`ACCESS_BACKGROUND_LOCATION`), you must submit a **Permissions Declaration Form** in the Play Console. [4]
+
+In this form, you must:
+1.  **Justify the need:** Explain why the app needs background location for its core functionality.
+2.  **Provide a demo video:** A short (30-second) video showing the feature in action. For JobRunner, this would be a screen recording of the map view showing a worker's live location updating while the app is in the background.
+
+**Your app will be rejected if you request background location without an approved declaration.**
+
+### Top Rejection Reasons for Field Service Apps
+
+1.  **Violation of Permissions Policy:** Requesting background location without a valid, approved reason.
+2.  **Violation of User Data Policy:** Collecting personal or sensitive data without a clear privacy policy and in-app disclosure.
+3.  **App is Not Testable:** Forgetting to provide demo account credentials, leading to an automatic rejection.
+4.  **Broken Functionality:** Key features not working as described in the store listing.
+5.  **Misleading Claims:** The app description promises features that don't exist or don't work.
+
+---
+
+## 5. Expo & EAS: The Final Step
+
+Expo Application Services (EAS) simplifies the build and submission process significantly.
+
+*   **`eas.json`:** This file configures your build profiles. You'll have a `production` profile for store builds that includes your signing credentials.
+*   **EAS Build (`eas build`):** This command takes your React Native code, builds it in the cloud, and produces a signed `.ipa` or `.aab` file ready for the stores.
+*   **EAS Submit (`eas submit`):** This command takes the built file and automatically uploads it to App Store Connect (where it appears in TestFlight) or the Google Play Console. [3]
+
+**Common Pitfall:** For Google Play, you must manually upload your first build through the Play Console website. After that, you can use `eas submit` for all subsequent updates.
+
+---
+
+## 6. References
+
+[1] Apple Inc. (2026). *App Store Review Guidelines*. [https://developer.apple.com/app-store/review/guidelines/](https://developer.apple.com/app-store/review/guidelines/)
+[2] Expo. (2026). *Privacy manifests*. [https://docs.expo.dev/guides/apple-privacy/](https://docs.expo.dev/guides/apple-privacy/)
+[3] Expo. (2026). *EAS Submit*. [https://docs.expo.dev/submit/introduction/](https://docs.expo.dev/submit/introduction/)
+[4] Google. (2026). *Permissions and APIs that Access Sensitive Information*. [https://support.google.com/googleplay/android-developer/answer/9888170](https://support.google.com/googleplay/android-developer/answer/9888170)

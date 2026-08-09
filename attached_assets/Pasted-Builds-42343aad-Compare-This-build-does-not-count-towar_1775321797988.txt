@@ -1,0 +1,235 @@
+Builds
+
+42343aad
+
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+cdd8f7a · Update build configuration to resolve common build errors Remove static frameworks configuration and use default build image for iOS. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: a36aa384-7671-4175-b265-540e0e54f074 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/52w9vwB Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (36)
+
+fcc719b
+
+cdd8f7a
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 5, 2026 2:52 AM
+184ms
+
+49s
+
+1m 17s
+
+2m 6s
+
+30 days
+
+Logs
+
+Waiting to start
+
+1s
+
+
+Spin up build environment
+
+47s
+
+
+Install custom tools
+
+43s
+
+
+Prepare project
+
+7s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+8s
+
+
+Read app config
+
+323ms
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Running "expo doctor"
+Running 17 checks on your project...
+15/17 checks passed. 2 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+✖ Validate packages against React Native Directory package metadata
+The following issues were found when validating your dependencies against React Native Directory:
+  Untested on New Architecture: @stripe/stripe-terminal-react-native
+Advice:
+Use libraries that are actively maintained and support the New Architecture. Find alternative libraries with https://reactnative.directory.
+Add packages to expo.doctor.reactNativeDirectoryCheck.exclude in package.json to selectively skip validations, if the warning is not relevant.
+✖ Check that packages match versions required by installed Expo SDK
+❗ Major version mismatches
+package               expected  found    
+@sentry/react-native  ~7.2.0    6.14.0   
+🔧 Patch version mismatches
+package               expected  found    
+expo                  ~54.0.33  54.0.32  
+expo-router           ~6.0.23   6.0.22   
+Changelogs:
+- expo-router → https://github.com/expo/expo/blob/sdk-54/packages/expo-router/CHANGELOG.md
+3 packages out of date.
+Advice:
+Use 'npx expo install --check' to review and upgrade your dependencies.
+To ignore specific packages, add them to "expo.install.exclude" in package.json. Learn more: https://expo.fyi/dependency-validation
+2 checks failed, indicating possible issues with the project.
+Command "expo doctor" failed.
+npx -y expo-doctor exited with non-zero code: 1
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+1s
+
+
+Using Expo modules
+[Expo] Enabling modular headers for pod ExpoModulesCore
+[Expo] Enabling modular headers for pod React-RCTAppDelegate
+[Expo] Enabling modular headers for pod React-RCTFabric
+[Expo] Enabling modular headers for pod ReactAppDependencyProvider
+[Expo] Enabling modular headers for pod React-Core
+[Expo] Enabling modular headers for pod ReactCodegen
+[Expo] Enabling modular headers for pod RCTRequired
+[Expo] Enabling modular headers for pod RCTTypeSafety
+[Expo] Enabling modular headers for pod ReactCommon
+[Expo] Enabling modular headers for pod React-NativeModulesApple
+[Expo] Enabling modular headers for pod Yoga
+[Expo] Enabling modular headers for pod React-Fabric
+[Expo] Enabling modular headers for pod React-graphics
+[Expo] Enabling modular headers for pod React-utils
+[Expo] Enabling modular headers for pod React-featureflags
+[Expo] Enabling modular headers for pod React-debug
+[Expo] Enabling modular headers for pod React-ImageManager
+[Expo] Enabling modular headers for pod React-rendererdebug
+[Expo] Enabling modular headers for pod React-jsi
+[Expo] Enabling modular headers for pod React-renderercss
+[Expo] Enabling modular headers for pod hermes-engine
+[Expo] Enabling modular headers for pod glog
+[Expo] Enabling modular headers for pod boost
+[Expo] Enabling modular headers for pod DoubleConversion
+[Expo] Enabling modular headers for pod fast_float
+[Expo] Enabling modular headers for pod fmt
+[Expo] Enabling modular headers for pod RCT-Folly
+[Expo] Enabling modular headers for pod SocketRocket
+[Expo] Enabling modular headers for pod ZXingObjC
+[Expo] Enabling modular headers for pod expo-dev-menu-interface
+[Expo] Enabling modular headers for pod EXManifests
+[Expo] Enabling modular headers for pod EXUpdatesInterface
+[Expo] Enabling modular headers for pod expo-dev-menu
+[Expo] Enabling modular headers for pod React-jsinspector
+[Expo] Enabling modular headers for pod expo-dev-launcher
+[Expo] Enabling modular headers for pod EASClient
+[Expo] Enabling modular headers for pod RNScreens
+[Expo] Enabling modular headers for pod EXStructuredHeaders
+[Expo] Enabling modular headers for pod ReachabilitySwift
+Adding extra pod - SocketRocket (*)
+Found 14 modules for target `JobRunner`
+link_native_modules! {:ios_packages=>[{:configurations=>[], :name=>"@react-native-async-storage/async-storage", :root=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-async-storage/async-storage", :path=>"../node_modules/@react-native-async-storage/async-storage", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-async-storage/async-storage/RNCAsyncStorage.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/datetimepicker", :root=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-community/datetimepicker", :path=>"../node_modules/@react-native-community/datetimepicker", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-community/datetimepicker/RNDateTimePicker.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@react-native-community/netinfo", :root=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-community/netinfo", :path=>"../node_modules/@react-native-community/netinfo", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/@react-native-community/netinfo/react-native-netinfo.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@stripe/stripe-terminal-react-native", :root=>"/Users/expo/workingdir/build/mobile/node_modules/@stripe/stripe-terminal-react-native", :path=>"../node_modules/@stripe/stripe-terminal-react-native", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/@stripe/stripe-terminal-react-native/stripe-terminal-react-native.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"@sentry/react-native", :root=>"/Users/expo/workingdir/build/mobile/node_modules/@sentry/react-native", :path=>"../node_modules/@sentry/react-native", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/@sentry/react-native/RNSentry.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"expo", :root=>"/Users/expo/workingdir/build/mobile/node_modules/expo", :path=>"../node_modules/expo", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/expo/Expo.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-gesture-handler", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-gesture-handler", :path=>"../node_modules/react-native-gesture-handler", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-gesture-handler/RNGestureHandler.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-maps", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-maps", :path=>"../node_modules/react-native-maps", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-maps/react-native-maps.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-reanimated", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-reanimated", :path=>"../node_modules/react-native-reanimated", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-reanimated/RNReanimated.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-safe-area-context", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-safe-area-context", :path=>"../node_modules/react-native-safe-area-context", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-safe-area-context/react-native-safe-area-context.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-screens", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-screens", :path=>"../node_modules/react-native-screens", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-screens/RNScreens.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-svg", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-svg", :path=>"../node_modules/react-native-svg", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-svg/RNSVG.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-webview", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-webview", :path=>"../node_modules/react-native-webview", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-webview/react-native-webview.podspec", :script_phases=>[]}, {:configurations=>[], :name=>"react-native-worklets", :root=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-worklets", :path=>"../node_modules/react-native-worklets", :podspec_path=>"/Users/expo/workingdir/build/mobile/node_modules/react-native-worklets/RNWorklets.podspec", :script_phases=>[]}], :ios_project_root_path=>"/Users/expo/workingdir/build/mobile/ios", :react_native_path=>"../node_modules/react-native"}
+Auto-linking React Native modules for target `JobRunner`: RNCAsyncStorage, RNDateTimePicker, RNGestureHandler, RNReanimated, RNSVG, RNScreens, RNSentry, RNWorklets, react-native-maps, react-native-netinfo, react-native-safe-area-context, react-native-webview, and stripe-terminal-react-native
+React Native requires XCode >= 16.1. Found 15.4.
+[!] Invalid `Podfile` file: Please upgrade XCode.
+ #  from /Users/expo/workingdir/build/mobile/ios/Podfile:47
+ #  -------------------------------------------
+ #  
+ >    use_react_native!(
+ #      :path => config[:reactNativePath],
+ #  -------------------------------------------
+pod install exited with non-zero code: 1
+
+Clean up credentials
+
+856ms
+
+
+Fail job
+
+1ms
+
+
+Build failed
+
+pod install exited with non-zero code: 1

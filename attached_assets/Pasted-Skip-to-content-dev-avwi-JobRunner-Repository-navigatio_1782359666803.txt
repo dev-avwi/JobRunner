@@ -1,0 +1,82 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+2
+ (2)
+Insights
+Settings
+
+Repository settings saved. This initial setup might take a while because CodeQL will perform a full scan of the repository. 
+Settings: dev-avwi/JobRunner
+Access
+Code and automation
+Security and quality
+Integrations
+Advanced Security
+Advanced Security features help keep your repository secure and updated. By enabling these features, you're granting us permission to perform read-only analysis on your repository.
+
+Private vulnerability reporting
+Allow your community to privately report potential security vulnerabilities to maintainers and repository owners. Learn more about private vulnerability reporting.
+
+Dependency graph
+Understand your dependencies.
+
+Dependabot
+Keep your dependencies secure and up-to-date. Learn more about Dependabot.
+
+Dependabot alerts
+Receive alerts for vulnerabilities that affect your dependencies and manually generate Dependabot pull requests to resolve these vulnerabilities. Configure alert notifications.
+
+Dependabot security updates
+Enabling this option will result in Dependabot automatically attempting to open pull requests to resolve every open Dependabot alert with an available patch.
+
+Grouped security updates
+Groups all available updates that resolve a Dependabot alert into one pull request (per package manager and directory of requirement manifests). This option may be overridden by group rules specified in dependabot.yml - Learn how to group updates.
+
+Dependabot version updates
+Allow Dependabot to open pull requests automatically to keep your dependencies up-to-date when new versions are available. Learn more about configuring a dependabot.yml file.
+
+Code scanning
+Automatically detect common vulnerabilities and coding errors.
+
+Tools
+CodeQL analysis
+Identify vulnerabilities and errors with CodeQL for eligible repositories.
+
+Other tools
+Add any third-party code scanning tool.
+
+Copilot Autofix
+Suggest fixes for CodeQL alerts using AI. CodeQL default or advanced setup must be enabled for this feature to work. Learn more about the limitations of autofix code suggestions
+
+On
+Protection rules
+Check runs failure threshold
+Select the alert severity level for code scanning check runs to fail. Create a branch ruleset to prevent a branch from merging when these checks fail.
+
+Secret Protection
+GitHub will always send alerts to partners for detected secrets in public repositories. Learn more about partner patterns.
+
+Push protection
+Block commits that contain supported secrets.
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

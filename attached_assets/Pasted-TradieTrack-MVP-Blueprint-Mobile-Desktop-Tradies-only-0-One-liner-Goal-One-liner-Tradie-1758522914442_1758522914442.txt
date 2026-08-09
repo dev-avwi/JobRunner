@@ -1,0 +1,324 @@
+TradieTrack — MVP Blueprint (Mobile + Desktop, Tradies‑only)
+0) One‑liner & Goal
+
+One‑liner: “TradieTrack helps tradies manage jobs, send quotes, create invoices, and get paid faster—without paperwork.”
+Primary goal: Ship a clean MVP that works great on phone and desktop, with email+password auth and Stripe Checkout payments (no client logins).
+
+1) Roles, Personas, & Scope
+
+Roles: owner, admin, tradie, accountant(readonly)
+
+Personas:
+
+Solo tradie (mostly mobile)
+
+Office/admin (desktop)
+
+Out of scope (MVP): client login/portal, accounting sync, supplier APIs, route optimization, offline mode.
+
+2) Core Features (MVP)
+
+Auth + onboarding (email+password + email verification; collect business profile)
+
+Jobs: CRUD, status (pending/in_progress/done), notes, photos, files, scheduled_at, address
+
+Quotes: AI/text builder, items (labour/materials), totals, validity, send via email (HTML + PDF)
+
+Invoices: create from job/quote, add logo (Pro), send via email, Pay Now (Stripe Checkout), mark paid via webhook
+
+Clients (CRM‑lite): basic contact info + job history
+
+Calendar/Schedule: day/week/month views, drag & drop on desktop
+
+Dashboard: jobs today, quotes awaiting, unpaid invoices, month earnings
+
+AI Assist (server function): convert voice/text notes → quote line items + invoice description
+
+Photos/Attachments: image/PDF upload per job
+
+Branding: business logo (Pro), invoice prefix, GST toggle
+
+Freemium limits: Free=5 jobs/month, plain invoice; Pro=unlimited + branding + AI quote helper
+
+3) Tech Stack
+
+Frontend: React + TypeScript, TailwindCSS, shadcn/ui, TanStack Query, React Router
+
+Backend: Node.js (Express) or Fastify
+
+DB: PostgreSQL (Supabase or hosted Postgres)
+
+Auth: Supabase Auth (email+password, email verification, optional TOTP later)
+
+Storage: Supabase Storage (images/PDFs)
+
+Payments: Stripe Checkout (hosted), webhooks
+
+Email: Resend / Postmark / SendGrid (transactional)
+
+Build/Deploy: Replit (dev), Railway/Fly/Render (prod)
+
+Env: dotenv; separate .env for dev/prod
+
+4) Data Model (SQL sketch)
+-- users are managed by Supabase Auth; store profile linkage here
+create table businesses (
+  id uuid primary key default gen_random_uuid(),
+  owner_user_id uuid not null,
+  name text not null,
+  abn text,
+  phone text,
+  email text,
+  timezone text default 'Australia/Brisbane',
+  currency text default 'AUD',
+  gst_enabled boolean default false,
+  logo_url text,
+  branding_color text default '#3B5998',
+  created_at timestamptz default now()
+);
+
+create table memberships (
+  business_id uuid references businesses(id) on delete cascade,
+  user_id uuid not null,
+  role text check (role in ('owner','admin','tradie','accountant')),
+  primary key (business_id, user_id)
+);
+
+create table clients (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid references businesses(id) on delete cascade,
+  name text not null,
+  email text,
+  phone text,
+  address text,
+  notes text,
+  created_at timestamptz default now()
+);
+
+create table jobs (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid references businesses(id) on delete cascade,
+  client_id uuid references clients(id) on delete set null,
+  title text not null,
+  description text,
+  status text check (status in ('pending','in_progress','done')) default 'pending',
+  address text,
+  scheduled_at timestamptz,
+  assigned_to uuid, -- user_id
+  created_by uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table job_files (
+  id uuid primary key default gen_random_uuid(),
+  job_id uuid references jobs(id) on delete cascade,
+  file_url text not null,
+  file_type text, -- image/pdf/receipt/plan
+  created_at timestamptz default now()
+);
+
+create table quotes (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid references businesses(id) on delete cascade,
+  job_id uuid references jobs(id) on delete set null,
+  number text, -- e.g., QT-2025-001
+  status text check (status in ('draft','sent','accepted','rejected')) default 'draft',
+  valid_until date,
+  subtotal numeric(12,2) default 0,
+  gst numeric(12,2) default 0,
+  total numeric(12,2) default 0,
+  payload jsonb, -- line items etc.
+  sent_at timestamptz
+);
+
+create table invoices (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid references businesses(id) on delete cascade,
+  job_id uuid references jobs(id) on delete set null,
+  number text, -- e.g., TT-2025-001
+  status text check (status in ('draft','sent','paid','overdue')) default 'draft',
+  subtotal numeric(12,2) default 0,
+  gst numeric(12,2) default 0,
+  total numeric(12,2) default 0,
+  sent_at timestamptz,
+  paid_at timestamptz,
+  stripe_payment_intent text,
+  stripe_fee numeric(12,2),
+  net_received numeric(12,2),
+  payload jsonb -- line items etc.
+);
+
+create table settings (
+  business_id uuid primary key references businesses(id) on delete cascade,
+  invoice_prefix text default 'TT-',
+  quote_prefix text default 'QT-',
+  default_hourly_rate numeric(12,2) default 100,
+  default_markup_pct numeric(5,2) default 0,
+  payment_instructions text -- BSB/Acct/PayID text shown on PDFs/emails
+);
+
+create table audit_log (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid references businesses(id),
+  actor_user_id uuid,
+  action text, -- 'CREATE_INVOICE', 'SEND_QUOTE', etc.
+  entity_type text,
+  entity_id uuid,
+  created_at timestamptz default now()
+);
+
+5) REST API (essential endpoints)
+
+Auth handled by Supabase; send JWT in Authorization: Bearer header. Role-check per memberships.
+
+POST /onboarding/start → create business + owner membership
+body: { name, abn?, phone?, email?, timezone?, gst_enabled?, branding_color?, default_hourly_rate? }
+
+GET /me/businesses → list businesses for current user
+
+Clients: GET/POST /clients, GET/PUT/DELETE /clients/:id
+
+Jobs: GET/POST /jobs, GET/PUT/DELETE /jobs/:id, POST /jobs/:id/files (multipart)
+
+Quotes: GET/POST /quotes, PUT /quotes/:id, POST /quotes/:id/send (sends email), POST /quotes/:id/accept (no login; tokenized link)
+
+Invoices: GET/POST /invoices, PUT /invoices/:id, POST /invoices/:id/send,
+POST /invoices/:id/create-checkout-session → returns checkout_url
+
+Stripe webhook: POST /webhooks/stripe (handle checkout.session.completed)
+
+Settings: GET/PUT /settings
+
+AI helpers (server‑side):
+POST /ai/quote-from-notes → { notes, hourly_rate? } → returns line items
+POST /ai/invoice-summary → { job_notes } → returns clean description
+
+Example: create checkout session (server)
+
+// POST /invoices/:id/create-checkout-session
+// returns: { checkout_url }
+
+6) Email Templates (HTML + TXT)
+
+Quote email: subject “Quote from {{business_name}} ({{quote.number}})”, buttons: View PDF, Accept
+
+Invoice email: subject “Invoice {{invoice.number}} — {{business_name}}”, buttons: Pay Now, Download PDF
+
+Footer always includes BSB/Account/PayID as fallback
+
+When paid: send Receipt email
+
+7) Payments (Stripe Checkout)
+
+Flow:
+tradie sends invoice → client clicks Pay Now → Stripe hosted page → on success webhook updates invoice to paid.
+
+Metadata: include business_id + invoice_id in checkout.session.
+
+Webhook: /webhooks/stripe handle checkout.session.completed
+
+fetch session + payment intent → update invoices (status='paid', paid_at, stripe_fee, net_received)
+
+write audit_log entry
+
+send receipt
+
+Invoice PDF/email also shows BSB/PayID details from settings.payment_instructions.
+
+8) UI / Screens & Routes
+
+Desktop (sidebar): Dashboard /, Jobs /jobs, Calendar /calendar, Clients /clients, Invoices /invoices, Settings /settings
+Mobile (bottom nav): Jobs, Calendar, Invoices, More
+
+Key screens:
+
+Auth: /login, /register, /verify-email, /forgot-password
+
+Onboarding wizard: /onboarding (business profile → preferences → (optional) invite team)
+
+Dashboard: KPIs + quick actions
+
+Jobs list: filters + search; Job detail (notes, photos, attachments, “Generate Quote”)
+
+Quotes: list + detail + wizard
+
+Invoices: list + detail + send + “Create Checkout Link”
+
+Calendar: day/week/month views
+
+Clients: list + detail + new job from client
+
+Settings: business info, logo, invoice/quote prefixes, GST, payment instructions
+
+UX rules:
+
+Max 2 taps/clicks to: add job, send quote, send invoice.
+
+Big touch targets (≥44px), clean forms, progressive disclosure.
+
+9) Security & Compliance
+
+Email verification before access
+
+Strong password policy + strength meter
+
+httpOnly Secure cookies (if using sessions) OR short‑lived JWT + refresh rotation
+
+RBAC checks at API layer (membership role per business)
+
+Audit log on critical actions
+
+Rate limit login/signup; CAPTCHA on suspicious actions
+
+Terms & Privacy acceptance checkbox at signup
+
+Invoices include legal business name, ABN, GST lines when enabled
+
+10) Config & ENV (example)
+SUPABASE_URL=
+SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+DATABASE_URL=
+RESEND_API_KEY=        # or SENDGRID_API_KEY
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+APP_BASE_URL=https://app.tradietrack.com
+
+11) Testing Checklist (MVP)
+
+Register → email verify → onboarding → dashboard
+
+Create client → create job → upload photo → generate quote → send → accept (token link)
+
+Convert to invoice → send → Pay Now (test mode) → webhook updates → receipt sent
+
+Role checks: tradie cannot edit settings; accountant read‑only invoices/reports
+
+Freemium limit: Free plan blocks creating 6th job; upgrade CTA works
+
+PDFs render correctly (logo only on Pro)
+
+12) Roadmap (Post‑MVP)
+
+Offline mode (read/write queue)
+
+Timesheets; job timers
+
+Custom forms/checklists (SWMS)
+
+Client reminders (SMS/email)
+
+Inventory/price books (start with CSV import)
+
+Xero/QuickBooks sync
+
+GPS/route planning; tap‑to‑pay (Square) optional
+
+13) Acceptance Criteria (Ship It)
+
+A tradie can: create job → send quote → convert to invoice → get paid → see paid status from phone or laptop in < 5 minutes, with no client account involved.
+
+Emails and PDFs look professional and branded (Pro).
+
+Stripe webhook reliably flips invoice to paid and logs a receipt.

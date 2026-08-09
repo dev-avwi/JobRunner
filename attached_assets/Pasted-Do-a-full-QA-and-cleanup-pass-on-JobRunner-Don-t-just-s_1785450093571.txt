@@ -1,0 +1,35 @@
+Do a full QA and cleanup pass on JobRunner. Don't just skim — actually go through the app systematically and fix what's broken. Here's the scope:
+
+1. ROUTE AUDIT
+- List every API route in the backend (Express) and every screen/navigation route in the mobile app.
+- For each API route: confirm it responds correctly for valid input, handles missing/invalid input without crashing, and returns proper error codes (not raw 500s with stack traces leaking to the client).
+- For each screen: confirm it renders without errors, handles empty states (no data yet), loading states, and error states (failed fetch, no network).
+- Flag and fix any route that's dead code, duplicated, or inconsistent with how similar routes behave elsewhere.
+
+2. LIGHT MODE DEFAULT
+- Confirm light mode is the default theme for all new sessions/installs.
+- Check existing/old accounts in the database — if any users have a dark mode or null theme preference stored from before this was decided, make sure they get migrated or defaulted to light mode too (don't just fix it for new signups).
+- Confirm there's no flash-of-wrong-theme on load.
+
+3. EXISTING ACCOUNT / DATA INTEGRITY
+- Check for any schema changes made recently that older accounts might not have been migrated for (missing columns defaulting to null when they shouldn't, old records missing new required fields, etc).
+- Run through what an account created months ago looks like today — does it break anywhere in the current UI?
+
+4. BUILT-IN TESTING
+- Write and run actual tests (not just manual clicking) for the critical paths: auth/login, job creation, job status updates, GPS/check-in flow, SMS routing, AI receptionist trigger, Stripe/payment flow, and the client job tracking link.
+- Test with a fresh account AND an existing/older account to catch migration issues.
+- Test on both a slow/flaky network simulation and normal network to catch race conditions or missing loading states.
+
+5. GENERAL CLEANUP
+- Remove console.logs, dead code, unused imports, and any TODOs that are actually blocking issues.
+- Check for any hardcoded test/dev values that shouldn't be in production (test API keys, placeholder text, debug flags left on).
+- Confirm error boundaries exist so one broken screen doesn't crash the whole app.
+
+6. REPORT BACK
+When done, give me a clear summary:
+- What was broken and what you fixed
+- Anything you found but didn't fix (and why)
+- Any route or screen you couldn't fully test and why
+- Confirm explicitly: light mode default is working for new AND existing accounts
+
+Don't touch pricing, branding colors (#2B7DE9 blue / #F28C28 orange), or the existing design system — this is a stability and correctness pass, not a redesign.

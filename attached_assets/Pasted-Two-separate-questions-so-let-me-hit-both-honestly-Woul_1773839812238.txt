@@ -1,0 +1,108 @@
+Two separate questions so let me hit both honestly.
+
+---
+
+**Would Tradies Say Yes?**
+
+Based on what I saw — most would be genuinely interested. But "interested" and "yes I'll pay for it" are different things.
+
+Here's how it would realistically play out:
+
+A tradie sees the dashboard with their overdue invoices front and centre — they'd say "oh that's actually useful." The job pipeline with the status filters — they'd get it immediately. The mobile app looking clean and real — that builds instant credibility.
+
+But here's what would make or break it in the room:
+
+The moment you show them the AI answering a call and a job appearing automatically — that's the yes moment. Without that demo working live, you're selling features. With it working, you're solving a pain they feel every single day.
+
+So my honest answer is — the app is good enough to get serious interest from tradies right now. It's not good enough to get mass paid signups until the AI receptionist is live and demoable. That's your closer.
+
+---
+
+**The Integrations — This Is Critical**
+
+Replit saying it's working and it actually working reliably in production are very different things. Xero and QuickBooks integrations in particular are notorious for breaking silently — they'll work in testing and then fail for real users in ways you never anticipated.
+
+Before you tell any tradie these integrations work you need to verify them yourself. Let me search for what's actually required to make these production-ready.Okay here's everything you need to know across both questions.
+
+---
+
+**Would Tradies Say Yes To The App?**
+
+Based on what I actually saw — yes, most would be genuinely interested. The dashboard is impressive, the Action Centre is a standout feature that directly speaks to money, and the UI looks professional enough to build trust immediately.
+
+But there's a difference between "that looks good" and "I'll pay for it." The honest breakdown:
+
+Solo tradie sees it — probably says yes if the price feels right and the demo is smooth. The $39 Pro plan is very accessible.
+
+Tradie with a team sees it — likely very interested because the team management and job pipeline are genuinely strong.
+
+Tradie who currently uses ServiceM8 — harder sell. They need to see something ServiceM8 can't do. Right now without the AI receptionist live, you're selling convenience and better UX. With the AI receptionist working — you're selling something they genuinely can't get anywhere else and that's when you get easy yeses.
+
+---
+
+**The Integrations — Here's The Real Picture**
+
+This is where I want to be completely straight with you because it matters a lot.
+
+Xero dominates Australia with about 47% of SMBs using it — so getting this right is critical. Most Australian tradies who use accounting software are on Xero.
+
+There are some important things you need to verify and fix before claiming these integrations work:
+
+**The 25 connection limit is a real problem right now.** Xero limits unapproved apps to 25 active connections by default. That means once 25 businesses connect their Xero to JobRunner, the 26th will fail. To go beyond that you need to become a certified Xero App Partner — which requires building a working integration, onboarding at least 3 active customers, and agreeing to Xero's commercial terms.
+
+**Token refresh is critical.** Access tokens expire every 30 minutes, so you need token refresh logic built in from day one. Refresh tokens last 60 days — once used, they expire within 30 minutes, so accurate timing is essential. Stale tokens cause auth errors that surface as bugs for your users.
+
+**The redirect URI must be exact.** Even small mismatches will break OAuth authentication entirely. For production, ensure HTTPS and exact URL matching.
+
+---
+
+**What You Need To Do Right Now**
+
+Here's a checklist of what to verify personally — don't trust Replit's word on this:
+
+**Xero integration checklist:**
+
+Open a real Xero account — use their demo company for testing. Connect it to JobRunner yourself. Then test every single one of these:
+
+| Test | What You're Checking |
+|------|---------------------|
+| Connect Xero account | Does OAuth flow work without errors? |
+| Create an invoice in JobRunner | Does it appear in Xero automatically? |
+| Mark invoice as paid in Xero | Does JobRunner update? |
+| Create a client in JobRunner | Does contact sync to Xero? |
+| Disconnect and reconnect | Does token refresh work? |
+| Leave it 35 minutes then try | Does it break when token expires? |
+
+That last test is the one Replit probably never ran. Access tokens expire after 30 minutes and if the token refresh logic isn't solid, the integration will work perfectly in testing and silently break for real users.
+
+**QuickBooks checklist:**
+
+Same approach — connect a real QuickBooks account and test the same flows. QuickBooks is less common in Australia but still used, particularly by tradies who came from a Windows background.
+
+**Google Calendar checklist:**
+
+Connect a real Google Calendar. Create a job scheduled for tomorrow. Does the event appear in Google Calendar? Update the job time — does it update in Calendar? Delete the job — does it remove from Calendar? These sync failures are the most common complaint with calendar integrations.
+
+---
+
+**The Honest Priority Order**
+
+Here's how I'd rank what matters for tradies specifically:
+
+Xero is absolutely critical — fix and verify this first. Most Australian tradies use it for their accounting.
+
+Google Calendar is important — tradies live on their phone calendar and expect jobs to show up there automatically.
+
+QuickBooks is secondary — less common in Australia, can come later.
+
+MYOB is worth adding eventually — still used by older Australian businesses, their accountants often insist on it.
+
+---
+
+**One More Thing On The App**
+
+Looking at the screenshots again — I noticed the pricing page shows Free, Pro at $39, and Team at $49. But our full pricing structure has Solo+AI at $99, Team+AI at $149, and Full Bundle at $300. Those tiers aren't showing yet.
+
+That's fine for now while the AI receptionist isn't built. But the moment Retell is connected and working, update that pricing page immediately. You want the AI plans visible and sellable from day one of launch.
+
+The app is genuinely good enough to start showing people. Just verify those integrations yourself before telling any tradie they work.

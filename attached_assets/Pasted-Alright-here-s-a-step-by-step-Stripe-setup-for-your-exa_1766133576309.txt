@@ -1,0 +1,267 @@
+Alright — here’s a **step-by-step Stripe setup** for your exact pricing:
+
+* **Pro = $39/month**
+* **Team = $59/month + $29 per additional user (seat)**
+
+I’ll keep it practical and in the right order.
+
+---
+
+# 0) Before you start (quick decisions)
+
+### Currency
+
+Use **AUD** (since you’re targeting Australia).
+
+### Billing interval
+
+Start with **Monthly only** (add annual later).
+
+### Trials
+
+Recommend:
+
+* **7 or 14-day free trial** for Pro + Team
+  (You can do “no card required” trials later, but easiest is card-required trial via Stripe.)
+
+---
+
+# 1) Create your Stripe account
+
+1. Go to Stripe and create/login.
+2. Complete the **Business details** (you can start as an individual/sole trader and update later).
+3. Set **Payout bank account** (so money can flow).
+
+---
+
+# 2) Create Products + Prices (this is the core)
+
+You’ll create **2 Products** in Stripe, with **recurring Prices**.
+
+## ✅ Product A: “TradieTrack Pro”
+
+1. Stripe Dashboard → **Products** → **Add product**
+2. Name: **TradieTrack Pro**
+3. Pricing model: **Recurring**
+4. Price:
+
+   * **$39.00 AUD**
+   * **Monthly**
+5. Save
+
+### (Optional but recommended)
+
+* Add a description like: “Unlimited jobs, quotes/invoices, AI job notes, single user”
+
+---
+
+## ✅ Product B: “TradieTrack Team”
+
+Here’s the important part: **base + per-seat add-on**.
+
+### Step B1 — Create the base Team price ($59/month)
+
+1. Products → **Add product**
+2. Name: **TradieTrack Team**
+3. Price:
+
+   * **$59.00 AUD**
+   * **Monthly**
+4. Save
+
+This is your “Team base fee”.
+
+---
+
+### Step B2 — Create the “Additional User Seat” price ($29/month)
+
+This is usually done as a **second product** OR a second price you attach in Checkout as an add-on.
+
+**Recommended (cleanest): make it its own product:**
+
+1. Products → **Add product**
+2. Name: **Additional User (Seat)**
+3. Price:
+
+   * **$29.00 AUD**
+   * **Monthly**
+4. In advanced options:
+
+   * Set it as **Quantity adjustable** (so you can do 1, 2, 3 extra users)
+5. Save
+
+Now you can charge:
+
+* Team base ($59) **+** seats ($29 × number of extra users)
+
+---
+
+# 3) Add a Customer Portal (so you don’t build billing screens)
+
+Stripe can host a portal where users can:
+
+* change card
+* cancel plan
+* download invoices
+* change seat quantity
+
+### Setup:
+
+1. Dashboard → **Settings** → Search **Customer portal**
+2. Enable it
+3. Turn on:
+
+   * Update payment method ✅
+   * Cancel subscription ✅
+   * Update quantities (for seats) ✅
+4. Save
+
+This is a massive time saver.
+
+---
+
+# 4) Taxes (don’t overcomplicate)
+
+For MVP:
+
+* Don’t enable complicated tax rules yet unless you need GST immediately.
+
+But if you want GST later:
+
+* Stripe Tax can calculate it automatically (you can add it once you’re actually charging).
+
+---
+
+# 5) Checkout setup (the “upgrade” button)
+
+Your app will send users to **Stripe Checkout**, where they pay.
+
+### What you need for Pro
+
+Checkout line items:
+
+* Pro price → quantity 1
+
+### What you need for Team (base + seats)
+
+Checkout line items:
+
+* Team base price → quantity 1
+* Seat price → quantity = number of extra users
+
+**Example:**
+
+* 1 extra user → seat qty 1
+* 2 extra users → seat qty 2
+  etc.
+
+Tip: In your UI, show:
+
+* “How many extra users?” (+ / -)
+* Total updates live.
+
+---
+
+# 6) The “unlock features” part (how your app knows who paid)
+
+Stripe works like this:
+
+* User pays
+* Stripe sends an event to your backend called a **Webhook**
+* Your backend updates your database:
+
+  * `plan = "pro"` or `plan = "team"`
+  * `seats = X`
+
+### Webhooks you care about (MVP list)
+
+* `checkout.session.completed` ✅ (user successfully subscribed)
+* `customer.subscription.updated` ✅ (seat count changes, plan changes)
+* `customer.subscription.deleted` ✅ (cancelled)
+
+That’s enough.
+
+---
+
+# 7) Your internal “Plan Rules” (simple)
+
+Store in your DB:
+
+* `plan`: free | pro | team
+* `seats`: number
+* `stripeCustomerId`
+* `stripeSubscriptionId`
+
+Then gate features:
+
+* Pro: 1 user only
+* Team: allow number of users = `1 + seats` (or however you define it)
+
+---
+
+# 8) Test it properly (don’t skip)
+
+Stripe has “Test mode”.
+
+### In Test mode:
+
+1. Create a checkout session
+2. Pay with Stripe test card:
+
+   * `4242 4242 4242 4242`
+3. Confirm your app updates plan correctly
+
+You’re not “done” until:
+
+* cancel works
+* seat quantity changes update correctly
+* failed payment shows a warning (optional, later)
+
+---
+
+# ✅ Suggested “Minimum Billing UI” inside TradieTrack
+
+You don’t need much in-app:
+
+### Settings → Billing
+
+* Current plan badge
+* “Upgrade” button
+* “Manage subscription” button (links to Stripe portal)
+
+That’s it.
+
+---
+
+# 🔥 Your exact pricing logic (so it feels clean)
+
+### Pro
+
+$39/month
+
+### Team
+
+$59/month + $29/month per extra user
+**Example text:**
+
+> “Team starts at $59/month. Add staff for $29/user.”
+
+Add a toggle:
+
+* “Solo business” → Pro
+* “Team” → Team + seats
+
+---
+
+## If you tell me what stack you’re using for the backend
+
+I can give you the exact working code setup for:
+
+* Node/Express
+* Next.js (API routes)
+* Supabase edge functions
+* Firebase functions
+
+But even without that, the Stripe dashboard part above is exactly how you set it up.
+
+If you want the **next actionable step right now**, I’ll write you the **exact Stripe product names + descriptions** to paste in, and the **copy for your pricing page** that matches this billing model.

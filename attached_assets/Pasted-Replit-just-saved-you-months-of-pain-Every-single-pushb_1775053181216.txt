@@ -1,0 +1,63 @@
+Replit just saved you months of pain. Every single pushback is correct. Let me break it down.
+
+**The iframe problem is a genuine blocker we missed**
+
+This is the most important thing in Replit's entire response. You cannot embed arbitrary websites in an iframe. Most production apps block it with X-Frame-Options and CSP headers. If you try to build "the app loads inside our dashboard" the way the spec described, it will fail on the majority of real apps users submit. This is a real blocker that wasn't in the 24 problems and should have been.
+
+Replit's solution is exactly right. Browser extension that records user actions on their actual browser tab, sends the event log back to your server, Playwright replays it server-side. Record locally, replay on the server. This is how tools like Playwright's own codegen works. It solves the iframe problem entirely and is simpler to build than a cloud browser infrastructure.
+
+**The batch processing insight is genuinely better architecture**
+
+This is the smartest thing Replit has said in this entire conversation. The live streaming vision — three concurrent real-time systems per user staying in sync — is complex, expensive, and fragile. Replit's alternative produces the exact same user experience with fundamentally more reliable technology.
+
+Run the Playwright replay and Claude analysis as a batch job. Capture raw video. Get all analysis results. Compose the final video with annotations timed to appear at exactly the right moments. Then play it back to the user.
+
+The user sees: video playing, annotations drawing themselves at the right moments, subtitles appearing, issues appearing in the right panel.
+
+The difference: they waited 60 seconds first instead of watching it live.
+
+That 60 second wait is worth it for a flawless experience versus a stuttery live stream. And honestly — users don't care if it's technically live. They care if it looks incredible. The batch approach gives you that guarantee. The live approach gives you a prayer.
+
+**What changes in the spec**
+
+The entire frontend experience stays identical. Three panel layout. Sidebar filling with screens. Annotations drawing themselves. Subtitles. Right panel commentary. All four exports. Everything exactly as designed.
+
+What changes is two things under the hood. The embedded browser becomes a browser extension that records on the user's own tab. The live stream becomes a brief "Preparing your analysis" state followed by a composed playback. The user literally cannot tell the difference between these two architectures from the outside.
+
+Add one new state to the state machine — preparing. After the user submits their recording, the system runs the full Playwright replay and Claude analysis as a batch job. Clean loading screen. Progress indicator showing screens processed. "Preparing your analysis — 12 of 20 screens complete." Takes 30-90 seconds depending on app size. Then it launches into the playback experience.
+
+**The timeline correction**
+
+Replit called it honestly. Core product — record, analyse, report — is 6-8 weeks. Polish — annotation animations, video export with overlays, real-time dashboard feel — is another 3-4 weeks. Plan for 10-12 weeks total. This is the correct number.
+
+**The one thing Replit said that matters most**
+
+Before any of this gets built, take 10 real app URLs, manually screenshot 5 screens from each, run them through Claude with your best prompts, grade the output honestly. If 7 out of 10 are feedback you'd actually act on, the product works. If 3 out of 10 are useful, fix the prompts first.
+
+This was already in the success metrics section but Replit restating it this clearly means it needs to be the very first thing that happens. Not week one of building. Week zero before building starts.
+
+**What to update in the document**
+
+Three changes needed.
+
+One — replace embedded browser with browser extension recording approach. User installs a lightweight Chrome extension. Clicks Record in AppScout dashboard. Extension opens their app in a new tab and records all events. When done, sends event log to AppScout server. Playwright replays on the server.
+
+Two — replace live streaming architecture with batch-then-playback. New state added: preparing. System processes everything, composes the annotated video, then launches the playback. The playback experience looks and feels identical to what was designed — the user just waited 60 seconds first.
+
+Three — update timeline to 10-12 weeks.
+
+**What to send back to Replit**
+
+"Agreed on all three pushbacks. Updating the spec.
+
+Browser extension for recording — correct call. X-Frame-Options would have broken this on most real apps. Extension records locally, server replays. Cleaner and more reliable.
+
+Batch processing over live streaming — correct call. Same user experience, fundamentally better architecture. New state: preparing. 30-90 second batch job. Then composed playback. User cannot tell the difference and gets a flawless result instead of a potentially stuttery live stream.
+
+Timeline updated to 10-12 weeks. 6-8 for core, 3-4 for polish.
+
+Week zero before any building: 10 real app URLs, 5 manual screenshots each, run through Claude prompts, grade honestly. 7 out of 10 useful is the bar. Nothing gets built until that bar is met.
+
+Two questions before we start. How complex is the Chrome extension to build — is this something you're comfortable with or does it add significant scope? And for the composed video playback — what's the best approach for timing annotation appearances to specific video timestamps so they feel natural rather than mechanical?"
+
+Those two questions will tell you exactly what the next month of planning looks like before you even write a line of code.

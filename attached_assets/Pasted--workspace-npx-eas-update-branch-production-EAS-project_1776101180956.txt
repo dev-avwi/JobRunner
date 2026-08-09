@@ -1,0 +1,169 @@
+~/workspace$ npx eas update --branch production
+EAS project not configured.
+✔ Existing EAS project found for @avwi/rest-express (id = 4a157b00-c548-452c-bf4d-72498e04f99f). Configure this project? … yes
+✔ Linked local project to EAS project 4a157b00-c548-452c-bf4d-72498e04f99f
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+> npx expo install expo-updates
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[expo-cli] › Installing 1 SDK 54.0.0 compatible native module using npm
+[expo-cli] > npm install
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[expo-cli] added 8 packages, and audited 1361 packages in 4s
+[expo-cli] 143 packages are looking for funding
+[expo-cli]   run `npm fund` for details
+[expo-cli] 29 vulnerabilities (5 low, 11 moderate, 13 high)
+[expo-cli] 
+[expo-cli] To address issues that do not require attention, run:
+[expo-cli]   npm audit fix
+[expo-cli] 
+[expo-cli] To address all issues (including breaking changes), run:
+[expo-cli]   npm audit fix --force
+[expo-cli] 
+[expo-cli] Run `npm audit` for details.
+✔ Installed expo-updates
+✔ Configured updates.url to "https://u.expo.dev/4a157b00-c548-452c-bf4d-72498e04f99f"
+✔ Configured runtimeVersion for Android and iOS with "{"policy":"appVersion"}"
+
+All builds of your app going forward will be eligible to receive updates published with EAS Update.
+
+✔ Provide an update message: … Improve app settings footer logo size and background color
+
+Update the app settings footer logo size to be larger and change its background color from primaryLight to card with a border color change for better contrast and visibility.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: e6e7b8be-7001-4ec6-b0bb-840894c0b378
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/NrIdXfE
+Replit-Helium-Checkpoint-Created: true
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+[expo-cli] CommandError: Platform "ios" is not configured to use the Metro bundler in the project Expo config, or is missing from the supported platforms in the platforms array: [web].
+✖ Export failed
+/home/runner/workspace/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace$ 

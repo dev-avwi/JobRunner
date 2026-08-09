@@ -1,0 +1,397 @@
+⭐ Short answer:
+
+YES — Replit AI can analyse a video of your web app and replicate the UI/UX in the mobile Expo app…
+BUT only if you give it the right instructions AND the video shows everything clearly.
+
+BUT…
+It cannot automatically “scan the video and clone your app” magically.
+You still need to give it structure + context.
+
+Think of the video as guidance, not automation.
+
+⸻
+
+⭐ What Replit AI CAN do with your video
+
+If you upload a screen recording showing:
+	•	pages
+	•	buttons
+	•	transitions
+	•	map interactions
+	•	PDF preview
+	•	chat layout
+	•	job workflows
+	•	colours
+	•	spacing
+	•	navbars
+	•	layout structure
+	•	animations
+
+Replit AI CAN:
+
+✔ Identify consistency rules
+
+(“Oh the web app uses rounded cards, these colours, these shadows…”)
+
+✔ Extract design patterns
+
+(“The job cards always show: client, date, status.”)
+
+✔ Learn your UI structure
+
+(“Left sidebar → top nav → content grid.”)
+
+✔ Copy entire components
+
+(“This jobs list layout should be recreated in Expo using FlatList with these paddings.”)
+
+✔ Understand workflows
+
+(“Clicking ‘Send Quote’ opens a modal → generates PDF → uses SendGrid.”)
+
+✔ Rebuild the SAME FLOW in the mobile app
+
+like:
+	•	jobs
+	•	quotes
+	•	invoices
+	•	map view
+	•	team chat
+	•	settings
+	•	onboarding
+	•	stripe
+	•	sendgrid
+	•	pdf viewer
+
+✔ Fix inconsistencies
+
+If something in the video doesn’t match what you said earlier, it can correct the code to match.
+
+✔ Ensure the mobile app has identical UI spacing, shadows, fonts
+
+(based entirely on your video)
+
+✔ Generate React Native/Expo components that perfectly mirror the web version
+
+(using:
+	•	Expo Router
+	•	React Native Reanimated
+	•	NativeWind
+	•	React Native Paper
+	•	Expo Maps
+	•	React Query
+	•	MMKV
+)
+
+⸻
+
+⭐ What Replit AI CANNOT do
+
+(so you don’t waste time expecting impossible behaviour)
+
+❌ Cannot “automatically” convert a video into code
+
+The video is reference only.
+
+❌ Cannot extract backend functionality from video
+
+It needs your explanation, or your existing backend code.
+
+❌ Cannot guess your database schema from video
+
+You MUST give it (or let it inspect your backend repo).
+
+❌ Cannot ensure perfect pixel-for-pixel matching unless you ask
+
+You must explicitly request:
+
+“Match paddings, shadows, colours, spacing, borders exactly as shown in the video.”
+
+⸻
+
+⭐ The key to making it work:
+
+You must give Replit:
+	1.	Your web app code
+	2.	Your mobile app code (even if early)
+	3.	Your video of the full walkthrough
+	4.	A Master Prompt (I will give you this now)
+	5.	Permission to unify design tokens
+	6.	Permission to unify workflows
+
+Then Replit will make BOTH match.
+
+⸻
+
+⭐ Full Breakdown: How your web app features work (explain this to Replit)
+
+You need to clearly summarise the major systems so Replit knows what to replicate:
+
+⸻
+
+🔷 1. PDF Generation System
+
+How it works in your web app:
+	•	You have HTML templates
+	•	They include placeholders (business details, client, items, totals)
+	•	You generate a live preview
+	•	Backend renders HTML → PDF using a renderer (Puppeteer / wkhtmltopdf / WeasyPrint)
+	•	PDF is stored or emailed
+	•	Tradie sends PDF to client
+	•	Pro users get branding injected
+	•	Free users see “Powered by TradieTrack”
+
+What the mobile app must do:
+	•	Use the SAME backend endpoints
+	•	Use WebView or Expo-pdf-viewer to preview
+	•	Use Share API or Email button (calls backend)
+	•	Must show EXACT same layout
+	•	Must match typography, colours, header sections
+
+⸻
+
+🔷 2. Maps / Location System
+
+How web app works:
+	•	Job address stored
+	•	Geocoding to lat/lng
+	•	Map clusters for past jobs
+	•	Status badges (Completed / Scheduled / Pending)
+	•	Team location tracking (polled every 60–180 seconds)
+	•	Pins represent jobs + team members
+	•	Clicking pins opens summary card
+	•	Owner can track team in real time
+
+What mobile must match:
+	•	Use Expo Maps
+	•	Same pin colours
+	•	Same badge styling
+	•	Show both job pins + team pins
+	•	Allow tap to open info card
+	•	Allow “Open in Google Maps” button
+	•	Optionally track worker’s live GPS (with permission)
+	•	Store updated coordinates in backend
+
+⸻
+
+🔷 3. Stripe (Tradie Subscription + Customer Payments)
+
+Web:
+	•	Stripe Connect for tradies
+	•	Stripe Subscriptions for Pro plans
+	•	Webhooks update DB
+
+Mobile:
+	•	Use the SAME backend
+	•	Deep link payment pages
+	•	Show receipts, paid status
+	•	Manage subscriptions inside the mobile app
+
+⸻
+
+🔷 4. SendGrid Email System
+
+Web:
+	•	Templates for:
+	•	Quote Sent
+	•	Invoice Sent
+	•	Payment Receipt
+	•	Reminder Email
+	•	Attach PDFs or send link
+	•	Branding for Pro plans
+
+Mobile:
+	•	Must hit the same backend route
+	•	Button triggers:
+	•	sendQuote(jobId)
+	•	sendInvoice(jobId)
+
+⸻
+
+🔷 5. Live Preview UI (Quotes & Invoices)
+
+Web Approach:
+	•	Form on left
+	•	Live preview on right
+	•	Instantly updates
+	•	PDF matches the preview exactly
+
+Mobile must:
+	•	Switch tab: “Edit” / “Preview”
+	•	Preview matches EXACT web design
+	•	Uses same HTML from server
+	•	Ensures same fonts & padding
+
+⸻
+
+🔷 6. Chat System (Job chat + Team chat)
+
+Web:
+	•	Real-time websockets or polling
+	•	Separate channels:
+	•	Job-specific chat
+	•	Team-wide chat
+	•	Direct owner → tradie chat
+
+Mobile:
+	•	Mirror chat UI
+	•	Timestamp
+	•	Quick reply buttons
+	•	Use React Native Gifted Chat or custom UI
+	•	Same backend WS
+
+⸻
+
+⭐ Here is the MASTER PROMPT for Replit AI
+
+Paste this EXACT message into Replit:
+
+⸻
+
+🧠 REPLIT MASTER PROMPT — MOBILE APP MUST MATCH WEB APP EXACTLY
+
+I want you to analyse BOTH my web app code and the mobile Expo app code and ensure the mobile app matches the web app exactly in:
+	•	UI
+	•	Shadows
+	•	Spacing
+	•	Padding
+	•	Typography
+	•	Colour system
+	•	Layout
+	•	Navigation structure
+	•	Animations
+	•	Component behaviour
+	•	Page flows
+	•	Buttons
+	•	Interactions
+	•	Map features
+	•	PDF generation & preview
+	•	Stripe flows
+	•	SendGrid flows
+	•	Chats
+	•	Job workflows
+	•	Onboarding differences (owner vs employee)
+
+Here is what I need you to do:
+
+⸻
+
+1. Use my walkthrough video as visual reference
+
+Extract from the video:
+	•	Layout structure
+	•	Page count
+	•	Spacing rules
+	•	Colours
+	•	Shadows
+	•	Radius
+	•	Card structure
+	•	Navigation flow
+	•	Transitions
+	•	Button shapes
+	•	How the quotes → preview → PDF system works
+	•	How maps look and behave
+
+Then enforce these rules in Expo.
+
+⸻
+
+2. Match ALL web features in mobile exactly
+
+Make Expo versions of:
+	•	Jobs page
+	•	Job detail
+	•	Quote builder
+	•	Invoice builder
+	•	PDF preview
+	•	Client list
+	•	Team list
+	•	Team chat
+	•	Job chat
+	•	Maps page (jobs + tradies)
+	•	Settings
+	•	Business settings
+	•	Onboarding flow (owner vs tradie)
+
+⸻
+
+3. Use SAME backend workflows
+
+PDF generation:
+	•	Use same backend HTML templates
+	•	Use same endpoints
+	•	Show preview in WebView
+	•	Download/share
+	•	Send PDF through SendGrid
+
+Maps:
+	•	Same geocoding
+	•	Same coordinates
+	•	Show jobs + tradies on map
+	•	Tap to open job card
+	•	Show status badges (Completed / Scheduled / Pending)
+
+Stripe:
+	•	For tradie subscription
+	•	For customers paying invoices
+	•	Use Connect accounts
+	•	Open payment link in WebView or deep-link
+
+SendGrid:
+	•	Quote sent
+	•	Invoice sent
+	•	Payment receipt
+	•	Templates
+	•	Pro branding enabled
+
+Chats:
+	•	Use same real-time backend
+	•	Job chat
+	•	Team chat
+	•	Owner → tradie direct chat
+
+⸻
+
+4. Enforce Design Token Unification
+
+Generate ONE global theme for:
+	•	colours
+	•	spacing
+	•	radius
+	•	fonts
+	•	shadows
+	•	card components
+	•	field components
+	•	buttons
+	•	headers
+	•	navbars
+
+Make both apps use identical tokens.
+
+⸻
+
+5. Validate functionality (detect fake UI)
+
+Identify any feature in the web or mobile version that:
+	•	has UI but no backend
+	•	has a button but no endpoint
+	•	has a form but does not save
+	•	generates a PDF preview but not the final PDF
+	•	shows a map pin but no latitude stored
+	•	shows chat UI but no websocket
+
+Fix or remove for beta.
+
+⸻
+
+6. Final summary
+
+Provide a list of:
+	•	Features matched perfectly
+	•	Features missing
+	•	Features incomplete
+	•	UI inconsistencies
+	•	UX inconsistencies
+	•	Backend wiring issues
+	•	Anything that will confuse real tradies
+	•	Steps needed to publish a stable beta

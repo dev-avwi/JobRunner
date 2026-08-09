@@ -1,0 +1,66 @@
+and for a business as a subbie you dotn want a business seeing your locations at all times, cause my mates dads subbies who are normally his subbies, do other things. but they dont only work for him., so if they work for someone else, how will it work, will it be disabled. will they be in team operations page, so if owner or manager assigns them, then it starts traking location and stuff
+
+3:43 PM
+This is a really important privacy point and you're thinking about it exactly right. Here's how it should work:
+
+The Core Principle
+
+A subbie's location should only be visible to a business when they are actively working on that business's job. Not before. Not after. Not when they're working for someone else.
+
+How It Works
+
+Location tracking for subbies is job-scoped not business-scoped. The moment a subbie taps "Start Job" on a job assigned by Mike's Construction — Mike can see their location. The moment they tap "Complete Job" — location tracking stops for Mike completely. If that same subbie then starts a job for Dave's Plumbing, Dave can see their location but Mike cannot.
+
+A permanent employee is different — their location is visible during business hours because they work exclusively for that business. A subbie's visibility window is strictly tied to active job status.
+
+Tell Replit This Brief
+
+"Implement privacy-aware location tracking for subcontractors. The rules are:
+
+For permanent employees — location visible to business owner during business hours as currently implemented.
+
+For subcontractors — completely different rules:
+
+Location is ONLY visible to a business when the subbie has an active job with that business AND has tapped Start Job
+The moment they tap Complete Job or pause the job, location tracking stops for that business immediately
+If a subbie works for multiple businesses, each business can only see location during their own active jobs
+A subbie who is between jobs is completely invisible to all businesses — no location data at all
+GPS tracking does not run in the background for subbies outside of active jobs — this saves their battery too
+In the Team Operations / GPS map view:
+
+Subbies only appear on the map when they have an active job currently in progress
+When they complete the job they disappear from the map
+Show a clear indicator on the map pin that says "On job: [job name]" so the owner knows why they can see this person
+Never show a subbie's location with no job context
+In the subbie's own app:
+
+Show a clear banner when location is being shared: "Your location is visible to Mike's Construction while this job is active"
+When they complete the job show: "Location sharing stopped"
+This transparency is important — subbies need to know exactly when they're being tracked
+Business switching for subbies with multiple clients:
+
+Each business appears as a separate workspace
+Location tracking is completely isolated between workspaces
+Starting a job in one workspace never shares location with another workspace
+The subbie sees clearly which workspace is active
+In Team Operations page for business owners:
+
+Subbies appear in the team list but are visually distinct from employees — different badge or label
+Their status shows as "Available", "On your job", or "Unavailable" — never their location when unavailable
+Owner cannot see where a subbie is when they're not on one of their jobs
+This is not a bug — it is by design and should be communicated clearly in the UI"*
+The UI Communication Piece
+
+This privacy model is actually a selling point for getting subbies to use the app willingly. If a subbie knows their boss can only see them during active jobs they're much more likely to accept the app invite. Make sure the onboarding for subbies explicitly explains this.
+
+When a subbie first joins add a screen that says something like:
+
+"Your location is only shared when you're actively working on a job. As soon as you complete or pause a job, location sharing stops automatically. Businesses you work for cannot see you between jobs."
+
+That one screen will eliminate the biggest reason subbies resist using job management apps.
+
+Is This On The Team Operations Page?
+
+Yes subbies should be on the Team Operations page but visually distinct. Think of it like two sections — Your Team (employees) and Your Subbies (subcontractors). Employees have full presence. Subbies only show as active when on your jobs.
+
+The owner should never see a subbie's location without a job attached to it. That's the rule. Build the whole feature around that rule and both the owner and the subbie will trust the system.

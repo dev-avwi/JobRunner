@@ -1,0 +1,63 @@
+AppleYesterday 11:41 PM
+Hello,
+
+Thank you for your efforts to follow our guidelines. There are still some issues that need your attention.
+
+If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+
+Review Environment
+
+Submission ID: 61088bf5-f0af-4d45-acc4-e2d188ffb25b
+Review date: January 31, 2026
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.1
+
+
+Guideline 2.1 - Performance - App Completeness
+Issue Description
+
+We continue to notice that the app exhibited one or more bugs that would negatively impact users.
+
+Bug description: The Sign in with Apple was not functional. 
+
+Review device details:
+
+- Device type: iPad Air 11-inch (M3) 
+- OS version: iPadOS 26.2.1
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+Note that users expect apps they download to function on all the devices where they are available. Since your app may be downloaded onto iPad devices, it is important that it also function as expected for iPad users. 
+
+
+Guideline 2.1 - Performance - App Completeness
+
+We are unable to complete the review of the app because one or more of the in-app purchase products have not been submitted for review.
+
+Specifically, the app includes references to subscriptions but the associated in-app purchase products have not been submitted for review. 
+
+Next Steps
+
+To resolve this issue, please be sure to take action and submit your in-app purchases and upload a new binary in App Store Connect so we can proceed with our review. 
+
+Note you must provide an App Review screenshot in App Store Connect in order to submit in-app purchases for review. Learn more about required in-app purchase metadata.
+
+Resources 
+
+- Learn more about how to offer in-app purchases.
+- Learn more about submitting In-App Purchases and subscriptions to App Review.
+
+Support
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review

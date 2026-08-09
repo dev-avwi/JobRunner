@@ -1,0 +1,338 @@
+
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+1 of 1,654
+[JobRunner ERROR] frontend: Client error: Minified React error #185; visit https://reactjs.org/docs/error-de
+External
+Inbox
+
+JobRunner
+08:38 (12 hours ago)
+JobRunner ERROR Alert Category: frontend Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for t
+
+JobRunner <noreply@jobrunner.com.au>
+09:04 (12 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: 0b2f912f-e222-4124-bbec-ee6a75c8e1ac
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-12T23:04:15.229Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+09:18 (11 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-12T23:18:02.967Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+09:23 (11 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: 8388586b-2a1b-411c-99df-011008611fc4
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-12T23:23:53.153Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+09:29 (11 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-12T23:29:17.075Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+09:37 (11 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-12T23:37:40.849Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+10:17 (10 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T00:17:38.330Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+10:39 (10 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T00:38:58.480Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+10:46 (10 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: f33dd9c1-fb26-4c24-9306-d30e1068deb0
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T00:45:54.956Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+11:50 (9 hours ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: f33dd9c1-fb26-4c24-9306-d30e1068deb0
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T01:50:30.767Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+20:43 (27 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T10:43:32.397Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+20:57 (13 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T10:57:39.067Z
+
+
+JobRunner <noreply@jobrunner.com.au>
+21:03 (8 minutes ago)
+to me
+
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+User: ecbdffcb-668c-41a1-aadb-d7c44c822e6c
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+
+Error: Minified React error #185; visit https://reactjs.org/docs/error-decoder.html?invariant=185 for the full message or use the non-minified dev environment for full errors and additional helpful warnings.
+    at file:///home/runner/workspace/dist/index.js:87971:16
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle [as handle_request] (/home/runner/workspace/node_modules/express/lib/router/layer.js:95:5)
+    at /home/runner/workspace/node_modules/express/lib/router/index.js:284:15
+    at Function.process_params (/home/runner/workspace/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/express/lib/router/index.js:280:10)
+    at file:///home/runner/workspace/dist/index.js:20358:7
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+Time: 2026-05-13T11:03:18.388Z
+
+Suggestions updated

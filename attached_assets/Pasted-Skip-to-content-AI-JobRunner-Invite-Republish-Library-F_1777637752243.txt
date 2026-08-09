@@ -1,0 +1,252 @@
+Skip to content
+
+AI
+
+JobRunner
+
+
+Invite
+
+Republish
+
+
+
+
+
+
+
+Library
+
+File tree
+Search
+
+New
+Other
+Start application
+Website
+
+Documents
+JobRunner Full System Brief (Updated)
+Text
+
+JobRunner Mobile App — Complete UI/UX Design Document
+Text
+
+App Store Submission Readiness Audit Report
+Text
+
+JobRunner Full Pre-Launch Audit Report
+Text
+
+JobRunner Complete Feature Verification (364 Items)
+Text
+
+JobRunner 14-Scenario Verification Report
+Text
+
+JobRunner Complete Feature Audit
+Text
+
+Images
+JobRunner - Google Play App Icon (512x512)
+JobRunner - Google Play App Icon (512x512)
+Image
+
+JobRunner - Google Play Feature Graphic (1024x500)
+JobRunner - Google Play Feature Graphic (1024x500)
+Image
+
+App Icon (512x512) - Your actual JobRunner logo
+App Icon (512x512) - Your actual JobRunner logo
+Image
+
+
+Agent
+4
+
+
+Networking
+Private Dev URL
+Restrict Dev URL access to authenticated editors only.
+When this option is disabled, anyone with the Dev URL can access your app preview.
+
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev:5000/
+
+Dev URLs are temporary and will sleep after you leave the workspace.
+Ports
+Learn more
+Internal Port
+External Port
+Name
+Pid
+0.0.0.0:5000
+
+:80
+
+node
+4099
+
+0.0.0.0:5900
+VNC ports do not require external port
+
+rfbproxy
+3108
+
+0.0.0.0:23636
+
+:3000
+
+node
+4129
+
+
+New port
+This port config is saved in the .
+Update team operations page to match polished team redesign
+
+
+
+Show previous messages
+
+4 messages & 16 actions
+
+Checkpoint made
+55 minutes ago
+
+Worked for 2 minutes
+the demo url link is saying error 404
+
+35 minutes ago
+
+8 messages & 34 actions
+
+Checkpoint made
+30 minutes ago
+
+Worked for 4 minutes
+
+Attached Image
+
+Attached Image
+29 minutes ago
+
+1 message & 1 action
+
+Checkpoint made
+29 minutes ago
+i want this one to work dumbass not demo or whatever for fucks sake https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/
+
+28 minutes ago
+
+3 messages & 7 actions
+
+Checkpoint made
+27 minutes ago
+
+Worked for 48 seconds
+
+Attached Image
+
+Attached Image
+the background of the video mockup is different to the website abckground how can we think of ways to get rid of this, also get rid of the see in action thing above it
+
+25 minutes ago
+
+2 messages & 4 actions
+
+Checkpoint made
+24 minutes ago
+
+Worked for 1 minute
+
+Attached Image
+you can make it look more right, make it alittle bigger and higher
+
+22 minutes ago
+
+1 message & 3 actions
+
+Checkpoint made
+21 minutes ago
+
+Worked for 26 seconds
+
+Attached Image
+
+Attached Image
+i want to make the team operations/management paghe looks better and is easier to use cause it doesnt look that great right now
+
+18 minutes ago
+
+2 messages & 11 actions
+
+Worked for 1 minute
+
+Attached Image
+https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev:5000/
+
+the polished team redesign works but the team operations/management hasnt been redesigned so the team operatiosn page is a button within teams page
+
+16 minutes ago
+
+15 messages & 50 actions
+
+Checkpoint made
+5 minutes ago
+
+Worked for 10 minutes
+
+Attached Image
+this url isnt working but the other oens do https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/
+
+4 minutes ago
+
+Show less
+
+Deciding on networking port configuration (9 seconds)
+I can see the issue in your Networking pane. Look at your ports list:
+
+0.0.0.0:5000 → :5000 — this is your app (node, pid 4099) ✓
+0.0.0.0:33115 → :80 — this is the broken one. External port :80 is routed to internal port 33115, but nothing is listening there (no name, no pid). That's why the bare URL https://...replit.dev/ (which uses port 80) fails.
+Fix it in two clicks (you have to do this — I can't edit .replit from here):
+
+In the Networking pane, find the row 0.0.0.0:33115 → :80 and click the X next to :80 to delete that broken mapping.
+Then on the 0.0.0.0:5000 → :5000 row, click the :5000 on the right (External Port column) and change it to :80 in the dropdown.
+After that, the bare URL https://ff735932-...replit.dev/ will work, and the :5000 URL will stop working (only one URL can map to a port at a time).
+
+Alternative if you want both URLs to work: leave port 5000 alone, just delete the broken :33115 → :80 row and add a new port mapping with internal :5000 and external :80 (Replit lets one internal port map to multiple external ports).
+
+Take a screenshot once you've done it and I'll confirm it's working.
+
+
+Attached Image
+2 minutes ago
+
+Planning port mapping adjustment (8 seconds)
+You're halfway there. The broken :80 mapping is gone (good), and there's still an orphan 0.0.0.0:33115 row but it has no external port assigned, so it's not blocking anything.
+
+One more click to finish:
+
+In the row 0.0.0.0:5000 → :5000, click the :5000 button in the External Port column. A dropdown will open — pick :80 from the list.
+
+After that, the bare URL https://ff735932-1a5e-42dc-89e5-b025f7feea5d-00-3hwzylsjthmgp.worf.replit.dev/ will work. The :5000 URL will stop working at the same time (Replit only lets one external port serve a given internal port).
+
+If you also want the :5000 URL to keep working alongside:
+
+After changing 5000 → :80, click + New port at the bottom
+Set Internal Port to 5000, External Port to :5000
+Now both the bare URL and :5000 URL hit the same app
+Take a screenshot of the ports list once it's set and I'll confirm the bare URL is good to ship.
+
+
+Scroll to latest
+
+Make, test, iterate…
+
+
+
+Power
+
+
+
+JobRunner - Replit

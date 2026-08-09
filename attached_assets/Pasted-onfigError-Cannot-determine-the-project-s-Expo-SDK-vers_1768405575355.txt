@@ -1,0 +1,53 @@
+onfigError: Cannot determine the project's Expo SDK version because the module `expo` is not installed. Install it with `npm install expo` and try again.
+~/workspace$ npm install expo
+npm warn ERESOLVE overriding peer dependency
+npm error code ERESOLVE
+npm error ERESOLVE could not resolve
+npm error
+npm error While resolving: react-native@0.80.2
+npm error Found: @types/react@18.3.12
+npm error node_modules/@types/react
+npm error   peerOptional @types/react@"^19.0.0" from @react-native/virtualized-lists@0.80.2
+npm error   node_modules/react-native/node_modules/@react-native/virtualized-lists
+npm error     @react-native/virtualized-lists@"0.80.2" from react-native@0.80.2
+npm error     node_modules/react-native
+npm error       peer react-native@"*" from expo@54.0.31
+npm error       node_modules/expo
+npm error         expo@"*" from the root project
+npm error         8 more (@expo/cli, @expo/metro-config, expo-font, ...)
+npm error       9 more (@expo/cli, @expo/devtools, @expo/vector-icons, ...)
+npm error
+npm error Could not resolve dependency:
+npm error peerOptional @types/react@"^19.1.0" from react-native@0.80.2
+npm error node_modules/react-native
+npm error   peer react-native@"*" from expo@54.0.31
+npm error   node_modules/expo
+npm error     expo@"*" from the root project
+npm error     8 more (@expo/cli, @expo/metro-config, expo-font, ...)
+npm error   peerOptional react-native@"*" from @expo/cli@54.0.21
+npm error   node_modules/expo/node_modules/@expo/cli
+npm error     @expo/cli@"54.0.21" from expo@54.0.31
+npm error   8 more (@expo/devtools, @expo/vector-icons, expo-font, ...)
+npm error
+npm error Conflicting peer dependency: @types/react@19.2.8
+npm error node_modules/@types/react
+npm error   peerOptional @types/react@"^19.1.0" from react-native@0.80.2
+npm error   node_modules/react-native
+npm error     peer react-native@"*" from expo@54.0.31
+npm error     node_modules/expo
+npm error       expo@"*" from the root project
+npm error       8 more (@expo/cli, @expo/metro-config, expo-font, ...)
+npm error     peerOptional react-native@"*" from @expo/cli@54.0.21
+npm error     node_modules/expo/node_modules/@expo/cli
+npm error       @expo/cli@"54.0.21" from expo@54.0.31
+npm error     8 more (@expo/devtools, @expo/vector-icons, expo-font, ...)
+npm error
+npm error Fix the upstream dependency conflict, or retry
+npm error this command with --force or --legacy-peer-deps
+npm error to accept an incorrect (and potentially broken) dependency resolution.
+npm error
+npm error
+npm error For a full report see:
+npm error /home/runner/.npm/_logs/2026-01-14T15_45_28_559Z-eresolve-report.txt
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-01-14T15_45_28_559Z-debug-0.log
+~/workspace$ 

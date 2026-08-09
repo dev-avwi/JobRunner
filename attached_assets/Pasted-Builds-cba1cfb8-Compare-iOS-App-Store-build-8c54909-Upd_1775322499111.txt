@@ -1,0 +1,187 @@
+Builds
+
+cba1cfb8
+
+
+Compare
+iOS App Store build
+8c54909 · Update build configuration to use SDK-specific images Update `eas.json` to use the `sdk-54` image for iOS builds, ensuring compatibility with the Expo SDK version and resolving build errors. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: c852d1db-bc59-4b9e-a6da-21dd8461ccc3 Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/52w9vwB Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (37)
+
+33a9303
+
+8c54909
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 5, 2026 3:01 AM
+248ms
+
+44s
+
+3m 23s
+
+4m 8s
+
+30 days
+
+Logs
+
+Waiting to start
+
+4s
+
+
+Spin up build environment
+
+40s
+
+
+Install custom tools
+
+8s
+
+
+Prepare project
+
+7s
+
+
+Read eas.json
+
+1ms
+
+
+Read package.json
+
+0ms
+
+
+Install dependencies
+
+8s
+
+
+Read app config
+
+398ms
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+30s
+
+
+Calculate expo-updates runtime version
+
+240ms
+
+
+Configure Xcode project
+
+52ms
+
+
+Configure expo-updates
+
+3ms
+
+
+Bundle JavaScript
+
+21s
+
+
+Run fastlane
+
+
+1
+1m 47s
+
+
+Clean up credentials
+
+961ms
+
+
+Fail job
+
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- 'folly/coro/Coroutine.h' file not found
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+
+View in the browser

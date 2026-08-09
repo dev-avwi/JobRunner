@@ -1,0 +1,95 @@
+Category
+2
+Questionnaire
+3
+Summary
+All other app types
+Downloaded app
+Completed
+Does the app contain any ratings-relevant content (e.g. sex, violence, language) downloaded as part of the app package (code, assets)? Learn more
+
+Yes
+
+No
+User content sharing
+Completed
+Does the app natively allow users to interact or exchange content with other users through voice communication, text or sharing images or audio? Learn more
+
+Yes
+
+No
+Is shared, user-generated content the primary source of content in the app? Learn more
+
+Yes
+
+No
+Does the app permit the public sharing of nudity?
+
+Yes
+
+No
+Does the app permit the public sharing of real-world, graphic violence outside of a newsworthy context?
+
+Yes
+
+No
+Does the app include the ability to block users or user-generated content?
+
+Yes
+
+No
+Does the app include the ability to report users or user-generated content?
+
+Yes
+
+No
+Does the app include chat moderation?
+
+Yes
+
+No
+Can interactions in the app be limited to invited friends only?
+
+Yes
+
+No
+Online content
+Completed
+Does the app feature or promote content that isn't part of the initial app download, but can be accessed from the app? Examples of this type of content are films in the Netflix app, product listings in the Amazon Shopping app, songs in the Spotify app, AI-generated content or news articles in the New York Times app. Learn more
+
+Yes
+
+No
+Promotion or sale of age-restricted products or activities
+Completed
+Does the app focus on promoting or selling items or activities that are typically age-restricted, such as cigarettes, alcohol, firearms or gambling?
+
+Yes
+
+No
+Miscellaneous
+Does the app share the user's current and precise physical location with other users? Learn more
+
+Yes
+
+No
+Does the app allow users to purchase digital goods? Learn more
+
+Yes
+
+No
+Does the app include cash rewards, gift cards, play-to-earn features, convertible cryptocurrency rewards or the issuance of transferable digital assets (e.g. NFTs)?
+
+Yes
+
+No
+Is the app a web browser or search engine? Learn more
+
+Yes
+
+No
+Is the app primarily a news or educational product? Learn more
+
+Yes
+
+No

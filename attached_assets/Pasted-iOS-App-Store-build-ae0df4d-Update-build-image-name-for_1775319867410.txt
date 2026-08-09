@@ -1,0 +1,184 @@
+iOS App Store build
+ae0df4d · Update build image name for iOS builds to include full OS version Correct the macOS image name in EAS build profiles to specify the full OS version number for iOS builds, ensuring compatibility with the build environment. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: a749cca5-e869-461a-a5e7-1d8c3e4d66ec Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/vjyCLPA Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (32)
+
+64a98f4
+
+ae0df4d
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 5, 2026 1:57 AM
+142ms
+
+51s
+
+3m 31s
+
+4m 23s
+
+29 days
+
+Logs
+
+Waiting to start
+
+1s
+
+
+Spin up build environment
+
+51s
+
+
+Install custom tools
+
+37s
+
+
+Prepare project
+
+8s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+0ms
+
+
+Install dependencies
+
+10s
+
+
+Read app config
+
+436ms
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+2s
+
+
+Install pods
+
+33s
+
+
+Calculate expo-updates runtime version
+
+335ms
+
+
+Configure Xcode project
+
+94ms
+
+
+Configure expo-updates
+
+3ms
+
+
+Bundle JavaScript
+
+32s
+
+
+Run fastlane
+
+
+1
+1m 5s
+
+
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- 'folly/coro/Coroutine.h' file not found
+- 'folly/coro/Coroutine.h' file not found
+- 'folly/coro/Coroutine.h' file not found
+- no member named 'enableSamplingProfiler' in 'facebook::hermes::HermesRuntime'
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+
+View in the browser

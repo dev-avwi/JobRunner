@@ -1,0 +1,79 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+App Review
+iOS Submission
+Resubmit to App Review
+Unresolved Issues
+
+Your app version was rejected and no other items submitted can be accepted or approved. You can make edits to your app version below.
+
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.1.0 (60)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+2.5.4 Performance: Software Requirements
+
+3.1.2 Business: Payments - Subscriptions
+
+See More
+Edit
+
+Messages (1)
+
+AppleYesterday 8:06 PM
+
+Ayden VoglerYesterday 8:14 PM
+The app uses persistent background location for the Live Team Tracking feature, available to Team plan subscribers. To locate: go to More → App Settings → Location Sharing → enable 'Share Location'. Team owners can then see workers' real-time positions on the live map (Dashboard → Map icon in the top bar, or More → Team Operations → Live tab). This is a core feature for trade businesses that need to track field workers across job sites throughout the day.
+Continue DraftDelete Draft
+Date Submitted
+Apr 14, 2026 at 7:24 PM
+Submission ID
+e8a15a30-c960-45cb-a0e6-e996bb75d385
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission
+Reply to App Review
+Use the field below to:
+
+Request clarification on why your app was rejected.
+
+Provide information requested by App Review.
+
+Provide more information to help App Review better understand your app or business model. If you believe your app should be reconsidered, you can submit an appeal to the App Review Board.
+
+If you have an available TSI in your account, you can submit a code-level technical support request to Developer Technical Support (DTS) engineers.
+
+Reply
+The app uses persistent background location for the Live Team Tracking feature, available to Team plan subscribers. To locate: go to More → App Settings → Location Sharing → enable 'Share Location'. Team owners can then see workers' real-time positions on the live map (Dashboard → Map icon in the top bar, or More → Team Operations → Live tab). This is a core feature for trade businesses that need to track field workers across job sites throughout the day.
+3541
+
+Attach File
+
+Cancel
+Save Draft
+Reply
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

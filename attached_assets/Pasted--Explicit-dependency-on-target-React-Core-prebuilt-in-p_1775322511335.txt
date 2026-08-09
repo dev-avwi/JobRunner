@@ -1,0 +1,67 @@
+
+        ➜ Explicit dependency on target 'React-Core-prebuilt' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsi' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsiexecutor' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-RCTFBReactNativeSpec' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-runtimeexecutor' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-runtimescheduler' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactCommon' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactNativeDependencies' in project 'Pods'
+
+    Target 'React-featureflagsnativemodule' in project 'Pods'
+
+        ➜ Explicit dependency on target 'hermes-engine' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-Core-prebuilt' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-featureflags' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsi' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsiexecutor' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-RCTFBReactNativeSpec' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactCommon' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactNativeDependencies' in project 'Pods'
+
+    Target 'React-domnativemodule' in project 'Pods'
+
+        ➜ Explicit dependency on target 'hermes-engine' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-Core-prebuilt' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-Fabric' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-FabricComponents' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-graphics' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsi' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-jsiexecutor' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-RCTFBReactNativeSpec' in project 'Pods'
+
+        ➜ Explicit dependency on target 'React-runtimeexecutor' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactCommon' in project 'Pods'
+
+        ➜ Explicit dependency on target 'ReactNativeDependencies' in project 'Pods'
+
+        ➜ Explicit dependency on target 'Yoga' in project 'Pods'
+
+    Target 'React-CoreModules' in project 'Pods'
+
+        ➜ Explicit dependency on target 'RCTTypeSafety' in project 'Pods'
+
+
+

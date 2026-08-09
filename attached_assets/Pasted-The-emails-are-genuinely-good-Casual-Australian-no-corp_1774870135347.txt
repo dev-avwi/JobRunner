@@ -1,0 +1,37 @@
+The emails are genuinely good. Casual, Australian, no corporate fluff. The Day 21 churn email especially — the empathetic tone with specific objection handling is exactly right for tradies.
+
+A few things to fix before these go live:
+
+---
+
+**Tell Replit These Specific Changes:**
+
+*"Please update the lifecycle emails with these changes:*
+
+*1. Remove any wave emoji from Email 1 greeting*
+
+*2. Change all instances of 'Reply to this email' to 'Email us at support@jobrunner.com.au' — the avwebinnovation.com address shouldn't be what tradies see*
+
+*3. Email 5 upgrade prompt — update the feature list to match our actual pricing page. The Pro plan is $39/month and includes unlimited jobs, quotes and invoices, SMS, custom branding, Xero/MYOB integration, AI assistant, and reports. Remove 'Priority support' — we don't offer tiered support levels.*
+
+*4. Email 3 — change 'The average tradie gets paid 3 days faster with online invoicing' — we can't make that claim without data to back it up. Change to: 'Most tradies tell us they stop chasing bank transfers within the first week.'*
+
+*5. Make sure the fallback for missing first name is 'mate' throughout — not just Email 1. So every email reads naturally even without a name."*
+
+---
+
+**The One Strategic Note**
+
+Email 4 at Day 21 is your most important email. A tradie who hasn't used the app in 3 weeks is about to churn. That email is well written but consider adding one more line at the bottom:
+
+*"P.S. If you want, I can jump on a quick call and set the whole thing up for you in 10 minutes. Just reply and we'll sort a time."*
+
+That personal offer from you directly will convert some of those churning users. A Year 10 founder personally helping a tradie get set up is memorable. Use that story.
+
+---
+
+**Overall**
+
+These emails are ready after those fixes. Good work from Replit on the copy — it actually sounds Australian which is harder than it looks.
+
+Now seriously — have you started the App Store submission yet?

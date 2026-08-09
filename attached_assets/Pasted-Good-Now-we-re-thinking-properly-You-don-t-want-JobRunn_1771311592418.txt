@@ -1,0 +1,355 @@
+Good. Now we’re thinking properly.
+
+You don’t want JobRunner to just be “another tradie app.”
+
+You want it to be:
+
+• Powerful enough for a 15-person plumbing company
+• Simple enough for a one-man handyman
+• Clean enough that it feels modern
+• Deep enough that an owner can run their whole business from it
+• Identical in capability on web + mobile
+
+Let’s build this properly.
+
+⸻
+
+🔥 JOBRUNNER 2.0 – OWNER-FIRST BUSINESS PLATFORM
+
+We’re structuring this in layers so it works for:
+
+• Solo handyman
+• Small 2–5 team
+• Growing 10–20 team
+• Subcontractor-heavy business
+
+⸻
+
+🧱 CORE FOUNDATION (Must Be Rock Solid)
+
+Before adding features, this must be bulletproof:
+
+1️⃣ Single Source of Truth
+
+Every job must feed:
+	•	Timeline (append-only event log)
+	•	Financial engine
+	•	Client portal
+	•	Dispatch map
+	•	Reporting dashboard
+
+No duplicate states.
+No silent overwrites.
+Everything logs.
+
+⸻
+
+2️⃣ Role Architecture (Clean + Scalable)
+
+Roles:
+
+Owner
+	•	Full access
+	•	Financial reports
+	•	Staff rates
+	•	Profit margins
+	•	Automation rules
+
+Manager / Dispatcher
+	•	Assign jobs
+	•	Manage crew
+	•	View reports (optional)
+	•	Approve timesheets
+
+Worker
+	•	Assigned jobs only
+	•	Clock in/out
+	•	Upload photos/materials
+	•	Limited financial visibility
+
+Subcontractor
+	•	Assignment scoped
+	•	Must accept job
+	•	Limited client visibility
+	•	Optional web-only mode
+
+Office Admin
+	•	Quotes
+	•	Invoices
+	•	Client communication
+	•	No time tracking
+
+This makes it scalable.
+
+⸻
+
+📊 OWNER DASHBOARD (This is where you win)
+
+When an owner opens JobRunner, they should immediately see:
+
+Today
+	•	Revenue today
+	•	Labour hours today
+	•	Jobs in progress
+	•	Crew currently en route
+	•	Cash collected today
+
+This Week
+	•	Revenue this week
+	•	Jobs completed
+	•	Average job value
+	•	Outstanding invoices
+	•	Team utilization %
+
+Profit Snapshot
+	•	Labour cost
+	•	Material cost
+	•	Gross profit
+	•	Net profit estimate
+
+This is what ServiceM8 does well.
+This is what Visual Dispatch does well.
+This is what owners care about.
+
+⸻
+
+💰 PROFIT ENGINE (Non-Negotiable)
+
+Each job must calculate automatically:
+
+Revenue:
+	•	Quote total
+	•	Final invoice total
+
+Costs:
+	•	Labour cost (worker rate x hours)
+	•	Subcontractor cost
+	•	Material cost
+
+Profit:
+	•	Gross margin %
+	•	Net margin %
+
+Owner must be able to see:
+	•	Profit per job
+	•	Profit per worker
+	•	Profit per client
+	•	Profit per week/month
+
+Without this, it’s not business management.
+
+⸻
+
+🚛 ASSET & EQUIPMENT LAYER (Visual Dispatch Strength)
+
+You need:
+
+Equipment Registry
+	•	ID
+	•	Type
+	•	Status
+	•	Assigned to job
+	•	Assigned to worker
+	•	Maintenance due
+
+Vehicle Tracking
+	•	Vehicle assigned to worker
+	•	Which jobs it’s servicing
+	•	Basic fleet awareness
+
+Asset Timeline
+	•	Who used it
+	•	Which job
+	•	When
+
+This unlocks larger businesses.
+
+⸻
+
+👷 HANDYMAN MODE (Important)
+
+You must not overwhelm solo operators.
+
+So implement:
+
+“Simple Mode” toggle
+
+If 1 user only:
+	•	Hide asset module
+	•	Hide advanced reporting
+	•	Hide subcontractor tools
+	•	Keep clean dashboard
+
+If >3 team members:
+	•	Unlock advanced dispatch + reporting
+
+This keeps UI clean but scalable.
+
+⸻
+
+📱 MOBILE APP MUST HAVE FULL PARITY
+
+Mobile must support:
+	•	Create/edit jobs
+	•	Assign crew
+	•	Approve timesheets
+	•	View profit summary (owners)
+	•	Generate/send invoice
+	•	View client portal preview
+	•	Dispatch board view
+	•	Map view
+	•	Asset check-in/out
+	•	Reports (at least summary view)
+
+Mobile cannot be “worker-only.”
+Owner must be able to run the business from phone.
+
+⸻
+
+📍 DISPATCH & MAP (Uber-Level)
+
+Dispatch Map should show:
+	•	All active jobs
+	•	All workers (live)
+	•	All subcontractors (live or last ping)
+	•	Status color-coded
+	•	Tap → open job
+
+Tracking link:
+	•	One link per job
+	•	Multi-pin map
+	•	Clean UI
+	•	“Last updated” indicators
+
+⸻
+
+🔁 AUTOMATION ENGINE (Business-Grade)
+
+Add rule-based automation:
+
+When:
+	•	Job scheduled → send reminder
+	•	Worker en route → send tracking link
+	•	Job complete → send review request
+	•	Invoice overdue 7 days → auto reminder
+
+Owner can toggle automation on/off.
+
+⸻
+
+📄 CLIENT PORTAL PERFECTION CHECK
+
+Client must be able to:
+	•	View active jobs
+	•	View past jobs
+	•	View quotes
+	•	Accept quote (optional)
+	•	View invoices
+	•	Pay invoice
+	•	Download receipts
+	•	View photos
+	•	Track live crew
+	•	Contact dispatch
+
+Portal must:
+	•	Be OTP only
+	•	Not require password
+	•	Not expose internal notes
+
+⸻
+
+🧠 REPORTING LAYER
+
+You need at minimum:
+	•	Revenue by period
+	•	Profit by period
+	•	Jobs by status
+	•	Staff hours report
+	•	Staff performance report
+	•	Outstanding invoice report
+	•	Client lifetime value
+
+Even if simple charts at first.
+
+⸻
+
+🛠 WHAT TO TELL REPLIT (MASTER UPGRADE REQUEST)
+
+Copy this:
+
+Upgrade JobRunner from a job-tracking app into a full tradie business management platform.
+
+Requirements:
+
+1) Owner Dashboard:
+- Revenue today/week/month
+- Labour hours
+- Jobs in progress
+- Outstanding invoices
+- Profit snapshot
+
+2) Job Profit Engine:
+- Revenue vs labour cost vs material cost
+- Gross/net margin per job
+- Profit reports by worker and client
+
+3) Asset/Equipment module:
+- Equipment registry
+- Assign to job/worker
+- Status tracking
+- Maintenance tracking
+
+4) Automation system:
+- Rule-based SMS/email triggers
+- Invoice reminders
+- Job reminders
+- Review requests
+
+5) Role-based permissions:
+- Owner, Manager, Worker, Subcontractor, Admin
+- Strict backend enforcement
+
+6) Web + Mobile parity:
+- All major business functions available on both
+- Same APIs
+- Same data logic
+- Offline support on mobile
+
+7) Client portal completeness:
+- Jobs, quotes, invoices, payments, tracking
+- OTP secure
+- No internal notes exposed
+
+8) Reporting layer:
+- Revenue reports
+- Profit reports
+- Staff utilization
+- Outstanding invoices
+
+
+⸻
+
+🚀 The Big Shift
+
+If JobRunner can:
+
+• Show owner profit in real time
+• Show crew locations live
+• Track equipment
+• Manage subcontractors
+• Automate reminders
+• Handle payments cleanly
+• Run fully on mobile
+
+Then you are no longer competing as “another app.”
+
+You are competing as a business operating system for tradies.
+
+⸻
+
+If you want next, I can:
+	•	Design the exact Owner Dashboard layout (clean + powerful)
+	•	Or create a “Phase 1 / Phase 2 / Phase 3” roadmap
+	•	Or build a competitive feature matrix with ServiceM8 + Visual Dispatch side-by-side
+
+Tell me which direction.

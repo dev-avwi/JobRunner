@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppScout — Complete System Design v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d0f;--surface:#131519;--surface2:#1a1d22;--surface3:#20242a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --text:#e6e3dd;--muted:#5e5d59;--subtle:#8a8880;
+  --accent:#c8f06e;--purple:#8b7cf8;--red:#ff5757;
+  --amber:#f5a623;--green:#3ecf8e;--blue:#4fb3ff;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;line-height:1.6}
+.doc{max-width:960px;margin:0 auto;padding:48px 28px 80px}
+h1{font-family:'Instrument Serif',serif;font-size:34px;font-weight:400;letter-spacing:-0.5px;margin-bottom:8px}
+h2{font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;letter-spacing:-0.3px;margin-bottom:4px;margin-top:0}
+h3{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px}
+p{color:var(--subtle);line-height:1.65;margin-bottom:10px}
+code{font-family:'DM Mono',monospace;font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--accent);border:1px solid var(--border)}
+.divider{height:1px;background:var(--border);margin:44px 0}
+.label{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.subtitle{font-size:14px;color:var(--subtle);max-width:580px;line-height:1.6;margin-bottom:28px}
+.tag{display:inline-flex;align-items:center;padding:3px 8px;border-radius:4px;font-size:11px;font-family:'DM Mono',monospace;margin-right:4px;margin-bottom:4px}
+.t-green{background:rgba(62,207,142,0.1);color:var(--green);border:1px solid rgba(62,207,142,0.2)}
+.t-purple{background:rgba(139,124,248,0.1);color:var(--purple);border:1px solid rgba(139,124,248,0.2)}
+.t-amber{background:rgba(245,166,35,0.1);color:var(--amber);border:1px solid rgba(245,166,35,0.2)}
+.t-red{background:rgba(255,87,87,0.1);color:var(--red);border:1px solid rgba(255,87,87,0.2)}
+.t-blue{background:rgba(79,179,255,0.1);color:var(--blue);border:1px solid rgba(79,179,255,0.2)}
+.t-gray{background:var(--surface2);color:var(--subtle);border:1px solid var(--border2)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:12px}
+.card2{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:10px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.card-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.locked{border-left:3px solid var(--green)}
+.warn-card{border-left:3px solid var(--amber)}
+.critical-card{border-left:3px solid var(--red)}
+.info-card{border-left:3px solid var(--blue)}
+.decision-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.decision-body{font-size:12px;color:var(--subtle);line-height:1.6;margin-bottom:0}
+.decision-note{font-size:11px;color:var(--green);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.section{margin-bottom:56px}
+.num-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.num-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.num-big{font-family:'Instrument Serif',serif;font-size:30px;color:var(--text);line-height:1;margin-bottom:3px}
+.num-label{font-size:11px;color:var(--muted)}
+.step{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:white;flex-shrink:0;margin-top:1px}
+.step-num.done{background:var(--green)}
+.step-num.gray{background:var(--surface2);border:1px solid var(--border2);color:var(--muted)}
+.step-content h3{margin-bottom:3px}
+.step-content p{margin:0;font-size:12px}
+.arch-row{display:flex;align-items:flex-start;gap:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:8px}
+.arch-n{font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);min-width:20px;margin-top:2px}
+.arch-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px}
+.arch-desc{font-size:12px;color:var(--subtle);line-height:1.5;margin-bottom:6px}
+.arch-tech{display:flex;gap:5px;flex-wrap:wrap}
+.tech-tag{font-family:'DM Mono',monospace;font-size:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--subtle);padding:2px 7px;border-radius:4px}
+.prob{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:8px}
+.prob-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:7px}
+.prob-body{font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:6px}
+.prob-sol{font-size:11px;color:var(--green);line-height:1.55;padding-top:6px;border-top:1px solid var(--border)}
+.prob-sol::before{content:'→ ';font-weight:500}
+.flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:20px}
+.flow-box{background:var(--surface);border:1px solid var(--border2);border-radius:7px;padding:8px 14px;font-size:12px;color:var(--text)}
+.flow-box.active{border-color:var(--purple);background:rgba(139,124,248,0.08);color:var(--purple)}
+.flow-arr{color:var(--muted);padding:0 8px;font-size:14px}
+.timeline{position:relative;padding-left:18px;margin-bottom:20px}
+.timeline::before{content:'';position:absolute;left:5px;top:0;bottom:0;width:1px;background:var(--border2)}
+.tl-item{position:relative;margin-bottom:14px;padding-left:14px}
+.tl-item::before{content:'';position:absolute;left:-13px;top:4px;width:8px;height:8px;border-radius:50%;background:var(--purple);border:2px solid var(--bg)}
+.tl-item h4{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px}
+.tl-item p{font-size:11px;color:var(--muted);margin:0;line-height:1.5}
+.brief-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--subtle);line-height:1.9}
+.brief-block .section-head{color:var(--accent);font-weight:500;display:block;margin-top:14px;margin-bottom:4px}
+.brief-block .first{margin-top:0}
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- Header -->
+<div class="section">
+  <div class="label">AppScout — System Design v2 · April 2026</div>
+  <h1>Complete System Design<br>All Decisions Locked</h1>
+  <p class="subtitle">Every decision from every conversation, locked and ready to hand to Replit the moment JobRunner ships. Read every section before writing a single line of code.</p>
+  <div style="margin-top:16px">
+    <span class="tag t-green">✓ Vision locked</span>
+    <span class="tag t-green">✓ 24 problems pre-solved</span>
+    <span class="tag t-green">✓ Flow recorder designed</span>
+    <span class="tag t-green">✓ Annotation style locked</span>
+    <span class="tag t-green">✓ Credit system defined</span>
+    <span class="tag t-purple">Working name: AppScout</span>
+    <span class="tag t-gray">Web only · V1 MVP</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 1: The Vision -->
+<div class="section">
+  <div class="label">01 — The vision</div>
+  <h2>What this product actually is</h2>
+  <p class="subtitle">The one paragraph that every engineering decision flows from. Replit should read this before touching anything.</p>
+
+  <div class="card locked">
+    <div class="decision-title">The product vision — locked</div>
+    <div class="decision-body">AppScout is an AI-powered app quality analyser. The user pastes their app URL and records a walkthrough of their own app. The system replays that recording inside a live browser session, streams the video directly to the user's dashboard, and simultaneously runs Claude vision analysis on every screen as it's visited. Handwritten-style annotations draw themselves directly onto the live video at the exact moment an issue is found. A one-line subtitle appears at the bottom of the video telling the user what the AI is looking at right now. When the session ends the user gets four exports — raw video, annotated video, full PDF report, and individual screenshots. The experience is immersive, premium, and unlike anything that currently exists. Nobody has built this combination of live browser streaming, self-drawing annotations, simultaneous AI analysis, and a complete export suite.</div>
+    <div class="decision-note">This is the north star. Every engineering decision that conflicts with this vision needs to be flagged and discussed before proceeding.</div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card2 locked">
+      <div class="decision-title">What it is</div>
+      <div class="decision-body">An AI that navigates your app, finds design and UX problems in real time, draws attention to them visually, and hands you a complete report you can act on or share with a client.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">What it is not</div>
+      <div class="decision-body">Not a crash tester. Not a performance monitor. Not a session recorder for real users. Not a static screenshot uploader. None of those exist in this product.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 2: Locked decisions -->
+<div class="section">
+  <div class="label">02 — Locked decisions</div>
+  <h2>Every decision confirmed, nothing left open</h2>
+  <p class="subtitle">These were all confirmed. Replit does not need to make any of these decisions. They are already made.</p>
+
+  <!-- Flow recorder -->
+  <h3 style="margin-bottom:8px;color:var(--accent)">Flow recorder</h3>
+
+  <div class="card2 locked">
+    <div class="decision-title">How recording works — locked</div>
+    <div class="decision-body">User pastes their app URL. The app loads inside the AppScout dashboard in an embedded browser. They click Start recording. From that moment every scroll, click, form input, hover, and navigation event is captured. They use their app completely normally. A floating toolbar shows recording duration and a manual screenshot button — pressing it flags that screen as a priority for the AI to analyse carefully. When done they click Stop recording. They see a real-time preview of everything that was captured as they recorded, then a full replay before submitting. If they're unhappy with the recording they can redo it completely. One-click redo, no penalty.</div>
+    <div class="decision-note">The recording is stored as a Playwright trace file. On submit it gets queued as a crawl job and replayed exactly.</div>
+  </div>
+
+  <div class="card2 locked">
+    <div class="decision-title">Pre-recording tips overlay — locked</div>
+    <div class="decision-body">Before the recording starts a tips overlay appears for 3 seconds. Tips: Go slowly — pause on each screen for 2-3 seconds. Click everything you want analysed. Use the screenshot button to flag important moments. Navigate through your main user flows. The overlay auto-dismisses and recording begins. Tips are dismissable immediately if the user has seen them before.</div>
+  </div>
+
+  <!-- Annotation style -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Annotation style — the most important design decision</h3>
+
+  <div class="card locked">
+    <div class="decision-title">Self-drawing annotations — locked</div>
+    <div class="decision-body">Every annotation draws itself onto the screen like handwriting. No pen visible — just the annotation appearing. The shape draws first (circle, arrow, or underline depending on issue type), then the label text appears letter by letter after the shape finishes. Total animation duration 600-800 milliseconds per annotation. This is implemented as SVG stroke animation — stroke-dashoffset animates from full path length to zero, making the stroke appear to draw itself. The animation speed makes it feel live and intentional, not like a loading state.</div>
+    <div class="decision-note">This animation is the signature visual moment of the product. It is also the latency buffer — the 700ms drawing time masks any slight delay between Claude finishing analysis and the annotation appearing. One mechanism doing two jobs.</div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card2 locked">
+      <div class="decision-title">Annotation colours</div>
+      <div class="decision-body">Red — critical issues. Amber — warnings. Green — passed checks. Each has its own SVG stroke colour and label background. Consistent with severity system throughout the product.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Annotation shapes</div>
+      <div class="decision-body">Circle — draws around a problematic element. Arrow — points to a specific location. Underline — highlights text copy issues. Shape chosen automatically based on issue type returned in Claude JSON.</div>
+    </div>
+  </div>
+
+  <!-- Subtitle system -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Subtitle system — not a commentator</h3>
+
+  <div class="card2 locked">
+    <div class="decision-title">Subtitles not commentary — locked</div>
+    <div class="decision-body">No narration. No full commentary track. Just clean one-line subtitles at the bottom of the video like a documentary. Maximum 8 words per subtitle. Appears when the AI starts looking at a new screen or finds something worth surfacing. Fades out after 3 seconds. Never competes with what the user is watching. Font is clean and slightly editorial — DM Sans medium weight with generous letter spacing. Subtle dark pill background behind the text for readability over any app colour.</div>
+  </div>
+
+  <div class="card2 locked">
+    <div class="decision-title">Status indicator — top right of video</div>
+    <div class="decision-body">Three states only: Navigating (when Playwright is moving between screens), Analysing (when Claude is processing a screenshot), Issue found (brief flash with colour pulse when annotation is about to appear). That is all. No other text in the video area.</div>
+  </div>
+
+  <!-- Video sync -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Video sync and pause behaviour</h3>
+
+  <div class="card locked">
+    <div class="decision-title">The pause design — locked</div>
+    <div class="decision-body">The 2-3 second hold on each new screen is not a loading pause. It is a designed moment. During the hold: the subtitle shows what the AI is looking at, the status shows Analysing, and the annotation begins drawing itself if the analysis is ready. The hold feels like the AI taking a breath to look properly. If it is designed correctly the user never perceives it as waiting — they perceive it as the AI working. The pause must always have visual life. It is never an empty frozen screen.</div>
+    <div class="decision-note">Maximum hold is 3 seconds regardless of whether analysis has returned. If Claude is slow the annotation arrives late and attaches to the timeline at the correct timestamp. The video always resumes at 3 seconds. No exceptions.</div>
+  </div>
+
+  <!-- Credit system -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Credit and pricing system</h3>
+
+  <div class="card locked">
+    <div class="decision-title">Token-based subscription — locked direction</div>
+    <div class="decision-body">Subscription plans include a monthly token allowance. Tokens are spent per scan based on scan type and screen count. Scan types and approximate costs: Full app scan — 100 tokens (up to 30 screens), Scenario scan — 50 tokens (specific user flow), Quick audit — 20 tokens (single screen or small section). Exact token costs to be calibrated once the analysis pipeline is built and real API costs are known — do not hardcode these until then. Top-up packs available for purchase when monthly allowance is exhausted. This follows the Originality.ai model — familiar and understood by developers.</div>
+    <div class="decision-note">Token costs must be calibrated against real Claude API costs with a margin. Do not finalise token pricing until the pipeline is built and real costs measured.</div>
+  </div>
+
+  <div class="card-grid-3">
+    <div class="card2 locked">
+      <div class="decision-title">Indie — $29/mo</div>
+      <div class="decision-body">Monthly token allowance for solo developers. Full scan, scenario, and quick audit types included. Shareable report link included.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Team — $99/mo</div>
+      <div class="decision-body">Larger token allowance. Up to 5 users. All scan types. Priority analysis queue. PDF export included.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Agency — $249/mo</div>
+      <div class="decision-body">Largest token allowance. Unlimited users. White label report option. Client shareable links with agency branding. Priority support.</div>
+    </div>
+  </div>
+
+  <!-- Exports -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Export suite</h3>
+
+  <div class="card-grid">
+    <div class="card2 locked">
+      <div class="decision-title">Raw video — MP4</div>
+      <div class="decision-body">Clean recording of the browser session with no overlays. Compressed to under 50MB via H.264 CRF 28. Web quality default, full quality option with file size shown before downloading.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Annotated video — MP4</div>
+      <div class="decision-body">Full session with annotation overlays and subtitle text baked in. FFmpeg merges the canvas layer with the raw video. This is the primary shareable asset — plays anywhere without special software.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Full report — PDF + web</div>
+      <div class="decision-body">Every screen thumbnailed. Issues listed by severity with exact location, problem, and fix. Overall score. Breakdown by category and pass type. This is what agencies send to clients.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Screenshots — ZIP</div>
+      <div class="decision-body">Every captured screen as a clean PNG with no overlays. Useful for dropping into Figma, design tools, or Jira tickets. Named by screen path for easy organisation.</div>
+    </div>
+  </div>
+
+  <div class="card2 locked">
+    <div class="decision-title">Shareable link</div>
+    <div class="decision-body">Generates a unique public URL. Anyone can view the annotated video and full report without an account. Link served from a hosted public report page. Unique token stored in PostgreSQL against the run. Free tier links expire after 30 days. Paid tier links permanent. The shareable link is the primary organic growth mechanic — users share their audit results and others discover the product.</div>
+  </div>
+
+  <!-- Product name -->
+  <h3 style="margin-bottom:8px;margin-top:24px;color:var(--accent)">Product name</h3>
+
+  <div class="card2 warn-card">
+    <div class="decision-title">Working name: AppScout — not final</div>
+    <div class="decision-body">AppScout is the working name. Final name not decided. Candidates worth considering: Lensed (visual, premium feeling), Flaw (provocative — "run Flaw on your app before your users do"), Screenwise, Auditly, Vantage, Crux, Arca. Honest pick: Lensed or Flaw. Decision needed before buying domain and setting up branding.</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 3: User flow -->
+<div class="section">
+  <div class="label">03 — User flow</div>
+  <h2>Every screen in order</h2>
+
+  <div class="flow">
+    <div class="flow-box">Sign up</div><div class="flow-arr">→</div>
+    <div class="flow-box active">Setup</div><div class="flow-arr">→</div>
+    <div class="flow-box">Record flow</div><div class="flow-arr">→</div>
+    <div class="flow-box">Live analysis</div><div class="flow-arr">→</div>
+    <div class="flow-box">Report + export</div><div class="flow-arr">→</div>
+    <div class="flow-box">History</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 1 — Setup</div>
+    <div class="decision-body">Left side: URL input, credentials input, custom instruction textarea (optional), analysis type checkboxes. Right side: credit cost estimate for selected scan type, tips panel. Two primary actions: Record my flow (primary, purple button) and Let AI navigate (secondary, V2 only — greyed out in V1 with "Coming soon" label). Credit estimate updates live as user selects analysis types.</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 2 — Recording</div>
+    <div class="decision-body">Full screen embedded browser showing the user's app. Floating toolbar at top: recording timer, pause button, screenshot button (flags current screen for priority analysis), stop button. Real-time capture preview shown in a small strip at the bottom — thumbnails of screens captured so far appearing as user navigates. Tips overlay shown for 3 seconds at start then dismissed.</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 3 — Recording review</div>
+    <div class="decision-body">User sees full replay of their recording before submitting. Scrubber to jump to any point. List of captured screens on the left. Option to redo recording. Submit button fires the analysis job. Credit cost confirmed before submitting. WebSocket connection opens immediately on submit.</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 4 — Live analysis (core experience)</div>
+    <div class="decision-body">Three independent panels. Left sidebar: screen list filling in real time, each with a coloured status dot. Center: live video stream with subtitle overlay at bottom, status indicator top right, annotation layer on top, timeline scrubber at bottom showing every captured screen as a tick mark. Right panel: score updating live, three tabs (Feed / Issues / Screens), live commentary feed, issue cards appearing as findings arrive, four download buttons greyed out until scan completes.</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 5 — Report and export</div>
+    <div class="decision-body">Score reveal animation — counts up from zero to final score. Issue count numbers appear one by one. All screen thumbnails displayed in a row, clickable to jump to that screen's detail. Four download buttons now active with file sizes shown. Shareable link generated and displayed with one-click copy. Option to re-run scan with same or modified settings.</div>
+  </div>
+
+  <div class="card2">
+    <div class="decision-title">Screen 6 — History dashboard</div>
+    <div class="decision-body">All previous scans listed by app URL and date. Score shown per scan. Quick re-run button. Compare two scans side by side (V2 feature, show in UI as coming soon). Token balance displayed prominently with top-up link.</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 4: All states -->
+<div class="section">
+  <div class="label">04 — States</div>
+  <h2>Every state the live screen can be in</h2>
+  <p class="subtitle">Every state must have a designed UI. If Replit doesn't know what a state should look like it will guess and get it wrong.</p>
+
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:8px"></div>idle</div><div class="decision-body">Setup form visible. No active job. Token balance shown.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block;margin-right:8px"></div>initialising</div><div class="decision-body">Browser launching. Subtitle: "Starting browser..." Center shows a clean loading state — not a spinner, a pulsing AppScout wordmark.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);display:inline-block;margin-right:8px"></div>authenticating</div><div class="decision-body">Playwright filling login form visible in live video. Subtitle: "Logging in..." Status: Navigating.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--purple);animation:pulse 1s infinite;display:inline-block;margin-right:8px"></div>crawling</div><div class="decision-body">Video playing. Playwright navigating. Subtitle showing current screen name. Status: Navigating.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:8px"></div>paused for analysis</div><div class="decision-body">Maximum 3-second hold. Subtitle showing what AI is examining. Status: Analysing. Annotation beginning to draw if ready. Subtle pill overlay: "AI finishing analysis" — small, non-intrusive.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:8px"></div>annotation drawing</div><div class="decision-body">SVG stroke animation playing. Shape drawing itself over 600-800ms. Status: Issue found with brief colour pulse. Label text appearing after shape completes.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:8px"></div>blocked — bot protection</div><div class="decision-body">Clear error state. Never silent failure. Message: "Bot protection detected on this app. To proceed: whitelist our crawler IP [IP shown], or use manual screenshot upload." Run is paused, not killed — user can action and retry.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:8px"></div>auth failed</div><div class="decision-body">Login credentials didn't work. Video shows the failed login. Clear message with option to update credentials and retry from start.</div></div>
+  <div class="card2"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block;margin-right:8px"></div>error</div><div class="decision-body">Unexpected crash. Save all captured screenshots and analysis results so far. Show partial report option. Never lose work silently.</div></div>
+  <div class="card2 locked"><div class="decision-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px"></div>complete</div><div class="decision-body">Score counts up from zero. Issue numbers appear one by one. All downloads unlock simultaneously with a subtle animation. Share link generated. This is a moment — design it as a reveal, not a page load.</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 5: Architecture -->
+<div class="section">
+  <div class="label">05 — Architecture</div>
+  <h2>Seven layers — build in this exact order</h2>
+
+  <div class="arch-row">
+    <div class="arch-n">01</div>
+    <div style="flex:1">
+      <div class="arch-name">Analysis pipeline <span style="color:var(--green);font-size:11px;font-weight:400">— build first, test manually from day one</span></div>
+      <div class="arch-desc">Claude vision API calls with structured JSON output. Two passes per screen — layout/visual quality and UX/copy quality. Test by manually feeding screenshots before the crawler exists. This is where prompt iteration happens. Success metric: a senior designer agrees with 80%+ of findings. Do not proceed to crawler until this bar is met.</div>
+      <div class="arch-tech"><div class="tech-tag">Claude vision API</div><div class="tech-tag">structured JSON</div><div class="tech-tag">two-pass system</div><div class="tech-tag">S3 storage</div><div class="tech-tag">80% agreement success metric</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">02</div>
+    <div style="flex:1">
+      <div class="arch-name">Playwright crawler worker</div>
+      <div class="arch-desc">Authenticated session via saved cookies. Playwright trace replay from recorded flow. CDP screencast streaming live video frames via WebSocket. Screenshot capture on navigation and significant DOM mutations. Perceptual hash deduplication (pHash). Network idle + DOM stability wait before each screenshot. SPA support via MutationObserver. Maximum 8-second screenshot wait cap.</div>
+      <div class="arch-tech"><div class="tech-tag">Playwright</div><div class="tech-tag">CDP screencast</div><div class="tech-tag">recordVideo</div><div class="tech-tag">pHash dedup</div><div class="tech-tag">MutationObserver</div><div class="tech-tag">stealth mode</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">03</div>
+    <div style="flex:1">
+      <div class="arch-name">Redis + Bull job queue</div>
+      <div class="arch-desc">Two job types: crawl-job and analysis-job. Analysis jobs fire immediately per screenshot — do not wait for crawl to finish. Jobs persist through browser tab closure. Exponential backoff with jitter on all Claude API calls. Retry up to 3 times before marking failed. Analysis queue concurrency limited below Claude rate limit threshold.</div>
+      <div class="arch-tech"><div class="tech-tag">Redis</div><div class="tech-tag">Bull</div><div class="tech-tag">separate queues</div><div class="tech-tag">retry on failure</div><div class="tech-tag">rate limit handling</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">04</div>
+    <div style="flex:1">
+      <div class="arch-name">WebSocket server</div>
+      <div class="arch-desc">Five event types: screen:discovered, screen:paused, annotation:ready, issue:found, run:complete. JWT authenticated. Client reconnect replays all missed events from the job log — user never loses progress if tab closes. CDP video frames also streamed via WebSocket to the video player.</div>
+      <div class="arch-tech"><div class="tech-tag">WebSocket</div><div class="tech-tag">event replay</div><div class="tech-tag">JWT auth</div><div class="tech-tag">CDP frame streaming</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">05</div>
+    <div style="flex:1">
+      <div class="arch-name">REST API</div>
+      <div class="arch-desc">Six core endpoints. POST /runs, GET /runs/:id, GET /runs/:id/screens, POST /reports/:id/share, POST /reports/:id/pdf, GET /reports/public/:token. Same JWT auth, error handling, and response patterns as JobRunner. Document any deviation from JobRunner patterns.</div>
+      <div class="arch-tech"><div class="tech-tag">Node.js</div><div class="tech-tag">Express</div><div class="tech-tag">JWT</div><div class="tech-tag">JobRunner patterns</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">06</div>
+    <div style="flex:1">
+      <div class="arch-name">Frontend dashboard</div>
+      <div class="arch-desc">React. Six screens as defined in user flow section. Live analysis screen has three completely independent panels — they do not wait for each other. Video player renders CDP frames on canvas at target 24fps. SVG annotation layer sits above the video canvas. Subtitle overlay sits above the annotation layer. All three layers independently updated. Follow JobRunner component patterns.</div>
+      <div class="arch-tech"><div class="tech-tag">React</div><div class="tech-tag">canvas video player</div><div class="tech-tag">SVG annotation layer</div><div class="tech-tag">WebSocket client</div><div class="tech-tag">JobRunner patterns</div></div>
+    </div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-n">07</div>
+    <div style="flex:1">
+      <div class="arch-name">Report generator + S3 storage</div>
+      <div class="arch-desc">FFmpeg merges raw video with canvas annotation layer and subtitle text into annotated MP4. Puppeteer generates PDF. All screenshots and videos in S3 — never PostgreSQL binary storage. Free tier: 30-day S3 expiry lifecycle rule. Paid: 1-year. PDF generation is a Bull job not a synchronous API call. Shareable link serves a public React page authenticated only by the share token.</div>
+      <div class="arch-tech"><div class="tech-tag">FFmpeg</div><div class="tech-tag">Puppeteer</div><div class="tech-tag">AWS S3</div><div class="tech-tag">lifecycle expiry</div><div class="tech-tag">public share token</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 6: Pre-solved problems -->
+<div class="section">
+  <div class="label">06 — Pre-solved problems</div>
+  <h2>24 problems. All solved before building starts.</h2>
+
+  <div class="num-grid">
+    <div class="num-card"><div class="num-big">24</div><div class="num-label">Identified</div></div>
+    <div class="num-card"><div class="num-big">24</div><div class="num-label">Solved</div></div>
+    <div class="num-card"><div class="num-big">5</div><div class="num-label">Blockers</div></div>
+    <div class="num-card"><div class="num-big">0</div><div class="num-label">Unresolved</div></div>
+  </div>
+
+  <h3 style="color:var(--red);margin-bottom:10px">Blockers — solve before building anything else</h3>
+
+  <div class="prob critical-card">
+    <div class="prob-title"><span class="tag t-red" style="margin:0;font-size:10px">Blocker 1</span> SPA navigation not triggering events</div>
+    <div class="prob-body">React/Vue/Angular apps change content without full page navigation. waitForNavigation never fires. Crawler sits on first screen forever.</div>
+    <div class="prob-sol">Watch two signals: URL hash/path changes via History API AND significant DOM mutations via MutationObserver. Either triggers screen discovery. Debounce DOM mutations 500ms.</div>
+  </div>
+
+  <div class="prob critical-card">
+    <div class="prob-title"><span class="tag t-red" style="margin:0;font-size:10px">Blocker 2</span> Screenshot capturing half-loaded screens</div>
+    <div class="prob-body">Screenshot fires immediately on navigation. Heavy JS apps take 2-4 seconds to render. Claude analyses a skeleton screen and gives useless feedback.</div>
+    <div class="prob-sol">Two-condition wait: networkidle (no requests for 500ms) AND DOM stability (no mutations for 300ms). Both required. Cap at 8 seconds maximum.</div>
+  </div>
+
+  <div class="prob critical-card">
+    <div class="prob-title"><span class="tag t-red" style="margin:0;font-size:10px">Blocker 3</span> Bot protection blocking the crawler</div>
+    <div class="prob-body">Cloudflare, Imperva, and other CDN protection blocks the crawler within seconds. Product appears broken with no helpful error.</div>
+    <div class="prob-sol">Playwright stealth mode plugin. Detect block pages via known CAPTCHA selectors or 403/429 responses. Never silent fail — clear message with IP whitelist instructions or manual upload fallback.</div>
+  </div>
+
+  <div class="prob critical-card">
+    <div class="prob-title"><span class="tag t-red" style="margin:0;font-size:10px">Blocker 4</span> Auth flows and session expiry mid-crawl</div>
+    <div class="prob-body">Long scans on apps with short session timeouts. User gets logged out mid-crawl. All subsequent screens are the login page.</div>
+    <div class="prob-sol">Monitor each screenshot for login page indicators. If detected mid-crawl, auto re-authenticate using stored credentials. If re-auth fails, pause and notify via WebSocket with option to update credentials.</div>
+  </div>
+
+  <div class="prob critical-card">
+    <div class="prob-title"><span class="tag t-red" style="margin:0;font-size:10px">Blocker 5</span> Claude rate limits during parallel analysis</div>
+    <div class="prob-body">120 API calls in minutes from parallel analysis across multiple users hits rate limits. Jobs fail silently or return errors stored as results.</div>
+    <div class="prob-sol">Exponential backoff with jitter. Analysis queue concurrency capped below rate limit threshold. Failed jobs retry up to 3 times. Rate limit errors never stored as results — always trigger retry.</div>
+  </div>
+
+  <h3 style="color:var(--amber);margin-bottom:10px;margin-top:24px">Handle during build — standard engineering practice</h3>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 6</span> Cookie consent banners</div><div class="prob-body">Banner obscures content. All analysis is about the cookie UI not the product.</div><div class="prob-sol">Detect common consent selectors (OneTrust, Cookiebot). Auto-click accept. If unknown, ask Claude to identify and click dismiss.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 7</span> Infinite scroll and pagination loops</div><div class="prob-body">Crawler scrolls or paginates forever. Never finishes.</div><div class="prob-sol">pHash catches repeated content at 90% similarity. Cap screenshots per domain path at 5. Mark infinite scroll screens and analyse first viewport only.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 8</span> External links taking crawler off-domain</div><div class="prob-body">Crawler follows links to documentation, social media, partner sites.</div><div class="prob-sol">Intercept all navigation. Block any destination outside target domain. Log as "external link found" without following.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 9</span> File download dialogs blocking navigation</div><div class="prob-body">Download dialog triggered. Playwright hangs. Crawl freezes.</div><div class="prob-sol">Intercept all download events. Cancel automatically. Log as "download trigger found" in report.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 10</span> Modal states not captured</div><div class="prob-body">Confirmation dialogs, form modals, lightboxes never triggered. Important interaction patterns missed.</div><div class="prob-sol">After primary crawl, run modal detection pass — find buttons with ARIA roles suggesting modals, click each, screenshot, close. Separate pass.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 11</span> Video file too large to download</div><div class="prob-body">10-minute session at full resolution produces 200-400MB MP4.</div><div class="prob-sol">Record at 1280x800, compress H.264 CRF 28 via FFmpeg post-processing. Target under 50MB. Two quality options on download with file size shown before clicking.</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 12</span> User closes tab mid-analysis</div><div class="prob-body">Long runs. User closes tab. Returns to find run gone. All progress lost.</div><div class="prob-sol">Bull jobs run server-side independently of browser. WebSocket reconnect replays all missed events. Active runs visible on history dashboard. Email notification on completion (opt-in).</div></div>
+
+  <div class="prob warn-card"><div class="prob-title"><span class="tag t-amber" style="margin:0;font-size:10px">Warning 13</span> CDP screencast frame rate inconsistency</div><div class="prob-body">CDP delivers 5-30fps depending on server load. At 5fps it looks like a slideshow not a video.</div><div class="prob-sol">Set explicit target frame rate in CDP configuration. Provision server resources to hit 24fps minimum. Monitor frame rate per session. This is the most important performance metric to watch in production.</div></div>
+
+  <h3 style="color:var(--blue);margin-bottom:10px;margin-top:24px">Handle during build — edge cases</h3>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 14</span> Annotation coordinates misaligned on different screen sizes</div><div class="prob-body">Accessibility tree returns coordinates at original browser viewport size. Dashboard renders video at different dimensions. Annotations offset from elements.</div><div class="prob-sol">Normalise all coordinates to video display dimensions at render time. Store raw coordinates, compute scale factor, apply to all annotation positions before drawing to canvas.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 15</span> Claude false positives destroying trust</div><div class="prob-body">Claude flags intentional minimalist design as empty state error. Developer dismisses the tool after one wrong annotation.</div><div class="prob-sol">System prompt: "Only flag issues you would raise in a real design review meeting. If unsure whether intentional, do not flag. Include confidence score — only return findings above 80%." Build thumbs up/down on each finding for user feedback.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 16</span> Canvas and WebGL content</div><div class="prob-body">Apps with canvas-based UI can't be meaningfully analysed from screenshots.</div><div class="prob-sol">Detect canvas elements over 30% of viewport. Flag with note: "Canvas/WebGL content detected — visual analysis limited." Still run UX/copy on any non-canvas elements.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 17</span> Apps requiring MFA or 2FA</div><div class="prob-body">Two-factor authentication requires a phone code. Can't be automated.</div><div class="prob-sol">Detect 2FA step after credentials entry. Pause and prompt: "This app uses 2FA. Enter a session token from your browser cookies instead." Provide Chrome DevTools instructions.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 18</span> Multiple tabs opened by target app</div><div class="prob-body">App opens content in new tabs. Playwright only controls original page. New tab content never analysed.</div><div class="prob-sol">Listen for new page events on browser context. Same domain: add to crawl queue. Different domain: close immediately.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 19</span> App requires localhost or VPN</div><div class="prob-body">Cloud crawler can't reach staging or localhost environments.</div><div class="prob-sol">V1: document clearly in onboarding. Provide ngrok guide. V2: local crawler agent running on user's machine streaming to cloud dashboard.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 20</span> Playwright memory leak on long runs</div><div class="prob-body">Browser context accumulates memory on 50+ screen apps. Worker crashes mid-run.</div><div class="prob-sol">New browser context every 20 pages. Transfer session cookie to new context. Monitor memory per worker — reset context at 500MB threshold.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 21</span> S3 storage costs unbounded</div><div class="prob-body">Hundreds of PNGs and two MP4s per scan. Grows without limit.</div><div class="prob-sol">S3 lifecycle rule: free tier 30-day expiry, paid 1-year. Shareable links check asset existence before serving — show "report expired" with re-run option if deleted. JSON analysis results stored in PostgreSQL permanently regardless.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 22</span> PDF generation timeout on large reports</div><div class="prob-body">50-screen report with many annotated screenshots. PDF takes too long. Request times out.</div><div class="prob-sol">PDF generation is a Bull job not a synchronous call. User clicks Generate PDF — job queued — WebSocket fires when ready — download link appears. Never block waiting for PDF.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 23</span> Annotated video audio sync</div><div class="prob-body">FFmpeg merging annotation overlay with video introduces sync issues if frame rates differ.</div><div class="prob-sol">Record without audio — apps don't need audio for QA. Eliminates sync problem entirely. If audio needed in future use -vsync cfr flag.</div></div>
+
+  <div class="prob info-card"><div class="prob-title"><span class="tag t-blue" style="margin:0;font-size:10px">Info 24</span> Analysis results arriving after report generated</div><div class="prob-body">User ends run manually while jobs still queued. Report generated. Remaining results arrive late. Report is incomplete but user already has it.</div><div class="prob-sol">Reports generated lazily — pull from database at request time, not at run completion. Shareable link always serves latest version. Banner shown if jobs still pending: "Analysis still running — this report updates automatically."</div></div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 7: Success metrics -->
+<div class="section">
+  <div class="label">07 — Success metrics</div>
+  <h2>How to know if the product is actually working</h2>
+
+  <div class="card locked">
+    <div class="decision-title">Analysis quality metric — the most important measure</div>
+    <div class="decision-body">A senior designer shown the same screenshot would agree with at least 80% of the findings Claude returned. Test this in week one before the crawler exists. Take 10 screenshots of real apps. Run them through the analysis pipeline. Show the output to someone with design experience. If they agree with 8 out of 10 findings the prompt is working. If they agree with 4 out of 10 the prompt needs rework. Do not proceed until this bar is consistently met.</div>
+    <div class="decision-note">This test is the single most important thing to do before building anything else. The analysis quality is the product. Everything else is delivery infrastructure.</div>
+  </div>
+
+  <div class="card-grid">
+    <div class="card2 locked">
+      <div class="decision-title">Video experience metric</div>
+      <div class="decision-body">CDP stream delivers minimum 24fps on a medium complexity web app on production server hardware. Test before building the full system around it. If 24fps can't be achieved consistently the video experience doesn't match the vision.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Annotation precision metric</div>
+      <div class="decision-body">Annotation boxes align within 4px of the actual element they're pointing at across three different viewport sizes. Test with a fixed set of screenshots before shipping. Coordinate scaling must be correct.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">Run completion metric</div>
+      <div class="decision-body">A full scan of a medium complexity web app (20-30 screens) completes without error in under 30 minutes in V1. This is the baseline. Optimise toward under 10 minutes in V2.</div>
+    </div>
+    <div class="card2 locked">
+      <div class="decision-title">User trust metric</div>
+      <div class="decision-body">First ten users rate at least 70% of findings as useful when shown the thumbs up/down per finding. Below 70% means prompt quality needs rework before charging money.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 8: Replit brief -->
+<div class="section">
+  <div class="label">08 — Replit brief</div>
+  <h2>Exact brief to send Replit</h2>
+  <p class="subtitle">Copy this entire block and send it before starting. Do not start building without written confirmation that Replit has read and understood every section.</p>
+
+  <div class="brief-block">
+    <span class="section-head first">OVERVIEW</span>
+    We are building AppScout — an AI-powered app quality analyser. Before writing a single line of code read this entire brief and confirm you understand every section. Ask questions on anything unclear. Do not start until I have answered your questions.
+
+    <span class="section-head">THE PRODUCT IN ONE PARAGRAPH</span>
+    User pastes their app URL and records a walkthrough of their own app inside our dashboard. We replay that recording via Playwright, stream the live browser session to the user via Chrome DevTools Protocol, and simultaneously run Claude vision analysis on every screen. Handwritten-style SVG annotations draw themselves onto the live video when issues are found. One-line subtitles appear at the bottom of the video. At the end the user downloads four exports: raw video, annotated video, PDF report, screenshots ZIP.
+
+    <span class="section-head">BUILD ORDER — DO NOT DEVIATE</span>
+    1. Analysis pipeline first. Claude API calls returning structured JSON. Test manually with screenshots from day one. Do not proceed to step 2 until an 80% senior designer agreement rate is achieved on test screenshots.
+    2. Playwright crawler with CDP live streaming.
+    3. Redis + Bull job queue with two job types.
+    4. WebSocket server with five event types.
+    5. REST API — six endpoints — follow JobRunner patterns exactly.
+    6. React frontend — six screens — three independent panels on the live analysis screen.
+    7. Report generator — FFmpeg, Puppeteer, S3, shareable links.
+
+    <span class="section-head">NON-NEGOTIABLE RULES</span>
+    Video and analysis pipelines are completely decoupled. Video pauses maximum 3 seconds on each new screen. The pause must have visual life — subtitle showing what's being analysed, status showing Analysing, annotation beginning to draw. Never a frozen empty screen.
+    Screenshots fire only after two conditions: networkidle (500ms) AND DOM stability (300ms). Maximum 8-second cap.
+    All screenshots and videos go to S3 from day one. Never PostgreSQL binary storage.
+    All 24 pre-identified problems in this document have defined solutions. Implement those solutions proactively — do not wait to discover them in production.
+    Follow JobRunner patterns for auth, error handling, database queries, API structure, component organisation. Document any deviation with a reason.
+
+    <span class="section-head">ANNOTATION SYSTEM</span>
+    SVG stroke animation. stroke-dashoffset animates from full path length to zero over 600-800ms. Three shapes: circle (wraps element), arrow (points to location), underline (highlights copy). Shape draws first, label text appears letter by letter after. Three colours: red critical, amber warning, green passed. Coordinates come from Claude JSON — normalise to video display dimensions using scale factor before drawing.
+
+    <span class="section-head">SUBTITLE SYSTEM</span>
+    Maximum 8 words. DM Sans medium weight, generous letter spacing. Semi-transparent dark pill background. Bottom of video area. Fades out after 3 seconds. Status indicator top right: Navigating / Analysing / Issue found only.
+
+    <span class="section-head">S3 STORAGE POLICY</span>
+    Free tier: 30-day S3 lifecycle expiry on all assets. Paid tier: 1-year. JSON analysis results in PostgreSQL permanently regardless of tier. Shareable links check asset existence before serving.
+
+    <span class="section-head">FIRST THING TO BUILD BEFORE ANYTHING ELSE</span>
+    A local test script that takes a folder of screenshots, sends each to Claude with the analysis prompt, and dumps the structured JSON output. No dashboard. No crawler. Just input and output. This is where prompt iteration happens and it needs to work before anything else is built.
+
+    <span class="section-head">DEFINITION OF DONE — MVP</span>
+    User submits a web app URL with credentials. Records a walkthrough. Watches continuous live video of the replay with SVG annotations drawing themselves onto the screen and one-line subtitles appearing. Receives a full report with issues ranked by severity. Downloads raw video, annotated video, PDF report, and screenshot ZIP. Shareable link generated. All 24 pre-identified problems handled. Analysis quality achieves 80% senior designer agreement rate. CDP stream delivers minimum 24fps on production hardware.
+  </div>
+</div>
+
+</div>
+</body>
+</html>

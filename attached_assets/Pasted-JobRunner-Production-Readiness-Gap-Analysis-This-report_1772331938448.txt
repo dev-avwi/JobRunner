@@ -1,0 +1,91 @@
+JobRunner: Production Readiness & Gap Analysis
+
+This report evaluates the "Production Readiness" of JobRunner for full-scale trade businesses, focusing on multi-user workflows, financial loops, and potential gaps identified during stress testing.
+
+1. Multi-User & Subcontractor Workflows
+
+Current Strengths:
+
+•
+Role Management: The app has a sophisticated role system (Administrator, Manager, Technician, Apprentice, Office Manager, Worker). This is critical for businesses scaling beyond a single person.
+
+•
+Team Status & Map: Real-time visibility of who is "Available," "Working," or "Driving" is a high-end feature that allows owners to manage subcontractors and staff effectively.
+
+•
+Invitation System: The ability to invite members via email with specific roles is a professional-grade onboarding flow.
+
+Identified Gaps:
+
+•
+Subcontractor-Specific Role: While "Worker" exists, a dedicated "Subcontractor" role with restricted visibility (only seeing jobs assigned to them, no financial data of other jobs) would be a major production requirement.
+
+•
+External Sharing: For one-off subcontractors, a "Public Job Link" (similar to the client portal) would allow them to see job details, upload photos, and mark tasks as done without needing a full account.
+
+2. End-to-End Financial Loop
+
+Current Strengths:
+
+•
+Action Center Intelligence: The app proactively identifies "Revenue at Risk" (jobs done but not invoiced) and "Potential Revenue" (old quotes). This is the #1 pain point for tradies and JobRunner handles it brilliantly.
+
+•
+Payment Hub: Centralized tracking of owed vs. overdue money.
+
+•
+Automation (Autopilot): Features like "Auto-invoice on Complete" and "Invoice Reminders" are "set and forget" tools that make the app sticky for business owners.
+
+Identified Gaps:
+
+•
+Partial Payments/Deposits: Production businesses often require a 50% deposit before starting. Testing showed a need for clearer "Deposit Invoice" workflows.
+
+•
+Supplier/Material Tracking: While you can add items to jobs, a dedicated "Expenses" or "Purchase Order" section to track what was spent on materials vs. what was invoiced would complete the financial loop.
+
+3. Communication & Visibility
+
+Current Strengths:
+
+•
+Client Portal: Allowing clients to view and accept quotes online is a major professional touch.
+
+•
+Integrated Chat: Keeping communication inside the job context prevents "lost" instructions in SMS or WhatsApp.
+
+Identified Gaps:
+
+•
+Automated Client Notifications: While "Autopilot" has job reminders, adding "Technician is on their way" (triggered by the 'Driving' status) would be a "wow" feature for production readiness.
+
+•
+Job History for Clients: In the client section, seeing a full history of every job ever done for that specific client is a gap that would help with long-term customer management.
+
+4. Production Readiness Verdict
+
+Status: 90% Ready for Production.
+
+JobRunner is more than just a "prototype." It is a functional business tool. The core engine (Jobs -> Quotes -> Invoices) is robust.
+
+Final Recommendations for "Going Live":
+
+1.
+Hardened Subcontractor Permissions: Ensure the "Worker" role cannot see the "Insights" or "Payment Hub" sections.
+
+2.
+Material/Expense Tracking: Add a way to log costs against a job to calculate true profit.
+
+3.
+Batch Invoicing: The "Action Center" is great; adding a "Select All -> Generate Invoices" button for completed jobs would save hours of admin.
+
+
+
+
+Prepared for: AV Web Innovation / JobRunner
+Analysis by: Manus AI
+Date: March 1, 2026
+
+
+
+

@@ -1,0 +1,135 @@
+I want you to act as a full QA engineer and SaaS product reviewer for my app “TradieTrack.”
+
+Your objective is to deeply inspect both **frontend and backend** code to make sure:
+1) Every feature is fully functional (NOT just UI placeholders)
+2) All workflows are connected end-to-end
+3) Real-world usage scenarios will succeed
+4) There are no half-implemented areas
+
+Please test and verify ALL workflows:
+
+---
+
+## 1) User Accounts & Roles
+- Signup/login flows work
+- Email verification works
+- Business owner vs tradie roles are correctly isolated
+- Team invites + role assignment works
+
+---
+
+## 2) Onboarding
+- Owner onboarding screens set up business info, contact info
+- Solo tradie onboarding handles single user
+- After onboarding, users land on correct dashboard
+
+---
+
+## 3) Jobs
+- Create/Edit/Delete jobs
+- Job status transitions (New → Scheduled → In Progress → Completed)
+- Time tracking for jobs
+- Job address + geolocation is captured and stored
+- Job history logs properly
+
+---
+
+## 4) Maps & Locations
+- Map page shows all past jobs with pins (lat/lng from DB)
+- Job pins show job status
+- Team tracking: locations of team members visible (if allowed)
+- Clicking pin loads job details
+
+---
+
+## 5) Quotes
+- Quote creation from job
+- Line items, prices, GST, totals calculate correctly
+- Ability to preview live quote
+- PDF generation matches template
+- Quote number auto-generated (no duplicates)
+
+---
+
+## 6) Emails (SendGrid)
+- Sending quote email:
+  • PDF attaches or link is correct
+  • Subject line correct
+  • From verified sender
+  • Reply-to is tradie email
+
+- Invoice email
+- Payment receipt email
+- All use correct templates & logo if on Pro
+
+---
+
+## 7) Quote Acceptance
+- Accept button triggers backend
+- Status updates to “Accepted”
+- Timestamp stored
+- Job status updated appropriately
+
+---
+
+## 8) Invoices
+- Invoice creation works
+- Line items carried over
+- PDF invoice generation is correct
+- Invoice email with payment link sends correctly
+
+---
+
+## 9) Stripe Integrations
+- Subscriptions (paying TradieTrack) works (test mode)
+- Stripe Connect for client payments works
+- PaymentIntents create correctly
+- Webhooks update invoice status to Paid
+- Payment receipts generate and email trigger works
+
+---
+
+## 10) Offline / error states
+- When offline, app warns but doesn’t crash
+- API failures handled with messages
+- Retry logic exists for failed states
+
+---
+
+## 11) UI/UX Consistency
+Check all screens for:
+- Responsiveness
+- Layout integrity
+- Consistent padding and spacing
+- Same behavior on web & mobile
+- Buttons actually trigger network/backend logic
+
+Mention any “dead” buttons.
+
+---
+
+## 12) Database Integrity
+- No data duplication
+- Foreign keys correct
+- Data only visible to correct roles
+
+---
+
+## 13) Security
+- Auth & RBAC checks on API
+- Cannot access other businesses’ data
+- Stripe & SendGrid secrets not exposed to frontend
+
+---
+
+## 14) Summary
+At the end, give a report listing:
+
+✔ Working flows  
+⚠ Partially working flows  
+❌ Broken flows  
+📝 UX feedback (real tradie perspective)  
+🛠 Bugs found  
+📌 Must-fix items
+
+Use my entire codebase as the source of truth and make sure TradieTrack is **technically solid and beta-ready**.

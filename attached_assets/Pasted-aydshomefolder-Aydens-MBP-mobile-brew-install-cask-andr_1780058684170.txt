@@ -1,0 +1,50 @@
+aydshomefolder@Aydens-MBP mobile % brew install --cask android-studio
+==> Auto-updating Homebrew...
+Adjust how often this is run with `$HOMEBREW_AUTO_UPDATE_SECS` or disable with
+`$HOMEBREW_NO_AUTO_UPDATE=1`. Hide these hints with `$HOMEBREW_NO_ENV_HINTS=1` (see `man brew`).
+==> Downloading https://ghcr.io/v2/homebrew/core/portable-ruby/blobs/sha256:4ba8d535df01e4bf97e6661c3815796fd77364ea2552606e891659133a76f0e1
+################################################################################################################# 100.0%
+==> Pouring portable-ruby-4.0.5_1.arm64_big_sur.bottle.tar.gz
+==> Homebrew collects anonymous analytics.
+Read the analytics documentation (and how to opt-out) here:
+  https://docs.brew.sh/Analytics
+No analytics have been recorded yet (nor will be during this `brew` run).
+
+==> Homebrew is run entirely by unpaid volunteers. Please consider donating:
+  https://github.com/Homebrew/brew#donations
+
+==> Auto-updated Homebrew!
+Updated 2 taps (homebrew/core and homebrew/cask).
+==> New Formulae
+btdu: Sampling disk usage profiler for btrfs
+bumblebee: Read-only developer endpoint scanner for supply-chain exposure
+chunkah: OCI building tool for content-based layers
+cloudmonkey: Apache CloudStack CloudMonkey CLI
+codeburn: See where your AI coding tokens go - by task, tool, model, and project
+erlang@28: Programming language for highly scalable real-time systems
+far2l-tty: Unix TTY port of FAR Manager v2 (with NetRocks support)
+gmp-ecm: Elliptic Curve Method for integer factorization
+goenv@2: Go version management
+herdr: Agent multiplexer that lives in your terminal
+ladder: Selfhosted alternative to 12ft.io and 1ft.io HTTP web proxies
+leaf-md: Terminal Markdown previewer with a GUI-like experience
+lisette: Language inspired by Rust that compiles to Go
+m4ri: Library for fast arithmetic with dense matrices over GF(2)
+mercury-cli: CLI interface for Mercury banking
+miasma: Trap AI web scrapers in an endless poison pit
+mips-linux-gnu-binutils: GNU Binutils for mips-linux-gnu cross development
+openjdk@25: Development kit for the Java programming language
+panache: Language server, formatter, and linter for Markdown, Quarto, and R Markdown
+quickjs-ng: QuickJS, the Next Generation: a mighty JavaScript engine
+rustnet: Cross-platform network monitoring terminal UI with deep packet inspection
+sanity: Command-line interface for Sanity
+satellite-tracker: Terminal-based real-time satellite tracking and orbit prediction application
+vs-preview: Previewer for VapourSynth scripts
+zerolang: Programming language for agents with explicit effects and predictable memory
+
+You have 1 outdated formula installed.
+
+==> Fetching downloads for: android-studio
+✔︎ Cask android-studio (2025.3.4.7,panda4-patch1)                                             Verified      1.4GB/  1.4GB
+==> Installing Cask android-studio
+

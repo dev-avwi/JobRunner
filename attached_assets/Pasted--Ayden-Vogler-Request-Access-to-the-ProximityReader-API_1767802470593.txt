@@ -1,0 +1,63 @@
+[Ayden Vogler] Request Access to the ProximityReader APIs; Case-ID: 17816973
+External
+Inbox
+AI Overview
+Ayden Vogler requested access to ProximityReader APIs for the TradieTrack app, detailing an onboarding process using Stripe Connect.
+The entitlement request was granted with a development distribution restriction, limiting use to registered test devices only.
+Shakeera instructed Ayden to review linked requirement documents and reply with four specific video recordings and a checklist for final review.
+By Gemini; there may be mistakes. Learn more
+
+Tap to Pay on iPhone Entitlements
+Tue 6 Jan, 14:21 (2 days ago)
+Hello, Thank you for your interest in Apple Wallet Entitlements We have received and are reviewing your request which has been assigned Case-ID: 17816973. We wi
+
+Tap to Pay on iPhone Entitlements <ttpoientitlements@apple.com>
+Tue 6 Jan, 18:12 (2 days ago)
+to ttpoi_entitlement_anzsea, me
+
+Hello,
+
+The entitlement request for Tap to Pay on iPhone has been granted with the development distribution restriction in place.
+
+The development distribution restriction will allow you to incorporate Tap to Pay on iPhone in your new or existing app.
+
+Distribution is limited to registered test devices only.
+
+There are two (2) files located in this folder that you must review: https://apple.box.com/v/ttpoirequirements
+
+Tap to Pay on iPhone App Requirements and Review
+
+App Review Requirements Checklist
+
+—————————————————
+
+IMPORTANT
+
+Your app will need to meet the requirements in the linked documents to move forward.
+
+—————————————————
+
+Once you have built your app to meet the requirements, reply to this email and then upload the following items to the File Uploader for review:
+
+1. A video recording of the “New User Flow”
+2. A video recording of the “Existing User Flow”
+3. A video recording of the “Checkout Flow”
+4. A completed App Review Requirements Checklist
+
+More details on what we expect in the video recording is provided in the Entitlements and App Review section of the Tap to Pay on iPhone App Requirements and Review
+—————————————————
+
+MARKETING
+Apple has created a comprehensive Tap to Pay on iPhone Marketing Guide and Toolkit to support you when marketing the availability of Tap to Pay on iPhone to your merchants, partners, and customers.
+
+When marketing Tap to Pay on iPhone in your channels, you should only leverage the Apple-approved marketing assets and templates provided in the Tap to Pay on iPhone Marketing Toolkit.
+
+Please see the Developer Marketing Guidelines for more details on Marketing Requirements.
+
+To access the Tap to Pay on iPhone Marketing Guide and Toolkit, please click here and follow the instructions.
+
+Shakeera
+Wallet Entitlements
+
+Please include the line below in follow-up emails for this request.
+Case-ID: 17816973

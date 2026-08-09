@@ -1,0 +1,108 @@
+App Information
+This information is used for all platforms of this app. Any changes will be released with your next app version.
+
+Save
+Localizable Information
+English (Australia)
+?
+Name
+JobRunner
+21
+Subtitle
+30
+General Information
+Bundle ID
+
+avwitradietrack 3dc5b870c4b715386c6eead0d2a6ac89 - com.jobrunner.app
+SKU
+jobrunner-ios
+
+Apple ID
+6760283858
+
+Content Rights
+Set Up Content Rights Information
+License Agreement
+Edit
+Apple’s Standard License Agreement
+
+Primary Language
+English (Australia)
+
+Category
+
+Primary
+
+Secondary (optional)
+Age Ratings
+Age ratings help users better understand if your app contains any objectionable content. To determine your app's age rating, you'll be asked the availability or frequency of certain features and types of content within your app. Based on your responses, an age rating will be assigned for each country or region based on their age suitability standards. The assigned age rating will appear on each country or region's App Store and be the same across all platforms in that country or region. Learn More
+
+Set Up Age Ratings
+Learn More About Age Ratings
+To learn more about and view examples of the features and content used to determine age ratings, select a category below.
+
+In-App Controls
+
+Parental Controls, Age Assurance
+
+Capabilities
+
+Unrestricted Web Access, User-Generated Content, Messaging and Chat, Advertising
+
+Mature Themes
+
+Profanity or Crude Humor, Horror/Fear Themes, Alcohol, Tobacco, or Drug Use or References
+
+Medical or Wellness
+
+Medical or Treatment Information, Health or Wellness Topics
+
+Sexuality or Nudity
+
+Mature or Suggestive Themes, Sexual Content or Nudity, Graphic Sexual Content and Nudity
+
+Violence
+
+Cartoon or Fantasy Violence, Realistic Violence, Prolonged Graphic or Sadistic Realistic Violence, Guns or Other Weapons
+
+Chance-Based Activities
+
+Gambling, Simulated Gambling, Contests, Loot Boxes
+
+App Encryption Documentation
+
+Specify your use of encryption in Xcode by adding the App Uses Non-Exempt Encryption key to your app's Info.plist file with a Boolean value that indicates whether your app uses encryption. Learn More
+
+You're required to provide documentation if your app contains any of the following:
+
+Encryption algorithms that are proprietary or not accepted as standard by international standard bodies (IEEE, IETF, ITU, etc.)
+Standard encryption algorithms instead of, or in addition to, using or accessing the encryption within Apple's operating system
+You can provide your documentation before you submit a build.
+
+Upload
+App Store Regulations & Permits
+Digital Services Act
+Under the Digital Services Act, you must provide and verify information regarding your account. If you don't, there may be payment delays or your content may be removed from sale in certain countries or regions. Learn More
+
+Set Up
+
+Vietnam Game License
+If your game is available on the App Store in Vietnam, you can add a game license as required by Vietnamese regulators. Learn More
+
+Add
+App Store Server Notifications
+App Store server notifications provide information about key events related to your in-app purchases. To test notifications before implementing them in production, you can set up a separate sandbox server URL. Learn More
+
+Production Server URL
+Set Up URL
+Sandbox Server URL
+Set Up URL
+App-Specific Shared Secret
+The app-specific shared secret is a unique code to receive receipts for only this app’s auto-renewable subscriptions. You may want to use an app-specific shared secret if you’re transferring this app to another developer, or if you want to keep your primary shared secret private.
+
+Manage
+
+Additional Information
+View on App Store
+
+Edit User Access

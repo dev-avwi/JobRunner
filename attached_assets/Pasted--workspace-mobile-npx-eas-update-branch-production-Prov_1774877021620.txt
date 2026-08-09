@@ -1,0 +1,83 @@
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Add Sentry integration for mobile app error tracking
+
+Install the Sentry React Native SDK to enable error monitoring and reporting for the mobile application.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 486bfaef-2b15-46a6-8ad6-75490ad5c8bc
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/jYUeZUX
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  1.0% (1/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓░░░░░░░░░░░░░░░  8.8% ( 61/206)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓░░░░░░░░░░░░░░ 17.0% ( 99/246)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 34.0% (317/649)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.0% (454/718)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.2% (459/724)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 43.0% (498/766)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.2% (459/724)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 44.4% (521/799)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.2% (459/724)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 44.4% (535/805)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.2% (459/724)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 47.2% (560/815)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 40.6% (467/736)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (598/865)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 41.3% (489/783)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (599/865)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 41.3% (510/798)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (599/865)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 42.4% (521/801)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (599/865)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 45.2% (544/811)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (599/865)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓░░░░░░░░░ 47.2% (560/815)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 50.6% (611/879)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓░░░░░░░░ 55.5% (673/903)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.5% (728/952)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 59.8% (712/921)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.5% ( 848/2953)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.3% ( 895/2970)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.5% ( 928/3020)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.3% ( 910/3006)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.5% (1645/3127)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓░░░░░░░ 61.3% ( 945/3046)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 83.9% (2979/3253)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 69.0% (2569/3093)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 83.9% (2979/3253)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░ 85.5% (2994/3267)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 88.8% (3222/3419)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 89.7% (3267/3533)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 88.8% (3323/3570)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95.5% (3531/3613)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95.4% (3548/3632)
+[expo-cli] Android Bundling failed 80914ms node_modules/expo-router/entry.js (3934 modules)
+[expo-cli] Error: Unable to resolve module @sentry/react-native from /home/runner/workspace/mobile/src/lib/sentry.ts: @sentry/react-native could not be found within the project or in these directories:
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli]   node_modules
+[expo-cli]   ../node_modules
+[expo-cli] > 1 | import * as Sentry from '@sentry/react-native';
+[expo-cli]     |                          ^
+[expo-cli]   2 | import Constants from 'expo-constants';
+[expo-cli]   3 |
+[expo-cli]   4 | const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+[expo-cli] 
+[expo-cli] Import stack:
+[expo-cli] 
+[expo-cli]  src/lib/sentry.ts
+[expo-cli]  | import "@sentry/react-native"
+[expo-cli] 
+[expo-cli]  app/_layout.tsx
+[expo-cli]  | import "../src/lib/sentry"
+[expo-cli] 
+[expo-cli]  app (require.context)
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

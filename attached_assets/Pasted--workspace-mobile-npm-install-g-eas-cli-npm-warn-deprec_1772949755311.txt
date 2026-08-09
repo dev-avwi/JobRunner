@@ -1,0 +1,104 @@
+~/workspace/mobile$ npm install -g eas-cli
+npm warn deprecated @xmldom/xmldom@0.7.13: this version is no longer supported, please update to at least 0.8.*
+npm warn deprecated @oclif/screen@3.0.8: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+npm warn deprecated rimraf@2.4.5: Rimraf versions prior to v4 are no longer supported
+npm warn deprecated glob@6.0.4: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated lodash.get@4.4.2: This package is deprecated. Use the optional chaining (?.) operator instead.
+npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+npm warn deprecated tar@7.5.7: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+
+added 4 packages, removed 17 packages, and changed 442 packages in 17s
+
+55 packages are looking for funding
+  run `npm fund` for details
+~/workspace/mobile$ npx eas-cli build --profile development --platform ios
+Resolved "development" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "development" environment on EAS.
+Environment variables loaded from the "development" build profile "env" configuration: NPM_CONFIG_LEGACY_PEER_DEPS, EXPO_PUBLIC_API_URL.
+
+
+
+ios.buildNumber field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+✔ Using remote iOS credentials (Expo server)
+
+If you provide your Apple account credentials we will be able to generate all necessary build credentials and fully validate them.
+This is optional, but without Apple account access you will need to provide all the missing values manually and we can only run minimal validation on them.
+✔ Do you want to log in to your Apple account? … yes
+
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … developer@avwebinnovation.com
+› The password is only used to authenticate with Apple and never stored on EAS servers
+  Learn more: https://bit.ly/2VtGWhU
+✔ Password (for developer@avwebinnovation.com): … ***********
+› Saving Apple ID password to the local Keychain
+  Learn more: https://docs.expo.dev/distribution/security#keychain
+✔ Logged in, verify your Apple account to continue
+Two-factor Authentication (6 digit code) is enabled for developer@avwebinnovation.com. Learn more: https://support.apple.com/en-us/HT204915
+
+✔ Please enter the 6 digit code you received at +61 •••• ••• •51: … 053704
+✔ Valid code
+✔ Logged in and verified
+› Team Ayden Vogler (6557LUX45F)
+› Provider Ayden Vogler (128354611)
+✔ Bundle identifier registered com.jobrunner.app
+✔ Synced capabilities: Enabled: Push Notifications, Sign In with Apple
+✔ Synced capability identifiers: No updates
+✔ Fetched Apple distribution certificates
+✔ Reuse this distribution certificate?
+Cert ID: 68A3JCUQ6J, Serial number: 682CD5E0B2FD0DDDF61C61AFE364C8AC, Team ID: 6557LUX45F, Team name: Ayden Vogler (Individual)
+    Created: 3 months ago, Updated: 3 months ago,
+    Expires: Mon, 07 Dec 2026 09:10:45 UTC
+    📲 Used by: @avwi/tradietrack,@avwi/tradietrack … yes
+Using distribution certificate with serial number 682CD5E0B2FD0DDDF61C61AFE364C8AC
+✔ Select devices for the ad hoc build: › 2 devices selected
+✔ Created new profile: *[expo] com.jobrunner.app AdHoc 1772949212898
+
+Project Credentials Configuration
+
+Project                   @avwi/tradietrack
+Bundle Identifier         com.jobrunner.app
+                          
+Ad Hoc Configuration      
+                          
+Distribution Certificate  
+Serial Number             682CD5E0B2FD0DDDF61C61AFE364C8AC
+Expiration Date           Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Updated                   3 months ago
+                          
+Provisioning Profile      
+Developer Portal ID       Z3S9KPVYYA
+Status                    active
+Expiration                Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Provisioned devices       - iPhone (UDID: 00008150-000E604926B8401C)
+                          - iPad Pro (12.9 inch, 3rd Gen) (UDID: 00008027-001C291E0A39002E)
+Updated                   0 second ago
+                          
+All credentials are ready to build @avwi/tradietrack (com.jobrunner.app)
+
+✔ Would you like to set up Push Notifications for your project? › Yes
+✔ Fetched Apple push keys
+✔ Reuse this Push Key?
+Push Key ID: 54VQ44MC2Q , Team ID: 6557LUX45F, Team name: Ayden Vogler (Individual)
+    Updated: 3 months ago,
+    📲 Used by: @avwi/tradietrack
+    ✅ Currently valid on Apple's servers. … yes
+Using push key with ID 54VQ44MC2Q
+✔ Push Key assigned to tradietrack: com.jobrunner.app
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+✔ Compressed project files 1m 47s (1.1 GB)
+Your project archive is 1.1 GB. You can reduce its size and the time it takes to upload by excluding files that are unnecessary for the build process in .easignore file. Learn more: https://expo.fyi/eas-build-archive
+✔ Uploaded to EAS 3m 13s
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/avwi/projects/tradietrack/builds/f27f9fe9-85c6-45cb-a34b-6d8c015dbae4
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+✖ Build failed
+
+🍏 iOS build failed:
+Unknown error. See logs of the Build complete hook build phase for more information.
+~/workspace/mobile$ 

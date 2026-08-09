@@ -1,0 +1,194 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+e2bfc756
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+Android internal distribution build
+43f93ce · Add latency monitoring and character counters to the AI Receptionist Introduces latency estimation, monitoring, and feedback to the AI Receptionist configuration, including new database columns, API endpoints, and UI elements for tracking and managing response times. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 08844ac7-feac-4a64-82a7-9037060a7433 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 37ee84f7-c45c-4c08-ab31-15cbc1e64c6e Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/08844ac7-feac-4a64-82a7-9037060a7433/WT99xhu Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+preview
+
+preview
+
+
+1.1.2
+
+
+preview
+
+ 1.1.2 (35)
+
+ccb4c81
+
+43f93ce
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+May 8, 2026 7:48 PM
+203ms
+
+55s
+
+26s
+
+1m 22s
+
+89 days
+
+Logs
+
+Waiting to start
+
+6s
+
+
+Spin up build environment
+
+48s
+
+
+Install custom tools
+
+6s
+
+
+Prepare project
+
+12s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+0ms
+
+
+Install dependencies
+
+909ms
+
+
+Running "npm ci --include=dev" in /home/expo/workingdir/build/mobile directory
+npm error code EUSAGE
+npm error
+npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+npm error
+npm error Missing: @expo-google-fonts/inter@0.4.2 from lock file
+npm error
+npm error Clean install a project
+npm error
+npm error Usage:
+npm error npm ci
+npm error
+npm error Options:
+npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts] [--no-audit]
+npm error [--no-bin-links] [--no-fund] [--dry-run]
+npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+npm error [-ws|--workspaces] [--include-workspace-root] [--install-links]
+npm error
+npm error aliases: clean-install, ic, install-clean, isntall-clean
+npm error
+npm error Run "npm help ci" for more info
+npm error A complete log of this run can be found in: /home/expo/.npm/_logs/2026-05-08T09_50_10_830Z-debug-0.log
+npm ci --include=dev exited with non-zero code: 1
+
+Fail job
+
+1ms
+
+
+Build failed
+
+npm ci --include=dev exited with non-zero code: 1
+

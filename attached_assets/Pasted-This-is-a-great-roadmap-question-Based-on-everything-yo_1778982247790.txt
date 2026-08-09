@@ -1,0 +1,112 @@
+This is a great roadmap question. Based on everything you've shared about JobRunner, here's the complete checklist of native iOS features worth building, in order of impact:
+
+---
+
+**Phase 1 — Get set up first (Day 1 on the Mac)**
+
+- [ ] Clone your JobRunner repo to the MacBook via terminal
+- [ ] Run `pnpm install` in the project folder
+- [ ] Run `npx expo prebuild --platform ios` in the mobile folder
+- [ ] Open `ios/JobRunner.xcworkspace` in Xcode
+- [ ] Hit Play and confirm the app runs in the simulator
+- [ ] Plug in your iPhone and run it on your actual device
+- [ ] Confirm git pull from Replit changes show up in Xcode
+
+---
+
+**Phase 2 — Live Activity (highest impact, build first)**
+
+This shows on the lock screen and Dynamic Island while a job is running — perfect for tradies who have their phone in their pocket on the job.
+
+- [ ] Add Widget Extension target in Xcode with Live Activity ticked
+- [ ] Ask Claude Code to scaffold the Live Activity with job title, elapsed time, current status
+- [ ] Build the Dynamic Island compact view showing job name and timer
+- [ ] Build the lock screen expanded view with more detail
+- [ ] Wire up `JobLiveActivity.start()` from React Native side in Replit
+- [ ] Trigger start when a job timer begins
+- [ ] Update every minute with elapsed time
+- [ ] End the activity when job is paused or completed
+- [ ] Test on real iPhone — Live Activities don't work in simulator
+
+---
+
+**Phase 3 — Home Screen Widget**
+
+Shows the next upcoming job on the tradie's home screen so they know what's coming without opening the app.
+
+- [ ] Add a second Widget Extension target for the home screen widget
+- [ ] Small widget — next job name, customer, start time
+- [ ] Medium widget — today's job schedule at a glance, 2-3 jobs listed
+- [ ] Large widget — full today's schedule with job status indicators
+- [ ] Add a Replit API endpoint `/api/widget/next-job` to feed widget data
+- [ ] Set up App Group in Xcode so the widget can share data with the main app
+- [ ] Write data to App Group UserDefaults when the dashboard loads
+- [ ] Add widget configuration so tradies can pick which jobs to show
+- [ ] Test all three sizes on the simulator home screen
+
+---
+
+**Phase 4 — Lock Screen Widgets**
+
+These sit on the lock screen itself, not the Dynamic Island. Smaller but always visible.
+
+- [ ] Circular widget — current job status dot or timer
+- [ ] Rectangular widget — next job name and time
+- [ ] Inline widget — one line summary of today's job count
+- [ ] These use the same Widget Extension, just new widget families
+
+---
+
+**Phase 5 — Siri Shortcuts & Intents**
+
+Lets tradies say "Hey Siri, start my next job" or "Hey Siri, log JobRunner hours."
+
+- [ ] Add App Intents target in Xcode
+- [ ] Create "Start Job" intent
+- [ ] Create "Complete Job" intent
+- [ ] Create "Log Hours" intent
+- [ ] Make shortcuts appear in the Shortcuts app automatically
+- [ ] Wire each intent back to Replit API calls
+
+---
+
+**Phase 6 — Apple Watch App**
+
+This is the big one for tradies — glance at wrist, see current job, tap to start/stop timer. Huge practical value.
+
+- [ ] Add watchOS target in Xcode
+- [ ] Build main watch face showing current job and timer
+- [ ] Add complication for watch face (tiny JobRunner data on their watch face)
+- [ ] Start/stop job timer from the watch
+- [ ] View today's schedule from the watch
+- [ ] Mark job complete from the watch
+- [ ] Sync via WatchConnectivity with the iPhone app
+
+---
+
+**Phase 7 — Tap to Pay & Apple Pay**
+
+If JobRunner handles invoicing or payments on the spot.
+
+- [ ] Add Tap to Pay entitlement in Xcode (requires Apple approval)
+- [ ] Wire up payment flow from the job completion screen
+- [ ] Connect to Stripe terminal on the Replit backend
+
+---
+
+**Phase 8 — Notifications (polish)**
+
+- [ ] Rich push notifications with job details visible without opening app
+- [ ] Notification actions — "Start Job" or "Reschedule" directly from the notification
+- [ ] Time-sensitive notifications that break through Focus modes
+- [ ] Job reminder 30 minutes before start time
+
+---
+
+**The order that makes the most sense for JobRunner specifically:**
+
+Live Activity → Home Screen Widget → Lock Screen Widgets → Siri Shortcuts → Apple Watch → everything else.
+
+The Live Activity is first because a tradie with their phone in their pocket while working and being able to glance at elapsed job time on their lock screen without unlocking their phone is genuinely useful every single day. That's the one that makes JobRunner feel like a professional tool rather than just another app.
+
+The Watch app is the long term crown jewel — when a tradie can start and stop jobs, view their schedule, and mark jobs complete from their wrist without ever pulling their phone out, that's when JobRunner becomes something people can't imagine working without.

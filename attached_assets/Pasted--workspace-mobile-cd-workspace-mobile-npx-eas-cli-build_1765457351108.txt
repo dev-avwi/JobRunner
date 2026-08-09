@@ -1,0 +1,65 @@
+~/workspace/mobile$ cd ~/workspace/mobile && npx eas-cli build --profile development --platform ios --clear-cache
+Resolved "development" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "development" environment on EAS.
+Environment variables loaded from the "development" build profile "env" configuration: NPM_CONFIG_LEGACY_PEER_DEPS.
+
+
+
+✔ Using remote iOS credentials (Expo server)
+
+If you provide your Apple account credentials we will be able to generate all necessary build credentials and fully validate them.
+This is optional, but without Apple account access you will need to provide all the missing values manually and we can only run minimal validation on them.
+✔ Do you want to log in to your Apple account? … yes
+
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … developer@avwebinnovation.com
+› Restoring session /home/runner/.app-store/auth/developer@avwebinnovation.com/cookie
+› Team Ayden Vogler (6557LUX45F)
+› Provider Ayden Vogler (128354611)
+✔ Logged in Local session
+✔ Bundle identifier registered com.tradietrack.app
+✔ Synced capabilities: No updates
+✔ Synced capability identifiers: No updates
+✔ Fetched Apple distribution certificates
+✔ Fetched Apple provisioning profiles
+✔ All your registered devices are present in the Provisioning Profile. Would you like to reuse the profile? › Yes
+
+Project Credentials Configuration
+
+Project                   @avwi/tradietrack
+Bundle Identifier         com.tradietrack.app
+                          
+Ad Hoc Configuration      
+                          
+Distribution Certificate  
+Serial Number             682CD5E0B2FD0DDDF61C61AFE364C8AC
+Expiration Date           Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Updated                   4 days ago
+                          
+Provisioning Profile      
+Developer Portal ID       2K935J95DK
+Status                    active
+Expiration                Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Provisioned devices       - iPhone (UDID: 00008150-000E604926B8401C)
+Updated                   3 days ago
+                          
+All credentials are ready to build @avwi/tradietrack (com.tradietrack.app)
+
+✔ Push Notifications are set up
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+✔ Compressed project files 50s (362 MB)
+Your project archive is 362 MB. You can reduce its size and the time it takes to upload by excluding files that are unnecessary for the build process in .easignore file. Learn more: https://expo.fyi/eas-build-archive
+✔ Uploaded to EAS 1m 5s
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/avwi/projects/tradietrack/builds/7b012e95-82ec-425b-8dbb-bda155bd626c
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+✖ Build failed
+
+🍏 iOS build failed:
+Failed to start the build. Try again.
+~/workspace/mobile$ 

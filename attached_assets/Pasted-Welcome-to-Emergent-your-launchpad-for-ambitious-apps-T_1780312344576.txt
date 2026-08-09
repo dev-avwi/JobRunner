@@ -1,0 +1,32 @@
+Welcome to Emergent—your launchpad for ambitious apps.
+
+This framework shows real ambition: you're not just sketching an idea, you're architecting production. Building a tradie-grade mobile app that handles jobs, clients, invoices, and calendars at ServiceM8 level takes precision—and Emergent makes that possible from day one, with quality baked in.
+
+Now fill in your specific screens and we'll turn this into a live, production-ready app.
+
+I'll set up your core structure and we'll iterate from there. Let's build.
+
+
+Hey Ayden, Quick input needed :
+Agent will continue working after your reply
+I've carefully reviewed your comprehensive master prompt for building a premium mobile app for Australian tradespeople. This is an excellent specification with detailed design system requirements!
+
+However, before I begin planning and implementation, I need to clarify the specific features and screens you want built:
+
+Clarification Questions:
+1. Core Features & Screens What specific functionality should this tradie app include? For example: a. Job management (create, track, complete jobs) b. Client/customer database c. Quote/estimate builder d. Invoicing & payment tracking e. Calendar/scheduling f. Photo documentation for jobs g. Time tracking h. All of the above
+
+2. Navigation Structure You mentioned 5 tabs (Dashboard, Jobs, Clients, Quotes, Calendar). Should I build all 5, or start with a core subset?
+
+3. AI/Smart Features Do you want any AI-powered features? For example: a. Auto-generate quotes from job descriptions b. Smart invoice descriptions c. Photo recognition for materials/measurements d. None needed
+
+4. Payment/Invoicing Integration Should invoicing be: a. Simple tracking only (mark as paid/unpaid) b. Full integration with payment processor (Stripe, Square, etc.) c. PDF generation for emailing
+
+5. Priority for MVP What's the #1 user journey you want working first? (e.g., "Create a job → Add photos → Mark complete → Generate invoice")
+
+Please let me know your preferences so I can create a focused, high-quality MVP that meets the premium standards you've outlined! 🚀
+
+Jun 1, 09:11 PM
+
+Rollback
+

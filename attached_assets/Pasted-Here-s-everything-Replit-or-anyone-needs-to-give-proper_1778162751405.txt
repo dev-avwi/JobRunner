@@ -1,0 +1,88 @@
+Here's everything Replit (or anyone) needs to give proper feedback — copy and paste this entire thing:
+
+---
+
+**CONTEXT**
+
+Presenter: Ayden Vogler, 15 years old, Year 10, Cairns Queensland Australia. Founder of JobRunner, operating company LinkUp2Care Pty Ltd. Built the entire platform solo in 6 months while in school.
+
+Audience: JCU Ideas Lab Cairns, May 13. Founders in Residence and a cohort of US university students. Also Dr Samantha is present — important evaluator.
+
+Presentation length: 10 minutes.
+
+JobRunner is a complete field service management platform for Australian trade businesses — plumbers, electricians, builders, HVAC technicians. Competes with Tradify and ServiceM8. Built with React Native, Node.js, PostgreSQL, Stripe, Twilio, Vapi AI, OpenAI, Xero and more. 160+ database tables, 1000+ API endpoints, 14 integrations, 98.6% feature complete.
+
+---
+
+**THE 9 SLIDES AND MATCHING SPEECH**
+
+**Slide 1 — "Run The Job."**
+Label: none. Logo top left. Big headline "Run The Job." Subtitle: "Field service management built for Australian trade businesses." App screenshot on right showing live dashboard.
+
+Speech: "Hi everyone. My name is Ayden Vogler. I'm 15, I'm in Year 10 in Cairns, and over the last 6 months I built a complete software platform for Australian trade businesses from scratch. Before I explain what it does — let me show you something." [Calls Vapi AI receptionist on speaker. Room hears Mike's Plumbing AI answer the call. Hangs up after 20-30 seconds.] "That wasn't a recording. That was a live AI receptionist powered through JobRunner. Every business gets their own receptionist with their own name and greeting. And here's what just happened in the app." [Shows lead auto-created on phone.] "The missed call became a lead automatically. Nothing missed."
+
+---
+
+**Slide 2 — "The tools tradies use are broken."**
+Label: PROBLEM. Headline: "The tools tradies use are broken." Subtitle: "350,000 trade businesses. Still running on outdated software." Three dark cards on right with orange icons — phone icon, invoice icon, dollar icon. Card 1: "Missed calls = missed jobs. Competitors answer first." Card 2: "Invoices never sent = unpaid revenue sitting on the table." Card 3: "Payments taking 60+ days = a cashflow crisis every month."
+
+Speech: "There are 350,000 trade businesses in Australia. Plumbers, electricians, builders. Most are running their business on paper job sheets, WhatsApp group chats and gut feel. Three things cost them tens of thousands every year. Missed calls become missed jobs — while they're on the tools they can't answer, and competitors do. Invoices that never get sent because they're too busy mean money sits uncollected. And payments that take 60 days to collect create a cashflow crisis every single month. The software that exists to fix this was built over a decade ago. It hasn't kept up."
+
+---
+
+**Slide 3 — "Wide Open."**
+Label: MARKET. Headline: "Wide Open." Subtitle: "Validated market. No modern competitor." Three dark cards — Card 1: "Tradify acquired. Big markets attract big buyers." Card 2: "FSM growing 10%+ yearly. No modern platform." Card 3: "FieldPulse (US) raised millions. Australia has nobody."
+
+Speech: "The market is proven and it's growing. Tradify was acquired by Constellation Software — one of the world's largest acquirers of vertical software. They only buy proven profitable businesses. The Australian field service market is growing at over 10% a year. FieldPulse raised significant venture capital in the US proving the demand exists globally. But every existing product was designed before modern technology was a practical tool. Nobody has rebuilt this from scratch using what's available today. That's the gap. That's what JobRunner fills."
+
+---
+
+**Slide 4 — "The complete toolkit."**
+Label: PRODUCT. Headline: "The complete toolkit." Subtitle: "Built with today's technology. Not 2012's." Phone on left showing live GPS job map. Six bullet points with orange ticks — AI receptionist answers every call, Live GPS tracking and dispatch, Quote to invoice in one tap, Two-way SMS client communication, Native WHS and safety compliance, Full iOS and Android apps.
+
+Speech: "JobRunner is a complete operating system for trade businesses. Not individual features bolted together — one connected system where everything flows. The phone call becomes a lead. The lead becomes a job. The job assigns to a worker. The worker completes it. The invoice creates itself. The client pays from their phone. Every step connected. Nothing falls through the cracks."
+
+---
+
+**Slide 5 — "The Complete Workflow."**
+Label: DEMO. Headline: "The Complete Workflow." Owner View and Worker View labels. Split screen video plays showing both phones simultaneously.
+
+Speech: "Let me show you how it works in real life." [Split screen video plays — owner assigns job, notification fires on worker phone instantly, worker accepts, GPS tracking shows live, job marked complete, invoice auto-created, SMS payment link fires to client, client pays, invoice marked paid automatically.] "That's the full cycle. Missed call to payment collected. Running through one connected system."
+
+---
+
+**Slide 6 — "Built. Tested. Ready."**
+Label: TRACTION. Headline: "Built. Tested. Ready." Subtitle: "Not a prototype. This is the real thing." Two big stats — 98.6% feature complete, 350K+ businesses to target.
+
+Speech: "This isn't a concept. It's been built and tested over six months across every scenario — solo tradies, teams of workers, subcontractors, safety compliance for high risk construction. It's live on iOS and Android today. First pilot customers are onboarding this week right here in Cairns — Thirkell Engineering and Granite Fabricating."
+
+---
+
+**Slide 7 — "JobRunner Wins."**
+Label: COMPETITION. Headline: "JobRunner Wins." Competition table — JobRunner vs Tradify vs ServiceM8. Rows: AI receptionist answers calls, Live GPS tracking, Full Android app, Native safety compliance, Connected call to cash workflow, Price solo tradie. JobRunner wins every row in orange ticks. Tradify and ServiceM8 have grey crosses except Tradify has Android.
+
+Speech: "Against the two main competitors — Tradify has no live GPS. ServiceM8 has no Android app — serious problem in Australia where roughly half the market uses Android. Neither has an AI receptionist or a connected call to cash workflow. Both were built feature by feature over a decade. JobRunner was designed as one system from the start. Same price for a solo tradie. Significantly cheaper for teams."
+
+---
+
+**Slide 8 — "Built to Spread."**
+Label: GROWTH. Headline: "Built to Spread." Subtitle: "One builder joins. Subbies spread it to the next." Four bullet points in two columns — Builder joins JobRunner. Subbies get the app automatically. / Subbies work across multiple builders every week. / Next builder doesn't have JobRunner. Subbie asks why. / That builder signs up. Cycle repeats. No paid acquisition.
+
+Speech: "This is the part I'm most proud of from a product design perspective. A subcontractor in construction typically works for three or four different builders — not full time, project by project. When one builder puts their subbies on JobRunner, those subbies now have the app. Their schedule, their jobs, their earnings — all in one place. When they go to work for the next builder who isn't on JobRunner — the subbie asks why. That builder signs up. Every subcontractor who joins through one business becomes a natural entry point for every other business they work for. Growth compounds without paid acquisition. That's not a feature. That's a distribution mechanic built into the product itself."
+
+---
+
+**Slide 9 — "Three asks."**
+Label: WHAT I NEED. Headline: "Three asks." Subtitle: "I'm not here to pitch and disappear." Three bullet points — Connections to trade business owners in FNQ. Advice on early customer acquisition. Direction on funding pathways in Queensland. JobRunner logo on right.
+
+Speech: "Three things would genuinely help me right now. First — connections. If anyone in this room knows a trade business owner in Far North Queensland who is frustrated with their current software — that introduction is worth more to me than anything else today. Second — advice. I know how to build software. I'm still learning how to sell it. If anyone has been through early customer acquisition and is willing to share what actually worked — I want to hear that. Third — understanding what's available. I don't know what grants, accelerators or pathways exist for an early stage founder in Queensland. I'd love direction on that. My name is Ayden Vogler. I'm 15, I'm from Cairns, and I built this because I saw a real problem and figured someone should fix it. Happy to take any questions."
+
+---
+
+**WHAT WE NEED FEEDBACK ON**
+1. Does the speech match each slide perfectly
+2. Is the flow from slide to slide natural
+3. Are there any gaps or weak moments in the narrative
+4. Is the closing strong enough for a room with experienced founders and Dr Samantha from JCU Ideas Lab
+5. Is the 10 minute timing realistic
+6. Any suggestions to make it stronger

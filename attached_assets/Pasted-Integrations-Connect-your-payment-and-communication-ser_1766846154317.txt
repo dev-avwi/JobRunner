@@ -1,0 +1,144 @@
+Integrations
+Connect your payment and communication services
+
+Ready to Accept Payments
+Your Stripe account is connected and ready. You can send invoices and collect payments!
+
+Live
+Payment Processing
+Accept payments via Stripe
+
+Connected
+AV Web Innovations
+Payments are processed and deposited directly to your bank account.
+
+View Stripe Dashboard
+Email - Ready to Go!
+Verified
+Send quotes and invoices from your Gmail
+
+Working
+No setup needed - it just works!
+
+Emails from your Gmail will land in your client's inbox, not spam. When you click "Send" on a quote or invoice, Gmail opens with everything ready.
+
+Setup Checklist
+
+Email delivery connected
+Quote templates ready
+Invoice templates ready
+Professional PDF generation
+Send Test Email
+Opens Gmail with a test message
+When you email a quote or invoice:
+
+Review in Gmail first
+
+Opens Gmail so you can check and personalise before sending
+
+Send instantly
+
+Emails go out immediately - faster for busy tradies
+
+
+Australian Compliance Tips
+Xero Accounting
+Sync invoices and contacts with Xero
+
+Not Connected
+Connect your Xero account to automatically sync invoices and contacts.
+
+Two-way sync: Contacts and invoices stay in sync
+
+Automatic updates: Changes sync between platforms
+
+Australian business: Works with Xero AU
+
+Connect to Xero
+Google Calendar
+Sync scheduled jobs to your calendar
+
+Not Connected
+Connect your Google Calendar to automatically sync scheduled jobs. Never miss an appointment again.
+
+One-way sync: Jobs sync from TradieTrack to Calendar
+
+Event details: Job title, client, address, and notes
+
+Reminders: Automatic 60min and 15min reminders
+
+Connect Google Calendar
+MYOB AccountRight
+Sync invoices and contacts with MYOB
+
+Not Configured
+MYOB integration is not configured. Please contact support to enable this feature.
+
+MYOB_CLIENT_ID and MYOB_CLIENT_SECRET must be configured.
+
+Communication Services
+Connect these services to automate client communications
+
+SMS Notifications
+Send SMS reminders and updates to clients
+
+Not Connected
+Connect your Twilio account to send SMS reminders and updates directly to your clients' phones.
+
+You'll need: Your Twilio Account SID, Auth Token, and Phone Number
+
+Features: Job reminders, status updates, confirmations
+
+What happens when connected:
+
+SMS reminders sent automatically
+Two-way texting with clients
+Appointment confirmations
+Connect Twilio
+Email Automation
+Automatic email sending for quotes & invoices
+
+Connected
+Email automation is active
+
+Quotes and invoices are sent automatically without opening Gmail.
+
+What happens when connected:
+
+Emails send instantly (no Gmail popup)
+Professional templates
+Delivery tracking
+Optional: Send Emails Automatically
+Want emails to send instantly without opening Gmail? Connect your email account below. This is optional - the Gmail method above works great for most tradies.
+
+Email Delivery
+Your Email Connected
+Gmail Connected
+Automatic
+Emails will be sent via your connected Gmail account.
+
+Quotes and invoices will be sent from your Gmail. Replies go directly to your inbox.
+
+Sending emails as: Gmail Account
+
+Display name: Gmail Connector
+
+Connection: GMAIL
+
+Test Connection
+Disconnect
+Quick Guide: Getting Paid
+1
+Connect Stripe
+
+Add your bank details so you can receive payments
+
+2
+Send Invoice
+
+Your client gets an email with a "Pay Now" button
+
+3
+Get Paid
+
+Money goes to your bank in 2-3 business days

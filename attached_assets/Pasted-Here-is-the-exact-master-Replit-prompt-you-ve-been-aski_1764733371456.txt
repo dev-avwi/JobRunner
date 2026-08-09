@@ -1,0 +1,319 @@
+Here is **the exact master Replit prompt** you’ve been asking for — focused ONLY on **TradieTrack**, and built to:
+
+✅ Compare your app directly to ServiceM8
+✅ Check ALL workflows end-to-end
+✅ Ensure onboarding creates correct roles (Solo vs Team Owner vs Tradie)
+✅ Ensure the entire system is smart, connected, and production-ready
+✅ Generate test accounts (Owner + Solo Tradie + Team Tradie)
+✅ Confirm UX, UI, backend and integrations behave exactly like a real tradie needs
+
+This is **the strongest technical QA prompt** you can paste into Replit to upgrade your codebase.
+
+---
+
+# 🧠 **REPLIT MASTER TESTING PROMPT — “ServiceM8-Level TradieTrack QA”**
+
+**Paste this directly into Replit AI.**
+Do NOT edit anything unless you want to add new features later.
+
+---
+
+## 🟦 **PURPOSE**
+
+You are acting as a **full QA engineer**, **workflow analyst**, and **ServiceM8 feature comparator** for TradieTrack.
+
+Your job is to make sure TradieTrack:
+
+✔ Works in real tradie workflows
+✔ Matches or exceeds ServiceM8 features
+✔ Has no UI-only elements
+✔ Has full backend logic for every major action
+✔ Properly separates Owner vs Solo Tradie vs Team Tradie dashboards
+✔ Generates correct PDFs, emails, jobs, payments, and chats
+✔ Has correct location + time tracking
+✔ Has a smart onboarding flow that configures the account correctly
+
+---
+
+# 1️⃣ **Create Test Accounts in the System (Very Important)**
+
+Simulate these accounts IN THE CODE BASE and use them for all reasoning/testing:
+
+### **A) Team Owner Account**
+
+```
+Name: Mike Sullivan  
+Business: North QLD Plumbing & Gas  
+Role: Owner  
+Plan: Pro  
+Staff: 3 techs
+Location: Cairns, QLD  
+```
+
+### **B) Solo Tradie Account**
+
+```
+Name: Luke Harris  
+Business: Harris Electrical  
+Role: Solo  
+Plan: Free  
+Location: Cairns, QLD  
+```
+
+### **C) Team Tradie Account**
+
+```
+Name: Tom Nguyen  
+Business: North QLD Plumbing & Gas  
+Role: Technician  
+Plan: Inherits Owner’s Pro  
+```
+
+Use these 3 personas throughout every test.
+Simulate each one logging in and experiencing their dashboard EXACTLY like a real tradie.
+
+---
+
+# 2️⃣ **Onboarding Flow Must Branch Correctly**
+
+Verify onboarding screens:
+
+### **Owner onboarding should ask:**
+
+* Business name
+* ABN
+* Address
+* Phone
+* Team size
+* Invite staff emails
+* Logo upload
+* Preferred job categories
+* Stripe Connect setup (optional)
+* Default schedule templates
+  ❗ Confirm these create correct database entries.
+
+### **Solo onboarding should ask:**
+
+* Business name
+* ABN (optional for sole traders)
+* Logo (optional)
+* Basic job preferences
+  ❗ Should NOT show team/roles settings.
+
+---
+
+# 3️⃣ **Dashboard Separation (MUST BE WORKING)**
+
+Check all code paths:
+
+### **Owner dashboard must show:**
+
+* Team locations on map
+* Job status counts
+* Financial summary
+* Staff performance (completed jobs, overdue jobs)
+* Group chat & Direct messages
+* Quotes requiring approval
+* Payments received
+* Overdue invoices
+
+### **Solo dashboard must show:**
+
+* Today’s jobs
+* Overdue invoices
+* Quick actions
+* AI assistant
+  ❗ No team buttons, no staff map, no invites.
+
+### **Team Tradie dashboard must show:**
+
+* Assigned jobs only
+* Location tracking button ("Start job", "On-site")
+* Chat with Owner
+* Upload photos/files for each job
+
+---
+
+# 4️⃣ **Map System (ServiceM8 comparison)**
+
+Verify TradieTrack map is fully functional:
+
+### MUST test in code:
+
+* Each job has stored address
+* Geocode → stores lat/lng
+* Map clusters jobs across a region
+* Job pins show status color (Scheduled, In-progress, Completed)
+* Owner location shows
+* Team Tradie location shows
+* LIVE updates every 10–30 sec
+
+### If location tracking not fully implemented:
+
+→ Hide behind `"coming soon"` toggle
+
+---
+
+# 5️⃣ **Job Workflow — ServiceM8 Level**
+
+Test these steps:
+
+### **Owner creates job → Assigned tradie gets notification**
+
+Confirm:
+
+* Job saved
+* Push notification event created
+* Tradie dashboard updates
+* Appears on map
+* Correct job number assigned
+
+### **Tradie marks themselves on-site**
+
+Confirm:
+
+* Location saved (lat/lng + timestamp)
+* Job status updates
+* Time tracking starts
+
+### **Tradie uploads photos**
+
+Confirm:
+
+* Saved to cloud storage
+* Visible to owner
+* Attaches to final invoice/report
+
+### **Owner marks job completed**
+
+Confirm:
+
+* Close-out timestamp
+* Time tracking stops
+* Auto-create invoice draft
+
+---
+
+# 6️⃣ **Quotes & Invoices — Must Match ServiceM8 Quality**
+
+COMPARE AGAINST SERVICEM8 SPEC:
+
+PDFs MUST include:
+
+* Logo (Pro users)
+* ABN
+* Client info
+* Job info
+* Line items
+* GST breakdown
+* Total
+* Footer with terms
+* Invoice number
+* Issue + due date
+
+Email MUST include:
+
+* Nice subject
+* Reply-To tradie's email
+* Clean template
+* Link to PDF OR attached PDF
+
+❗ Ensure PDFs are NOT “UI screenshots” — must use PDF generator code.
+
+---
+
+# 7️⃣ **Payments (Stripe)**
+
+### **Test Stripe for:**
+
+1. TradieTrack subscription payments
+2. Client → Tradie invoice payments
+
+Confirm:
+
+* Test mode works
+* Webhooks update status
+* Paid invoices cannot be edited
+* Payment receipts generated
+
+---
+
+# 8️⃣ **Chat System (Team Chat + Direct Messages)**
+
+Test:
+
+* Owner ↔ Tradie 1:1 chat
+* Group chat
+* File upload (images/documents)
+* Real-time updates via sockets/polling
+
+Ensure:
+
+* Messages saved in DB
+* Notifications triggered
+* Only team members see team chats
+
+---
+
+# 9️⃣ **Time Tracking**
+
+Tradie:
+
+* Starts job
+* Ends job
+* Breaks
+* Auto-stops when job completed
+
+Owner:
+
+* Sees full timesheet
+* Approves hours
+* Export to PDF/CSV
+
+Ensure all DB logic exists.
+
+---
+
+# 🔟 **Final ServiceM8 Comparison (Full Feature Matrix)**
+
+Replit should evaluate:
+
+| Feature              | ServiceM8 | TradieTrack | Status     |
+| -------------------- | --------- | ----------- | ---------- |
+| Job scheduling       | Yes       | ?           | Match      |
+| Quotes/Invoices      | Elite     | ?           | Match      |
+| PDF editor           | Yes       | ?           | Match      |
+| Client communication | Yes       | ?           | Improve    |
+| Time tracking        | Yes       | ?           | Add/Verify |
+| Live map tracking    | Yes       | ?           | Add/Verify |
+| Team chat            | No        | Yes         | Advantage  |
+| Automation           | Yes       | Partial     | Improve    |
+| Payments             | Yes       | ?           | Add/Verify |
+| Onboarding           | Good      | ?           | Improve    |
+| File storage         | Yes       | Partial     | Improve    |
+| iOS-level UX         | Excellent | ?           | Polish     |
+
+Replit should upgrade TradieTrack until all question marks → **Yes**.
+
+---
+
+# 🟩 **END RESULT**
+
+Replit should produce:
+
+* Fixes
+* Improved backend logic
+* Upgraded PDF/email
+* Stronger onboarding
+* Better map handling
+* Cleaner role-based dashboards
+* No UI-only placeholders
+* A complete list of “must fix before public beta”
+
+---
+
+# Want the **Real-World Testing Script (for your phone)** now?
+
+You’ll actually walk around Cairns pretending to be an owner and a tradie — like a real ServiceM8 test.
+
+Just say: **“Yes give me the real-world script”**

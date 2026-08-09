@@ -1,0 +1,188 @@
+Builds
+
+8fe15a33
+
+
+Compare
+iOS App Store build
+227ed3e · Enable new architecture and upgrade to latest Xcode for improved build stability Re-enable the new architecture in app.json and update EAS build profiles in eas.json to use the latest macOS Sequoia image with Xcode 16.4. Replit-Commit-Author: Agent Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: fd346ebe-50ac-4b41-a3a5-34ac92adb41e Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/52w9vwB Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.0
+
+
+production
+
+ 1.1.0 (35)
+
+307e5b0
+
+227ed3e
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Apr 5, 2026 2:35 AM
+212ms
+
+45s
+
+3m 28s
+
+4m 14s
+
+30 days
+
+Logs
+
+Waiting to start
+
+4s
+
+
+Spin up build environment
+
+41s
+
+
+Install custom tools
+
+25s
+
+
+Prepare project
+
+7s
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+0ms
+
+
+Install dependencies
+
+6s
+
+
+Read app config
+
+325ms
+
+
+Run expo doctor
+
+
+1
+2s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+1s
+
+
+Install pods
+
+25s
+
+
+Calculate expo-updates runtime version
+
+204ms
+
+
+Configure Xcode project
+
+43ms
+
+
+Configure expo-updates
+
+2ms
+
+
+Bundle JavaScript
+
+20s
+
+
+Run fastlane
+
+
+1
+1m 44s
+
+
+Clean up credentials
+
+1s
+
+
+Fail job
+
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- 'folly/coro/Coroutine.h' file not found
+- 'folly/coro/Coroutine.h' file not found
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+
+View in the browser

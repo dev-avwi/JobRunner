@@ -1,0 +1,152 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+iOS App
+1.0 Rejected
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+App Information
+This information is used for all platforms of this app. Any changes will be released with your next app version.
+
+Save
+Localizable Information
+English (Australia)
+?
+Name
+JobRunner
+21
+Subtitle
+Job management for tradies
+4
+General Information
+Bundle ID
+com.jobrunner.app
+
+SKU
+jobrunner-ios
+
+Apple ID
+6760283858
+
+Content Rights
+Edit
+No, this app does not contain, show, or access third-party content.
+
+License Agreement
+Edit
+Apple’s Standard License Agreement
+
+Primary Language
+English (Australia)
+
+Category
+
+Business
+
+Productivity
+Age Ratings
+App Age Ratings
+
+Edit
+View Details
+Users will only see the age rating that applies to their country or region on the App Store.
+
+4+
+173 countries or regions
+
+Brazil
+
+All
+Korea, Republic of
+
+Age Suitability URL
+?
+–
+
+Operating Systems Earlier than Version 26
+
+Global rating of 4+ with regional exceptions
+
+View Details
+App Encryption Documentation
+
+Specify your use of encryption in Xcode by adding the App Uses Non-Exempt Encryption key to your app's Info.plist file with a Boolean value that indicates whether your app uses encryption. Learn More
+
+You're required to provide documentation if your app contains any of the following:
+
+Encryption algorithms that are proprietary or not accepted as standard by international standard bodies (IEEE, IETF, ITU, etc.)
+Standard encryption algorithms instead of, or in addition to, using or accessing the encryption within Apple's operating system
+You can provide your documentation before you submit a build.
+
+Upload
+App Store Regulations & Permits
+Digital Services Act
+This developer has identified itself as a non-trader for this app. In order to update your app level trader status, you need to complete compliance requirements. Get Started
+
+China Mainland ICP Filing Number
+An Internet Content Provider (ICP) Filing Number is an app registration number from China's Ministry of Industry and Information Technology (MIIT). If you have an ICP Filing Number, provide it here. Learn More
+
+Set Up
+
+Vietnam Game License
+If your game is available on the App Store in Vietnam, you can add a game license as required by Vietnamese regulators. Learn More
+
+Add
+Regulated Medical Devices
+If your app is in the Medical or Health and Fitness categories, or if you selected “frequent” for “Medical or Treatment Information” in the App Store Connect age rating questionnaire, you need to declare whether it functions as a regulated medical device to keep distributing on the App Store in certain regions. Learn More
+
+Declare Regulated Medical Device
+
+App Store Server Notifications
+App Store server notifications provide information about key events related to your in-app purchases. To test notifications before implementing them in production, you can set up a separate sandbox server URL. Learn More
+
+Production Server URL
+Edit
+https://jobrunner.com.au/
+
+Sandbox Server URL
+Set Up URL
+App-Specific Shared Secret
+The app-specific shared secret is a unique code to receive receipts for only this app’s auto-renewable subscriptions. You may want to use an app-specific shared secret if you’re transferring this app to another developer, or if you want to keep your primary shared secret private.
+
+Manage
+
+Additional Information
+View on App Store
+
+Edit User Access
+
+Remove App
+
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

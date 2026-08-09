@@ -1,0 +1,100 @@
+It won’t interfere — it actually makes the whole system cleaner and stronger, as long as you keep one rule:
+
+SMS is for job/invoice updates and urgent stuff.
+The website is for getting new leads and credibility.
+
+They do different jobs, so they don’t clash.
+
+Why it makes things better
+
+1) Website → cleaner lead capture
+
+Instead of tradies getting random calls/DMs, the website form drops enquiries straight into TradieTrack as Leads (tagged “Website”).
+That means you can then run your normal pipeline:
+Lead → Quote → Job → Invoice → Pay.
+
+2) SMS workflow stays exactly the same (and becomes more valuable)
+
+Your SMS flow is triggered by job actions inside TradieTrack:
+	•	Quote sent
+	•	On My Way
+	•	Invoice sent
+	•	(later reminders, overdue, etc.)
+
+The website doesn’t touch those triggers. It just creates leads that feed into them.
+
+So the website basically increases the number of jobs entering your SMS automation flow.
+
+3) Fewer “where did that enquiry come from?” headaches
+
+Because the lead is created inside TradieTrack, you can show:
+	•	Source = Website
+	•	Timestamp
+	•	Client details
+	•	Notes
+
+This makes follow-up + conversion easier.
+
+4) Portal links remain magic-link only (no conflict)
+
+Clients still access the portal via links TradieTrack sends during:
+	•	quote
+	•	job
+	•	invoice
+
+Your website can have a “Client Portal” button, but it doesn’t generate access. So no security issue and no confusion if you label it properly (e.g., “Portal link is sent by SMS after booking”).
+
+⸻
+
+The only ways it could interfere (and how to avoid it)
+
+Risk A: Website form triggers SMS to the client too early
+
+If your website lead form automatically texts the client “here’s your portal link”… that’s where confusion starts.
+
+✅ Fix:
+Don’t send portal links at lead stage.
+Only send portal links when:
+	•	quote is sent, or
+	•	job is created, or
+	•	invoice is sent.
+
+(Exactly like your spec.)
+
+Risk B: Tradie starts messaging outside TradieTrack and expects it to be tracked
+
+If a tradie replies from their personal SMS to a website enquiry, it won’t be logged.
+
+✅ Fix:
+Keep it simple in the app:
+	•	Lead is in TradieTrack
+	•	Tradie can call/text from their phone if they want
+	•	Once job starts, TradieTrack SMS + portal become the official thread
+
+That’s a natural split and it works in the real world.
+
+⸻
+
+The clean combined workflow (best version)
+	1.	Customer visits tradie website → submits “Get a Quote”
+	2.	Lead appears in TradieTrack (source: Website)
+	3.	Tradie calls/texts (manual) to confirm details (optional)
+	4.	Tradie sends quote through TradieTrack → SMS goes out with quote link
+	5.	Quote accepted → job scheduled → (optional reminders later)
+	6.	On My Way → SMS with link
+	7.	Invoice sent → SMS with pay link
+	8.	Everything saved in job history
+
+So: website feeds the machine, SMS runs the job.
+
+⸻
+
+Bottom line
+
+✅ No interference
+✅ Makes it better
+✅ More leads flowing into your polished SMS/portal workflow
+✅ More professional “end-to-end” experience for the client
+Just don’t send portal links at lead stage.
+
+If you want, I’ll write the exact “lead created” behaviour: what notifications happen (to tradie + to customer), and what stays silent until quote/job.

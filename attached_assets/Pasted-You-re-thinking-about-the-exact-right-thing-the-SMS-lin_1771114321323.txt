@@ -1,0 +1,281 @@
+You’re thinking about the exact right thing: the SMS + link must be generated from the assignment context, not “whatever user pressed a button.” That’s how you make it reliable for employees + subcontractors + big teams.
+
+Here’s the bulletproof design (logic + data + edge cases) you can hand to Replit.
+
+⸻
+
+1) The Core Rule That Makes It Perfect
+
+✅ Every SMS must be tied to these 4 IDs
+
+When “On My Way” is pressed, the system must know:
+	•	company_id
+	•	job_id
+	•	assignment_id (this is key)
+	•	actor_user_id (the person who pressed it)
+
+You never send SMS from just job_id alone.
+You send from the assignment so the worker identity is guaranteed.
+
+⸻
+
+2) Data Model You Need (simple but solid)
+
+Company
+	•	id, name, logo, owner_phone, support_email, etc.
+
+User
+	•	id, name, phone, role (owner/manager/worker/subcontractor)
+	•	company_id
+	•	default_hourly_rate (optional)
+
+Job
+	•	id, company_id, client info, address, geocode coords
+	•	scheduled window, job status
+
+JobAssignment (MOST IMPORTANT)
+	•	id (assignment_id)
+	•	job_id
+	•	worker_user_id
+	•	worker_display_name (snapshot)
+	•	worker_phone_snapshot (optional)
+	•	rate_override (optional)
+	•	assignment_status (assigned/accepted/declined)
+	•	visibility flags (show_worker_phone_to_client, show_worker_name_to_client)
+
+PortalToken
+	•	job_id + assignment_id
+	•	token, expiry, revoked flag
+
+LocationPing
+	•	assignment_id
+	•	lat/lng, accuracy, timestamp
+
+✅ Note the “snapshot” fields: even if the worker later changes their profile name, the invoice/SMS remains consistent.
+
+⸻
+
+3) The “On My Way” Workflow (Step-by-Step)
+
+Step 0: Preconditions
+
+Worker must be:
+	•	logged in
+	•	assigned to the job
+	•	assignment status = accepted (or auto-accepted if employee)
+
+Step 1: Worker taps “On My Way”
+
+App calls:
+POST /jobs/{job_id}/assignments/{assignment_id}/on-my-way
+
+Server validates:
+	•	assignment belongs to user
+	•	assignment active
+	•	job not cancelled
+	•	client contact exists
+
+Step 2: System sets travel mode
+
+Server creates events:
+	•	ON_MY_WAY_PRESSED with actor_user_id
+	•	sets assignment status = EN_ROUTE
+	•	starts tracking “travel session”
+
+Step 3: Generate portal link
+
+Server creates/refreshes:
+	•	Portal token scoped to assignment_id
+	•	e.g. /p/{token}
+
+Step 4: Calculate ETA
+
+Server uses:
+	•	worker current location (or last location ping)
+	•	job destination coords
+	•	directions API to compute ETA minutes
+
+Store:
+	•	eta_minutes
+	•	eta_updated_at
+
+Step 5: Compose SMS
+
+Template variables pulled from:
+	•	Company (business name + owner phone)
+	•	Worker (name + phone depending on flag)
+	•	Job (short name/address)
+	•	Portal link
+	•	ETA
+
+Step 6: Send SMS + Email
+	•	SMS to client phone
+	•	Email to client email (if present)
+
+Step 7: Live tracking begins
+
+Worker app begins sending location pings for this assignment every 30–60s.
+
+Portal shows:
+	•	live map + ETA
+	•	worker name/phone (if enabled)
+	•	status updates
+
+⸻
+
+4) Subcontractors: Make It Work the Same
+
+Subcontractors are tricky because:
+	•	they can be “external”
+	•	you may not want to expose their real number
+	•	they might not accept jobs immediately
+
+Required subcontractor rules
+	•	Assignment must be accepted before “On My Way” can run
+	•	If subcontractor declines, it logs event + notifies manager
+	•	Option to “mask” subcontractor number:
+	•	Client sees business number only
+	•	Any client calls route to owner/dispatch
+
+✅ For MVP: show Owner number always, worker number optional.
+
+⸻
+
+5) Make It “Enterprise Ready” (big business features)
+
+Big businesses need:
+	•	Dispatch control
+	•	approvals
+	•	material tracking
+	•	roles
+	•	reporting
+	•	audit
+
+So Visual Dispatch must include:
+
+A) Dispatch Board (Operations)
+	•	Column board: Assigned / En Route / Arrived / Working / Completed
+	•	Filters: by crew, by region, by date
+	•	Reassign worker (with audit log)
+	•	“Send client update” button
+
+B) Team Map
+	•	Show active workers (only if allowed)
+	•	Show active jobs pins
+	•	“Last update X mins ago”
+
+C) Timesheet Approval
+	•	Workers submit time
+	•	Manager approves
+	•	Invoice uses approved time only
+	•	All edits logged
+
+D) Material Tracking
+
+Per job:
+	•	items, qty, cost, supplier
+	•	receipt photo
+	•	markup
+	•	taxable flag
+	•	inventory optional later
+
+Materials must roll into:
+	•	job cost
+	•	invoice line items
+	•	profitability report
+
+E) Reporting
+	•	weekly hours by worker
+	•	profitability by job
+	•	labour vs materials
+	•	utilization (how many hours worked vs scheduled)
+
+⸻
+
+6) Make SMS “Perfect” (Templates + Safety)
+
+SMS must always use the assignment context
+
+So it always says:
+	•	correct worker name
+	•	correct portal link
+	•	correct job
+	•	correct ETA
+
+SMS templates (client)
+
+On My Way
+
+JobRunner — {BusinessName}: {WorkerName} is on the way. ETA {ETA}. Track live: {PortalLink}. Questions? Call {OwnerName} {OwnerPhone}.
+
+Arrived
+
+JobRunner — {BusinessName}: {WorkerName} has arrived. Updates/photos: {PortalLink}
+
+Delayed
+
+JobRunner — {BusinessName}: {WorkerName} is delayed ~{NewETA}. Track here: {PortalLink}
+
+✅ Add anti-spam rules:
+	•	Don’t send “On My Way” twice
+	•	If worker toggles it, just update portal, don’t SMS unless >10 mins since last SMS
+
+⸻
+
+7) The “Perfect” Failure Handling (so it never breaks)
+
+If worker has no GPS yet
+	•	still send SMS, but portal shows:
+“Waiting for live location…”
+	•	once first ping arrives, portal updates
+
+If client has no phone
+	•	email only
+
+If job reassigned while en route
+	•	old assignment travel stops + portal token revoked
+	•	new assignment gets new token + new SMS
+
+If subcontractor refuses tracking
+	•	portal still shows status + ETA (manual)
+	•	no live map
+
+⸻
+
+8) Copy/Paste Checklist for Replit
+
+SMS Workflow + Portal (must implement)
+	•	Add JobAssignment entity and always use it for worker actions
+	•	Implement endpoint:
+	•	/assignments/{id}/on-my-way
+	•	Validate assignment ownership + status
+	•	Create travel session + event logs
+	•	Generate portal token scoped to assignment_id
+	•	Compute ETA using directions API
+	•	Send SMS + email using templates
+	•	Start location ping loop (30–60s) during travel
+	•	Stop tracking on “Arrived” or timeout
+	•	Portal shows map + ETA + last updated + worker card
+
+Enterprise features to add
+	•	Dispatch board with columns + filters
+	•	Timesheet approval workflow
+	•	Materials tracking + receipts + markup
+	•	Job profitability (labour + materials)
+	•	Audit logs for all edits
+
+⸻
+
+9) One Recommendation That Will Make It Feel “Big Business”
+
+Add a Dispatch Number feature:
+	•	Company has a “dispatch phone”
+	•	SMS sender always = JobRunner / company dispatch
+	•	Client always sees dispatch number
+	•	Worker number optional (on/off per company)
+
+This is exactly how larger operators run it.
+
+⸻
+
+If you want, I can write you a single Replit prompt that describes all of this in one clean instruction (so the agent builds it correctly), plus a permissions matrix for enterprise roles.

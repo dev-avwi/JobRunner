@@ -1,0 +1,1219 @@
+Notes from YouTube videos on building, designing, and launching websites — copy strategy, visual design, AI workflows, and client generation.
+
+---
+
+# 🎥 Video 1 — The Profitable Website Launchpad (Full Free Course)
+
+**Channel:** Wes McDowell | **Focus:** Client-generating websites for service businesses
+
+https://www.youtube.com/watch?v=5oTwHW0KFyo
+
+## What This Is
+
+A full 6-hour course on building websites that convert visitors into booked clients. No coding — uses Hostinger website builder + custom AI assistants + Midjourney. The system works for any service business: consultants, coaches, lawyers, agencies, etc.
+
+> "Your website should act like your number one salesperson who never takes a day off."
+> 
+
+---
+
+## The Customer Saga Framework (Core Concept)
+
+The central idea: your client is the **hero** of their own story. You are the **mentor** (Yoda, not Luke). Every page of your website should tell their story — not yours.
+
+The saga structure:
+
+1. Hero has a desire
+2. Encounters obstacles (the big bad problem)
+3. Meets a mentor (you) who's already defeated the big bad
+4. Gets a plan
+5. Achieves the happy ending
+
+This maps directly to your homepage layout:
+
+- **Hero section** — flash forward to the happy ending (what they want)
+- **Problem section** — the big bad and its symptoms
+- **Solution section** — you as the mentor (empathy + authority)
+- **Benefits** — 3D benefits (feature → benefit → deeper meaning)
+- **Process plan** — 3 simple steps to work with you
+- **Testimonials** — objection-crushing social proof
+- **Features** — you vs. competition (or just your inclusions)
+- **FAQs** — bust the final objections
+- **CTA** — one clear action, repeated everywhere
+
+---
+
+## Module 1 — Customer Saga Research (What to Gather Before Writing)
+
+### Ideal Client Avatar
+
+Use **Perplexity AI** (not ChatGPT — it does real web research). Prompt:
+
+> "I need help identifying my ideal client avatar. I run a [business type]. Here's what I know for sure: [list]. Here are my best guesses: [list]. Give me: demographics, a cleverly alliterated avatar name (e.g. Busy Ben), and detailed psychographics including goals, challenges, values, lifestyle, and how my service meets their needs."
+> 
+
+Tweak until it sounds like your actual clients.
+
+### What Your Client Wants (The I Want Song)
+
+- Narrow to **one single desire** based on your service focus
+- Make it specific, not vague. Bad: "we give you more time." Good: "Packed calendar. Your dog's walk is covered."
+- The desire fits one of: making/saving money, saving time/eliminating stress, health, status/social standing, or relationships
+- **Their desire is almost never your service itself.** They don't want coaching. They want a happier life. They don't want dog training. They want a dog they can take anywhere.
+
+### The Big Bad Problem
+
+- One overarching problem, not many
+- Must be instantly recognisable to your ideal client
+- Comes with external symptoms (how it shows up daily) and internal emotions (how it makes them feel)
+- Go deeper than "frustrated" — why are they frustrated? What does it make them doubt or regret?
+- Value-add businesses (photo booth rental, event spaces): your "problem" is the gap between their current life and a more elevated experience. Lean less on pain, more on aspiration.
+
+### You as the Mentor
+
+Two components:
+
+1. **Understanding** — show empathy. "I know how draining it is to be constantly pulled into IT emergencies when you should be driving your vision forward."
+2. **Authority** — brief, stat-backed proof. Numbers hit both the logical and emotional brain. "I've helped 300 clients overcome obstacles" > "I have lots of experience."
+3. **Philosophical statement** — what do you believe/stand for that your client would agree with? "I believe technology should empower growth without being a constant burden."
+
+### Call to Action
+
+- One direct CTA only (book a consultation, schedule a call)
+- Never say "contact us" or "learn more" — passive language signals you don't believe in your own service
+- If you had a cure for a disease, would you quietly ask people to contact you? Be bold.
+
+### 3-Step Process Plan
+
+- Step 1: your CTA (what they do right now)
+- Step 2: everything you do for them (simplified into one sentence)
+- Step 3: the happy after state
+- Add a benefit to each step. Don't skip the numbered language — without it, it reads as three random features, not a reassuring process.
+
+### Features vs Benefits (Critical)
+
+- **Feature**: what something is (goal setting and accountability)
+- **Benefit**: what it does for you (keeps you on track, increasing motivation)
+- **Deeper meaning**: the real emotional payoff (you'll make meaningful strides toward your dreams)
+- Formula: *"You'll get [feature] so you can [benefit] which means [deeper meaning]"*
+- 80% of businesses stop at features. 20% get to benefits. Almost nobody goes to deeper meaning. That's your differentiation.
+
+### Objections
+
+- Top 3–5 objections, with a compelling rebuttal for each
+- Price objection: anchor to more expensive alternatives, or flip it to "what's it costing you NOT to?"
+- "Won't work for me" objection: show case studies of diverse clients, explain why it will work for their specific situation
+- Trust objection: reinforce empathy + authority + testimonials + a human photo
+
+### Negative Consequences + Success Vision
+
+- People are 3x more motivated to avoid a bad outcome than to achieve a good one
+- List 3 realistic negative consequences of not working with you
+- List 3 ultimate successes they'll achieve
+- Attach a specific positive emotion to each success (not just "happy" — use: proud, relieved, confident, empowered, focused)
+
+### Deep Research (Perplexity)
+
+- **Voice of customer messaging**: find exact phrases your clients use to describe their problems, desires, and past failures. Search real review sites only. Use these phrases in your copy.
+- **Pre-purchase FAQs**: top 20 questions a prospect has before choosing a provider. Delete any that don't apply.
+- **Industry statistics**: compelling numbers that create urgency. "Staged homes sell 88% faster and for 20% more."
+
+---
+
+## Module 2 — Writing Your Website Copy
+
+### Tone Guidelines
+
+- Avoid **woo woo copy**: vague, abstract, feel-good with no concrete meaning
+- Avoid **corporate jargon**: synergy, innovative solutions, global paradigms — trust killers
+- Aim for: clear, conversational, specific. Apple, Lyft, HubSpot all write this way on purpose.
+- Tone scale 1–10: 1 = casual/quirky, 10 = polished-but-never-stuffy. Default is 5 for most businesses.
+
+### Homepage Flow (in order)
+
+1. Hero section (flash forward to the happy ending)
+2. Problem section (big bad + symptoms)
+3. Solution section (you as mentor: empathy + authority)
+4. Benefits (3D: feature → benefit → deeper meaning)
+5. Process plan (3 steps with benefits)
+6. Testimonials (3 that crush objections or show results)
+7. Features section (you vs. them, or just your inclusions)
+8. FAQs (5 objection-busters)
+9. Final CTA
+
+### Hero Section Formulas
+
+- Formula 1: *Stop [problem]. Start [desired outcome].* + sub-headline explaining how
+- Formula 2: *[Unique benefit] for [target audience].* We deliver [key service] enabling you to [what matters most]
+- Formula 3: *[Desired outcome] without [common hassle].* Our [service] provides [benefit] ensuring [result]
+- Add: 3 two-to-three word positive outcomes ("Know yourself better", "Get a clear path forward", "Goals reached faster")
+- Add social proof: how many clients helped, five-star graphic, key statistic
+
+### About Page (Second Most Visited Page)
+
+Six elements:
+
+1. **Characters** — real humans, not corporate headshots
+2. **Setting** — name your city, show you're a real business
+3. **Conflict** — what was broken in your industry that you had to fix? Or your founder's passion story.
+4. **Journey** — how did your approach develop? What's unique about how you do things?
+5. **Resolution** — real outcomes for real clients. Evidence your approach works.
+6. **Sequel** — where are you going? What bigger impact do you want to make?
+
+> 82% of consumers want to buy from businesses whose values align with their own. Not their prices. Their values.
+> 
+
+### Testimonials (The Right Way)
+
+- Ask 5 questions: What was your problem before? How did it make you feel? Describe working with me. How are things better now? How do you feel vs. before?
+- Get them on a Zoom call — people honor appointments, they don't fill out forms
+- Record the call, pull the best quotes, write the story in one short paragraph
+- Never use "contact us and learn more" level testimonials. You need **result showcasers** (before/after with numbers) and **objection busters** (addresses a common doubt)
+- Give each testimonial a 2–3 word headline. 5x more people read headlines than body text.
+- Include a photo — grab from LinkedIn, ask permission
+- 3 homepage testimonials max. Choose the bangers.
+
+### Features vs. Comparison
+
+- If your offer is genuinely better than competitors and you can prove it: use a comparison table (you vs. them)
+- If you can't make a strong case: just list your features with benefits and deeper meanings
+- Don't go overly negative on competition — it backfires and erodes trust
+
+### Pricing Page (Always Include One)
+
+- People expect it. If you don't have it, competitors who do will win the business.
+- Pre-qualifies prospects so you stop wasting time on calls with people who can't afford you
+- If you can't list hard prices: use starting-at prices, ranges, or tiers with variables explained
+- Anchor pricing: show a higher-priced option to make your core offer feel attainable
+- Never use defensive language that assumes people think your price is too high
+
+### Pages You Actually Need
+
+- Homepage, About, Pricing, FAQs, Success Stories (testimonials + case study)
+- Service pages (one per main service, if multiple)
+- Portfolio page (if visual service)
+- **Do not add anything else.** Every page that doesn't funnel toward a sale works against you.
+
+---
+
+## Module 3 — Lead Magnet (The 96% Who Aren't Ready Yet)
+
+### Why It Matters
+
+96% of website visitors aren't ready to buy yet. A lead magnet captures them on your email list so you can coach the sale over time. Email is the only channel where **you own the list** — social platforms can disappear or kill your reach.
+
+### What Works Now
+
+- Checklist / cheat sheet — converts well, easy to create, actionable
+- Resource list / swipe file — saves them research time
+- 5–7 day challenge — builds bond over multiple touchpoints
+- Template / blueprint — removes the blank page problem
+- Short guide (5–20 pages) — modern ebook, focused on one result
+- Interactive quiz — personalised output, natural email exchange
+
+### What Doesn't Work Anymore
+
+- Newsletters (nothing in it for them)
+- Generic ebooks
+- Anything emphasising what they'll **learn** instead of what they'll **get**
+
+### Lead Magnet Mistakes
+
+1. Promising learning instead of transformation. "10 makeup tips" < "10 secrets to turn back the clock 10 years"
+2. Solving the wrong problem for your audience (career path quiz for executives — they're already on their path)
+3. Boring title — power words, specific result, longer is fine
+4. Not visually appealing — use Ideogram.ai for covers (handles text correctly unlike Midjourney)
+5. Doesn't align with your paid offer — 100% overlap required
+
+> Don't be afraid to give away your best stuff. The more you share freely, the more people want to pay. They'll either DIY it (they were never your client) or realise they need you to do it for them.
+> 
+
+### Email Sequence
+
+- Delivery email: sends immediately, tone is warm and excited
+- 5-email nurture sequence (one per day or every other day):
+    - Day 1: quick easy-to-implement tip building on the lead magnet. Ask them to reply with their results.
+    - Day 2: deeper dive into one key concept
+    - Day 3: address a common sticking point
+    - Day 4: more advanced strategy
+    - Day 5: recap + first direct CTA in the PS line ("Ready for more help? Book a call.")
+- Subject lines: curiosity-driven, benefit/result-focused, short and punchy
+- Email provider recommendation: **Kit (formerly ConvertKit)** — free up to 10K subscribers, primary inbox delivery vs Mailchimp's promotions tab
+
+---
+
+## Module 4 — Building the Website (Hostinger)
+
+### Color Rules
+
+- Pick a palette with at least 1–2 neutral colors + 2 accent colors + 1 standout CTA color
+- **CTA color rule**: use your standout color on CTA buttons ONLY. Nowhere else on the site. Not in text, not in the logo, not in icons. This is the most ignored rule that matters most.
+- Avoid bold color blocking — most good sites use white space + great images + small pops of color
+- Tool: **Palettmaker.com** — free, shows palettes in a web UI mockup
+
+### Image Strategy
+
+- **Happy customer photos** — show the happy after state, not the process ("sausage being made")
+- Don't feature yourself in the hero section unless you're a known personal brand whose audience already recognises you
+- Introduce yourself lower on the page (solution section) with a candid, friendly photo
+- Vary: age, gender, ethnicity, scenario — lean toward your actual avatar
+- Tool: **Midjourney** — best for generating cohesive sets of happy customer photos. Use `--style raw` for more natural look. Specify activities not poses ("playing with kids on the beach" > "smiling couple")
+- For lead magnet covers: **Ideogram.ai** — handles text on images correctly
+
+### Section Advice
+
+- Never skip the step numbers in your process plan ("Step 1, Step 2, Step 3") — without them it reads as random features
+- Bold key phrases throughout — people skim, they don't read. If they only take one thing from each paragraph, bold it.
+- Don't include social media icons in the header or mid-page. Footer only. You don't want to send warmed-up visitors back to Instagram.
+- Booking page: keep it stripped down. One job. No images, no color scheme distractions. Tell them exactly what happens after they submit.
+- Form fields: ask only what you need. Every extra field = friction = fewer completions.
+
+---
+
+## Apply to Your Projects
+
+- **Kindred, Criti, JobRunner landing pages** — if any of your apps need a marketing site, this is the complete framework. The Customer Saga structure maps directly to a mobile app landing page.
+- **Criti specifically** — the features vs. benefits vs. deeper meaning framework is exactly what Criti's own onboarding and paywall copy is missing. "Design critique" is the feature. "Catch problems before your users do" is the benefit. "Ship with confidence, not anxiety" is the deeper meaning.
+- **Lead magnet idea for any app** — a short checklist or template is a low-effort way to start building an email list of warm prospects before launch
+- **Copy audit** — look at your current app store descriptions and paywalls. Are you selling features or deeper meaning?
+- **Testimonials** — when you get early users, get on a Zoom call and ask the 5 questions. Do not ask for a written testimonial. You will get "great app 5 stars."
+
+---
+
+# 🎥 Video 2 — Building an Animated Website with Claude Code + Figma + Hailuo/Kling
+
+**Channel:** (web dev creator) | **Focus:** Design-to-code workflow with animated AI characters
+
+https://www.youtube.com/watch?v=F2OpUJsf68g
+
+## What Was Built
+
+A fully animated hero section website built from a Figma design using Claude Code. Features: animated Pixar-style characters generated with Hailuo Nano Banana 2, animated with Kling/Cedanse 2.0, dropped into the site as videos. Grid SVG background with radial vignette mask. Word-by-word H1 animation. Fully responsive with mobile burger nav. Pushed to GitHub and hosted on Cloudflare in ~5 minutes.
+
+## The Workflow (Step by Step)
+
+### Step 1 — Figma to Claude Code
+
+Two options:
+
+- **If you have Figma Pro**: use Dev Mode → MCP → copy example prompt directly
+- **If you don't**: screenshot the design → drag into Claude → prompt: *"Make this into a full screen hero section website. Font is [font name]. H1 is [size]px."*
+- Model: **Claude Opus 4.6** for the initial build
+
+### Step 2 — Terminal for Micro-Adjustments
+
+Once initial build is done in Claude desktop app, switch to terminal:
+
+- Prompt specific fixes: "H1 should be regular and semi-bold weight", "star icon at end of text not showing correctly"
+- Have the website open on the left, Claude terminal on the right
+- Refresh browser after each change
+
+### Step 3 — Add SVG Assets
+
+- Export SVGs from Figma (logo, icons, background elements)
+- Create an `/images` folder in the project
+- Prompt Claude: "Add grid.svg that's in the images folder to the full screen background. It should sit behind everything filling the entire page."
+- For vignette: "Add a radial mask to this to create a vignette. Tighten it up."
+
+### Step 4 — Generate Characters (Hailuo Nano Banana 2)
+
+- Use **Hailuo Nano Banana 2** (or Pro) for image generation
+- Prompt for Pixar-style characters on white background
+- Iterate — first results may be too on-the-nose (too close to existing IP). Adjust until original.
+- Export as PNGs, add to `/images` folder
+- Prompt Claude: "I want to add two character PNG images into the design. They're in the images folder. Position them like this." (attach screenshot of intended layout)
+
+### Step 5 — Animate Characters (Kling/Cedanse 2.0)
+
+- Use **Kling Cedanse 2.0** for character animation (available via Hailuo)
+- Why Cedanse 2.0: super precise, static camera, no unwanted panning or cropping. Essential for characters on a website.
+- Prompt: "This character is on a solid white background. He's looking around. Static camera positioning, no panning."
+- Download the video files
+
+### Step 6 — Remove Background (Optional, DaVinci Resolve)
+
+- Drag video into DaVinci Resolve
+- Use Magic Mask, draw around the character
+- Add solid white background layer
+- Export clean video
+- Alternative in-code solution: prompt Claude to add `blend-mode: darken` on the videos — this punches out the white, effectively making it transparent without DaVinci
+
+### Step 7 — Compress Videos
+
+- 6MB video files are too heavy for a hero section
+- Prompt Claude in terminal: "Can we compress the videos?"
+- Result: 6MB → 650KB. Quality loss is minimal, performance gain is massive.
+
+### Step 8 — Add Animations to Page Elements
+
+- Prompt: "Have the grid come on screen first. Grow in the H1 appearing one word at a time."
+- Claude handles the animation logic from a plain English instruction
+
+### Step 9 — Make Responsive
+
+- Prompt: "Make it responsive. Nav links should turn into a burger icon. Show a full screen nav popup with a cross at the top. Hide the characters on mobile. Have the login button full width."
+- One prompt handles the entire mobile breakpoint
+
+### Step 10 — Deploy
+
+- Prompt: "Let's push this to a GitHub repo, then show me the steps of publishing this live on Cloudflare."
+- Total deploy time: ~5 minutes
+- Cloudflare hosting is free in most cases. Connect a domain and you're live.
+
+## Key Tools
+
+| Tool | Purpose |
+| --- | --- |
+| Claude Opus 4.6 | Initial build from screenshot/Figma |
+| Claude Code (terminal) | Micro-adjustments, animations, responsive, compression |
+| Figma | Source design, SVG exports |
+| Hailuo Nano Banana 2 | AI image generation (characters) |
+| Kling Cedanse 2.0 | Character animation (precise, no unwanted camera movement) |
+| DaVinci Resolve | Background removal from video (optional) |
+| GitHub + Cloudflare | Free hosting and deployment |
+
+## Key Tips
+
+- **`blend-mode: darken`** — easiest way to remove white backgrounds from videos in-browser without DaVinci. One line of CSS, ask Claude to apply it.
+- **Cedanse 2.0 over other video models for UI** — other models pan, zoom, and reframe. For characters sitting inside a website, you need static camera. Cedanse 2.0 respects this.
+- **Compress in-terminal** — don't forget to ask Claude to compress video assets before shipping. The compression is dramatic and Claude handles it with a single prompt.
+- **Figma Dev Mode MCP** — if you're on Figma Pro, this is a significant upgrade over screenshotting. Claude gets exact values, not guesses.
+- **Word-by-word H1 animation** — one of the best low-effort high-impact animations for hero sections. Ask Claude directly for it.
+
+## Apply to Your Projects
+
+- **Any app landing page** — this workflow (screenshot → Claude → terminal for refinement → deploy on Cloudflare) can produce a professional landing page in under an hour
+- **Kindred** — an animated, character-driven hero section would fit the warmth of the brand. Pixar-style characters with the blend-mode trick is a genuinely unique approach for an emotion-driven app
+- **Criti** — a design-forward landing page built with this exact process would be a credibility signal to designer/dev users. Show that your landing page itself was built with care.
+- **`blend-mode: darken` trick** — useful beyond just character videos. Any time you want a white-background PNG or video to feel transparent on a coloured background.
+- **GitHub + Cloudflare** — if you're not already hosting static sites this way, it's worth switching. Free, fast, and Claude can walk you through the entire deploy process in terminal.
+
+---
+
+# 🎯 Cross-Video Synthesis
+
+| Principle | Wes (Copy Course) | Claude Code Web | Apply |
+| --- | --- | --- | --- |
+| Client as hero, you as mentor | ✅ Core framework | — | App store copy, paywalls, landing pages |
+| Features → benefits → deeper meaning | ✅ Critical | — | Every piece of copy you write |
+| One clear CTA, repeated | ✅ | — | Every app onboarding screen |
+| Happy customer photos (not you) | ✅ | — | App screenshots, marketing materials |
+| CTA color used nowhere else | ✅ | — | App UI + any website you build |
+| Screenshot → Claude → terminal workflow | — | ✅ | Landing pages for any app |
+| blend-mode: darken for transparency | — | ✅ | Creative web elements |
+| Cloudflare free hosting | — | ✅ | Deploy static landing pages free |
+| Compress assets in terminal | — | ✅ | Standard practice for any web project |
+| Build in public | — | — | Both channels advocate showing the process |
+
+---
+
+# 🎯 Action Items
+
+## Immediate (Under 1 Hour)
+
+- [ ]  Audit your app store descriptions and paywall copy — are you selling features or deeper meaning?
+- [ ]  Check your CTA color — is it used anywhere other than buttons? Fix it.
+- [ ]  Ask Claude Code to compress any heavy video/image assets in existing projects
+
+## Medium Term
+
+- [ ]  Write a Customer Saga document for each app (avatar, desire, big bad, mentor intro, 3-step plan)
+- [ ]  Get 3 early users on a Zoom call and ask the 5 testimonial questions
+- [ ]  Build a landing page for one app using the screenshot → Claude → terminal workflow
+- [ ]  Set up Kit (free) for email capture if any app has a waitlist or lead magnet opportunity
+
+## Longer Term
+
+- [ ]  Create a lead magnet for at least one app — checklist or short guide aligned with the core problem you solve
+- [ ]  Write a full 5-email nurture sequence using Claude, feed it your Customer Saga workbook
+- [ ]  Explore Kling Cedanse 2.0 for animated characters on a Kindred landing page
+
+---
+
+---
+
+# 🎥 Video 3 — Build a $10,000 Website with Claude Code
+
+**Channel:** (web dev creator) | **Focus:** Full premium website build workflow, skills, motion, deploy
+
+https://www.youtube.com/watch?v=VMvZuhcDdnw
+
+## What Was Built
+
+A premium restaurant website (dark moody steakhouse) built from scratch using Claude Code desktop app. Scroll-driven hero video, cinematic motion, cursor interactions, per-section micro-animations. Deployed to a custom domain via Hostinger. Total cost: ~$60 (Claude Pro + hosting + domain).
+
+## The $10,000 Website Checklist
+
+Eight things that separate a $10K site from a $200 one — grouped into three categories:
+
+**Taste**: Point of view, Typography, Colour
+
+**Substance**: Hierarchy, Imagery
+
+**Felt quality**: Motion, Mobile (designed, not just shrunk), Invisible stuff (fast, finished feel)
+
+## Setup
+
+- Claude Code desktop app, Code mode (not Chat mode)
+- Create a dedicated project folder, connect it in the app
+- Switch to **auto mode** (bottom left) — lets Claude work without stopping to ask permission at every step
+
+## Installing Skills (The Key Differentiator)
+
+Out of the box, Claude defaults to the same overused fonts, predictable layouts, and generic AI output. Skills fix that.
+
+### Skill 1 — Front End Design (Anthropic-built)
+
+- Paste the skill link into Claude with: `"Install this skill"`
+- Install globally
+- Runs silently in the background
+- **What it does**: bans the most overused fonts on the internet, pushes Claude toward bold design direction instead of generic AI output, trains Claude on restrained sensory copywriting
+
+### Skill 2 — UI UX Pro Max (community-built)
+
+- Paste the skill link into Claude with: `"Install this plugin using NPM"` (exact phrasing matters)
+- Install globally
+- Ships with 57 UI styles, 95 colour palettes, 56 font pairings
+- You call it directly at the start of a build: `/ui-ux-pro-max` at the top of your prompt
+
+## The Build Prompt (The Whole Video in One Pattern)
+
+```
+/ui-ux-pro-max
+[brief description of what you're building]
+Ask me clarifying questions.
+```
+
+That last line — **"Ask me clarifying questions"** — is what makes this work. It forces Claude to stop and think before building, and it comes back with style direction options to choose from (e.g. dark moody luxury vs. Pacific Northwest modern vs. classic chophouse). Your answers become the entire site. The more specific you are at this stage, the less you'll have to fight Claude on revisions.
+
+## References Before You Prompt
+
+- **Dribbble** — designers posting work, every style
+- **Awwwards** — award-winning sites, highest quality bar
+- **Pinterest** — search "modern website design [your niche]"
+- Take 3–5 screenshots of sites you like. You're not copying — you're showing Claude your taste.
+- Describing visual taste in words is hard. Screenshots are your shortcut.
+
+## Imagery Strategy
+
+Claude can't solve imagery on its own. Three tiers:
+
+1. **Custom photography** — best, drop into project folder and tell Claude what to do with it
+2. **AI image → AI video** — use ChatGPT image model for stills, then Google Veo 3.1 or similar to animate into video. Aggregator tools (like ElevenLabs) give you image + video + upscale in one tab.
+3. **Ask Claude to write the image prompt** — Claude already knows your project, so ask it: "Write me an image generation prompt for the hero asset that matches our brand and design."
+
+## Pre-made Components (21st.dev)
+
+- Browse **21st.dev** for free pre-built web components, animations, scroll effects, buttons
+- Two uses: browse for inspiration, or copy a prompt that tells Claude exactly how to recreate a specific component
+- **Important**: Claude will push back if a component requires React and your project is a simple static site. That's correct behaviour — Claude protects your architecture. Don't override it.
+- If Claude says no to something: explain your constraint and ask it to rebuild the effect without changing the project architecture
+
+## Debugging Pattern
+
+When something breaks:
+
+1. Tell Claude what went wrong and what you expected instead
+2. If it doesn't fix it, tell Claude to dig deeper
+3. Claude can open your page in a browser, inspect it live, and find the real problem
+4. Keep pushing — most issues resolve within 2–3 attempts if you give specific feedback
+
+## The Polish Pass (Chapter 7 — Most Important)
+
+### Step 1 — Grade yourself against the checklist
+
+Paste the 8-item checklist into Claude and ask: "Where does this site land against each of these criteria? Be honest."
+
+You'll get a split: some strong, some mixed. That's normal. Now you know exactly what's left.
+
+### Step 2 — Batch fix prompt
+
+Don't fix items one at a time. Ask Claude to **propose a batch of fixes** and lead with intent, not specifics:
+
+> "We need more handcrafted micro interactions. The lower sections feel a bit generic. We don't need to make them busier, just more expensive."
+> 
+
+Note what's happening: you're telling Claude how you want it to **feel**, not what to add. Claude is better at translating intent into specifics than most people are at writing specs. Fewer tokens, more cohesive result.
+
+### Step 3 — Section-by-section cursor/motion pass
+
+Scroll through every section. Find the ones that still feel flat. For each:
+
+- Give Claude **one specific motion or cursor interaction to add** — one per section
+- Keep all of them restrained and subtle
+- After Claude implements: push back with "make it more subtle, more refined" until it feels alive without being noisy
+
+Examples from the build:
+
+- Reserve a Table section: ember glow → "Make the embers move like fire. Have them react to the cursor."
+- Story section: "Add elegant micro movements and cursor interactions here. This section is very static." → candlelight halo that follows the cursor. First attempt too obvious → "Make it more subtle, more refined." → trailing motion that lags behind the cursor. Ship that version.
+
+> "That layer is the difference between a site that looks expensive and one that **feels** expensive."
+> 
+
+## Copy Quality
+
+- The Front End Design skill trains Claude toward restrained sensory writing
+- Example: "Six dishes, one fire." — no adjectives, maximum impact
+- **The Inter font problem**: Inter is so overused on AI sites it instantly signals "AI made this." If you see Inter, ask Claude to swap it. Good alternative: Geist.
+
+## Mobile Pass
+
+- Claude makes sites responsive by default, but responsive ≠ designed for phones
+- Ask Claude explicitly: "Do a dedicated pass on the mobile version. Think about what should be hidden on small screens, what should be tighter, and what should resize."
+
+## Deployment (Hostinger)
+
+- **Simple static site** (single HTML file, no login/checkout/database): Premium plan
+- **Complex site** (user accounts, payment, backend): Business plan (supports Node.js)
+- Free domain included on 12-month+ plans
+- **Critical zip tip**: don't zip the project folder itself — zip the **files inside** the folder. If you zip the whole folder, Hostinger nests your files one level too deep and your domain loads blank.
+    - Mac: select all inside folder → right click → Compress
+    - Windows: select all → right click → Send To → Compressed Folder
+    - Result: `index.html` sits at the top level of the zip
+
+## Apply to Your Projects
+
+- **Install both skills now** — Front End Design + UI UX Pro Max. Install globally, they work for every project.
+- **The `/ui-ux-pro-max` + clarifying questions pattern** is the best starting prompt for any web project
+- **The Inter swap** — check all your existing Claude Code web projects. If Inter is anywhere, swap it.
+- **The batch intent prompt** — use this pattern when a section feels flat: describe how it should feel, not what to add
+- **The cursor/motion pass** — this is what turns a professional site into an expensive one. One subtle interaction per flat section.
+- **Deployment zip tip** — this catches people every time. Save this note.
+
+---
+
+# 🎥 Video 4 — Build an Interactive Website with Google AI Studio (Gemini 3.5)
+
+**Channel:** Victor Adi | **Focus:** Day/night transition hero, animated backgrounds, section-by-section build in Google AI Studio
+
+https://www.youtube.com/watch?v=t5NMwmxOl1g
+
+## What Was Built
+
+A premium AI design agency website with a day/night mode hero transition. Animated background videos (Kling Cedanse 2.0), isometric card section with horizontal scroll, full dark mode, looping boomerang video fix. Built entirely free using Google AI Studio (Gemini 3.5).
+
+## Why Google AI Studio
+
+- Completely free tool
+- Gemini 3.5 is the model — described as the best thing to happen to web designers recently
+- Builds full interactive sites from one-shot prompts
+- No Framer, no Webflow needed
+
+## The Day/Night Hero Transition — Step by Step
+
+### Step 1 — Find a reference image
+
+- Go to Pinterest, find an image with a lot of likes (popular = proven taste)
+- Screenshot it — don't copy exactly, just use as a style reference
+
+### Step 2 — Generate the two images
+
+- Use ChatGPT image gen (free): prompt "Create me an image like this in 8K" with reference screenshot
+- Then upload that result back and prompt: "Create me the same image but make it a night view"
+- Result: two identical scenes, day and night mode
+
+### Step 3 — Strip the style from Motionsize
+
+- Go to **Motionsite** (motionsite.ai or similar) → browse 3D websites
+- Find a style you like → copy the prompt
+- Paste into Claude/ChatGPT and say: "Get rid of everything. I just need the color styles, background, fonts, and font positions on the hero section."
+- Use that stripped-down style prompt in Google AI Studio
+
+### Step 4 — Build the hero in Google AI Studio
+
+- Paste the stripped style prompt
+- Add: "Keep the background pure black. We'll add images later."
+- Do the same for the navbar: find one you like, strip it to essentials via Claude, paste into AI Studio
+
+### Step 5 — Add images and blur
+
+- Paste your day-mode image into AI Studio
+- Prompt: "For the background, use this image. Do not add any overlay."
+- Add blur at the bottom: screenshot a blur effect example, send to AI with prompt "Add this blur effect to our page"
+
+### Step 6 — Day/Night toggle
+
+- Go to Dribbble or Pinterest, search "toggle UI"
+- Screenshot a toggle you like
+- Prompt: "We're going to have a day and night mode. This is the image for day mode. Whenever the toggle is on day mode, this image should show and the navbar should be in dark mode. I've attached inspiration for our day/night toggle."
+- Result: smooth toggle switching between the two images with mode-aware navbar
+
+### Step 7 — Transition effect
+
+- Screenshot a transition effect you want (e.g. a smooth sweep/fade)
+- Prompt: "Add this transition when switching from day mode to night mode."
+
+### Step 8 — Animate the backgrounds (Kling Cedanse 2.0)
+
+- Take each image, go to Kling or Hailuo
+- Click animate, prompt: "Animate this image similar to how this reference video moves" (attach a reference video recording from Pinterest/Dribbble)
+- Generate animated versions of both day and night images
+- Copy the video URLs into notes (label: light mode / dark mode)
+- In AI Studio: "Replace the static images with these videos. Download them, host them locally, connect them to our background. No overlays. Exactly the same, just replacing static images with videos."
+
+### Step 9 — Boomerang loop fix (critical)
+
+- When a video ends and restarts, there's a jarring cut
+- Fix: prompt Claude to generate the boomerang fix code (plays forward then reverses seamlessly)
+- In AI Studio: "Apply this fix to both videos in our hero section"
+- Result: video plays forward, then smoothly reverses back — no jarring cut
+
+## Building Sections Beyond the Hero
+
+### The pattern for every new section:
+
+1. Go to Pinterest, search for what you want ("roadmap design website", "feature cards web design", "4 card section")
+2. Screenshot something you like
+3. Prompt AI Studio with your description + the screenshot
+4. First result will be generic — that's expected. Iterate with specific human input.
+5. Generate images/videos for card backgrounds via ChatGPT → Kling
+6. Paste video URLs into the prompt to replace static backgrounds
+
+### Cards section example:
+
+- "In the second section, let's have two cards side by side. Left card has the text with a liquid glass stroke like the navbar. Right card has a video background."
+- Attach the video URL for the right card
+- Expand/collapse on hover: "For the third section, use this layout (screenshot). When you hover or click, the card expands. Keep dark mode. Place these videos as card backgrounds."
+
+### Key insight on AI image variation:
+
+> "If you don't change much in your prompt, AI will keep the image the same. You need to specifically tell it what to change."
+> 
+
+To create variations: "Remove the computer from the image. Add more flowers and a river flowing down from the mountain." Be specific or it won't change.
+
+## Marketing on X (Twitter)
+
+- Record your screen scrolling/interacting with the live site (shows it's a real website, not a mockup)
+- Post on X mentioning the tools used: Gemini 3.5, Cedanse 2.0, etc.
+- Tag the tutorial creator
+- Visual content performs well on X — if the design looks great, it gets attention
+- Quality bar: must look award-winning, not average AI output
+
+## Key Tips
+
+- **Motionsite** — great source for style prompts. Strip them down via Claude to just colours, fonts, positions.
+- **The boomerang fix** — any video that doesn't loop perfectly gets the forward-then-reverse treatment. Ask Claude to write the fix code.
+- **Isometric cards with horizontal scroll** — one of the best-performing section patterns. Screenshot from Pinterest, describe it, let AI Studio build it.
+- **Liquid glass navbar stroke** — a specific aesthetic detail that elevates the design. Reference it explicitly in your prompts.
+- **Human input is the differentiator** — the first draft from AI will always look generic. Specific human direction section by section is what makes it premium.
+- Google AI Studio is free. Kling/Hailuo for video animation. ChatGPT for image gen. The whole workflow can be done at near-zero cost.
+
+## Apply to Your Projects
+
+- **Any app landing page with a strong visual concept** — the day/night toggle is a memorable hero interaction that would work for apps with dual modes (Kindred: connection vs. solo mode, Criti: before/after critique)
+- **The Motionsite → Claude → AI Studio pipeline** for style prompts is a fast way to get past generic AI output without having design skills
+- **Boomerang loop fix** — any project using looping video backgrounds needs this. Save the pattern.
+- **Section-by-section Pinterest reference** approach is the same principle as the 7-step vibe coding system from Video 3 (App Design & UI). Consistent pattern across both channels.
+
+---
+
+# 📚 Tools & Resources Referenced
+
+| Tool | Purpose |
+| --- | --- |
+| Perplexity AI | Deep research on ideal client avatar + voice of customer |
+| Midjourney | Happy customer photo generation (`--style raw` for natural look) |
+| Ideogram.ai | Lead magnet cover design (handles text on images correctly) |
+| Palettmaker.com | Free colour palette generator with UI preview |
+| Hostinger + template | Website builder with pre-built Customer Saga template |
+| Kit (ConvertKit) | Email automation — free up to 10K subscribers, better inbox delivery than Mailchimp |
+| Figma | Design source + SVG exports |
+| Hailuo Nano Banana 2 | AI image generation for characters |
+| Kling Cedanse 2.0 | Character animation (static camera, precise) |
+| DaVinci Resolve | Video background removal (optional) |
+| GitHub + Cloudflare | Free static site hosting and deployment |
+
+---
+
+# 🎥 Video 5 — Build a Free Animated Website Entirely with AI
+
+**Channel:** (tutorial creator) | **Focus:** Pinterest → ChatGPT → Kling → Google AI Studio → Netlify, zero cost
+
+https://www.youtube.com/watch?v=yOkUmfNdNIk
+
+## What Was Built
+
+A premium animated website with a cinematic character video hero, second page with smooth navigation, fully responsive. Built using only free tools. Zero manual coding or designing. Total cost: zero.
+
+## The Complete Free Workflow
+
+### Step 1 — Find hero visual (Pinterest)
+
+- Search Pinterest for visual inspiration. Pick something with high likes — proven taste.
+- Don't copy exactly. Use as a style reference.
+
+### Step 2 — Recreate and clean the image (ChatGPT)
+
+- Upload reference to ChatGPT, select Create Image, set 16:9 aspect ratio
+- Prompt: *"Generate the same image shown in the reference. Remove all text and extra elements but keep the original visual style and character exactly the same."*
+- ChatGPT image gen now expands the composition naturally while keeping the visual feel
+- Download the result
+
+### Step 3 — Expand to fit frame (Figma)
+
+- Create a 1440×900 frame in Figma
+- Drop in the image, drag edges — Figma's AI image expansion fills the background automatically
+- Requires Figma Pro. If you don't have it: extend manually using any image editor.
+- Export the final image
+
+### Step 4 — Animate the character (Kling AI)
+
+- Go to Kling AI, select Video Generator, upload the image as the starting frame
+- Select **2.5 Turbo** (fewer credits than Pro) at **720p** (enough for web)
+- No ending frame needed — just let it animate from the starting frame
+- Cost: 15 credits. Result: smooth, impressive AI character animation.
+- Download the video
+
+### Step 5 — Find hero layout reference (Pinterest)
+
+- Search Pinterest again for a hero section layout you like
+- Look for: character centred, content aligned around it
+- Screenshot the layout reference
+
+### Step 6 — Strip the layout to UI elements only (ChatGPT)
+
+- Upload the layout screenshot
+- Prompt: *"Recreate this layout. Remove all background visuals, keep only the text and UI elements on a black background."*
+- If any elements remain: ask again to remove them
+- Result: clean wireframe of the layout structure only
+
+### Step 7 — Build the hero in Google AI Studio
+
+- Go to Google AI Studio → Build option (left panel)
+- Upload your clean UI layout image
+- Prompt: *"Create a website hero section exactly like this reference. Don't change the design."*
+- Result: pixel-accurate hero section with full code generated automatically. You can copy the code directly.
+
+### Step 8 — Host the video (Cloudinary — critical step)
+
+- **Do not** upload the video directly into AI Studio and ask it to use as background — it usually won't work
+- Instead: go to **Cloudinary** (free), upload your video, copy the hosted URL it generates
+- This converts your local video file into a public URL that AI Studio can reference
+
+### Step 9 — Add animated video background (Google AI Studio)
+
+- Paste the Cloudinary URL into AI Studio with this prompt:
+    
+    > *"Use this video as the hero section background. Keep it muted. Loop the video continuously and remove the black overlay so the video is clearly visible."*
+    > 
+- Result: beautiful animated hero with the character video as background, fully responsive
+
+### Step 10 — Build remaining sections (Google AI Studio)
+
+- Find more reference designs on Pinterest for each section
+- Use ChatGPT to strip each to UI elements only (same process as Step 6)
+- Prompt AI Studio section by section: *"Create a second page section. Make the Get Started button from the hero navigate to this new page."*
+- Iterate: remove elements you don't want, adjust navigation, refine button styles
+- Example refinements via prompt: *"Make the menu smaller. Too many pages. Make them a drop-down menu."* / *"Make the buttons on the homepage visible. Buttons should match the styles."*
+
+### Step 11 — Deploy free (Netlify)
+
+- Download the zip file of your project from Google AI Studio
+- Go to **Netlify** → Add New Project → Upload zip
+- Within seconds: website is live with a shareable link
+- Optional: change the default subdomain to something readable
+
+## Key Tips
+
+- **Cloudinary is the unlock** for video backgrounds. Always convert local video to a hosted URL first before giving it to any AI builder.
+- **2.5 Turbo at 720p** on Kling is the best credits-to-quality ratio for web use. You don't need Pro or 1080p for a browser background.
+- **Strip before you build** — always use ChatGPT to remove background visuals from reference screenshots before feeding them to AI Studio. Cleaner input = more accurate output.
+- **Figma's AI expand** is a fast way to make any image fill a widescreen frame. If you have Pro, use it every time.
+- **Netlify is genuinely free** for static sites. No credit card required.
+- The entire workflow (Steps 1–11) can be completed without spending anything if you use ChatGPT free tier, Kling free credits, Cloudinary free tier, and Netlify free.
+
+## Apply to Your Projects
+
+- **Any app landing page** — this is the cheapest version of the full animated hero workflow. For a quick Kindred or Criti landing page, this is faster than the Claude Code approach.
+- **The Cloudinary trick** applies to any AI web builder, not just Google AI Studio. Whenever an AI builder can't load a local video, host it on Cloudinary first.
+- **Kling 2.5 Turbo at 720p** — if you're animating images for any project (not just websites), this is the budget-conscious setting to remember.
+
+---
+
+# 🎥 Video 6 — Base44 vs Lovable: Building & Selling AI Websites ($5K/Month Model)
+
+**Channel:** (creator) | **Focus:** Base44 tutorial, tool comparison, local client system
+
+https://www.youtube.com/watch?v=-Ag5NXbQwlM
+
+## What Base44 Is
+
+An AI website and app builder. Websites = business sites, landing pages, portfolios. Apps = interactive builds (booking systems, ordering flows, CRMs). Key differentiator: **back-end is built-in by default** — database, authentication, hosting, analytics, file storage, email, and auto-generated API all bundled. No need to stitch together Supabase + Vercel + email provider separately.
+
+## Base44 Build Workflow
+
+### Step 1 — Generate the base site
+
+Start simple: *"Please create a simple website for a [business type]."*
+
+Base44 builds in real time from the prompt. Goal at this stage is a usable starting point, not a finished site.
+
+### Step 2 — Pull in real client data
+
+Run this prompt with the client's existing website URL:
+
+> *"Please revamp our website's data and get the data from [URL] to replace it. Update the logo and ensure contact information and placeholder content match their services. Ensure the website is 100% mobile responsive."*
+> 
+
+Base44 scrapes the existing site and applies: logo, branding, services, contact info, location — all replaced automatically. Mobile responsive by default.
+
+### Step 3 — SEO optimise
+
+*"Please optimize the SEO for its location."*
+
+Targets local searches ("service near me" / "service in [city]"). Once published, use the Base44 site URL as the foundation for the client's Google My Business profile.
+
+### Step 4 — Add lead capture and automation
+
+> *"Please update the contact form, create an automated email system that sends a confirmation email if the user triggers the contact form. Build a login page and a dashboard to track users that submit the form. Create options in the dashboard to send booking confirmation emails and mark bookings as confirmed, completed, or cancelled."*
+> 
+
+Replaces basic contact forms with a full workflow. Leads are tracked, confirmations are automatic, nothing gets lost. This is where pricing naturally increases.
+
+### Step 5 — Add AI chatbot
+
+*"Please create an AI chatbot for our website. Users should be able to talk to the chatbot to discuss general info about the business."*
+
+Chatbot answers questions, explains services, captures intent 24/7. Turns a passive brochure into an active salesperson. Anyone who engages = a lead even if they don't fill out a form.
+
+### Step 6 — Local SEO (final pass)
+
+*"Please further optimize the website's SEO based on the new info we added, especially for [area/region]."*
+
+## Base44 vs Lovable — Full Comparison
+
+| Category | Lovable | Base44 |
+| --- | --- | --- |
+| Build speed | ~2.5 min | ~2 min |
+| Visual design | ✅ Excellent | ✅ Good |
+| Back-end (out of box) | ❌ Front-end only | ✅ Full back-end included |
+| Native integrations | ~16 | More (bundled) |
+| Client handoff ease | 7/10 (learning curve) | 9/10 (lightweight UI, non-tech friendly) |
+| Pricing predictability | Usage-based back-end adds $50–200+/mo | All-in-one, no surprise fees |
+| Scalability (agency) | 7/10 (design-heavy, limits at scale) | 9/10 (templates carry functionality) |
+| Overall score | ~7/10 | ~9/10 |
+
+**Key difference**: Lovable is design-first, front-end focused. Great for polished visual sites. Base44 builds complete business solutions — forms, dashboards, workflows work out of the box without external tools.
+
+**Client handoff**: Base44's interface is lighter, cleaner, designed for non-technical business owners. Clients can update text, images, manage leads, and make basic workflow changes without touching code or writing prompts. Lovable has more visual clutter and a steeper learning curve for non-tech clients.
+
+**Template system**: Base44 templates carry functionality (forms, dashboards, workflows) not just design. Build once, reuse across multiple clients with minimal changes.
+
+## The Outreach Scripts (Value-First System)
+
+### For businesses without a website
+
+> *"Hey [business name]. I was looking for your website but couldn't find one, so I built one for you. Would you want to check it out?"*
+> 
+
+### For businesses with a bad website
+
+> *"Hey [business name]. I noticed a few things on your website that are easy to fix. I built a new version optimized for more leads. Want to take a look?"*
+> 
+
+### For restaurants (focus: convenience)
+
+> *"Hi [restaurant name]. I noticed you don't have online ordering. I built a quick system where customers can order from their phones. Do you want to see it?"*
+> 
+
+### For real estate (focus: leads + credibility)
+
+### For fitness studios (focus: bookings)
+
+**The pattern**: notice a problem → build a solution → ask permission to show it. You're not pitching an idea. You're showing something that already exists. Channel (email, DM, phone, in-person) matters less than the message.
+
+### Instagram DM approach
+
+*"Hey [business name]. I love the work you did on [specific project]. I noticed your website link isn't working, so I built a quick mockup for your business that captures leads automatically. Mind if I share it with you?"*
+
+Specific + value-first = 30–40% response rates.
+
+### LinkedIn (B2B: consultants, coaches, accountants)
+
+*"I help [profession] capture more qualified leads through automated systems. Would a 10-minute mockup for your business be useful?"*
+
+### Discovery call questions (non-threatening)
+
+- *"When was the last time you updated your website?"* — surfaces the problem without pitching
+- *"If you could change one thing about it, what would it be?"*
+- *"How many customers find you through your website vs word of mouth?"*
+- *"What happens when someone fills out your contact form?"*
+- *"Do you know how many visitors don't contact you?"*
+
+### Handling objections
+
+- **Too expensive**: "How much is one new customer worth to you?" → anchor to their number
+- **Don't need a website**: "Where do people go when they want to verify you're legitimate?"
+- **Will do it myself**: "How long have you been planning to? What if it was done next week?"
+
+### The math close
+
+> *"You're getting ~20 visitors a month with no capture system. That likely means you're losing ~10 potential customers. At $2,000 each, that's $20,000 in missed revenue. If a $400/month system captures even 25% of that, you're adding $5,000/month."*
+> 
+
+Stop talking features. Translate everything into outcomes: *"Customers can book appointments from their phone at 2am and you can wake up to a full calendar."*
+
+## Pricing Tiers
+
+| Tier | Price | What's included |
+| --- | --- | --- |
+| Basic | $150–200/month | Website, hosting, security, basic updates |
+| Standard | $300–500/month |   • Lead capture, email automation, simple CRM |
+| Full marketing | $1,000–2,000/month |   • Booking systems, dashboards, email campaigns, analytics |
+
+**Why monthly beats one-off**: lowers friction, creates ongoing relationships, makes ROI conversations simple. You're a long-term partner, not a one-off website builder.
+
+## Apply to Your Projects
+
+- **Base44 for app landing pages** — faster than Claude Code for a simple business site, back-end included, no deployment setup
+- **The chatbot upsell** — relevant for any of your apps. An AI chatbot on a landing page that captures leads 24/7 is a straightforward add-on to pitch after the base website
+- **The math close** — use this exact structure when pitching Criti or JobRunner to potential B2B clients. Quantify the missed opportunity, then show how your product captures a percentage of it
+- **The discovery questions** — these work for user research, not just sales. "What happens when someone [does X]?" surfaces broken processes without the person feeling interrogated.
+
+---
+
+# 🎥 Video 7 — Clone an Award-Winning Website in 10 Minutes: The AI Architect Workflow (Samir)
+
+**Channel:** Samir | **Focus:** Google Whisk + Flow for asset generation, Ezgif frame extraction, Gemini blueprint injection, Antigravity build, TestSprite QA
+
+https://www.youtube.com/watch?v=j74kjYvzzLk
+
+## What Was Built
+
+A clone of the Jesko Jets award-winning website (Awwwards website of the year). Cinematic cloud-push hero scroll, plane morphing from photorealistic to wireframe, seamless rotating globe loop. Built in ~10 minutes, $0 cost.
+
+## The Core Insight
+
+Stop trying to get one AI model to do everything. Instead: **orchestrate a team of specialised AI tools**, each handling what it does best. The workflow has six phases.
+
+---
+
+## Phase 1 — The Architect's Deconstruction
+
+Before building anything, identify the 3–5 "impossible components" that make the site feel premium. For Jesko Jets:
+
+1. **Hero scroll** — camera pushes through a window into clouds, speed tied to scroll position
+2. **Plane morph** — photorealistic jet transitions to a CAD wireframe as you scroll
+3. **Globe loop** — seamless infinite rotation with zero stutter or jump
+
+Rule: don't build the whole site at once. **Generate the components first**, then build the website around them.
+
+---
+
+## Phase 2 — Generative Assets (Google Whisk + Google Flow)
+
+**Google Whisk** = image generation using reference images as style/subject inputs
+
+**Google Flow** = frame-to-frame video generation (give it a start frame and end frame, it generates the motion between them)
+
+### Hero scroll asset
+
+1. Screenshot the hero section of the original site
+2. Paste into Whisk as a **subject** → prompt for the start frame (inside the cabin looking out)
+3. Refine: "remove the [brand] text"
+4. Screenshot a further-in moment of the original → give to Whisk as a new subject → prompt for the end frame (camera has passed through the window)
+5. Download both frames
+6. In Google Flow → change type to **Frames to Video** → upload start frame + end frame → generate
+7. Pick the best output
+
+### Plane morph asset
+
+1. Screenshot the photorealistic plane from the original site → Whisk subject
+2. Prompt: generate a clean photorealistic plane
+3. Refine to remove text
+4. Take that generated plane → give as Whisk subject
+5. Screenshot the wireframe from the original site → also give as Whisk subject
+6. Prompt: generate the wireframe version of the same plane
+7. Download both (photorealistic + wireframe)
+8. Google Flow → Frames to Video → upload both → generate
+
+### Globe asset
+
+1. Screenshot the globe from the original site → Whisk subject
+2. Prompt: seamless rotating globe
+3. Refine to remove text
+4. Click **Animate** directly inside Whisk (no need to go to Flow for this one)
+5. Give a clear motion prompt: smooth seamless rotation, no jump
+6. Download
+
+---
+
+## Phase 3 — Optimising for the Web (Ezgif Frame Extraction)
+
+**Critical step most people skip.** You can't put video files directly into a scroll-controlled website — they're too heavy and you can't control playback with the scrollbar.
+
+**Solution**: convert scroll-controlled videos to individual image frame sequences.
+
+Tool: **Ezgif** (free, browser-based) — search "video to frames ezgif"
+
+Settings: 15 fps (sweet spot — smooth enough for web, not too heavy. 30fps = overkill)
+
+Output: hundreds of individual JPEG frames in a zip file
+
+**Three different treatments for three different asset types:**
+
+| Asset | Treatment | Why |
+| --- | --- | --- |
+| Hero scroll | Frame sequence (15fps JPEGs) | Scroll position scrubs through frames |
+| Plane morph | Frame sequence (15fps JPEGs) | Same — scroll-driven |
+| Globe | Use video file as-is | Continuous background loop — just set to loop forever |
+
+Name your extracted folders clearly: `sequence1`, `sequence2`. Place them in the `/public` directory of your project before building.
+
+---
+
+## Phase 4 — The Blueprint (Context Injection via Google AI Studio / Gemini)
+
+**This is the most important step.**
+
+Don't throw files at the coding agent and say "build this website." Create a comprehensive blueprint first.
+
+**Tool**: Google AI Studio with Gemini 2.5 Pro (massive context window, can analyse video + generate a full implementation plan in one shot)
+
+**What to give it:**
+
+- Screen recording of the original website (for design, UX, and aesthetic reference)
+- Your master prompt (available in the creator's Notion — linked in description)
+
+**What it outputs:**
+
+- React component structure
+- Framework and motion logic
+- Complete copy
+- Every implementation instruction the coding agent will need
+
+> "This document is now the brain of our project."
+> 
+
+Paste the entire blueprint into the coding agent as the first message. It follows it exactly.
+
+---
+
+## Phase 5 — The Build (Antigravity / Claude Code)
+
+- Drag all asset folders (hero sequence, plane sequence, globe video) into the `/public` directory **before** writing any code
+- Paste the entire Gemini blueprint into Antigravity's chat → hit enter
+- It follows the blueprint: canvas component for hero, CSS triggers for the plane morph, video player for the globe
+- Minor linter errors → paste errors back → auto-fixed
+- After the base build: ask "what other features could we add?" → it suggests sound design, custom cursor, micro-interactions → tell it to implement them
+
+---
+
+## Phase 6 — Autonomous QA (TestSprite)
+
+**TestSprite** = an autonomous QA agent that runs as an MCP server inside your editor. It has "eyes" — it can actually see and interact with the running website.
+
+Setup: configure TestSprite as an MCP server in your editor (Claude Code / Antigravity)
+
+Workflow:
+
+1. Give it a simple test command in the chat
+2. It generates test cases from your PRD and code
+3. Runs all test cases **in parallel** (13 cases tested simultaneously in the demo)
+4. Outputs a test report file with pass/fail for each case
+5. For failed cases: shows a video recording of the failure, the error, the steps, and the suggested fix code
+6. Paste the fix report back into Antigravity → it resolves everything
+
+Result: production-quality QA without manually testing on different devices and network conditions.
+
+---
+
+## The Full Tool Stack
+
+| Tool | Phase | Cost |
+| --- | --- | --- |
+| Google Whisk | Asset generation (images) | Free |
+| Google Flow | Asset generation (video) | Free |
+| Ezgif | Frame extraction | Free |
+| Google AI Studio (Gemini 2.5 Pro) | Blueprint generation | Free |
+| Antigravity | Build | Free |
+| TestSprite (MCP) | QA | Paid |
+
+Total cost for the demo: $0.
+
+---
+
+## Apply to Your Projects
+
+- **The 3-asset deconstruction approach** — before building any premium landing page, identify 2–3 "impossible components" that make it feel expensive. Build those first, then wrap the site around them. This applies to Kindred, Criti, and JobRunner landing pages.
+- **Google Whisk → Google Flow** — the frame-to-frame video pipeline is faster than Kling for scroll-hero assets because you control both endpoints exactly. Good for any project where you need a specific start-to-end camera motion.
+- **Ezgif frame extraction at 15fps** — the scroll-scrubbing technique is the single highest-impact web animation technique. Extract at 15fps, not 30. Name folders `sequence1`, `sequence2`. Drop into `/public` before building.
+- **Blueprint injection before coding** — the Gemini blueprint step (screen recording → master prompt → full implementation plan) is applicable to any complex build. Instead of iterating on vague prompts, generate a comprehensive spec first and let the coding agent execute against it. Fewer iterations, better output.
+- **TestSprite as MCP** — if you're shipping any public-facing web project, autonomous QA via TestSprite is worth setting up. 13 parallel test cases in minutes vs. hours of manual testing.
+- **The "orchestrate specialised tools" principle** — the core lesson. Whisk for images, Flow for video, Ezgif for optimization, Gemini for planning, Antigravity for building, TestSprite for QA. No single model does everything. This mental model applies to every complex AI workflow you build.
+
+---
+
+# 🎥 Video 8 — 3D Scroll Animation Website: Nano Banana 2 + Kling + Claude Code
+
+**Channel:** (creator) | **Focus:** Assembled + exploded product images → Kling transition video → scroll-scrubbing 3D effect via Claude Code
+
+https://www.youtube.com/watch?v=mhIAd5lVMag
+
+## What Was Built
+
+A scroll-driven 3D product animation landing page. As the user scrolls down, a product transitions from assembled to exploded view. Scroll up — it reverses. Looks like a $50K interactive 3D experience. Built in 20 minutes with $0 image generation cost.
+
+## The Core Technique: Two Images → One Video → Scroll Scrubbing
+
+### Step 1 — Generate the assembled product image (Nano Banana 2)
+
+- Tool: Google AI Studio free tier (Nano Banana 2)
+- Free tier: ~600–750 generations/month. API cost if needed: $0.045–$0.067 per image.
+- **Key prompt tip**: specify resolution explicitly — `generate a product photo at 2048 resolution`. The sharpness difference between default and 2K is dramatic.
+- Prompt: clean product photo, white background, 2K resolution
+
+### Step 2 — Generate the exploded view (Nano Banana 2)
+
+- Same product, same angle, same lighting — but all parts separated and floating (like Apple's product teardown photos)
+- **Critical**: feed Nano Banana 2 the first image as a reference when generating the second. It can maintain fidelity of up to 14 objects in a single workflow — the exploded view stays visually coherent with the assembled version.
+
+### Step 3 — Generate the transition video (Kling 3.0)
+
+- Upload assembled image as **start frame**, exploded image as **end frame**
+- Kling generates a smooth 3–5 second transition between them
+- Alternatives if Kling is unavailable or slow: **Runway ML** or **Pika** — same concept, same result
+- Formula: start frame + end frame = transition video. That's the whole secret.
+
+### Step 4 — Build the scroll-driven website (Claude Code)
+
+Drop the video file into Claude Code. Prompt used:
+
+> *"Build a scroll-driven frame animation website using Three.js. The video plays forward as the user scrolls down and reverses when they scroll up. Add a hero headline and a clean gradient background."*
+> 
+
+**First version won't be perfect — that's normal:**
+
+- Second prompt: "Slow down the scroll speed by 40%. Move the headline to centre-left. Change the background to a dark gradient."
+- Third prompt: "Add a subtle parallax effect to the headline on scroll."
+
+Three prompts, ~8 minutes total. Result: fully responsive scroll-driven 3D animation.
+
+### Step 5 — Deploy (Vercel)
+
+- One-click deploy from VS Code
+- Live in ~60 seconds
+- Free tier for personal projects; $20/month Pro plan for client work
+- Custom domain setup: ~1 minute if client already has one
+
+## Monthly Operating Cost
+
+| Tool | Cost |
+| --- | --- |
+| Claude Pro | $20/month |
+| Vercel Pro | $20/month |
+| Nano Banana 2 | Free (free tier) |
+| **Total** | **$40/month** |
+
+## Honest Limitations
+
+These are **static animated sites** — no CMS, no blog, no e-commerce, no user login. Built for service businesses that need a premium front door, not SaaS companies or online stores.
+
+## Apply to Your Projects
+
+- **The two-image scroll technique** — assembled + exploded product is the formula. Any physical product (hardware, packaging, device) can use this. For app landing pages, you could use an app UI "assembled" vs. individual feature screens "exploded."
+- **Nano Banana 2 at 2K resolution** — always specify the resolution. This applies to any product photography prompt, not just for this technique.
+- **Kling start frame + end frame** — this is the most controlled video generation workflow in the notes. You specify both endpoints exactly. Use this any time you need a precise camera motion or product transition.
+- **Three.js scroll scrubbing** — the mechanism (video plays forward/backward based on scroll position) is one of the highest-impact landing page effects possible. Claude Code builds the whole thing from a plain English prompt in minutes.

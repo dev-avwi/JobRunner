@@ -1,0 +1,390 @@
+🔧 Replit Prompt – TradieTrack UI Generator
+
+Copy everything from here into Replit:
+
+You are an expert React Native + Expo + TypeScript engineer and product designer.
+
+Your task is to build the MVP UI for a mobile app called TradieTrack – an AI-powered job management app for tradies (plumbers, sparkies, etc.).
+
+🔩 Tech + Project Setup
+
+Use Expo and React Native with TypeScript.
+
+Use Expo Router for navigation (file-based routing in app/).
+
+Use functional components + React hooks.
+
+Use StyleSheet.create for styling (no Tailwind).
+
+Keep styles clean and reusable: define shared styles in a styles or theme file if helpful.
+
+No backend or real API calls yet – just mock data + TypeScript types.
+
+All state can be local or via basic context if needed.
+
+🎯 UX Rules (Must Follow)
+
+Apply these rules to every screen and component you build:
+
+Clarity
+
+Each screen must clearly show:
+
+What it is (title at top)
+
+What can be done
+
+What the main next action is
+
+Max 1–3 primary actions per screen.
+
+Tap Limits
+
+Common flows must be:
+
+Create job → ≤ 3 taps from main Jobs screen
+
+Add photos → 1 tap from Job details
+
+Send invoice → ≤ 3 taps from Job or Invoice screen
+
+Mark job complete → 1–2 taps
+
+If a flow takes more taps, simplify the UI.
+
+One-hand Use
+
+Main actions (buttons) must be placed near the bottom of the screen where possible (thumb zone).
+
+Large tap areas, no tiny icons only – always include labels.
+
+Speed & Perceived Performance
+
+Use skeleton loaders / placeholders instead of blank screens.
+
+Use simple, fast lists. Paginate or fake-paginate when necessary.
+
+Visual Hierarchy
+
+Big, clear screen title.
+
+Primary action button styled clearly (filled).
+
+Secondary actions as outline/ghost buttons or simpler text buttons.
+
+Use cards/sections to group related info.
+
+Feedback
+
+Every important action must give feedback:
+
+Saved ✓, Job updated ✓, Quote sent ✓ (can be a toast or inline message).
+
+Offline-Friendly UI (No real offline logic required yet)
+
+Add an offline badge / banner component we can later wire up.
+
+Design the UI so that actions can “queue” in concept (e.g., show “Pending sync” pill).
+
+AI as Assistant, Not Boss
+
+AI suggestions always editable.
+
+Provide an obvious “Use suggestion” or “Insert” button.
+
+🧱 Core Screens to Build
+1. Jobs List Screen (app/index.tsx or app/jobs/index.tsx)
+
+Purpose: Home screen for tradies.
+
+Design:
+
+Top area:
+
+Title: Jobs
+
+Small filter row: All / Today / Scheduled
+
+List of jobs as cards:
+
+Job title
+
+Client name
+
+Status pill (Quote / Scheduled / In Progress / Done)
+
+Date & time
+
+Location (subtle)
+
+Each card is tappable → opens Job Details.
+
+Floating primary button at bottom: “New Job”.
+
+2. Job Details Screen (app/jobs/[id].tsx)
+
+Purpose: See and manage a single job.
+
+Sections:
+
+Header:
+
+Job title
+
+Status dropdown/pill (tap to change status)
+
+Client section:
+
+Client name
+
+Phone (tapable)
+
+Address (tapable; placeholder for map)
+
+Job info:
+
+Date/time
+
+Assigned technician (for later: show single user now)
+
+Photos section:
+
+Horizontal scroll of photo thumbnails
+
+Button: “Add Photos”
+
+Notes section:
+
+Text area or read-only notes + “Edit notes” button
+
+Bottom sticky bar actions:
+
+Primary (filled): “Create Quote” OR “View Quote” (if exists)
+
+Secondary: “Mark as Done”
+
+Optional tertiary: “More” menu (for things we add later)
+
+3. New Job Screen (app/jobs/new.tsx)
+
+Purpose: Fast job creation in ≤ 3 taps from Jobs.
+
+Fields:
+
+Client selector / quick add (Name, Phone, Address)
+
+Job title
+
+Job description (multiline)
+
+Date & time
+
+Optional: quick toggle “Schedule later”
+
+Buttons:
+
+Primary: “Save Job”
+
+Secondary: “Save & Open” (takes user straight to Job Details)
+
+Add a small “Create from text” area:
+
+Multiline input for pasted client message
+
+Button: “Generate job details (AI)” (no backend – just mock)
+
+4. Clients List (app/clients/index.tsx)
+
+Purpose: See all clients.
+
+Design:
+
+Title: Clients
+
+Search bar at top.
+
+List of clients:
+
+Name
+
+Phone
+
+Last job date
+
+FAB: “New Client”
+
+5. Client Details (app/clients/[id].tsx)
+
+Sections:
+
+Basic info:
+
+Name
+
+Phone
+
+Email
+
+Address
+
+Actions:
+
+Call
+
+Email (placeholder)
+
+“New Job for this client”
+
+Recent jobs list (simple list of 3–5 jobs).
+
+6. Quotes Screen (per Job) (app/jobs/[id]/quote.tsx)
+
+Purpose: Create/edit a quote for a job.
+
+Layout:
+
+Header: Quote for [Job Title]
+
+Client summary (name + address)
+
+Line items list:
+
+Each item: description, qty, unit price, total
+
+Button: “Add item”
+
+Summary:
+
+Subtotal, Tax (placeholder), Total.
+
+Bottom actions:
+
+Primary: “Save Quote”
+
+Secondary: “Send Quote” (no real send logic, just mock UI feedback)
+
+Add an AI Assist panel (drawer or inline card) with:
+
+Textarea: “Job notes”
+
+Button: “Suggest quote items (AI)”
+
+Display a static mocked list of suggested items the user can insert.
+
+7. Invoice Screen (per Job) (app/jobs/[id]/invoice.tsx)
+
+Very similar to Quotes, but:
+
+Header: Invoice for [Job Title]
+
+Line items (start from quote if exists – fake it for now).
+
+Totals.
+
+Payment status pill (Unpaid / Paid).
+
+Actions:
+
+“Save Invoice”
+
+“Send Invoice”
+
+“Mark as Paid”
+
+8. Schedule Screen (app/schedule/index.tsx)
+
+Purpose: Simple daily/weekly schedule view.
+
+Design:
+
+Toggle: Day / Week view (can just switch layouts for now).
+
+List of jobs grouped by day.
+
+Each job shows: time, client, status.
+
+Tap → Job Details.
+
+No drag & drop needed yet, but design it with spacing that could support it later.
+
+9. Settings / Profile (app/settings/index.tsx)
+
+Sections:
+
+Business info:
+
+Business name
+
+Phone
+
+Logo placeholder
+
+Preferences:
+
+Date/time format
+
+Default tax rate (no logic yet)
+
+Experimental:
+
+Toggle: “Use AI suggestions” (no real logic needed yet; just mock state)
+
+🧩 Components to Extract into components/
+
+Create reusable components to keep UI consistent:
+
+<Screen>
+
+Wrapper with safe area, padding, optional header.
+
+<PrimaryButton> / <SecondaryButton>
+
+<StatusPill status="scheduled" | "quote" | "in_progress" | "done" />
+
+<JobCard>
+
+<ClientCard>
+
+<SectionHeader> (title + optional action button)
+
+<OfflineBanner /> (show mock “You’re offline, changes will sync later”)
+
+<Toast /> or simple feedback mechanism (even just a simple temporary banner at top or bottom).
+
+🧪 Dummy Data & Types
+
+Create simple TypeScript types in a types.ts:
+
+Job
+
+Client
+
+Quote
+
+Invoice
+
+Use mock data arrays for Jobs and Clients to populate the UI so the screens look real.
+
+✅ What to Deliver
+
+All screens under app/ wired with Expo Router.
+
+Shared components in components/.
+
+Consistent styling and spacing across all screens.
+
+Dummy data to demonstrate full flow:
+
+Jobs list → Job details → Quote → Invoice
+
+Clients list → Client details → New job
+
+At least one screen that demonstrates the AI assist panel UI (even if wired to static mock data).
+
+Make sure the final result:
+
+Builds and runs in Expo (no TypeScript errors).
+
+Follows the UX rules at the top.
+
+Feels like a coherent, production-ready prototype UI for TradieTrack.

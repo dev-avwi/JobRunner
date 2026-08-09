@@ -1,0 +1,38 @@
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Add authentication and rate limiting to protect API endpoints
+
+Adds authentication to address search endpoints, implements rate limiting for the bug report endpoint, and fixes a broken navigation link.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 24ac717b-f6f1-4faf-9a66-f7482bef1edb
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: 4ba686b6-9347-450d-9b74-24f9aa3896e0
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/24ac717b-f6f1-4faf-9a66-f7482bef1edb/Al1nAJk
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓░░░░░░░░░░░ 31.6% (431/767)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓░░░░░ 70.4% (1376/1640)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓░░░░░░░░░░ 39.2% ( 656/1320)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 96.1% (4141/4225)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4311/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 98.5% (4250/4286)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4311/4313)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (4316/4317)
+[expo-cli] Android Bundling failed 25524ms node_modules/expo-router/entry.js (4317 modules)
+[expo-cli] SyntaxError: SyntaxError: /home/runner/workspace/mobile/app/more/time-tracking.tsx: Unexpected token, expected "," (1506:22)
+[expo-cli] 
+[expo-cli]   1504 |                         </View>
+[expo-cli]   1505 |                       </View>
+[expo-cli] > 1506 |                       {entry.isDisputed && entry.disputeReason && !entry.disputeResolvedAt && (
+[expo-cli]        |                       ^
+[expo-cli]   1507 |                         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs }}>
+[expo-cli]   1508 |                           <Text style={{ fontSize: 11, color: '#ef4444' }} numberOfLines={2}>
+[expo-cli]   1509 |                             Reason: {entry.disputeReason}
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

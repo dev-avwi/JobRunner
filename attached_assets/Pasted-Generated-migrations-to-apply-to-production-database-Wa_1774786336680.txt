@@ -1,0 +1,432 @@
+Generated migrations to apply to production database
+Warning, this migration may permanently remove some data from your production database, learn more:
+You're about to delete sessions table with 6 items
+CREATE TABLE "quote_versions" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"quote_id" varchar NOT NULL,
+	"version_number" integer NOT NULL,
+	"edited_by" varchar,
+	"change_note" text,
+	"snapshot" jsonb NOT NULL,
+	"created_at" timestamp DEFAULT now()
+);
+CREATE TABLE "error_logs" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"level" text NOT NULL,
+	"category" text NOT NULL,
+	"message" text NOT NULL,
+	"user_id" varchar,
+	"metadata" jsonb,
+	"error_details" jsonb,
+	"created_at" timestamp DEFAULT now()
+);
+CREATE TABLE "ai_receptionist_calls" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar NOT NULL,
+	"vapi_call_id" text NOT NULL,
+	"caller_phone" text,
+	"caller_name" text,
+	"status" text DEFAULT 'ringing' NOT NULL,
+	"duration" integer,
+	"summary" text,
+	"transcript" text,
+	"recording_url" text,
+	"lead_id" varchar,
+	"transferred_to" text,
+	"transfer_status" text,
+	"caller_intent" text,
+	"extracted_info" json,
+	"ended_reason" text,
+	"cost" numeric(8, 4),
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now(),
+	"outcome" text
+);
+CREATE TABLE "quickbooks_connections" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar NOT NULL,
+	"realm_id" varchar NOT NULL,
+	"company_name" varchar,
+	"access_token" text NOT NULL,
+	"refresh_token" text NOT NULL,
+	"token_expires_at" timestamp NOT NULL,
+	"refresh_token_expires_at" timestamp,
+	"scope" varchar,
+	"connected_at" timestamp DEFAULT now(),
+	"last_sync_at" timestamp,
+	"status" varchar DEFAULT 'active'
+);
+CREATE TABLE "ai_receptionist_config" (
+	"id" varchar PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" varchar NOT NULL,
+	"vapi_assistant_id" text,
+	"vapi_phone_number_id" text,
+	"voice_id" text,
+	"voice_name" text DEFAULT 'Jess',
+	"greeting" text,
+	"mode" text DEFAULT 'off' NOT NULL,
+	"transfer_numbers" json DEFAULT '[]'::json,
+	"business_hours" json,
+	"enabled" boolean DEFAULT false NOT NULL,
+	"dedicated_phone_number" text,
+	"created_at" timestamp DEFAULT now(),
+	"updated_at" timestamp DEFAULT now()
+);
+ALTER TABLE "sessions" DISABLE ROW LEVEL SECURITY;
+DROP TABLE "sessions" CASCADE;
+ALTER TABLE "idempotency_keys" DROP CONSTRAINT "idempotency_keys_key_key";
+ALTER TABLE "portal_sessions" DROP CONSTRAINT "portal_sessions_session_token_key";
+ALTER TABLE "automation_logs" DROP CONSTRAINT "automation_logs_automation_id_entity_type_entity_id_key";
+ALTER TABLE "job_invites" DROP CONSTRAINT "job_invites_invite_code_key";
+ALTER TABLE "push_tokens" DROP CONSTRAINT "push_tokens_token_key";
+ALTER TABLE "automation_settings" DROP CONSTRAINT "automation_settings_user_id_key";
+ALTER TABLE "sms_booking_links" DROP CONSTRAINT "sms_booking_links_token_key";
+ALTER TABLE "subcontractor_sessions" DROP CONSTRAINT "subcontractor_sessions_session_token_key";
+ALTER TABLE "job_portal_tokens" DROP CONSTRAINT "job_portal_tokens_token_key";
+ALTER TABLE "terminal_locations" DROP CONSTRAINT "terminal_locations_stripe_location_id_key";
+ALTER TABLE "users" DROP CONSTRAINT "users_apple_id_key";
+ALTER TABLE "sms_tracking_links" DROP CONSTRAINT "sms_tracking_links_token_key";
+ALTER TABLE "stripe_payouts" DROP CONSTRAINT "stripe_payouts_stripe_payout_id_key";
+ALTER TABLE "sms_automation_logs" DROP CONSTRAINT "sms_automation_logs_rule_id_entity_type_entity_id_key";
+ALTER TABLE "payment_requests" DROP CONSTRAINT "payment_requests_token_key";
+ALTER TABLE "subcontractor_tokens" DROP CONSTRAINT "subcontractor_tokens_token_key";
+ALTER TABLE "tap_to_pay_terms_acceptance" DROP CONSTRAINT "tap_to_pay_terms_acceptance_user_id_key";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_receipt_number_key";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_view_token_key";
+ALTER TABLE "quotes" DROP CONSTRAINT "quotes_acceptance_token_key";
+ALTER TABLE "tradie_status" DROP CONSTRAINT "tradie_status_user_id_key";
+ALTER TABLE "invoices" DROP CONSTRAINT "invoices_payment_token_key";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_stripe_payment_intent_id_key";
+ALTER TABLE "activity_feed" DROP CONSTRAINT "activity_feed_actor_user_id_fkey";
+ALTER TABLE "activity_feed" DROP CONSTRAINT "activity_feed_business_owner_id_fkey";
+ALTER TABLE "automations" DROP CONSTRAINT "automations_user_id_fkey";
+ALTER TABLE "invoice_edits" DROP CONSTRAINT "invoice_edits_edited_by_fkey";
+ALTER TABLE "invoice_edits" DROP CONSTRAINT "invoice_edits_invoice_id_fkey";
+ALTER TABLE "jsa_documents" DROP CONSTRAINT "jsa_documents_job_id_fkey";
+ALTER TABLE "jsa_documents" DROP CONSTRAINT "jsa_documents_user_id_fkey";
+ALTER TABLE "gps_signal_logs" DROP CONSTRAINT "gps_signal_logs_business_owner_id_fkey";
+ALTER TABLE "gps_signal_logs" DROP CONSTRAINT "gps_signal_logs_job_id_fkey";
+ALTER TABLE "gps_signal_logs" DROP CONSTRAINT "gps_signal_logs_user_id_fkey";
+ALTER TABLE "jsa_steps" DROP CONSTRAINT "jsa_steps_jsa_id_fkey";
+ALTER TABLE "direct_messages" DROP CONSTRAINT "direct_messages_business_owner_id_fkey";
+ALTER TABLE "direct_messages" DROP CONSTRAINT "direct_messages_recipient_id_fkey";
+ALTER TABLE "direct_messages" DROP CONSTRAINT "direct_messages_sender_id_fkey";
+ALTER TABLE "assignment_events" DROP CONSTRAINT "assignment_events_actor_user_id_fkey";
+ALTER TABLE "assignment_events" DROP CONSTRAINT "assignment_events_assignment_id_fkey";
+ALTER TABLE "assignment_events" DROP CONSTRAINT "assignment_events_job_id_fkey";
+ALTER TABLE "site_hazardous_environments" DROP CONSTRAINT "site_hazardous_environments_job_id_fkey";
+ALTER TABLE "site_hazardous_environments" DROP CONSTRAINT "site_hazardous_environments_user_id_fkey";
+ALTER TABLE "activity_logs" DROP CONSTRAINT "activity_logs_user_id_fkey";
+ALTER TABLE "email_delivery_logs" DROP CONSTRAINT "email_delivery_logs_email_integration_id_fkey";
+ALTER TABLE "email_delivery_logs" DROP CONSTRAINT "email_delivery_logs_user_id_fkey";
+ALTER TABLE "location_pings" DROP CONSTRAINT "location_pings_assignment_id_fkey";
+ALTER TABLE "location_pings" DROP CONSTRAINT "location_pings_user_id_fkey";
+ALTER TABLE "geofence_alerts" DROP CONSTRAINT "geofence_alerts_business_owner_id_fkey";
+ALTER TABLE "geofence_alerts" DROP CONSTRAINT "geofence_alerts_job_id_fkey";
+ALTER TABLE "geofence_alerts" DROP CONSTRAINT "geofence_alerts_user_id_fkey";
+ALTER TABLE "invoice_reminder_logs" DROP CONSTRAINT "invoice_reminder_logs_invoice_id_fkey";
+ALTER TABLE "invoice_reminder_logs" DROP CONSTRAINT "invoice_reminder_logs_user_id_fkey";
+ALTER TABLE "site_safety_signage" DROP CONSTRAINT "site_safety_signage_job_id_fkey";
+ALTER TABLE "site_safety_signage" DROP CONSTRAINT "site_safety_signage_user_id_fkey";
+ALTER TABLE "automation_logs" DROP CONSTRAINT "automation_logs_automation_id_fkey";
+ALTER TABLE "digital_signatures" DROP CONSTRAINT "digital_signatures_assignment_id_fkey";
+ALTER TABLE "digital_signatures" DROP CONSTRAINT "digital_signatures_client_id_fkey";
+ALTER TABLE "job_equipment" DROP CONSTRAINT "job_equipment_equipment_id_fkey";
+ALTER TABLE "job_equipment" DROP CONSTRAINT "job_equipment_job_id_fkey";
+ALTER TABLE "job_equipment" DROP CONSTRAINT "job_equipment_user_id_fkey";
+ALTER TABLE "site_emergency_info" DROP CONSTRAINT "site_emergency_info_job_id_fkey";
+ALTER TABLE "site_emergency_info" DROP CONSTRAINT "site_emergency_info_user_id_fkey";
+ALTER TABLE "leads" DROP CONSTRAINT "leads_client_id_fkey";
+ALTER TABLE "leads" DROP CONSTRAINT "leads_user_id_fkey";
+ALTER TABLE "job_assignment_requests" DROP CONSTRAINT "job_assignment_requests_business_owner_id_fkey";
+ALTER TABLE "job_assignment_requests" DROP CONSTRAINT "job_assignment_requests_job_id_fkey";
+ALTER TABLE "job_assignment_requests" DROP CONSTRAINT "job_assignment_requests_requester_id_fkey";
+ALTER TABLE "job_assignment_requests" DROP CONSTRAINT "job_assignment_requests_responded_by_fkey";
+ALTER TABLE "job_assignment_requests" DROP CONSTRAINT "job_assignment_requests_team_member_id_fkey";
+ALTER TABLE "business_templates" DROP CONSTRAINT "business_templates_user_id_fkey";
+ALTER TABLE "permission_requests" DROP CONSTRAINT "permission_requests_business_owner_id_fkey";
+ALTER TABLE "permission_requests" DROP CONSTRAINT "permission_requests_responded_by_fkey";
+ALTER TABLE "permission_requests" DROP CONSTRAINT "permission_requests_team_member_id_fkey";
+ALTER TABLE "job_invites" DROP CONSTRAINT "job_invites_job_id_fkey";
+ALTER TABLE "job_invites" DROP CONSTRAINT "job_invites_used_by_fkey";
+ALTER TABLE "job_invites" DROP CONSTRAINT "job_invites_user_id_fkey";
+ALTER TABLE "job_checkins" DROP CONSTRAINT "job_checkins_job_id_fkey";
+ALTER TABLE "job_checkins" DROP CONSTRAINT "job_checkins_user_id_fkey";
+ALTER TABLE "job_reminders" DROP CONSTRAINT "job_reminders_job_id_fkey";
+ALTER TABLE "job_reminders" DROP CONSTRAINT "job_reminders_user_id_fkey";
+ALTER TABLE "defects" DROP CONSTRAINT "defects_client_id_fkey";
+ALTER TABLE "defects" DROP CONSTRAINT "defects_job_id_fkey";
+ALTER TABLE "defects" DROP CONSTRAINT "defects_user_id_fkey";
+ALTER TABLE "quote_options" DROP CONSTRAINT "quote_options_quote_id_fkey";
+ALTER TABLE "payment_installments" DROP CONSTRAINT "payment_installments_schedule_id_fkey";
+ALTER TABLE "incident_reports" DROP CONSTRAINT "incident_reports_job_id_fkey";
+ALTER TABLE "incident_reports" DROP CONSTRAINT "incident_reports_user_id_fkey";
+ALTER TABLE "email_integrations" DROP CONSTRAINT "email_integrations_user_id_fkey";
+ALTER TABLE "client_asset_services" DROP CONSTRAINT "client_asset_services_asset_id_fkey";
+ALTER TABLE "client_asset_services" DROP CONSTRAINT "client_asset_services_job_id_fkey";
+ALTER TABLE "client_asset_services" DROP CONSTRAINT "client_asset_services_performed_by_fkey";
+ALTER TABLE "client_asset_services" DROP CONSTRAINT "client_asset_services_user_id_fkey";
+ALTER TABLE "push_tokens" DROP CONSTRAINT "push_tokens_user_id_fkey";
+ALTER TABLE "job_photo_requirements" DROP CONSTRAINT "job_photo_requirements_job_id_fkey";
+ALTER TABLE "compliance_documents" DROP CONSTRAINT "compliance_documents_business_owner_id_fkey";
+ALTER TABLE "compliance_documents" DROP CONSTRAINT "compliance_documents_holder_user_id_fkey";
+ALTER TABLE "quote_line_items" DROP CONSTRAINT "quote_line_items_option_id_fkey";
+ALTER TABLE "job_chat" DROP CONSTRAINT "job_chat_job_id_fkey";
+ALTER TABLE "job_chat" DROP CONSTRAINT "job_chat_user_id_fkey";
+ALTER TABLE "automation_settings" DROP CONSTRAINT "automation_settings_user_id_fkey";
+ALTER TABLE "quote_templates" DROP CONSTRAINT "quote_templates_user_id_fkey";
+ALTER TABLE "team_group_members" DROP CONSTRAINT "team_group_members_group_id_fkey";
+ALTER TABLE "team_group_members" DROP CONSTRAINT "team_group_members_team_member_id_fkey";
+ALTER TABLE "job_assignments" DROP CONSTRAINT "job_assignments_job_id_fkey";
+ALTER TABLE "job_assignments" DROP CONSTRAINT "job_assignments_team_member_id_fkey";
+ALTER TABLE "job_assignments" DROP CONSTRAINT "job_assignments_user_id_fkey";
+ALTER TABLE "saved_filters" DROP CONSTRAINT "saved_filters_user_id_fkey";
+ALTER TABLE "job_notes" DROP CONSTRAINT "job_notes_created_by_fkey";
+ALTER TABLE "job_notes" DROP CONSTRAINT "job_notes_job_id_fkey";
+ALTER TABLE "job_notes" DROP CONSTRAINT "job_notes_user_id_fkey";
+ALTER TABLE "subcontractor_events" DROP CONSTRAINT "subcontractor_events_job_id_fkey";
+ALTER TABLE "subcontractor_events" DROP CONSTRAINT "subcontractor_events_token_id_fkey";
+ALTER TABLE "service_reminders" DROP CONSTRAINT "service_reminders_client_id_fkey";
+ALTER TABLE "service_reminders" DROP CONSTRAINT "service_reminders_job_id_fkey";
+ALTER TABLE "service_reminders" DROP CONSTRAINT "service_reminders_user_id_fkey";
+ALTER TABLE "myob_connections" DROP CONSTRAINT "myob_connections_user_id_fkey";
+ALTER TABLE "job_documents" DROP CONSTRAINT "job_documents_job_id_fkey";
+ALTER TABLE "job_documents" DROP CONSTRAINT "job_documents_user_id_fkey";
+ALTER TABLE "payment_schedules" DROP CONSTRAINT "payment_schedules_client_id_fkey";
+ALTER TABLE "payment_schedules" DROP CONSTRAINT "payment_schedules_invoice_id_fkey";
+ALTER TABLE "payment_schedules" DROP CONSTRAINT "payment_schedules_user_id_fkey";
+ALTER TABLE "sms_templates" DROP CONSTRAINT "sms_templates_user_id_fkey";
+ALTER TABLE "client_assets" DROP CONSTRAINT "client_assets_client_id_fkey";
+ALTER TABLE "client_assets" DROP CONSTRAINT "client_assets_user_id_fkey";
+ALTER TABLE "job_materials" DROP CONSTRAINT "job_materials_job_id_fkey";
+ALTER TABLE "job_materials" DROP CONSTRAINT "job_materials_user_id_fkey";
+ALTER TABLE "sms_booking_links" DROP CONSTRAINT "sms_booking_links_business_owner_id_fkey";
+ALTER TABLE "sms_booking_links" DROP CONSTRAINT "sms_booking_links_job_id_fkey";
+ALTER TABLE "job_requests" DROP CONSTRAINT "job_requests_client_id_fkey";
+ALTER TABLE "job_requests" DROP CONSTRAINT "job_requests_job_id_fkey";
+ALTER TABLE "job_requests" DROP CONSTRAINT "job_requests_reference_job_id_fkey";
+ALTER TABLE "job_requests" DROP CONSTRAINT "job_requests_user_id_fkey";
+ALTER TABLE "subcontractor_location_pings" DROP CONSTRAINT "subcontractor_location_pings_job_id_fkey";
+ALTER TABLE "subcontractor_location_pings" DROP CONSTRAINT "subcontractor_location_pings_token_id_fkey";
+ALTER TABLE "subcontractor_sessions" DROP CONSTRAINT "subcontractor_sessions_token_id_fkey";
+ALTER TABLE "job_portal_tokens" DROP CONSTRAINT "job_portal_tokens_assignment_id_fkey";
+ALTER TABLE "job_portal_tokens" DROP CONSTRAINT "job_portal_tokens_job_id_fkey";
+ALTER TABLE "job_portal_tokens" DROP CONSTRAINT "job_portal_tokens_user_id_fkey";
+ALTER TABLE "payment_records" DROP CONSTRAINT "payment_records_invoice_id_fkey";
+ALTER TABLE "payment_records" DROP CONSTRAINT "payment_records_user_id_fkey";
+ALTER TABLE "terminal_locations" DROP CONSTRAINT "terminal_locations_user_id_fkey";
+ALTER TABLE "job_photos" DROP CONSTRAINT "job_photos_job_id_fkey";
+ALTER TABLE "job_photos" DROP CONSTRAINT "job_photos_uploaded_by_fkey";
+ALTER TABLE "job_photos" DROP CONSTRAINT "job_photos_user_id_fkey";
+ALTER TABLE "sms_notification_log" DROP CONSTRAINT "sms_notification_log_assignment_id_fkey";
+ALTER TABLE "sms_notification_log" DROP CONSTRAINT "sms_notification_log_job_id_fkey";
+ALTER TABLE "sms_notification_log" DROP CONSTRAINT "sms_notification_log_portal_token_id_fkey";
+ALTER TABLE "sms_notification_log" DROP CONSTRAINT "sms_notification_log_sms_message_id_fkey";
+ALTER TABLE "sms_notification_log" DROP CONSTRAINT "sms_notification_log_user_id_fkey";
+ALTER TABLE "sms_conversations" DROP CONSTRAINT "sms_conversations_business_owner_id_fkey";
+ALTER TABLE "sms_conversations" DROP CONSTRAINT "sms_conversations_client_id_fkey";
+ALTER TABLE "sms_conversations" DROP CONSTRAINT "sms_conversations_job_id_fkey";
+ALTER TABLE "xero_sync_state" DROP CONSTRAINT "xero_sync_state_user_id_fkey";
+ALTER TABLE "sms_tracking_links" DROP CONSTRAINT "sms_tracking_links_business_owner_id_fkey";
+ALTER TABLE "sms_tracking_links" DROP CONSTRAINT "sms_tracking_links_job_id_fkey";
+ALTER TABLE "sms_tracking_links" DROP CONSTRAINT "sms_tracking_links_team_member_id_fkey";
+ALTER TABLE "swms_signatures" DROP CONSTRAINT "swms_signatures_swms_id_fkey";
+ALTER TABLE "swms_signatures" DROP CONSTRAINT "swms_signatures_worker_user_id_fkey";
+ALTER TABLE "rebates" DROP CONSTRAINT "rebates_client_id_fkey";
+ALTER TABLE "rebates" DROP CONSTRAINT "rebates_invoice_id_fkey";
+ALTER TABLE "rebates" DROP CONSTRAINT "rebates_job_id_fkey";
+ALTER TABLE "rebates" DROP CONSTRAINT "rebates_user_id_fkey";
+ALTER TABLE "swms_documents" DROP CONSTRAINT "swms_documents_job_id_fkey";
+ALTER TABLE "swms_documents" DROP CONSTRAINT "swms_documents_user_id_fkey";
+ALTER TABLE "stripe_payouts" DROP CONSTRAINT "stripe_payouts_invoice_id_fkey";
+ALTER TABLE "stripe_payouts" DROP CONSTRAINT "stripe_payouts_user_id_fkey";
+ALTER TABLE "sms_automation_logs" DROP CONSTRAINT "sms_automation_logs_message_id_fkey";
+ALTER TABLE "sms_automation_logs" DROP CONSTRAINT "sms_automation_logs_rule_id_fkey";
+ALTER TABLE "payment_requests" DROP CONSTRAINT "payment_requests_client_id_fkey";
+ALTER TABLE "payment_requests" DROP CONSTRAINT "payment_requests_invoice_id_fkey";
+ALTER TABLE "payment_requests" DROP CONSTRAINT "payment_requests_job_id_fkey";
+ALTER TABLE "payment_requests" DROP CONSTRAINT "payment_requests_user_id_fkey";
+ALTER TABLE "team_member_availability" DROP CONSTRAINT "team_member_availability_team_member_id_fkey";
+ALTER TABLE "subcontractor_tokens" DROP CONSTRAINT "subcontractor_tokens_invite_id_fkey";
+ALTER TABLE "subcontractor_tokens" DROP CONSTRAINT "subcontractor_tokens_job_id_fkey";
+ALTER TABLE "subcontractor_tokens" DROP CONSTRAINT "subcontractor_tokens_user_id_fkey";
+ALTER TABLE "timesheet_approvals" DROP CONSTRAINT "timesheet_approvals_approved_by_fkey";
+ALTER TABLE "timesheet_approvals" DROP CONSTRAINT "timesheet_approvals_submitted_by_fkey";
+ALTER TABLE "timesheet_approvals" DROP CONSTRAINT "timesheet_approvals_time_entry_id_fkey";
+ALTER TABLE "job_variations" DROP CONSTRAINT "job_variations_created_by_fkey";
+ALTER TABLE "job_variations" DROP CONSTRAINT "job_variations_job_id_fkey";
+ALTER TABLE "job_variations" DROP CONSTRAINT "job_variations_user_id_fkey";
+ALTER TABLE "team_groups" DROP CONSTRAINT "team_groups_user_id_fkey";
+ALTER TABLE "template_analysis_jobs" DROP CONSTRAINT "template_analysis_jobs_created_template_id_fkey";
+ALTER TABLE "template_analysis_jobs" DROP CONSTRAINT "template_analysis_jobs_user_id_fkey";
+ALTER TABLE "tap_to_pay_terms_acceptance" DROP CONSTRAINT "tap_to_pay_terms_acceptance_accepted_by_user_id_fkey";
+ALTER TABLE "tap_to_pay_terms_acceptance" DROP CONSTRAINT "tap_to_pay_terms_acceptance_user_id_fkey";
+ALTER TABLE "team_chat" DROP CONSTRAINT "team_chat_business_owner_id_fkey";
+ALTER TABLE "team_chat" DROP CONSTRAINT "team_chat_sender_id_fkey";
+ALTER TABLE "team_member_skills" DROP CONSTRAINT "team_member_skills_team_member_id_fkey";
+ALTER TABLE "swms_hazards" DROP CONSTRAINT "swms_hazards_swms_id_fkey";
+ALTER TABLE "time_entry_edits" DROP CONSTRAINT "time_entry_edits_edited_by_fkey";
+ALTER TABLE "time_entry_edits" DROP CONSTRAINT "time_entry_edits_time_entry_id_fkey";
+ALTER TABLE "team_member_time_off" DROP CONSTRAINT "team_member_time_off_approved_by_fkey";
+ALTER TABLE "team_member_time_off" DROP CONSTRAINT "team_member_time_off_team_member_id_fkey";
+ALTER TABLE "team_presence" DROP CONSTRAINT "team_presence_business_owner_id_fkey";
+ALTER TABLE "team_presence" DROP CONSTRAINT "team_presence_current_job_id_fkey";
+ALTER TABLE "team_presence" DROP CONSTRAINT "team_presence_user_id_fkey";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_client_id_fkey";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_invoice_id_fkey";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_job_id_fkey";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_payment_request_id_fkey";
+ALTER TABLE "receipts" DROP CONSTRAINT "receipts_user_id_fkey";
+ALTER TABLE "team_member_metrics" DROP CONSTRAINT "team_member_metrics_team_member_id_fkey";
+ALTER TABLE "voice_notes" DROP CONSTRAINT "voice_notes_job_id_fkey";
+ALTER TABLE "voice_notes" DROP CONSTRAINT "voice_notes_recorded_by_fkey";
+ALTER TABLE "voice_notes" DROP CONSTRAINT "voice_notes_user_id_fkey";
+ALTER TABLE "worker_requests" DROP CONSTRAINT "worker_requests_business_owner_id_fkey";
+ALTER TABLE "worker_requests" DROP CONSTRAINT "worker_requests_client_id_fkey";
+ALTER TABLE "worker_requests" DROP CONSTRAINT "worker_requests_preferred_worker_id_fkey";
+ALTER TABLE "worker_requests" DROP CONSTRAINT "worker_requests_reference_job_id_fkey";
+ALTER TABLE "sms_automation_rules" DROP CONSTRAINT "sms_automation_rules_template_id_fkey";
+ALTER TABLE "sms_automation_rules" DROP CONSTRAINT "sms_automation_rules_user_id_fkey";
+ALTER TABLE "jobs" DROP CONSTRAINT "jobs_assigned_team_member_id_fkey";
+ALTER TABLE "xero_connections" DROP CONSTRAINT "xero_connections_user_id_fkey";
+ALTER TABLE "sms_messages" DROP CONSTRAINT "sms_messages_conversation_id_fkey";
+ALTER TABLE "sms_messages" DROP CONSTRAINT "sms_messages_sender_user_id_fkey";
+ALTER TABLE "style_presets" DROP CONSTRAINT "style_presets_user_id_fkey";
+ALTER TABLE "tradie_status" DROP CONSTRAINT "tradie_status_business_owner_id_fkey";
+ALTER TABLE "tradie_status" DROP CONSTRAINT "tradie_status_current_job_id_fkey";
+ALTER TABLE "tradie_status" DROP CONSTRAINT "tradie_status_user_id_fkey";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_client_id_fkey";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_invoice_id_fkey";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_job_id_fkey";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_location_id_fkey";
+ALTER TABLE "terminal_payments" DROP CONSTRAINT "terminal_payments_user_id_fkey";
+DROP INDEX "idx_push_tokens_token";
+DROP INDEX "idx_push_tokens_user_id";
+DROP INDEX "idx_team_group_members_group_id";
+DROP INDEX "idx_team_group_members_team_member_id";
+DROP INDEX "idx_team_groups_user_id";
+DROP INDEX "idx_business_settings_dedicated_phone";
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "local_entity_type" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "local_entity_id" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "provider" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "external_id" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "sync_status" SET DATA TYPE varchar;
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "sync_status" SET DEFAULT 'synced';
+ALTER TABLE "external_accounting_ids" ALTER COLUMN "last_sync_at" DROP DEFAULT;
+ALTER TABLE "hazard_reports" ALTER COLUMN "job_id" SET DATA TYPE varchar;
+ALTER TABLE "leads" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "leads" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "leads" ALTER COLUMN "user_id" SET DATA TYPE varchar;
+ALTER TABLE "leads" ALTER COLUMN "client_id" SET DATA TYPE varchar;
+ALTER TABLE "ppe_checklists" ALTER COLUMN "job_id" SET DATA TYPE varchar;
+ALTER TABLE "push_tokens" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "push_tokens" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "push_tokens" ALTER COLUMN "user_id" SET DATA TYPE varchar;
+ALTER TABLE "push_tokens" ALTER COLUMN "platform" SET DATA TYPE text;
+ALTER TABLE "push_tokens" ALTER COLUMN "is_active" DROP NOT NULL;
+ALTER TABLE "push_tokens" ALTER COLUMN "created_at" DROP NOT NULL;
+ALTER TABLE "push_tokens" ALTER COLUMN "last_used_at" DROP NOT NULL;
+ALTER TABLE "automation_settings" ALTER COLUMN "job_reminder_enabled" SET DEFAULT false;
+ALTER TABLE "automation_settings" ALTER COLUMN "quote_follow_up_enabled" SET DEFAULT false;
+ALTER TABLE "automation_settings" ALTER COLUMN "invoice_reminder_enabled" SET DEFAULT false;
+ALTER TABLE "team_group_members" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "job_documents" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "job_documents" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "job_documents" ALTER COLUMN "job_id" SET DATA TYPE varchar;
+ALTER TABLE "job_documents" ALTER COLUMN "user_id" SET DATA TYPE varchar;
+ALTER TABLE "job_documents" ALTER COLUMN "file_size" DROP NOT NULL;
+ALTER TABLE "job_documents" ALTER COLUMN "mime_type" DROP NOT NULL;
+ALTER TABLE "job_documents" ALTER COLUMN "uploaded_by" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "xero_sync_state" ALTER COLUMN "user_id" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "entity_type" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "last_sync_cursor" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "sync_direction" SET DATA TYPE varchar;
+ALTER TABLE "xero_sync_state" ALTER COLUMN "sync_direction" SET DEFAULT 'bidirectional';
+ALTER TABLE "routes" ALTER COLUMN "start_address" DROP NOT NULL;
+ALTER TABLE "routes" ALTER COLUMN "end_address" DROP NOT NULL;
+ALTER TABLE "routes" ALTER COLUMN "route_date" DROP NOT NULL;
+ALTER TABLE "routes" ALTER COLUMN "status" SET DEFAULT 'saved';
+ALTER TABLE "team_groups" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "jobs" ALTER COLUMN "scheduled_time" SET DATA TYPE text;
+ALTER TABLE "jobs" ALTER COLUMN "estimated_duration" SET DEFAULT 60;
+ALTER TABLE "xero_connections" ALTER COLUMN "id" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "id" SET DEFAULT gen_random_uuid();
+ALTER TABLE "xero_connections" ALTER COLUMN "user_id" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "tenant_id" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "tenant_name" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "scope" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "connected_at" SET DEFAULT now();
+ALTER TABLE "xero_connections" ALTER COLUMN "status" SET DATA TYPE varchar;
+ALTER TABLE "xero_connections" ALTER COLUMN "status" SET DEFAULT 'active';
+ALTER TABLE "quotes" ALTER COLUMN "acceptance_token" SET DATA TYPE varchar;
+ALTER TABLE "quotes" ALTER COLUMN "document_template_settings" SET DATA TYPE json;
+ALTER TABLE "style_presets" ALTER COLUMN "header_layout" SET DEFAULT 'professional';
+ALTER TABLE "invoices" ALTER COLUMN "document_template_settings" SET DATA TYPE json;
+ALTER TABLE "invoices" ALTER COLUMN "quickbooks_invoice_id" SET DATA TYPE varchar;
+ALTER TABLE "invoices" ALTER COLUMN "amount_paid" SET DEFAULT '0.00';
+ALTER TABLE "business_settings" ALTER COLUMN "brand_color" SET DEFAULT '#2563EB';
+ALTER TABLE "business_settings" ALTER COLUMN "document_template_settings" SET DATA TYPE json;
+ALTER TABLE "business_settings" ALTER COLUMN "billing_reminder_days" SET DATA TYPE json;
+ALTER TABLE "business_settings" ALTER COLUMN "billing_reminder_days" SET DEFAULT '[3,1]'::json;
+ALTER TABLE "team_members" ADD COLUMN "ai_receptionist_availability" boolean DEFAULT true;
+ALTER TABLE "users" ADD COLUMN "xero_id" varchar;
+ALTER TABLE "sms_messages" ADD COLUMN "retry_count" integer DEFAULT 0;
+ALTER TABLE "sms_messages" ADD COLUMN "next_retry_at" timestamp;
+ALTER TABLE "business_settings" ADD COLUMN "schedule_start_hour" integer DEFAULT 6;
+ALTER TABLE "business_settings" ADD COLUMN "schedule_end_hour" integer DEFAULT 20;
+ALTER TABLE "business_settings" ADD COLUMN "google_review_url" text;
+ALTER TABLE "business_settings" ADD COLUMN "booking_slug" text;
+ALTER TABLE "business_settings" ADD COLUMN "booking_page_enabled" boolean DEFAULT false;
+ALTER TABLE "business_settings" ADD COLUMN "booking_page_services" json DEFAULT '[]'::json;
+ALTER TABLE "business_settings" ADD COLUMN "booking_page_description" text;
+ALTER TABLE "business_settings" ADD COLUMN "vapi_assistant_id" text;
+ALTER TABLE "business_settings" ADD COLUMN "vapi_phone_number_id" text;
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_mode" text DEFAULT 'off';
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_voice" text DEFAULT 'Jess';
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_greeting" text;
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_transfer_numbers" json DEFAULT '[]'::json;
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_business_hours" json;
+ALTER TABLE "business_settings" ADD COLUMN "ai_receptionist_enabled" boolean DEFAULT false;
+ALTER TABLE "business_settings" ADD COLUMN "email_on_quote_accepted" boolean DEFAULT false;
+ALTER TABLE "business_settings" ADD COLUMN "email_on_invoice_paid" boolean DEFAULT false;
+CREATE INDEX "idx_error_logs_category" ON "error_logs" USING btree ("category");
+CREATE INDEX "idx_error_logs_created" ON "error_logs" USING btree ("created_at");
+CREATE INDEX "idx_error_logs_level" ON "error_logs" USING btree ("level");
+CREATE INDEX "idx_ai_calls_created" ON "ai_receptionist_calls" USING btree ("created_at");
+CREATE INDEX "idx_ai_calls_user" ON "ai_receptionist_calls" USING btree ("user_id");
+CREATE INDEX "idx_ai_calls_vapi" ON "ai_receptionist_calls" USING btree ("vapi_call_id");
+CREATE INDEX "idx_ai_config_user" ON "ai_receptionist_config" USING btree ("user_id");
+ALTER TABLE "gps_signal_logs" ADD CONSTRAINT "gps_signal_logs_business_owner_id_users_id_fk" FOREIGN KEY ("business_owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "gps_signal_logs" ADD CONSTRAINT "gps_signal_logs_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "gps_signal_logs" ADD CONSTRAINT "gps_signal_logs_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "training_records" ADD CONSTRAINT "training_records_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "ppe_checklists" ADD CONSTRAINT "ppe_checklists_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "ppe_checklists" ADD CONSTRAINT "ppe_checklists_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "idempotency_keys" ADD CONSTRAINT "idempotency_keys_key_unique" UNIQUE("key");
+ALTER TABLE "portal_sessions" ADD CONSTRAINT "portal_sessions_session_token_unique" UNIQUE("session_token");
+ALTER TABLE "automation_logs" ADD CONSTRAINT "automation_logs_automation_id_entity_type_entity_id_unique" UNIQUE("automation_id","entity_type","entity_id");
+ALTER TABLE "job_invites" ADD CONSTRAINT "job_invites_invite_code_unique" UNIQUE("invite_code");
+ALTER TABLE "automation_settings" ADD CONSTRAINT "automation_settings_user_id_unique" UNIQUE("user_id");
+ALTER TABLE "sms_booking_links" ADD CONSTRAINT "sms_booking_links_token_unique" UNIQUE("token");
+ALTER TABLE "subcontractor_sessions" ADD CONSTRAINT "subcontractor_sessions_session_token_unique" UNIQUE("session_token");
+ALTER TABLE "job_portal_tokens" ADD CONSTRAINT "job_portal_tokens_token_unique" UNIQUE("token");
+ALTER TABLE "terminal_locations" ADD CONSTRAINT "terminal_locations_stripe_location_id_unique" UNIQUE("stripe_location_id");
+ALTER TABLE "users" ADD CONSTRAINT "users_apple_id_unique" UNIQUE("apple_id");
+ALTER TABLE "users" ADD CONSTRAINT "users_xero_id_unique" UNIQUE("xero_id");
+ALTER TABLE "sms_tracking_links" ADD CONSTRAINT "sms_tracking_links_token_unique" UNIQUE("token");
+ALTER TABLE "stripe_payouts" ADD CONSTRAINT "stripe_payouts_stripe_payout_id_unique" UNIQUE("stripe_payout_id");
+ALTER TABLE "sms_automation_logs" ADD CONSTRAINT "sms_automation_logs_rule_id_entity_type_entity_id_unique" UNIQUE("rule_id","entity_type","entity_id");
+ALTER TABLE "payment_requests" ADD CONSTRAINT "payment_requests_token_unique" UNIQUE("token");
+ALTER TABLE "subcontractor_tokens" ADD CONSTRAINT "subcontractor_tokens_token_unique" UNIQUE("token");
+ALTER TABLE "tap_to_pay_terms_acceptance" ADD CONSTRAINT "tap_to_pay_terms_acceptance_user_id_unique" UNIQUE("user_id");
+ALTER TABLE "receipts" ADD CONSTRAINT "receipts_receipt_number_unique" UNIQUE("receipt_number");
+ALTER TABLE "receipts" ADD CONSTRAINT "receipts_view_token_unique" UNIQUE("view_token");
+ALTER TABLE "quotes" ADD CONSTRAINT "quotes_acceptance_token_unique" UNIQUE("acceptance_token");
+ALTER TABLE "tradie_status" ADD CONSTRAINT "tradie_status_user_id_unique" UNIQUE("user_id");
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_payment_token_unique" UNIQUE("payment_token");
+ALTER TABLE "terminal_payments" ADD CONSTRAINT "terminal_payments_stripe_payment_intent_id_unique" UNIQUE("stripe_payment_intent_id");
+You may notice a temporary downtime of your deployment. What's happening?

@@ -1,0 +1,254 @@
+This is exactly the kind of thing that separates “cool project” from “serious product.”
+
+Right now you’re thinking correctly:
+Accounts, authentication, and onboarding must feel premium and bulletproof.
+
+If login feels messy or inconsistent → owners won’t trust the financial side of the app.
+
+Let’s fix this properly.
+
+⸻
+
+🔐 1️⃣ Sign in With Apple – Web vs Mobile
+
+The Problem
+	•	Mobile app has Sign in with Apple
+	•	Web does not
+	•	That creates:
+	•	account duplication risk
+	•	confusion
+	•	broken parity
+	•	“why can’t I log in on web?” frustration
+
+The Correct Answer
+
+Yes — you should implement Sign in with Apple on web as well.
+
+Apple supports web-based Sign in with Apple.
+If you offer it on mobile, you should offer it everywhere.
+
+⸻
+
+💡 Why?
+
+If someone:
+	•	Creates account with Apple on iPhone
+	•	Then tries web
+
+And they don’t see “Sign in with Apple”…
+
+They will:
+	•	Try email login
+	•	Possibly create a duplicate account
+	•	Think your system is broken
+
+That destroys trust instantly.
+
+⸻
+
+🧠 2️⃣ Unified Identity System (Must Be Clean)
+
+You need one identity model:
+
+User
+- id
+- email (nullable if Apple private relay)
+- apple_sub_id
+- google_sub_id
+- phone
+- company_id
+- role
+- created_at
+
+Identity Rules
+	1.	One email = one account
+	2.	One Apple ID (sub) = one account
+	3.	If email matches existing user → link automatically
+	4.	If Apple login email matches existing email account → prompt:
+
+“We found an existing account with this email. Is this you?”
+[Continue & Link] [Cancel]
+
+That’s how top apps do it.
+
+⸻
+
+📱 3️⃣ Mobile + Web Sync Must Be Perfect
+
+There must be:
+	•	One backend auth provider
+	•	One token format
+	•	Same session rules
+	•	Same refresh logic
+
+No separate “mobile auth” and “web auth”.
+
+Same API.
+
+⸻
+
+🛑 4️⃣ Prevent Duplicate Accounts (Very Important)
+
+When someone signs up:
+
+Case 1:
+
+Email already exists
+→ Show:
+
+“An account already exists. Would you like to sign in instead?”
+
+Case 2:
+
+Apple login email matches existing account
+→ Prompt to merge.
+
+Case 3:
+
+User tries to register new company with same email
+→ Ask:
+
+“Join existing company or create new?”
+
+These micro-moments make your app feel professional.
+
+⸻
+
+🚀 5️⃣ Onboarding Needs a Complete Upgrade
+
+You’re right — “icky onboarding” kills perceived quality.
+
+Here’s what professional onboarding looks like:
+
+⸻
+
+🧭 Onboarding Flow (Owner)
+
+Step 1 – Identity
+	•	Name
+	•	Company name
+	•	Industry (Plumbing, Electrical, Handyman etc.)
+
+Step 2 – Business Setup
+	•	Business address
+	•	Logo upload
+	•	Default hourly rate
+	•	Tax/GST settings
+
+Step 3 – Team Setup
+	•	Invite team (optional)
+	•	Add subcontractors (optional)
+	•	Skip option
+
+Step 4 – Financial Setup
+	•	Connect Stripe
+	•	Set payment terms
+	•	Invoice defaults
+
+Step 5 – First Job Setup Wizard
+	•	Create first job (guided)
+	•	Send test quote
+	•	Preview client portal
+
+Step 6 – Done
+
+Show:
+
+“Your business is ready to run.”
+
+Clean. Focused. No overwhelm.
+
+⸻
+
+🧠 6️⃣ Onboarding Must Adapt
+
+If:
+	•	Solo handyman → simpler setup
+	•	5+ employees → unlock team tools
+
+Dynamic onboarding > static.
+
+⸻
+
+📲 7️⃣ Mobile Onboarding Must Feel Native
+
+No tiny web-style forms.
+
+Use:
+	•	Big buttons
+	•	Single-screen steps
+	•	Progress indicator
+	•	“Back” always available
+	•	Auto-save every step
+
+⸻
+
+🏗 What To Tell Replit
+
+Copy this:
+
+We need to overhaul authentication and onboarding for JobRunner to feel enterprise-grade.
+
+AUTH REQUIREMENTS:
+
+1) Implement Sign in with Apple on web (not just mobile).
+2) Ensure unified identity model:
+   - email + provider sub IDs
+   - prevent duplicate accounts
+3) If Apple login email matches existing email account:
+   - prompt to merge/link
+4) If user tries to sign up with existing email:
+   - prompt to log in instead
+5) Mobile and web must use same auth backend + token logic.
+6) Sessions must sync across devices properly.
+
+ONBOARDING REQUIREMENTS:
+
+1) Multi-step guided onboarding:
+   - Business info
+   - Rates
+   - Logo
+   - Stripe setup
+   - Team invites
+   - First job creation
+2) Adaptive onboarding:
+   - Solo user = simplified flow
+   - Team mode = advanced options
+3) Auto-save between steps.
+4) Clear progress indicator.
+5) Add “Preview Client Portal” step at end.
+
+GOAL:
+Authentication and onboarding must feel like:
+- Stripe
+- Notion
+- Uber
+Not like a prototype.
+
+
+⸻
+
+🎯 The Bigger Picture
+
+If:
+
+• Auth is smooth
+• Accounts sync perfectly
+• No duplicate accounts
+• Apple login works everywhere
+• Onboarding feels guided and powerful
+
+Then the app instantly feels:
+
+Legitimate. Trustworthy. Business-grade.
+
+And trust = conversions.
+
+⸻
+
+If you want next, I can:
+	•	Design the exact onboarding screens step-by-step
+	•	Or design the account linking logic visually
+	•	Or write the exact merge flow prompts so it feels premium
+
+Tell me which one you want.

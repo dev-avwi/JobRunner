@@ -1,0 +1,230 @@
+Here is **your exact Replit prompt** written specifically for the **TradieTrack dashboard screen**, using the screenshots you provided.
+
+Just **copy + paste this whole thing into Replit** and it will build the Dashboard UI in React Native (Expo) to match your web version as closely as possible.
+
+---
+
+# ✅ **Replit Prompt — TradieTrack Dashboard (Exact Copy-Paste)**
+
+**PASTE THIS INTO REPLIT:**
+
+---
+
+I am rebuilding the TradieTrack **Dashboard** screen from my web app into a **React Native (Expo) mobile app**.
+I want you to recreate the UI **as close as possible to the web layout**, but optimised for mobile.
+
+Here are the screenshots showing exactly what the Dashboard looks like:
+**(Assume these two images show the complete layout)**
+
+* A full desktop dashboard with sidebar, top bar, greeting, quick stats, quick actions, and today’s jobs list.
+* A mobile UI example showing how elements collapse into bottom navigation.
+
+### 🎯 **Build This Using My Mobile Stack**
+
+Use this tech stack:
+
+* Expo + React Native (TypeScript)
+* Expo Router (or React Navigation)
+* React Query (for fetching dashboard data)
+* MMKV or SQLite (for offline storage)
+* Reanimated 3 (for smooth card animations)
+* Expo Image / Expo Camera (not needed on this screen but keep ready)
+* Expo Notifications (not needed on this screen but keep ready)
+
+### 📌 **Your job: Build the ENTIRE Dashboard screen UI**
+
+Recreate the following elements in React Native:
+
+---
+
+# 🔹 **1. Top Navigation Bar**
+
+Match the style shown in the screenshot:
+
+* TradieTrack logo left
+* Icons on right: search, notifications, profile avatar
+* Light grey header background
+* Thin bottom border
+
+---
+
+# 🔹 **2. Greeting Section**
+
+Just like the web:
+
+**Good afternoon, Ayden**
+“You have 3 jobs scheduled today”
+
+Use bold large font for greeting, smaller grey text for subtitle.
+
+---
+
+# 🔹 **3. App Promo Card (Blue Gradient Box)**
+
+Recreate the EXACT layout:
+
+* TradieTrack logo circle on left
+* “TradieTrack – Free during Beta” pill
+* “Built for Australian tradies”
+* Feature icons + text:
+
+  * GST Compliant
+  * Secure Payments
+  * Encrypted
+
+Rounded corners, soft gradient background, thin border.
+
+---
+
+# 🔹 **4. Quick Stats Section**
+
+Two rows of cards, each card with:
+
+**Row 1:**
+
+* Jobs Today
+* Overdue
+
+**Row 2:**
+
+* Quotes Pending
+* This Month ($0)
+
+Each card should match the web look:
+
+* White card
+* Rounded corners
+* Icon on left
+* Number large
+* Label below
+
+Use a 2-column grid on mobile.
+
+---
+
+# 🔹 **5. Quick Actions (Buttons Row)**
+
+Recreate the three pill buttons exactly:
+
+* Job (blue active)
+* Quote (white)
+* Invoice (white with $ icon)
+
+These should be horizontally scrollable on small screens.
+
+---
+
+# 🔹 **6. “Today” Section Title**
+
+“Today” on the left
+“View All >” on the right
+
+Keep spacing identical.
+
+---
+
+# 🔹 **7. Job Card (The Blue-ish Card)**
+
+Recreate the exact job layout:
+
+* Time badge (3:14 AM)
+* Job status pill (“In Progress”)
+* Job title: “Sewer Line Inspection”
+* Client name (David White)
+* Location (icon + address)
+* Entire card rounded with soft shadow
+* Blue vertical highlight bar on the left
+
+Make it animated with Reanimated (fade-in + slide-up).
+
+---
+
+# 🔹 **8. Bottom Navigation Bar**
+
+Use mobile layout shown in the second screenshot:
+
+Tabs:
+
+* Dashboard
+* Jobs
+* Map
+* More
+
+Use icons + labels exactly like shown.
+
+---
+
+# 🔹 **INSTRUCTIONS FOR OUTPUT**
+
+When generating code, include:
+
+1. A full folder structure:
+
+```
+app/
+  dashboard/
+    index.tsx
+  components/
+    QuickStatCard.tsx
+    JobCard.tsx
+    ActionButton.tsx
+  hooks/
+    useDashboard.ts
+  styles/
+    colors.ts
+    spacing.ts
+```
+
+2. Provide the **complete Dashboard screen code** (`index.tsx`)
+
+3. Provide all supporting components:
+
+* QuickStatCard
+* JobCard
+* ActionButton
+* BottomNavigation
+
+4. Use dummy placeholder data (React Query mocked)
+
+5. Use clean, modern styling:
+
+* Tailwind (via NativeWind) OR StyleSheet (your choice)
+* Spacing + colours should match screenshot aesthetic
+
+6. No backend wiring yet — just UI and placeholder query hooks.
+
+---
+
+# 🧩 **Final Goal**
+
+Produce a **pixel-converted React Native version** of the TradieTrack dashboard:
+
+* Same layout
+* Same components
+* Same branding
+* Same spacing
+* Same card design
+* Same bottom bar navigation
+
+But fully built in Expo + React Native.
+
+---
+
+### End of prompt.
+
+Generate the full code now.
+
+---
+
+If you want, I can also generate:
+
+✅ Jobs List prompt
+✅ Job Details prompt
+✅ Quote builder prompt
+✅ Invoice builder prompt
+✅ Client list + profile page prompt
+✅ Onboarding flow prompt
+✅ Navigation architecture prompt
+✅ Full project folder structure prompt
+
+Just tell me the next page you want.

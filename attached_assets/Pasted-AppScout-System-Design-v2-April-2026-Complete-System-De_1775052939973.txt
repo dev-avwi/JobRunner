@@ -1,0 +1,318 @@
+AppScout — System Design v2 · April 2026
+Complete System Design
+All Decisions Locked
+Every decision from every conversation, locked and ready to hand to Replit the moment JobRunner ships. Read every section before writing a single line of code.
+
+✓ Vision locked ✓ 24 problems pre-solved ✓ Flow recorder designed ✓ Annotation style locked ✓ Credit system defined Working name: AppScout Web only · V1 MVP
+01 — The vision
+What this product actually is
+The one paragraph that every engineering decision flows from. Replit should read this before touching anything.
+
+The product vision — locked
+AppScout is an AI-powered app quality analyser. The user pastes their app URL and records a walkthrough of their own app. The system replays that recording inside a live browser session, streams the video directly to the user's dashboard, and simultaneously runs Claude vision analysis on every screen as it's visited. Handwritten-style annotations draw themselves directly onto the live video at the exact moment an issue is found. A one-line subtitle appears at the bottom of the video telling the user what the AI is looking at right now. When the session ends the user gets four exports — raw video, annotated video, full PDF report, and individual screenshots. The experience is immersive, premium, and unlike anything that currently exists. Nobody has built this combination of live browser streaming, self-drawing annotations, simultaneous AI analysis, and a complete export suite.
+This is the north star. Every engineering decision that conflicts with this vision needs to be flagged and discussed before proceeding.
+What it is
+An AI that navigates your app, finds design and UX problems in real time, draws attention to them visually, and hands you a complete report you can act on or share with a client.
+What it is not
+Not a crash tester. Not a performance monitor. Not a session recorder for real users. Not a static screenshot uploader. None of those exist in this product.
+02 — Locked decisions
+Every decision confirmed, nothing left open
+These were all confirmed. Replit does not need to make any of these decisions. They are already made.
+
+Flow recorder
+How recording works — locked
+User pastes their app URL. The app loads inside the AppScout dashboard in an embedded browser. They click Start recording. From that moment every scroll, click, form input, hover, and navigation event is captured. They use their app completely normally. A floating toolbar shows recording duration and a manual screenshot button — pressing it flags that screen as a priority for the AI to analyse carefully. When done they click Stop recording. They see a real-time preview of everything that was captured as they recorded, then a full replay before submitting. If they're unhappy with the recording they can redo it completely. One-click redo, no penalty.
+The recording is stored as a Playwright trace file. On submit it gets queued as a crawl job and replayed exactly.
+Pre-recording tips overlay — locked
+Before the recording starts a tips overlay appears for 3 seconds. Tips: Go slowly — pause on each screen for 2-3 seconds. Click everything you want analysed. Use the screenshot button to flag important moments. Navigate through your main user flows. The overlay auto-dismisses and recording begins. Tips are dismissable immediately if the user has seen them before.
+Annotation style — the most important design decision
+Self-drawing annotations — locked
+Every annotation draws itself onto the screen like handwriting. No pen visible — just the annotation appearing. The shape draws first (circle, arrow, or underline depending on issue type), then the label text appears letter by letter after the shape finishes. Total animation duration 600-800 milliseconds per annotation. This is implemented as SVG stroke animation — stroke-dashoffset animates from full path length to zero, making the stroke appear to draw itself. The animation speed makes it feel live and intentional, not like a loading state.
+This animation is the signature visual moment of the product. It is also the latency buffer — the 700ms drawing time masks any slight delay between Claude finishing analysis and the annotation appearing. One mechanism doing two jobs.
+Annotation colours
+Red — critical issues. Amber — warnings. Green — passed checks. Each has its own SVG stroke colour and label background. Consistent with severity system throughout the product.
+Annotation shapes
+Circle — draws around a problematic element. Arrow — points to a specific location. Underline — highlights text copy issues. Shape chosen automatically based on issue type returned in Claude JSON.
+Subtitle system — not a commentator
+Subtitles not commentary — locked
+No narration. No full commentary track. Just clean one-line subtitles at the bottom of the video like a documentary. Maximum 8 words per subtitle. Appears when the AI starts looking at a new screen or finds something worth surfacing. Fades out after 3 seconds. Never competes with what the user is watching. Font is clean and slightly editorial — DM Sans medium weight with generous letter spacing. Subtle dark pill background behind the text for readability over any app colour.
+Status indicator — top right of video
+Three states only: Navigating (when Playwright is moving between screens), Analysing (when Claude is processing a screenshot), Issue found (brief flash with colour pulse when annotation is about to appear). That is all. No other text in the video area.
+Video sync and pause behaviour
+The pause design — locked
+The 2-3 second hold on each new screen is not a loading pause. It is a designed moment. During the hold: the subtitle shows what the AI is looking at, the status shows Analysing, and the annotation begins drawing itself if the analysis is ready. The hold feels like the AI taking a breath to look properly. If it is designed correctly the user never perceives it as waiting — they perceive it as the AI working. The pause must always have visual life. It is never an empty frozen screen.
+Maximum hold is 3 seconds regardless of whether analysis has returned. If Claude is slow the annotation arrives late and attaches to the timeline at the correct timestamp. The video always resumes at 3 seconds. No exceptions.
+Credit and pricing system
+Token-based subscription — locked direction
+Subscription plans include a monthly token allowance. Tokens are spent per scan based on scan type and screen count. Scan types and approximate costs: Full app scan — 100 tokens (up to 30 screens), Scenario scan — 50 tokens (specific user flow), Quick audit — 20 tokens (single screen or small section). Exact token costs to be calibrated once the analysis pipeline is built and real API costs are known — do not hardcode these until then. Top-up packs available for purchase when monthly allowance is exhausted. This follows the Originality.ai model — familiar and understood by developers.
+Token costs must be calibrated against real Claude API costs with a margin. Do not finalise token pricing until the pipeline is built and real costs measured.
+Indie — $29/mo
+Monthly token allowance for solo developers. Full scan, scenario, and quick audit types included. Shareable report link included.
+Team — $99/mo
+Larger token allowance. Up to 5 users. All scan types. Priority analysis queue. PDF export included.
+Agency — $249/mo
+Largest token allowance. Unlimited users. White label report option. Client shareable links with agency branding. Priority support.
+Export suite
+Raw video — MP4
+Clean recording of the browser session with no overlays. Compressed to under 50MB via H.264 CRF 28. Web quality default, full quality option with file size shown before downloading.
+Annotated video — MP4
+Full session with annotation overlays and subtitle text baked in. FFmpeg merges the canvas layer with the raw video. This is the primary shareable asset — plays anywhere without special software.
+Full report — PDF + web
+Every screen thumbnailed. Issues listed by severity with exact location, problem, and fix. Overall score. Breakdown by category and pass type. This is what agencies send to clients.
+Screenshots — ZIP
+Every captured screen as a clean PNG with no overlays. Useful for dropping into Figma, design tools, or Jira tickets. Named by screen path for easy organisation.
+Shareable link
+Generates a unique public URL. Anyone can view the annotated video and full report without an account. Link served from a hosted public report page. Unique token stored in PostgreSQL against the run. Free tier links expire after 30 days. Paid tier links permanent. The shareable link is the primary organic growth mechanic — users share their audit results and others discover the product.
+Product name
+Working name: AppScout — not final
+AppScout is the working name. Final name not decided. Candidates worth considering: Lensed (visual, premium feeling), Flaw (provocative — "run Flaw on your app before your users do"), Screenwise, Auditly, Vantage, Crux, Arca. Honest pick: Lensed or Flaw. Decision needed before buying domain and setting up branding.
+03 — User flow
+Every screen in order
+Sign up
+→
+Setup
+→
+Record flow
+→
+Live analysis
+→
+Report + export
+→
+History
+Screen 1 — Setup
+Left side: URL input, credentials input, custom instruction textarea (optional), analysis type checkboxes. Right side: credit cost estimate for selected scan type, tips panel. Two primary actions: Record my flow (primary, purple button) and Let AI navigate (secondary, V2 only — greyed out in V1 with "Coming soon" label). Credit estimate updates live as user selects analysis types.
+Screen 2 — Recording
+Full screen embedded browser showing the user's app. Floating toolbar at top: recording timer, pause button, screenshot button (flags current screen for priority analysis), stop button. Real-time capture preview shown in a small strip at the bottom — thumbnails of screens captured so far appearing as user navigates. Tips overlay shown for 3 seconds at start then dismissed.
+Screen 3 — Recording review
+User sees full replay of their recording before submitting. Scrubber to jump to any point. List of captured screens on the left. Option to redo recording. Submit button fires the analysis job. Credit cost confirmed before submitting. WebSocket connection opens immediately on submit.
+Screen 4 — Live analysis (core experience)
+Three independent panels. Left sidebar: screen list filling in real time, each with a coloured status dot. Center: live video stream with subtitle overlay at bottom, status indicator top right, annotation layer on top, timeline scrubber at bottom showing every captured screen as a tick mark. Right panel: score updating live, three tabs (Feed / Issues / Screens), live commentary feed, issue cards appearing as findings arrive, four download buttons greyed out until scan completes.
+Screen 5 — Report and export
+Score reveal animation — counts up from zero to final score. Issue count numbers appear one by one. All screen thumbnails displayed in a row, clickable to jump to that screen's detail. Four download buttons now active with file sizes shown. Shareable link generated and displayed with one-click copy. Option to re-run scan with same or modified settings.
+Screen 6 — History dashboard
+All previous scans listed by app URL and date. Score shown per scan. Quick re-run button. Compare two scans side by side (V2 feature, show in UI as coming soon). Token balance displayed prominently with top-up link.
+04 — States
+Every state the live screen can be in
+Every state must have a designed UI. If Replit doesn't know what a state should look like it will guess and get it wrong.
+
+idle
+Setup form visible. No active job. Token balance shown.
+initialising
+Browser launching. Subtitle: "Starting browser..." Center shows a clean loading state — not a spinner, a pulsing AppScout wordmark.
+authenticating
+Playwright filling login form visible in live video. Subtitle: "Logging in..." Status: Navigating.
+crawling
+Video playing. Playwright navigating. Subtitle showing current screen name. Status: Navigating.
+paused for analysis
+Maximum 3-second hold. Subtitle showing what AI is examining. Status: Analysing. Annotation beginning to draw if ready. Subtle pill overlay: "AI finishing analysis" — small, non-intrusive.
+annotation drawing
+SVG stroke animation playing. Shape drawing itself over 600-800ms. Status: Issue found with brief colour pulse. Label text appearing after shape completes.
+blocked — bot protection
+Clear error state. Never silent failure. Message: "Bot protection detected on this app. To proceed: whitelist our crawler IP [IP shown], or use manual screenshot upload." Run is paused, not killed — user can action and retry.
+auth failed
+Login credentials didn't work. Video shows the failed login. Clear message with option to update credentials and retry from start.
+error
+Unexpected crash. Save all captured screenshots and analysis results so far. Show partial report option. Never lose work silently.
+complete
+Score counts up from zero. Issue numbers appear one by one. All downloads unlock simultaneously with a subtle animation. Share link generated. This is a moment — design it as a reveal, not a page load.
+05 — Architecture
+Seven layers — build in this exact order
+01
+Analysis pipeline — build first, test manually from day one
+Claude vision API calls with structured JSON output. Two passes per screen — layout/visual quality and UX/copy quality. Test by manually feeding screenshots before the crawler exists. This is where prompt iteration happens. Success metric: a senior designer agrees with 80%+ of findings. Do not proceed to crawler until this bar is met.
+Claude vision API
+structured JSON
+two-pass system
+S3 storage
+80% agreement success metric
+02
+Playwright crawler worker
+Authenticated session via saved cookies. Playwright trace replay from recorded flow. CDP screencast streaming live video frames via WebSocket. Screenshot capture on navigation and significant DOM mutations. Perceptual hash deduplication (pHash). Network idle + DOM stability wait before each screenshot. SPA support via MutationObserver. Maximum 8-second screenshot wait cap.
+Playwright
+CDP screencast
+recordVideo
+pHash dedup
+MutationObserver
+stealth mode
+03
+Redis + Bull job queue
+Two job types: crawl-job and analysis-job. Analysis jobs fire immediately per screenshot — do not wait for crawl to finish. Jobs persist through browser tab closure. Exponential backoff with jitter on all Claude API calls. Retry up to 3 times before marking failed. Analysis queue concurrency limited below Claude rate limit threshold.
+Redis
+Bull
+separate queues
+retry on failure
+rate limit handling
+04
+WebSocket server
+Five event types: screen:discovered, screen:paused, annotation:ready, issue:found, run:complete. JWT authenticated. Client reconnect replays all missed events from the job log — user never loses progress if tab closes. CDP video frames also streamed via WebSocket to the video player.
+WebSocket
+event replay
+JWT auth
+CDP frame streaming
+05
+REST API
+Six core endpoints. POST /runs, GET /runs/:id, GET /runs/:id/screens, POST /reports/:id/share, POST /reports/:id/pdf, GET /reports/public/:token. Same JWT auth, error handling, and response patterns as JobRunner. Document any deviation from JobRunner patterns.
+Node.js
+Express
+JWT
+JobRunner patterns
+06
+Frontend dashboard
+React. Six screens as defined in user flow section. Live analysis screen has three completely independent panels — they do not wait for each other. Video player renders CDP frames on canvas at target 24fps. SVG annotation layer sits above the video canvas. Subtitle overlay sits above the annotation layer. All three layers independently updated. Follow JobRunner component patterns.
+React
+canvas video player
+SVG annotation layer
+WebSocket client
+JobRunner patterns
+07
+Report generator + S3 storage
+FFmpeg merges raw video with canvas annotation layer and subtitle text into annotated MP4. Puppeteer generates PDF. All screenshots and videos in S3 — never PostgreSQL binary storage. Free tier: 30-day S3 expiry lifecycle rule. Paid: 1-year. PDF generation is a Bull job not a synchronous API call. Shareable link serves a public React page authenticated only by the share token.
+FFmpeg
+Puppeteer
+AWS S3
+lifecycle expiry
+public share token
+06 — Pre-solved problems
+24 problems. All solved before building starts.
+24
+Identified
+24
+Solved
+5
+Blockers
+0
+Unresolved
+Blockers — solve before building anything else
+Blocker 1
+SPA navigation not triggering events
+React/Vue/Angular apps change content without full page navigation. waitForNavigation never fires. Crawler sits on first screen forever.
+Watch two signals: URL hash/path changes via History API AND significant DOM mutations via MutationObserver. Either triggers screen discovery. Debounce DOM mutations 500ms.
+Blocker 2
+Screenshot capturing half-loaded screens
+Screenshot fires immediately on navigation. Heavy JS apps take 2-4 seconds to render. Claude analyses a skeleton screen and gives useless feedback.
+Two-condition wait: networkidle (no requests for 500ms) AND DOM stability (no mutations for 300ms). Both required. Cap at 8 seconds maximum.
+Blocker 3
+Bot protection blocking the crawler
+Cloudflare, Imperva, and other CDN protection blocks the crawler within seconds. Product appears broken with no helpful error.
+Playwright stealth mode plugin. Detect block pages via known CAPTCHA selectors or 403/429 responses. Never silent fail — clear message with IP whitelist instructions or manual upload fallback.
+Blocker 4
+Auth flows and session expiry mid-crawl
+Long scans on apps with short session timeouts. User gets logged out mid-crawl. All subsequent screens are the login page.
+Monitor each screenshot for login page indicators. If detected mid-crawl, auto re-authenticate using stored credentials. If re-auth fails, pause and notify via WebSocket with option to update credentials.
+Blocker 5
+Claude rate limits during parallel analysis
+120 API calls in minutes from parallel analysis across multiple users hits rate limits. Jobs fail silently or return errors stored as results.
+Exponential backoff with jitter. Analysis queue concurrency capped below rate limit threshold. Failed jobs retry up to 3 times. Rate limit errors never stored as results — always trigger retry.
+Handle during build — standard engineering practice
+Warning 6
+Cookie consent banners
+Banner obscures content. All analysis is about the cookie UI not the product.
+Detect common consent selectors (OneTrust, Cookiebot). Auto-click accept. If unknown, ask Claude to identify and click dismiss.
+Warning 7
+Infinite scroll and pagination loops
+Crawler scrolls or paginates forever. Never finishes.
+pHash catches repeated content at 90% similarity. Cap screenshots per domain path at 5. Mark infinite scroll screens and analyse first viewport only.
+Warning 8
+External links taking crawler off-domain
+Crawler follows links to documentation, social media, partner sites.
+Intercept all navigation. Block any destination outside target domain. Log as "external link found" without following.
+Warning 9
+File download dialogs blocking navigation
+Download dialog triggered. Playwright hangs. Crawl freezes.
+Intercept all download events. Cancel automatically. Log as "download trigger found" in report.
+Warning 10
+Modal states not captured
+Confirmation dialogs, form modals, lightboxes never triggered. Important interaction patterns missed.
+After primary crawl, run modal detection pass — find buttons with ARIA roles suggesting modals, click each, screenshot, close. Separate pass.
+Warning 11
+Video file too large to download
+10-minute session at full resolution produces 200-400MB MP4.
+Record at 1280x800, compress H.264 CRF 28 via FFmpeg post-processing. Target under 50MB. Two quality options on download with file size shown before clicking.
+Warning 12
+User closes tab mid-analysis
+Long runs. User closes tab. Returns to find run gone. All progress lost.
+Bull jobs run server-side independently of browser. WebSocket reconnect replays all missed events. Active runs visible on history dashboard. Email notification on completion (opt-in).
+Warning 13
+CDP screencast frame rate inconsistency
+CDP delivers 5-30fps depending on server load. At 5fps it looks like a slideshow not a video.
+Set explicit target frame rate in CDP configuration. Provision server resources to hit 24fps minimum. Monitor frame rate per session. This is the most important performance metric to watch in production.
+Handle during build — edge cases
+Info 14
+Annotation coordinates misaligned on different screen sizes
+Accessibility tree returns coordinates at original browser viewport size. Dashboard renders video at different dimensions. Annotations offset from elements.
+Normalise all coordinates to video display dimensions at render time. Store raw coordinates, compute scale factor, apply to all annotation positions before drawing to canvas.
+Info 15
+Claude false positives destroying trust
+Claude flags intentional minimalist design as empty state error. Developer dismisses the tool after one wrong annotation.
+System prompt: "Only flag issues you would raise in a real design review meeting. If unsure whether intentional, do not flag. Include confidence score — only return findings above 80%." Build thumbs up/down on each finding for user feedback.
+Info 16
+Canvas and WebGL content
+Apps with canvas-based UI can't be meaningfully analysed from screenshots.
+Detect canvas elements over 30% of viewport. Flag with note: "Canvas/WebGL content detected — visual analysis limited." Still run UX/copy on any non-canvas elements.
+Info 17
+Apps requiring MFA or 2FA
+Two-factor authentication requires a phone code. Can't be automated.
+Detect 2FA step after credentials entry. Pause and prompt: "This app uses 2FA. Enter a session token from your browser cookies instead." Provide Chrome DevTools instructions.
+Info 18
+Multiple tabs opened by target app
+App opens content in new tabs. Playwright only controls original page. New tab content never analysed.
+Listen for new page events on browser context. Same domain: add to crawl queue. Different domain: close immediately.
+Info 19
+App requires localhost or VPN
+Cloud crawler can't reach staging or localhost environments.
+V1: document clearly in onboarding. Provide ngrok guide. V2: local crawler agent running on user's machine streaming to cloud dashboard.
+Info 20
+Playwright memory leak on long runs
+Browser context accumulates memory on 50+ screen apps. Worker crashes mid-run.
+New browser context every 20 pages. Transfer session cookie to new context. Monitor memory per worker — reset context at 500MB threshold.
+Info 21
+S3 storage costs unbounded
+Hundreds of PNGs and two MP4s per scan. Grows without limit.
+S3 lifecycle rule: free tier 30-day expiry, paid 1-year. Shareable links check asset existence before serving — show "report expired" with re-run option if deleted. JSON analysis results stored in PostgreSQL permanently regardless.
+Info 22
+PDF generation timeout on large reports
+50-screen report with many annotated screenshots. PDF takes too long. Request times out.
+PDF generation is a Bull job not a synchronous call. User clicks Generate PDF — job queued — WebSocket fires when ready — download link appears. Never block waiting for PDF.
+Info 23
+Annotated video audio sync
+FFmpeg merging annotation overlay with video introduces sync issues if frame rates differ.
+Record without audio — apps don't need audio for QA. Eliminates sync problem entirely. If audio needed in future use -vsync cfr flag.
+Info 24
+Analysis results arriving after report generated
+User ends run manually while jobs still queued. Report generated. Remaining results arrive late. Report is incomplete but user already has it.
+Reports generated lazily — pull from database at request time, not at run completion. Shareable link always serves latest version. Banner shown if jobs still pending: "Analysis still running — this report updates automatically."
+07 — Success metrics
+How to know if the product is actually working
+Analysis quality metric — the most important measure
+A senior designer shown the same screenshot would agree with at least 80% of the findings Claude returned. Test this in week one before the crawler exists. Take 10 screenshots of real apps. Run them through the analysis pipeline. Show the output to someone with design experience. If they agree with 8 out of 10 findings the prompt is working. If they agree with 4 out of 10 the prompt needs rework. Do not proceed until this bar is consistently met.
+This test is the single most important thing to do before building anything else. The analysis quality is the product. Everything else is delivery infrastructure.
+Video experience metric
+CDP stream delivers minimum 24fps on a medium complexity web app on production server hardware. Test before building the full system around it. If 24fps can't be achieved consistently the video experience doesn't match the vision.
+Annotation precision metric
+Annotation boxes align within 4px of the actual element they're pointing at across three different viewport sizes. Test with a fixed set of screenshots before shipping. Coordinate scaling must be correct.
+Run completion metric
+A full scan of a medium complexity web app (20-30 screens) completes without error in under 30 minutes in V1. This is the baseline. Optimise toward under 10 minutes in V2.
+User trust metric
+First ten users rate at least 70% of findings as useful when shown the thumbs up/down per finding. Below 70% means prompt quality needs rework before charging money.
+08 — Replit brief
+Exact brief to send Replit
+Copy this entire block and send it before starting. Do not start building without written confirmation that Replit has read and understood every section.
+
+OVERVIEW
+We are building AppScout — an AI-powered app quality analyser. Before writing a single line of code read this entire brief and confirm you understand every section. Ask questions on anything unclear. Do not start until I have answered your questions.
+THE PRODUCT IN ONE PARAGRAPH
+User pastes their app URL and records a walkthrough of their own app inside our dashboard. We replay that recording via Playwright, stream the live browser session to the user via Chrome DevTools Protocol, and simultaneously run Claude vision analysis on every screen. Handwritten-style SVG annotations draw themselves onto the live video when issues are found. One-line subtitles appear at the bottom of the video. At the end the user downloads four exports: raw video, annotated video, PDF report, screenshots ZIP.
+BUILD ORDER — DO NOT DEVIATE
+1. Analysis pipeline first. Claude API calls returning structured JSON. Test manually with screenshots from day one. Do not proceed to step 2 until an 80% senior designer agreement rate is achieved on test screenshots. 2. Playwright crawler with CDP live streaming. 3. Redis + Bull job queue with two job types. 4. WebSocket server with five event types. 5. REST API — six endpoints — follow JobRunner patterns exactly. 6. React frontend — six screens — three independent panels on the live analysis screen. 7. Report generator — FFmpeg, Puppeteer, S3, shareable links.
+NON-NEGOTIABLE RULES
+Video and analysis pipelines are completely decoupled. Video pauses maximum 3 seconds on each new screen. The pause must have visual life — subtitle showing what's being analysed, status showing Analysing, annotation beginning to draw. Never a frozen empty screen. Screenshots fire only after two conditions: networkidle (500ms) AND DOM stability (300ms). Maximum 8-second cap. All screenshots and videos go to S3 from day one. Never PostgreSQL binary storage. All 24 pre-identified problems in this document have defined solutions. Implement those solutions proactively — do not wait to discover them in production. Follow JobRunner patterns for auth, error handling, database queries, API structure, component organisation. Document any deviation with a reason.
+ANNOTATION SYSTEM
+SVG stroke animation. stroke-dashoffset animates from full path length to zero over 600-800ms. Three shapes: circle (wraps element), arrow (points to location), underline (highlights copy). Shape draws first, label text appears letter by letter after. Three colours: red critical, amber warning, green passed. Coordinates come from Claude JSON — normalise to video display dimensions using scale factor before drawing.
+SUBTITLE SYSTEM
+Maximum 8 words. DM Sans medium weight, generous letter spacing. Semi-transparent dark pill background. Bottom of video area. Fades out after 3 seconds. Status indicator top right: Navigating / Analysing / Issue found only.
+S3 STORAGE POLICY
+Free tier: 30-day S3 lifecycle expiry on all assets. Paid tier: 1-year. JSON analysis results in PostgreSQL permanently regardless of tier. Shareable links check asset existence before serving.
+FIRST THING TO BUILD BEFORE ANYTHING ELSE
+A local test script that takes a folder of screenshots, sends each to Claude with the analysis prompt, and dumps the structured JSON output. No dashboard. No crawler. Just input and output. This is where prompt iteration happens and it needs to work before anything else is built.
+DEFINITION OF DONE — MVP
+User submits a web app URL with credentials. Records a walkthrough. Watches continuous live video of the replay with SVG annotations drawing themselves onto the screen and one-line subtitles appearing. Receives a full report with issues ranked by severity. Downloads raw video, annotated video, PDF report, and screenshot ZIP. Shareable link generated. All 24 pre-identified problems handled. Analysis quality achieves 80% senior designer agreement rate. CDP stream delivers minimum 24fps on production hardware.

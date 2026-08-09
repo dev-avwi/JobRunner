@@ -1,0 +1,257 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+84
+ (84)
+Insights
+Settings
+Owner avatar
+JobRunner
+Public
+dev-avwi/JobRunner
+Go to file
+t
+T
+Name		
+replit-agent
+replit-agent
+Published your App
+367fca6
+ · 
+45 minutes ago
+.agents
+Backfill manager/office-admin permissions for gated Leads/Comms/Actio…
+2 hours ago
+.canvas/assets
+Add a route for the demo version of the platform
+2 months ago
+.github/workflows
+Task #99: Wire mobile typecheck into CI
+last month
+assets/images
+Update email templates to use correct platform URL for logos
+6 months ago
+client
+Add multi-worker job completion and lead reassignment features
+3 hours ago
+docs
+Task #194: Subbie-Bills-Business Billing Builder
+3 weeks ago
+exports
+Task #192: Re-render App Store hero video as a playable vertical file
+last month
+migrations
+Task #194: Subbie-Bills-Business Billing Builder
+3 weeks ago
+mobile
+Mobile menu: gate Leads/Communications/Action Centre on permissions, …
+1 hour ago
+public
+Update website icons and version numbers for accurate branding
+3 months ago
+reports/audit-demo-account
+Task #240: Fix web app E2E audit defects (G1, G7, G8, G9)
+2 weeks ago
+screenshots
+Task #230: Demo account full UI/UX audit (web) — report only
+2 weeks ago
+scripts
+Task #213: Close RBAC gaps on owner/manager-only actions
+3 weeks ago
+server
+Backfill manager/office-admin permissions for gated Leads/Comms/Actio…
+2 hours ago
+shared
+Task #264: Let custom roles reach remaining role-only More-menu pages…
+3 hours ago
+tests
+Webhook signature audit: harden Apple IAP, log + test SendGrid/Xero/A…
+last month
+.gitignore
+Saved progress at the end of the loop
+4 days ago
+.npmrc
+Fix deployment build failures by skipping unnecessary browser downloads
+last month
+.puppeteerrc.cjs
+Fix deployment build failures by skipping unnecessary browser downloads
+last month
+.replit
+Remove unused mockup sandbox and update configuration
+2 weeks ago
+APP_STORE_LAUNCH_PLAN.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+APP_STORE_SUBMISSION_GUIDE.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+BACKLOG.md
+Organize and prioritize project tasks for future development
+last month
+BETA_READINESS_REPORT.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+CLAUDE.md
+Add Live Activity extension — plugin, Swift targets, config
+last month
+COMPETITOR_ANALYSIS.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+COMPREHENSIVE_APP_RATING.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+FEATURE_IMPLEMENTATION_PLAN.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+FEATURE_LIST.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+FINAL_LAUNCH_REVIEW.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+JOBRUNNER_FULL_AUDIT.md
+Remove the online booking page feature from the platform
+2 months ago
+JobRunner-Mobile-UI-UX-Audit-Document.md
+Add a detailed UI/UX audit document for the mobile app
+2 months ago
+MOBILE_TESTING_GUIDE.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+MOBILE_WEB_AUDIT.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+PRESENTATION_GUIDE.md
+Add a comprehensive presentation guide for demonstrating the job mana…
+3 months ago
+TRADIETRACK_COMPARISON_REPORT.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+TradieTrack_Competitive_Analysis.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+app.json
+Update project configuration for mobile app deployments
+2 months ago
+apptest-login-scenario.json
+Add automated login scenario for app testing
+3 months ago
+billing_addon.png
+Update subscription and billing pages to display dedicated number fea…
+3 months ago
+components.json
+Initial commit (no secrets)
+6 months ago
+conflicts.txt
+Task #170: Mobile typecheck 47→0, backend any sweep (-799)
+last month
+cookies.txt
+Initial commit (no secrets)
+6 months ago
+design_guidelines.md
+Rebrand the application and update all references from TradieTrack to…
+4 months ago
+dispatch-map-full.png
+Improve map display and functionality for job dispatch and team opera…
+3 months ago
+drizzle.config.ts
+Initial commit (no secrets)
+6 months ago
+head_markers.txt
+Task #170: Mobile typecheck 47→0, backend any sweep (-799)
+last month
+package-lock.json
+Task #170: Mobile typecheck 47→0, backend any sweep (-799)
+last month
+package.json
+Task #170: Mobile typecheck 47→0, backend any sweep (-799)
+last month
+postcss.config.js
+Initial commit (no secrets)
+6 months ago
+replit.md
+Remove unused mockup sandbox and update configuration
+2 weeks ago
+search_patterns.py
+Add tool to find unresolved issues and code placeholders
+last month
+subscription_addon.png
+Update subscription and billing pages to display dedicated number fea…
+3 months ago
+tailwind.config.ts
+Replace hardcoded status colors in JobsList with theme tokens (Task #…
+last month
+tsconfig.json
+Task #229: drive npm run check (tsc --noEmit) from 801 → 0 errors
+2 weeks ago
+vite.config.ts
+Fix lifecycle email service to send automated onboarding nudges
+3 months ago
+Repository files navigation
+README
+Add a README
+Help people interested in this repository understand your project.
+
+About
+TradieTrack is a place where tradies can run their whole business in one tap.
+
+ Activity
+Stars
+ 0 stars
+Watchers
+ 0 watching
+Forks
+ 0 forks
+Releases
+No releases published
+Create a new release
+Packages
+No packages published
+Publish your first package
+Contributors
+3
+@replit-agent
+replit-agent Replit Agent
+@dev-avwi
+dev-avwi Ayden Vogler
+@claude
+claude Claude
+Languages
+TypeScript
+98.7%
+ 
+Python
+0.4%
+ 
+JavaScript
+0.4%
+ 
+Swift
+0.2%
+ 
+CSS
+0.2%
+ 
+Shell
+0.1%
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AppScout — Full System Design</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d0f;--surface:#131519;--surface2:#1a1d22;--surface3:#20242a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --text:#e6e3dd;--muted:#5e5d59;--subtle:#8a8880;
+  --accent:#c8f06e;--purple:#8b7cf8;--red:#ff5757;
+  --amber:#f5a623;--green:#3ecf8e;--blue:#4fb3ff;
+  --font-serif:'Instrument Serif',serif;
+  --font-mono:'DM Mono',monospace;
+  --font-sans:'DM Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:13px;line-height:1.6}
+h1{font-family:var(--font-serif);font-size:32px;font-weight:400;color:var(--text);letter-spacing:-0.5px;margin-bottom:6px}
+h2{font-family:var(--font-serif);font-size:22px;font-weight:400;color:var(--text);letter-spacing:-0.3px;margin-bottom:4px}
+h3{font-size:13px;font-weight:500;color:var(--text);letter-spacing:0.2px;margin-bottom:4px}
+p{color:var(--subtle);line-height:1.65;margin-bottom:8px}
+code{font-family:var(--font-mono);font-size:11px;background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--accent);border:1px solid var(--border)}
+
+/* Layout */
+.doc{max-width:1100px;margin:0 auto;padding:48px 32px 80px}
+.section{margin-bottom:64px}
+.divider{height:1px;background:var(–border);margin:40px 0}
+.chapter-label{font-family:var(–font-mono);font-size:10px;color:var(–muted);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:12px}
+.subtitle{font-size:14px;color:var(–subtle);max-width:560px;line-height:1.6;margin-bottom:32px}
+
+/* Cards */
+.card{background:var(–surface);border:1px solid var(–border);border-radius:12px;padding:20px 24px;margin-bottom:12px}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.card-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+
+/* Screen designs */
+.screen-wrap{background:var(–surface2);border:1px solid var(–border2);border-radius:14px;overflow:hidden;margin-bottom:24px}
+.screen-label{font-family:var(–font-mono);font-size:10px;color:var(–muted);padding:10px 16px;border-bottom:1px solid var(–border);display:flex;align-items:center;justify-content:space-between}
+.screen-label span{background:var(–surface3);padding:2px 8px;border-radius:4px;border:1px solid var(–border2);color:var(–subtle);font-size:10px}
+
+/* Tags */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:11px;font-family:var(–font-mono);margin-right:4px;margin-bottom:4px}
+.tag-red{background:rgba(255,87,87,0.1);color:var(–red);border:1px solid rgba(255,87,87,0.2)}
+.tag-amber{background:rgba(245,166,35,0.1);color:var(–amber);border:1px solid rgba(245,166,35,0.2)}
+.tag-green{background:rgba(62,207,142,0.1);color:var(–green);border:1px solid rgba(62,207,142,0.2)}
+.tag-blue{background:rgba(79,179,255,0.1);color:var(–blue);border:1px solid rgba(79,179,255,0.2)}
+.tag-purple{background:rgba(139,124,248,0.1);color:var(–purple);border:1px solid rgba(139,124,248,0.2)}
+.tag-gray{background:var(–surface2);color:var(–subtle);border:1px solid var(–border2)}
+
+/* Problem blocks */
+.problem-block{background:var(–surface);border:1px solid var(–border);border-radius:10px;padding:16px 20px;margin-bottom:10px;border-left:3px solid var(–red)}
+.problem-block.warn{border-left-color:var(–amber)}
+.problem-block.info{border-left-color:var(–blue)}
+.problem-block.solved{border-left-color:var(–green)}
+.problem-title{font-size:13px;font-weight:500;color:var(–text);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.problem-body{font-size:12px;color:var(–subtle);line-height:1.55;margin-bottom:8px}
+.problem-solution{font-size:12px;color:var(–green);line-height:1.55;padding-top:8px;border-top:1px solid var(–border)}
+.problem-solution::before{content:’→ Solution: ’;font-weight:500}
+
+/* Flow diagram */
+.flow{display:flex;align-items:center;gap:0;margin-bottom:24px;flex-wrap:wrap}
+.flow-step{background:var(–surface);border:1px solid var(–border2);border-radius:8px;padding:10px 14px;font-size:12px;color:var(–text);min-width:120px;text-align:center}
+.flow-step.active{border-color:var(–purple);background:rgba(139,124,248,0.08)}
+.flow-arrow{color:var(–muted);padding:0 8px;font-size:16px}
+
+/* UI mock components */
+.mock-topbar{height:44px;background:var(–surface);border-bottom:1px solid var(–border);display:flex;align-items:center;padding:0 16px;gap:12px}
+.mock-logo{font-family:var(–font-serif);font-size:15px;color:var(–text)}
+.mock-logo em{color:var(–accent);font-style:normal}
+.mock-tabs{display:flex;background:var(–surface2);border:1px solid var(–border);border-radius:6px;padding:2px;gap:2px}
+.mock-tab{padding:4px 12px;border-radius:4px;font-size:11px;color:var(–muted)}
+.mock-tab.on{background:var(–surface);color:var(–text);border:1px solid var(–border2)}
+.mock-layout{display:flex;height:400px}
+.mock-sidebar{width:200px;border-right:1px solid var(–border);background:var(–surface);padding:12px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.mock-center{flex:1;background:var(–bg);display:flex;flex-direction:column}
+.mock-right{width:260px;border-left:1px solid var(–border);background:var(–surface);display:flex;flex-direction:column;overflow:hidden}
+.mock-section-label{font-family:var(–font-mono);font-size:9px;color:var(–muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.mock-input{background:var(–surface2);border:1px solid var(–border2);border-radius:6px;padding:7px 10px;font-family:var(–font-mono);font-size:10px;color:var(–subtle);width:100%}
+.mock-url{background:var(–surface2);border:1px solid var(–border2);border-radius:6px;padding:5px 8px;font-family:var(–font-mono);font-size:9px;color:var(–subtle);width:100%}
+.mock-check-row{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;background:var(–surface2);border:1px solid var(–border)}
+.mock-check{width:13px;height:13px;border-radius:3px;background:var(–purple);flex-shrink:0}
+.mock-check-name{font-size:10px;color:var(–text)}
+.mock-check-score{margin-left:auto;font-family:var(–font-mono);font-size:9px;color:var(–muted)}
+.mock-video-area{flex:1;background:#080909;display:flex;align-items:center;justify-content:center;position:relative}
+.mock-browser-mini{width:460px;height:260px;background:#1a1c20;border-radius:8px;border:1px solid rgba(255,255,255,0.07);overflow:hidden}
+.mock-browser-bar-mini{height:28px;background:#1e2024;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;align-items:center;padding:0 10px;gap:6px}
+.bd{width:7px;height:7px;border-radius:50%}
+.mock-browser-content{padding:14px;display:flex;flex-direction:column;gap:8px}
+.mock-row{height:28px;background:rgba(255,255,255,0.04);border-radius:5px}
+.mock-row2{height:70px;background:rgba(255,255,255,0.03);border-radius:5px;position:relative}
+.mock-cards-row{display:flex;gap:6px}
+.mock-card-mini{flex:1;height:52px;background:rgba(255,255,255,0.03);border-radius:5px;border:1px solid rgba(255,255,255,0.05)}
+.mock-ann{position:absolute;border-radius:3px;pointer-events:none}
+.mock-ann-r{border:1.5px solid var(–red)}
+.mock-ann-a{border:1.5px solid var(–amber)}
+.mock-ann-label{position:absolute;top:-16px;left:0;font-size:8px;font-family:var(–font-mono);padding:1px 5px;border-radius:2px;white-space:nowrap}
+.mock-footer{height:36px;border-top:1px solid var(–border);background:var(–surface);display:flex;align-items:center;padding:0 14px;gap:10px}
+.mock-progress{flex:1;height:2px;background:var(–surface2);border-radius:1px;position:relative}
+.mock-progress-fill{height:100%;width:42%;background:var(–purple);border-radius:1px}
+.mock-time{font-family:var(–font-mono);font-size:9px;color:var(–muted)}
+.mock-header-bar{height:36px;border-bottom:1px solid var(–border);display:flex;align-items:center;padding:0 14px;gap:10px;background:var(–surface);flex-shrink:0}
+.mock-live{display:flex;align-items:center;gap:4px;background:rgba(255,87,87,0.1);border:1px solid rgba(255,87,87,0.2);color:var(–red);padding:2px 7px;border-radius:4px;font-size:9px;font-weight:500}
+.mock-live-dot{width:4px;height:4px;background:var(–red);border-radius:50%;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.mock-path{font-family:var(–font-mono);font-size:9px;color:var(–muted)}
+.mock-ai-status{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:9px;color:var(–muted)}
+.mock-dots{display:flex;gap:2px}
+.mock-dot{width:3px;height:3px;border-radius:50%;background:var(–purple);animation:pulse 1.2s infinite}
+.mock-dot:nth-child(2){animation-delay:.2s}
+.mock-dot:nth-child(3){animation-delay:.4s}
+.mock-panel-tabs{display:flex;border-bottom:1px solid var(–border);flex-shrink:0}
+.mock-panel-tab{flex:1;padding:8px 4px;font-size:9px;color:var(–muted);text-align:center;border-bottom:2px solid transparent}
+.mock-panel-tab.on{color:var(–text);border-bottom-color:var(–purple)}
+.mock-feed{flex:1;padding:10px;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.mock-comment{font-size:10px;color:var(–subtle);line-height:1.5}
+.mock-comment strong{color:var(–accent)}
+.mock-issue{background:var(–surface2);border:1px solid var(–border);border-radius:6px;padding:8px 10px}
+.mock-issue-sev{font-family:var(–font-mono);font-size:8px;padding:1px 5px;border-radius:3px;display:inline-block;margin-bottom:4px}
+.mock-issue-title{font-size:10px;color:var(–text);font-weight:500;margin-bottom:2px}
+.mock-issue-body{font-size:9px;color:var(–muted);line-height:1.4}
+.mock-score-bar{padding:10px;border-bottom:1px solid var(–border);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mock-score-num{font-family:var(–font-serif);font-size:24px;color:var(–text);line-height:1}
+.mock-chips{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.mock-chip{font-size:8px;font-family:var(–font-mono);padding:2px 6px;border-radius:3px}
+.mock-dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:10px;border-top:1px solid var(–border)}
+.mock-dl-btn{background:var(–surface2);border:1px solid var(–border2);border-radius:5px;padding:7px;text-align:center}
+.mock-dl-name{font-size:9px;color:var(–text)}
+.mock-dl-desc{font-size:8px;color:var(–muted)}
+
+/* Screen list in sidebar */
+.mock-screen-list{flex:1;display:flex;flex-direction:column;gap:0;overflow:hidden}
+.mock-screen-item{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:5px}
+.mock-screen-item.on{background:var(–surface2)}
+.mock-sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.mock-sname{font-size:10px;color:var(–text);flex:1}
+.mock-scount{font-family:var(–font-mono);font-size:9px;color:var(–muted)}
+
+/* Setup screen */
+.setup-layout{display:flex;height:380px}
+.setup-left{flex:1;padding:28px;display:flex;flex-direction:column;gap:18px;border-right:1px solid var(–border)}
+.setup-right{width:280px;padding:20px;background:var(–surface2);display:flex;flex-direction:column;gap:12px}
+.setup-step{display:flex;align-items:flex-start;gap:12px}
+.setup-step-num{width:24px;height:24px;border-radius:50%;background:var(–purple);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:white;flex-shrink:0;margin-top:2px}
+.setup-step-num.done{background:var(–green)}
+.setup-step-num.gray{background:var(–surface2);border:1px solid var(–border2);color:var(–muted)}
+.setup-step-content h3{font-size:13px;color:var(–text);font-weight:500;margin-bottom:4px}
+.setup-step-content p{font-size:11px;color:var(–muted);line-height:1.5;margin:0}
+.setup-input{background:var(–surface2);border:1px solid var(–border2);border-radius:7px;padding:8px 12px;font-family:var(–font-mono);font-size:11px;color:var(–subtle);width:100%;outline:none}
+.setup-row{display:flex;gap:8px}
+.setup-btn-primary{background:var(–purple);color:white;border:none;padding:8px 16px;border-radius:7px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(–font-sans)}
+.setup-btn-secondary{background:var(–surface2);color:var(–text);border:1px solid var(–border2);padding:8px 16px;border-radius:7px;font-size:12px;cursor:pointer;font-family:var(–font-sans)}
+.cred-row{display:flex;gap:8px}
+.cred-field{flex:1;background:var(–surface);border:1px solid var(–border2);border-radius:6px;padding:7px 10px;font-size:10px;color:var(–muted);font-family:var(–font-mono)}
+.preview-box{flex:1;background:var(–bg);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(–border)}
+.preview-text{font-size:11px;color:var(–muted);text-align:center;line-height:1.6}
+
+/* Report screen */
+.report-layout{padding:24px;display:flex;flex-direction:column;gap:20px;height:400px;overflow:hidden}
+.report-hero{display:flex;align-items:center;gap:28px}
+.report-score-circle{width:72px;height:72px;border-radius:50%;border:3px solid var(–purple);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.report-score-num{font-family:var(–font-serif);font-size:24px;color:var(–text);line-height:1}
+.report-score-label{font-size:9px;color:var(–muted)}
+.report-stats{display:flex;gap:20px}
+.report-stat h4{font-family:var(–font-serif);font-size:22px;color:var(–text);line-height:1;margin-bottom:2px}
+.report-stat p{font-size:10px;color:var(–muted);margin:0}
+.report-screens{display:flex;gap:8px;overflow:hidden}
+.report-screen-thumb{width:90px;flex-shrink:0;background:var(–surface2);border-radius:8px;border:1px solid var(–border);overflow:hidden;cursor:pointer}
+.report-screen-thumb.issue{border-color:rgba(255,87,87,0.4)}
+.report-thumb-img{height:58px;background:var(–bg);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(–muted);position:relative}
+.report-thumb-badge{position:absolute;top:4px;right:4px;background:var(–red);color:white;font-size:7px;font-family:var(–font-mono);padding:1px 5px;border-radius:3px}
+.report-thumb-badge.ok{background:var(–green)}
+.report-thumb-name{font-size:9px;color:var(–text);padding:5px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-dl-row{display:flex;gap:8px;margin-top:auto}
+.report-dl{flex:1;background:var(–surface2);border:1px solid var(–border2);border-radius:8px;padding:10px;text-align:center;cursor:pointer}
+.report-dl-icon{font-size:18px;margin-bottom:4px}
+.report-dl-name{font-size:11px;color:var(–text);font-weight:500}
+.report-dl-sub{font-size:9px;color:var(–muted)}
+.share-link{background:var(–surface2);border:1px solid var(–border2);border-radius:7px;padding:8px 12px;display:flex;align-items:center;gap:10px}
+.share-url{font-family:var(–font-mono);font-size:10px;color:var(–purple);flex:1}
+.share-copy{font-size:10px;background:var(–surface);border:1px solid var(–border2);color:var(–text);padding:4px 10px;border-radius:5px;cursor:pointer}
+
+/* Architecture layers */
+.arch-layer{background:var(–surface);border:1px solid var(–border);border-radius:10px;padding:16px 20px;margin-bottom:8px;display:flex;align-items:flex-start;gap:16px}
+.arch-num{font-family:var(–font-mono);font-size:11px;color:var(–muted);min-width:24px;margin-top:2px}
+.arch-name{font-size:13px;font-weight:500;color:var(–text);margin-bottom:3px}
+.arch-desc{font-size:12px;color:var(–subtle);line-height:1.5;margin-bottom:6px}
+.arch-tech{display:flex;gap:6px;flex-wrap:wrap}
+.arch-tech-tag{font-family:var(–font-mono);font-size:10px;background:var(–surface2);border:1px solid var(–border2);color:var(–subtle);padding:2px 7px;border-radius:4px}
+
+/* State machine */
+.states{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.state-row{display:flex;align-items:center;gap:10px}
+.state-name{font-family:var(–font-mono);font-size:11px;color:var(–text);min-width:140px}
+.state-desc{font-size:11px;color:var(–muted)}
+.state-icon{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* Timeline */
+.timeline{position:relative;padding-left:20px;margin-bottom:20px}
+.timeline::before{content:’’;position:absolute;left:6px;top:0;bottom:0;width:1px;background:var(–border2)}
+.timeline-item{position:relative;margin-bottom:16px;padding-left:16px}
+.timeline-item::before{content:’’;position:absolute;left:-14px;top:4px;width:8px;height:8px;border-radius:50%;background:var(–purple);border:2px solid var(–bg)}
+.timeline-item h4{font-size:12px;font-weight:500;color:var(–text);margin-bottom:2px}
+.timeline-item p{font-size:11px;color:var(–muted);margin:0;line-height:1.5}
+
+/* Number callout */
+.callout-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.callout{background:var(–surface);border:1px solid var(–border);border-radius:10px;padding:14px 16px}
+.callout-num{font-family:var(–font-serif);font-size:28px;color:var(–text);line-height:1;margin-bottom:3px}
+.callout-label{font-size:11px;color:var(–muted)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(–surface3);border-radius:2px}
+</style>
+
+</head>
+<body>
+<div class="doc">
+
+<!-- Header -->
+
+<div class="section">
+  <div class="chapter-label">System Design Document — AppScout</div>
+  <h1>Full UI/UX, Architecture<br>& Pre-Solved Problems</h1>
+  <p class="subtitle">Everything Replit needs to build this correctly the first time. Every screen, every state, every problem identified and solved before a single line of code is written.</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+    <span class="tag tag-purple">Version 1.0 — MVP</span>
+    <span class="tag tag-gray">Guided flow · Web only</span>
+    <span class="tag tag-green">Pre-solved: 24 problems</span>
+    <span class="tag tag-blue">Stack: Node · React · Playwright · Claude API</span>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 1: User flow -->
+
+<div class="section">
+  <div class="chapter-label">01 — User flow</div>
+  <h2>Every screen in order</h2>
+  <p class="subtitle">This is the complete journey from signing up to downloading their report. Design every screen before building any of them.</p>
+
+  <div class="flow">
+    <div class="flow-step">Sign up</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">Setup scan</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Record flow</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Live analysis</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">Report + export</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">History</div>
+  </div>
+
+  <!-- Screen 1: Setup -->
+
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 1 — Scan setup <span>Entry point</span></div>
+    <div class="mock-topbar">
+      <div class="mock-logo">App<em>Scout</em></div>
+      <div style="margin-left:16px" class="mock-tabs">
+        <div class="mock-tab on">Full scan</div>
+        <div class="mock-tab">Scenario</div>
+        <div class="mock-tab">Quick</div>
+        <div class="mock-tab">Compare</div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);padding:3px 8px;border-radius:5px">2,840 credits</span>
+        <div style="background:var(--purple);color:white;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500">+ New scan</div>
+      </div>
+    </div>
+    <div class="setup-layout">
+      <div class="setup-left">
+        <div class="setup-step">
+          <div class="setup-step-num done">✓</div>
+          <div class="setup-step-content">
+            <h3>App URL</h3>
+            <input class="setup-input" value="https://jobrunner.com.au" style="margin-top:6px" readonly>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num done">✓</div>
+          <div class="setup-step-content">
+            <h3>Login credentials</h3>
+            <p>So the crawler can log in automatically</p>
+            <div class="cred-row" style="margin-top:6px">
+              <div class="cred-field">demo@jobrunner.com.au</div>
+              <div class="cred-field">••••••••</div>
+            </div>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num">3</div>
+          <div class="setup-step-content">
+            <h3>Custom instruction <span style="font-size:10px;color:var(--muted);font-weight:400">(optional)</span></h3>
+            <p>Tell the AI what to focus on, or leave blank for a full audit</p>
+            <input class="setup-input" placeholder="e.g. Focus on onboarding. Pay attention to what a first-time tradie would find confusing..." style="margin-top:6px" readonly>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="setup-step-num gray">4</div>
+          <div class="setup-step-content">
+            <h3>Analysis types</h3>
+            <p>Choose what to analyse — Design, UX & copy, Accessibility, Logic, Performance</p>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <div class="setup-btn-primary">Record my flow →</div>
+          <div class="setup-btn-secondary">Let AI navigate</div>
+        </div>
+      </div>
+      <div class="setup-right">
+        <div class="mock-section-label">Analysis types</div>
+        <div class="mock-check-row"><div class="mock-check"></div><div class="mock-check-name">Design quality</div><div class="mock-check-score">7.2</div></div>
+        <div class="mock-check-row"><div class="mock-check"></div><div class="mock-check-name">UX & copy</div><div class="mock-check-score">5.8</div></div>
+        <div class="mock-check-row"><div class="mock-check" style="background:var(--surface3)"></div><div class="mock-check-name" style="color:var(--muted)">Accessibility</div><div class="mock-check-score">—</div></div>
+        <div class="mock-check-row"><div class="mock-check" style="background:var(--surface3)"></div><div class="mock-check-name" style="color:var(--muted)">Logic & flow</div><div class="mock-check-score">—</div></div>
+        <div class="mock-check-row"><div class="mock-check" style="background:var(--surface3)"></div><div class="mock-check-name" style="color:var(--muted)">Performance</div><div class="mock-check-score">—</div></div>
+        <div style="margin-top:8px">
+          <div class="mock-section-label">Estimated credits</div>
+          <div style="font-family:var(--font-mono);font-size:18px;color:var(--text)">320 <span style="font-size:11px;color:var(--muted)">credits</span></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">~20 screens · 2 passes each</div>
+        </div>
+        <div style="margin-top:auto;background:rgba(139,124,248,0.08);border:1px solid rgba(139,124,248,0.15);border-radius:7px;padding:10px;font-size:10px;color:var(--subtle);line-height:1.5">
+          Tip: Record your flow first to get the most accurate analysis. The AI will replay exactly what you showed it.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 2: Live analysis -->
+
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 2 — Live analysis <span>Core experience</span></div>
+    <div class="mock-topbar">
+      <div class="mock-logo">App<em>Scout</em></div>
+      <div style="margin-left:16px;font-size:10px;color:var(--muted)">jobrunner.com.au — Full scan</div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
+        <div style="font-size:10px;color:var(--amber)">● 02:14 elapsed</div>
+        <div style="background:var(--surface2);border:1px solid var(--border);color:var(--subtle);padding:4px 10px;border-radius:5px;font-size:10px;cursor:pointer">Stop scan</div>
+      </div>
+    </div>
+    <div class="mock-layout">
+      <div class="mock-sidebar">
+        <div>
+          <div class="mock-section-label">URL</div>
+          <div class="mock-url">jobrunner.com.au</div>
+        </div>
+        <div>
+          <div class="mock-section-label">Screens (8 / 16)</div>
+          <div class="mock-screen-list">
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--green)"></div><div class="mock-sname">Login</div><div class="mock-scount">2</div></div>
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--green)"></div><div class="mock-sname">Onboarding</div><div class="mock-scount">1</div></div>
+            <div class="mock-screen-item on"><div class="mock-sdot" style="background:var(--purple);animation:pulse 1s infinite"></div><div class="mock-sname">Dashboard</div><div class="mock-scount">—</div></div>
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--amber)"></div><div class="mock-sname">New job</div><div class="mock-scount">5</div></div>
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--red)"></div><div class="mock-sname">Invoice</div><div class="mock-scount">3</div></div>
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--muted)"></div><div class="mock-sname">Settings</div><div class="mock-scount">—</div></div>
+            <div class="mock-screen-item"><div class="mock-sdot" style="background:var(--muted)"></div><div class="mock-sname">Team</div><div class="mock-scount">—</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-center">
+        <div class="mock-header-bar">
+          <div class="mock-live"><div class="mock-live-dot"></div>Live</div>
+          <div class="mock-path">/dashboard</div>
+          <div class="mock-ai-status">
+            <div class="mock-dots"><div class="mock-dot"></div><div class="mock-dot"></div><div class="mock-dot"></div></div>
+            layout pass
+          </div>
+        </div>
+        <div class="mock-video-area">
+          <div class="mock-browser-mini">
+            <div class="mock-browser-bar-mini">
+              <div class="browser-dots" style="display:flex;gap:4px">
+                <div class="bd" style="background:#ff5f56"></div>
+                <div class="bd" style="background:#ffbd2e"></div>
+                <div class="bd" style="background:#27c93f"></div>
+              </div>
+              <div style="flex:1;background:rgba(255,255,255,0.04);border-radius:3px;height:16px;margin:0 8px;display:flex;align-items:center;padding:0 7px;font-family:var(--font-mono);font-size:8px;color:rgba(255,255,255,0.3)">jobrunner.com.au/dashboard</div>
+            </div>
+            <div class="mock-browser-content">
+              <div class="mock-row"></div>
+              <div class="mock-row2">
+                <div class="mock-ann mock-ann-r" style="inset:4px"><div class="mock-ann-label" style="background:var(--red);color:white">CTA unclear</div></div>
+              </div>
+              <div class="mock-cards-row">
+                <div class="mock-card-mini"></div>
+                <div class="mock-card-mini" style="position:relative"><div class="mock-ann mock-ann-a" style="inset:0"><div class="mock-ann-label" style="background:var(--amber);color:#0c0d0f">8px→12px</div></div></div>
+                <div class="mock-card-mini"></div>
+                <div class="mock-card-mini"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Paused overlay state -->
+          <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(139,124,248,0.15);border:1px solid rgba(139,124,248,0.3);border-radius:20px;padding:4px 12px;font-size:9px;color:var(--purple);font-family:var(--font-mono)">⏸ 2s hold — AI finishing analysis</div>
+        </div>
+        <div class="mock-footer">
+          <div class="mock-time">02:14 / ~05:40</div>
+          <div class="mock-progress"><div class="mock-progress-fill"></div></div>
+          <div class="mock-time">8/16 screens</div>
+        </div>
+      </div>
+      <div class="mock-right">
+        <div class="mock-score-bar">
+          <div>
+            <div class="mock-score-num">6.4</div>
+            <div style="font-size:9px;color:var(--muted)">Overall</div>
+          </div>
+          <div class="mock-chips">
+            <div class="mock-chip" style="background:rgba(255,87,87,0.1);color:var(--red)">3 crit</div>
+            <div class="mock-chip" style="background:rgba(245,166,35,0.1);color:var(--amber)">7 warn</div>
+            <div class="mock-chip" style="background:rgba(62,207,142,0.1);color:var(--green)">4 ok</div>
+          </div>
+        </div>
+        <div class="mock-panel-tabs">
+          <div class="mock-panel-tab on">Feed</div>
+          <div class="mock-panel-tab">Issues</div>
+          <div class="mock-panel-tab">Screens</div>
+        </div>
+        <div class="mock-feed">
+          <div class="mock-comment">On <strong>dashboard</strong>. Hero section has three competing elements — no clear primary action for the user.</div>
+          <div class="mock-issue">
+            <div class="mock-issue-sev" style="background:rgba(255,87,87,0.1);color:var(--red)">critical</div>
+            <div class="mock-issue-title">CTA hierarchy broken</div>
+            <div class="mock-issue-body">Primary + secondary share identical weight. → Make primary 44px, ghost secondary.</div>
+          </div>
+          <div class="mock-comment">Card 2 padding is <strong>8px</strong>, others are 12px. Subtle misalignment across the row.</div>
+          <div class="mock-issue">
+            <div class="mock-issue-sev" style="background:rgba(245,166,35,0.1);color:var(--amber)">warning</div>
+            <div class="mock-issue-title">Inconsistent card padding</div>
+            <div class="mock-issue-body">Card 2 → 8px. Others → 12px. Fix with design token.</div>
+          </div>
+        </div>
+        <div class="mock-dl-grid">
+          <div class="mock-dl-btn"><div class="mock-dl-name">Raw video</div><div class="mock-dl-desc">Ready after scan</div></div>
+          <div class="mock-dl-btn"><div class="mock-dl-name">Annotated</div><div class="mock-dl-desc">Ready after scan</div></div>
+          <div class="mock-dl-btn"><div class="mock-dl-name">PDF report</div><div class="mock-dl-desc">Ready after scan</div></div>
+          <div class="mock-dl-btn"><div class="mock-dl-name">Screenshots</div><div class="mock-dl-desc">Ready after scan</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 3: Report -->
+
+  <div class="screen-wrap">
+    <div class="screen-label">Screen 3 — Report & export <span>Final output</span></div>
+    <div class="mock-topbar">
+      <div class="mock-logo">App<em>Scout</em></div>
+      <div style="margin-left:16px;font-size:10px;color:var(--muted)">jobrunner.com.au — Scan complete</div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div style="background:var(--green);color:#0c0d0f;padding:5px 12px;border-radius:6px;font-size:11px;font-weight:500">✓ Analysis complete</div>
+      </div>
+    </div>
+    <div class="report-layout">
+      <div class="report-hero">
+        <div class="report-score-circle">
+          <div class="report-score-num">6.4</div>
+          <div class="report-score-label">/ 10</div>
+        </div>
+        <div class="report-stats">
+          <div class="report-stat"><h4 style="color:var(--red)">3</h4><p>Critical issues</p></div>
+          <div class="report-stat"><h4 style="color:var(--amber)">7</h4><p>Warnings</p></div>
+          <div class="report-stat"><h4 style="color:var(--green)">4</h4><p>Passed checks</p></div>
+          <div class="report-stat"><h4>16</h4><p>Screens analysed</p></div>
+          <div class="report-stat"><h4>5m 40s</h4><p>Total run time</p></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.8px">All screens — click to view detail</div>
+        <div class="report-screens">
+          <div class="report-screen-thumb"><div class="report-thumb-img"><div class="report-thumb-badge ok">clean</div></div><div class="report-thumb-name">Login</div></div>
+          <div class="report-screen-thumb"><div class="report-thumb-img"><div class="report-thumb-badge ok">1 issue</div></div><div class="report-thumb-name">Onboarding</div></div>
+          <div class="report-screen-thumb issue"><div class="report-thumb-img"><div class="report-thumb-badge">3 issues</div></div><div class="report-thumb-name">Dashboard</div></div>
+          <div class="report-screen-thumb issue"><div class="report-thumb-img"><div class="report-thumb-badge">5 issues</div></div><div class="report-thumb-name">New job form</div></div>
+          <div class="report-screen-thumb issue"><div class="report-thumb-img"><div class="report-thumb-badge">3 issues</div></div><div class="report-thumb-name">Invoice editor</div></div>
+          <div class="report-screen-thumb"><div class="report-thumb-img"><div class="report-thumb-badge ok">clean</div></div><div class="report-thumb-name">Settings</div></div>
+        </div>
+      </div>
+      <div class="share-link">
+        <div class="share-url">appscout.io/r/abc123xyz</div>
+        <div style="font-size:10px;color:var(--muted)">Anyone with this link can view</div>
+        <div class="share-copy">Copy link</div>
+      </div>
+      <div class="report-dl-row">
+        <div class="report-dl"><div class="report-dl-icon">▶</div><div class="report-dl-name">Raw video</div><div class="report-dl-sub">MP4 · 48MB</div></div>
+        <div class="report-dl"><div class="report-dl-icon">◈</div><div class="report-dl-name">Annotated video</div><div class="report-dl-sub">MP4 · 52MB</div></div>
+        <div class="report-dl"><div class="report-dl-icon">⬡</div><div class="report-dl-name">Full report</div><div class="report-dl-sub">PDF · 4.2MB</div></div>
+        <div class="report-dl"><div class="report-dl-icon">◻</div><div class="report-dl-name">Screenshots</div><div class="report-dl-sub">ZIP · 16 PNGs</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 2: All states -->
+
+<div class="section">
+  <div class="chapter-label">02 — States & transitions</div>
+  <h2>Every state the live screen can be in</h2>
+  <p class="subtitle">Every state needs a designed UI. If Replit doesn't know what a state should look like, it'll guess and get it wrong.</p>
+
+  <div class="states">
+    <div class="state-row"><div class="state-icon" style="background:var(--muted)"></div><div class="state-name">idle</div><div class="state-desc">Scan not started. Setup form visible. Record flow button prominent.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--blue)"></div><div class="state-name">initialising</div><div class="state-desc">Browser starting up. "Launching browser..." shown in center. ~3 seconds.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--blue)"></div><div class="state-name">authenticating</div><div class="state-desc">Playwright filling login form. Video shows it typing credentials. Status: "Logging in..."</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--purple);animation:pulse 1s infinite"></div><div class="state-name">crawling</div><div class="state-desc">Playwright navigating. Video playing continuously. AI cursor visible. Live commentary streaming.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--amber)"></div><div class="state-name">paused_for_analysis</div><div class="state-desc">2-3s hold on new screen. Subtle pill overlay: "⏸ AI finishing analysis". Never exceeds 3s.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--purple)"></div><div class="state-name">analysing</div><div class="state-desc">Claude processing screenshot in background. Video continues. Thinking dots in header.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--green)"></div><div class="state-name">annotation_ready</div><div class="state-desc">Analysis complete for a screen. Annotation fades in on correct timeline position.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--red)"></div><div class="state-name">blocked</div><div class="state-desc">Cloudflare or bot protection detected. Clear error: "Bot protection detected. Whitelist our IP or use manual upload."</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--red)"></div><div class="state-name">auth_failed</div><div class="state-desc">Login credentials didn't work. Stop scan. Clear message with option to update credentials and retry.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--red)"></div><div class="state-name">error</div><div class="state-desc">Unexpected crash. Save everything captured so far. Show partial report option.</div></div>
+    <div class="state-row"><div class="state-icon" style="background:var(--green)"></div><div class="state-name">complete</div><div class="state-desc">All screens analysed. Score reveals with animation. All downloads unlock. Share link generated.</div></div>
+  </div>
+
+  <div class="card" style="border-left:3px solid var(--amber)">
+    <h3>Critical: The video sync state machine</h3>
+    <p style="margin-top:4px">Video and analysis are completely decoupled. Video never waits for analysis except for the maximum 3-second paused_for_analysis hold on a new screen load. After 3 seconds the video continues regardless of whether analysis is complete. Late annotations attach to the timeline at the correct timestamp and pulse to indicate a new finding. They never appear over the current live view if the video has moved on.</p>
+    <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+      <span class="tag tag-green">Video pipeline — independent</span>
+      <span class="tag tag-green">Analysis pipeline — independent</span>
+      <span class="tag tag-amber">Max pause — 3 seconds only</span>
+      <span class="tag tag-blue">Late annotations → timeline only</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 3: Architecture -->
+
+<div class="section">
+  <div class="chapter-label">03 — System architecture</div>
+  <h2>Seven layers, build in this order</h2>
+  <p class="subtitle">Each layer is fully defined. Replit should build in sequence — analysis pipeline first, crawler second.</p>
+
+  <div class="arch-layer">
+    <div class="arch-num">01</div>
+    <div style="flex:1">
+      <div class="arch-name">Analysis pipeline <span style="font-size:11px;color:var(--green);font-weight:400">— build first</span></div>
+      <div class="arch-desc">Claude vision API calls returning structured JSON. Two passes per screen — layout/visual and UX/copy. Can be tested immediately by manually feeding screenshots. This is the most important layer and needs the most iteration time.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">Claude vision API</div>
+        <div class="arch-tech-tag">structured JSON output</div>
+        <div class="arch-tech-tag">two-pass system</div>
+        <div class="arch-tech-tag">S3 screenshot storage</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">02</div>
+    <div style="flex:1">
+      <div class="arch-name">Playwright crawler worker</div>
+      <div class="arch-desc">Authenticated session handling using saved cookies. Flow replay from recorded trace. Screenshot capture on every navigation event and DOM mutation. Visual fingerprint dedup using perceptual hash. Network idle detection before screenshot. SPA support via MutationObserver.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">Playwright</div>
+        <div class="arch-tech-tag">recordVideo</div>
+        <div class="arch-tech-tag">Chrome DevTools Protocol</div>
+        <div class="arch-tech-tag">pHash dedup</div>
+        <div class="arch-tech-tag">MutationObserver</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">03</div>
+    <div style="flex:1">
+      <div class="arch-name">Redis + Bull job queue</div>
+      <div class="arch-desc">Two job types: crawl-job and analysis-job. Jobs persist even if user closes the browser tab. Analysis jobs fire immediately when each screenshot is captured — they don't wait for crawling to finish. Multiple workers can run in parallel for different users.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">Redis</div>
+        <div class="arch-tech-tag">Bull</div>
+        <div class="arch-tech-tag">separate queues per job type</div>
+        <div class="arch-tech-tag">retry on failure</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">04</div>
+    <div style="flex:1">
+      <div class="arch-name">WebSocket server</div>
+      <div class="arch-desc">Pushes real-time events to the dashboard. Four event types: screen:discovered, screen:paused, issue:found, run:complete. WebSocket connection authenticated with JWT. If connection drops the client reconnects and replays missed events from the job log.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">WebSocket</div>
+        <div class="arch-tech-tag">event replay on reconnect</div>
+        <div class="arch-tech-tag">JWT auth</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">05</div>
+    <div style="flex:1">
+      <div class="arch-name">REST API</div>
+      <div class="arch-desc">Six core endpoints. POST /runs to start a scan. GET /runs/:id for status and results. GET /runs/:id/screens for all discovered screens. POST /reports/:id/share for shareable link. POST /reports/:id/pdf for PDF generation. Same JWT auth and error handling patterns as JobRunner.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">Node.js</div>
+        <div class="arch-tech-tag">Express</div>
+        <div class="arch-tech-tag">JWT</div>
+        <div class="arch-tech-tag">follow JobRunner patterns</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">06</div>
+    <div style="flex:1">
+      <div class="arch-name">Frontend dashboard</div>
+      <div class="arch-desc">Three screens: setup, live analysis, report. Live analysis screen has three independent panels — video player, left sidebar screen list, right commentary feed — that operate independently of each other. Video player uses Chrome DevTools Protocol stream. Annotation layer is a canvas overlay positioned above the video. React, same patterns as JobRunner.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">React</div>
+        <div class="arch-tech-tag">CDP video stream</div>
+        <div class="arch-tech-tag">canvas annotation overlay</div>
+        <div class="arch-tech-tag">WebSocket client</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="arch-layer">
+    <div class="arch-num">07</div>
+    <div style="flex:1">
+      <div class="arch-name">Report generator + S3 storage</div>
+      <div class="arch-desc">FFmpeg merges raw video with canvas annotation layer into annotated MP4. Puppeteer generates PDF report. All screenshots stored in S3 with automatic 30-day expiry on free tier, 1-year on paid. Shareable link generates unique token stored in PostgreSQL. Public report page served without auth.</div>
+      <div class="arch-tech">
+        <div class="arch-tech-tag">FFmpeg</div>
+        <div class="arch-tech-tag">Puppeteer PDF</div>
+        <div class="arch-tech-tag">AWS S3</div>
+        <div class="arch-tech-tag">expiry policy</div>
+        <div class="arch-tech-tag">public share token</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 4: Pre-solved problems -->
+
+<div class="section">
+  <div class="chapter-label">04 — Pre-solved problems</div>
+  <h2>Every problem identified before building</h2>
+  <p class="subtitle">These are every failure mode we could think of. Solving them now costs an hour of thinking. Discovering them in production costs weeks of rework.</p>
+
+  <div class="callout-grid">
+    <div class="callout"><div class="callout-num">24</div><div class="callout-label">Problems identified</div></div>
+    <div class="callout"><div class="callout-num">24</div><div class="callout-label">Solutions defined</div></div>
+    <div class="callout"><div class="callout-num">0</div><div class="callout-label">Left unresolved</div></div>
+    <div class="callout"><div class="callout-num">6</div><div class="callout-label">Critical priority</div></div>
+  </div>
+
+  <h3 style="margin-bottom:12px;color:var(--red)">Critical — will break the product if not solved</h3>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 1</span> Video sync — annotations appearing on wrong screen</div>
+    <div class="problem-body">Video plays at real speed. Claude analysis takes 3-5 seconds. By the time annotation is ready the video has moved to a different screen. User sees annotation on wrong content. Feels broken and confusing.</div>
+    <div class="problem-solution">Video and analysis are fully decoupled pipelines. Video pauses maximum 3 seconds on each new screen load. If analysis finishes within 3s, annotation appears live. If not, video resumes and late annotation attaches to the correct timestamp in the timeline only — never over the current live view. Late annotations pulse in the timeline to signal a new finding on a previous screen.</div>
+  </div>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 2</span> Screenshot timing — capturing half-loaded screens</div>
+    <div class="problem-body">Playwright navigates to a new page. The screenshot fires immediately. But heavy JavaScript apps take 2-4 seconds to fully render. Screenshot captures skeleton screens or empty states that aren't the real content. Claude analyses a blank screen and gives useless feedback.</div>
+    <div class="problem-solution">Two-condition wait before screenshot: (1) networkidle — no network requests for 500ms, AND (2) DOM stability check — no significant DOM mutations for 300ms via MutationObserver. Both conditions must be true before screenshot fires. Maximum wait time capped at 8 seconds to prevent hanging on apps with polling requests.</div>
+  </div>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 3</span> Single page apps not triggering navigation events</div>
+    <div class="problem-body">React/Vue/Angular apps change content without a full page navigation. Playwright's waitForNavigation never fires. The crawler sits on the first screen forever thinking nothing happened. Misses 90% of the app.</div>
+    <div class="problem-solution">Watch two signals simultaneously: URL hash/path changes via History API, AND significant DOM mutations (>20% of visible DOM changed) via MutationObserver. Either signal triggers a new screen discovery event. Debounce DOM mutations by 500ms to avoid firing on every animation frame.</div>
+  </div>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 4</span> Cloudflare and bot protection blocking the crawler</div>
+    <div class="problem-body">Many production apps use Cloudflare, Imperva, or other bot protection. The crawler gets served a CAPTCHA or blocked page within seconds. User thinks your product is broken. You have no control over their CDN config.</div>
+    <div class="problem-solution">Use Playwright with stealth mode plugin to reduce bot detection signals. Detect block pages by checking for known CAPTCHA selectors or HTTP 403/429 responses. When detected, immediately stop the run and show a clear, helpful message: "Bot protection detected on this app. To proceed: (1) whitelist our crawler IP [IP address], or (2) use manual screenshot upload." Never let the run silently fail.</div>
+  </div>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 5</span> S3 storage costs growing unbounded</div>
+    <div class="problem-body">Every scan produces hundreds of PNG screenshots plus two MP4 files. Without expiry policies this grows without limit. Storage costs compound fast across many users.</div>
+    <div class="problem-solution">Free tier: S3 lifecycle rule auto-deletes all assets after 30 days. Paid tier: 1-year retention. Enterprise: custom retention. Shareable links check if assets still exist before serving — if expired, show a clear "This report has expired. Re-run the scan to generate a new one." message. Store only the JSON analysis results permanently — screenshots and videos are regeneratable.</div>
+  </div>
+
+  <div class="problem-block">
+    <div class="problem-title"><span class="tag tag-red" style="margin:0">Critical 6</span> Claude API rate limits during parallel analysis</div>
+    <div class="problem-body">Running six analysis passes across 20 screens simultaneously means potentially 120 Claude API calls in a few minutes. Hitting rate limits causes analysis jobs to fail silently or return errors that get stored as results.</div>
+    <div class="problem-solution">Implement exponential backoff with jitter on all Claude API calls. Analysis jobs have a dedicated Bull queue with concurrency limit set below the Claude rate limit threshold. Failed jobs automatically retry up to 3 times before marking as failed. Rate limit errors are never stored as analysis results — they trigger a retry, not a failure state shown to the user.</div>
+  </div>
+
+  <h3 style="margin-bottom:12px;margin-top:24px;color:var(--amber)">Warnings — will degrade experience if not handled</h3>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 7</span> Cookie consent banners blocking content</div>
+    <div class="problem-body">Nearly every European app shows a cookie consent banner. The crawler screenshots the banner, not the actual page. All analysis is about the consent UI, not the product.</div>
+    <div class="problem-solution">Before crawl begins, run a detection pass for common consent banner selectors (OneTrust, Cookiebot, etc.). Automatically click the accept button. If no known selector found, take a screenshot and ask Claude to identify and click the dismiss element before proceeding.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 8</span> Crawler looping on infinite scroll or pagination</div>
+    <div class="problem-body">An app with infinite scroll or paginated content looks like an endless source of new screens. The crawler scrolls forever or clicks Next page repeatedly, never finishing.</div>
+    <div class="problem-solution">Visual fingerprinting catches repeated content — perceptual hash similarity above 90% triggers deduplication. Additionally cap maximum screenshots per domain path at 5. If same path is visited more than 5 times with different scroll positions, mark it as infinite scroll and only analyse the first viewport.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 9</span> External links taking crawler off the target domain</div>
+    <div class="problem-body">App links to documentation, social media, or partner sites. Crawler follows them and spends the entire run analysing someone else's website.</div>
+    <div class="problem-solution">Intercept all navigation events. Compare the destination domain against the initial target domain. Any navigation leaving the target domain is blocked automatically. Log it as an "external link found" event in the report without following it.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 10</span> Session cookie expiring mid-crawl</div>
+    <div class="problem-body">Long scans on apps with short session timeouts. User gets logged out 3 minutes into a 10-minute crawl. Every subsequent screen is the login page. Entire analysis is useless.</div>
+    <div class="problem-solution">Monitor each screenshot for login page indicators (login form present, URL matches auth route). If detected mid-crawl, automatically re-authenticate using stored credentials before continuing. If re-auth fails, pause the run and notify user via WebSocket event with option to update credentials.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 11</span> File download dialogs blocking navigation</div>
+    <div class="problem-body">User clicks a button that triggers a file download. Browser shows a download dialog. Playwright hangs waiting for navigation that never comes. Crawl freezes.</div>
+    <div class="problem-solution">Intercept all download events before they trigger. Cancel them automatically. Log as "download trigger found on this screen" in the report. Never let a download block navigation.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 12</span> Modal and overlay states not being captured</div>
+    <div class="problem-body">Important screens exist inside modals — confirmation dialogs, form modals, image lightboxes. A basic crawler never triggers them. Analysis misses entire interaction patterns.</div>
+    <div class="problem-solution">After landing on each screen, run a modal detection pass — look for buttons whose labels or ARIA roles suggest they open modals (confirm, delete, edit, view, details). Click each one, screenshot the result, close, continue. This is a separate pass from the main navigation, run after the primary crawl completes.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 13</span> Video file too large to download</div>
+    <div class="problem-body">A 10-minute crawl session at full resolution produces an MP4 that could be 200-400MB. Users on slow connections can't download it. Hosting costs are high.</div>
+    <div class="problem-solution">Record at 1280x800 maximum resolution and compress with H.264 at CRF 28 via FFmpeg post-processing. Target under 50MB for a 10-minute session. Offer two quality options on download — web quality (compressed) and full quality — with file size shown on the button before downloading.</div>
+  </div>
+
+  <div class="problem-block warn">
+    <div class="problem-title"><span class="tag tag-amber" style="margin:0">Warning 14</span> User closes tab mid-analysis</div>
+    <div class="problem-body">Analysis runs are long. User closes the tab to do something else. When they come back the run is gone. All progress lost.</div>
+    <div class="problem-solution">Jobs run on the server via Bull — completely independent of browser tab. When user returns and navigates to the run, it reconnects via WebSocket and replays all events since disconnection. Show run progress on the dashboard home page so users can always see active scans. Email notification when run completes (opt-in).</div>
+  </div>
+
+  <h3 style="margin-bottom:12px;margin-top:24px;color:var(--blue)">Info — edge cases worth handling early</h3>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 15</span> Canvas and WebGL content</div>
+    <div class="problem-body">Apps with canvas-based UIs (games, data visualisations, design tools) render content Claude can't analyse meaningfully from a screenshot.</div>
+    <div class="problem-solution">Detect canvas elements occupying more than 30% of the viewport. Flag those screens with a note: "This screen contains canvas/WebGL content. Visual analysis may be limited." Still run UX/copy analysis on any non-canvas elements present.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 16</span> Apps requiring MFA or 2FA</div>
+    <div class="problem-body">Two-factor authentication requires a code from the user's phone. Can't be automated. Crawl fails at login.</div>
+    <div class="problem-solution">During setup, detect if the app's login flow has a 2FA step after entering credentials. If detected, pause and prompt user: "This app uses 2FA. Enter a valid session token from your browser's cookies instead of credentials." Provide instructions for extracting session cookies from Chrome DevTools.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 17</span> PDF generation timing out on large reports</div>
+    <div class="problem-body">A scan with 50 screens and many annotated screenshots makes the PDF generation take too long. Request times out. User sees an error.</div>
+    <div class="problem-solution">PDF generation is a separate Bull job, not a synchronous API call. User clicks Generate PDF — job is queued — WebSocket event fires when ready — download link appears. Never block the response waiting for PDF generation. Show "Generating PDF..." progress state.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 18</span> Annotations misaligned on retina/HiDPI screens</div>
+    <div class="problem-body">Playwright captures screenshots at device pixel ratio 1x. The accessibility tree returns coordinates at 1x. But the dashboard renders the video at a different size. Annotation boxes don't align with the elements they're pointing at.</div>
+    <div class="problem-solution">Normalise all coordinates to the video display dimensions at annotation render time. Store raw coordinates from the accessibility tree, compute the scale factor between the original screenshot dimensions and the rendered video dimensions, apply scale to all annotation positions before drawing to canvas.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 19</span> Claude false positives destroying trust</div>
+    <div class="problem-body">Claude flags an intentional minimalist design as "empty state — needs more content." Developer dismisses the tool entirely after one wrong annotation. Precision matters more than coverage.</div>
+    <div class="problem-solution">System prompt explicitly instructs Claude: "Only flag issues you would raise in a real design review meeting. If unsure whether something is intentional, do not flag it. Precision over recall. Include a confidence score on each finding — only return findings above 80% confidence." Build a thumbs up/down on each finding so users can mark false positives. Use feedback to iterate prompt quality.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 20</span> Multiple browser tabs opened by target app</div>
+    <div class="problem-body">Some apps open content in new tabs. Playwright by default only controls the original page. New tab content is never analysed.</div>
+    <div class="problem-solution">Listen for new page events on the browser context. When a new tab opens, check if it's on the same domain. If yes, add it to the crawl queue. If no, close it. This catches in-app popups and same-domain tab opens without following external links.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 21</span> App uses localhost or requires VPN</div>
+    <div class="problem-body">Developer wants to test a staging environment on localhost:3000 or an app behind a VPN. The cloud-hosted crawler can't reach it.</div>
+    <div class="problem-solution">V1 — document clearly in onboarding that the app must be publicly accessible. Provide a guide for exposing localhost via ngrok. V2 — offer a downloadable local crawler agent that runs on the user's machine and streams results to the cloud dashboard.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 22</span> Playwright browser memory leak on long runs</div>
+    <div class="problem-body">Playwright browser contexts accumulate memory over long crawl sessions. On 50+ screen apps the worker process runs out of memory and crashes mid-run.</div>
+    <div class="problem-solution">Create a new browser context (not a new browser) every 20 pages. Transfer the session cookie to the new context. This resets the memory footprint without requiring re-authentication. Monitor memory usage per worker with a 500MB threshold — if exceeded, force a context reset before continuing.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 23</span> Annotated video audio sync</div>
+    <div class="problem-body">FFmpeg merging the canvas annotation overlay with the video can introduce audio/video sync issues if frame rates don't match perfectly.</div>
+    <div class="problem-solution">Record video without audio (apps don't need audio for QA). This eliminates the sync problem entirely. The annotated video is silent. If audio is ever needed in future, use FFmpeg's -vsync cfr flag to enforce constant frame rate before merging.</div>
+  </div>
+
+  <div class="problem-block info">
+    <div class="problem-title"><span class="tag tag-blue" style="margin:0">Info 24</span> Analysis results for a screen arriving after report is generated</div>
+    <div class="problem-body">User ends the run manually while some analysis jobs are still queued. Report is generated. Then the remaining analysis results arrive. Report is now incomplete but the user already has it.</div>
+    <div class="problem-solution">Reports are generated lazily — they pull from the database at request time, not at run completion time. The shareable link always serves the latest version of the analysis. Add a "last updated" timestamp to the report. If the user views the report while jobs are still queued, show a banner: "Analysis still running — some screens pending. This report will update automatically."</div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Section 5: Replit brief -->
+
+<div class="section">
+  <div class="chapter-label">05 — Replit brief</div>
+  <h2>Exact brief to send Replit</h2>
+  <p class="subtitle">Copy this entire section and send it to Replit before starting. Do not start building without it.</p>
+
+  <div class="card">
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--subtle);line-height:1.8">
+      <p style="color:var(--text);font-size:13px;margin-bottom:16px">We are building AppScout — an AI-powered app quality analyser. Before writing a single line of code I want you to read this entire brief and confirm you understand every section. Ask questions on anything unclear before starting.</p>
+
+```
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px">Build order (critical — do not deviate):</p>
+  <p>1. Analysis pipeline first — Claude API calls with structured JSON output. Test manually with screenshots before anything else is built. This is where we iterate on prompt quality.<br>
+  2. Playwright crawler second — flow replay, screenshot capture, fingerprint dedup.<br>
+  3. Job queue third — Bull/Redis, two job types.<br>
+  4. WebSocket server fourth — real-time events to dashboard.<br>
+  5. REST API fifth — six endpoints, same patterns as JobRunner.<br>
+  6. Frontend dashboard sixth — three screens, independent panels.<br>
+  7. Report generator last — FFmpeg, PDF, S3, shareable links.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">The most important architectural rule:</p>
+  <p>Video pipeline and analysis pipeline are completely decoupled. Video never waits for analysis except for a maximum 3-second hold when a new screen first loads. Late annotations attach to the timeline at the correct timestamp — they never appear over the current live view. This is non-negotiable.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">Screenshot timing rule:</p>
+  <p>Never screenshot immediately on navigation. Wait for: (1) networkidle — no requests for 500ms, AND (2) DOM stability — no significant mutations for 300ms. Both conditions required. Maximum wait cap of 8 seconds.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">24 pre-identified problems with solutions are documented in this brief. Before building each layer, read the relevant problems section and implement the solutions proactively. Do not wait to discover these in production.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">Follow JobRunner patterns for:</p>
+  <p>Authentication (JWT), database queries, error handling, API structure, environment variables, component organisation. Document any deviation from JobRunner patterns with a reason.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">Storage:</p>
+  <p>S3 for all screenshots and videos from day one. Never store binary files in PostgreSQL. Free tier: 30-day expiry. Paid tier: 1-year. PostgreSQL stores only JSON analysis results, run metadata, and share tokens.</p>
+
+  <p style="color:var(--accent);font-weight:500;margin-bottom:6px;margin-top:12px">Definition of done for MVP:</p>
+  <p>User can submit a web app URL with credentials, record or replay a flow, watch a continuous live video of the crawler navigating with annotations appearing in real time, receive a full report with issues ranked by severity, and download four exports: raw video, annotated video, PDF report, screenshot ZIP. All 24 pre-identified problems handled.</p>
+</div>
+```
+
+  </div>
+</div>
+
+</div>
+</body>
+</html>

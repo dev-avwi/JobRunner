@@ -1,0 +1,184 @@
+
+Structured Outputs
+
+Create Structured Output
+No Structured Outputs yet
+
+Create your first structured output to start capturing model results
+
+
+Create Structured Output
+Create Structured Output
+
+Create from Scratch
+Build a completely custom structured output with your own schema
+
+Or choose from our pre-built structured output templates
+
+Search templates by name or description...
+Call Summary
+Generate a concise 2-3 sentence summary of the call
+
+string
+Success Evaluation - Pass/Fail
+Simple binary evaluation of call success
+
+boolean
+Success Evaluation - Numeric Scale
+Rate call success on a scale of 1-10
+
+number
+Success Evaluation - Descriptive
+Qualitative assessment of call performance
+
+string
+Appointment Booked
+Tracks if a customer booked an appointment
+
+boolean
+Appointment Cancelled
+Track when appointments are cancelled by the customer
+
+boolean
+Appointment Rescheduled
+Track when appointments are moved to a different time
+
+boolean
+Booking Status
+Current status of the booking attempt
+
+string
+Appointment Date
+Capture the scheduled appointment date
+
+string
+Appointment Time
+Capture the scheduled appointment time
+
+string
+Booking Details
+Capture complete booking information in structured format
+
+object
+CSAT
+Numerical rating of customer satisfaction
+
+number
+Customer Sentiment
+Overall emotional tone of the customer during the call
+
+string
+NPS Score
+Net Promoter Score - likelihood to recommend
+
+integer
+Customer Feedback
+Whether customer gave specific feedback or suggestions
+
+boolean
+Customer Effort Score
+How easy it was for the customer to get their issue resolved
+
+integer
+Would Recommend
+Whether the customer would recommend your service
+
+boolean
+Feedback Summary
+Detailed customer feedback and suggestions
+
+string
+Sale Completed
+Track when a sale is successfully closed
+
+boolean
+Lead Qualified
+Whether the prospect meets qualification criteria
+
+boolean
+Revenue Amount
+Dollar amount of revenue generated from the call
+
+number
+Upsell Opportunity Identified
+Whether additional sales opportunities were discovered
+
+boolean
+Lead Status
+Current qualification status of the sales lead
+
+string
+Product Interest Level
+Level of interest shown in products or services
+
+string
+Discount Requested
+Whether customer requested pricing discounts
+
+boolean
+Products Discussed
+List of products or services discussed during the call
+
+array
+Issue Resolved
+Whether the customer's issue was resolved during the call
+
+boolean
+Issue Severity
+Priority level of the customer's issue
+
+string
+Support Ticket Created
+Whether a follow-up support ticket was created
+
+boolean
+Time to Resolution
+Minutes taken to resolve the customer issue
+
+number
+Issue Type
+Category of the support issue
+
+string
+Escalation Required
+Whether the issue needs escalation to higher support tier
+
+boolean
+Customer Frustrated
+Whether the customer expressed frustration
+
+boolean
+Troubleshooting Steps Taken
+Number of troubleshooting steps attempted
+
+integer
+Script Followed
+Whether the agent followed the prescribed script
+
+boolean
+Compliance Verified
+Whether all compliance requirements were met
+
+boolean
+Quality Score
+Overall quality assessment score
+
+number
+Supervisor Review Needed
+Whether the call requires supervisor review
+
+boolean
+Appropriate Greeting
+Whether the agent used the proper greeting
+
+boolean
+Excessive Hold Time
+Whether customer was placed on hold for too long
+
+boolean
+Call Recording Quality
+Quality of the call recording for review purposes
+
+string
+Cancel
+Save

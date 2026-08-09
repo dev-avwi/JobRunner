@@ -1,0 +1,190 @@
+Skip to content
+dev-avwi
+JobRunner
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+84
+ (84)
+Insights
+Settings
+Security: dev-avwi/JobRunner
+Security and quality
+Findings
+Reporting
+Code scanning
+ CodeQL is reporting errors. Check the status page for help.
+ 
+is:open branch:main 
+
+Select all alerts
+
+Select alert #32
+Missing rate limiting
+High
+#32 opened 1 hour ago • Detected by CodeQL in server/index.ts :179
+main
+
+Select alert #31
+Incomplete URL substring sanitization
+High
+#31 opened 1 hour ago • Detected by CodeQL in mobile/.../more/profile-edit.tsx :240
+main
+
+Select alert #30
+Incomplete URL substring sanitization
+High
+#30 opened 1 hour ago • Detected by CodeQL in mobile/.../more/api-debug.tsx :126
+main
+
+Select alert #29
+Client-side cross-site scripting
+High
+#29 opened 1 hour ago • Detected by CodeQL in server/emailIntegrationService.... :308
+main
+
+Select alert #28
+DOM text reinterpreted as HTML
+High
+#28 opened 1 hour ago • Detected by CodeQL in client/.../pages/ChatHub.tsx :2351
+main
+
+Select alert #27
+DOM text reinterpreted as HTML
+High
+#27 opened 1 hour ago • Detected by CodeQL in client/.../components/JobVariations.tsx :957
+main
+
+Select alert #26
+DOM text reinterpreted as HTML
+High
+#26 opened 1 hour ago • Detected by CodeQL in client/.../components/JobVariations.tsx :807
+main
+
+Select alert #25
+DOM text reinterpreted as HTML
+High
+#25 opened 1 hour ago • Detected by CodeQL in client/.../components/DocumentEditor.tsx :451
+main
+
+Select alert #24
+DOM text reinterpreted as HTML
+High
+#24 opened 1 hour ago • Detected by CodeQL in client/.../components/ClientInsightsPanel.tsx :172
+main
+
+Select alert #23
+DOM text reinterpreted as HTML
+High
+#23 opened 1 hour ago • Detected by CodeQL in client/.../components/ChatComposer.tsx :111
+main
+
+Select alert #22
+Unvalidated dynamic method call
+High
+#22 opened 1 hour ago • Detected by CodeQL in server/demoData.ts :2999
+main
+
+Select alert #17
+Insecure configuration of Helmet security middleware
+High
+#17 opened 1 hour ago • Detected by CodeQL in server/index.ts :431
+main
+
+Select alert #16
+Missing CSRF middleware
+High
+#16 opened 1 hour ago • Detected by CodeQL in server/index.ts :501
+main
+
+Select alert #15
+Incomplete string escaping or encoding
+High
+#15 opened 1 hour ago • Detected by CodeQL in server/services/smsService.ts :1246
+main
+
+Select alert #14
+Incomplete string escaping or encoding
+High
+#14 opened 1 hour ago • Detected by CodeQL in server/pdfService.ts :2606
+main
+
+Select alert #13
+Double escaping or unescaping
+High
+#13 opened 1 hour ago • Detected by CodeQL in server/emailProviderService.ts :201
+main
+
+Select alert #12
+Double escaping or unescaping
+High
+#12 opened 1 hour ago • Detected by CodeQL in mobile/.../more/sms-conversation.tsx :29
+main
+
+Select alert #11
+Double escaping or unescaping
+High
+#11 opened 1 hour ago • Detected by CodeQL in client/.../pages/ChatHub.tsx :1085
+main
+
+Select alert #10
+Incomplete multi-character sanitization
+High
+#10 opened 1 hour ago • Detected by CodeQL in server/routes.ts :17337
+main
+
+Select alert #9
+Incomplete multi-character sanitization
+High
+#9 opened 1 hour ago • Detected by CodeQL in server/emailProviderService.ts :201
+main
+
+Select alert #8
+Polynomial regular expression used on uncontrolled data
+High
+#8 opened 1 hour ago • Detected by CodeQL in server/routes.ts :5060
+main
+
+Select alert #7
+Polynomial regular expression used on uncontrolled data
+High
+#7 opened 1 hour ago • Detected by CodeQL in server/routes.ts :4912
+main
+
+Select alert #6
+Polynomial regular expression used on uncontrolled data
+High
+#6 opened 1 hour ago • Detected by CodeQL in server/services/smsService.ts :373
+main
+
+Select alert #5
+Polynomial regular expression used on uncontrolled data
+High
+#5 opened 1 hour ago • Detected by CodeQL in server/gmailClient.ts :303
+main
+
+Select alert #4
+Polynomial regular expression used on uncontrolled data
+High
+#4 opened 1 hour ago • Detected by CodeQL in server/gmailClient.ts :204
+main
+     
+ ProTip! CodeQL queries are developed by an open-source coalition called the GitHub Security Lab
+Footer
+© 2026 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information

@@ -1,0 +1,42 @@
+Let me pull up Jobber's full feature set and cross-reference it properly.Okay, here's the honest breakdown — Jobber vs JobRunner, what they have that you don't.
+
+## What Jobber Has That You Don't
+
+**1. Website Builder — built in, free on every plan**
+They generate a full website customised to your business in minutes, included on all plans at no extra charge — multiple pages, SEO-ready, custom domain, Google reviews pulled in automatically, request forms, and the AI receptionist chat embedded on it. This is a genuine differentiator. You have the tradie websites idea on your roadmap — this is exactly why you should build it.
+
+**2. Marketing Suite**
+Competitor analysis of reviews, email campaigns, referral programs, and an insights dashboard — all built in. Tradies can see how they compare to up to 10 local competitors by rating and review volume. You have nothing like this yet.
+
+**3. Jobber Copilot — AI business advisor**
+It recommends automations, spots opportunities, handles routine tasks, drafts quotes, flags high-value jobs, and manages repetitive tasks. It's an embedded AI that advises the tradie on running their business — not just answering calls like your AI Receptionist does.
+
+**4. Job Costing**
+Labour, materials, and expenses compared to revenue by job and crew — so businesses can protect margins and price future work with confidence. You don't have this built out properly yet.
+
+**5. Location Timers**
+Automatically start when crews arrive at a job and stop when they leave. Geofenced auto time tracking — you have GPS tracking but not automatic time start/stop tied to job arrival.
+
+**6. Home Depot Product Catalogue**
+Search Home Depot's entire catalogue of over 3 million products directly inside a quote without leaving Jobber. Not relevant for AU right now — but the concept of embedded supplier catalogues in quoting is worth noting.
+
+---
+
+## What You Have That Jobber Doesn't
+
+To be fair the other direction — you have things Jobber doesn't:
+
+- **WHS/SWMS compliance** — AU-specific, Jobber has nothing like it
+- **Subcontractor ecosystem** — Jobber is employee-focused
+- **Stripe Tap to Pay** — in-field card payments on your phone
+- **Vapi AI Receptionist** — voice calls, not just chat
+- **Two-way SMS via Twilio** — not available in AU on Jobber
+- **Live GPS dispatch board** — more real-time than Jobber's scheduling
+
+---
+
+## What To Actually Do With This
+
+The two things worth prioritising from this list are the website builder and job costing — they're the biggest gaps that paying tradies will notice. The website builder maps directly to your tradie websites roadmap item. Job costing is a feature that business owners specifically care about when evaluating software.
+
+Everything else is catch-up eventually, not now.

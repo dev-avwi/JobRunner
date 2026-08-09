@@ -1,0 +1,62 @@
+i feel like these screens just arent clear and like just not done right you know
+
+12:09 AM
+Yeah I see what you mean. Let me go through each one honestly.
+
+WHS Safety Screen
+
+The dark theme here feels inconsistent if the rest of the app is light. The "2/6 Compliant" with the red circle is good but the unchecked items below just look like a plain list with no visual weight or clear action. A tradie looks at this and thinks "what do I actually do next?" There's no obvious button or call to action on the incomplete items. The SWMS documents all showing "draft" is also a red flag visually — looks unfinished even though it's demo data.
+
+Fix: Add a clear action button on each incomplete compliance item. Something like "Complete Now →" so it's obvious what to do. And clean the demo data so SWMS documents show as complete not draft.
+
+Incidents Tab
+
+This is the emptiest screen I've seen. Just a triangle icon and a sentence. It's fine functionally but it feels abandoned. The dark background with nothing on it looks like something broke.
+
+Fix: Add a proper empty state — maybe a simple illustration, a clearer message, and a prominent "Report Incident" button centred on the page. The button exists but it's tiny in the top right.
+
+Templates Hub
+
+The tabs across the top are good. But there are two identical "Bathroom Floor Tiling" entries and two identical "Gutter & Fascia Replacement" entries visible. That looks like a bug even if it's just demo data. Any tradie or investor seeing this immediately thinks something is broken.
+
+Fix: Clean the demo data. No duplicates. Simple.
+
+Forms Screen
+
+This one is actually pretty good. The left panel list with category grouping works well and the preview on the right is a smart touch. The form preview showing Mike's Plumbing Services with empty checkboxes looks clean and professional.
+
+Minor issue — the preview shows empty checkboxes with no labels. A tradie looking at this has no idea what those checkboxes are for. The preview should show the actual form content not just blank boxes.
+
+Chase Queue
+
+This is actually one of the strongest screens. "Critical — $1,048 — 44d overdue" is immediately impactful. The tone selector with Friendly, Professional, Firm is genuinely clever and differentiating.
+
+The only issue is the dark theme again — if the rest of the app is light this feels jarring. Consistency matters.
+
+The Bigger Issue — Dark Theme
+
+Looking at all six screens together versus the landing page and dashboard screenshots you showed earlier — those were light theme, these are dark theme. Is the dark theme a toggle the user turns on, or are these specific sections always dark?
+
+If it's a toggle that's fine, but the dark theme execution looks less polished than the light theme. The contrast feels heavy and some elements disappear into the background.
+
+Priority Fixes In Order
+
+These are the ones worth fixing before showing anyone:
+
+Duplicate templates in Templates Hub — looks like a bug, fix immediately.
+
+WHS compliance items need action buttons — right now it's a list with no direction.
+
+Incidents empty state needs a proper design — current version looks broken.
+
+Form preview needs to show actual content not blank checkboxes.
+
+Dark theme consistency — either polish it to match the light theme quality or make sure the toggle is obvious to users.
+
+Overall Honest Take On These Screens
+
+They're not broken — they function correctly. But they feel less finished than the dashboard and Work screens you showed earlier. The dashboard is genuinely impressive. These feel like they were built faster and got less design attention.
+
+That's completely normal. Every app has screens that get more love than others. The ones tradies will use every day — dashboard, jobs, quotes, invoices — those look excellent. The WHS and templates screens are secondary features that most tradies won't touch daily.
+
+The Chase Queue is genuinely great and worth showing off. The WHS screen needs the most work before you'd want to demo it.

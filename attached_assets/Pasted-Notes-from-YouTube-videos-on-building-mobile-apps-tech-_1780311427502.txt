@@ -1,0 +1,232 @@
+Notes from YouTube videos on building mobile apps — tech stack, Claude Code workflow, architecture, validation, and the development process.
+
+---
+
+# 🎥 Video 1 — "I Built a $800K/Month App Without Code"
+
+**Channel:** Jason | **App:** Recipe Snap (ReciMe clone)
+
+https://www.youtube.com/watch?v=9atd5lczG2k
+
+## What He Built & How
+
+A recipe-saving app that lets you paste a YouTube/website link or scan a physical recipe — AI extracts everything into a clean card. Built entirely through conversation with Claude, no code written manually.
+
+## The Exact Workflow
+
+1. **Plan** → paste competitor app URL into Claude Code (Opus), ask for feature list + page breakdown formatted to copy-paste
+2. **Design** → bring that prompt into Claude Design + a Pinterest screenshot reference → gets you ~95% polished UI in one shot vs ~50% doing it in Claude Code directly
+3. **Build** → download design as zip, bring into Claude Code (Sonnet), wire up Expo React Native + Node.js backend + OpenAI API. API keys go in `.env` file — never in chat
+4. **Test** → Expo Go app on phone, scan QR code, live preview
+5. **Infra** → Supabase (database), RevenueCat (subscriptions), Apple Dev account ($99/yr)
+
+## Key Tips
+
+- Use **Opus for planning**, **Sonnet for building** — Sonnet is faster and uses fewer tokens. Matters on the $20 plan
+- Ask Claude "give me 10 wow-factor feature ideas" when you want differentiators
+- Niche by demographic doesn't mean less revenue — Cookpad (Japan only) makes $900K/mo
+- Have an 18-point App Store checklist before submitting — vibe-coded apps are getting rejected for missing security layers
+
+## Business Model Notes
+
+- Sticky by design: once users have 20–30 recipes saved, cancelling means losing everything → low churn
+- Apps like this sell for 2–4x annual profit. At 50% margin on $800K/mo → ~$9.6M exit at 2x
+
+## Apply to Your Apps
+
+- **All apps** — if you're not using Claude Design for UI first, you're doing extra work. The Pinterest reference image trick is underrated
+- **Kindred** — the sticky data model (can't leave without losing your relationship memory) is exactly what Kindred has. Lean into this in your paywall copy
+- **JobRunner** — `.env` pattern and Supabase should be standardised across your stack if not already
+
+---
+
+# 🎥 Video 2 — Brian: $20K/Month in 83 Days with "Once"
+
+**Channel:** Starter Story | **App:** Once (disposable camera for events/weddings)
+
+https://www.youtube.com/watch?v=r4R_Hlw7sbo
+
+## The Core Idea
+
+Digital disposable camera — guests join an event, take photos, photos reveal after a set time like a real disposable. Charges by number of guests ($2 for 10 people, $50 for 150). 10–12K weekly active users, ~$22K MRR at 3 months.
+
+## The Commitment Metric Framework
+
+> "Don't write a single line of code until you hit your commitment metric."
+> 
+
+The big insight: **AI tools make it too easy to build instead of validate.** You can vibe-code something in an afternoon, feel productive, and skip the hard part — talking to real people.
+
+### His 5-Step Validation Playbook
+
+1. **Define your commitment metric** — a specific number + specific date. Commitment doesn't have to be payment. For Once it was: *10 events with an actual date and actual intent to use it before writing any code*
+2. **Exhaust personal network** — open X, LinkedIn, Instagram simultaneously. Go through your contacts, circle everyone with a relevant upcoming event
+3. **Build a quick mockup** — max 2–3 days. Figma or any AI tool. Doesn't need to be perfect
+4. **Go where your users live** — Reddit, TikTok, cold DMs. "If you haven't been banned from a platform at least twice, you haven't tried hard enough"
+5. **Get your signal** — whatever count of commitments gives you enough confidence. Then build
+
+### The Mom Test
+
+When validating with friends/family, apply the Mom Test — your mum will love anything you build. Make sure you're getting honest signal, not encouragement. Ask about their existing behaviour, not their hypothetical interest in your product.
+
+## Build Notes
+
+- Built a web app first (1–2 weeks), tested at a real Halloween party, it broke several times, but validated the core concept
+- Threw out the v1 entirely after validation — started fresh for the real build
+- **Never used AI for design** — "consumer apps are a craft. Design requires taste. The more opinionated, the better"
+- Uses **Conductor** to run multiple Claude Code instances across different work trees simultaneously
+
+## Tech Stack
+
+Figma (design — no AI), Claude Code + Conductor (multi-instance), Supabase (DB + backend), Vercel (web)
+
+## Apply to Your Apps
+
+- **JobRunner** — did you hit a commitment metric before building? If not, go validate now. Cold DM 20 active job hunters on LinkedIn. Ask them to commit to logging their next 5 applications in it
+- **Criti** — commitment metric could be: 20 designers/devs agree to submit actual work for critique before you build the full review flow
+- **Conductor** — if you're juggling Kindred, Criti, and JobRunner at the same time in Claude Code, running parallel instances would save a lot of context-switching
+
+---
+
+# 🎥 Video 3 — Chris: Complete Guide from Idea to App
+
+**Channel:** Chris (productivity apps) | **Apps:** Ellie (daily planner), Amy (calorie tracker), personal CRM
+
+https://www.youtube.com/watch?v=cXIWx1eYA9w
+
+## Building Workflow (His Exact Setup)
+
+- **Cursor** on the left — file browser, git history, GitHub PRs, BugBot
+- **Claude Code** on the right — terminal pulled down to the right side of Cursor
+- Model: **Opus 4.5** for Claude Code
+- Always uses **plan mode** (Shift+Tab) — reviews the plan before execution
+- Keyword **`ultrathink`** → Claude Code uses ~40K thinking tokens instead of ~1K. Noticeably better at hard problems
+- **Frontend design plugin** for Claude Code → 20–30% better design
+- When stuck after 2–3 attempts: use `/re` to revert to a previous message and start the branch over
+- **Cursor BugBot** ($40/mo) — automatically reviews pull requests for bugs and security issues
+- $200/mo Claude Code plan running 5 instances, $60/mo Cursor
+
+## Ideation Advice
+
+- Look for problems in your own life first
+- If stuck: look at apps you use and ask "could I make this simpler, faster, or more tailored?"
+- Even saturated categories work if your workflow is differentiated
+
+## Analytics — Set It Up on Day 1
+
+> "You are flying blind if you don't have analytics."
+> 
+- Uses **PostHog** — free tier covers almost everyone
+- Also tracks **LLM observability in PostHog** — cost per user for AI features
+
+### North Star Metric: Week 1 Retention
+
+- How many people who signed up are still using your app 7 days later
+- His calorie app Amy: ~3% (actively trying to improve it)
+- His planning app Ellie: started at 3%, now at 30% after iterating on onboarding
+
+## Apply to Your Apps
+
+- **`ultrathink`** — use whenever Claude Code is stuck on a hard problem
+- **Plan mode (Shift+Tab)** — start every session with this
+- **PostHog + Week 1 Retention** — set it up for all 3 apps
+- **BugBot** — you're a solo dev. $40/mo is cheap insurance
+
+---
+
+# 🎥 Video 4 — 5 Essential Skills to Become a Mobile App Developer
+
+**Channel:** Code with Mosh | **Focus:** Career roadmap for mobile dev
+
+https://www.youtube.com/watch?v=yye7rSsiV6k
+
+## The Core Decision: Native vs Cross-Platform
+
+**Native** = build separately for iOS (Swift) and Android (Kotlin). Full platform control, best performance, but two codebases.
+
+**Cross-platform** = one codebase for both:
+
+| Framework | Language | Made By | Big Apps |
+| --- | --- | --- | --- |
+| React Native | JavaScript + React | Facebook | Microsoft Office, Skype |
+| Flutter | Dart | Google | eBay, Alibaba, Google Pay |
+| Kotlin Multiplatform | Kotlin | JetBrains | McDonald's, Netflix |
+
+**Which to choose:** Already know JavaScript/React → React Native. Starting fresh → Flutter recommended.
+
+## The 5 Skills
+
+1. **Language** — JavaScript or Dart. Commit to one. ~2 months
+2. **Git** — 20% of features cover 80% of daily use. 1–2 weeks
+3. **Data Structures & Algorithms** — where self-taught devs feel pain later. ~1–2 months
+4. **Design Patterns** — 23 classic patterns. Understanding *why* React Native works the way it does. ~2 months
+5. **Mobile Framework** — Flutter or React Native. ~2 months
+
+**Total roadmap to entry-level job: 8–12 months at a few hours/day**
+
+## Apply to Your Apps
+
+- **Design patterns** — if you're hitting architecture problems (state management, data flow confusion), this is the root
+- **React Native** — all your apps use RN. Knowing it was built for JS/React devs explains why certain web patterns translate and others don't
+- **Git discipline** — if you're running multiple Claude Code instances (Conductor), branching strategy matters more
+
+---
+
+# 🧠 Cross-Video Synthesis — Build Practices
+
+| Practice | Jason | Brian | Chris | Your Apps |
+| --- | --- | --- | --- | --- |
+| Opus for planning / Sonnet for building | ✅ | — | ✅ | ? |
+| Plan mode (Shift+Tab) | — | — | ✅ | ? |
+| `ultrathink` keyword | — | — | ✅ | ? |
+| PostHog from day 1 | — | — | ✅ | ❌ |
+| Week 1 retention as north star | — | — | ✅ | ❌ |
+| Commitment metric before building | — | ✅ | — | ? |
+| Conductor (multi-instance Claude Code) | — | ✅ | ✅ | ❌ |
+| Claude Design for UI first | ✅ | — | — | ? |
+| BugBot / automated PR review | — | — | ✅ | ❌ |
+| Supabase | ✅ | ✅ | — | ? |
+| RevenueCat | ✅ | — | — | Kindred ✅ |
+
+---
+
+# 🎯 Action Items
+
+## JobRunner
+
+- [ ]  Set up PostHog — what % of users are still logging applications on day 7?
+- [ ]  Cold DM 20 active job hunters on LinkedIn for real feedback
+- [ ]  App Store: are screenshots optimised? Are you asking for reviews?
+
+## Criti
+
+- [ ]  Commitment metric: get 20 designers/devs to commit to submitting work before building more features
+- [ ]  PostHog setup — track what % submit a second piece of work
+
+## Kindred
+
+- [ ]  PostHog — week 1 retention. Hard paywall + RevenueCat ✅ but what happens before they hit the paywall?
+
+## All Apps
+
+- [ ]  Turn on plan mode in Claude Code (Shift+Tab) — always
+- [ ]  Use `ultrathink` when stuck on hard problems
+- [ ]  Look into Conductor for multi-instance Claude Code
+- [ ]  Set up Cursor BugBot ($40/mo)
+
+---
+
+# 📚 Tech Stack Reference
+
+| Tool | Purpose | Who Uses It |
+| --- | --- | --- |
+| Claude Code (Sonnet) | Building / coding | All |
+| Claude Code (Opus) | Planning / architecture | Jason, Chris |
+| Claude Design | UI design from prompts | Jason |
+| Expo + React Native | Cross-platform mobile | Jason, Nicole |
+| Supabase | Database + backend | Jason, Brian |
+| RevenueCat | Subscription management | Jason, Nicole |
+| PostHog | Analytics + LLM cost tracking | Nicole, Chris |
+| Figma | Human-crafted design | Brian, Chris |
+| Conductor | Multi-instance Claude Code | Brian |
+| Cursor + BugBot | Code review + PR security | Chris |

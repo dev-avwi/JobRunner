@@ -1,0 +1,66 @@
+✖ Build failed
+
+🍏 iOS build failed:
+The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- extraneous '}' at top level
+- type 'StripeTerminalReactNative' does not conform to protocol 'MobileReaderDelegate'
+- type 'StripeTerminalReactNative' does not conform to protocol 'OfflineDelegate'
+- type 'StripeTerminalReactNative' does not conform to protocol 'TapToPayReaderDelegate'
+- (any Error)?)
+- (any Error)?)
+- any Error)
+- (any Error)?)
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- @objc can only be used with members of classes, @objc protocols, and concrete extensions of classes
+- cannot find 'sendEvent' in scope
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'sendEvent' in scope
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'sendEvent' in scope
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'sendEvent' in scope
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot infer contextual base in reference to member 'card'
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot infer contextual base in reference to member 'nonCard'
+- 'nil' requires a contextual type
+- 'nil' requires a contextual type
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- 'nil' requires a contextual type
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- 'nil' requires a contextual type
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+- cannot find 'self' in scope; did you mean to use it in a type or extension context?
+Refer to "Xcode Logs" below for additional, more detailed logs.
+~/workspace/mobile$ 

@@ -1,0 +1,115 @@
+None selected
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+7 of 297
+Re: [Ayden Vogler] Request Access to the ProximityReader APIs; Case-ID: 20927765
+External
+Inbox
+AI Overview
+Entitlement request for Tap to Pay on iPhone granted; check documentation for setup/HIG/App Store submission requirements.
+App Store submission requires declaring entitlement use, providing a test account (recommended), and video walkthrough of enrollment/transaction.
+Marketing must use only Apple-approved assets per Marketing Guidelines; toolkit access provided.
+By Gemini; there may be mistakes. Learn more
+
+Entitlements Support <wallet_entitlements@apple.com>
+Thu 23 Jul, 05:34 (3 days ago)
+to me
+
+Hi team,
+
+
+Your entitlement request for Tap to Pay on iPhone has been granted.
+
+
+To enable this entitlement, please review Setting up the entitlement for Tap to Pay on iPhone. To ensure successful integration of Tap to Pay on iPhone please review the information below.
+
+
+—————————————————
+
+
+Human Interface Guidelines
+Please review the Human Interface Guidelines for Tap to Pay on iPhone. To provide the best experience for your users, please make the best effort to follow these guidelines as closely as possible. If you are interested in feedback on your UX/UI implementation of Tap to Pay on iPhone, you may respond to this thread and we will reach out to assist.
+
+
+—————————————————
+
+
+App Store Connect Submission
+When submitting your app to App Store Connect for the first time with the Tap to Pay on iPhone entitlement, you will need to provide additional details as part of your submission. You will need to add the following information in the notes section of your App Store Connect submission:
+      - Declare how you are using the Tap to Pay on iPhone Entitlement (e.g. general availability, behind a feature flag, etc)
+      - Add details on how the app store team can review your implementation of Tap to Pay on iPhone - you can do one or more of the following:
+                - Provide a Test Account for App Store Team (recommended)
+      - Provide a Video walkthrough or a Document (PDF) to highlight the following step-by-step processes:
+                - Enrollment of Tap to Pay on iPhone, accepting terms and conditions.
+                - Add items to cart, initiate transaction with Tap to Pay on iPhone
+      - Successfully completed transaction
+
+Note: Tap to Pay on iPhone transaction screens cannot be recorded with screen recording tools. Please use a second device to capture video of the iPhone completing the tasks above.
+
+
+Note: If the app store team requires additional details on your implementation of Tap to Pay on iPhone - this will be presented as a rejection, but noting in the message body that it is in fact a request for information. The best way to proceed here is responding on the message thread, as the information will be relayed back to the App Review team.
+
+
+—————————————————
+
+
+MARKETING
+Apple has created a comprehensive Tap to Pay on iPhone Marketing Guide and Toolkit to support you when marketing the availability of Tap to Pay on iPhone to your merchants, partners, and customers.
+
+
+When marketing Tap to Pay on iPhone in your channels, you should only leverage the Apple-approved marketing assets and templates provided in the Tap to Pay on iPhone Marketing Toolkit.
+
+
+Please see the Developer Marketing Guidelines for more details on Marketing Requirements.
+
+
+To access the Tap to Pay on iPhone Marketing Guide and Toolkit, please click here and follow the instructions.
+
+
+Best Regards,
+Zach G.
+Wallet Entitlements Team
+
+Please include the line below in follow-up emails for this request.
+
+Case-ID: 20927765
+On Jul 18, 2026, at 3:08 AM, Unknown Unknown <developer@avwebinnovation.com> wrote:
+
+Hi Zach,
+
+Thanks for the feedback. We've re-recorded the demo as requested.
+
+The new screen recording (uploaded to the File Uploader) shows:
+
+Apple's system-provided Terms and Conditions sheet being presented and accepted during Tap to Pay on iPhone setup — this is the native sheet displayed by the ProximityReader API, not a custom screen.
+A live contactless payment being accepted end to end using Tap to Pay on iPhone.
+Please let us know if anything else is needed.
+
+Best regards,
+Ayden Vogler
+
+Case-ID: 20927765
+
+On Fri, 17 Jul 2026 at 05:52, TTPOI Entitlements <ttpoientitlements@apple.com> wrote:
+Hello, 
+
+Thanks for sharing the updated details of your app with Tap to Pay on iPhone. There are still a few remaining prerequisites that need to be addressed. Kindly review the information, and feel free to reach out if you have any questions or need further clarification
+
+Tap to Pay on iPhone’s Terms and Condition must be presented using Apple's system-provided sheet, which handles presentation and acceptance of the Terms and Conditions. The provided video does not meet this requirement.
+
+Please provide updated screen recordings of Tap to Pay on iPhone.
+
+Please reply to this email and upload the requested material to the File Uploader at your earliest convenience.
+
+Best Regards,
+Zach G.
+Wallet Entitlements Team
+Please include the line below in follow-up emails for this request.
+
+Case-ID: 20927765
+On Jul 16, 2026, at 7:35 AM, Unknown Unknown <developer@avwebinnovation.com> wrote:
+
+Hi Zach, we've addressed all the feedback.
+The app now includes the awareness moment, Terms and Conditions acceptance, and merchant education screens (contactless cards and Apple Pay/digital wallets), and the checkout button follows the HIG. Updated screen recordings have been uploaded to the File Uploader. Case-ID: 20927765.

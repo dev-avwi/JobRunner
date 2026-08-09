@@ -1,0 +1,96 @@
+No Tap to Pay on iPhone - ServiceM8 has this, you only have QR codes and payment links.
+No ServiceM8-style "On My Way" SMS - Auto-send when technician is en route (you have manual SMS).
+Job Queue System (jobs waiting for action) ⚠️ Partial (status-based) Low
+dont work on supplier invoice import yet i just want yto know what it is tho: Supplier Invoice Import (auto-match to jobs) ❌ Manual only Low
+Voice-activated AI assistant ❌ Text-only AI Medium
+
+Great questions! Let me explain each of these features:
+
+📱 Tap to Pay on iPhone
+What it is: Apple's NFC payment feature that lets you accept contactless card payments directly on your iPhone - no card reader hardware needed. Customer taps their card/phone on your iPhone screen and payment is done.
+
+ServiceM8 has it: In AU, UK, US, Canada - tradies can collect payments on-site instantly.
+
+What we have: QR codes (customer scans and pays via Stripe link) and payment links (SMS/email). Works but requires an extra step from the customer.
+
+To add: Would need Stripe Terminal SDK integration with Apple's Tap to Pay APIs.
+
+📍 "On My Way" Auto-SMS
+What it is: When a technician checks out of one job or starts driving to the next, the system automatically sends an SMS to the upcoming customer: "Hi [Name], your technician Mike is on the way and should arrive in approximately 15 minutes."
+
+Why it's valuable: Reduces "where are you?" calls, improves customer experience, feels professional.
+
+What we have: Manual SMS sending - tradie has to type and send themselves.
+
+To add: Trigger SMS when job status changes to "en route" or when GPS detects movement toward next job location.
+
+📋 Job Queue System
+What it is: A holding area for jobs that need attention but aren't ready to schedule yet. Like:
+
+"Waiting for parts"
+"Awaiting customer approval"
+"Needs follow-up quote"
+"Ready to invoice"
+Jobs sit in queues until the blocker is resolved, then get scheduled.
+
+What we have: Status-based filtering (you can filter by status) but no dedicated queue view with custom queue types.
+
+📄 Supplier Invoice Import
+What it is: You photograph or upload a supplier invoice (from Bunnings, electrical wholesaler, etc.), and the system:
+
+OCR scans the invoice
+Extracts parts/materials and costs
+Auto-matches them to the job they belong to
+Updates job costing with actual material costs
+Why it's valuable: Accurate job profitability tracking without manual data entry.
+
+🎤 Voice-Activated AI Assistant
+What it is: Instead of typing, you speak: "Hey ServiceM8, schedule the Smith job for tomorrow at 2pm and send them a confirmation" - and it does it.
+
+What we have: Text-based AI chat for suggestions and analysis.
+
+To add: Would need speech-to-text integration + natural language command processing.
+
+Want me to prioritize implementing any of these? The "On My Way" SMS is probably the quickest win (1-2 days of work).
+
+Worked for 24 seconds
+with the SMS we actually need to improve and integrate it more with the app cause it seems like only within the team and stuff, like we need to make it more clear and usable
+
+You're right! Currently SMS seems buried in team features. Here's what I'm seeing and what we should fix:
+
+Current SMS Issues
+Where SMS exists now:
+
+Team chat/messaging
+Manual SMS sending from job cards
+Twilio integration for receiving/sending
+What's confusing:
+
+No clear "Send SMS to Customer" button on job/quote/invoice pages
+SMS automation settings are hidden in settings
+No visible SMS history on client profiles
+"On My Way" and appointment reminders aren't obvious
+What We Should Build
+1. Prominent Customer SMS Buttons
+
+Add "SMS Customer" button on every job card, quote, and invoice
+One-tap to send common messages: "On my way", "Job complete", "Quote ready"
+2. Client SMS History
+
+Show all SMS conversations on the client detail page
+See what was sent and when
+3. Quick SMS Templates
+
+Pre-written messages: "Running 10 mins late", "On my way", "Job complete - invoice sent"
+One tap to send, no typing needed
+4. Auto-SMS Triggers (make visible)
+
+Move automation settings to a prominent location
+Clear toggles: "Send reminder 24hrs before job", "Send 'on my way' when I start driving"
+5. SMS in the Workflow
+
+When completing a job, prompt: "Send completion SMS to customer?"
+When quote is ready, prompt: "SMS the quote link?"
+Would you like me to create a task list to improve SMS visibility and customer messaging throughout the app?
+
+Worked for 16 seconds

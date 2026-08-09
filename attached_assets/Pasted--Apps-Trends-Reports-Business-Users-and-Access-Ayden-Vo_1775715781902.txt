@@ -1,0 +1,73 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+iOS App
+1.0 Rejected
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+Subscriptions
+Your first subscription must be submitted with a new app version. Create your subscription, then select it from the app’s In-App Purchases and Subscriptions section on the version page before submitting the version to App Review.
+
+Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted from the Subscriptions section. Learn More
+
+Auto-Renewable Subscriptions
+A subscription is a product that allows users to purchase dynamic content for a set period. This type of subscription renews automatically unless cancelled by the user. Once your binary has been uploaded and your first subscription has been submitted for review, additional subscriptions can be submitted using the table below. Learn More
+
+Subscription Groups
+
+You can create a subscription after you create a subscription group. All subscriptions must be a part of a group. Users can only subscribe to one subscription in a group at a time, but can change to another subscription in the same group. If they do, you'll still receive 85% of the proceeds in the second year (after tax, if applicable). Learn More
+
+
+Subscription Group Reference Name
+Subscriptions
+JobRunner Plans
+3
+Billing Grace Period
+A billing grace period lets subscribers retain access to your app's paid content even after their subscription expires due to a billing issue. If Apple successfully recovers the subscription during this grace period, you will not experience any interruption in your revenue. Learn more
+
+Set Up Billing Grace Period
+
+Streamlined Purchasing
+Streamlined purchasing lets customers buy subscriptions from outside your app. You can turn it off for subscriptions with contingent pricing or win-back offers. Learn More
+
+Turned On
+
+Edit
+
+Non-Renewing Subscriptions
+Users can purchase access to services or content for a limited duration, such as a season pass to in-game content. This type of subscription doesn't renew automatically, so users need to purchase a new subscription once it concludes if they wish to retain access.
+
+Manage
+
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

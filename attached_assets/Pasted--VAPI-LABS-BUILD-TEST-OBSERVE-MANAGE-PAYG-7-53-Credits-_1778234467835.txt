@@ -1,0 +1,179 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+7.53 Credits
+Assistants
+3
+
+
+Create Assistant
+
+Search Assistants
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+deepgram · openai · 11labs
+
+Mike's Plumbing Services AI Receptionist
+
+d3d89b1a-baea-43cd-80ce-2b224d3b8311
+
+
+Talk
+
+
+Publish
+
+
+
+
+
+
+
+You're using Vapi's new agent builder. You can switch back to the classic layout anytime from themenu in the header.
+
+Unsaved changes — publish to apply.
+
+Calls
+
+Chat
+
+Sessions
+
+Webhooks
+Time Range
+
+
+Time Range
+Call ID
+
+Call ID
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...4476
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 8, 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+-	
+-
+Web	
+Customer
+May 8, 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+Transcript and Chat
+
+Assistant
+Good day. Thanks for calling Mark's Plumbing Services. How can I help you today?
+Customer ended the call
+07:53 PM
+05/08/2026 19:55 inboundPhoneCall
+Assistant
+Cost: $0.16
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 1m 29s
+019e0703-837...
+View detailed logs for this call session
+Recording
+01:03
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+Latency Summary
+Turns
+8
+Avg Turn
+1920ms
+Latency Breakdown
+Voice
+Avg Latency
+577ms
+LLM
+Avg Latency
+253ms
+Transcriber
+Avg Latency
+294ms
+Turn
+Avg Latency
+1920ms
+Endpointing
+Avg Latency
+0ms
+From Transport
+Avg Latency
+20ms
+To Transport
+Avg Latency
+50ms
+Latency Per Turn
+Individual turn breakdown (all values in milliseconds)
+8 turns
+Turn	Total	Endpointing	Voice	LLM	Transcriber
+#1	1519ms	0ms	820ms	669ms	0ms
+#2	1281ms	0ms	310ms	483ms	443ms
+#3	2091ms	0ms	871ms	0ms	584ms
+#4	1805ms	0ms	778ms	416ms	0ms
+#5	2383ms	0ms	1035ms	0ms	287ms
+#6	3405ms	0ms	0ms	0ms	0ms
+#7	1386ms	0ms	466ms	454ms	464ms
+#8	1489ms	0ms	336ms	0ms	570ms
+Close

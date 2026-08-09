@@ -1,0 +1,93 @@
+AppScout — System Design v2 · April 2026
+Complete System Design
+All Decisions Locked
+Every decision from every conversation, locked and ready to hand to Replit the moment JobRunner ships. Read every section before writing a single line of code.
+
+✓ Vision locked ✓ 24 problems pre-solved ✓ Flow recorder designed ✓ Annotation style locked ✓ Credit system defined Working name: AppScout Web only · V1 MVP
+01 — The vision
+What this product actually is
+The one paragraph that every engineering decision flows from. Replit should read this before touching anything.
+
+The product vision — locked
+AppScout is an AI-powered app quality analyser. The user pastes their app URL and records a walkthrough of their own app. The system replays that recording inside a live browser session, streams the video directly to the user's dashboard, and simultaneously runs Claude vision analysis on every screen as it's visited. Handwritten-style annotations draw themselves directly onto the live video at the exact moment an issue is found. A one-line subtitle appears at the bottom of the video telling the user what the AI is looking at right now. When the session ends the user gets four exports — raw video, annotated video, full PDF report, and individual screenshots. The experience is immersive, premium, and unlike anything that currently exists. Nobody has built this combination of live browser streaming, self-drawing annotations, simultaneous AI analysis, and a complete export suite.
+This is the north star. Every engineering decision that conflicts with this vision needs to be flagged and discussed before proceeding.
+What it is
+An AI that navigates your app, finds design and UX problems in real time, draws attention to them visually, and hands you a complete report you can act on or share with a client.
+What it is not
+Not a crash tester. Not a performance monitor. Not a session recorder for real users. Not a static screenshot uploader. None of those exist in this product.
+02 — Locked decisions
+Every decision confirmed, nothing left open
+These were all confirmed. Replit does not need to make any of these decisions. They are already made.
+
+Flow recorder
+How recording works — locked
+User pastes their app URL. The app loads inside the AppScout dashboard in an embedded browser. They click Start recording. From that moment every scroll, click, form input, hover, and navigation event is captured. They use their app completely normally. A floating toolbar shows recording duration and a manual screenshot button — pressing it flags that screen as a priority for the AI to analyse carefully. When done they click Stop recording. They see a real-time preview of everything that was captured as they recorded, then a full replay before submitting. If they're unhappy with the recording they can redo it completely. One-click redo, no penalty.
+The recording is stored as a Playwright trace file. On submit it gets queued as a crawl job and replayed exactly.
+Pre-recording tips overlay — locked
+Before the recording starts a tips overlay appears for 3 seconds. Tips: Go slowly — pause on each screen for 2-3 seconds. Click everything you want analysed. Use the screenshot button to flag important moments. Navigate through your main user flows. The overlay auto-dismisses and recording begins. Tips are dismissable immediately if the user has seen them before.
+Annotation style — the most important design decision
+Self-drawing annotations — locked
+Every annotation draws itself onto the screen like handwriting. No pen visible — just the annotation appearing. The shape draws first (circle, arrow, or underline depending on issue type), then the label text appears letter by letter after the shape finishes. Total animation duration 600-800 milliseconds per annotation. This is implemented as SVG stroke animation — stroke-dashoffset animates from full path length to zero, making the stroke appear to draw itself. The animation speed makes it feel live and intentional, not like a loading state.
+This animation is the signature visual moment of the product. It is also the latency buffer — the 700ms drawing time masks any slight delay between Claude finishing analysis and the annotation appearing. One mechanism doing two jobs.
+Annotation colours
+Red — critical issues. Amber — warnings. Green — passed checks. Each has its own SVG stroke colour and label background. Consistent with severity system throughout the product.
+Annotation shapes
+Circle — draws around a problematic element. Arrow — points to a specific location. Underline — highlights text copy issues. Shape chosen automatically based on issue type returned in Claude JSON.
+Subtitle system — not a commentator
+Subtitles not commentary — locked
+No narration. No full commentary track. Just clean one-line subtitles at the bottom of the video like a documentary. Maximum 8 words per subtitle. Appears when the AI starts looking at a new screen or finds something worth surfacing. Fades out after 3 seconds. Never competes with what the user is watching. Font is clean and slightly editorial — DM Sans medium weight with generous letter spacing. Subtle dark pill background behind the text for readability over any app colour.
+Status indicator — top right of video
+Three states only: Navigating (when Playwright is moving between screens), Analysing (when Claude is processing a screenshot), Issue found (brief flash with colour pulse when annotation is about to appear). That is all. No other text in the video area.
+Video sync and pause behaviour
+The pause design — locked
+The 2-3 second hold on each new screen is not a loading pause. It is a designed moment. During the hold: the subtitle shows what the AI is looking at, the status shows Analysing, and the annotation begins drawing itself if the analysis is ready. The hold feels like the AI taking a breath to look properly. If it is designed correctly the user never perceives it as waiting — they perceive it as the AI working. The pause must always have visual life. It is never an empty frozen screen.
+Maximum hold is 3 seconds regardless of whether analysis has returned. If Claude is slow the annotation arrives late and attaches to the timeline at the correct timestamp. The video always resumes at 3 seconds. No exceptions.
+Credit and pricing system
+Token-based subscription — locked direction
+Subscription plans include a monthly token allowance. Tokens are spent per scan based on scan type and screen count. Scan types and approximate costs: Full app scan — 100 tokens (up to 30 screens), Scenario scan — 50 tokens (specific user flow), Quick audit — 20 tokens (single screen or small section). Exact token costs to be calibrated once the analysis pipeline is built and real API costs are known — do not hardcode these until then. Top-up packs available for purchase when monthly allowance is exhausted. This follows the Originality.ai model — familiar and understood by developers.
+Token costs must be calibrated against real Claude API costs with a margin. Do not finalise token pricing until the pipeline is built and real costs measured.
+Indie — $29/mo
+Monthly token allowance for solo developers. Full scan, scenario, and quick audit types included. Shareable report link included.
+Team — $99/mo
+Larger token allowance. Up to 5 users. All scan types. Priority analysis queue. PDF export included.
+Agency — $249/mo
+Largest token allowance. Unlimited users. White label report option. Client shareable links with agency branding. Priority support.
+Export suite
+Raw video — MP4
+Clean recording of the browser session with no overlays. Compressed to under 50MB via H.264 CRF 28. Web quality default, full quality option with file size shown before downloading.
+Annotated video — MP4
+Full session with annotation overlays and subtitle text baked in. FFmpeg merges the canvas layer with the raw video. This is the primary shareable asset — plays anywhere without special software.
+Full report — PDF + web
+Every screen thumbnailed. Issues listed by severity with exact location, problem, and fix. Overall score. Breakdown by category and pass type. This is what agencies send to clients.
+Screenshots — ZIP
+Every captured screen as a clean PNG with no overlays. Useful for dropping into Figma, design tools, or Jira tickets. Named by screen path for easy organisation.
+Shareable link
+Generates a unique public URL. Anyone can view the annotated video and full report without an account. Link served from a hosted public report page. Unique token stored in PostgreSQL against the run. Free tier links expire after 30 days. Paid tier links permanent. The shareable link is the primary organic growth mechanic — users share their audit results and others discover the product.
+Product name
+Working name: AppScout — not final
+AppScout is the working name. Final name not decided. Candidates worth considering: Lensed (visual, premium feeling), Flaw (provocative — "run Flaw on your app before your users do"), Screenwise, Auditly, Vantage, Crux, Arca. Honest pick: Lensed or Flaw. Decision needed before buying domain and setting up branding.
+03 — User flow
+Every screen in order
+Sign up
+→
+Setup
+→
+Record flow
+→
+Live analysis
+→
+Report + export
+→
+History
+Screen 1 — Setup
+Left side: URL input, credentials input, custom instruction textarea (optional), analysis type checkboxes. Right side: credit cost estimate for selected scan type, tips panel. Two primary actions: Record my flow (primary, purple button) and Let AI navigate (secondary, V2 only — greyed out in V1 with "Coming soon" label). Credit estimate updates live as user selects analysis types.
+Screen 2 — Recording
+Full screen embedded browser showing the user's app. Floating toolbar at top: recording timer, pause button, screenshot button (flags current screen for priority analysis), stop button. Real-time capture preview shown in a small strip at the bottom — thumbnails of screens captured so far appearing as user navigates. Tips overlay shown for 3 seconds at start then dismissed.
+Screen 3 — Recording review
+User sees full replay of their recording before submitting. Scrubber to jump to any point. List of captured screens on the left. Option to redo recording. Submit button fires the analysis job. Credit cost confirmed before submitting. WebSocket connection opens immediately on submit.
+Screen 4 — Live analysis (core experience)
+Three independent panels. Left sidebar: screen list filling in real time, each with a coloured status dot. Center: live video stream with subtitle overlay at bottom, status indicator top right, annotation layer on top, timeline scrubber at bottom showing every captured screen as a tick mark. Right panel: score updating live, three tabs (Feed / Issues / Screens), live commentary feed, issue cards appearing as findings arrive, four download buttons greyed out until scan completes.
+Screen 5 — Report and export
+Score reveal animation — counts up from zero to final score. Issue count numbers appear one by one. All screen thumbnails displayed in a row, clickable to jump to that screen's detail. Four download buttons now active with file sizes shown. Shareable link generated and displayed with one-click copy. Option to re-run scan with same or modified settings.
+Screen 6 — History dashboard
+All previous scans listed by app URL and date. Score shown per scan. Quick re-run button. Compare two scans side by side (V2 feature, show in UI as coming soon). Token balance displayed prominently with top-up link.

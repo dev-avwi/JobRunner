@@ -1,0 +1,121 @@
+Items Submitted (1)
+You can review and make edits to your items below, or communicate with Apple. Accepted items won't be available for release until all items with issues are resubmitted and accepted. You can also remove those items and resubmit them later.
+Item
+Type
+Review Status
+Action
+iOS App 1.0
+
+1.0.0 (4)
+
+App Version
+Rejected
+2.1.0 Performance: App Completeness
+
+4.8.0 Design: Login Services
+
+Screenshot-1223-113527.pngDownload
+Screenshot-1223-113653.pngDownload
+Screenshot-1223-113725.pngDownload
+Edit
+
+Messages (1)
+
+AppleToday 1:40 PM
+Hello, 
+
+We noticed this is your first app submission and want to congratulate you on joining the Apple Developer Program. We look forward to working together on your submissions.
+
+When App Review identifies an issue with a submission, we’ll contact you with a message in App Store Connect with details about what we found and how to resolve the issue. Learn more about App Review and tips for a smooth review experience. 
+
+See below for additional information about the issues that require your attention for this submission. If you have any questions, we are here to help. Reply to this message in App Store Connect and let us know.
+
+Review Environment
+
+Submission ID: 6fe3fa27-b774-4984-9e08-434e4688666b
+Review date: December 23, 2025
+Review Device: iPad Air 11-inch (M3)
+Version reviewed: 1.0
+
+
+Guideline 4.8 - Design - Login Services
+
+The app uses a third-party login service, but does not appear to offer as an equivalent login option another login service with all of the following features:
+
+- The login option limits data collection to the user’s name and email address.
+- The login option allows users to keep their email address private from all parties as part of setting up their account.
+- The login option does not collect interactions with the app for advertising purposes without consent. 
+
+Next Steps
+
+Revise the app to offer as an equivalent login option another login service that meets all of the above requirements.
+
+If the app already includes another login service that meets all of the above requirements, reply to App Review in App Store Connect, identify which login service meets all of the requirements, and explain why it meets all of the requirements.
+
+Note that Sign in with Apple is a login service meets all the requirements specified in guideline 4.8.
+
+Resources
+
+Learn about the benefits of Sign in with Apple.
+
+
+Guideline 2.1 - Performance - App Completeness
+Issue Description
+
+The app exhibited one or more bugs that would negatively impact users.
+
+Bug description: a server  error message was displayed when we tried to login or sign up
+
+Review device details:
+
+- Device type: iPad Air 11-inch (M3) 
+- OS version: iPadOS 26.2
+
+Next Steps
+
+Test the app on supported devices to identify and resolve bugs and stability issues before submitting for review.
+
+If the bug cannot be reproduced, try the following:
+
+- For new apps, uninstall all previous versions of the app from a device, then install and follow the steps to reproduce.
+- For app updates, install the new version as an update to the previous version, then follow the steps to reproduce.
+
+Resources
+
+- For information about testing apps and preparing them for review, see Testing a Release Build.
+- To learn about troubleshooting networking issues, see Networking Overview.
+
+
+Guideline 2.1 - Information Needed
+
+We have started our review, but we need additional information to continue. Specifically, it appears your app may access or include paid digital content or services, and we want to understand your business model before completing our review. 
+
+Next Steps
+
+Please review the following questions and provide as much detailed information about your business model as you can.
+
+1. Who are the users that will use the paid content, subscriptions, features, and services in the app?
+2. Where can users purchase the content, subscriptions, features, and services that can be accessed in the app?
+3. What specific types of previously purchased content, subscriptions, features, and services can a user access in the app?
+4. What paid content, subscriptions, or features are unlocked within your app that do not use in-app purchase?
+5. How do users obtain an account? Do users have to pay a fee to create an account?
+6. Are the enterprise services in your app sold to single users, consumers, or for family use?
+
+
+Support
+
+- Reply to this message in your preferred language if you need assistance. If you need additional support, use the Contact Us module.
+- Consult with fellow developers and Apple engineers on the Apple Developer Forums.
+- Provide feedback on this message and your review experience by completing a short survey.
+
+Reply to App Review
+
+Date Submitted
+Dec 22, 2025 at 2:39 AM
+Submission ID
+6fe3fa27-b774-4984-9e08-434e4688666b
+Submitted By
+Ayden Vogler
+Last Updated By
+Apple
+Cancel Submission

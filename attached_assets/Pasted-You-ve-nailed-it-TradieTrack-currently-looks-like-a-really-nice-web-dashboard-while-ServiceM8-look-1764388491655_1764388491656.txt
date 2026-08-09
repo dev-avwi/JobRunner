@@ -1,0 +1,212 @@
+You’ve nailed it: TradieTrack currently looks like a really nice web dashboard, while ServiceM8 looks like a native iOS app.
+We don’t want to throw away your layout – just reshape it so it feels “app-y” instead of “website-y”.
+
+I’ll break it into:
+	1.	🔍 What ServiceM8 is doing visually
+	2.	🔍 What TradieTrack is doing now
+	3.	🎯 Concrete design changes to make TradieTrack feel like a top-tier app (while keeping your pages)
+	4.	✏️ A short Replit prompt to start refactoring the UI
+
+⸻
+
+1️⃣ What ServiceM8 is doing (why it feels so “Apple”)
+
+Looking at that ServiceM8 screenshot:
+	•	Big page title: “Activity” – huge, left-aligned, strong weight.
+	•	Minimal chrome: no obvious “website header”; just content and a tiny icon button.
+	•	Pill elements:
+	•	“My Shift” pill at top
+	•	“Post message” card with big, soft corners
+	•	Feed style layout:
+	•	Cards stacked vertically like a social feed.
+	•	Each card feels like a simple, self-contained story: “Your next job…”, “Tap to Pay…”
+	•	Bottom nav is chunky & rounded:
+	•	Large icons and labels, pill-shaped background.
+	•	Feels like a native tab bar, not a website footer.
+	•	Generous spacing & big touch targets:
+	•	Lots of white space, comfortable to tap.
+	•	Strong focus on today and next job:
+	•	“Your next job is scheduled for 4:00pm” front and centre.
+	•	The app is screaming: “Here’s what you need to do right now.”
+
+Overall: soft cards, big headings, feed of “what’s happening now”, chunky bottom nav.
+
+⸻
+
+2️⃣ What TradieTrack is doing right now
+
+From your screenshot:
+	•	Classic SaaS layout:
+	•	Blue top bar with logo/name.
+	•	Big “New Job” button in top-right.
+	•	Info blocks:
+	•	“Demo mode” banner
+	•	“Welcome to TradieTrack (Beta)” card
+	•	“Getting started 3/4” card
+	•	Bottom nav: already there (nice!), but it’s more flat/web-style than chunky/native.
+	•	Content feels more like sections on a webpage than a live “activity feed”.
+
+This is perfect for desktop web, but on phone it feels more like “web app” than “native tool”.
+
+⸻
+
+3️⃣ Concrete changes to make TradieTrack feel like a ServiceM8-level app
+
+Don’t rewrite everything. Same pages, new presentation. Here’s what I’d change.
+
+A. Turn your Home into an “Activity / Today” feed
+
+Rename “Home” to something like Activity or Today and structure it like a feed:
+
+Order of content on mobile:
+	1.	Big greeting + title
+	•	“Good afternoon, Mike”
+	•	Under it, small: “Mike’s Plumbing Services”
+	•	Below that, bold page label: Activity or Today
+	2.	Key banner (like your Beta card)
+	•	Your “Welcome to TradieTrack · Free during beta” fits nicely as the second card.
+	•	Keep the “GST compliant invoices / Stripe secure payments / Data encrypted” with tick icons – that screams “legit”.
+	3.	“Next job” card (copy the idea from ServiceM8)
+	•	Large card:
+Your next job is scheduled for 2:30 PM
+[Client name] – [Suburb]
+[Map preview / basic address line]
+Button: View job
+	•	This should be near the top, above onboarding checklists.
+	4.	Getting started / onboarding card
+	•	Your 3/4 progress bar is perfect – just style it like a card in the feed.
+	5.	Recent activity / notifications cards
+	•	“Invoice #INV-1024 paid”
+	•	“Quote #Q-009 accepted by Sarah Thompson”
+	•	“New message on Job #23”
+
+So your Activity screen becomes a stack of cards, similar to ServiceM8’s feed.
+
+⸻
+
+B. Make cards softer & more native-feeling
+
+Right now your cards are still a bit “web dashboard”. To move towards ServiceM8:
+	•	Increase corner radius on cards (e.g. 16–20px on mobile).
+	•	Slightly increase shadow blur but keep opacity low → soft, floating feel.
+	•	Remove harsh borders; rely more on shadow + background.
+	•	Add subtle section titles above groups:
+	•	“Today”
+	•	“Getting started”
+	•	“Recent activity”
+
+⸻
+
+C. Upgrade your bottom nav to feel like a native tab bar
+
+You’re already using a bottom nav – great. To make it feel more like ServiceM8:
+	•	Give the bottom bar a pill / capsule background on mobile:
+	•	Rounded top corners, a little margin from screen edges.
+	•	Enlarge icons and text slightly.
+	•	Add active tab highlight:
+	•	Filled pill behind the active icon.
+	•	Bolder label.
+	•	Minimise top chrome (on mobile):
+	•	On mobile, the bottom nav should feel like the primary navigation, not the top bar.
+
+⸻
+
+D. Tame the top bar on mobile
+
+On phone screens:
+	•	Consider hiding or shrinking the full “SaaS header”.
+	•	Instead of a chunky top nav, use:
+	•	Small logo/wordmark at top-left (“TradieTrack”)
+	•	Single menu icon / profile on the right
+	•	Big page title just below (“Activity”) like ServiceM8.
+
+Desktop can keep the nice wide SaaS header.
+Mobile should feel more app-y and less website-y.
+
+⸻
+
+E. Make Jobs / Clients / Invoices look like app screens not reports
+
+For each main tab:
+
+Jobs
+	•	List view with full-width job cards, not thin table rows:
+	•	Client name
+	•	Suburb
+	•	Date & time
+	•	Status pill (“Scheduled”, “In progress”, “Done”)
+	•	Big “+ New Job” button floating in the corner or at top; not tiny in the header.
+
+Clients
+	•	Similar card/list view with:
+	•	Client name
+	•	Suburb
+	•	Jobs count
+	•	Tap → client detail page with tabs: Jobs · Quotes · Invoices
+
+Invoices
+	•	Card list:
+	•	Invoice number + client name
+	•	Amount
+	•	Status pill (Paid / Overdue / Draft)
+	•	Again: large touch targets, comfortable spacing.
+
+Think “Apple Contacts / Mail” + “ServiceM8 cards”, not Excel tables.
+
+⸻
+
+F. Visual language & typography tweaks
+	•	Use one strong weight for headings (like your “Good afternoon, Mike”) and keep subtext light.
+	•	Cap the number of fonts/weights.
+	•	Increase vertical spacing between sections to reduce “dashboard clutter”.
+	•	On mobile: aim for big comfortable text, not tiny “SaaS” text.
+
+⸻
+
+4️⃣ Short Replit prompt to start the UI refactor
+
+Here’s a focused prompt you can paste into Replit to start moving in this direction:
+
+REPLIT PROMPT – Make TradieTrack feel like a native mobile app (ServiceM8-style)
+
+I want to update the mobile UI of TradieTrack so it feels more like a native app (similar to ServiceM8) and less like a traditional web dashboard, while keeping the same routes and features.
+
+Please:
+	1.	Activity/Home screen
+	•	Transform the home/dashboard into an “Activity/Today” feed:
+	•	Big greeting (“Good afternoon, Mike”) and business name.
+	•	Bold page label “Activity” under the greeting.
+	•	Cards stacked in this order on mobile:
+	1.	“Demo mode / Beta” banner (if active)
+	2.	“Welcome to TradieTrack · Free during beta” card
+	3.	“Next job” card (shows next scheduled job with time, suburb, and “View job” button)
+	4.	“Getting started” progress card
+	5.	Recent activity / notifications cards.
+	•	Use soft rounded cards (larger border-radius and subtle drop shadows).
+	2.	Layout & header
+	•	On mobile:
+	•	Reduce the heavy top SaaS header; use a light top area with logo + profile, then big title.
+	•	Remove any unused right columns; content should be full-width with max-width and centered.
+	•	On desktop:
+	•	Keep current SaaS layout but ensure cards and sections match the new visual style.
+	3.	Bottom navigation
+	•	Keep the bottom nav, but style it more like a native tab bar:
+	•	Rounded container, slight shadow.
+	•	Larger icons + labels.
+	•	A clear active state pill behind the active tab.
+	4.	Jobs / Clients / Invoices screens
+	•	On mobile, use card lists instead of table-like rows:
+	•	Jobs: client name, suburb, time, status pill.
+	•	Clients: name, suburb, jobs count.
+	•	Invoices: invoice number, client, amount, status pill.
+	•	Ensure tap targets are large and spacing feels like a mobile app.
+	5.	General mobile UX
+	•	Ensure no horizontal scrolling.
+	•	Check that all main pages (Home/Activity, Jobs, Clients, Invoices, More/Settings) feel consistent.
+	•	Use simple, tradie-friendly labels (“New Job”, “Send quote”, “Mark as paid”).
+
+Preserve all existing business logic and routes; this is a UI/UX refactor to make TradieTrack feel like a top-tier tradie app on mobile, similar in quality to ServiceM8, while remaining responsive for desktop.
+
+⸻
+
+If you want, next we can design one specific screen in detail (e.g. the Activity screen or the Job Detail screen) and I’ll literally describe it component by component so you can recreate that “ServiceM8 polish” exactly.

@@ -1,0 +1,229 @@
+Here's everything you need to do before Tuesday April 22.
+
+---
+
+**TONIGHT — Non negotiable**
+
+Build the slides. Open Canva right now. Create a presentation. Here are the exact 9 slides:
+
+**Slide 1 — Your intro**
+Clean slide. Just your name and one line.
+*Ayden Vogler — Founder, JobRunner*
+
+**Slide 2 — The Problem**
+Big bold headline:
+*"350,000+ trade businesses in Australia running on software built in 2012."*
+Three dot points underneath:
+- Missed calls on the job = missed work
+- Invoices never sent = unpaid revenue
+- Payments taking 60+ days = cashflow crisis
+
+**Slide 3 — The Market**
+Four facts large and clean:
+- Tradify — acquired by Constellation Software
+- FieldPulse — raised significant venture capital in the US
+- Australian FSM market growing over 10% per year
+- No modern competitor built for today exists in Australia
+
+**Slide 4 — The Product**
+JobRunner logo centred.
+One sentence: *"A complete field service platform built with the technology that exists today — not the technology of 2012."*
+Two columns of three features each — left side: phone answered automatically creating leads, live GPS team tracking, quotes invoices payments connected. Right side: two-way SMS with clients, safety compliance built in, full iOS and Android.
+
+**Slide 5 — Demo slide**
+Just two lines while you demo live:
+*"The complete workflow — live."*
+*"From missed call to payment collected."*
+Nothing else. This slide stays up while you demo.
+
+**Slide 6 — This is real and ready**
+- Built and tested over 6 months
+- Live on iOS App Store and Android
+- Full end to end workflow working today
+- First pilot customers onboarding this week in Cairns
+- Competing directly with products that sold for hundreds of millions
+
+**Slide 7 — The competition**
+Comparison table. JobRunner vs Tradify vs ServiceM8. Five rows they care about most — calls answered automatically, live GPS, full Android, native safety compliance, price solo tradie.
+
+**Slide 8 — The network effect**
+Simple diagram or just text. Heading: *"Every subcontractor who joins becomes a gateway to the next business."*
+Three dot points explaining the mechanic — subbie works for multiple builders, joins one builder on JobRunner, other builders get pulled in.
+
+**Slide 9 — What I'm looking for**
+Three clear asks:
+1. Connections — trade business owners in FNQ frustrated with current software
+2. Advice — from founders who have scaled before, what to prioritise first 90 days
+3. Direction — funding pathways available in Queensland at this stage
+
+---
+
+**THE COMPLETE SCRIPT**
+
+**Walk in. Stand still. Make eye contact. Then:**
+
+*"Hi everyone. My name is Ayden Vogler. I'm 15 years old, I'm in Year 10 here in Cairns, and over the last 6 months I've built a software platform for Australian trade businesses from scratch.*
+
+*Before I explain what it does — let me show you something."*
+
+Pick up your phone. Call the Vapi number. Put it on speaker. Let the room hear Mike's Plumbing's AI receptionist answer professionally.
+
+Let it run 20-30 seconds. Then hang up.
+
+*"That wasn't JobRunner answering. That was a demo plumbing business called Mike's Plumbing — their virtual receptionist powered through JobRunner. Every business gets their own receptionist with their own name and greeting.*
+
+*And here's what just happened in the app."*
+
+Open the app. Show the lead auto-created.
+
+*"The missed call became a lead automatically. Mike gets a notification. He calls back when he's free. Nothing missed.*
+
+*But that's not actually the impressive part. Let me show you the full system."*
+
+Click to Slide 2.
+
+*"There are over 350,000 trade businesses in Australia. Plumbers, electricians, builders, HVAC. Most of them are running their business from a combination of paper job sheets, WhatsApp group chats, and gut feel.*
+
+*The average trade business loses tens of thousands every year to three things — missed calls that turn into missed jobs, invoices that never get sent because the tradie is too busy, and payments that take months to collect because nobody wants to chase them manually.*
+
+*The software that exists to fix this was built over a decade ago. Tradify. ServiceM8. They haven't kept up."*
+
+Click to Slide 3.
+
+*"The market is proven and it's growing. Tradify was acquired by Constellation Software — one of the world's largest acquirers of vertical software businesses. They only buy proven businesses. FieldPulse in the US raised significant venture capital. The Australian field service market is growing at over 10% a year.*
+
+*But every existing product was designed before modern technology was a practical tool. Nobody has rebuilt this from scratch with what's available today. That's the gap."*
+
+Click to Slide 4.
+
+*"JobRunner is a complete operating system for trade businesses. Not individual features bolted together — one connected system where everything flows.*
+
+*The phone call becomes a lead. The lead becomes a job. The job assigns to a worker. The worker completes it. The invoice creates itself from the time tracking data. The client pays from their phone.*
+
+*Every step connected. Nothing falls through the cracks.*
+
+*Let me show you how it works."*
+
+Click to Slide 5. Put down the clicker. Pick up both phones.
+
+*"This is the manager's view. And this is what one of his workers sees."*
+
+Hold both phones up briefly so the room can see.
+
+*"I just assigned a job to a worker. Watch the second phone."*
+
+Assign a job on your phone. Worker notification fires on the second phone.
+
+*"Notified instantly. No phone call needed. No WhatsApp group.*
+
+*The manager can now see every worker live on a map."*
+
+Open GPS map. Show the live marker.
+
+*"Every worker. Every job. Real time.*
+
+*Job's done. Here's what happens."*
+
+Mark job complete on your phone.
+
+*"The app flags it immediately — completed job, not yet invoiced. One tap creates the invoice from the time tracking data. The client gets an SMS with a payment link."*
+
+Show the SMS firing. Open the client payment portal briefly.
+
+*"Client pays from their phone. Invoice marked paid. Receipt generated. Call to cash — completely connected.*
+
+*That's what I mean by built with better technology. Not individual features. One system that runs the whole day."*
+
+Click to Slide 6.
+
+*"This isn't a concept or an MVP. It's built and it works.*
+
+*It's been tested across every scenario — solo tradies, teams of workers, subcontractors juggling multiple businesses, clients paying deposits, safety compliance for high risk jobs.*
+
+*First pilot customers are starting this week here in Cairns."*
+
+Click to Slide 7.
+
+*"Against the two main competitors — JobRunner wins on connected workflow, GPS tracking, safety compliance, and Android support.*
+
+*Tradify has no live GPS. ServiceM8 has no Android app — serious problem when half the Australian market uses Android. Neither has a connected call to cash workflow.*
+
+*Same price point for a solo tradie. Significantly cheaper for teams."*
+
+Click to Slide 8.
+
+*"This is the part I'm most proud of from a product design perspective.*
+
+*A subcontractor in construction typically works for three or four different builders — not full time for any of them, project by project.*
+
+*When one builder puts their subbies on JobRunner, those subbies now have the app. Their schedule, their jobs across every business in one place.*
+
+*When they go to work for the next builder and that builder isn't on JobRunner — the subbie asks why. That builder signs up.*
+
+*Every subcontractor who joins through one business becomes a natural entry point for every other business they work for. Growth compounds without paid acquisition.*
+
+*That's not a feature. That's a distribution mechanic built into the product itself."*
+
+Click to Slide 9.
+
+*"I'm not here to pitch and disappear. I'm here because this room has people who have built things before.*
+
+*Three things would genuinely help me right now.*
+
+*First — introductions. If anyone here knows a tradie or trade business owner who is frustrated with what they're currently using, that introduction is worth more to me than anything else.*
+
+*Second — advice. I know how to build software. I'm still learning how to sell it and scale it. Anyone who has been through the early customer acquisition stage and is willing to share what actually worked — I want to hear that.*
+
+*Third — direction on funding. I don't know what's available in Queensland for something at this stage. Grants, accelerators, angels — I'd love to understand the landscape.*
+
+*My name is Ayden Vogler. I'm 15, I'm from Cairns, and I built this because I saw a real problem and figured someone should fix it.*
+
+*Happy to take any questions."*
+
+Step back. Done.
+
+---
+
+**QUESTIONS TO PREPARE FOR**
+
+*"Do you have paying customers?"*
+*"First pilot customers onboarding this week — two local Cairns businesses as founding members. Launching paid subscriptions immediately after."*
+
+*"Who legally owns this?"*
+*"The operating company is LinkUp2Care Pty Ltd, ABN 34 692 409 448. My mum is the director on record. I run the product and make all the decisions."*
+
+*"Did you build this yourself?"*
+*"Yes — using modern development tools including AI coding assistants. That's part of why a solo developer can ship this much in 6 months. Every professional developer uses these tools now."*
+
+*"How are you going to acquire customers?"*
+*"Direct outreach to local Cairns trade businesses. Cold calling with a pain-first script — I ask about their current workflow before I mention the product. The subcontractor network effect handles compounding growth."*
+
+*"What's the pricing?"*
+*"Free starter plan. Pro at $49 a month for solo tradies. Team at $99 for up to five workers. Business at $199 for up to fifteen. AI receptionist is a $60 add-on."*
+
+*"What do you need from us?"*
+*"Connections, advice, and direction on funding. Not a cheque today — just the right conversations."*
+
+---
+
+**YOUR PRACTICE SCHEDULE**
+
+Tonight — build slides in Canva. Get them done before you sleep.
+
+Sunday — run through the full presentation out loud alone twice. Time it. Should be under 10 minutes.
+
+Monday — practice the two phone demo three times with a real second phone. Make sure notifications fire. Make sure the GPS map shows. Have someone hold the second phone.
+
+Tuesday morning — charge both phones to 100%. Get to JCU early. Connect to WiFi on both phones. Run the demo once in the room before anyone arrives.
+
+---
+
+**THE THREE THINGS THAT WILL MAKE THIS MEMORABLE**
+
+Calling the AI receptionist live in the first 60 seconds — nobody in that room has ever seen that before.
+
+The two phone demo — showing a real system with multiple users simultaneously is what separates you from everyone who just shows slides.
+
+Your personal story — 15 years old, Year 10, Cairns, built it solo. That's the line they'll remember and repeat to other people.
+
+Go build the slides tonight.

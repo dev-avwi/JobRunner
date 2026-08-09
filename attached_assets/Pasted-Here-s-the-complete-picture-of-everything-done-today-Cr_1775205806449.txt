@@ -1,0 +1,36 @@
+Here’s the complete picture of everything done today:
+
+Critical Bugs Found And Fixed During Integration Testing
+The integration test caught five real bugs that would have broken things for actual users:
+The most critical — workers and subbies were permanently stuck in an infinite onboarding loop. The onboarding completion endpoint was behind ownerOnly() middleware, and the error was silently swallowed so nobody would have known why. Fixed with a dedicated endpoint that works for all user types.
+The invite codes table didn’t exist in the database at all. Every invite code feature would have crashed the moment a real user tried it. Fixed.
+The availability status column was missing from the database. The subbie dashboard would have crashed on load. Fixed.
+Workers weren’t getting their active business ID set when redeeming invite codes, so they’d connect to a business but not actually be in the right context. Fixed.
+App Store link was generic. Now points to the actual JobRunner app ID. Google Play link added.
+
+All Six Subcontractor Tasks Now Complete And Tested
+Task 17 — Restricted mobile role. Subbies see only their assigned jobs. No financials, no client list, no team management. Server-side enforcement on every API endpoint not just UI hiding.
+Task 18 — Magic link and portal. Owners send a one-tap SMS to any phone number. The web portal lets them update status, add notes, upload photos. After 3 completions it prompts them to download the full app with correct App Store and Play Store links.
+Task 19 — Privacy-aware location tracking. Strictly job-scoped. Starts when subbie taps Start Job, stops when they tap Complete. Between jobs they’re completely invisible on all maps. Privacy banner shown in the app throughout. Each business is fully isolated from seeing another business’s subbie tracking.
+Task 20 — Multi-business workspace switching. Subbies working for multiple JobRunner businesses switch workspaces with one tap. Data is completely isolated between workspaces. Job conflict detection fires when two businesses assign overlapping jobs. Pending invites auto-detected on login.
+Task 21 — Onboarding role split. Three completely separate paths from the first screen — Owner, Worker/Manager, Subcontractor. Owner gets business setup, trade selection, team size, plan picking. Worker just enters a 6-character invite code and lands on their dashboard. Subbie gets privacy explanation screen as a mandatory step before their dashboard.
+Task 22 — Subcontractor purpose-built dashboard. Not a modified owner dashboard — built from scratch. Shows today’s jobs across all connected businesses in a single timeline, colour coded by business. Availability toggle visible to all connected businesses. Incoming job requests with Accept/Decline buttons. Active job card with live timer. Earnings summary across all businesses.
+
+Quote And UX Fixes Done Earlier
+SendGrid SSL fix — quote and invoice links were routing through a broken SSL subdomain causing security warnings. Disabled click tracking entirely. Links now go directly to jobrunner.com.au.
+Quote auto-revert — editing a sent quote’s line items automatically reverts status to Draft so the owner is prompted to resend.
+Resend and Mark Accepted buttons added to sent quotes.
+Quote edit history modal showing every version with who changed what and when.
+Job detail card ordering — Time Tracking card now appears near the top for in-progress jobs.
+
+All 10 Integration Scenarios Pass
+Every connection point between the subcontractor tasks was tested and verified. The system works as one connected platform not as isolated features.
+
+What’s Still On Your Plate
+App Store submission — has this happened yet? This is the only remaining blocker that has a timeline you can’t control.
+Xero certification — keep pushing, 4-6 weeks.
+Test the quote flow yourself — send a real quote to your own phone and click every link to confirm no SSL warning in production.
+
+The Honest Bottom Line
+JobRunner is now a complete trades ecosystem platform. Business owners, workers, managers, and subcontractors all have purpose-built experiences. The network effect is real — every subbie who joins through one business becomes a gateway to every other business they work for.
+You’re done building. Start selling.​​​​​​​​​​​​​​​​

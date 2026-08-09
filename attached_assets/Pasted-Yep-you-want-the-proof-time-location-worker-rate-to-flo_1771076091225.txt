@@ -1,0 +1,203 @@
+Yep — you want the proof (time + location + worker/rate) to flow all the way through into quotes → invoices → client portal, automatically.
+
+Here’s the clean way to spec it to Replit so it’s reliable and looks professional.
+
+⸻
+
+1) What must appear automatically on an Invoice
+
+Invoice header (standard)
+	•	Business name + logo
+	•	ABN (optional)
+	•	Owner name + phone/email
+	•	Client name + address
+	•	Job name + job address
+	•	Invoice number + date + due date
+	•	Payment details
+
+Labour section (auto from time tracking)
+
+For each worker (or aggregated), show:
+	•	Worker name (optional toggle for client)
+	•	Role (employee/subcontractor) (internal)
+	•	Hourly rate (auto)
+	•	Hours worked (auto)
+	•	Labour subtotal (auto)
+
+Example layout
+	•	Labour — Ayden Vogler — $85/hr — 6.25 hrs — $531.25
+	•	Labour — Worker 2 — $70/hr — 3.00 hrs — $210.00
+
+✅ Requirement: the invoice must pull rate from the worker profile or job assignment rate override.
+
+⸻
+
+2) How worker rate should work (so it’s bulletproof)
+
+You need 3 layers, in order of priority:
+
+Rate priority order
+	1.	Job assignment rate override (highest priority)
+	2.	Worker default rate (from worker profile)
+	3.	Company default rate (fallback)
+
+So if someone’s a subcontractor or a specialist, you can override just for that job.
+
+⸻
+
+3) Time tracking → Timesheet → Invoice pipeline
+
+Data model
+	•	TimeEntry (raw logs): clock in/out, edits, GPS loss flags
+	•	TimesheetSummary (computed): hours per worker per job per day
+	•	InvoiceLineItems (final): labour lines + materials lines + discounts + GST
+
+✅ Rule: never calculate invoice totals directly from raw logs every time.
+Compute a stable “timesheet summary”, then invoice uses that.
+
+⸻
+
+4) Proof on the Invoice (GPS/Geofence)
+
+You have two options depending on how “legal proof” you want it.
+
+Option A (Clean & Client-Friendly)
+
+Show a simple summary:
+	•	“Work period: 7:58am – 3:42pm”
+	•	“Total billable hours: 6.25”
+	•	“Location: [Job Address]”
+	•	“Tracking summary: Verified”
+
+✅ This keeps it readable.
+
+Option B (Detailed Proof Attachment)
+
+Invoice includes a link or attachment:
+	•	“View time & location log” (portal link)
+	•	Includes:
+	•	arrival/departure
+	•	GPS accuracy
+	•	GPS signal loss notes
+	•	manual edit logs
+
+✅ This is what Nathan wanted for disputes.
+
+Best practice:
+Keep Option A on invoice PDF, and Option B as a link/attachment.
+
+⸻
+
+5) Quotes vs Invoices (important)
+
+Quotes should NOT show time tracking
+
+Quotes are estimates. Instead show:
+	•	Estimated labour hours (manual estimate by owner/manager)
+	•	Rate
+	•	Materials allowance
+	•	Terms
+
+But once job starts, the quote can convert to an invoice where actual tracked time replaces estimates.
+
+⸻
+
+6) The “auto rate” + “auto time” rules you want
+
+Invoice generation rules
+
+When generating invoice:
+	1.	Gather all time entries for job between:
+	•	job start date/time → job completion
+	2.	Group by worker
+	3.	Apply rate priority rules (job override → worker default → company default)
+	4.	Round time consistently (you choose):
+	•	nearest 5 minutes OR
+	•	nearest 0.1 hour OR
+	•	exact to minute (recommended for fairness)
+	5.	Produce labour line items per worker
+	6.	Add materials line items (from materials list)
+	7.	Add optional travel charge line item (if enabled)
+	8.	Generate PDF + portal link
+
+⸻
+
+7) Replit Implementation Checklist (copy/paste)
+
+Invoice Auto Labour Lines
+	•	Add Worker model fields:
+	•	default_hourly_rate
+	•	display_name
+	•	optional: hide_name_on_invoice toggle
+	•	Add JobAssignment model:
+	•	job_id
+	•	worker_id
+	•	hourly_rate_override (nullable)
+	•	Add TimesheetSummary generator:
+	•	job_id
+	•	worker_id
+	•	total_seconds
+	•	start_time
+	•	end_time
+	•	gps_verified flag
+	•	gps_loss_events count
+	•	manual_edits count
+
+Invoice PDF Output
+	•	PDF must include:
+	•	work period start/end
+	•	total hours
+	•	labour line items per worker w/ rate
+	•	materials section
+	•	subtotal/GST/total
+	•	Add optional “Proof link”:
+	•	portal_url + “Tracking report”
+
+GPS/Geofence Logging
+	•	If geofence prompts triggered:
+	•	log event type (ARRIVAL_PROMPTED, EXIT_PROMPTED)
+	•	If GPS lost:
+	•	log event + timestamp
+	•	Invoice should show:
+	•	“GPS tracking interruptions: X”
+	•	“Manual time edits: Y”
+
+Quote → Invoice conversion
+	•	Quote includes estimated hours + rate
+	•	Invoice replaces estimate with tracked hours (or shows both with “estimated vs actual”)
+
+⸻
+
+8) What the client sees (clean + professional)
+
+On invoice PDF:
+	•	Labour summary
+	•	Worker rate + hours
+	•	“Work performed at job address”
+	•	Optional “Tracking report link”
+
+In portal link:
+	•	Timeline
+	•	GPS travel map (On My Way only)
+	•	Arrival time / departure time
+	•	Before/after photos
+	•	Worker + owner contacts
+	•	Download invoice, quote, certificates
+
+⸻
+
+9) One key decision you need to pick
+
+How do you want time to round?
+	•	Exact minutes (most fair, most accurate)
+	•	Nearest 5 minutes (industry common)
+	•	Nearest 15 minutes (some tradies do this)
+
+If you don’t choose, do nearest 5 minutes by default.
+
+⸻
+
+If you want, I’ll write you:
+	•	A complete Invoice PDF template spec (exact sections + layout)
+	•	The data schema for worker rates, assignments, timesheets
+	•	The client-facing “Tracking Report” page layout that’s dispute-proof

@@ -1,0 +1,876 @@
+1️⃣ Checklists to keep you on track
+🧩 A. Modern App Checklist (UI/UX & behaviour)
+
+ Clean card-based layout, rounded corners, soft shadows
+
+ Primary colour #007AFF, accent #00C853, light grey background
+
+ Responsive (mobile + desktop)
+
+ Sidebar on desktop, bottom nav on mobile
+
+ Email-based login (no passwords)
+
+ Simple onboarding, max 2–3 short steps
+
+ Role-based views (owner vs tradie)
+
+ Empty states with friendly helpful text
+
+ Clear error/success messages (toasts or banners)
+
+ Consistent typography and spacing
+
+ Search for jobs/clients
+
+ Dark text on light, easy to read
+
+🧱 B. Feature Checklist (what the app should include)
+
+Core:
+
+ Email login + code verification
+
+ Onboarding: solo vs team
+
+ Business + user profile
+
+ Roles: owner / manager / tradie
+
+ Owner/manager dashboard
+
+ Tradie dashboard (“My Day”)
+
+ Jobs list + job detail
+
+ Job statuses (draft, scheduled, in progress, completed, invoiced, paid)
+
+ Job photos (before/after)
+
+ Job file attachments (PDFs, etc.)
+
+ Job notes
+
+ Job checklists (simple tick-list)
+
+ Time tracking (start/finish job)
+
+ Clients list + client detail
+
+ Quotes list + detail
+
+ Quote Accept/Decline
+
+ Invoices list + detail
+
+ GST toggle for AU
+
+ Invoice number auto generation
+
+ Calendar view of jobs
+
+ Activity feed
+
+ Team management (invite, roles)
+
+ Job chat (per-job)
+
+ Team chat page
+
+ Map view / “Open in Google Maps” from job
+
+ Settings page (profile, business, team)
+
+AI placeholders:
+
+ AI “rewrite” job description
+
+ AI “summarise notes”
+
+ AI “draft quote items”
+
+ AI “draft invoice email”
+
+ AI “summarise client”
+
+ AI “suggest actions” on dashboard
+
+🧪 C. Testing Checklist
+
+Ask Replit to:
+
+ Set up Vitest + React Testing Library for unit/integration tests
+
+ Set up Playwright (or Cypress) for E2E tests
+
+Basic tests:
+
+ Unit: invoice total function
+
+ Unit: GST calculation
+
+ Unit: status label mapping
+
+ Integration: Jobs list renders mock jobs
+
+ Integration: Quote Accept/Decline updates status
+
+ E2E: create job → see it on dashboard
+
+ E2E: create job → create quote → convert to invoice
+
+ E2E: start job → stop job → time recorded
+
+2️⃣ FULL PROMPT FOR REPLIT (COPY-PASTE THIS)
+
+Here’s the big one. This includes everything we’ve talked about: features, roles, onboarding, dashboards, chat, and testing.
+
+PROMPT START
+
+I’m building a SaaS app called TradieTrack for tradies to manage jobs, clients, quotes, invoices, teams, and team communication.
+
+I want you to generate a clean React front-end (React + React Router, TypeScript if possible) with:
+
+Email-based login
+
+Simple multi-step onboarding
+
+Role-based dashboards (owner vs tradie)
+
+Jobs, clients, quotes, invoices, calendar
+
+Job chat + Team chat
+
+Team management
+
+Time tracking
+
+Job checklists
+
+File uploads (mock UI)
+
+GST toggle
+
+Quote Accept/Decline
+
+Map “open in Google Maps”
+
+Activity feed
+
+AI helper placeholders
+
+Basic testing setup
+
+You can use mock data and front-end state only for now. I will hook up Supabase/Firebase later.
+
+1. Auth & Onboarding
+
+Login flow:
+
+Login is email-based, no password.
+
+Step 1: email input + button “Continue with Email”. On submit, call requestLoginCode(email) (mock function).
+
+Step 2: code input (6-digit), button “Verify & Continue”. On submit, call verifyLoginCode(email, code) (mock).
+
+On success:
+
+If isFirstLogin → go to onboarding.
+
+Otherwise → straight to /dashboard.
+
+You can hardcode isFirstLogin as true for now.
+
+Onboarding flow:
+
+Step 1 – Work style
+
+Screen title: “How do you work?”
+
+Two large cards:
+
+“I work on my own” → value solo
+
+“I have a team” → value team
+
+Clicking one saves choice and goes Next.
+
+Step 2A – Solo (if solo)
+
+Title: “Tell us a bit about your business”
+
+Fields:
+
+Business Name
+
+Your Name
+
+Phone Number
+
+Trade Type (dropdown: Plumbing, Electrical, Carpentry, Landscaping, General Handyman, Other)
+
+Button: Continue → call completeOnboarding({ mode: "solo", businessInfo }).
+
+Step 2B – Team (if team)
+
+Title: “Set up your business”
+
+Fields:
+
+Business Name
+
+Your Name
+
+Your Role (Owner / Manager / Admin)
+
+Business Phone Number
+
+Trade Type (same dropdown)
+
+Team Size (radio: 1–3, 4–10, 11+)
+
+Button: Continue → go to Step 3B.
+
+Step 3B – Invite team (optional)
+
+Title: “Invite your team (optional)”
+Text: “You can add other tradies or office staff now, or do it later in Settings.”
+
+List of repeatable rows: Name, Email, Role (Tradie / Office / Manager).
+
+Buttons:
+
+“Send invites & Finish”
+
+“Skip for now”
+
+Both call completeOnboarding({ mode: "team", businessInfo, invites }).
+
+For now, completeOnboarding should:
+
+Create a mock currentUser object in context or global state:
+
+{
+  id: "user_1",
+  name: "John Example",
+  email: "john@example.com",
+  role: "owner" | "manager" | "tradie",
+  business: {
+    id: "biz_1",
+    name: "Cairns Plumbing Co",
+    tradeType: "Plumbing"
+  }
+}
+
+
+Navigate to /dashboard.
+
+2. Roles & Layout
+
+Roles:
+
+owner
+
+manager
+
+tradie
+
+Use a currentUser.role field to switch behaviour.
+
+Layout:
+
+Use an AppLayout with:
+
+Left sidebar (desktop) with links:
+
+Dashboard
+
+Jobs
+
+Clients
+
+Quotes
+
+Invoices
+
+Calendar
+
+Team Chat
+
+Settings
+
+Top bar with page title, subtitle, user summary.
+
+On mobile:
+
+Bottom nav with icons: Dashboard, Jobs, Clients, Invoices, More.
+
+In “More”: Calendar, Team Chat, Settings.
+
+Design language:
+
+Primary: #007AFF
+
+Accent: #00C853
+
+Background: #F5F7FA
+
+Cards: white, 10–12px radius, soft shadow.
+
+Typography: modern sans-serif, consistent spacing.
+
+Use simple cards, tables, and clean buttons.
+
+3. Dashboards (Role-Based)
+
+Make a single Dashboard page that renders different sections based on currentUser.role.
+
+Owner/Manager dashboard:
+
+Greeting: “Good morning, {name}” + business name
+
+Stat cards row:
+
+Jobs today (number)
+
+Open jobs
+
+Overdue invoices
+
+Revenue this month (mock sum)
+
+“Jobs today” table:
+
+Job title
+
+Assigned to
+
+Time
+
+Status
+
+“Activity feed” card:
+
+List items like:
+
+“Sarah completed Job #102”
+
+“Invoice INV-00021 marked as paid”
+
+“AI suggestions” card:
+
+Static list, e.g.
+
+“Draft reminders for 3 overdue invoices”
+
+“Review 2 unscheduled jobs”
+
+Tradie dashboard:
+
+Greeting: “Good morning, {name}”
+
+Highlight card: “Next job”
+
+Job title
+
+Time
+
+Address
+
+Button: “Open job”
+
+“My jobs today” list:
+
+Cards with:
+
+job title
+
+address
+
+time
+
+status
+
+Quick actions:
+
+“View all jobs”
+
+“Open Team Chat”
+
+“Upload photos” (link to current/next job)
+
+Optional mini list: “This week’s jobs”.
+
+4. Core Pages & Features
+4.1 Jobs (/jobs + /jobs/:jobId)
+
+Jobs List (/jobs):
+
+Filter by status (All, Draft, Scheduled, In progress, Completed, Invoiced, Paid).
+
+Search bar (job title or client).
+
+Table columns:
+
+Job Title
+
+Client
+
+Status (colour-coded pill)
+
+Date/Time
+
+Address
+
+Assigned To
+
+“+ New Job” button opens basic job creation form.
+
+Job Detail (/jobs/:jobId):
+
+Header:
+
+Job title
+
+Status pill
+
+Buttons:
+
+“Start job” (starts time tracking)
+
+“Finish job” (stops time tracking, records duration)
+
+“Create Quote”
+
+“Create Invoice”
+
+“Open in Google Maps” (link to https://maps.google.com/?q={address})
+
+Sections (tabs or vertical):
+
+Overview
+
+Client info (name, phone, email)
+
+Address
+
+Description text area
+
+Small button “🤖 Rewrite with AI” (no real AI yet, just placeholder handler)
+
+Timeline / Activity
+
+List of events:
+
+Job created
+
+Status changes
+
+Time tracking events
+
+Files uploaded, etc. (mocked)
+
+Photos & Files
+
+“Before” and “After” labels
+
+Photo grid (mock URLs)
+
+“Upload photo” button (UI only)
+
+File list (e.g. plans.pdf, receipt.pdf)
+
+Notes
+
+Multi-line text area for notes
+
+Button: “🤖 Summarise notes” (placeholder)
+
+Checklists
+
+Simple list of checklist items:
+
+e.g. “Confirm access to property”, “Turn off main water”, etc.
+
+Checkboxes to tick them off
+
+You can keep items in local state.
+
+Time Tracking
+
+Show total time spent on job
+
+Show event log:
+
+“Started at X”
+
+“Ended at Y”
+
+Job Chat
+
+See “Messaging” section below.
+
+Linked Documents
+
+List any related quotes/invoices.
+
+4.2 Clients (/clients + /clients/:id)
+
+Clients list:
+
+Columns:
+
+Name
+
+Phone
+
+Email
+
+Jobs
+
+Outstanding balance (mock)
+
+Client Detail:
+
+Header:
+
+Name
+
+Contact info
+
+Sections:
+
+Overview
+
+Jobs history
+
+Quotes
+
+Invoices
+
+Files
+
+Button: “🤖 Summarise this client” (placeholder)
+
+4.3 Quotes (/quotes + detail)
+
+Quotes list:
+
+Columns:
+
+Quote #
+
+Client
+
+Job
+
+Date
+
+Total
+
+Status (Draft / Sent / Accepted / Declined)
+
+Quote detail:
+
+Header:
+
+Quote #
+
+Status
+
+Buttons:
+
+“Send quote” (no backend, just change status to Sent)
+
+“Accept quote” (set status Accepted, create job or update job status)
+
+“Decline” (status Declined)
+
+Line items table:
+
+Description
+
+Quantity
+
+Unit price
+
+Line total
+
+Subtotal, GST (10% toggle), Total
+
+Button: “🤖 Suggest line items” (placeholder)
+
+4.4 Invoices (/invoices + detail)
+
+Invoices list:
+
+Columns:
+
+Invoice #
+
+Client
+
+Job
+
+Due date
+
+Total
+
+Status (Draft / Sent / Paid / Overdue)
+
+Invoice detail:
+
+Header:
+
+Invoice #
+
+Status
+
+Buttons:
+
+“Mark as sent”
+
+“Mark as paid”
+
+“Download PDF” (mock function, can just show a message)
+
+Line items table similar to quote
+
+Subtotal, GST, Total
+
+Button: “🤖 Draft invoice email” (placeholder text “Hi {Client}…”)
+
+4.5 Calendar (/calendar)
+
+Simple month or week view.
+
+Show jobs on their scheduled date.
+
+Clicking a job opens Job Detail.
+
+5. Team Management (Settings → Team)
+
+/settings with tabs:
+
+Profile – name, email
+
+Business – business name, trade type, phone
+
+Team (only for owner/manager)
+
+Team tab:
+
+Table of team members:
+
+Name
+
+Email
+
+Role (Owner / Manager / Tradie / Office)
+
+Status (Active / Pending)
+
+“Invite team member” button:
+
+Opens modal: Name, Email, Role
+
+Adding creates row with status “Pending”
+
+All of this can be local state + mock data.
+
+6. Messaging (Job Chat + Team Chat)
+
+Team Chat (/team-chat):
+
+Title: “Team Chat”
+
+Subtext: “Use this to coordinate with your team.”
+
+Chat window:
+
+Messages list:
+
+sender name
+
+role
+
+timestamp
+
+content
+
+Input at bottom: “Type a message…”
+
+“Send” button adds to messages list.
+
+Add unread badge on sidebar if there are messages marked unread (you can just mock this logic).
+
+Job Chat (inside Job Detail):
+
+Within Job Detail, add a “Job Chat” section.
+
+Works like Team Chat, but for that job only (jobId scoped).
+
+Mock an initial set of messages per job.
+
+No backend or real-time yet; just keep everything in state.
+
+7. Activity Feed
+
+On the Owner/Manager dashboard, show a card:
+
+“Recent activity”
+
+List items like:
+
+“John started Job ‘Leaking shower repair’”
+
+“Invoice INV-102 marked as Paid”
+
+“Quote Q-305 sent to Sarah Smith”
+
+Use mock data, update when user actions happen if easy.
+
+8. AI Helper Placeholders
+
+Add AI buttons:
+
+Job description: “🤖 Rewrite with AI”
+
+Notes: “🤖 Summarise notes”
+
+Quotes: “🤖 Suggest line items”
+
+Invoices: “🤖 Draft invoice email”
+
+Client page: “🤖 Summarise this client”
+
+Dashboard suggestions card: static suggestions
+
+For now, they can just call stub functions that update text with some placeholder content.
+
+9. Maps Integration (basic)
+
+On Job Detail:
+
+Show address in Overview.
+
+“Open in Maps” button that links to:
+https://maps.google.com/?q=${encodeURIComponent(address)}
+
+This just opens Google Maps.
+
+10. Testing Setup
+
+Please also:
+
+Set up Vitest + React Testing Library for unit & integration tests.
+
+Set up Playwright for E2E tests.
+
+Add example tests:
+
+Unit tests:
+
+calcInvoiceTotal(items) – adds up line items correctly.
+
+applyGST(amount) – adds 10% correctly.
+
+getStatusLabel(status) – returns the right label.
+
+Integration tests:
+
+<Jobs /> renders a list of jobs from mock data.
+
+<QuoteDetail /> updates status when Accept/Decline is clicked.
+
+E2E tests (Playwright):
+
+create-job.spec – user logs in (mock), creates new job, sees it on Jobs page and Dashboard.
+
+quote-flow.spec – create quote → mark as sent → accept → see linked to job/invoice.
+
+11. Code Structure
+
+Suggested structure:
+
+src/
+
+App.tsx
+
+routes/
+
+Dashboard.tsx
+
+Jobs.tsx
+
+JobDetail.tsx
+
+Clients.tsx
+
+ClientDetail.tsx
+
+Quotes.tsx
+
+QuoteDetail.tsx
+
+Invoices.tsx
+
+InvoiceDetail.tsx
+
+Calendar.tsx
+
+TeamChat.tsx
+
+Settings.tsx
+
+Auth.tsx (login + onboarding)
+
+components/
+
+layout/AppLayout.tsx
+
+layout/Sidebar.tsx
+
+layout/TopBar.tsx
+
+ui/Card.tsx
+
+ui/Button.tsx
+
+ui/Input.tsx
+
+ui/Badge.tsx
+
+ui/StatCard.tsx
+
+context/
+
+AuthContext.tsx (currentUser)
+
+DataContext.tsx (mock jobs, clients, etc.)
+
+data/
+
+mockJobs.ts
+
+mockClients.ts
+
+mockQuotes.ts
+
+mockInvoices.ts
+
+mockMessages.ts
+
+utils/
+
+calcInvoiceTotal.ts
+
+applyGST.ts
+
+statusHelpers.ts
+
+tests/ for Vitest + Playwright configs.
+
+The key is: clean, modern, role-based, with all flows wired as mock front-end so I can connect a backend later.
+
+PROMPT END

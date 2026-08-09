@@ -1,0 +1,42 @@
+Run expo doctor
+
+
+1
+3s
+
+
+Running "expo doctor"
+Running 17 checks on your project...
+14/17 checks passed. 3 checks failed. Possible issues detected:
+Use the --verbose flag to see more details about passed checks.
+✖ Check that required peer dependencies are installed
+Missing peer dependency: expo-font
+Required by: @expo/vector-icons
+Advice:
+Install missing required peer dependency with "npx expo install expo-font"
+Your app may crash outside of Expo Go without this dependency. Native module peer dependencies must be installed directly.
+✖ Validate packages against React Native Directory package metadata
+The following issues were found when validating your dependencies against React Native Directory:
+  Untested on New Architecture: @stripe/stripe-terminal-react-native
+Advice:
+Use libraries that are actively maintained and support the New Architecture. Find alternative libraries with https://reactnative.directory.
+Add packages to expo.doctor.reactNativeDirectoryCheck.exclude in package.json to selectively skip validations, if the warning is not relevant.
+✖ Check that packages match versions required by installed Expo SDK
+❗ Major version mismatches
+package                         expected  found   
+@react-native-community/slider  5.0.1     4.5.7   
+expo-audio                      ~1.0.16   0.4.9   
+react-native-reanimated         ~4.1.1    3.16.7  
+⚠️ Minor version mismatches
+package                         expected  found   
+@types/react                    ~19.1.10  19.0.0  
+typescript                      ~5.9.2    5.3.3   
+Changelogs:
+- expo-audio → https://github.com/expo/expo/blob/sdk-54/packages/expo-audio/CHANGELOG.md
+5 packages out of date.
+Advice:
+Use 'npx expo install --check' to review and upgrade your dependencies.
+To ignore specific packages, add them to "expo.install.exclude" in package.json. Learn more: https://expo.fyi/dependency-validation
+3 checks failed, indicating possible issues with the project.
+Command "expo doctor" failed.
+npx -y expo-doctor exited with non-zero code: 1

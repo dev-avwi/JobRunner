@@ -1,0 +1,132 @@
+Tell Replit to run every one of these scenarios and report what each person sees at every step:
+
+SCENARIO 1 — The Standard Job Day (Most Common)
+Mike owns Mike’s Plumbing. Jake is his worker. Sarah is the client.
+Morning — Mike opens the app. Dashboard shows Good morning Mike, 3 jobs scheduled today, weather 28 degrees Cairns, $2,400 outstanding invoices. He taps the Dispatch Board and sees Jake unassigned for the 9am blocked drain at Sarah’s house. He assigns Jake from the board.
+Jake’s phone — push notification fires. “New job assigned — Blocked Drain, 14 Maple Street, 9:00am.” Jake opens the app, sees the job on his dashboard with a Start Timer card. He taps navigate and drives to site.
+Jake arrives — geofence auto clock-in fires at 100m from address. Timer starts automatically. Jake sees privacy banner “Your location is visible to Mike’s Plumbing while this job is active.”
+Mike’s map — Jake appears as a blue marker with “On job: Blocked Drain, Sarah Chen” label.
+Jake completes the job — takes before and after photos, adds a note “Cleared root blockage in main drain line”, taps Mark Complete.
+Mike — sees job status update to Done in real time. Action Centre fires “1 job done but not invoiced.” He taps Create Invoice, line items pre-fill from the job, sends to Sarah via SMS.
+Sarah — receives SMS “Hi Sarah, Mike’s Plumbing has sent you an invoice for $385. Pay securely here: [link]” She taps the link, views the invoice, pays by card online.
+Mike — receives push notification “Invoice paid — Sarah Chen $385.” Payment appears in Payment Hub. Jake’s location disappears from the map.
+Verify every step works end to end.
+
+SCENARIO 2 — The Missed Call Rescue (AI Receptionist)
+Dave owns Dave’s Electrical. He’s up a ladder at 2pm. Customer Tom calls about a sparking powerpoint.
+Tom calls Dave’s dedicated Vapi number — AI answers in 1.5 seconds. “Hey thanks for calling Dave’s Electrical, I’m the virtual assistant. How can I help you today?”
+Tom — “Yeah I’ve got a powerpoint that’s sparking every time I plug something in, bit worried about it.”
+AI — “No worries I can help get that sorted. Can I grab your name?”
+Tom — “Tom Walsh.”
+AI — “And what suburb are you in Tom?”
+Tom — “Earlville.”
+AI — “Is this something urgent that needs sorting today or are you right to book in over the next few days?”
+Tom — “Look it’s sparking so probably today if possible.”
+AI — “Perfect. Is this the best number to reach you on?”
+Tom — “Yeah.”
+AI — “Beauty. I’ve got all your details — Dave will give you a call back shortly. Thanks for calling Dave’s Electrical, have a good one.”
+Dave’s phone — push notification “New lead from AI Receptionist. Tom Walsh, Earlville, Sparking powerpoint, URGENT. Tap to call back.” Lead created automatically in Leads page with all details.
+Dave finishes his job, calls Tom back, books the job, creates it in JobRunner with Tom as a new client.
+Verify AI answers, lead creates, notification fires, call back works.
+
+SCENARIO 3 — The Subbie Juggle (Multiple Businesses)
+Jake is a subcontractor who works for Mike’s Plumbing and Dave’s Electrical.
+Monday morning — Jake opens the app. Workspace switcher shows Mike’s Plumbing and Dave’s Electrical. Today tab shows two jobs in chronological order, colour-coded blue for Mike and orange for Dave. 8am blocked drain for Mike, 1pm switchboard inspection for Dave.
+Jake starts the Mike job at 8am — Mike can see Jake on his map. Dave opens his map — Jake is invisible. Dave’s app shows Jake as “On another job” with no location data.
+Jake completes Mike job at 11am — Jake disappears from Mike’s map instantly. Privacy banner in Jake’s app “Location sharing stopped.”
+Jake starts Dave job at 1pm — Dave can now see Jake on his map. Mike opens his map — Jake is invisible.
+End of day — Jake’s earnings summary shows $240 from Mike’s job and $180 from Dave’s job, total $420 for the day across both businesses.
+Both Mike and Dave assigned Jake overlapping jobs for Wednesday 9am — Jake sees a conflict warning “You have overlapping jobs on Wednesday. Contact Mike’s Plumbing and Dave’s Electrical to resolve.” Neither business can see each other’s job details.
+Verify location isolation, earnings across businesses, conflict detection.
+
+SCENARIO 4 — The Chase (Overdue Invoice)
+Mike sent an invoice to Ryan 45 days ago for $1,048. Ryan hasn’t paid.
+Mike opens Payment Hub — Ryan’s invoice shows Critical, 45 days overdue, $1,048. Action Centre shows “$13,854 overdue across 10 invoices.”
+Mike taps Chase Payments — Ryan is at the top of the Chase Queue with Critical badge. Mike selects Firm tone and taps Chase. SMS fires to Ryan “Hi Ryan, this is a final notice regarding your outstanding invoice of $1,048.30 from Mike’s Plumbing dated 2 Feb 2026. Please make payment immediately to avoid further action. Pay here: [link]”
+Ryan — receives SMS, taps link, views invoice, pays $1,048.30 by card.
+Mike — push notification “Invoice paid — Ryan Walker $1,048.30.” Invoice removed from Chase Queue. Payment Hub updates outstanding amount. Revenue this week updates on dashboard.
+Verify Chase Queue, SMS sends, payment processes, all views update.
+
+SCENARIO 5 — The New Worker Joins (Invite Code)
+Mike wants to add apprentice Connor to his team.
+Mike opens Team Management — taps Generate Invite Code — selects Worker role — code MIKE47 appears with 30 day expiry.
+Mike texts Connor “Download JobRunner and enter code MIKE47 to join our team.”
+Connor downloads app — taps I was invited to a team — enters MIKE47 — app validates instantly and shows “You’re joining Mike’s Plumbing as a Worker.” Connor enters his name and phone — lands on worker dashboard.
+Connor’s view — sees only jobs assigned to him, no financials, no client list, no business settings. His dashboard shows Today’s jobs and a timer.
+Mike’s view — Connor appears in Team Management list with Worker badge. Mike assigns Connor his first job from the Dispatch Board. Connor gets push notification.
+Verify code generates, worker joins correct business with correct role, permissions locked down server-side.
+
+SCENARIO 6 — The One-Off Subbie (Magic Link)
+Mike needs a concreter for a one-off job. He’s never worked with this guy before.
+Mike opens a job — taps Assign Worker — taps Send Magic Link — enters phone 0411 222 333 and name “Pete the Concreter” — sends.
+Pete receives SMS “Mike’s Plumbing has assigned you a job. Tap to view details: [link]”
+Pete taps link — web portal opens in his browser, no app download required. Shows job title, address, scheduled time, description, Mike’s contact details.
+Pete does the job — taps Update Status to In Progress, then to Done. Adds a note “Poured 3m x 4m slab, sealed edges.” Uploads 2 photos.
+Mike’s job detail screen — shows Pete’s status updates, note, and photos in real time.
+After Pete’s 3rd magic link job — portal shows “You’ve completed 3 jobs through JobRunner. Download the app for the full experience: [App Store link] [Play Store link]”
+Verify magic link sends, portal works, updates appear on owner screen, conversion prompt fires.
+
+SCENARIO 7 — The Client Portal (Quote to Payment)
+Mike creates a quote for new client Emma. Emma has never used JobRunner before.
+Mike creates quote for Emma — Kitchen Tap Replacement, $385 including GST. Sends via SMS.
+Emma — receives SMS with quote link. Taps link. Portal opens showing Mike’s Plumbing logo, quote details, line items, total. No login required.
+Emma approves — taps Accept Quote, draws her signature, confirms. Mike receives push notification “Quote accepted — Emma Cooper $385.”
+Mike converts to invoice — one tap from job detail. Invoice created with Emma’s details pre-filled.
+Mike sends invoice — Emma receives SMS. Taps link. Portal shows invoice with Pay Now button. Emma pays $385 by card. Stripe processes payment.
+Mike receives push notification “Invoice paid — Emma Cooper $385.” Receipt generated and emailed to Emma automatically.
+Emma checks portal — invoice shows as Paid with payment date and receipt download link.
+Verify no SSL warning on portal links, signature captures, payment processes, receipt emails.
+
+SCENARIO 8 — The Quote Edit Problem (Edge Case)
+Mike sent a quote to a client. Client asks for changes. Mike edits the quote.
+Mike opens sent quote — edits a line item, changes price from $200 to $250. System should automatically revert status from Sent to Draft.
+Mike sees a notification — “Quote reverted to Draft. Resend to client to share the updated version.”
+Mike taps Resend to Client — updated quote SMS fires. Client receives new quote with updated pricing. Old quote link now shows the updated version.
+Verify auto-revert fires, resend works, client sees correct version.
+
+SCENARIO 9 — The Tough One: Subbie Works For Two JobRunner Businesses, Both Assign Same Time
+Jake is connected to Mike’s Plumbing and Dave’s Electrical. Both assign Jake a job for Tuesday 10am.
+Jake opens app — conflict warning appears on his dashboard. “You have overlapping jobs on Tuesday 10am. Mike’s Plumbing — Hot Water Service. Dave’s Electrical — Switchboard Upgrade. Contact both businesses to resolve.”
+Jake’s availability shows as Conflicted on both businesses’ team views. Neither Mike nor Dave can see each other’s job details — they just see “Jake has a schedule conflict on Tuesday.”
+Mike opens dispatch board — Jake shows as Conflicted with a warning icon. Mike reassigns the job to another worker.
+Jake’s conflict clears — confirmation shows in Jake’s dashboard.
+Verify conflict shows on both sides, neither business sees the other’s details, conflict clears when one job is reassigned.
+
+SCENARIO 10 — The App Can’t Handle This One: Client Wants to Reschedule Via Portal
+Emma wants to reschedule her job through the client portal.
+Emma opens her client portal — she can see her job, status, and documents. But there is no reschedule button. She has no way to request a different time from within the portal.
+Expected behaviour that doesn’t exist yet — Emma should be able to tap Request Reschedule, pick preferred times, and Mike gets a notification to approve or suggest alternatives.
+This is a gap. Client portal is read-only for job scheduling. Flag this to Replit as a future feature — client-initiated reschedule requests from the portal.
+
+SCENARIO 11 — The App Can’t Handle This One: Worker Disputes Timesheet
+Jake thinks Mike has edited his timesheet incorrectly. Jake wants to dispute it.
+Jake opens his timesheet — he can see his time entries but has no way to flag a dispute or add a comment. There is no dispute workflow. He has to call Mike directly.
+Expected behaviour that doesn’t exist yet — Jake should be able to tap Flag Entry and add a comment, Mike gets a notification to review.
+This is a gap. Flag to Replit as future feature — timesheet dispute workflow.
+
+SCENARIO 12 — The App Can’t Handle This One: Subbie Invoices The Business
+Jake wants to send an invoice to Mike for his work as a subcontractor.
+Jake opens his subbie dashboard — he can see his earnings summary but there is no way to generate or send an invoice to the businesses he works for. He would need to use a separate invoicing tool like Xero or a paper invoice.
+Expected behaviour that doesn’t exist yet — subbies should be able to generate a tax invoice from their completed jobs and send it to the business directly through JobRunner.
+This is a genuinely important gap for the subcontractor ecosystem. A subbie who can invoice through the same app they use to manage jobs is a much stickier product. Flag as a high priority future feature.
+
+SCENARIO 13 — The App Can’t Handle This One: Client Pays Deposit Only
+Emma wants to pay a 50% deposit on a $2,000 bathroom renovation quote.
+Mike sends the invoice — Emma can pay the full amount or not at all. There is no deposit or partial payment option visible to the client in the portal.
+Mike can record a partial payment manually from his side, but the client cannot initiate a partial payment themselves.
+Expected behaviour that doesn’t exist yet — deposit amount field on invoice, client pays deposit and sees remaining balance in portal.
+This is a real gap for larger jobs where deposits are standard. Flag to Replit.
+
+SCENARIO 14 — The Stress Test: Everything Happening At Once
+Mike has 5 workers out, 3 subbies on magic links, 8 client chats open, 2 overdue invoices being chased, and his AI receptionist answering calls.
+Mike opens the app — dashboard shows 8 jobs in progress today. Map shows 5 worker markers and no subbie markers (they’re all between jobs right now).
+One subbie Jake starts his job — Jake’s marker appears on map with job label.
+Two clients reply to SMS chasers — Chat Hub shows 2 unread conversations with notification badge.
+AI receptionist answers an inbound call — lead appears in Leads page with push notification.
+A worker marks a job complete — Action Centre fires with uninvoiced job alert.
+A Stripe payment processes for an overdue invoice — Payment Hub updates, push notification fires.
+Mike navigates between Dashboard, Map, Chat Hub, Payment Hub — all update in real time without refreshing.
+Verify real-time updates across all views simultaneously, notifications fire correctly, no race conditions or stale data.
+
+Give Replit This Brief
+“Run every scenario above and tell me exactly what each person sees at every step. For Scenarios 10, 11, 12, and 13 — confirm these are genuine gaps and give me an estimate of how long each would take to build. For all other scenarios confirm they work end to end with no errors. If anything fails tell me exactly what broke and fix it.”

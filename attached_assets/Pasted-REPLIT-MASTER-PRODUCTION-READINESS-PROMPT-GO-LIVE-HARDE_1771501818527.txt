@@ -1,0 +1,229 @@
+REPLIT — MASTER PRODUCTION-READINESS PROMPT (GO-LIVE HARDENING)
+Goal: Make JobRunner production-ready for real businesses. Web app + mobile app + client portal must be reliable, secure, fast, and operationally trustworthy. No new features unless required for stability/compliance/parity.
+
+You must NOT respond with “I’ll start by exploring.” Instead, produce:
+(1) a concrete hardening plan,
+(2) an execution checklist with PASS/FAIL criteria,
+(3) a bug list with severity,
+(4) a launch readiness report.
+
+========================
+A) DEFINITION OF “READY”
+========================
+JobRunner is “Ready” only if:
+- ZERO P0 issues (data loss, security, incorrect payments, wrong client/job routing, broken auth, broken timers)
+- Mobile parity on ALL “golden paths” (owner/admin/worker/subcontractor)
+- Client portal messaging + quote/invoice/pay flows are reliable
+- Dispatch/map/timers survive poor signal + offline + app backgrounding
+- Observability exists (crashes/errors/logs) and we can diagnose issues in production
+- Performance meets targets (see Performance section)
+
+If any P0 exists → NOT READY.
+
+==================================
+B) CORE GOLDEN PATHS (MUST PASS)
+==================================
+You must create automated + manual test checklists for these flows and run them end-to-end repeatedly:
+
+B1) OWNER / MANAGER FLOW
+1. Create client -> create job -> schedule -> assign worker -> send quote -> client accepts -> convert invoice -> collect payment -> receipt -> job complete -> proof pack/export.
+2. Reschedule job, reassign worker, change scope (variation), update materials, approve timesheet, view job profitability.
+
+B2) WORKER FLOW (FIELD REALITY)
+1. Open “My Jobs” -> navigate -> set EN_ROUTE/ARRIVED -> start timer -> take photos (before/during/after) -> checklist -> add notes -> stop timer -> mark done -> capture signature (if enabled).
+2. Must work with: poor signal, offline, phone locked, app backgrounded, app killed/reopened.
+
+B3) CLIENT PORTAL FLOW (NO APP INSTALLED)
+1. Client views quote -> signs/accepts -> pays invoice -> views receipts/docs -> messages job -> receives updates.
+2. Client messages must appear in correct job thread in JobRunner and notify correct roles immediately.
+
+B4) SUBCONTRACTOR FLOW (IF SUPPORTED)
+1. Subcontractor invited/assigned -> accepts job -> logs hours/materials -> submits -> manager approves -> payment workflow (manual or Stripe) -> receipt/export.
+All permissions must be correct.
+
+Deliverable: “Golden Path Test Pack” with PASS/FAIL + screenshots/logs.
+
+==================================
+C) ROLES, PERMISSIONS, TENANCY
+==================================
+Define and enforce RBAC strictly:
+- Owner, Admin/Manager, Worker, Subcontractor (and any other roles we use).
+- Produce a permissions matrix listing: Jobs, Quotes, Invoices, Payments, Team, Tracking, Reports, Settings, Client Comms, Exports.
+- Verify restricted screens/actions cannot be accessed by URL/deeplink/api.
+
+TENANCY IS NON-NEGOTIABLE:
+- Ensure no cross-business data leakage (jobs/messages/clients/payments).
+- Add automated tests to prevent cross-tenant access.
+P0 if any tenant leak risk exists.
+
+==================================
+D) DISPATCH + MAP + TRACKING (REAL WORLD)
+==================================
+You must harden:
+- Dispatch board drag/drop (instant sync to worker devices)
+- Map (jobs + workers) reliability
+- “Last seen” timestamps, signal quality indicators, fallback logic
+- GPS permission handling on iOS/Android (denied/limited/approx)
+- Background location strategy (if used) or explicitly safe alternatives
+- Geofencing: enter/exit detection accuracy; fail-safe if GPS unreliable
+
+Edge cases:
+- worker toggles airplane mode
+- app backgrounded during travel
+- location permission revoked
+- device battery saver restrictions
+- GPS drift / inaccurate points
+- multiple workers editing job simultaneously
+
+Deliverables:
+1) Tracking/Geofence spec: what is tracked, how often, where stored, and UX for failures
+2) Accuracy + battery plan (minimize drain)
+3) Load test for 20 workers / 200 jobs with frequent updates
+4) Clear user messaging when tracking is stale/limited
+
+==================================
+E) TIME TRACKING (PAYROLL-GRADE INTEGRITY)
+==================================
+Must guarantee:
+- No overlapping timers
+- No negative durations
+- Offline timers sync without duplication or corruption
+- Job completion blocks if active timer exists
+- Edits logged in audit trail (who/when/what)
+- Timesheets approvals safe (no data overwrite)
+- Timezone correctness (DST handling)
+
+Deliverables:
+- Time tracking test suite (manual + automated)
+- Conflict resolution rules for offline edits
+- Audit log verification
+
+==================================
+F) QUOTES, INVOICES, PAYMENTS (FINANCIAL TRUST)
+==================================
+Hard requirements:
+- Stripe onboarding stable + recoverable
+- Deposits, partial payments, full payments, refunds (if supported)
+- Invoice locking after payment (no edits)
+- Rate snapshots always applied correctly
+- Calculation verification (no rounding/GST errors)
+- Webhook safety: idempotency, retries, delayed events, out-of-order events
+- Payment links & QR flows work on mobile browsers
+
+Deliverables:
+- Payment test plan with Stripe test cases
+- Webhook idempotency + retry report
+- Reconciliation checks (payment -> invoice -> receipt linkage)
+
+==================================
+G) CLIENT PORTAL (BUSINESS-READY)
+==================================
+Portal must:
+- Work perfectly on mobile web
+- Have simple auth (magic link/code) with secure expiry
+- Allow viewing documents, paying, messaging, uploading photos/files (if supported)
+- Messages route into correct job thread + notify assigned worker/manager/owner fallback
+- Never expose internal-only notes
+
+If we have ONE shared SMS number:
+- Implement safe routing by sender phone -> business -> job
+- If multiple open jobs, prompt selection
+- Prevent misrouting (P0 risk)
+
+Deliverables:
+- Portal UX walkthrough + test cases
+- Messaging routing tests (portal + SMS)
+- Security review (tokens, access scope, expiry)
+
+==================================
+H) DOCUMENT GENERATION (PDFS / PROOF PACK / EXPORTS)
+==================================
+Must ensure:
+- PDFs generate reliably (quotes/invoices/receipts/proof packs)
+- Branding correct (logo, ABN, GST, business details)
+- Numbers match exact calculations
+- Exports work under load and don’t time out
+- Secure storage + access controls for generated docs
+
+Deliverables:
+- Document generation tests with sample data
+- Performance & timeout plan
+- Access control verification
+
+==================================
+I) RELIABILITY / PERFORMANCE TARGETS (PASS/FAIL)
+==================================
+Targets (minimum):
+- App start / dashboard usable < 3s on average devices
+- Dispatch interactions < 200ms perceived delay
+- No UI jank during live updates
+- API p95 latency acceptable (define and report)
+- No memory leaks / crash loops
+- Offline mode must clearly show banners and sync states
+
+Deliverables:
+- Performance report with measured numbers
+- Identified bottlenecks + fixes
+
+==================================
+J) SECURITY, PRIVACY, COMPLIANCE
+==================================
+Must include:
+- Secure auth token storage (mobile + web)
+- CSRF protections where relevant
+- Rate limiting for sensitive endpoints
+- Audit logging for financial/time edits
+- Data retention rules + backups
+- Secure file upload scanning checks (at least type/size limits; ideally virus scan)
+- PII handling: phone numbers, addresses, payment data (never store raw card data)
+- OWASP-style review of portal links
+
+Deliverable:
+- Security checklist with PASS/FAIL and changes made
+
+==================================
+K) OBSERVABILITY + PRODUCTION OPS (NON-NEGOTIABLE)
+==================================
+Before go-live, implement:
+- Crash reporting (mobile + web)
+- Centralized error logging with trace IDs
+- Key business event logs: auth, job status changes, timer starts/stops, payments, portal messages, SMS routing
+- Alerts for failures: webhook errors, SMS failures, doc generation failures
+- Basic admin tools: resend invites, re-send portal links, view message delivery status, view webhook failures
+
+Deliverables:
+- Observability setup summary
+- “How to debug” runbook
+- Monitoring/alerting checklist
+
+==================================
+L) RELEASE PROCESS & GO-LIVE GATE
+==================================
+You must produce:
+1) Launch Readiness Report (PASS/FAIL per section)
+2) Bug list with severity:
+   - P0: data loss/security/payment mischarge/misrouting/auth broken/timer corruption
+   - P1: major workflow disruption, crashes, serious perf issues
+   - P2: minor bugs/UI polish
+3) Parity matrix: Web vs iOS vs Android for golden paths
+4) A GO/NO-GO recommendation
+
+We only launch when:
+- 0 P0 and acceptable P1 count
+- 14 days of testing with no critical regressions (or equivalent repeated test cycles)
+- 2–3 pilot businesses can run end-to-end without manual intervention
+
+========================
+OUTPUT FORMAT REQUIRED
+========================
+Do not answer with generalities.
+Return the following in your next response:
+
+1) “Audit Findings” (top issues + risk level)
+2) “Hardening Plan” (ordered steps + timeboxed sprints)
+3) “Test Plan” (golden paths + edge cases)
+4) “Acceptance Criteria” (PASS/FAIL list)
+5) “Launch Readiness Report Template” (that we will fill in)
+6) “Open Questions / Assumptions” (only if truly blocking)
+
+This is the production-readiness sprint. Prioritize reliability, correctness, security, and role clarity over feature additions.

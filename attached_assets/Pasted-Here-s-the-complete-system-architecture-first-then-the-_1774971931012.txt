@@ -1,0 +1,120 @@
+Here's the complete system architecture first, then the full breakdown of every piece Replit needs to build.That's every component. Now here's exactly what Replit needs to build, layer by layer.
+
+---
+
+**Layer 1 — Frontend (React, same as JobRunner)**
+
+Three screens Replit builds:
+
+Flow recorder — a simple interface where users paste their app URL, enter test credentials, and click Record. Under the hood this triggers a Playwright session. User sees a live preview of Playwright navigating their app screen by screen. Progress bar fills as screens are discovered.
+
+Live dashboard — the main screen while analysis is running. Left sidebar fills up with discovered screens in real time via WebSocket. Each screen gets a status dot — scanning, issues found, clean. Main area shows the current screenshot being analysed with the AI thinking indicator. Right panel shows issues appearing as each pass completes.
+
+Report viewer — the final output. Every screen listed with issue counts. Click any screen to see the annotated screenshot with issues highlighted directly on it. Issues panel shows severity, location, problem, fix recommendation. Export to PDF button. Generate shareable link button.
+
+---
+
+**Layer 2 — REST API (Node.js, same as JobRunner)**
+
+Replit builds these endpoints:
+
+`POST /projects` — create a new app project, store URL and credentials
+`POST /runs` — kick off a new analysis run, push a job to the queue
+`GET /runs/:id` — fetch run status and results
+`GET /runs/:id/screens` — fetch all discovered screens with their issues
+`POST /reports/:id/share` — generate a shareable public link
+`POST /reports/:id/pdf` — generate and return a PDF report
+
+Auth is the same pattern as JobRunner — JWT tokens, same middleware.
+
+---
+
+**Layer 3 — WebSocket server**
+
+This is what makes it feel live like Apptest.ai. Every time the crawler discovers a new screen, every time an analysis pass completes, the server pushes an event to the user's browser in real time. The dashboard updates without refreshing.
+
+Events Replit builds:
+- `screen:discovered` — new screen found, add to sidebar
+- `screen:analysing` — current screen being processed
+- `screen:complete` — analysis done, here are the issues
+- `run:complete` — full analysis finished, report ready
+
+---
+
+**Layer 4 — Redis + Bull queue**
+
+Every analysis run gets queued as a job. This means if ten users submit at the same time, they queue properly instead of crashing the server. Same Bull/Redis pattern Replit already knows from JobRunner notifications.
+
+Two job types:
+- `crawl-job` — run the Playwright flow recorder and capture screenshots
+- `analysis-job` — for each screenshot, run the Claude analysis pipeline
+
+---
+
+**Layer 5 — Playwright crawler**
+
+This is the unique piece. Replit builds a Playwright worker that:
+
+Takes the URL and credentials from the job queue. Logs into the app using Playwright — fills the login form, submits, saves the session cookie. Replays the recorded user flow step by step. At each step, captures a full-page screenshot. Generates a visual fingerprint (hash) of each screenshot to deduplicate — if the same screen appears twice it gets skipped. Watches for DOM mutations on single-page apps, not just URL changes. Handles screenshot timing — waits for network idle before capturing so you don't get half-loaded screens.
+
+Every captured screenshot gets saved to the screenshot store and a `screen:discovered` WebSocket event fires.
+
+---
+
+**Layer 6 — Claude vision analysis pipeline**
+
+For each screenshot, Replit calls Claude vision API twice. Each call is a separate Bull job so they can run in parallel across multiple screens.
+
+Pass 1 — layout and visual quality: spacing consistency, padding, alignment, element sizing, colour contrast, visual hierarchy, tap target sizes.
+
+Pass 2 — UX and copy quality: CTA clarity, empty state helpfulness, error message language, onboarding instructions, confusing flows, copy written for developers not users.
+
+Each pass returns structured JSON:
+```json
+{
+  "pass": "layout",
+  "score": 7,
+  "issues": [
+    {
+      "severity": "critical",
+      "location": "primary CTA button, bottom centre",
+      "problem": "Button label says Submit with no indication of what happens next",
+      "fix": "Change to Create job or Save and notify team"
+    }
+  ]
+}
+```
+
+This JSON gets stored in PostgreSQL against the screen record. The dashboard renders it.
+
+---
+
+**Layer 7 — Report generator**
+
+Two outputs Replit builds:
+
+PDF report — puppeteer or a PDF library generates a clean document. Every screen as a thumbnail, issues listed below each one ranked by severity. Cover page with overall score, total issues found, breakdown by severity. This is what agencies forward to clients.
+
+Shareable link — generates a unique token, stores it against the run. Anyone with the link can view the report without logging in. Same pattern as Notion share links.
+
+---
+
+**The brief to send Replit**
+
+"Here is the complete system design for the product we're building after JobRunner.
+
+Seven layers to build in order:
+
+1. Three frontend screens — flow recorder, live dashboard with WebSocket realtime updates, report viewer with annotated screenshots
+2. REST API — six endpoints covering projects, runs, screens, share links, PDF export
+3. WebSocket server — four event types pushing live progress to the dashboard
+4. Redis and Bull queue — two job types, crawl jobs and analysis jobs
+5. Playwright crawler worker — authenticated session handling, flow replay, screenshot capture, visual fingerprint deduplication, SPA DOM mutation detection
+6. Claude vision analysis pipeline — two passes per screen returning structured JSON, layout quality and UX/copy quality
+7. Report generator — PDF export and shareable public link
+
+Tech stack is identical to JobRunner. Node.js backend, React frontend, PostgreSQL, Redis and Bull, Claude vision API, WebSockets.
+
+Build in this order: crawler first, analysis pipeline second, dashboard third, report generator last.
+
+Save this. We start after JobRunner ships."

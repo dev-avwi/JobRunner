@@ -1,0 +1,32 @@
+~/workspace/mobile$ npx eas update --branch production
+✔ Provide an update message: … Modernize SMS conversation screen with cleaner layout and improved alignment
+
+Redesign the SMS conversation screen, updating styles for header, message bubbles, and composer to achieve a modern, native messaging app look and feel.
+
+Replit-Commit-Author: Agent
+Replit-Commit-Session-Id: 033c480d-2d5c-441b-8e8c-cbff187c8791
+Replit-Commit-Checkpoint-Type: full_checkpoint
+Replit-Commit-Event-Id: dfb6f150-7ac5-4d1e-a13c-9f660bf6fee1
+Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/033c480d-2d5c-441b-8e8c-cbff187c8791/yexQxeU
+Replit-Helium-Checkpoint-Created: true
+[expo-cli] Starting Metro Bundler
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] iOS node_modules/expo-router/entry.js ░░░░░░░░░░░░░░░░  0.0% (0/1)
+[expo-cli] Android node_modules/expo-router/entry.js ▓░░░░░░░░░░░░░░░  9.4% (15/49)
+[expo-cli] iOS node_modules/expo-router/entry.js ▓▓▓▓░░░░░░░░░░░░ 26.5% (327/635)
+[expo-cli] Android node_modules/expo-router/entry.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 95.9% (3921/4004)
+[expo-cli] Android Bundling failed 10051ms node_modules/expo-router/entry.js (4237 modules)
+[expo-cli] SyntaxError: SyntaxError: /home/runner/workspace/mobile/app/job/[id].tsx: Identifier 'Linking' has already been declared. (24:2)
+[expo-cli] 
+[expo-cli]   22 |   AppState,
+[expo-cli]   23 |   AppStateStatus,
+[expo-cli] > 24 |   Linking,
+[expo-cli]      |   ^
+[expo-cli]   25 | } from 'react-native';
+[expo-cli]   26 | import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+[expo-cli]   27 | import { WebView } from 'react-native-webview';
+✖ Export failed
+/home/runner/workspace/mobile/node_modules/expo/bin/cli export --output-dir dist --source-maps --dump-assetmap --platform ios --platform android exited with non-zero code: 1
+    Error: update command failed.
+~/workspace/mobile$ 

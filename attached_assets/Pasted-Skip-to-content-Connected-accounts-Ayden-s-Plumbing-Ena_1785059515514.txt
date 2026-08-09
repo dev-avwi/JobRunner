@@ -1,0 +1,171 @@
+Skip to content
+Connected accounts
+Ayden’s Plumbing
+Enabled
+vogler.ayden@gmail.com
+Payouts active
+Payments active
+Copy ID
+Overview
+Payments
+Payment methods
+Invoices
+Subscriptions
+Customers
+Products
+Account balances
+Add funds
+Pull funds
+Debit negative balances
+
+On
+Total balance
+A$0.00
+AUD
+Future payouts
+A$0.00
+AUD
+In transit to bank
+A$0.00
+AUD
+Lifetime total volume
+A$5.00
+AUD
+Money movement
+Payments
+Transfers
+Payouts
+Collected fees
+Amount
+Description
+Customer
+Date
+A$5.00
+​
+Succeeded
+Tap to Pay payment
+​
+18 Jul, 07:56
+Support cases
+No support cases
+This account hasn't created any eligible support cases.
+API logs
+View API logs from this
+connected account
+or
+your platform
+Payout information
+Payout schedule
+Daily – 2 day rolling basis
+Default currency
+AUD
+Payout statement descriptor
+None
+External accounts
+CUS
+70 2321
+•••• 7291
+AUD
+Default
+
+More options
+Related
+Reports
+View this account's balance activity, fees, and payout reports.
+View reports
+Tax forms
+Create, manage, file, and deliver this account's 1099 form.
+View tax forms
+Capabilities
+Edit
+Active
+• Bancontact payments
+• Card payments
+• EPS payments
+• iDEAL payments
+• Klarna payments
+• Link payments
+• Payouts
+• Transfers
+Profile
+View all
+Account ID
+acct_1Tu14VIyKteHtdmt
+Created
+17 Jul 2026, 02:00 (1 week ago)
+Terms accepted
+18 Jul 2026, 07:15
+Country
+Australia
+Doing business as
+Ayden’s Plumbing
+Email
+vogler.ayden@gmail.com
+Phone number
++61 458 300 051
+Website
+https://jobrunner.com.au/settings?connect=success
+Statement descriptor
+AYDENS PLUMBING
+Metadata
+
+Edit
+platform
+jobrunner
+userId
+f1a857f3-5b45-44a8-9590-cdc70f76f26b
+Configurations
+View all
+Merchant
+Accept payments from their own customers.
+
+Recipient
+Receives transfers to their Stripe balance.
+
+Navigated to Connected accounts – JobRunner – Stripe
+
+JobRunner
+Home
+Balances
+Transactions
+Customers
+Product catalogue
+Shortcuts
+Subscriptions
+Terminal
+Apps overview
+Connected accounts
+Connect overview
+Products
+Connect
+Overview
+Connected accounts
+Compliance
+Tax forms
+Capital
+Support cases
+Payments
+Billing
+Reporting
+Apps
+More
+Search
+Developers
+acct_1Tu14VIyKteHtdmt
+Setup guide
+Next:
+Start building with blueprints
+
+
+
+
+
+
+
+
+
+
+
+
+
+

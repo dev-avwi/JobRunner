@@ -1,0 +1,126 @@
+Tell Replit exactly this:
+
+---
+
+*"I need you to do a complete App Store submission readiness audit of the mobile app. Apple and Google both reject apps for specific reasons and I want to catch every issue before submitting. Go through every single item on this checklist and tell me Pass, Fail, or Needs Review for each one. Fix every Fail immediately.*
+
+*SECTION 1 — APP STORE METADATA*
+
+*Check app.json and eas.json for:*
+- *Bundle identifier is set correctly — com.avwebinnovation.tradietrack or similar, consistent across iOS and Android*
+- *Version number is correct — currently what version and build number*
+- *App name matches what will show on App Store — "JobRunner" not "tradietrack" or any dev name*
+- *iOS deployment target is set — should be iOS 16.0 minimum*
+- *Android minimum SDK is set — should be SDK 26 minimum*
+- *All required icon sizes exist — 1024x1024 for App Store, adaptive icon for Android*
+- *Splash screen is configured correctly with no white flash on load*
+- *All expo plugins are declared in app.json that the app actually uses*
+- *No placeholder values like "Your App Name" or "your.bundle.id" anywhere in app.json*
+
+*SECTION 2 — PRIVACY AND PERMISSIONS*
+
+*Apple rejects apps that request permissions without proper justification strings. Check every permission:*
+- *Camera — NSCameraUsageDescription exists and explains why clearly*
+- *Photo Library — NSPhotoLibraryUsageDescription exists*
+- *Photo Library Add — NSPhotoLibraryAddUsageDescription exists*
+- *Location When In Use — NSLocationWhenInUseUsageDescription exists*
+- *Location Always — NSLocationAlwaysAndWhenInUseUsageDescription exists — this will get extra scrutiny from Apple, needs a very clear justification about geofencing for job site clock-in*
+- *Microphone — NSMicrophoneUsageDescription exists for voice note recording*
+- *Contacts — if used, NSContactsUsageDescription exists*
+- *NFC — Near Field Communication description exists for Tap to Pay*
+- *Background Location — if used, full justification required*
+- *All Android permissions declared in app.json — READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, ACCESS_FINE_LOCATION, ACCESS_BACKGROUND_LOCATION, CAMERA, RECORD_AUDIO, NFC, VIBRATE, RECEIVE_BOOT_COMPLETED*
+
+*SECTION 3 — APPLE SPECIFIC REQUIREMENTS*
+
+*These are the most common rejection reasons:*
+- *Account deletion flow exists and is accessible — Apple mandates this. User must be able to delete their account from within the app. Check that the flow clearly states what data is deleted and when*
+- *Sign in with Apple is implemented if Google Sign In is offered — Apple requires this. If the app offers any third-party login, Apple Sign In must also be offered*
+- *No references to other platforms — no mentions of Android-only features on iOS or vice versa*
+- *No broken links in the app — every external link opens correctly*
+- *No placeholder content visible — no lorem ipsum, no test data in production*
+- *No use of private APIs*
+- *In-app purchases use Apple's payment system — Stripe is fine for SaaS subscriptions but any digital goods must go through Apple. Verify the subscription model is compliant*
+- *Privacy policy URL is live and accessible at jobrunner.com.au/privacy*
+- *Terms of service URL is live and accessible at jobrunner.com.au/terms*
+- *Support URL is live — jobrunner.com.au*
+- *Age rating is set correctly — likely 4+ with no objectionable content*
+- *No mention of "beta", "early access", "coming soon", or "test" in any user-visible UI*
+- *App works without requiring an account for at least some functionality OR clearly explains why an account is required at the gate*
+- *Demo account credentials provided in review notes so Apple can test the full app*
+
+*SECTION 4 — GOOGLE PLAY SPECIFIC REQUIREMENTS*
+
+*- Target SDK is 34 or higher — required for new apps in 2025*
+- *App bundle is AAB format not APK*
+- *Data safety form information is accurate — what data is collected, shared, and whether it is encrypted*
+- *Sensitive permissions declared in Data Safety section — location, camera, contacts*
+- *No misleading app description or screenshots*
+- *Content rating questionnaire completed*
+- *Privacy policy URL provided*
+
+*SECTION 5 — TECHNICAL REQUIREMENTS*
+
+*- App does not crash on launch on a clean install with no cached data*
+- *App handles no internet connection gracefully — shows appropriate error not a crash*
+- *App handles session expiry gracefully — logs out cleanly rather than crashing*
+- *All images load correctly — no broken image URLs*
+- *All navigation flows complete without dead ends*
+- *Back navigation works correctly on Android — hardware back button behaves correctly*
+- *Keyboard does not cover input fields on any screen*
+- *App works in both portrait and landscape or locks to portrait correctly*
+- *Dark mode works correctly on all screens — no hardcoded colours showing incorrectly*
+- *No console errors or warnings that indicate real problems*
+- *Deep links work correctly — email verification, password reset, team invite links all open the app correctly*
+- *Push notification permission request appears at the right time — not immediately on launch*
+
+*SECTION 6 — CONTENT REVIEW*
+
+*Apple's human review team will manually use the app. Make sure:*
+- *The demo account demo@jobrunner.com.au with password demo123 works correctly and shows realistic data*
+- *Every feature they might tap works — no dead buttons or broken flows*
+- *The AI receptionist feature has a clear disclaimer that it is AI-powered*
+- *Any call recording features have appropriate consent disclosures*
+- *Location tracking has clear disclosure to users about when tracking is active*
+- *All SMS features disclose they will send messages on behalf of the business*
+
+*SECTION 7 — EAS BUILD CONFIGURATION*
+
+*- eas.json has a production profile configured correctly*
+- *All environment variables needed for production are configured as EAS secrets — not hardcoded*
+- *SENTRY_DSN and VITE_SENTRY_DSN are set as EAS secrets*
+- *EXPO_PUBLIC_API_URL points to jobrunner.com.au not a Replit dev URL*
+- *Any other API keys needed at build time are configured*
+- *iOS provisioning profile and certificates are configured*
+- *Android keystore is configured and the password is stored safely*
+
+*SECTION 8 — FINAL BUILD VERIFICATION*
+
+*After checking all of the above:*
+- *Run a production build locally: eas build --platform ios --profile production --local*
+- *Confirm the build completes without errors*
+- *List every warning that appears during the build*
+- *Confirm the bundle size after all the code splitting we did*
+- *Confirm Sentry is initialising correctly in the production build*
+- *Confirm all API calls go to jobrunner.com.au not any development URL*
+
+*Give me a complete report:*
+- *Pass/Fail/Needs Review for every single item*
+- *Fix every Fail immediately without asking*
+- *For every Needs Review item tell me exactly what I need to do personally*
+- *At the end tell me the exact commands to run to build and submit to both App Store and Google Play*
+- *Tell me exactly what information I need to have ready in App Store Connect before submitting*
+
+*The goal is zero rejections on first submission. Be thorough."*
+
+---
+
+That brief covers every known rejection reason for both Apple and Google. The most common rejection causes are missing permission descriptions, account deletion flow not existing, Sign in with Apple not offered alongside Google, and metadata issues.
+
+The things Replit cannot do for you — you need these ready before submission:
+
+App Store Connect account with the app listing created, all metadata filled in, screenshots uploaded for 6.7 inch and 6.5 inch iPhone sizes, privacy policy and support URLs entered, and the review notes field filled with the demo account credentials.
+
+Google Play Console account with the app listing created, content rating questionnaire completed, and data safety form filled out.
+
+Both of those are your personal actions. Everything else Replit can fix in code.

@@ -1,0 +1,305 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+
+Observe
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+68bc1718
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS App Store build
+236f7bb · Published your App Replit-Commit-Author: Deployment Replit-Commit-Session-Id: 790c8277-1ae1-4213-80b2-a5b2447806a2 Replit-Commit-Checkpoint-Type: full_checkpoint Replit-Commit-Event-Id: 41cfe192-e876-47d3-b12b-ba2a212b44aa Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/ff735932-1a5e-42dc-89e5-b025f7feea5d/790c8277-1ae1-4213-80b2-a5b2447806a2/3Mla1a0 Replit-Commit-Deployment-Build-Id: 611952b7-0fc4-48e9-b31e-f6543f654224 Replit-Helium-Checkpoint-Created: true
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+production
+
+production
+
+
+1.1.4
+
+
+production
+
+ 1.1.4 (44)
+
+6deb7e4
+
+236f7bb*
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Jul 26, 2026 6:15 PM
+2s
+
+26s
+
+1m 55s
+
+2m 25s
+
+29 days
+
+Logs
+
+Waiting to start
+
+29s
+
+
+Spin up build environment
+
+11ms
+
+
+Install custom tools
+
+14s
+
+
+Installing node v20.19.4
+Downloading and installing node v20.19.4...
+Downloading http://nodejs.caches.eas-build.internal/v20.19.4/node-v20.19.4-darwin-arm64.tar.xz...
+######################                                                    31.7%
+##############################################################            86.3%
+######################################################################## 100.
+0%
+Computing checksum with sha256sum
+Checksums matched!
+Now using node v20.19.4 (npm v10.8.2)
+default -> 20.19.4 (-> v20.19.4 *)
+npm warn deprecated lodash.pick@3.1.0: This package is deprecated. Use destructuring assignment syntax instead.
+npm warn deprecated sliced@1.0.1: Unsupported
+npm warn deprecated glob@11.0.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+added 59 packages in 5s
+11 packages are looking for funding
+  run `npm fund` for details
+Installing pnpm@11.9.0
+npm warn EBADENGINE Unsupported engine {
+npm warn EBADENGINE   package: 'pnpm@11.9.0',
+npm warn EBADENGINE   required: { node: '>=22.13' },
+npm warn EBADENGINE   current: { node: 'v20.19.4', npm: '10.8.2' }
+npm warn EBADENGINE }
+added 1 package in 450ms
+1 package is looking for funding
+  run `npm fund` for details
+Failed to install pnpm 11.9.0
+
+pnpm --version exited with non-zero code: 1
+
+Failed to install pnpm@11.9.0. Continuing because pnpm is not the primary package manager for this project.
+Installing yarn@1.22.22
+added 1 package in 334ms
+Prepare project
+
+903ms
+
+
+Read eas.json
+
+0ms
+
+
+Read package.json
+
+1ms
+
+
+Install dependencies
+
+11s
+
+
+Read app config
+
+
+1
+357ms
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+3s
+
+
+Install pods
+
+26s
+
+
+Calculate expo-updates runtime version
+
+266ms
+
+
+Configure Xcode project
+
+52ms
+
+
+Configure expo-updates
+
+7ms
+
+
+Bundle JavaScript
+
+26s
+
+
+Run fastlane
+
+
+1
+13s
+
+
+Clean up credentials
+
+785ms
+
+
+Fail job
+
+1ms
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- Entitlement com.apple.developer.proximity-reader.payment.acceptance not found and could not be included in profile. This likely is not a valid entitlement and should be removed from your entitlements file. (in target 'JobRunner' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode Logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+        ➜ Implicit dependency on target 'expo-dev-menu-interface' in project 'Pods' via options '-framework EXDevMenuInterface' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXImageLoader' in project 'Pods' via options '-framework EXImageLoader' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXJSONUtils' in project 'Pods' via options '-framework EXJSONUtils' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXManifests' in project 'Pods' via options '-framework EXManifests' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXNotifications' in project 'Pods' via options '-framework EXNotifications' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXStructuredHeaders' in project 'Pods' via options '-framework EXStructuredHeaders' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXTaskManager' in project 'Pods' via options '-framework EXTaskManager' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXUpdates' in project 'Pods' via options '-framework EXUpdates' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'EXUpdatesInterface' in project 'Pods' via options '-framework EXUpdatesInterface' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoAppleAuthentication' in project 'Pods' via options '-framework ExpoAppleAuthentication' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoAsset' in project 'Pods' via options '-framework ExpoAsset' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoBackgroundFetch' in project 'Pods' via options '-framework ExpoBackgroundFetch' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoBlur' in project 'Pods' via options '-framework ExpoBlur' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoCamera' in project 'Pods' via options '-framework ExpoCamera' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoClipboard' in project 'Pods' via options '-framework ExpoClipboard' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoCrypto' in project 'Pods' via options '-framework ExpoCrypto' in build setting 'OTHER_LDFLAGS'
+
+        ➜ Implicit dependency on target 'ExpoDevice' in project 'Pods' via options '-framework ExpoDevice' in build setting 'OTHER_LDFLAGS'
+
+
+

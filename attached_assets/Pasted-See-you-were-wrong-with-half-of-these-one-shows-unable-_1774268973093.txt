@@ -1,0 +1,22 @@
+See you were wrong with half of these
+
+one shows unable to delete account
+Two shows it's a team plan
+Three shows to sign swms but in job view the swms allows you to sign again? Pretty weird it should show saved version or sign again you know
+Four shows that there's no Thi like you said where there's client portal link and job proof pack and stuff like that, none of that is in the job view
+five shows quick action, this should be at the top, why on earth would it be at the bottom
+Six shows the autopilot page and the autopilot page has the sliders/pages inside with my automations, templates and activity. The padding around it looks terrible as you can see the my automations button
+Seven shows action centre and its good but when batch invoicing and stuff like we had problems in web app, it says create invoices but there's no batch maker or whatever it just also takes you to the invoice page, doesn't really help
+Eight shows client detail of activity, it shows it, but it doesn't allow you to click on it to take you to there
+Nine shows you kanban board and it isn't even drag and drop and also the mobile app has no drag and drop functionality whatsoever
+Ten shows you the schedule which is good but highlights how there's no dispatch board or drag and drop, like research the top apps and how they overcome this
+Eleven shows you smart chaser or whatever and it shows you the thing where it has the tone, this should be a modal where you can preview the message, remember the app shouldn't have anything done blindly to the tradie worker owner or manager, remember that
+Twelve shows you a poor design of invoice view like cmon the UI/UX is quite poor we can do way better like style an everything is bad and the buttons are too traditional, but it's okay
+Thirteen shows you collecting payment and it shows everything good but why is custom amount at the bottom it should be at the top above all the items
+Fourteen the receipt in recording expense the AI can generate a description of receipt or whatever see how the photo has nothing to do with a receipt, let's make it more clearer
+Fifteen shows you the team operations page where it says upgrade team plan even though the team plan is already enabled
+Sixteen the team operations page is just not goo enough and advanced enough like it's not as good as web app and just feels poorly designed
+Seventeen in templates page the templates of items beneath the document template or whatever it has all the items which is good but it shouldn't allow you to scroll through every one, there can be maybe 5 of recent ones shown then a view all button and a search bar above it
+Eighteen the quote view isn't poorly designed but it just doesn't feel actioned like template like why is that button there, the edit button works but what if there's previous versions and you he preview view of the document, it's not responsive if you turn on before photos checkbox to put the before photos thing in there like web app does, this applies for after photos too
+Nineteen the chat hub is just not good enough and why's the back button there, only displayed when previous action wasn't dashboard page or whatever or just get rid of it in general it ruins the design also the SMS connected with the number should be able to edit just like web app and change and buy numbers you know like how we're gonna allow businesses to do. And honestly what's the point of new SMS button like idek what's good about it
+Twenty the communications hub didn't take in my recent message like why didn't it send through and everything and the communications hub on mobile doesn't even sync up on web app like there can be differentiators showing what came from mobile and what came from web app, this would be great

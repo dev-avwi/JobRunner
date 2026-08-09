@@ -1,0 +1,114 @@
+
+Vibe Code Secure
+Protect Your Vibe Code Apps
+
+Security Scanning for Vibe Code Applications
+Vibe Code Secure specializes in analyzing Vibe Code applications for security vulnerabilities, configuration issues, and best practices to help you build secure, resilient software tailored to the Vibe Code ecosystem.
+
+Built for Vibe Code Builders
+Replit
+Databutton
+Cursor
+Our security scanner is specially designed for applications built with these powerful Vibe Code platforms.
+
+Scan Your Web Application or API
+Application URL
+https://jobrunner.com.au
+Enter your web application or API URL (including http:// or https://)
+
+Scan Now
+Security Scan Results
+https://jobrunner.com.au - Scanned on Apr 19, 2026
+
+Must-Have Security Score (Critical & High Severity Only)
+Critical & High Priority
+77/100
+10 PASSED ·3 FAILED
+
+77
+Medium Priority Score
+58%
+7/12
+Overall Score
+70%
+19/27
+
+Must-Have Security
+77%
+(10/13) critical/high
+
+Good-to-Have
+58%
+(7/12) medium
+Must-Have Security Features
+These categories contain critical and high severity security checks that all projects should implement.
+
+The overall score at the top only counts high/critical severity checks, but below you'll see all checks within each category.
+
+Fix critical and high severity issues first to ensure basic security protection.
+
+
+HTTP Security Headers
+6/8
+Content-Security-Policy (CSP)
+PASS
+HIGH
+Restricts which resources can be loaded, preventing XSS attacks
+
+Why this passed:
+
+Properly implemented: default-src 'self';script-src 'self' https://js.stripe.com https://*.googletagmanager.com https://cd...
+
+X-Content-Type-Options
+PASS
+MEDIUM
+Prevents MIME type sniffing
+
+Why this passed:
+
+Properly implemented with "nosniff" value
+
+Strict-Transport-Security (HSTS)
+PASS
+HIGH
+Forces HTTPS connections
+
+Why this passed:
+
+Strong HSTS implementation with long duration: max-age=63072000; includeSubDomains, max-age=31536000; includeSubDomains
+
+Show all checks
+
+TLS/SSL Implementation
+4/5
+
+Cookie Security
+0/5
+
+Cross-Origin Protections
+3/5
+
+Input Validation & Injection Prevention
+1/1
+
+Environment Configuration
+1/1
+
+Security Best Practices
+Export Detailed Report
+HTTP Headers
+Verify Vibe Code security headers for XSS, CSRF, and injection protection
+
+TLS/SSL
+Verify Vibe Code app transport layer and encryption implementation
+
+Auth Controls
+Evaluate Vibe Code authentication, authorization, and session security
+
+Infrastructure
+Assess Vibe Code API configurations, server security, and deployment setup
+
+Vibe Code Secure
+Comprehensive application & API security scanning
+
+© 2026 Vibe Code Secure. All rights reserved.

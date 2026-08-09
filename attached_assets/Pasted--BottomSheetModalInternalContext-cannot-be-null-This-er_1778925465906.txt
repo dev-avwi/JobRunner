@@ -1,0 +1,243 @@
+'BottomSheetModalInternalContext' cannot be null!
+
+This error is located at:
+    at BottomSheetModalComponent (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3144809)
+    at anonymous (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3012020)
+    at ActionSheetProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3626148)
+    at ConfirmDialogProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:4342503)
+    at CustomAlertProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:4316613)
+    at TerminalProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:4290875)
+    at ScrollProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3189263)
+    at ThemeProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1628178)
+    at SafeAreaEnv (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1190374)
+    at RNCSafeAreaProvider (<anonymous>)
+    at SafeAreaProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1192282)
+    at SafeAreaProviderShim (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1190768)
+    at QueryClientProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3256886)
+    at ErrorBoundary (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:4315167)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:568001)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:572627)
+    at GestureHandlerRootView (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:6390181)
+    at RootLayout (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:3669669)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1407377)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1414428)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1379035)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1323911)
+    at SceneView (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1376819)
+    at PreventRemoveProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1355109)
+    at NavigationStateListenerProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1384373)
+    at NavigationContent (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1373901)
+    at anonymous (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1373804)
+    at Content (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1617151)
+    at SafeAreaEnv (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1190374)
+    at RNCSafeAreaProvider (<anonymous>)
+    at SafeAreaProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1192282)
+    at SafeAreaProviderShim (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1190768)
+    at LinkPreviewContextProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1526875)
+    at anonymous (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1616046)
+    at ThemeProvider (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1326072)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1323911)
+    at BaseNavigationContainer (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1302598)
+    at NavigationContainerInner (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1619013)
+    at ContextNavigator (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1616275)
+    at ExpoRoot (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:1615919)
+    at App (<anonymous>)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:568001)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:572627)
+    at AppContainer (address at /var/mobile/Containers/Data/Application/07138898-DBF0-4B1B-B36D-964CA3D1DD75/Library/Application Support/.expo-internal/9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:567328)
+
+_construct
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:216522
+Wrapper
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:216173
+_callSuper
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:201049
+SyntheticError
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:215658
+getExtendedError
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:213593
+onCaughtError
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:213696
+logCaughtError
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:342741
+anonymous
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:343127
+callCallback
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:327170
+commitCallbacks
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:327256
+commitClassCallbacks
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:360402
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362191
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:361727
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:361560
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:361596
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:361727
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362244
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:362287
+recursivelyTraverseLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:364534
+commitLayoutEffectOnFiber
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:361822
+flushLayoutEffects
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:374957
+commitRoot
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:374497
+commitRootWhenReady
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:370277
+performWorkOnRoot
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:369900
+performWorkOnRootViaSchedulerTask
+    9d2bc8fc91d44bb91d65e6e4e394ba34.bundle:1:323079

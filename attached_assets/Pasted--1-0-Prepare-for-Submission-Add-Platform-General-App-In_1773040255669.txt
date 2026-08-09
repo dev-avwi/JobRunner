@@ -1,0 +1,116 @@
+
+1.0 Prepare for Submission
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+iOS App Version 1.0
+Save
+Add for Review
+The assets and metadata below appear on your app’s product page, when users install your app, and will be used for web engine search results once you release your app.
+English (Australia)
+?
+Previews and Screenshots
+?
+Adding accurate screenshots of your app on the newest devices can help you represent the app's user experience. Keep in mind that we'll use these screenshots for all display sizes and localizations. Screenshots are only required for iOS apps, and only the first 3 will be used on the app installation sheets.
+
+iPhone
+iPad
+Apple Watch
+View All Sizes in Media Manager
+
+iPhone
+6.5" Display
+
+
+
+
+
+
+
+
+
+
+0 of 3 App Previews
+
+5 of 10 Screenshots
+
+Choose File
+
+Delete All
+
+Promotional Text
+170
+Description
+4,000
+Keywords
+100
+Support URL
+http://example.com
+Marketing URL
+http://example.com (optional)
+Version
+1.0
+Copyright
+Routing App Coverage File
+
+Choose File (Optional)
+
+
+iMessage App
+?
+Build
+If your app uses encryption, you're required to upload export compliance documentation. You can submit this documentation before you submit your app for review in the App Encryption Documentation section, or by uploading your app below.
+Upload your builds using one of several tools. See Upload Tools
+
+Game Center
+App Review Information
+Sign-In Information
+Provide a user name and password so we can sign in to your app. We’ll need this to complete your app review.
+
+Sign-in required
+User name
+Password
+Contact Information
+First name
+Last name
+Phone number
+Email
+Notes
+4,000
+Attachment
+
+Choose File (Optional)
+
+App Store Version Release
+To make your app available on the App Store, you can automatically release it after it’s been approved by App Review. You can also manually release it on the App Store at a later date.
+
+
+Manually release this version
+
+Automatically release this version
+
+Automatically release this version after App Review, no earlier than
+Your local date and time.
+
+March 9, 2026 5:00 PM
+Mar 9, 2026 7:00 AM (GMT)
+App Store Connect

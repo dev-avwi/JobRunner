@@ -1,0 +1,228 @@
+
+VAPI LABS
+
+BUILD
+
+
+
+
+TEST
+
+
+OBSERVE
+
+
+
+
+MANAGE
+
+
+PAYG
+7.05 Credits
+Logs
+
+Composer
+Refresh
+Export All
+
+
+
+
+
+
+Time Range
+
+
+Last 7 days
+Call ID
+
+Call ID
+Assistants
+
+Assistants
+Squads
+
+Squads
+Phone Numbers
+
+Phone Numbers
+Call Types
+
+Call Types
+Customer Phone Number
+
+Customer Phone Number
+
+
+
+Call ID
+Assistant / Squad
+Assistant Phone Number
+Customer Phone Number
+Type
+Ended Reason
+Start Time (GMT+10)
+Duration
+Cost
+
+019e...5871
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 13, 2026, 07:14
+2m 50s
+$0.29
+
+019e...4476
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
++61 (468) 070 456
+
++61 (458) 300 051
+Inbound	
+Customer
+May 8, 2026, 19:55
+1m 29s
+$0.16
+
+019e...c292
+
+Mike's Plumbing Services AI Receptionist
+
+d3d8...8311
+
+-	
+-
+Web	
+Customer
+May 8, 2026, 19:52
+36s
+$0.04
+Page 1 of 1
+Rows per page
+
+25
+05/13/2026 07:14 inboundPhoneCall
+Assistant
+Cost: $0.29
+Customer: +61 (458) 300 051
+Ended: Customer
+Duration: 2m 50s
+019e1e0a-f0a...
+View detailed logs for this call session
+Recording
+00:01
+Transcripts
+Logs
+Analysis
+Structured Outputs
+Messages
+Call Cost
+Latency Summary
+Search logs
+597 logs
+Time
+Level
+Category
+Raw Data
+May 13, 07:14:54.217
+Info
+Transcriber
+Deepgram Flux WebSocket request
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.requestStarted", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "request": { "url": "wss://api.deepgram.com/v2/listen?model=flux-general-en&sample_rate=16000&encoding=linear16", "config": { "model": "flux-general-en", "sample_rate": "16000", "encoding": "linear16" }, "keyterm": [] }, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.219
+Info
+Transcriber
+Deepgram Flux WebSocket request
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.requestStarted", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "request": { "url": "wss://api.deepgram.com/v2/listen?model=flux-general-en&sample_rate=16000&encoding=linear16", "config": { "model": "flux-general-en", "sample_rate": "16000", "encoding": "linear16" }, "keyterm": [] }, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.224
+Info
+Call
+call.queued
+{ "category": "call", "service": "call", "event": "call.queued", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "callType": "phone", "transportProvider": "twilio", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.465
+Info
+Transcriber
+Deepgram Flux WebSocket connected
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.connectionOpened", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.465
+Info
+Voice
+ElevenLabs WebSocket opened
+{ "category": "voice", "service": "call", "event": "assistant.voice.connectionOpened", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "elevenlabs", "voiceId": "spZS54yMfsj80VHtUQFY", "model": "eleven_turbo_v2_5", "sampleRate": 16000, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.467
+Info
+Voice
+ElevenLabs WebSocket opened
+{ "category": "voice", "service": "call", "event": "assistant.voice.connectionOpened", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "elevenlabs", "voiceId": "spZS54yMfsj80VHtUQFY", "model": "eleven_turbo_v2_5", "sampleRate": 16000, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.481
+Info
+Call
+call.started
+{ "category": "call", "service": "call", "event": "call.started", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "callType": "phone", "transportProvider": "twilio", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.481
+Info
+Call
+call.transportConnected
+{ "category": "call", "service": "call", "event": "call.transportConnected", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "transportProvider": "twilio", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.483
+Info
+Call
+call.assistantStarted
+{ "category": "call", "service": "call", "event": "call.assistantStarted", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "assistantName": "Mike's Plumbing Services AI Receptionist", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.483
+Info
+Call
+call.recordingResumed
+{ "category": "call", "service": "call", "event": "call.recordingResumed", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.483
+Info
+Pipeline
+First message started
+{ "category": "pipeline", "service": "call", "event": "pipeline.firstMessageStarted", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "firstMessageMode": "assistant-speaks-first", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.483
+Info
+Pipeline
+pipeline.sayQueuePush
+{ "category": "pipeline", "service": "call", "event": "pipeline.sayQueuePush", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "queueLength": 1, "interruptible": false, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.487
+Info
+Call
+call.inProgress
+{ "category": "call", "service": "call", "event": "call.inProgress", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "callType": "phone", "assistantName": "Mike's Plumbing Services AI Receptionist", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.487
+Info
+Call
+call.customerJoined
+{ "category": "call", "service": "call", "event": "call.customerJoined", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "callType": "phone", "transportProvider": "twilio", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.488
+Info
+Model
+LLM stream clearing
+{ "category": "model", "service": "call", "event": "assistant.model.clearing", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "openai", "model": "gpt-4o-mini", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.535
+Info
+Transcriber
+Deepgram Flux WebSocket connected
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.connectionOpened", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.825
+Info
+Transcriber
+Deepgram Flux first message received
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.requestSucceeded", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "message": { "type": "TurnInfo", "request_id": "019e1e0a-f1f1-7590-b0d3-4a0fd3fd5fa6", "event": "Update", "turn_index": 0, "audio_window_start": 0, "audio_window_end": 0.24, "transcript": "", "words": [], "end_of_turn_confidence": 0.3247, "sequence_id": 1 }, "latencyMs": 360, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+May 13, 07:14:54.901
+Info
+Transcriber
+Deepgram Flux first message received
+{ "category": "transcriber", "service": "call", "event": "assistant.transcriber.requestSucceeded", "eventStatus": "success", "orgId": "bf56e1f6-9af1-42d4-ab7e-e3a8d7f248d4", "callId": "019e1e0a-f0a6-7000-b18f-a38fca565871", "subscriptionId": "9402f9cc-213f-450d-8295-d1b70ec3f5b8", "provider": "deepgram", "model": "flux-general-en", "message": { "type": "TurnInfo", "request_id": "019e1e0a-f2a0-7581-8b82-cc5bced92e00", "event": "Update", "turn_index": 0, "audio_window_start": 0, "audio_window_end": 0.24, "transcript": "", "words": [], "end_of_turn_confidence": 0.0911, "sequence_id": 1 }, "latencyMs": 366, "traceId": "019e1e0a-f0a6-7000-b18f-a38fca565871" }
+Close

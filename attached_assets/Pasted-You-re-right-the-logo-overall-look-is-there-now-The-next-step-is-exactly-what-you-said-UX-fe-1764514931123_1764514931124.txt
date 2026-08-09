@@ -1,0 +1,253 @@
+You’re right – the logo + overall look is there now.
+The next step is exactly what you said: UX + features + offline + backend.
+
+Here’s a solid plan you can actually work through and also feed into Replit.
+
+⸻
+
+1️⃣ UX & Layout – Full App Checklist
+
+Go screen by screen (Dashboard, Jobs, Quotes, Invoices, Clients, Calendar, Files, Settings, etc.) and check:
+
+A. Navigation & structure
+	•	Bottom nav:
+	•	Home / Jobs / Clients / Invoices / More are always visible.
+	•	Current tab clearly highlighted.
+	•	Back/close buttons always obvious on sub-pages.
+	•	No pages feel “left aligned” or with weird unused columns.
+	•	Content max width is consistent (e.g. max-width: 1200px; margin: 0 auto;).
+	•	Demo/real mode clearly labelled (so tradie knows where they are).
+
+B. Visual consistency
+	•	Same fonts and sizes for:
+	•	Page titles (e.g. “Jobs”, “Invoices”).
+	•	Section headings (“Today’s Schedule”, “Recent Activity”).
+	•	Button styles (primary = blue, secondary = outline, danger = red).
+	•	Cards: same corner radius, shadow, padding.
+	•	Icons: same outline/weight and distance from text.
+	•	Spacing:
+	•	16–24px padding inside cards.
+	•	24–32px gaps between sections.
+	•	No random cramped areas.
+
+C. Key flows feel “obvious”
+
+Do these WITHOUT thinking too hard:
+	•	Create Job → add client → set date/time → save.
+	•	Convert Quote → Job → Invoice.
+	•	Mark Invoice as Paid.
+	•	Add file/photos to a Job.
+	•	View Today’s Schedule.
+	•	Find a past job by client name.
+
+If any step feels like “wait, where is that?”, add a button or micro-copy.
+
+D. Empty states & error states
+
+For every main list, test when it’s empty:
+	•	Jobs list empty → show:
+	•	Icon + text (“No jobs yet – create your first job”)
+	•	Big primary button “Create Job”.
+	•	Quotes, Invoices, Clients – same pattern.
+	•	Calendar empty → “No jobs scheduled today – schedule work”.
+
+Error states:
+	•	Failed to save job (e.g. network off) → show a small toast “Couldn’t save, will retry” or clear error.
+	•	Stripe or SendGrid errors → show simple message:
+	•	“Unable to connect to payments right now. Please try again.”
+
+E. Loading states
+	•	When you open Dashboard with real data:
+	•	Show skeleton cards / subtle loading placeholders – not white flashes.
+	•	When creating job/quote/invoice:
+	•	Button shows loading spinner and disables to avoid double-clicks.
+
+F. Mobile responsiveness
+	•	Test on:
+	•	iPhone 13/14 size.
+	•	Small Android size (e.g. ~360px width).
+	•	Make sure:
+	•	Tables become stacked cards.
+	•	No horizontal scrolling.
+	•	Bottom navigation never overlaps content.
+
+⸻
+
+2️⃣ Feature & Workflow Checklist
+
+Walk through each module as if you’re a tradie.
+
+A. Account, roles & onboarding
+	•	Sign up flow:
+	•	Email/password or Continue with Google works.
+	•	Email verification (if you’ve enabled it) actually sends via SendGrid.
+	•	Business onboarding asks:
+	•	Business name, trade type, ABN (optional), timezone, currency.
+	•	Roles:
+	•	Owner / Admin / Worker.
+	•	Owner can invite team; workers can’t see billing, only jobs & relevant clients.
+
+B. Jobs
+	•	Can:
+	•	Create / edit / delete jobs.
+	•	Assign client.
+	•	Assign team member.
+	•	Add address, date/time, notes, job status (New, Scheduled, In Progress, Completed).
+	•	Status updates:
+	•	Dashboard counts update correctly (e.g. “Open Jobs: 3”).
+	•	Job view:
+	•	Shows timeline (created, quote sent, invoice paid, etc.) if you’ve built it.
+	•	Attachments (photos, PDFs) upload and display.
+
+C. Quotes
+	•	Create quote from:
+	•	Jobs page (“Create Quote from job”)
+	•	Or directly from Quotes tab.
+	•	Line items:
+	•	Qty, unit price, calculated line total.
+	•	GST toggle (on/off).
+	•	Total updates instantly.
+	•	Quote number auto-increments (Q-1001, Q-1002…).
+	•	Quote PDF:
+	•	Uses your branding (TradieTrack logo + tradie’s logo if uploaded).
+	•	Shows all required info (ABN, client, terms, expiry date).
+	•	Email quote:
+	•	Uses SendGrid.
+	•	Goes to client’s email.
+	•	Includes link + attached PDF.
+
+D. Quote → Job → Invoice flow
+	•	Accept quote (simulate client clicking accept):
+	•	Quote status becomes “Accepted”.
+	•	Job auto-created or linked.
+	•	Create invoice from:
+	•	Accepted quote OR completed job.
+	•	Invoice PDF:
+	•	Invoice number, due date, payment instructions, GST, totals.
+
+E. Payments (Stripe)
+	•	Connect a Stripe account in Settings:
+	•	Test with Stripe test keys.
+	•	From an invoice:
+	•	“Pay Online” button leads to Stripe Checkout or Payment Link.
+	•	After payment:
+	•	Webhook (or polling) marks invoice “Paid”.
+	•	Stores payment date, amount, method.
+	•	You (Ayden) also have your own Stripe connection for TradieTrack subscriptions.
+
+F. Email flows (SendGrid)
+
+Test these:
+	•	New account welcome email (to tradie).
+	•	Quote sent email (to client).
+	•	Invoice sent email (to client).
+	•	Payment receipt (optional, nice to have).
+Check:
+	•	Subject lines are clear and non-spammy.
+	•	From-name is something like:
+	•	“Mike’s Plumbing via TradieTrack” or
+	•	“TradieTrack on behalf of Mike’s Plumbing”.
+
+⸻
+
+3️⃣ Offline + Cloud Backend Checklist
+
+You want:
+	•	Cloud backend for real syncing
+	•	Offline-friendly UI for when they’re on site
+
+A. Architecture (conceptually)
+	•	Frontend: your TradieTrack web app.
+	•	Backend API: e.g. Node/Express, Supabase, Firebase, or Replit DB + wrappers.
+	•	Database: Postgres / Supabase / Firebase Firestore / etc.
+	•	Integrations:
+	•	Stripe webhooks → your API → update invoices.
+	•	SendGrid / Twilio email → your API for logs.
+
+B. Offline behaviour
+
+When internet goes off mid-job:
+	1.	Detect offline
+	•	Use navigator.onLine + window.addEventListener('online'/'offline').
+	•	Show a small banner:
+“Offline – changes will sync when connection returns.”
+	2.	Queue actions locally
+	•	Store unsynced actions in localStorage / IndexedDB:
+	•	New job
+	•	Job edits
+	•	Photos (might need local caching)
+	•	When back online:
+	•	Replay the queue → send to API.
+	•	Clear once successful.
+	3.	What’s read-only when offline
+	•	No new Stripe payments (obviously).
+	•	No email sending.
+	•	But:
+	•	They can still open recently loaded jobs (cached).
+	•	They can still create new jobs/notes which sync later.
+	4.	Testing offline
+	•	Open app in Chrome dev tools → toggle “Offline”.
+	•	Try:
+	•	Open a job (should use cache if possible).
+	•	Create/edit a job.
+	•	Turn back online → confirm data appears in database.
+
+⸻
+
+4️⃣ Master Replit Prompt – QA & UX Sweep
+
+Here’s a prompt you can paste into Replit’s AI:
+
+PROMPT FOR REPLIT AI
+You are a senior SaaS product designer + QA engineer.
+I have built a web app called TradieTrack – a job, quote and invoice management platform for Australian tradies (similar to ServiceM8 / Tradify).
+
+I want you to:
+	1.	Go through the entire app as if you are a tradie user (owner + worker).
+	2.	Thoroughly test all workflows:
+	•	Sign up, onboarding, business setup
+	•	Creating / editing / deleting Jobs
+	•	Creating Quotes (with line items, GST, totals, expiry)
+	•	Sending Quotes via email (SendGrid) + PDF output
+	•	Converting Quotes → Jobs → Invoices
+	•	Creating + sending Invoices, marking as paid
+	•	Stripe payments integration (test mode)
+	•	Client management (add, edit, search, filter)
+	•	Calendar / Today’s schedule
+	•	File uploads/attachments for jobs
+	•	Notifications / banners / error messages
+	3.	Check UX & UI quality:
+	•	Navigation clarity (bottom nav, side panels, back buttons)
+	•	Consistent spacing, typography, card styles, button hierarchy
+	•	Empty states for all lists (Jobs, Quotes, Invoices, Clients)
+	•	Error states and loading skeletons
+	•	Mobile responsiveness (iPhone-sized viewport)
+	4.	Check offline behaviour conceptually:
+	•	Identify what currently breaks when offline
+	•	Suggest how to add local caching + action queue for Jobs/Notes
+	5.	Compare UX quality to apps like ServiceM8 / Tradify and list:
+	•	What feels on-par
+	•	What feels weaker or missing
+	•	Concrete improvements I should make before beta release
+
+When you’re done, give me:
+	•	A bug list (with steps to reproduce)
+	•	A UX issues list (with suggested fixes)
+	•	A feature gaps list vs pro-tier tradie apps
+	•	A final “beta readiness” verdict (YES/ALMOST/NO) with next steps.
+
+⸻
+
+5️⃣ What you actually do next
+	1.	Run through my checklists yourself on your phone + laptop.
+	2.	Paste the Replit prompt and get its feedback.
+	3.	Fix:
+	•	Any broken flows
+	•	Any confusing UX
+	•	Any places where totals/logic feel off
+	4.	Once you’re happy:
+	•	Turn on real domain
+	•	Lock in pricing
+	•	Invite your first 3 beta tradies.
+
+If you want, next time you can send me screens of each main screen (Dashboard, Jobs, Job Details, Quote editor, Invoice editor) and I’ll do a pixel-level UX critique like a real product designer.

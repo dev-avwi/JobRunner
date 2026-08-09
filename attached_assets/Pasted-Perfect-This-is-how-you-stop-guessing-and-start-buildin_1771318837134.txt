@@ -1,0 +1,162 @@
+Perfect. This is how you stop guessing and start building strategically.
+
+Below is a competitive feature matrix comparing:
+	•	ServiceM8
+	•	Visual Dispatch
+	•	Tradify
+	•	JobRunner (Current + Target)
+
+I’m being realistic — not marketing fluff.
+
+⸻
+
+🧩 1. JOB LIFECYCLE MANAGEMENT
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Lead → Quote → Job → Invoice	✅	✅	✅	✅	✅
+Job status pipeline	✅	✅	✅	⚠️ Basic	🔥 Advanced Kanban
+Multi-stage workflow	✅	⚠️ Limited	✅	❌	🔥 Yes
+Job history timeline	✅	⚠️ Basic	⚠️ Basic	⚠️ Partial	🔥 Full event log
+Internal vs client notes	✅	⚠️ Limited	⚠️ Limited	⚠️ Partial	🔥 Fully separated
+
+Verdict:
+JobRunner must strengthen workflow states + timeline logging.
+
+⸻
+
+👥 2. TEAM & DISPATCH
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Multi-worker assignment	✅	✅	✅	✅	✅
+Subcontractor support	⚠️ Limited	⚠️ Limited	⚠️ Limited	⚠️ Partial	🔥 Full web/app mode
+Live GPS tracking	⚠️ Limited	✅ Strong	⚠️ Limited	⚠️ Basic	🔥 Uber-style
+Dispatch board	✅	⚠️ Basic	⚠️ Limited	⚠️ Partial	🔥 Full
+Team utilization view	⚠️	❌	❌	❌	🔥 Yes
+Time approval workflow	⚠️	❌	⚠️	⚠️ Partial	🔥 Required
+
+Verdict:
+Visual Dispatch wins on fleet control.
+JobRunner can beat all with clean live + approval flow.
+
+⸻
+
+🚛 3. ASSET & EQUIPMENT MANAGEMENT
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Equipment registry	❌	✅ Strong	❌	❌	🔥 Yes
+Vehicle tracking	⚠️ Limited	✅	❌	❌	🔥 Yes
+Asset assigned to job	❌	✅	❌	❌	🔥 Yes
+Maintenance logs	❌	✅	❌	❌	🔥 Yes
+
+Verdict:
+Visual Dispatch dominates here.
+If JobRunner adds this properly → it becomes enterprise-capable.
+
+⸻
+
+💰 4. FINANCIAL & PROFIT CONTROL
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Invoice generation	✅	✅	✅	✅	✅
+Payment integration	✅	⚠️	✅	⚠️	🔥 Yes
+Job profitability view	⚠️	❌	⚠️	❌	🔥 Full engine
+Labour cost tracking	⚠️	❌	⚠️	⚠️	🔥 Yes
+Materials markup tracking	⚠️	❌	⚠️	⚠️	🔥 Yes
+Revenue dashboard	⚠️	❌	⚠️	❌	🔥 Strong
+
+Verdict:
+None of them are amazing at real-time profit insight.
+This is where JobRunner can win.
+
+⸻
+
+📊 5. OWNER DASHBOARD / ANALYTICS
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Revenue overview	✅	❌	⚠️	❌	🔥 Yes
+Outstanding invoices	✅	❌	⚠️	⚠️	🔥 Yes
+Staff performance	⚠️	❌	❌	❌	🔥 Yes
+Job value trends	⚠️	❌	⚠️	❌	🔥 Yes
+Cashflow insight	⚠️	❌	❌	❌	🔥 Yes
+
+Verdict:
+This is wide open.
+JobRunner can dominate here.
+
+⸻
+
+📱 6. MOBILE APP POWER
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Full feature parity	⚠️	❌	⚠️	❌	🔥 Required
+Owner can manage fully via mobile	⚠️	❌	⚠️	❌	🔥 Yes
+Offline mode	⚠️	❌	⚠️	⚠️	🔥 Strong
+
+Verdict:
+This is your competitive edge.
+Mobile-first, fully capable.
+
+⸻
+
+🔁 7. AUTOMATION
+
+Feature	ServiceM8	Visual Dispatch	Tradify	JobRunner (Now)	JobRunner (Target)
+Auto SMS reminders	✅	⚠️	⚠️	⚠️	🔥 Full rule engine
+Review requests	✅	❌	⚠️	❌	🔥 Yes
+Invoice overdue reminders	✅	❌	⚠️	❌	🔥 Yes
+Workflow automation	⚠️	❌	❌	❌	🔥 Yes
+
+
+⸻
+
+🎯 Where JobRunner Should Compete
+
+🔥 Win Areas
+	•	Clean UI (your strength)
+	•	Uber-style tracking
+	•	True subcontractor integration
+	•	Real profit engine
+	•	Owner dashboard clarity
+	•	Full mobile parity
+	•	Asset tracking + dispatch combined
+
+🚫 Avoid
+	•	Overcomplicated enterprise ERP
+	•	Bloated accounting features
+	•	Cluttered UX
+
+⸻
+
+🏆 Strategic Positioning
+
+ServiceM8 = Established + feature heavy
+Visual Dispatch = Fleet / resource focused
+Tradify = Simpler mid-market
+
+JobRunner = Modern, powerful, clean “Business OS for Tradies.”
+
+⸻
+
+🚀 The Key Strategic Advantage
+
+If JobRunner can combine:
+
+• Visual Dispatch asset tracking
+• ServiceM8 workflow automation
+• Tradify simplicity
+• Uber-level tracking
+• Real profit analytics
+
+It becomes:
+
+The modern tradie operating system.
+
+⸻
+
+If you want next, I can:
+	1.	Build a clear feature roadmap (Phase 1–3)
+	2.	Create a “Minimum to Compete” checklist
+	3.	Design the exact Owner Dashboard layout
+	4.	Or design the Subcontractor system properly from database up
+
+Which one do you want to tackle next?

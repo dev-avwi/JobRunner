@@ -1,0 +1,351 @@
+Absolutely — I understand exactly what you want:
+You want **TradieTrack to behave like a *real* team management app**, not just a job manager.
+
+That means:
+
+* ✔ A live map of jobs
+* ✔ Completed vs scheduled pins
+* ✔ Team member locations
+* ✔ Team chat + direct messaging
+* ✔ Job-specific chats
+* ✔ Owner command centre
+
+So let’s update the **Replit Master Testing Prompt** to include EVERYTHING you just described — especially the new map/location system and team communication layer.
+
+Below is the **updated + complete final version** you can paste directly into Replit AI.
+
+This is the **best possible version**, combining everything:
+
+* real-world tradie workflows
+* location systems
+* job pins
+* team tracking
+* chats
+* map UI
+* backend checks
+* Stripe
+* SendGrid
+* PDF legitimacy
+* roles
+* permissions
+* subscriptions
+* offline basics
+
+This is the **ultimate prompt**.
+
+——————————————
+
+# ⭐ **UPDATED REPLIT MASTER TESTING PROMPT (PASTE THIS INTO REPLIT)**
+
+——————————————
+
+🧠 **REPLIT MASTER TESTING PROMPT — FINAL BETA READINESS CHECK**
+
+I want you to act as a QA engineer + SaaS product tester for my app **TradieTrack**, a job/quote/invoice/payments/team/location management platform for tradies.
+
+Your job is to verify that the ENTIRE app is a **technically solid beta** — nothing should be UI-only unless marked as “coming soon”. Every visible feature must link to real backend logic.
+
+You must test all features using **realistic mock data** and ensure that:
+
+✔ Job workflows behave exactly like a real tradie business
+✔ Stripe works for subscriptions & invoice payments
+✔ SendGrid sends real emails (with templates + branding rules)
+✔ PDFs are clean, accurate, and professional
+✔ Location + map + team tracking logic works
+✔ Chats (team chat + job chat + private chat) are wired to backend
+✔ Roles & permissions work
+✔ No broken buttons or placeholders
+✔ No dead ends
+✔ No silent failures
+✔ All routes exist
+✔ Database writes happen properly
+
+Use this mock data in all operations:
+
+**Business:**
+
+* Name: “Cairns Coast Plumbing”
+* ABN: 12 345 678 910
+* Email: [cairnscoastplumbing@example.com](mailto:cairnscoastplumbing@example.com)
+* Phone: 0400 123 456
+* Plan: Free → then Pro
+* Address: 123 Sheridan St, Cairns QLD
+
+**Clients:**
+
+* Sarah Thompson — [sarah@example.com](mailto:sarah@example.com)
+* David Reid — [david@example.com](mailto:david@example.com)
+
+**Jobs:**
+
+1. “Fix leaking shower” — Sarah
+2. “Install new vanity” — Sarah
+3. “Blocked drain at cafe” — David
+
+**Team Members:**
+
+* Joe (Owner)
+* Sam (Technician)
+* Riley (Apprentice)
+
+——————————————————
+
+### ✔ 1. CORE WORKFLOW TESTING
+
+——————————————————
+
+Test the entire workflow end-to-end:
+
+1. Create job → save to DB
+2. Convert job → quote
+3. Quote preview updates live
+4. Send quote email via SendGrid
+5. Client receives email + PDF
+6. Client accepts quote
+7. Quote status → Accepted
+8. Convert to invoice
+9. Send invoice → email template + PDF
+10. Client pays via Stripe test card
+11. Invoice status → Paid
+12. Payment receipt email sent
+
+Check that **all backend routes exist** for each step.
+
+——————————————————
+
+### ✔ 2. PDF GENERATION & LEGITIMACY
+
+——————————————————
+
+Verify PDFs include:
+
+* Tradie logo (Pro only)
+* Business details + ABN
+* Client info
+* Line items
+* Totals (GST correct)
+* Dates
+* Quote/invoice numbers
+* Acceptance/paid timestamps
+* Clean layout
+* No broken formatting
+
+——————————————————
+
+### ✔ 3. SENDGRID EMAIL WORKFLOWS
+
+——————————————————
+
+Check that:
+
+* Verified sender is used
+* Reply-to is the tradie email
+* Templates exist for:
+
+*Quote sent*
+*Invoice sent*
+*Payment receipt*
+*Job update*
+
+**Pro plan branding:**
+
+* Logo included
+* Footer included
+* “Powered by TradieTrack” removed or minimised
+
+**Free plan:**
+
+* No custom branding
+* “Powered by TradieTrack” visible
+
+——————————————————
+
+### ✔ 4. STRIPE WORKFLOWS
+
+——————————————————
+
+Test:
+
+1. Tradie subscription (Test mode)
+2. Invoice payment (Stripe Connect)
+3. Webhook correctly updates:
+
+* business.subscription_status
+* invoice.status
+* payment records
+
+——————————————————
+
+### ✔ 5. MAP / LOCATION SYSTEM (NEW FEATURE)
+
+——————————————————
+
+Ensure this is fully wired:
+
+### **A. Job Map View**
+
+On the map page:
+
+* Jobs appear as pins
+* Pin colour changes by status:
+
+  * Blue: Scheduled
+  * Orange: In Progress
+  * Green: Completed
+* Each pin has:
+
+  * Job title
+  * Client name
+  * Status
+  * Tap → opens job details
+
+Check that:
+
+* Map loads from real API (Google Maps / Leaflet)
+* Coordinates are stored in DB for jobs
+* If tradie types an address → geocode to lat/lng
+* Map refreshes when job status changes
+
+### **B. Team Member Locations (NEW)**
+
+If enabled:
+
+* Team members show as different icons
+* Owner can see:
+
+  * Last known location
+  * Timestamp
+* Must verify:
+
+The “share location” button actually calls a backend update function.
+No fake UI.
+
+### **C. Job Route Planning**
+
+If route/“open in maps” link exists:
+
+Confirm:
+
+* It uses stored coordinates
+* Generates correct Google Maps link
+
+——————————————————
+
+### ✔ 6. TEAM CHAT + JOB CHAT
+
+——————————————————
+
+Confirm:
+
+**Team Chat:**
+
+* All members see messages
+* Messages save to DB
+* Real-time/subscription works
+* Attachments (photos) upload properly
+
+**Job Chat (Per job):**
+
+* Messages link to specific job ID
+* Team sees history
+* Owner sees everything
+* Attachments work
+
+**Direct messages (Owner → Tech):**
+
+* Private channel exists
+* Only correct users can view
+
+——————————————————
+
+### ✔ 7. ROLES & PERMISSIONS
+
+——————————————————
+
+Check:
+
+* Owner full access
+* Manager access but limited billing
+* Technician limited to assigned jobs
+* Apprentice view-only except checklists
+
+Enforce in backend:
+
+No UI-only restrictions.
+
+——————————————————
+
+### ✔ 8. OFFLINE & ERROR HANDLING
+
+——————————————————
+
+Check:
+
+* No crashes on slow internet
+* All API calls show loading state
+* All failures show error messages
+* No operations silently fail
+
+——————————————————
+
+### ✔ 9. MAP + TIME TRACKING (FINAL)
+
+——————————————————
+
+Test:
+
+1. “Start timer” on job
+2. Timer runs in background
+3. User can pause/stop
+4. Total time saved in DB
+5. Time converts into invoice line item (optional)
+
+Check:
+
+“Use current location”:
+
+* Captures location
+* Saves to last_known_location table
+
+——————————————————
+
+### ✔ 10. FINAL CHECK: IS THIS A “PROFESSIONAL, REAL-WORLD BETA”?
+
+——————————————————
+
+At the end provide:
+
+* All workflows that passed
+* All items partially implemented
+* All broken links or UI-only buttons
+* All missing backend endpoints
+* All bugs
+* A list of must-fix items before launch
+
+Use the codebase, not assumptions.
+
+——————————————
+
+# ⭐ END OF PROMPT
+
+——————————————
+
+### Paste all of that into Replit and let the AI run through everything.
+
+---
+
+# ⭐ NOW FOR YOUR NEXT QUESTION
+
+Here is how YOU test the map + location + time tracking workflow manually (real-world simulation):
+
+If you want it, I’ll write it clearly too.
+
+---
+
+If you want next:
+🔥 A “Real-World Testing Script” to physically test with your phone
+🔥 A “First 3 Tradies Test Plan PDF”
+🔥 A “Team Chat + Location UX Diagram”
+🔥 A “Live Map Mockup”
+
+Just tell me.

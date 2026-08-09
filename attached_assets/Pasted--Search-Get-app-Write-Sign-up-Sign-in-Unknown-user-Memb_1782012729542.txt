@@ -1,0 +1,94 @@
+
+Search
+
+Get app
+Write
+Sign up
+
+Sign in
+
+
+Unknown user
+Member-only story
+
+Your Vibe Coded App Is Useless Without These 5 Login Fixes
+Usman Writes
+Usman Writes
+
+Follow
+8 min read
+·
+13 hours ago
+1
+
+
+
+
+Press enter or click to view image in full size
+Here’s both, optimized for accessibility and discoverability: Alt text (for SEO and screen readers, keep it descriptive and keyword-rich): “Infographic banner titled ‘Your vibe coded app is useless, 5 security fixes your vibe coded app is missing right now,’ showing a road with five icons for session token security, server-side admin checks, email verification and 2FA, rate limiting, and password rules, from the Developer’s Journey newsletter by M. Usman.
+Cloud Code just added a login screen to your vibe-coded app. Big moment. It feels like the app is legit now. Real users, real accounts, real sense of progress.
+
+Link for free (non-member) readers
+
+But here’s the part nobody tells you: that new login screen is probably the easiest thing in your entire application to hack.
+
+Authentication is the front door of your app, and front doors get tested constantly, by bots, by curious users, by actual attackers. If you vibe-coded your login flow without explicitly asking for security hardening, there’s a good chance you’re missing critical protections. The good news is that every single one of these is a vibe-codable fix. You just need to know what to ask for.
+
+Here are the five things your login screen is probably missing, why each one matters, and the exact prompts you can paste into your AI coding tool to fix them.
+
+1. Your Session Token Lives in Local Storage (and That’s an XSS Risk)
+When a user logs in, your app generates a session token or JSON Web Token (JWT) to prove they’re authenticated on future requests. A lot of vibe-coded apps store that token in localStorage because it's the path of least resistance, it's easy to read and write, and most tutorials default to it.
+
+The problem is that localStorage is fully accessible to any JavaScript running on your page. If your app has even one cross-site scripting (XSS) vulnerability, anywhere, in a comment field, a search bar, a third-party widget, an attacker's script can read localStorage and steal that token. Once they have it, they can impersonate your user without ever needing a password.
+
+The fix is to move session storage out of JavaScript’s reach entirely. Use an httpOnly, Secure, SameSite cookie instead. httpOnly cookies can't be read by client-side JavaScript at all, which removes the entire attack path.
+
+Example of the vulnerable pattern:
+
+// Vulnerable: token is readable by any script on the page
+localStorage.setItem('authToken', token);
+Example of the fixed pattern (server-side, setting the cookie):
+
+Create an account to read the full story.
+The author made this story available to Medium members only.
+If you’re new to Medium, create a new account to read this story on us.
+
+Sign up with Google
+Sign up with Facebook
+
+Sign up with email
+Already have an account? Sign in
+1
+
+
+
+Usman Writes
+Written by Usman Writes
+4.1K followers
+·
+20 following
+Let's make the internet less boring than it already is. https://www.linkedin.com/in/muhammad-usman-strategist/
+
+
+Follow
+Help
+
+Status
+
+About
+
+Careers
+
+Press
+
+Blog
+
+Store
+
+Privacy
+
+Rules
+
+Terms
+
+Text to speech

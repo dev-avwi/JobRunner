@@ -1,0 +1,118 @@
+JobRunner: Comprehensive Valuation & Market Positioning
+Report
+Prepared by: Manus AI Date: March 29, 2026
+This report provides a detailed valuation analysis of JobRunner, examining its intrinsic IP asset value, projected revenue-based
+acquisition multiples, competitive pricing strategy, and user experience (UX) accessibility compared to incumbent market leaders.
+1. Executive Summary
+JobRunner represents a highly capable, modern entrant into the Australian field service management (FSM) software market.
+While the product is currently in beta, the underlying codebase and feature set represent significant intellectual property (IP).
+Based on our analysis, JobRunner’s current Code and IP Asset Value is estimated at $310,000 AUD. If the application reaches a
+milestone of $10,000 Monthly Recurring Revenue (MRR), its valuation would shift to a revenue multiple model, placing its value
+between 600,000 AUD. At scale (
+3,000,000 AUD** [1] [2].
+JobRunner’s primary competitive advantage lies in its rapid onboarding (time-to-value) and native AI integrations (Vapi
+receptionist, AI quoting), which incumbents like Tradify and ServiceM8 lack. However, its current lack of published native mobile
+apps on the App Store and Google Play is a critical adoption blocker that must be resolved before significant MRR can be
+achieved.
+2. Intrinsic Valuation: Code & IP Asset Value
+Before a SaaS product generates significant revenue, its value is derived from its Intellectual Property (IP) and the replacement
+cost of its codebase [3]. JobRunner is a full-stack application (React, Node.js, PostgreSQL) with complex third-party integrations.
+To calculate the IP Asset Value, we estimate the cost to rebuild the current feature set using an average Australian senior
+development rate of $150/hour.
+IP Asset Breakdown
+Component Estimated Effort Estimated Cost (AUD)
+Core Job Management Engine 400 hours $60,000
+React Native Mobile App (Codebase) 330 hours $50,000
+Multi-Accounting Integrations (Xero, etc.) 300 hours $45,000
+SWMS/WHS Compliance Module 260 hours $40,000
+AI Receptionist (Vapi) Integration 230 hours $35,000
+Stripe Connect & Payments 200 hours $30,000
+Client/Subcontractor Portals 160 hours $25,000
+AI Quote Generation 160 hours $25,000
+Total Estimated Rebuild Cost 2,040 hours $310,000
+360, 000and 50K +
+MRR), strategicacquisitionmultiplesintheverticalSaaSspacecouldpushthevaluationbeyond ∗ ∗
+Conclusion on IP Value: As a pure technology asset, JobRunner is worth approximately $310,000 AUD today. This represents the
+minimum baseline value if the technology were sold to a competitor or private equity firm looking to bypass the 12-18 month
+development cycle [4].
+3. Revenue-Based Valuation Models
+Once JobRunner transitions from beta to generating recurring revenue, its valuation methodology shifts from “cost-to-rebuild” to
+a multiple of Annual Recurring Revenue (ARR) or Seller’s Discretionary Earnings (SDE).
+In the current 2025
+⁄2026 vertical SaaS market, micro-SaaS businesses (under $1M ARR) typically trade at 3x to 5x ARR, depending
+on growth rate, churn, and gross margins [1] [5].
+Valuation Scenarios
+1. The 120K ARR): At $10,000 MRR, the business is proving product-market fit. Buyers at this stage are
+typically individual investors or micro-PE firms.
+Conservative Multiple (3x ARR): $360,000 AUD
+Premium Multiple (5x ARR): $600,000 AUD (Achievable if churn is <5% and growth is >15% MoM)
+2. The 600K ARR): At $50,000 MRR, JobRunner becomes an attractive target for strategic acquirers or
+larger PE roll-ups looking for market share in the trades sector.
+Standard Multiple (5x ARR): $3,000,000 AUD
+Strategic Acquisition (8x-12x ARR): 7,200,000 AUD
+10KMRRMilestone(
+50KMRRMilestone(
+4, 800, 000−
+The Precedent: Tradify’s Acquisition
+In October 2024, Tradify (a direct competitor) was acquired by The Access Group for over 150M AUD) [6]. At the
+time, Tradify had roughly $17M in revenue and 20,000 customers [7]. This represents an acquisition multiple of roughly 8.8x
+Revenue, demonstrating the high premium placed on established trade management software in the ANZ region.
+4. UX Accessibility & Ease of Use Comparison
+A major driver of software switching in the trades industry is the “Time to Value” (TTV). Tradies are time-poor; if an app takes
+hours to configure, they will abandon the trial.
+We audited JobRunner’s onboarding flow against Tradify, ServiceM8, and AroFlo.
+100MUSD(approx.
+Key Findings
+JobRunner’s Strength: The web onboarding is exceptionally fast. A user can create an account and generate their first job in
+under 3 minutes. The UI is modern (Radix/Tailwind) and highly intuitive.
+JobRunner’s Weakness: The absence of published native mobile apps. ServiceM8 dominates because its iOS app is
+flawlessly integrated with Apple’s ecosystem (including offline mode). Until JobRunner’s React Native apps are live on the
+stores, its mobile UX score remains critically low.
+UX Verdict: JobRunner is fundamentally easier to use on the web than its competitors. However, field service software is won and
+lost in the field. Publishing the mobile apps and ensuring robust offline capability is the single most important step to unlocking
+growth.
+5. Pricing Strategy Analysis
+JobRunner’s current pricing model is highly disruptive, but potentially leaves money on the table as the product matures.
+Current Competitor Landscape (5-Person Team)
+ServiceTitan: ~$1,250/mo (Enterprise focus)
+ServiceM8: ~$395/mo (Usage-based pricing scales quickly)
+AroFlo: ~$325/mo
+Tradify: 62/user)
+JobRunner (Current): 49 base + $29/seat)
+310/mo(
+165/mo(
+Strategic Pricing Recommendations
+JobRunner is currently underpricing its value, especially given the inclusion of AI features and native SWMS compliance.
+1. Maintain the Freemium Tier: The “Free for early users” (25 jobs/mo) is an excellent wedge strategy to steal market share
+from Tradify.
+2. Increase Pro & Team Pricing Post-Beta:
+Pro: Increase from 59/mo.
+Team: Increase base to 35/seat.
+Rationale: Even at these higher prices, a 5-person team would cost 91/mo cheaper than
+Tradify**, maintaining the disruptive price advantage while improving unit economics.
+3. Monetise the AI Receptionist Heavily: The
+60/mo includes 100 calls, $0.50 per call thereafter) to capture upside as businesses grow.
+6. Final Assessment & Next Steps
+JobRunner is a highly valuable IP asset with the potential to be a multi-million dollar business. The codebase is modern, the
+feature set is aggressive, and the AI integrations are genuinely market-leading.
+To reach the 600K+ valuation, you must:
+1. Publish the Mobile Apps: This is non-negotiable. Tradies will not adopt software they cannot download from the App
+Store/Play Store.
+2. Secure the Webhooks: Ensure Stripe, Xero, and Twilio webhooks have proper cryptographic signature validation to prevent
+financial data manipulation.
+3. Build Migration Tools: Create a “One-Click Import from Tradify/ServiceM8” feature to remove the friction of switching.
+Once these three foundational pillars are secure, the product is fully ready to scale to 1,000+ businesses.
+39/moto
+79/mo+
+219/mo, whichisstill ∗ ∗
+60/moadd −
+onfortheVapiAIreceptionistisbrilliant.Competitorsdonothavethis.Y oushouldconsiderusage −
+basedbillingforthisfeature(e.g.,
+10KMRRmilestoneanda
+References
+[1] SaaS Valuation Multiples: 2025 Report. First Page Sage. [2] Micro-SaaS Valuation: Selling Under
+9m+ payday as his Tradify app sells to UK firm for
+17M revenue and 20K customers in 2024. GetLatka.
+1MARR.SaaSValuationApp.[3]HowtoConductSoftwareIPValuation.Eqvista.[4]FieldServiceManagementSoftwareDevelop
+1M − 5MARR.BreakwaterMA.[6]Formersparkieinfor
+100m.RNZNews(Oct2024).[7]HowTradifyhit

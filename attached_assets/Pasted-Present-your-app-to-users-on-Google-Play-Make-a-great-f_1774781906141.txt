@@ -1,0 +1,68 @@
+Present your app to users on Google Play
+Make a great first impression and help users find and engage with your app through your store listing. Edit information like your app's name, icon, description, screenshots and video to increase discoverability and drive downloads.
+
+
+Default – English (United Kingdom) – en-GB
+* – Required fields. Enter all fields in English (United Kingdom) – en-GB
+
+Listing assets
+Check the Metadata policy and Help Centre guidance to avoid common issues with your Store Listing. Review all programme policies before submitting your app.
+
+If you're eligible to provide advance notice to the app review team, contact us before publishing your Store Listing.
+
+App name *
+JobRunner
+This is how your app will appear on Google Play 
+
+9 / 30
+Text is 9 characters out of 30
+Short description *
+Add a short description for your app 
+
+0 / 80
+Text is 0 characters out of 80
+Full description *
+ 
+
+0 / 4000
+Text is 0 characters out of 4000
+Graphics
+Manage your app icon, screenshots and videos to promote your app on Google Play. Review the content guidelines before uploading new graphics. If you add translations for your Store Listing without localised graphics, we will use the graphics from your default language.
+
+App icon *
+Your app icon must be a PNG or JPEG, up to 1 MB, 512 px by 512 px, and meet our design specifications and metadata policy
+
+Feature graphic *
+Your feature graphic must be a PNG or JPEG, up to 15 MB and 1,024 px by 500 px
+
+Video
+https://www.youtube.com/watch?v=
+Add a video by entering a YouTube URL. This video must be public or unlisted, ads must be turned off and it must not be age restricted. 
+
+Phone
+Phone screenshots *
+Upload 2–8 phone screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+To be eligible for promotion, include at least 4 screenshots at a minimum of 1080 px on each side.
+Tablet
+7-inch tablet screenshots *
+Upload up to eight 7-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 320 px and 3,840 px
+
+10-inch tablet screenshots *
+Upload up to eight 10-inch tablet screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Chromebook
+Chromebook screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 8 MB each, 16:9 or 9:16 aspect ratio, with each side between 1,080 px and 7,680 px
+
+Android XR
+Android XR screenshots
+Upload 4–8 screenshots. Screenshots must be PNG or JPEG, up to 15 MB each, 16:9 or 9:16 aspect ratio, with each side between 720 px and 7,680 px
+
+Spatial XR video
+https://www.youtube.com/watch?v=
+Add a spatial XR video for an immersive preview of your features by entering a YouTube URL. This video must be in 360°, 180° or 3D, be public or unlisted, ads must be turned off and it must not be age restricted.
+
+Non-spatial XR video
+https://www.youtube.com/watch?v=
+Add a non-spatial XR video by entering a YouTu

@@ -1,0 +1,463 @@
+Skip to main content
+I'm a Bug Hunter. Here is how I prevent my Vibe-Coded apps from getting hacked. : r/vibecoding
+Find anything
+Ask
+Find anything
+Sign Up
+Log In
+
+Expand user menu
+Skip to Sign upSkip to Right Sidebar
+
+Back
+
+Go to vibecoding
+r/vibecoding
+•
+4mo ago
+BehiSec
+
+I'm a Bug Hunter. Here is how I prevent my Vibe-Coded apps from getting hacked.
+I'm a bug bounty hunter and pentester. I've spent the last 5 years chasing security vulnerabilities in web apps, from small local companies to Google and Reddit.
+
+When vibe-coding took off, social media got flooded with memes about insecure vibe-coded apps. And honestly? They're not wrong.
+
+There are 2 reasons for this:
+
+Most vibe coders don't have a dev background - so they're not aware of security risks in the first place
+
+LLMs produce vulnerable code by default - doesn't matter which model, they all make the same mistakes unless you explicitly guide them
+
+From a bug hunter's perspective, security is about finding exceptions; the edge cases developers forgot to handle.
+
+I've seen so many of them:
+
+A payment bypass because the price was validated client-side
+
+Full account takeover through a password reset that didn't verify email ownership
+
+Admin access by changing a single parameter in the request
+
+If senior developers at Google make these mistakes, LLMs will definitely make them too.
+
+So here's how you can secure your vibe-coded apps without being a security expert:
+
+1. Securing the Code
+The best approach is to prevent vulnerabilities from being written in the first place. But you can't check every line of code an LLM generates.
+
+I got tired of fixing the same security bugs over and over, so I created a Skill that forces the model to adopt a Bug Hunter persona from the start.
+
+It catches about 70% of common vulnerabilities before I even review the code, specifically:
+
+Secret Leakage (e.g., hardcoded API keys in frontend bundles)
+
+Access Control (IDOR, privilege escalation nuances)
+
+XSS/CSRF
+
+API issues
+
+It basically makes the model think like an attacker while it builds your app.
+
+You can grab the skill file here (it's open source): https://github.com/BehiSecc/VibeSec-Skill
+
+2. Securing the Infrastructure
+Not every security issue happens in the code. You can write perfect code and still get hacked because of how you deployed or configured things.
+
+Here are 8 common infrastructure mistakes to avoid:
+
+Pushing secrets to public GitHub repos - use .gitignore and environment variables, never commit .env files
+
+Using default database credentials - always change default passwords for Postgres, MySQL, Redis, etc.
+
+Exposing your database to the internet - your DB should only be accessible from your app server, not the public internet
+
+Missing or broken Supabase RLS policies - enable RLS policy
+
+Debug mode in production - frameworks like Django/Flask/Laravel show stack traces, and secrets when debug is on
+
+No backup strategy - if your database gets wiped (or encrypted by ransomware), can you recover?
+
+Running as root - your app should run as a non-privileged user, not root
+
+Outdated dependencies - run npm audit or pip audit regularly, old packages might have known exploits
+
+Quick Checklist Before You Launch
+No API keys or secrets in your frontend code
+
+All API routes verify authentication server-side
+
+Users can only access their own data (test with 2 accounts)
+
+Your dependencies are up to date
+
+.env files are in .gitignore
+
+Database isn't exposed to the internet
+
+Debug mode is OFF in production
+
+If you want the AI to handle most of this automatically while you code, grab the skill. If you prefer doing it manually, this post should give you a solid starting point.
+
+Happy to answer any security questions in the comments.
+
+
+Read more
+95
+·
+19
+u/GeForce-NOW-CloudGG avatar
+GeForce-NOW-CloudGG
+•
+Promoted
+
+Cloud gaming with local Aussie servers!
+Play Now
+cloud.gg
+Thumbnail image: Cloud gaming with local Aussie servers!
+Comments Section
+u/vir_db avatar
+vir_db
+•
+4mo ago
+Thank you for sharing this!
+
+2
+BehiSec
+OP
+•
+4mo ago
+You're welcome!
+
+2
+Playful_Bug_3567
+•
+4mo ago
+u/Sheepherder71 avatar
+Sheepherder71
+•
+4mo ago
+Appreciate your experience, expertise and skill sharing , will be testing this skill against my setup 👍
+
+1
+BehiSec
+OP
+•
+4mo ago
+You're welcome. Let me know if you have any suggestions or concerns after testing the skill.
+
+1
+u/Coyote_Android avatar
+Coyote_Android
+•
+4mo ago
+This is awesome, thank you so much!
+
+1
+BehiSec
+OP
+•
+4mo ago
+You're welcome.
+
+1
+u/TryCursor avatar
+u/TryCursor
+•
+Promoted
+
+Find any file in milliseconds. Cursor knows your entire codebase, so you can jump straight to the code you need.
+Sign Up
+cursor.com
+Thumbnail image: Find any file in milliseconds. Cursor knows your entire codebase, so you can jump straight to the code you need.
+thesauce25
+•
+4mo ago
+Pretty helpful ty
+
+3
+RADICCHI0
+•
+4mo ago
+This is exactly why vibe coders should consider pipeline dev for data transformation as a first learning step. It allows one to probe, debug, transform data into information, and present it in novel ways that can lead to the creation on knowledge. It's also a lot more secure, because the access issues become non-existent.
+
+3
+[deleted]
+•
+4mo ago
+Thanks man
+
+2
+u/Practical-Club7616 avatar
+Practical-Club7616
+•
+4mo ago
+That's why for some of us AI is force multiplier. My simple project has all this and is probably more secure than your average company lol
+
+1
+u/felix_westin avatar
+felix_westin
+•
+4mo ago
+ive been building a tool quite literally exactly for this, but i guess instead of having it done as a skill with claude i have it seperated as a workflow before commiting or pushing. hope more people will realise how often AI still makes mistakes
+
+1
+Mhanz97
+•
+4mo ago
+Ty
+
+1
+booda26
+•
+4mo ago
+This is really helpful - thanks
+
+1
+u/rzagirov avatar
+rzagirov
+•
+4mo ago
+The skill approach is smart - making the model think like an attacker while it builds rather than after.Worth adding to the checklist: test your auth flows manually with two accounts. Most access control bugs are invisible until someone actually tries to access data they shouldn't. Two incognito windows, five minutes, catches most of it.
+
+1
+People also ask about section
+People also ask about
+Innovative AI tools for creative coding
+Unique programming languages to explore
+How to enhance coding with music
+Best practices for vibe coding techniques
+AI-generated art: tools and tips
+More posts you may like
+Related posts
+Sir, they just hacked a second vibe coding app
+
+r/softwareWithMemes
+•
+2mo ago
+Sir, they just hacked a second vibe coding app
+r/softwareWithMemes - Sir, they just hacked a second vibe coding app
+768 upvotes · 9 comments
+u/AdobeDocumentCloud avatar
+AdobeDocumentCloud
+•
+Promoted
+
+Easily create a personalised PDF Space to summarise PDFs, Microsoft 365 files, web links, and more in a click.
+Thumbnail image: Easily create a personalised PDF Space to summarise PDFs, Microsoft 365 files, web links, and more in a click.
+adobe.com
+Subscribe
+I vibe coded my entire app and it is quite extensive!
+
+r/promoteMyApp
+•
+11d ago
+I vibe coded my entire app and it is quite extensive!
+r/promoteMyApp - I vibe coded my entire app and it is quite extensive!
+27 upvotes · 20 comments
+The one thing I shouldn't have vibe coded...
+
+r/vibecoding
+•
+2mo ago
+The one thing I shouldn't have vibe coded...
+r/vibecoding - The one thing I shouldn't have vibe coded...
+222 upvotes · 80 comments
+asked the app I vibecoded if building it was a good idea. got absolutely humbled.
+
+r/vibecoding
+•
+5mo ago
+asked the app I vibecoded if building it was a good idea. got absolutely humbled.
+r/vibecoding - asked the app I vibecoded if building it was a good idea. got absolutely humbled.
+252 upvotes · 77 comments
+Vibe coding is fun until you have to debug it
+r/AI4tech
+•
+2mo ago
+Vibe coding is fun until you have to debug it
+r/AI4tech - Vibe coding is fun until you have to debug it
+0:24
+407 upvotes · 14 comments
+Vibe coders at it again 🤣🤣
+
+r/TechGhana
+•
+13d ago
+Vibe coders at it again 🤣🤣
+r/TechGhana - Vibe coders at it again 🤣🤣
+68 upvotes · 35 comments
+Vibe coding setups for indie hackers juggling too many workflows
+
+r/AutonomousLounge
+•
+1mo ago
+Vibe coding setups for indie hackers juggling too many workflows
+r/AutonomousLounge - Vibe coding setups for indie hackers juggling too many workflows
+2
+166 upvotes · 7 comments
+I fix apps for a living. 80% of my rescues this year are vibe coded builds.
+
+r/vibecoding
+•
+4mo ago
+I fix apps for a living. 80% of my rescues this year are vibe coded builds.
+335 upvotes · 100 comments
+nobody uses your vibecoded apps
+
+r/vibecoding
+•
+15d ago
+nobody uses your vibecoded apps
+r/vibecoding - nobody uses your vibecoded apps
+514 upvotes · 360 comments
+6 things that broke when my vibe coded apps got their first real users
+
+r/vibecoding
+•
+2mo ago
+6 things that broke when my vibe coded apps got their first real users
+115 upvotes · 31 comments
+vibe coding: lots of mediocre new apps with few users
+
+r/BetterOffline
+•
+16d ago
+vibe coding: lots of mediocre new apps with few users
+r/BetterOffline - vibe coding: lots of mediocre new apps with few users
+580 upvotes · 70 comments
+Vibe coded this little app that lets you doodle 1 moment a day and slowly build your personal memory collection
+
+r/vibecoding
+•
+3d ago
+Vibe coded this little app that lets you doodle 1 moment a day and slowly build your personal memory collection
+r/vibecoding - Vibe coded this little app that lets you doodle 1 moment a day and slowly build your personal memory collection
+0:37
+52 upvotes · 15 comments
+I audited 8 vibe-coded apps last week. 8 out of 8 had a high-severity hole, and they were almost identical
+
+r/vibecoding
+•
+18d ago
+I audited 8 vibe-coded apps last week. 8 out of 8 had a high-severity hole, and they were almost identical
+64 upvotes · 21 comments
+My dad (25+ years as a dev) made his first vibe coded app and asked me to publish it on Reddit to get some feedback, be nice!
+
+r/vibecoding
+•
+9mo ago
+My dad (25+ years as a dev) made his first vibe coded app and asked me to publish it on Reddit to get some feedback, be nice!
+23 upvotes · 13 comments
+Not a developer, I started with Vibe Code, I got hacked, I lost all my clients' data...
+
+r/AI_Coders
+•
+2mo ago
+Not a developer, I started with Vibe Code, I got hacked, I lost all my clients' data...
+15 upvotes · 76 comments
+I hack web apps for a living. Here's how I stop Claude from writing vulnerable code.
+
+r/ClaudeAI
+•
+5mo ago
+I hack web apps for a living. Here's how I stop Claude from writing vulnerable code.
+512 upvotes · 85 comments
+What's everyone doing when they get stuck vibe coding because of some bug(s)?
+
+r/vibecoding
+•
+9mo ago
+What's everyone doing when they get stuck vibe coding because of some bug(s)?
+7 upvotes · 64 comments
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+
+r/Vibe_SEO
+•
+6mo ago
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+1 upvote
+How to build secure vibe-coded apps that don't get hacked.
+
+r/VibeCodeDevs
+•
+5mo ago
+How to build secure vibe-coded apps that don't get hacked.
+5 comments
+The reason your vibe-coded app will never scale
+
+r/vibecoding
+•
+15d ago
+The reason your vibe-coded app will never scale
+108 comments
+As Vibe Coding becomes more and more complete, any application can be quickly copied, and everyone is making similar software. So what will ultimately lead to success?
+
+r/vibecodingcommunity
+•
+5d ago
+As Vibe Coding becomes more and more complete, any application can be quickly copied, and everyone is making similar software. So what will ultimately lead to success?
+6 upvotes · 38 comments
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+
+r/DigitalMarketingHack
+•
+6mo ago
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+2 upvotes
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+
+r/seogrowth
+•
+6mo ago
+Blocked Due to Access Forbidden (403) in GSC? One of the most annoying errors! Here's how to fix it, fast!
+1 upvote
+We found 21,000+ bugs in AI-generated apps. Here's what vibe coders keep breaking.
+
+r/SaaS
+•
+5mo ago
+We found 21,000+ bugs in AI-generated apps. Here's what vibe coders keep breaking.
+4 comments
+How to build secure vibe-coded apps that don't get hacked.
+
+r/SideProject
+•
+5mo ago
+How to build secure vibe-coded apps that don't get hacked.
+10 comments
+View Post in
+繁體中文
+Tiếng Việt
+简体中文
+Português (Brasil)
+Русский
+日本語
+Français
+See more
+Community Info Section
+r/vibecoding
+discord
+Join
+vibecoding
+fully give in to the vibes. forget that the code even exists.
+Public
+Home
+Popular
+News
+Explore
+Best of Reddit
+Best of Reddit in Portuguese
+Best of Reddit in German
+Reddit Rules
+Privacy Policy
+User Agreement
+Accessibility
+OSA Information
+Reddit, Inc. © 2026. All rights reserved.
+
+Join the most real place on the internet
+
+
+Continue with Phone Number
+By continuing, you agree to our User Agreement and acknowledge that you understand the Privacy Policy.

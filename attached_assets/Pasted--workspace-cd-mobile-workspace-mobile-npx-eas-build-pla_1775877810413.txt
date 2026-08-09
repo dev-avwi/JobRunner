@@ -1,0 +1,85 @@
+~/workspace$ cd mobile
+~/workspace/mobile$ npx eas build --platform ios --profile production
+★ eas-cli@18.6.0 is now available.
+To upgrade, run:
+npm install -g eas-cli
+Proceeding with outdated version.
+
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+Environment variables loaded from the "production" build profile "env" configuration: NPM_CONFIG_LEGACY_PEER_DEPS, EXPO_PUBLIC_API_URL, SENTRY_DISABLE_AUTO_UPLOAD.
+
+✔ Incremented buildNumber from 47 to 48.
+
+
+ios.buildNumber field in app config is ignored when version source is set to remote, but this value will still be in the manifest available via expo-constants. It's recommended to remove this value from app config.
+● Validation Warning:
+
+  Unknown option "watcher.unstable_workerThreads" with value false was found.
+  This is probably a typing mistake. Fixing it will remove this message.
+
+✔ Using remote iOS credentials (Expo server)
+
+If you provide your Apple account credentials we will be able to generate all necessary build credentials and fully validate them.
+This is optional, but without Apple account access you will need to provide all the missing values manually and we can only run minimal validation on them.
+✔ Do you want to log in to your Apple account? … yes
+
+› Log in to your Apple Developer account to continue
+✔ Apple ID: … developer@avwebinnovation.com
+› The password is only used to authenticate with Apple and never stored on EAS servers
+  Learn more: https://bit.ly/2VtGWhU
+✔ Password (for developer@avwebinnovation.com): … ***********
+› Saving Apple ID password to the local Keychain
+  Learn more: https://docs.expo.dev/distribution/security#keychain
+✔ Logged in, verify your Apple account to continue
+Two-factor Authentication (6 digit code) is enabled for developer@avwebinnovation.com. Learn more: https://support.apple.com/en-us/HT204915
+
+✔ Please enter the 6 digit code you received at +61 •••• ••• •51: … 497691
+✔ Valid code
+✔ Logged in and verified
+› Team Ayden Vogler (6557LUX45F)
+› Provider Ayden Vogler (128354611)
+✔ Bundle identifier registered com.jobrunner.app
+✔ Synced capabilities: No updates
+✔ Synced capability identifiers: No updates
+✔ Fetched Apple distribution certificates
+✔ Fetched Apple provisioning profiles
+
+Project Credentials Configuration
+
+Project                   @avwi/tradietrack
+Bundle Identifier         com.jobrunner.app
+                          
+App Store Configuration   
+                          
+Distribution Certificate  
+Serial Number             682CD5E0B2FD0DDDF61C61AFE364C8AC
+Expiration Date           Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Updated                   4 months ago
+                          
+Provisioning Profile      
+Developer Portal ID       DJTD4DADG8
+Status                    active
+Expiration                Mon, 07 Dec 2026 09:10:45 UTC
+Apple Team                6557LUX45F (Ayden Vogler (Individual))
+Updated                   11 days ago
+                          
+All credentials are ready to build @avwi/tradietrack (com.jobrunner.app)
+
+✔ Push Notifications are set up
+
+Compressing project files and uploading to EAS Build. Learn more: https://expo.fyi/eas-build-archive
+✔ Compressed project files 1m 25s (778 MB)
+Your project archive is 778 MB. You can reduce its size and the time it takes to upload by excluding files that are unnecessary for the build process in .easignore file. Learn more: https://expo.fyi/eas-build-archive
+✔ Uploaded to EAS 2m 18s
+✔ Computed project fingerprint
+
+See logs: https://expo.dev/accounts/avwi/projects/tradietrack/builds/6109476b-295b-4d37-a428-5b9e5c7392f3
+
+Waiting for build to complete. You can press Ctrl+C to exit.
+✖ Build failed
+
+🍏 iOS build failed:
+Unknown error. See logs of the Install pods build phase for more information.
+~/workspace/mobile$ 

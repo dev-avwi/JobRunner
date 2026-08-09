@@ -1,0 +1,60 @@
+Okay now I can do a proper full breakdown. This is gold — you’ve captured the entire Jobber flow from splash to quote review. Let me break down exactly why it works and what JobRunner needs to replicate.
+
+THE ONBOARDING FLOW — WHY IT’S SO GOOD
+
+Image 1 — Splash/Landing
+Full bleed real tradie photo, dark teal overlay, logo centred, social proof number (“200,000 pros”) as the only copy. Two buttons max. “Joining a Team?” as a third option in text only — doesn’t compete visually. No feature list, no bullet points. Pure confidence.
+
+Image 2 — Create Account
+Dead simple. Email + password, Google, Apple. Nothing else. The legal copy is tiny at the bottom. They don’t ask your business name here — that comes later. This is intentional friction reduction.
+
+Image 3 — “Your free trial is now active”
+This is the first genius move. The progress bar appears immediately. The headline celebrates something (“your free trial is now active”) before asking anything. Name is pre-filled from signup. Only asks for phone. One screen, two fields, Next.
+
+Image 4 — Tell us about your business
+Company name + industry dropdown. Still minimal. Progress bar has moved. The subheadline “Personalize Jobber with features specifically designed for businesses just like yours” is doing heavy lifting — it reframes data collection as a benefit to you.
+
+Image 5 — Your business at a glance
+Pill button selectors instead of dropdowns. Team size + years in business. No typing required, just tapping. This feels fast. Progress bar nearly halfway.
+
+Image 6 — THE MAGIC SCREEN
+Full bleed photo of a tradie working, dark overlay, “Welcome, Ayden!” personalised, “Setting up Ayden HVAC…” with your actual business name, green progress bar animating at the bottom. This is fake latency done right. Nothing is actually happening that takes this long — but it makes you feel like serious work is being done for you. The photo matches your industry (HVAC = electrical panel). This is the screen you’re missing entirely.
+
+Image 7 — Social proof DURING the loading
+While “setting up,” they show a real customer testimonial. “I can do everything on my phone in the field.” Adrian Garcia, Reliable Kitchen Services, Mission TX. The loading bar is now halfway. They’re selling you on the value while you wait for something that’s already done.
+
+Image 8 — Welcome to Jobber, Ayden
+Phone mockup showing the app, personalised headline with your business name bolded. “Here’s how Jobber can help you take Ayden HVAC to the next level.” Progress bar still going. This is a feature tour starting.
+
+Images 9, 10, 11 — Feature slides
+Three value prop screens — manage on the go, cut admin work, win more work. Each has a UI mockup or visual. Clean centred layout, bold headline, two lines of body copy, Next button. Progress bar completes across these.
+
+Image 12 — Notifications permission
+Smart placement. They ask for notifications AFTER you’ve seen the value, not at first launch. The screen shows example notifications (Quote Viewed, New Booking Request) so you understand what you’re enabling. “Not Right Now” in plain text below the button — no competing button style.
+
+THE APP SCREENS
+
+Image 13 — Timesheet
+6-icon grid for time categories. Each icon is distinct and labelled. No colour, no noise. The clock at top is huge and readable. Tabs at top for Track Time vs Time Log.
+
+Image 14 — New Expense
+Every field is a full-width rounded card. Consistent height. Logical order. “Linked job” section at bottom with + icon. Clean save button pinned to bottom.
+
+Image 15 — Quote detail
+Status badge top left, big bold title with dollar amount, two primary action buttons side by side (Approve & Schedule, Send), tabs for Quote vs Notes. Line items below. Very scannable.
+
+Image 16 — Review quote
+Rendered as the client would see it. Clean document view inside the app. Optional items have a checkbox. “Send by email” pinned to bottom.
+
+THE GAP LIST — what JobRunner needs
+
+In priority order:
+
+	1.	The loading/setup screen (image 6-7). This is the single biggest trust moment. You have the endpoint. You just need the screen.
+	2.	Progress bar throughout onboarding. Thin green line at top of every step. Dead simple to build.
+	3.	Pill/chip selectors instead of dropdowns where possible (image 5). Trade type, team size — make them tappable pills.
+	4.	Notifications permission screen with example notifications shown AFTER onboarding, not before.
+	5.	Feature slides post-setup (images 9-11). Three screens, UI mockups, bold headline, two lines copy. These sell the app while it loads.
+	6.	Splash screen with real tradie photo + social proof number. Not a logo on white.
+
+Want me to write the Replit Agent prompt to build the loading/setup screen first since that’s the highest impact single change?

@@ -1,0 +1,92 @@
+Good point. Let me research how the top apps actually handle SMS:
+This is gold. Here's what the top apps ACTUALLY do:
+
+How ServiceM8 Does It (Smart)
+They DON'T do true two-way SMS. They cheat:
+
+SMS SENT TO CLIENT:
+"Hi Sarah, Mike is on his way!
+Reply here: servicem8.com/reply/abc123"
+         ↓
+CLIENT CLICKS LINK
+         ↓
+OPENS WEB CHAT PORTAL (not SMS reply)
+         ↓
+CLIENT TYPES REPLY + ATTACHES PHOTOS
+         ↓
+SHOWS UP IN TRADIE'S APP
+The trick: Client doesn't text back. They click a link and reply via web. This avoids all the complex Twilio two-way routing.
+
+How Tradify Does It (Simpler)
+AUTOMATED SMS (quotes, invoices, reminders):
+   → Sent through Tradify's system
+   → No reply tracking
+"ON MY WAY" MESSAGES:
+   → Sent from tradie's PERSONAL PHONE
+   → Not tracked in app
+   → Free for Tradify (tradie pays their own phone bill)
+Translation: Tradify basically opens your phone's SMS app with a pre-filled message. Not in-app.
+
+What This Means for TradieTrack:
+You're overthinking it. The solution is:
+
+Option: Reply Link (Like ServiceM8)
+SMS SENT TO CLIENT:
+"TradieTrack for Mike's Electrical:
+Mike is on his way to fix your tap.
+Track & reply: tradietrack.com/job/abc123"
+         ↓
+CLIENT CLICKS LINK
+         ↓
+SEES: Live tracking map + chat + upload photos
+         ↓
+CLIENT SENDS PHOTO OF PROBLEM
+         ↓
+PHOTO AUTO-ADDS TO JOB JOURNEY AS "PRE PHOTOS"
+         ↓
+TRADIE SEES IN APP
+This is your Client Portal! The SMS just sends a link to it.
+
+The Simple Workflow:
+What Happens	How
+Tradie taps "On My Way"	Auto-SMS with tracking link
+Client clicks link	Opens Client Portal for that job
+Client sees tradie on map	Live tracking
+Client sends message	Shows in Chat Hub
+Client uploads "problem photo"	Auto-added to Job Journey as Pre-Photos
+Tradie arrives, takes photos	Added to Job Journey as Work Photos
+Job complete	Client can see all photos, pay invoice
+Job Journey Enhancement:
+JOB JOURNEY TIMELINE:
+├── 📸 PRE PHOTOS (Client uploaded via portal)
+│   └── "Leaking tap under sink"
+│   └── "Water damage on cabinet"
+├── 🚗 TRADIE EN ROUTE
+│   └── "Mike is 8 mins away"
+├── 📍 TRADIE ARRIVED
+├── 🔧 WORK IN PROGRESS
+│   └── Work photos taken by tradie
+├── ✅ COMPLETED
+│   └── Completion photos
+│   └── Client signature
+├── 💰 INVOICED
+├── ✅ PAID
+Answer to Your Question:
+"Do you think tradies will switch from phone app?"
+Honest answer: NO. Tradies won't stop using their phone's SMS for quick texts.
+
+But they WILL use TradieTrack if:
+
+It auto-sends for them (one tap "On My Way")
+The link gives clients something useful (tracking, portal)
+Client photos auto-attach to jobs (saves them forwarding/downloading)
+Everything is searchable later (phone SMS is a mess)
+The value isn't replacing SMS. It's making SMS SMARTER.
+
+Simple Implementation:
+SMS sends a link (not expecting text reply)
+Link opens Client Portal for that specific job
+Client can chat + upload photos through portal
+Photos auto-tag as "Pre Photos" in Job Journey
+Zero Twilio complexity for two-way
+Want me to design the Job Journey with Pre Photos section as part of the Client Portal feature?

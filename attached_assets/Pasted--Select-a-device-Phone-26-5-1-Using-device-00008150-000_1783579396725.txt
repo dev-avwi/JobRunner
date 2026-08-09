@@ -1,0 +1,75 @@
+✔ Select a device › 🔌 Phone. (26.5.1)
+› Using --device 00008150-000E604926B8401C
+› Auto signing app using team(s): "6557LUX45F", "6557LUX45F"
+› Planning build
+
+› 0 error(s), and 0 warning(s)
+
+CommandError: Failed to build iOS project. "xcodebuild" exited with error code 70.
+To view more error logs, try building the app with Xcode directly, by opening /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/ios/JobRunner.xcworkspace.
+
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/ios/JobRunner.xcworkspace -configuration Debug -scheme JobRunner -destination id=00008150-000E604926B8401C
+
+
+
+2026-07-09 16:43:05.643 xcodebuild[97943:11192744] Writing error result bundle to /var/folders/__/m_smxdw95rb69sqwn08qczqc0000gn/T/ResultBundle_2026-09-07_16-43-0005.xcresult
+xcodebuild: error: Unable to find a device matching the provided destination specifier:
+		{ id:00008150-000E604926B8401C }
+
+	The requested device could not be found because no available devices matched the request.
+
+	Available destinations for the "JobRunner" scheme:
+		{ platform:macOS, arch:arm64, variant:Designed for [iPad,iPhone], id:00006050-000211D80A31401C, name:My Mac }
+		{ platform:iOS, id:dvtdevice-DVTiPhonePlaceholder-iphoneos:placeholder, name:Any iOS Device }
+		{ platform:iOS Simulator, id:dvtdevice-DVTiOSDeviceSimulatorPlaceholder-iphonesimulator:placeholder, name:Any iOS Simulator Device }
+		{ platform:iOS Simulator, arch:arm64, id:E3411A48-2F4C-4473-BB06-F7D92C456AFE, OS:18.6, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:x86_64, id:E3411A48-2F4C-4473-BB06-F7D92C456AFE, OS:18.6, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:B74BF9D6-B9A8-4EB2-8EB8-71470A28643F, OS:26.4.1, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:ADFCEBC5-EF08-4B92-83AD-6A7322BEA756, OS:26.5, name:iPad (A16) }
+		{ platform:iOS Simulator, arch:arm64, id:D3C5AF9E-7850-499B-A7D7-B5AE9DA1D8D9, OS:18.6, name:iPad Air 11-inch (M3) }
+		{ platform:iOS Simulator, arch:x86_64, id:D3C5AF9E-7850-499B-A7D7-B5AE9DA1D8D9, OS:18.6, name:iPad Air 11-inch (M3) }
+		{ platform:iOS Simulator, arch:arm64, id:FDB61968-2BFC-4BA2-ADF3-DD2531CFD4D4, OS:26.4.1, name:iPad Air 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:8309B747-5646-4FF0-87BE-D3FBE53C3539, OS:26.5, name:iPad Air 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:22A2225F-E2E6-4329-A5CA-599BED541EC3, OS:18.6, name:iPad Air 13-inch (M3) }
+		{ platform:iOS Simulator, arch:x86_64, id:22A2225F-E2E6-4329-A5CA-599BED541EC3, OS:18.6, name:iPad Air 13-inch (M3) }
+		{ platform:iOS Simulator, arch:arm64, id:6CB745CB-6130-4717-A9DD-001E2648BAD3, OS:26.4.1, name:iPad Air 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:5F115469-B4D5-4C62-A62C-94DCD59D0972, OS:26.5, name:iPad Air 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:DF0160C4-49A9-4A47-BD7B-6714786517A1, OS:18.6, name:iPad Pro 11-inch (M4) }
+		{ platform:iOS Simulator, arch:x86_64, id:DF0160C4-49A9-4A47-BD7B-6714786517A1, OS:18.6, name:iPad Pro 11-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:39EB00C5-4B71-4EBA-91E2-04EE6E8D347C, OS:26.4.1, name:iPad Pro 11-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:EDE88F0D-3A4C-4DA4-AA4E-66DEEB312E30, OS:26.5, name:iPad Pro 11-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:1AEDE328-2BC2-4474-BB94-19070EE334ED, OS:18.6, name:iPad Pro 13-inch (M4) }
+		{ platform:iOS Simulator, arch:x86_64, id:1AEDE328-2BC2-4474-BB94-19070EE334ED, OS:18.6, name:iPad Pro 13-inch (M4) }
+		{ platform:iOS Simulator, arch:arm64, id:A9011ADA-57ED-47EE-8FDE-28425CB12E6F, OS:26.4.1, name:iPad Pro 13-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:1DC0EA5B-441D-4E4D-AE87-634D6741DE2F, OS:26.5, name:iPad Pro 13-inch (M5) }
+		{ platform:iOS Simulator, arch:arm64, id:83722427-5501-4DE6-BBA3-B6303444B47E, OS:18.6, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:x86_64, id:83722427-5501-4DE6-BBA3-B6303444B47E, OS:18.6, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:C7D54E10-4735-4BF7-BE1D-A1B6B084DB4B, OS:26.4.1, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:27E657A2-9C21-4B55-960B-D0683ABEB4D2, OS:26.5, name:iPad mini (A17 Pro) }
+		{ platform:iOS Simulator, arch:arm64, id:0D73BD34-7CAC-4897-BF8B-765F3007AA6B, OS:18.6, name:iPhone 16 }
+		{ platform:iOS Simulator, arch:x86_64, id:0D73BD34-7CAC-4897-BF8B-765F3007AA6B, OS:18.6, name:iPhone 16 }
+		{ platform:iOS Simulator, arch:arm64, id:532A15F1-A43B-4280-A292-7FB5FBFEA3BB, OS:18.6, name:iPhone 16 Plus }
+		{ platform:iOS Simulator, arch:x86_64, id:532A15F1-A43B-4280-A292-7FB5FBFEA3BB, OS:18.6, name:iPhone 16 Plus }
+		{ platform:iOS Simulator, arch:arm64, id:3B730D4F-0314-443B-A214-C16FFE8B7B59, OS:18.6, name:iPhone 16 Pro }
+		{ platform:iOS Simulator, arch:x86_64, id:3B730D4F-0314-443B-A214-C16FFE8B7B59, OS:18.6, name:iPhone 16 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:4F9770C8-B8CE-45B3-AA65-C85415CDD2C7, OS:18.6, name:iPhone 16 Pro Max }
+		{ platform:iOS Simulator, arch:x86_64, id:4F9770C8-B8CE-45B3-AA65-C85415CDD2C7, OS:18.6, name:iPhone 16 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:0B35672E-F3C1-4272-B038-17F40B627F4B, OS:18.6, name:iPhone 16e }
+		{ platform:iOS Simulator, arch:x86_64, id:0B35672E-F3C1-4272-B038-17F40B627F4B, OS:18.6, name:iPhone 16e }
+		{ platform:iOS Simulator, arch:arm64, id:5F47EFE9-8EC6-4473-8F33-2598A345787C, OS:26.4.1, name:iPhone 17 }
+		{ platform:iOS Simulator, arch:arm64, id:E3B5F60C-F01A-4ADE-9EE3-D4842D1A6C5D, OS:26.5, name:iPhone 17 }
+		{ platform:iOS Simulator, arch:arm64, id:138C78C3-7CF3-496B-851B-3AAD8A50479F, OS:26.4.1, name:iPhone 17 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:7E37CF92-17D0-4C09-BC15-FF1DF511B880, OS:26.5, name:iPhone 17 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:A08ABC78-B02C-4077-AB47-C74CA4EB9DBD, OS:26.5, name:iPhone 17 Pro }
+		{ platform:iOS Simulator, arch:arm64, id:979DB649-83A6-4737-87F9-A8ED4D6A03A3, OS:26.4.1, name:iPhone 17 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:5474C86C-689C-4085-AA40-A25C0994A11B, OS:26.5, name:iPhone 17 Pro Max }
+		{ platform:iOS Simulator, arch:arm64, id:A7D55974-9C1A-491E-A89F-60BB57A5C1ED, OS:26.4.1, name:iPhone 17e }
+		{ platform:iOS Simulator, arch:arm64, id:4D8737D9-CD7C-4A76-94E5-C2CE41864B9F, OS:26.5, name:iPhone 17e }
+		{ platform:iOS Simulator, arch:arm64, id:446EB139-D89B-490A-BDBB-61D713A7EBB8, OS:26.4.1, name:iPhone Air }
+		{ platform:iOS Simulator, arch:arm64, id:1D67E520-A6EF-4FF3-B70A-CD9D68A1D074, OS:26.5, name:iPhone Air }
+
+	Ineligible destinations for the "JobRunner" scheme:
+		{ platform:iOS, arch:arm64e, id:00008150-000E604926B8401C, name:Phone., error:Phone. is not available because pairing is in progress. Respond to the trust dialog on the device if present, and wait until pairing has completed. }
+Build logs written to /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/.expo/xcodebuild.log
+aydshomefolder@Mac mobile % 

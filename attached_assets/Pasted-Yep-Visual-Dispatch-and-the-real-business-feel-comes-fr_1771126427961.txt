@@ -1,0 +1,270 @@
+Yep — Visual Dispatch (and the “real business” feel) comes from one thing:
+
+**Operational awareness.**
+Everyone (owner/dispatch/crew/subbies) is looking at the *same job truth*, and the client sees the *safe version* of that truth.
+
+So if you want TradieTrack/JobRunner to feel like Visual Dispatch, you need **Assets/Equipment + Crew Ops + Job Intelligence** layered onto your already-clean UI.
+
+Here’s the exact feature set + how it connects across **Owner/Manager/Worker/Subcontractor/Client**.
+
+---
+
+## 1) The Visual Dispatch “Core” You’re Missing
+
+### A) Assets / Equipment Tracking (big one)
+
+**Goal:** know *what equipment is where*, who has it, and what job it’s on.
+
+**Asset types**
+
+* Equipment: generator, trencher, ladder, camera, pressure cleaner
+* Vehicles: ute, van, trailer
+* Tools (optional tier): high-value tracked tools only
+* Hire items: rented gear with return date
+
+**Asset fields**
+
+* Asset ID / QR code
+* Category + make/model
+* Status: `Available / In Use / In Transit / Maintenance / Lost / Retired`
+* Current holder: `user_id` (worker/subbie) OR `vehicle_id` OR `job_id`
+* Current location (optional): last known GPS / depot / job address
+* Next due: service date, compliance date
+* Notes + photos
+
+**Asset workflows**
+
+* “Assign asset to job” (dispatch does it)
+* “Check-out / Check-in” (worker scans QR)
+* “Transfer asset” (worker → worker)
+* “Maintenance flag” (worker taps “issue”)
+
+✅ This is what makes larger businesses run smooth.
+
+---
+
+### B) Crew Ops on One Job (multi-person reality)
+
+**Goal:** multiple workers/subbies can contribute without chaos.
+
+**Per job you must support**
+
+* Primary worker + support crew + subcontractors
+* Per-person status: `En Route / Arrived / Working / Done`
+* Per-person time tracking (auto rolls into job totals)
+* Shared job notes + photos + documents
+* Activity timeline (“who did what, when”)
+
+**Crew view (internal)**
+
+* Job card shows:
+
+  * crew list + status dots
+  * who’s en route
+  * who uploaded photos
+  * materials added by who
+  * assets assigned
+
+**Non-on-site workers**
+
+* Can open job and see:
+
+  * live status
+  * asset list
+  * photos/docs
+  * timeline
+  * “what’s next” checklist
+* But they can’t edit if they’re not assigned (unless manager).
+
+---
+
+## 2) Make the Client’s Life Easy (without exposing everything)
+
+Client sees a **clean portal view**, not internal mess.
+
+### Public Tracking Link (/p/{job_token})
+
+One map showing:
+
+* destination pin
+* **all assigned worker/subbie pins** (but privacy rules)
+* per-person ETA (tap to select a worker)
+
+Client also sees:
+
+* job status
+* arrival window
+* before photos (if allowed)
+* “Open verified portal” button
+
+### Verified Client Portal (OTP)
+
+Client sees:
+
+* quotes / approvals
+* invoices / pay
+* job history
+* documents
+* photos
+* **crew info in a controlled way**
+
+  * Default: “Your crew is on the way”
+  * Optional: show names (employees only)
+  * Phones: usually dispatch only
+
+✅ Client gets clarity, not complexity.
+
+---
+
+## 3) “Same Page” for Everyone: The Single Source of Truth
+
+You need one job timeline that everything writes to:
+
+**Event Timeline (append-only)**
+
+* Worker pressed “On My Way”
+* Subbie accepted
+* Asset checked out (Generator #G-14)
+* Material added (PVC 25mm)
+* Before photos uploaded
+* Manager approved timesheet
+* Invoice generated
+* Client paid
+
+Internal roles see full timeline.
+Client sees filtered timeline (no internal stuff like rates).
+
+---
+
+## 4) What to Add to Team Operations (so it scales)
+
+### Roles
+
+* Owner
+* Manager/Dispatcher
+* Worker
+* Subcontractor
+* Optional: Office/Admin
+
+### Assignment rules
+
+* Multiple assignments per job
+* Must set `primary_assignment_id`
+* Subcontractors must accept before acting
+* Visibility flags per assignment:
+
+  * show on client map? (default yes)
+  * show name? (default: employee yes / subbie optional)
+  * show phone? (default no)
+
+### Dispatch views
+
+* Board view (pipeline)
+* Map view (live)
+* Crew availability
+* Asset availability
+
+---
+
+## 5) Materials “Visual Dispatch style”
+
+Big companies need:
+
+* Materials list with:
+
+  * qty, unit cost, markup, supplier
+  * receipt photo
+  * “picked up” location (Bunnings etc.)
+* “Material run” event:
+
+  * logs travel + time + proof
+* Auto invoice lines from materials
+
+---
+
+## 6) The Clean UI Trick (so it doesn’t become clutter)
+
+Keep your UI simple by using **tabs** inside a job:
+
+### Worker Job Screen tabs
+
+* Overview (status + buttons)
+* Crew (who’s on job + statuses)
+* Assets (scan/check-out)
+* Materials (quick add + receipt)
+* Photos (before/after)
+* Notes (checklist + timeline)
+
+### Dispatch Job Screen tabs
+
+* Overview
+* Crew & assignments
+* Assets & materials
+* Timeline & approvals
+* Quote/Invoice
+
+Client portal is separate and simplified.
+
+---
+
+## 7) Copy/Paste to Replit: “Add Visual Dispatch Pillars”
+
+Use this prompt:
+
+```text
+Add Visual Dispatch-grade operations to JobRunner/TradieTrack while keeping the UI simple.
+
+Must implement:
+1) Assets/Equipment module:
+- Asset types (equipment/vehicles/hire)
+- QR scan check-in/out
+- Assign assets to job and/or worker
+- Asset status + maintenance flags
+- Asset history log
+
+2) Multi-crew jobs:
+- Multiple assignments per job (primary + support + subcontractors)
+- Per-person status and time tracking
+- Shared notes/photos/docs
+- Append-only event timeline
+
+3) One public tracking link per job with ONE map showing ALL assigned worker/subbie pins:
+- per-person status + ETA
+- tap a worker to focus
+- privacy rules for subcontractors (name/phone controls)
+- “Open Client Portal” triggers OTP
+
+4) Verified Client Portal (OTP):
+- view all jobs/quotes/invoices
+- pay invoices
+- see photos and updates
+
+5) Materials tracking:
+- add items + receipts + markup
+- rolls into invoice
+- reports: labour vs materials
+
+Ensure every action writes an EventLog and job timeline.
+Build a single “one job, multi-role” QA script to test owner/manager/worker/subbie/client flows end-to-end.
+```
+
+---
+
+## 8) The ONE example that proves it’s “business ready”
+
+A job where:
+
+* dispatcher assigns crew + assets
+* worker checks out generator + uploads before photos
+* subcontractor accepts + goes en route
+* client sees both pins and ETAs on one map
+* materials added with receipt
+* manager approves time
+* invoice auto-builds from time + materials
+* client pays in OTP portal
+
+If that works flawlessly, you’re in Visual Dispatch territory.
+
+---
+
+If you want, I’ll turn this into a **feature spec document** (proper headings + acceptance criteria + test cases) so Replit can’t misinterpret anything.

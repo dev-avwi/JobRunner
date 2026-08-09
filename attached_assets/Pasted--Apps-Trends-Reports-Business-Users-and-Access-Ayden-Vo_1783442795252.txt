@@ -1,0 +1,238 @@
+
+Apps
+Trends
+Reports
+Business
+Users and Access
+Ayden Vogler
+Ayden Vogler
+JobRunner
+DistributionAnalyticsTestFlightXcode Cloud
+iOS App
+1.1.3 Prepare for Submission
+1.1.2 Ready for Distribution
+Add Platform
+General
+App Information
+App Review
+History
+App Store
+Trust & Safety
+App Privacy
+App Accessibility
+Ratings and Reviews
+Growth & Marketing
+In-App Events
+Custom Product Pages
+Product Page Optimization
+Promo Codes
+Game Center
+Monetization
+Pricing and Availability
+In-App Purchases
+Subscriptions
+Featuring
+Nominations
+iOS App Version 1.1.3
+Save
+Add for Review
+The assets and metadata below appear on your app’s product page, when users install your app, and will be used for web engine search results once you release your app.
+
+English (Australia)
+?
+Previews and Screenshots
+?
+Adding accurate screenshots of your app on the newest devices can help you represent the app's user experience. Keep in mind that we'll use these screenshots for all display sizes and localizations. Screenshots are only required for iOS apps, and only the first 3 will be used on the app installation sheets.
+
+iPhone
+iPad
+Apple Watch
+View All Sizes in Media Manager
+
+iPhone
+6.5" Display
+
+
+
+
+
+
+
+
+
+
+0 of 3 App Previews
+
+5 of 10 Screenshots
+
+Choose File
+
+Delete All
+
+Promotional Text
+?
+Run your whole trade business from your phone. Jobs, quotes, invoices, live team tracking and payments — built in Australia for Aussie tradies.
+27
+
+Description
+?
+JobRunner is the complete job management app built for Australian tradies and trade businesses.
+
+
+Run your entire business from your pocket:
+
+Jobs & Scheduling
+• Create, assign and track jobs from start to finish
+• Calendar view with week, month and dispatch board
+• Recurring jobs for regular clients
+• Job statuses from pending through to invoiced
+
+Live Team Tracking
+• See every tradie on a live map in real-time
+• "On My Way" alerts with ETA sent to clients via SMS
+• Client job portal with live arrival tracking
+
+Quotes & Invoices
+• Professional branded quotes in seconds
+• Convert quotes to invoices with one tap
+• Email or SMS quotes and invoices to clients
+• Online payment links for fast payment
+
+Payments
+• Stripe-powered secure payments
+• Track payment status across all jobs
+
+Time Tracking
+• One-tap job timers
+• Track hours per job and per team member
+• Timesheet reports for payroll
+
+Team Management
+• Add team members and subcontractors
+• In-app team chat and direct messages
+• Assign jobs and track workload
+
+Client Communications
+• SMS and email clients directly from the app
+• Automated job updates
+• Professional client portal
+
+Built in Australia, for Australian tradies.
+
+Terms of Use: https://jobrunner.com.au/terms-of-service
+
+Privacy Policy: https://jobrunner.com.au/privacy-policy
+2,696
+
+What's New in This Version
+?
+What's new in 1.1.3:
+
+• Faster, smoother quotes and invoices — send to clients in seconds
+• Live team map improvements for more accurate "On My Way" ETAs
+• Better client job portal with real-time arrival tracking
+• Smoother scheduling and dispatch board
+• Performance improvements and bug fixes across the app
+
+Thanks for using JobRunner. Got feedback? Email us at admin@avwebinnovation.com — we're always improving.
+3,584
+
+Keywords
+?
+tradie,plumber,electrician,builder,handyman,contractor,invoice,quote,schedule,dispatch,gst,timesheet
+0
+
+Support URL
+?
+https://jobrunner.com.au/support
+Marketing URL
+?
+https://jobrunner.com.au
+Version
+?
+1.1.3
+Copyright
+?
+2026 AV Web Innovation
+178
+
+Routing App Coverage File
+?
+No file chosen
+Choose File
+
+App Clip
+
+iMessage App
+?
+Build
+Build
+Version
+Has App Clip
+40
+1.1.3
+No
+
+Included Assets
+
+
+App Icon
+
+Game Center
+App Review Information
+Sign-In Information
+?
+Provide a user name and password so we can sign in to your app. We’ll need this to complete your app review.
+
+
+Sign-in required
+demo@jobrunner.com.au
+demo123
+Contact Information
+?
+Ayden
+Vogler
++61458300051
+admin@avwebinnovation.com
+Notes
+?
+Chinese law requires apps with news, religious, book, and magazine content to have relevant permits in order to be available on the App Store in China mainland. If applicable, enter information about your permits below. Learn More
+
+This app does not read, write, or interact with NFC tags. The "Tap to Pay" feature visible in the Collect Payment screen uses Stripe Terminal SDK for Tap to Pay on iPhone (contactless card acceptance) and is currently marked "Coming Soon" — no NFC operations occur. All subscription plans use Apple In-App Purchase on iOS. The Dedicated Number add-on ($10/mo) is a real-world telecommunications service (Twilio phone number provisioning) exempt from IAP per guideline 3.1.3(a). AI Receptionist is a managed professional service enabled through direct contact with our team. Demo account: demo@jobrunner.com.au / demo123.
+3,380
+
+Attachment
+?
+No file chosen
+Choose File (Optional)
+App Store Version Release
+To make your app available on the App Store, you can automatically release it after it’s been approved by App Review. You can also manually release it on the App Store at a later date.
+
+
+Manually release this version
+
+Automatically release this version
+
+Automatically release this version after App Review, no earlier than
+Your local date and time.
+
+Jul 8, 2026 03:00
+Phased Release for App Store Automatic Updates
+Phased release for automatic updates lets you gradually release this update over a 7-day period to users who have turned on automatic updates from the App Store. Keep in mind that this version will still be available to all users as a manual update from the App Store. You can pause the phased release for up to 30 days or release this update to all users at any time. Learn More
+
+
+Release update to all users immediately
+
+Release update over 7-day period using phased release
+Reset iOS App Store Summary RatingEdit
+You can reset your app’s App Store summary rating for all countries or regions when you release this version. Keep in mind that once this version is released, you won’t be able to restore the rating. Your app’s existing customer reviews will still appear on the App Store. View Ratings and Reviews
+
+
+Keep existing rating
+
+Reset rating when this version is released
+App Store Connect
+Copyright © 2026 Apple Inc. All rights reserved.
+Terms of Service
+Privacy Policy
+Contact Us

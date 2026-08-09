@@ -1,0 +1,139 @@
+Next is **not more features** — next is making JobRunner **release-ready** with proof.
+
+Here’s the exact “ready to go” checklist in the right order (copy this into Replit as a sprint).
+
+---
+
+## 1) Lock the MVP scope for launch
+
+**Freeze** anything that isn’t required for:
+
+* create job → assign crew → track → complete → invoice → get paid → client can view
+
+**Launch scope must be stable for 2–4 weeks** (no big feature changes).
+
+---
+
+## 2) Run the “Worst-Day Test” (must pass)
+
+Build a test script and confirm these work end-to-end:
+
+* ✅ No internet mid-job (offline queue works)
+* ✅ Phone dies mid shift (clock out + audit recovery)
+* ✅ GPS denied / inaccurate (fallback + labels)
+* ✅ Subcontractor web-only flow works (OTP + uploads + timeline)
+* ✅ Payment fails + webhook delayed (correct states, no double-charging)
+* ✅ Duplicate account prevention (Apple/email merge prompts)
+* ✅ Client portal OTP + “not found” handling
+
+If any fail → not ready.
+
+---
+
+## 3) Implement the “Proof Pack” for disputes
+
+One click export per job:
+
+* timeline (arrived/started/finished)
+* hours per worker
+* materials + receipts
+* before/after photos
+* invoice PDF
+  This is what owners need when clients argue.
+
+---
+
+## 4) Make onboarding “premium”
+
+Before ads or App Store push:
+
+* guided setup (business details → rates → logo → stripe → first job)
+* demo data toggle (“try with sample job”)
+* “view as client” preview
+
+If onboarding feels icky, conversions die.
+
+---
+
+## 5) Mobile/Web parity audit
+
+Create a parity checklist and tick every item:
+
+* job create/edit
+* assign crew/subbies
+* timer + geofence
+* photos/docs share-to-client
+* quote/invoice generation
+* client portal preview
+* payments status
+
+If web can do it but mobile can’t → fix it now.
+
+---
+
+## 6) Analytics + crash/error tracking
+
+Before launch you need:
+
+* signup funnel tracking
+* “job created” / “invoice sent” / “paid” events
+* crash reporting
+* error logging for SMS, GPS, payments, syncing
+
+Otherwise you’ll be blind.
+
+---
+
+## 7) Beta pilot with 5 real tradies
+
+Not friends who “say it’s good”.
+You want:
+
+* 2 solo handyman
+* 2 small teams (2–5)
+* 1 bigger operator (8–15)
+
+Give them:
+
+* a simple onboarding sheet
+* a WhatsApp/SMS feedback channel
+* weekly 15 min check-in
+  Track: what breaks + what confuses them.
+
+---
+
+## Copy/paste sprint brief for Replit
+
+```text
+LAUNCH READINESS SPRINT (NO NEW FEATURES)
+
+1) Freeze MVP scope: job -> assign -> track -> complete -> invoice -> pay -> client portal view.
+
+2) Implement Worst-Day Test suite and fix failures:
+- offline queue for time/photos/materials/notes
+- phone dies recovery
+- GPS denied fallback
+- subcontractor web-only OTP flow
+- payment failure + delayed webhook handling
+- account merge (Apple/email) + duplicate prevention
+- client portal OTP with not-found + multi-client selector
+
+3) Add “Job Proof Pack” export:
+timeline + time logs + materials/receipts + photos + invoice PDF.
+
+4) Upgrade onboarding to premium multi-step setup + demo data + “View as client”.
+
+5) Run web/mobile parity audit. Anything missing on mobile is a bug.
+
+6) Add analytics + crash/error tracking across auth, SMS, GPS, payments, sync.
+
+7) Prepare beta pilot mode:
+easy feedback capture + admin dashboard showing errors and drop-offs.
+```
+
+---
+
+If you want the fastest path: do **(2) Worst-Day Test + (4) Onboarding + (6) analytics** first.
+That’s what makes it “ready” rather than “cool”.
+
+If you paste your current feature list (or screenshots of your nav), I can turn it into a **parity checklist** that you can literally tick off one by one.

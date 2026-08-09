@@ -1,0 +1,107 @@
+JobRunner: UX & Onboarding
+Improvement Report
+Focus: The “Friends & Family” First-Run Experience
+Prepared by: Manus AI Date: March 29, 2026
+This report provides a prioritised, actionable breakdown of friction points in
+JobRunner’s current onboarding flow. The goal is to optimize the experience so that
+when you send a link to a non-technical family member or friend (e.g., an uncle
+running a landscaping business), they can immediately understand the value and get
+to their first “aha” moment without needing you to explain it.
+1. The Landing Page Friction
+Current State
+When a user lands on jobrunner.com.au , they see a clean, professional site. However,
+to see the product in action, they must click “Get Started Free”, fill out a registration
+form, verify their email, and complete a multi-step setup wizard. For a busy tradie (or a
+skeptical family member), this is too much work just to see if the app is any good.
+The Solution: One-Click Demo Account
+The most impactful change you can make to your conversion rate is adding a “Try the
+Demo” button right next to “Get Started Free” [1].
+How it works: Clicking the button instantly logs the user into a pre-populated,
+read-only (or ephemeral) demo account with realistic data (jobs, quotes,
+invoices, team members).
+Why it works: It bypasses the entire email verification and setup friction. They
+can click around, see the drag-and-drop calendar, view a generated PDF quote,
+and understand the product in 30 seconds.
+Implementation: Create a generic user account (e.g., demo@jobrunner.com.au )
+with seeded data. When a user clicks “Try the Demo”, generate a temporary
+session token for that account and redirect them to the dashboard. Add a
+persistent banner at the top: “You are viewing a shared demo account. [Create
+your own free account to save your data.]”
+Messaging & Copy Tweaks
+The current messaging uses the word “Beta” prominently (“Beta: First 10 users get
+lifetime free access”). To non-technical users, “Beta” sounds like “unfinished” or
+“buggy.”
+Current: “Beta: First 10 users get lifetime free access”
+Recommended: “Early Access: First 10 users get lifetime free access” or
+“Founding Member: Lifetime free access”
+2. The Email Verification Trap
+Current State
+After submitting the registration form, users are redirected to a /verify-emailpending page. They must leave the app, open their email client, find the email, click
+the link, and then return to the app.
+The Friction
+Many users drop off here. They might be on their phone, get distracted by another
+email, or the verification email might go to spam.
+The Solution: Deferred Verification
+Do not block the user from entering the app.
+1. Allow them to complete the onboarding wizard and enter the dashboard
+immediately after registration.
+2. Place a prominent banner at the top of the dashboard: “Please verify your email
+address (uncle.bob@example.com) to send quotes and invoices. [Resend Email]”
+3. This allows them to experience the “Life of a Job” tour and see the value before
+you ask them to do the work of verifying their email.
+3. The Onboarding Wizard & “Life of a Job”
+Current State
+The onboarding wizard is actually very strong. The “Life of a Job” walkthrough is an
+excellent concept, guiding them through 7 steps (A New Lead Calls -> Schedule -> OnSite -> Quote -> Accept -> Work -> Get Paid).
+However, after the tour finishes, they are dropped into a dashboard with demo data
+and a setup checklist. The transition from “watching a tour” to “doing it yourself” is a
+steep cliff.
+The Solution: Guided “First Real Job” Creation
+Instead of just leaving them with a setup checklist (which feels like homework), guide
+them to create their first real job.
+1. The Empty State: When they clear the demo data, the dashboard shouldn’t just
+be empty. It should have a massive, unmissable CTA: “Create Your First Job”.
+2. Pre-filled Templates based on Trade: During onboarding, you ask for their
+Trade Type. Use this! If they selected “Plumber”, the “Create Job” modal should
+suggest:
+Client: (Add a new client)
+Job Title: e.g., “Leaking Tap Repair” or “Hot Water System Install”
+Description: “Customer reported water pooling under the sink.”
+3. The “Aha” Moment: Guide them to click “Generate Quote” for that job. When
+they see a beautifully formatted PDF quote with their business name on it, they
+will be hooked.
+Checklist Copy Refinement
+The current setup checklist items are good, but can be made more action-oriented and
+benefit-driven:
+Current: “Add your business details” -> Better: “Add your business details (so you
+can get paid)”
+Current: “Add your logo” -> Better: “Upload your logo to make your quotes look
+professional”
+Current: “Set up online payments” -> Better: “Connect Stripe to let clients pay by
+credit card”
+4. The Mobile App Blocker
+Current State
+The landing page prominently features “Download on the App Store” and “Get it on
+Google Play” buttons. As discovered in the technical audit, these links currently return
+404 errors.
+The Friction
+If you text your uncle the link to jobrunner.com.au , the first thing he will do on his
+phone is click “Download on the App Store.” When it fails, he will assume the app is
+broken or fake, and he won’t bother trying the web version.
+The Solution: Immediate Remediation
+1. Short Term (Today): Remove the App Store/Play Store buttons from the landing
+page. Replace them with a single button: “Open Web App (Works on Mobile)”.
+Ensure the web app is fully responsive and behaves like a PWA (Progressive Web
+App). Add a prompt in the web app showing them how to “Add to Home Screen”.
+2. Long Term (Next 2 Weeks): Getting the Expo/React Native apps approved and
+live on the stores is the absolute highest priority for user trust.
+Summary of Immediate Actions for Family/Friends
+Launch
+If you want to send this to family this weekend, do these three things first:
+1. Hide the App Store buttons until they are live.
+2. Change “Beta” to “Early Access” so it sounds like a privilege, not a test.
+3. Create a one-click Demo link (e.g., jobrunner.com.au/demo ) that bypasses
+signup entirely, so you can just text them: “Hey, check out this app I built. Click
+this link to play around with a demo account, no signup needed.”
+References
+[1] Adding a demo account was the best move I made. Reddit r/SaaS (2025).

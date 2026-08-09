@@ -1,0 +1,168 @@
+Yep — that’s a real constraint, and it changes the architecture.
+
+If you only have ONE JobRunner phone number total, you can still make it work, but you need to decide which model you’re aiming for:
+
+Model A (works now, simpler): “Shared JobRunner Number” + smart routing
+
+Model B (proper business-ready): “Dedicated number per business” (even if hidden/forwarded)
+
+Here’s how to do both, and what I recommend.
+
+⸻
+
+Model A — One shared JobRunner number (works, but has limits)
+
+How it works
+	•	Every client texts the same number (your JobRunner number)
+	•	Your system routes based on:
+	1.	Client phone number → which business they belong to
+	2.	Active job(s) under that business
+
+What you MUST build to make this not messy
+	1.	Incoming SMS must match a business
+
+	•	Find client by fromPhone
+	•	If that phone exists under multiple businesses (possible), ask:
+“Reply 1 for Mike’s Plumbing, 2 for Dave’s Electrical”
+
+	2.	Then match a job
+
+	•	If exactly 1 active job: attach to that job thread
+	•	If multiple: ask them to choose which job
+
+	3.	Stop cross-tenant leaks
+
+	•	Absolutely enforce tenant isolation so one client can’t ever land in the wrong business thread.
+
+UX downsides (important)
+	•	Clients see texts coming from “JobRunner” not “Mike’s Plumbing”
+	•	Tradies may not like that branding
+	•	Caller ID / trust is weaker
+	•	Harder to scale to “serious businesses”
+
+This model is OK for beta, family businesses, early traction.
+
+⸻
+
+Model B — Dedicated number per business (what “proper businesses” expect)
+
+This is the standard in pro field-service systems: the business has its own texting number (even if it’s virtual).
+
+How it works
+	•	Each tradie business gets a unique number (Twilio number)
+	•	Clients text that number
+	•	Your system routes instantly: number → business → job thread
+	•	You can optionally forward calls to their existing phone
+
+Why it’s better
+	•	Client sees “Mike’s Plumbing” comms feel direct
+	•	Businesses trust it more
+	•	Less routing ambiguity
+	•	Much cleaner for compliance, brand, and scaling
+
+Cost reality
+
+Numbers are cheap compared to churn.
+(You can include it only on Pro/Team tiers.)
+
+⸻
+
+What I recommend for you right now
+
+Do this in phases:
+
+Phase 1 (now, fast): Use your single JobRunner number for beta
+
+✅ Build smart routing + job selection prompts
+✅ Keep everything logged in Chat Hub
+✅ Prove the system works
+
+Phase 2 (when you onboard real businesses): Add “Business Numbers” as a paid upgrade
+
+✅ Assign each business its own number
+✅ Still keep your main JobRunner number for your own support
+
+This is the best path: you don’t block progress now, but you don’t get stuck later.
+
+⸻
+
+How to make Model A feel decent (even with one number)
+
+Message templates must clearly show the business identity
+
+When your system sends a reply, it should start like:
+
+“Mike’s Plumbing via JobRunner:”
+then the message.
+
+Also in portal:
+	•	show business logo/name heavily
+	•	use their brand colors
+
+Give clients a portal link in the SMS
+
+So they can click to see job/quote/invoice details (rich context).
+
+⸻
+
+Exact routing logic you should implement (for one shared number)
+
+On inbound SMS:
+	1.	fromPhone lookup:
+
+	•	find all client records with that phone across all businesses
+
+Cases:
+	•	0 matches → “Which business are you messaging? Reply with business name or code”
+	•	1 business match → proceed
+	•	multiple business matches → ask them to pick
+
+	2.	Determine job:
+
+	•	if 1 active job in last 30 days → attach
+	•	if multiple → ask:
+“Reply 1 for Blocked drain (Smith St), 2 for Hot water (Lake St)”
+
+	3.	Save message:
+
+	•	conversationId = jobConversationId
+	•	channel = sms
+	•	businessId = resolvedBusinessId
+
+	4.	Notify:
+
+	•	assigned worker(s) + job manager + owner fallback
+
+⸻
+
+Copy/paste to Replit (do this next)
+
+We currently have ONLY ONE shared SMS number for JobRunner (not per tradie business).
+Implement “Shared Number Smart Routing” safely:
+
+Inbound SMS routing:
+1) Resolve business by sender phone:
+   - find client(s) with fromPhone across all businesses
+   - if multiple businesses, auto-reply with a menu to pick business
+2) Resolve job:
+   - if one active job -> attach message to that jobConversationId
+   - if multiple active jobs -> auto-reply menu to pick job
+3) Persist message to jobConversationId with channel=sms and strict tenant isolation
+4) Notify assigned worker(s) + job manager + owner fallback
+
+Also add: branding in outgoing texts:
+“{BusinessName} via JobRunner: …”
+
+Plan forward:
+Add “Dedicated business number” option later (Pro/Team) for proper business readiness.
+
+
+⸻
+
+Straight answer: will one number hold you back?
+
+For beta + early users: no, you can make it work.
+
+For serious businesses scaling: yes, eventually you’ll want per-business numbers (or at least masked forwarding).
+
+If you want, tell me what SMS provider you’re using (Twilio?) and I’ll outline the exact database fields you need (businessPhoneNumber, smsNumberSid, defaultRoutingJobRule, etc.) so Replit can implement it cleanly.

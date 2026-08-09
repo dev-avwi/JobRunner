@@ -1,0 +1,546 @@
+Love this. You’re at the **“technically solid beta”** stage now – this is where you stop endlessly building and start **hardening + testing + launching small**.
+
+I’ll give you everything you asked for:
+
+1. ✅ One **Replit master testing prompt** (copy–paste ready)
+2. ✅ **Beta Launch PDF** content (you can paste into Google Docs/Canva as a PDF)
+3. ✅ **Beta pricing page** copy
+4. ✅ **Marketing email** to recruit your first 3 testers
+5. ✅ **UX polish checklist (iOS-style)** so it feels like a real app, not a web prototype
+
+---
+
+## 1️⃣ Replit “MASTER TESTING” Prompt (for a technically solid beta)
+
+Copy–paste this into Replit AI:
+
+```text
+You are helping me ship a **technically solid beta** of my SaaS app **TradieTrack**, a job/quote/invoice platform for tradies (plumbers, sparkies, handymen) with:
+
+- Auth + onboarding
+- Business setup (ABN, logo, contact details)
+- Jobs & clients
+- Quotes & invoices (+ PDFs)
+- Calendar/schedule
+- Job & team chat
+- File uploads (photos/docs)
+- Subscriptions (Stripe)
+- Customer payments (Stripe Connect)
+- Emails (SendGrid)
+- Role-based access (owner, staff)
+- Dashboard / Activity view
+
+I want you to act as:
+
+- ✅ QA tester
+- ✅ Senior full-stack engineer
+- ✅ UX reviewer (thinking like a tradie)
+- ✅ Production-readiness auditor
+
+Your goal: make this app a **technically solid, internally testable beta** – not just pretty UI.
+
+Please do ALL of the following:
+
+────────────────────────────────
+1. MAP CORE FLOWS & CONFIRM THEY WORK END-TO-END
+────────────────────────────────
+Find and inspect the code for these flows. For each one, verify the full path (front + back + database):
+
+1) Auth & onboarding
+   - Sign up
+   - Login
+   - Logout
+   - Onboarding (business name, trade type, ABN, location, solo/team)
+   - Redirect after onboarding (should end on a useful page, e.g. Dashboard/Activity)
+
+2) Business settings
+   - Update business profile (name, ABN, phone, email, address, logo)
+   - Confirm these values are used in quotes/invoices PDFs and emails
+   - Check validation & error handling
+
+3) Clients & jobs
+   - Create/edit/delete a client
+   - Create/edit/update a job linked to a client
+   - Job statuses: New → Scheduled → In progress → Completed → Invoiced (or similar)
+   - Ensure status changes are persisted and used in UI filters
+
+4) Quotes
+   - Create quote for a client/job
+   - Line items: description, qty, unit price, total
+   - GST logic (on/off, calculations)
+   - Auto quote numbers (e.g. Q-1001, Q-1002)
+   - Quote status: Draft → Sent → Accepted/Declined
+   - Generate PDF
+   - Send quote via email (or at least call the SendGrid function)
+   - Public quote view/acceptance link (if implemented): acceptance should timestamp who accepted and when
+
+5) Invoices
+   - Convert quote → invoice (if implemented)
+   - Or create invoice directly
+   - Invoice numbers (INV-1001 etc.)
+   - Correct totals & GST
+   - PDF generation
+   - Status: Draft → Sent → Paid → Overdue
+   - “Mark as paid” + payment date stored
+   - If Stripe payment link is implemented, ensure the invoice state updates on successful payment
+
+6) Calendar / schedule
+   - Jobs appear on the correct date/time
+   - Clicking job in calendar opens job detail
+   - No broken queries or empty screens
+
+7) Chat
+   - Job chat: messages attached to a specific job
+   - Team/general chat: messages attached to business/team
+   - Messages saved with who + when
+   - Good error handling (no silent failures)
+
+8) Files / photos
+   - Upload file/photo to a job
+   - File metadata saved in DB and visible in job detail
+   - No hard-coded URLs or mock data
+
+For ANY of these that are only partially implemented or are “UI only”, either:
+- Finish them to a usable beta state, OR
+- Clearly mark them in code and hide them in the UI so tradies won’t see unfinished features.
+
+────────────────────────────────
+2. CHECK BACKEND & CLOUD / OFFLINE BEHAVIOUR
+────────────────────────────────
+I want this to be backed by a real database and feel reliable.
+
+- Confirm all main entities are persisted in a real DB:
+  - users
+  - business
+  - clients
+  - jobs
+  - quotes
+  - invoices
+  - messages (chat)
+  - files (or file metadata)
+  - subscriptions/payments
+
+- Ensure there is **no fake/mock data** in production/beta paths.
+- Implement sensible loading and error states (no blank screens).
+
+Offline:
+- If any offline/“retry later” behaviour exists, verify it works (queued writes, simple caching).
+- If offline mode is NOT implemented, make sure the app **fails gracefully**:
+  - Clear error messages when the network fails.
+  - No infinite spinners.
+
+────────────────────────────────
+3. STRIPE & SENDGRID PRODUCTION-STYLE SETUP
+────────────────────────────────
+For **Stripe**:
+- Use environment variables for all keys (no secrets in client).
+- Confirm:
+  - Subscription logic for my platform billing works in TEST mode.
+  - If Stripe Connect is implemented:
+    - tradie’s Stripe account ID is stored correctly
+    - charges go to the right place (with platform fee if used)
+  - Webhook handlers update subscription and invoice/payment status correctly.
+- Check error handling:
+  - Failed payment
+  - Cancelled payment
+  - Expired checkout links
+
+For **SendGrid**:
+- Ensure the API key is only used server-side.
+- Confirm email helpers exist for:
+  - welcome/onboarding (optional)
+  - quote sent
+  - invoice sent
+  - payment receipt
+- Use a verified “from” domain pattern like:
+  - `TradieTrack for {BusinessName} <no-reply@mydomain>`
+  - Reply-To = tradie’s business email (so customers reply to tradie, not me).
+- Make sure emails don’t break if some fields (logo, ABN) are missing; handle gracefully.
+
+────────────────────────────────
+4. SECURITY, AUTH, AND RLS
+────────────────────────────────
+- Verify AUTH:
+  - Protect all private routes (dashboard, jobs, quotes, invoices, chat, settings).
+  - Redirect unauthenticated users to login.
+- Verify **role-based access**:
+  - Owner/admin vs staff:
+    - Only owners can manage billing and business settings.
+    - Staff cannot see or edit other businesses.
+- Verify **Row Level Security** (if using Supabase or similar):
+  - Users can only access records for their own business.
+- Remove any debug endpoints or test routes from beta environment.
+
+────────────────────────────────
+5. UI/UX POLISH FOR A “TECHNICALLY SOLID BETA”
+────────────────────────────────
+Think like a busy tradie using this on their phone.
+
+Check:
+
+- **Dashboard/Activity**
+  - Clear “Today” / “Next job” panel.
+  - Simple cards: jobs today, pending quotes, unpaid invoices.
+  - No big unused columns or awkward left-heavy layouts.
+
+- **Navigation**
+  - Bottom nav on mobile is consistent and clear.
+  - Icons + labels are understandable (Home/Activity, Jobs, Quotes/Invoices, More).
+  - No dead menu items that point to WIP pages.
+
+- **Consistency**
+  - Same spacing system across pages.
+  - Same card style (radius/shadow) across dashboard, job detail, lists.
+  - Buttons use consistent labels like:
+    - “New job”
+    - “Send quote”
+    - “Convert to invoice”
+    - “Mark as paid”
+
+- **Empty states**
+  - For empty jobs/clients/quotes/invoices, show friendly explainer text + CTA (e.g. “You don’t have any jobs yet. Create your first job.”).
+  - Avoid completely blank pages.
+
+- **Error & success messages**
+  - Show friendly toasts/messages on:
+    - save success
+    - send success
+    - failure to save/send
+  - No cryptic error messages from raw API.
+
+────────────────────────────────
+6. CLEANUP: REMOVE PROTOTYPE STUFF, PREPARE BETA
+────────────────────────────────
+- Remove or hide:
+  - any prototype buttons or test widgets
+  - dummy/test data in UI
+  - commented-out UI elements that confuse layout
+- Ensure:
+  - All main menu items lead to working features.
+  - Any “coming soon” features are clearly labeled as such and not clickable, or hidden for now.
+
+────────────────────────────────
+7. FINAL SUMMARY
+────────────────────────────────
+After you’ve made improvements:
+
+- Provide a short summary in comments or a markdown file:
+  1) Which core flows are now fully working and tested.
+  2) Which features are intentionally marked as “coming soon”.
+  3) Any important known issues that are acceptable for a closed beta.
+  4) Anything I MUST test manually before inviting 3–5 real tradies.
+
+Treat this as a **master QA + production-readiness pass** to make TradieTrack feel technically solid and ready for **real-world beta testing**, not just a demo UI.
+```
+
+---
+
+## 2️⃣ “Beta Launch PDF” content (you can drop this into Canva/Docs)
+
+Use this as the structure/content for a 1–2 page PDF you send to tradies.
+
+**Title:**
+
+> **TradieTrack Beta – Simple Job, Quote & Invoice Management for Tradies**
+
+**Section 1 – What is TradieTrack?**
+TradieTrack is a job management app built for Aussie tradies – plumbers, sparkies, handymen and small trade teams – who want simple, modern tools without the complexity and cost of big systems.
+
+With TradieTrack you can:
+
+* Keep all your **jobs, clients, quotes and invoices** in one place
+* See what’s booked **today and this week**
+* Send clean, professional **quotes and invoices** from your phone or laptop
+* Track job notes, photos and messages in one job timeline
+* Get paid faster with **online card payments** (beta)
+
+---
+
+**Section 2 – What the Beta Includes**
+
+✅ Jobs & Clients
+
+* Add clients in seconds
+* Create jobs with status (New, Scheduled, In progress, Completed)
+* See today’s and upcoming jobs at a glance
+
+✅ Quotes
+
+* Create itemised quotes
+* Auto-calculated totals & GST
+* Professional PDF quote templates with your logo & ABN
+* “Quote accepted” tracking (beta)
+
+✅ Invoices
+
+* Convert quotes to invoices
+* Send invoices as PDFs
+* Track draft / sent / paid / overdue
+* Record payments or use online payment links (Stripe beta)
+
+✅ Job Details
+
+* Attach photos & files
+* Add private notes
+* View job history in one place
+
+✅ Team & Chat
+
+* Create team accounts
+* Job chat for each job
+* Team chat for general comms (beta)
+
+✅ Business Setup
+
+* Your business name, logo, ABN and contact details
+* All documents branded with your details
+
+---
+
+**Section 3 – What We’re Testing in Beta**
+
+We’re looking for 3–5 tradies to help test:
+
+* Does the job > quote > invoice flow match how you actually work?
+* Is the app simple enough to use daily?
+* Are the quote & invoice PDFs professional and clear?
+* Are there any confusing steps or missing fields?
+* Does it save you time vs your current system?
+
+---
+
+**Section 4 – Your Commitment as a Beta Tester**
+
+We’ll ask you to:
+
+* Use TradieTrack on **real jobs** for 2–4 weeks
+* Send at least a few **real quotes and invoices**
+* Give **honest feedback** (what you like, what you don’t, what’s missing)
+* Jump on 1 short call or fill in a feedback form at the end
+
+In return, you’ll get:
+
+* **Free access** during beta
+* Founding user discounts when we launch
+* Direct influence on how the app works for tradies like you
+
+---
+
+**Section 5 – How to Start**
+
+1. We’ll set up your **beta account**
+2. You’ll add your business details (logo, ABN, etc.)
+3. We’ll walk you through your **first job, quote and invoice**
+4. You start using it on real work
+
+> Interested?
+> Email: **[your email]**
+> Subject: **“TradieTrack Beta”**
+> Or message me directly and I’ll set you up.
+
+---
+
+## 3️⃣ Beta Pricing Page (simple, honest, founder-style)
+
+You can put this on a `/pricing` page or inside a “More → Billing” screen.
+
+**Hero section**
+
+> **Simple pricing for small trade businesses**
+> Free while in beta. Fair, flexible plans when we launch.
+
+**Beta Banner**
+
+> 🧪 **Beta period:**
+> During beta, TradieTrack is **free to use** for approved testers.
+> You’ll keep a **discounted rate for life** when paid plans start.
+
+**Planned Plans (not charging yet – just showing intent)**
+
+**1. Solo Tradie (planned)**
+
+> For one-person businesses
+> – 1 user
+> – Unlimited jobs, clients, quotes & invoices
+> – Job notes & photos
+> – Basic job chat
+> – PDF quotes & invoices
+> – Email support
+> **Estimated:** $29/month (inc GST)
+
+**2. Small Team (planned)**
+
+> For growing teams (2–5 users)
+> – Everything in Solo
+> – Up to 5 team members
+> – Team chat
+> – Job assignment
+> – Online card payments (Stripe)
+> – Priority support
+> **Estimated:** $59/month (inc GST)
+
+**3. Growing Crew (planned)**
+
+> For busy trade businesses
+> – Everything in Small Team
+> – Up to 10 users
+> – Advanced reporting (planned)
+> – Custom templates & automations (planned)
+> – Dedicated onboarding
+> **Estimated:** $99/month (inc GST)
+
+**Beta Note**
+
+> 💡 *During beta, we are not charging. Pricing above is indicative only and may change based on feedback from you and other early users. Beta testers will receive locked-in discounts when paid plans launch.*
+
+---
+
+## 4️⃣ Marketing Email to Recruit First 3 Beta Testers
+
+Subject ideas (pick one):
+
+* `Want to help test a new tradie job app in Cairns?`
+* `Quick question – would you trial a new job & quote app?`
+* `Beta testers wanted: simple job, quote & invoice app`
+
+Email:
+
+```text
+Hey [Name],
+
+I’m working on a new app called **TradieTrack** – it’s a simple job, quote & invoice system built specifically for tradies like you.
+
+Instead of jumping between notes, texts and random PDF templates, the idea is:
+
+- all your **jobs, clients, quotes and invoices** in one place  
+- a clear **“Today / This week”** view  
+- clean, branded **PDF quotes & invoices** with your logo & ABN  
+- online card payments (beta)  
+- job notes, photos and chat all attached to each job  
+
+Right now I’m looking for **3–5 tradies** to use it in **beta** and give honest feedback.
+
+What you’d get:
+
+- ✅ Free access during the beta period  
+- ✅ Lifetime discount when paid plans launch  
+- ✅ Direct input into how the app works for tradies  
+- ✅ My help setting it up (I’ll walk you through your first job, quote & invoice)
+
+What I’d ask from you:
+
+- Use it on some real jobs for 2–4 weeks  
+- Send a few real quotes/invoices through it  
+- Be honest about what works, what sucks and what’s missing  
+
+If that sounds interesting, reply with:
+
+> “I’m keen for the beta”
+
+and I’ll set you up with an account and quick walkthrough.
+
+Cheers,  
+Ayden  
+Founder – TradieTrack  
+[Your mobile]  
+[Your email]
+```
+
+---
+
+## 5️⃣ UX Polish Checklist (iOS-style, for a solid beta)
+
+You can use this while you click through your app on your phone.
+
+### 🟦 Global
+
+* [ ] App looks good on **mobile first** (no horizontal scroll)
+* [ ] Bottom nav is obvious, labels clear (Home/Activity, Jobs, Clients, Invoices, More)
+* [ ] No dead links or “coming soon” buttons that don’t explain themselves
+* [ ] Colours match your brand (blue/orange) and are consistent
+* [ ] Typography consistent – same font family and sensible weights
+
+### 🟦 Activity / Home
+
+* [ ] Big greeting at the top (“Good afternoon, [Name]”)
+* [ ] Clear “Today” or “Next Job” card near the top
+* [ ] Cards stacked like a feed, not like a website section
+* [ ] Beta notice (if any) is small but clear, not overwhelming
+* [ ] You can see, at a glance:
+
+  * jobs today
+  * pending quotes
+  * unpaid invoices
+
+### 🟦 Jobs
+
+* [ ] Jobs show as card list, not tiny table rows, on mobile
+* [ ] Each job card shows:
+
+  * client name
+  * suburb
+  * date/time
+  * status pill
+* [ ] “New job” button is big and easy to find
+* [ ] Status change is simple and intuitive
+* [ ] Opening a job feels like a “hub”:
+
+  * job details
+  * notes/photos
+  * quotes
+  * invoices
+  * chat
+
+### 🟦 Quotes & Invoices
+
+* [ ] Creating a quote feels simple (no overwhelming form)
+* [ ] Line items are easy to add/remove
+* [ ] Totals & GST clearly shown
+* [ ] Live preview or clear preview before sending
+* [ ] PDF looks professional:
+
+  * your logo
+  * business name
+  * ABN
+  * client info
+  * dates
+  * totals
+* [ ] “Send quote/invoice” buttons are labeled clearly
+* [ ] Status (Draft/Sent/Accepted/Paid) is visible and understandable
+
+### 🟦 Clients
+
+* [ ] Clients page is clean, searchable if possible
+* [ ] Adding a client is quick (name, phone, email, address)
+* [ ] Client detail shows:
+
+  * basic info
+  * jobs
+  * quotes
+  * invoices
+
+### 🟦 Chat & Files
+
+* [ ] Job chat clearly shows who said what
+* [ ] Message bubbles are readable (not tiny)
+* [ ] File/photo uploads show a small preview or at least filenames
+* [ ] No broken icons or missing previews
+
+### 🟦 Settings & Billing
+
+* [ ] Business settings screen feels simple, not scary
+* [ ] Fields clearly labelled: Business name, ABN, phone, email, address
+* [ ] Billing/plan section clearly explains:
+
+  * “You are on beta (free)”
+  * planned tiers (Solo, Small Team, etc.)
+* [ ] No real “pay now” steps if you’re not charging yet
+* [ ] If Stripe is wired, it’s clearly marked as TEST or BETA
+
+---
+
+If you walk through all of this + run the Replit master prompt, you’ll end up with **exactly what you said you wanted**:
+
+> a **technically solid beta** that looks legit, works end-to-end, and is ready for 3–5 real tradies to try.
+
+Whenever you’re ready, you can paste me your **final live URL** and I can help you draft a tiny **“What’s new in this beta”** note or an in-app welcome banner for your first testers.

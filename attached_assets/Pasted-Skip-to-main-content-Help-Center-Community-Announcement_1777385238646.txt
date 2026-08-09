@@ -1,0 +1,96 @@
+Skip to main content
+Help Center
+Community
+Announcements
+Play Console
+Play Console HelpPolicy Center
+You can now request help from the Help page in your Play Console account.  If you don't have access to Play Console, ask your account admin for an invite.
+
+Declare permissions for your app
+Permission requests are evaluated during the release process after adding your Android App Bundle. If your app requests the use of high-risk or sensitive permissions (for example, SMS or Call Log), you may be required to complete the Permissions Declaration Form and receive approval from Google Play.
+
+About the process
+The Permissions Declaration Form is displayed during the release process if the app includes an app bundle that requests permissions for which a Permissions Declaration has not been provided to Google Play.
+
+If you have an active app bundle that requires a Permissions Declaration, including releases on the Open, Closed, or Internal test tracks, an alert is displayed on the left menu under App Content. You cannot publish any changes to your app, including changes to your Store Presence (for example, Store Listing, Pricing, and Distribution) until you address this alert by creating a release that includes a Permissions Declaration or removes the permissions.
+
+Consider deactivating any Open, Closed, or Internal testing tracks that are not currently in use if they are not compliant with this policy.
+
+If you publish apps using the Google Play Developer Publishing API, consult these special instructions.
+
+Complete the Permissions Declaration Form
+ 
+
+Step 1: Evaluate requested permissions
+Step 2: Specify your app's core functionality
+Step 3: Provide instructions for app review
+Step 4: Provide a video demonstration of your app
+Step 5: Provide instructions for accessing restricted app content
+Step 6: (Multi-APK only) Request an exception for old APKs 
+Step 7: Confirm your declaration
+Prepare and roll out your release
+Once you've completed all required steps of the Permissions Declaration Form, complete the remaining steps to prepare your app for review and prepare and roll out your release.
+
+Permissions review process
+When you complete the Permissions Declaration Form and roll out your release, your app will be subject to an extended review by the Google Play team. Your request may require up to several weeks to process. During this time, your new app or app update will be in a pending publication status until your request is reviewed. Your app will also be subject to the standard compliance review against Google Play's Developer Program Policies.
+
+If you override your pending publication with a new release, you may see additional delays to the review process. If you need to urgently release an app update, you must remove the high-risk or sensitive permissions from your app bundle and roll out a new release. This new release would only be reviewed for standard compliance with policies, and be published within several hours.
+If your app is not compliant with the Permissions policy, the Google Play team will send an email with the results of the review to the Account Owner and Contact email address on your developer account. If your request is approved and your app is compliant with the Developer Program policies, your new app or update will automatically be published to Google Play.
+
+Special instructions for Google Play Developer Publishing API users
+If you roll out a release using the Google Play Developer Publishing API and Google Play has not previously approved your app bundle use of high-risk or sensitive permissions, you will receive an error.
+
+To continue managing releases using the Publishing API, you must either remove any high-risk or sensitive permission requests from your app and create a new release with the revised app bundle. You can also prepare and roll out your release using the Play Console web UI by following these steps:
+
+Upload your app bundle with high-risk or sensitive permissions requested
+
+Complete the Permissions Declaration Form as above
+
+Complete the rollout of the release using the Play Console web UI
+
+Once your Permission Declaration has been approved and your app has been approved for policy compliance, your release will be published and you can once again use the Publishing API to manage your releases. Otherwise, the Google Play team will notify you if your Permissions Declaration request has been rejected and provide any additional information.
+
+Note: Whenever your app requests any new permissions, you will be required to use the UI to complete a revised Permissions Declaration Form specifically addressing the newly requested permissions.
+
+Related content
+Learn more about Play Console permissions in Play Academy.
+
+Give feedback about this article
+Was this helpful?YesNo
+Need more help?
+Try these next steps:
+Post to the help community
+Get answers from community members
+Contact us
+Tell us more and we’ll help you get there
+Play Console Help
+Create and set up your app
+App testing requirements for new personal developer accounts
+Device verification requirements for new developer accounts
+Set up your app on the app dashboard
+Inspect app versions on the Latest releases and bundles page
+Prepare and roll out a release
+Halting a fully rolled-out release
+Detect app issues early with pre-review checks
+Publish your app
+Helpful tips to get your app published on Google Play
+Best Practices for White Label Developers
+Update or unpublish your app
+Control when app changes are reviewed and published
+Release app updates with staged rollouts
+Prompt users to update to your latest app version
+Manage your store listings
+Distribute your instant experience
+Manage different form factor releases on dedicated tracks
+Add or test APK expansion files
+Google Play game services
+Using third-party SDKs in your app
+Target API level requirements for Google Play apps
+Create and distribute a watch face on Google Play
+Declare permissions for your app
+Prepare your app for review
+Request more time to complete a policy declaration
+Manage your store listing, experiment, and event graphics with the Asset Library
+©2026 Google  Privacy Policy  Terms of Service
+Language
+
