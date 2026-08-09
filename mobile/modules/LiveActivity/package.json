@@ -1,0 +1,8 @@
+{
+  "name": "live-activity",
+  "version": "0.1.0",
+  "description": "ActivityKit bridge for the JobRunner Live Activity. Local Expo module — not published to npm.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true
+}

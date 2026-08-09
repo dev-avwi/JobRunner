@@ -1,0 +1,45 @@
+# Smoke test: the Manage Subscription deep-link opens the platform
+# subscription management page (App Store on iOS, Play Store on Android).
+#
+# Required by Apple guideline 3.1.2 and Google Play subscription policy.
+# iOS:     maestro test --include-tags=ios mobile/.maestro/manage-subscription.yaml
+# Android: maestro test --include-tags=android mobile/.maestro/manage-subscription.yaml
+# (running without tags still works — both blocks execute and the
+#  platform-irrelevant one no-ops on the wrong store)
+appId: com.jobrunner.app
+---
+- launchApp
+- tapOn:
+    id: "tab-more"
+- tapOn:
+    text: "Subscription"
+- scrollUntilVisible:
+    element:
+      id: "button-manage-subscription"
+    direction: DOWN
+- tapOn:
+    id: "button-manage-subscription"
+
+# We left our app — the in-app subscription screen must no longer be visible.
+- assertNotVisible:
+    id: "button-manage-subscription"
+
+# Platform-specific destination assertion: confirm the host store opened to
+# its Subscriptions surface rather than just dropping us on a blank screen.
+- runFlow:
+    when:
+      platform: iOS
+    commands:
+      # App Store subscriptions sheet (or App Store sign-in if not signed in)
+      - assertVisible:
+          text: ".*(Subscriptions|App Store|Sign in to use the App Store).*"
+
+- runFlow:
+    when:
+      platform: Android
+    commands:
+      # Play Store subscription management surface
+      - assertVisible:
+          text: ".*(Subscriptions|Google Play|Payments & subscriptions).*"
+
+- stopApp

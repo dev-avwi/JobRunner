@@ -1,0 +1,38 @@
+# Smoke test: the Restore Purchases button on the Subscription screen
+# triggers the native IAP restore flow without crashing.
+#
+# Required by Apple guideline 3.1.1, also surfaced on Android for reinstalls.
+# iOS:     maestro test mobile/.maestro/restore-purchases.yaml
+# Android: maestro test mobile/.maestro/restore-purchases.yaml
+appId: com.jobrunner.app
+---
+- launchApp
+- tapOn:
+    id: "tab-more"
+- tapOn:
+    text: "Subscription"
+- scrollUntilVisible:
+    element:
+      id: "button-restore-purchases"
+    direction: DOWN
+
+# Baseline: the in-app result texts must NOT be on screen before we tap.
+# Asserting absence first means the post-tap assertVisible cannot pass on
+# the static button label alone — a new dialog has to actually appear.
+- assertNotVisible:
+    text: "No previous subscriptions were found"
+- assertNotVisible:
+    text: "Your .* plan has been restored"
+- assertNotVisible:
+    text: "Could not restore purchases"
+
+- tapOn:
+    id: "button-restore-purchases"
+
+# Post-tap: exactly one of the three handler outcomes from
+# `handleRestorePurchases` in mobile/app/more/subscription.tsx must surface,
+# OR the native StoreKit / Play Billing sign-in sheet (when the device is
+# signed out) must appear. The button label "Restore Purchases" alone is
+# NOT enough — these strings only exist after the IAP call returns.
+- assertVisible:
+    text: "(No previous subscriptions were found|Your .* plan has been restored|Could not restore purchases|Sign in to your Apple ID|Sign in to your Google account)"

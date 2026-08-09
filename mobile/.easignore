@@ -1,0 +1,39 @@
+# Dependencies (EAS reinstalls them)
+node_modules/
+
+# iOS/Android build folders
+ios/
+android/
+
+# Build output
+dist/
+
+# Expo cache
+.expo/
+
+# Git
+.git/
+
+# IDE
+.idea/
+.vscode/
+
+# Test files
+__tests__/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Documentation
+APP_STORE_SUBMISSION.md
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Credentials (managed by EAS)
+credentials/

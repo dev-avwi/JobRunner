@@ -1,0 +1,91 @@
+# Smoke test: Terms of Service and Privacy Policy links reach the
+# configured jobrunner.com.au pages from every screen reviewers visit
+# (subscription, register, delete-account). Both links are exercised on
+# every screen.
+#
+# Subscription uses external https links; register and delete-account
+# route to the in-app pages, which embed "www.jobrunner.com.au" as the
+# canonical source — we assert that string as proof the configured page
+# rendered (not just any "Terms" header).
+#
+# iOS:     maestro test mobile/.maestro/terms-privacy-links.yaml
+# Android: maestro test mobile/.maestro/terms-privacy-links.yaml
+appId: com.jobrunner.app
+---
+# 1. Subscription screen — external https://jobrunner.com.au links
+- launchApp
+- tapOn:
+    id: "tab-more"
+- tapOn:
+    text: "Subscription"
+- scrollUntilVisible:
+    element:
+      id: "link-terms"
+    direction: DOWN
+- tapOn:
+    id: "link-terms"
+- assertVisible:
+    text: ".*jobrunner\\.com\\.au/terms-of-service.*"
+- back
+- scrollUntilVisible:
+    element:
+      id: "link-privacy"
+    direction: DOWN
+- tapOn:
+    id: "link-privacy"
+- assertVisible:
+    text: ".*jobrunner\\.com\\.au/privacy-policy.*"
+- back
+
+# 2. Delete-account screen — in-app routes that render the configured pages
+- tapOn:
+    id: "tab-more"
+- scrollUntilVisible:
+    element:
+      text: "Delete Account"
+    direction: DOWN
+- tapOn:
+    text: "Delete Account"
+- scrollUntilVisible:
+    element:
+      id: "link-terms"
+    direction: DOWN
+- tapOn:
+    id: "link-terms"
+- assertVisible:
+    text: ".*www\\.jobrunner\\.com\\.au.*"
+- back
+- scrollUntilVisible:
+    element:
+      text: "Privacy Policy"
+    direction: DOWN
+- tapOn:
+    text: "Privacy Policy"
+- assertVisible:
+    text: ".*www\\.jobrunner\\.com\\.au.*"
+- back
+
+# 3. Register screen — only reachable when logged out. Tap each link and
+#    verify the configured jobrunner.com.au page was reached.
+- clearState
+- launchApp
+- tapOn:
+    text: "Sign Up"
+- scrollUntilVisible:
+    element:
+      text: "Terms of Service"
+    direction: DOWN
+- tapOn:
+    text: "Terms of Service"
+- assertVisible:
+    text: ".*www\\.jobrunner\\.com\\.au.*"
+- back
+- scrollUntilVisible:
+    element:
+      text: "Privacy Policy"
+    direction: DOWN
+- tapOn:
+    text: "Privacy Policy"
+- assertVisible:
+    text: ".*www\\.jobrunner\\.com\\.au.*"
+- back

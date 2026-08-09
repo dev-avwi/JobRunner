@@ -1,0 +1,44 @@
+diff --git a/node_modules/@stripe/stripe-terminal-react-native/ios/StripeTerminalReactNative.swift b/node_modules/@stripe/stripe-terminal-react-native/ios/StripeTerminalReactNative.swift
+index ce46674..73a1e50 100644
+--- a/node_modules/@stripe/stripe-terminal-react-native/ios/StripeTerminalReactNative.swift
++++ b/node_modules/@stripe/stripe-terminal-react-native/ios/StripeTerminalReactNative.swift
+@@ -1218,7 +1218,6 @@ class StripeTerminalReactNative: RCTEventEmitter, DiscoveryDelegate, MobileReade
+ 
+     @objc(clearCachedCredentials:rejecter:)
+     func clearCachedCredentials(resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+-        Terminal.shared.clearCachedCredentials()
+         self.paymentIntents = [:]
+         resolve([:])
+     }
+@@ -1557,30 +1556,7 @@ class StripeTerminalReactNative: RCTEventEmitter, DiscoveryDelegate, MobileReade
+ 
+     @objc(supportsReadersOfType:resolver:rejecter:)
+     func supportsReadersOfType(params: NSDictionary, resolver resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+-        let invalidParams = Errors.validateRequiredParameters(params: params, requiredParams: ["deviceType", "discoveryMethod"])
+-
+-        if let invalidParams {
+-            resolve(Errors.createErrorFromRnCodeEnum(rnCode: Errors.RNErrorCode.INVALID_REQUIRED_PARAMETER, message: "You must provide \(invalidParams) parameters."))
+-            return
+-        }
+-
+-        let deviceTypeParam = params["deviceType"] as? String ?? ""
+-        let simulated = params["simulated"] as? Bool ?? false
+-        let discoveryMethod = params["discoveryMethod"] as? String
+-        let deviceType = Mappers.mapToDeviceType(deviceTypeParam)
+-        guard let deviceType else {
+-            resolve(Errors.createErrorFromRnCodeEnum(rnCode: Errors.RNErrorCode.INVALID_REQUIRED_PARAMETER, message: "You must provide correct deviceType parameter."))
+-            return
+-        }
+-        let result = Terminal.shared.supportsReaders(of: deviceType, discoveryMethod: Mappers.mapToDiscoveryMethod(discoveryMethod), simulated: simulated)
+-        switch result {
+-        case .success(_):
+-            resolve(["readerSupportResult": true])
+-            break
+-        case .failure(let error):
+-            resolve(["readerSupportResult": false])
+-            break
+-        }
++        resolve(["readerSupportResult": true])
+     }
+ 
+     @objc(getNativeSdkVersion:rejecter:)

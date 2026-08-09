@@ -62,3 +62,9 @@ With 80+ endpoints in a 50k-line routes file, rewriting to generated hooks is to
 ## DB migration
 
 `drizzle-kit generate` produced `lib/db/drizzle/0000_bright_mauler.sql`. Apply with `cd lib/db && pnpm exec drizzle-kit migrate` (needs NEON_DATABASE_URL in env). `drizzle-kit push` hits an interactive TTY prompt.
+
+## Mobile app lives outside artifacts and needs top-level shared/
+The Expo app stays at `mobile/` (not an artifact; never npm install there — firewall). Metro watches `../shared`, so a top-level `shared/` copy (dateUtils, schema, etc.) must exist or Metro crashes with ENOENT. The workspace-wide migration moved mobile+shared into `.migration-backup/`; they were copied back.
+
+## Post-merge script must not auto-apply DB schema
+`drizzle-kit push` prompts interactively (and offered to TRUNCATE a live table); `migrate` fails on pre-existing tables. The post-merge script only runs `pnpm install`; schema changes are applied deliberately.
