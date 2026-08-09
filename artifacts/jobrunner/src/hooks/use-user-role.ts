@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
-import { WORKER_PERMISSIONS, type WorkerPermission } from "@shared/schema";
+import { WORKER_PERMISSIONS, type WorkerPermission } from "@shared/permissions";
 
 export type UserRoleType = "owner" | "manager" | "office_admin" | "tradie" | "loading";
 

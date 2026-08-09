@@ -1,4 +1,4 @@
-import { WORKER_PERMISSIONS } from "@shared/schema";
+import { WORKER_PERMISSIONS } from "@shared/permissions";
 import { type ActionPermissions } from "./permissions";
 
 type ActionPermissionKey = keyof ActionPermissions;

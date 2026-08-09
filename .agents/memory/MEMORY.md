@@ -1,1 +1,2 @@
 - [JobRunner port decisions](jobrunner-port.md) — Express v4 required; cookie v1 for parse(); @opentelemetry/* must NOT be external; zod/v4→zod; bcrypt needs approve-builds
+- [JobRunner web bundle splitting](jobrunner-bundle-splitting.md) — no runtime imports from @shared/schema in eager frontend code (use @shared/permissions); manualChunks function form; preview smoke-test trick

@@ -46,6 +46,7 @@ export default defineConfig({
         'attached_assets',
       ),
       '@shared/schema': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'schema.ts'),
+      '@shared/permissions': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'permissions.ts'),
       '@shared/dateUtils': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-dateUtils.ts'),
       '@shared/displayName': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-displayName.ts'),
       '@shared/tradeCatalog': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-tradeCatalog.ts'),
@@ -56,6 +57,35 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Split the largest always-loaded vendors out of the entry chunk so
+        // they download in parallel and stay cached across app deploys.
+        manualChunks(id: string) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(react|react-dom|scheduler|wouter)\//.test(id)) {
+            return 'vendor-react';
+          }
+          if (id.includes('framer-motion') || id.includes('motion-dom') || id.includes('motion-utils')) {
+            return 'vendor-motion';
+          }
+          if (id.includes('@tanstack')) return 'vendor-query';
+          if (id.includes('@sentry')) return 'vendor-sentry';
+          if (
+            id.includes('@radix-ui') ||
+            id.includes('@floating-ui') ||
+            id.includes('lucide-react') ||
+            id.includes('cmdk') ||
+            id.includes('tailwind-merge') ||
+            id.includes('class-variance-authority') ||
+            id.includes('clsx')
+          ) {
+            return 'vendor-ui';
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port,
