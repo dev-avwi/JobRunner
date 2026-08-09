@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <title>JobRunner - Built for How Jobs Actually Run</title>
+    <meta name="description" content="JobRunner keeps a clear record of what was known, done, and agreed — so tradies don't wear someone else's mistake. Jobs, quotes, invoices, and payments all in one place.">
+    <meta name="keywords" content="tradie app, job management, invoicing software, quote software, tradesman app, Australia, plumber software, electrician app, builder app, job tracking">
+    <meta name="author" content="JobRunner">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    <meta name="bingbot" content="index, follow">
+    <link rel="canonical" href="https://jobrunner.com.au" />
+    
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jobrunner.com.au">
+    <meta property="og:title" content="JobRunner - Built for How Jobs Actually Run">
+    <meta property="og:description" content="Keep a clear record of what was known, done, and agreed — so you don't wear someone else's mistake. Jobs, quotes, invoices, and payments all in one place.">
+    <meta property="og:image" content="https://jobrunner.com.au/logo.png">
+    <meta property="og:site_name" content="JobRunner">
+    <meta property="og:locale" content="en_AU">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="JobRunner - Built for How Jobs Actually Run">
+    <meta name="twitter:description" content="Keep a clear record of what was known, done, and agreed — so you don't wear someone else's mistake. Jobs, quotes, invoices, and payments all in one place.">
+    <meta name="twitter:image" content="https://jobrunner.com.au/logo.png">
+    
+    <meta name="geo.region" content="AU">
+    <meta name="geo.placename" content="Australia">
+    
+    <meta name="theme-color" content="#3B82F6">
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "JobRunner",
+      "url": "https://jobrunner.com.au",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web, iOS, Android",
+      "description": "JobRunner is a job management platform for Australian tradies. Manage jobs, quotes, invoices, scheduling, and payments all in one place.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "AUD",
+        "description": "Free plan available. Pro and Team plans also offered."
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "JobRunner",
+        "url": "https://jobrunner.com.au"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "5",
+        "ratingCount": "1"
+      }
+    }
+    </script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="JobRunner">
+    
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png?v=4002" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png?v=4002" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon-192.png?v=4002" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Google Analytics 4 - Cross-domain tracking for jobrunner.com.au & jobrunner.org -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-54KEQ75F8P"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      var prodDomains = ['jobrunner.com.au', 'jobrunner.org'];
+      var isProduction = prodDomains.indexOf(window.location.hostname) !== -1;
+      gtag('config', 'G-54KEQ75F8P', {
+        send_page_view: true,
+        debug_mode: !isProduction,
+        linker: {
+          domains: ['jobrunner.com.au', 'jobrunner.org'],
+          accept_incoming: true
+        }
+      });
+      if (typeof console !== 'undefined') {
+        console.log('[GA4] Initialized for', window.location.hostname, isProduction ? '(production)' : '(debug)');
+      }
+    </script>
+    <!-- Apply saved theme before first paint to avoid flash of wrong theme.
+         Default is light; dark only when explicitly saved (or saved "system" on a dark OS). -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('jobrunner-ui-theme');
+          var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.add(dark ? 'dark' : 'light');
+        } catch (e) {
+          document.documentElement.classList.add('light');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

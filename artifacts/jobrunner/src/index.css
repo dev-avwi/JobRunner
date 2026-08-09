@@ -1,0 +1,1242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+
+  /* Automatic computation of border around primary / danger buttons */
+  --opaque-button-border-intensity: -8; /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+
+  --background: 210 40% 98%;
+  --foreground: 217 33% 17%;
+  --border: 217 12% 91%;
+  --card: 0 0% 96%;
+  --card-foreground: 217 33% 17%;
+  --card-border: 217 12% 88%;
+  --sidebar: 217 15% 94%;
+  --sidebar-foreground: 217 20% 14%;
+  --sidebar-border: 217 12% 86%;
+  --sidebar-primary: 217 91% 53%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 217 12% 90%;
+  --sidebar-accent-foreground: 217 20% 14%;
+  --sidebar-ring: 217 12% 75%;
+  --popover: 0 0% 92%;
+  --popover-foreground: 217 20% 14%;
+  --popover-border: 217 12% 84%;
+  --primary: 217 91% 53%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 217 8% 89%;
+  --secondary-foreground: 217 20% 14%;
+  --muted: 217 6% 93%;
+  --muted-foreground: 217 10% 46%;
+  --accent: 217 12% 89%;
+  --accent-foreground: 217 20% 14%;
+  --destructive: 5 85% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 217 12% 75%;
+  --ring: 217 91% 53%;
+  --chart-1: 217 91% 60%;
+  --chart-2: 28 80% 55%;
+  --chart-3: 145 60% 42%;
+  --chart-4: 280 55% 58%;
+  --chart-5: 10 80% 58%;
+
+  /* Semantic status colors for consistency */
+  --success: 145 65% 42%;
+  --success-foreground: 0 0% 98%;
+  --warning: 35 90% 50%;
+  --warning-foreground: 0 0% 10%;
+  --info: 200 80% 50%;
+  --info-foreground: 0 0% 98%;
+
+  /* Job status colors - one token per 5-stage job status (light mode) */
+  --status-pending: 217 10% 45%;
+  --status-scheduled: 210 80% 45%;
+  --status-in-progress: 35 90% 42%;
+  --status-completed: 145 65% 35%;
+  --status-invoiced: 280 60% 45%;
+
+  /* Trade-specific colors - dynamically set by JavaScript */
+  --trade: 217 91% 53%; /* Default blue, overridden by trade selection */
+  --trade-bg: 217 20% 96%; /* Light tint for backgrounds */
+  --trade-border: 217 70% 40%; /* Darker for borders */
+  --trade-accent: 217 70% 45%; /* Enhanced accent color */
+  --trade-glow: 217 35% 85%; /* Subtle glow effect color */
+
+  --font-sans: 'Inter Variable', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: .5rem; /* 8px */
+  --shadow-2xs: 0px 1px 2px 0px hsl(220 13% 86% / 0.3);
+  --shadow-xs: 0px 1px 2px 0px hsl(220 13% 86% / 0.4);
+  --shadow-sm: 0px 1px 3px 0px hsl(220 13% 86% / 0.4), 0px 1px 2px -1px hsl(220 13% 86% / 0.3);
+  --shadow: 0px 1px 3px 0px hsl(220 13% 86% / 0.4), 0px 1px 2px -1px hsl(220 13% 86% / 0.3);
+  --shadow-md: 0px 4px 6px -1px hsl(220 13% 86% / 0.4), 0px 2px 4px -2px hsl(220 13% 86% / 0.3);
+  --shadow-lg: 0px 10px 15px -3px hsl(220 13% 86% / 0.4), 0px 4px 6px -4px hsl(220 13% 86% / 0.3);
+  --shadow-xl: 0px 20px 25px -5px hsl(220 13% 86% / 0.4), 0px 8px 10px -6px hsl(220 13% 86% / 0.3);
+  --shadow-2xl: 0px 25px 50px -12px hsl(220 13% 86% / 0.5);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
+
+  /* Fallback for older browsers */
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* Fallback for older browsers */
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+
+  --opaque-button-border-intensity: 9;  /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+
+  --background: 217 33% 8%;
+  --foreground: 210 25% 95%;
+  --border: 217 20% 15%;
+  --card: 217 30% 11%;
+  --card-foreground: 210 25% 95%;
+  --card-border: 217 20% 18%;
+  --sidebar: 217 33% 9%;
+  --sidebar-foreground: 210 25% 95%;
+  --sidebar-border: 217 20% 16%;
+  --sidebar-primary: 217 15% 95%;
+  --sidebar-primary-foreground: 195 18% 8%;
+  --sidebar-accent: 217 22% 14%;
+  --sidebar-accent-foreground: 210 25% 95%;
+  --sidebar-ring: 217 15% 30%;
+  --popover: 217 28% 12%;
+  --popover-foreground: 210 25% 95%;
+  --popover-border: 217 20% 19%;
+  --primary: 217 15% 95%;
+  --primary-foreground: 195 18% 8%;
+  --secondary: 217 22% 16%;
+  --secondary-foreground: 210 25% 95%;
+  --muted: 217 20% 13%;
+  --muted-foreground: 217 15% 65%;
+  --accent: 217 18% 18%;
+  --accent-foreground: 210 25% 95%;
+  --destructive: 5 85% 55%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 217 18% 35%;
+  --ring: 217 15% 95%;
+  --chart-1: 217 70% 55%;
+  --chart-2: 28 80% 65%;
+  --chart-3: 145 55% 60%;
+  --chart-4: 280 55% 72%;
+  --chart-5: 10 80% 68%;
+
+  /* Semantic status colors for consistency - dark mode */
+  --success: 145 65% 55%;
+  --success-foreground: 0 0% 10%;
+  --warning: 35 90% 60%;
+  --warning-foreground: 0 0% 10%;
+  --info: 200 80% 60%;
+  --info-foreground: 0 0% 10%;
+
+  /* Job status colors - one token per 5-stage job status (dark mode) */
+  --status-pending: 217 10% 70%;
+  --status-scheduled: 210 85% 70%;
+  --status-in-progress: 35 90% 62%;
+  --status-completed: 145 55% 62%;
+  --status-invoiced: 280 65% 75%;
+
+  /* Trade-specific colors - dynamically set by JavaScript */
+  --trade: 217 25% 95%; /* Default blue for dark mode */
+  --trade-bg: 217 25% 16%; /* Dark tint for backgrounds */
+  --trade-border: 217 25% 80%; /* Lighter for borders */
+  --trade-accent: 217 50% 65%; /* Enhanced accent color for dark mode */
+  --trade-glow: 217 30% 25%; /* Subtle glow effect color for dark mode */
+
+  --shadow-2xs: 0px 1px 2px 0px hsl(220 15% 3% / 0.4);
+  --shadow-xs: 0px 1px 2px 0px hsl(220 15% 3% / 0.5);
+  --shadow-sm: 0px 1px 3px 0px hsl(220 15% 3% / 0.5), 0px 1px 2px -1px hsl(220 15% 3% / 0.4);
+  --shadow: 0px 1px 3px 0px hsl(220 15% 3% / 0.5), 0px 1px 2px -1px hsl(220 15% 3% / 0.4);
+  --shadow-md: 0px 4px 6px -1px hsl(220 15% 3% / 0.5), 0px 2px 4px -2px hsl(220 15% 3% / 0.4);
+  --shadow-lg: 0px 10px 15px -3px hsl(220 15% 3% / 0.5), 0px 4px 6px -4px hsl(220 15% 3% / 0.4);
+  --shadow-xl: 0px 20px 25px -5px hsl(220 15% 3% / 0.5), 0px 8px 10px -6px hsl(220 15% 3% / 0.4);
+  --shadow-2xl: 0px 25px 50px -12px hsl(220 15% 3% / 0.6);
+
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Global smooth transitions for a fluid, app-like feel */
+  button, a, input, textarea, select, 
+  [role="button"], [role="tab"], [role="menuitem"],
+  .transition-all {
+    transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  /* Dialogs and menus get smooth transitions */
+  [role="dialog"], [role="menu"], [role="listbox"] {
+    transition: transform 200ms ease-out, box-shadow 200ms ease-out, opacity 200ms ease-out;
+  }
+}
+
+/* Global animation keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes fadeInDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+@keyframes slideInRight {
+  from { 
+    opacity: 0; 
+    transform: translateX(20px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateX(0); 
+  }
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0; 
+    transform: scale(0.95); 
+  }
+  to { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@keyframes field-highlight {
+  0% { box-shadow: 0 0 0 2px hsl(var(--primary) / 0.5); }
+  50% { box-shadow: 0 0 0 3px hsl(var(--primary) / 0.3); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gentle entrance for route/screen changes so pages settle in instead of
+   snapping. Applied to the route content wrapper (which remounts per route)
+   and the logout overlay. No fill-mode is used on purpose: once the animation
+   ends the element returns to its natural state (transform: none) so it never
+   leaves a persistent transform that would trap position:fixed descendants. */
+.page-enter {
+  animation: page-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter {
+    animation: none;
+  }
+}
+
+.animate-pulse-field {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.field-updated-highlight {
+  animation: field-highlight 2s ease-out forwards;
+  border-radius: var(--radius);
+}
+
+/**
+ * Using the elevate system.
+ * Automatic contrast adjustment.
+ *
+ * <element className="hover-elevate" />
+ * <element className="active-elevate-2" />
+ *
+ * // Using the tailwind utility when a data attribute is "on"
+ * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
+ * // Or manually controlling the toggle state
+ * <element className="toggle-elevate toggle-elevated" />
+ *
+ * Elevation systems have to handle many states.
+ * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
+ * - toggled or not
+ * - focused or not (this is not handled with these utilities)
+ *
+ * Even without handling focused or not, this is six possible combinations that
+ * need to be distinguished from eachother visually.
+ */
+@layer utilities {
+
+  /* Animation utility classes */
+  .animate-fade-in {
+    animation: fadeIn 200ms ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 250ms ease-out forwards;
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 250ms ease-out forwards;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 250ms ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 200ms ease-out forwards;
+  }
+
+  .animate-pulse-soft {
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  .animate-toast-progress {
+    animation: toast-progress linear forwards;
+  }
+
+  /* Staggered animation delays for lists */
+  .stagger-1 { animation-delay: 50ms; }
+  .stagger-2 { animation-delay: 100ms; }
+  .stagger-3 { animation-delay: 150ms; }
+  .stagger-4 { animation-delay: 200ms; }
+  .stagger-5 { animation-delay: 250ms; }
+
+  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  /* Placeholder styling for contentEditable div */
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
+   * buttons/badges can remove the automatic brightness adjustment on interactions
+   * and program their own. */
+  .no-default-hover-elevate {}
+
+  .no-default-active-elevate {}
+
+
+  /**
+   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
+   * This way they can stack/compound. Both will overlap the parent's borders!
+   * So borders will be automatically adjusted both on toggle, and hover/active,
+   * and they will be compounded.
+   */
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: -1;
+    /* sits behind content but above backdrop */
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  /* Does not work on elements with overflow:hidden! */
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: 999;
+    /* sits in front of content */
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+
+  /* Special Trade Theme Utilities - Make themes distinctive */
+  .trade-gradient-bg {
+    background: linear-gradient(135deg, 
+      hsl(var(--trade-bg) / 0.15) 0%, 
+      hsl(var(--trade-glow) / 0.12) 50%,
+      hsl(var(--trade-bg) / 0.15) 100%
+    );
+    width: 100%;
+    margin-inline: 0;
+  }
+  
+  /* More subtle in light mode */
+  :root .trade-gradient-bg {
+    background: linear-gradient(135deg, 
+      hsl(var(--trade-bg) / 0.08) 0%, 
+      hsl(var(--trade-glow) / 0.05) 50%,
+      hsl(var(--trade-bg) / 0.08) 100%
+    );
+    width: 100%;
+    margin-inline: 0;
+  }
+
+  .trade-border-special {
+    border: 2px solid hsl(var(--trade) / 0.3);
+    box-shadow: 0 0 0 1px hsl(var(--trade) / 0.1);
+  }
+
+  .trade-accent-glow {
+    box-shadow: 
+      0 4px 20px hsl(var(--trade) / 0.15),
+      0 2px 8px hsl(var(--trade) / 0.2);
+  }
+
+  .trade-text-special {
+    background: linear-gradient(135deg, 
+      hsl(var(--trade)), 
+      hsl(var(--trade-accent))
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 600;
+  }
+
+  /* Subtle trade-themed animation */
+  .trade-pulse {
+    animation: trade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes trade-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 hsl(var(--trade) / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 8px hsl(var(--trade) / 0);
+    }
+  }
+
+  /* Special hover effect for trade elements */
+  .trade-hover-special:hover {
+    transform: translateY(-1px);
+    box-shadow: 
+      0 8px 25px hsl(var(--trade) / 0.15),
+      0 4px 10px hsl(var(--trade) / 0.1);
+    transition: all 0.2s ease-in-out;
+  }
+
+  /* ============================================
+   * iOS-STYLE TYPOGRAPHY SYSTEM
+   * ServiceM8-inspired native mobile feel
+   * ============================================ */
+  
+  /* Large iOS-style page titles */
+  .ios-title {
+    @apply text-[32px] sm:text-[34px] font-bold tracking-tight leading-tight;
+  }
+  
+  /* Section headers with iOS large title feel */
+  .ios-section-title {
+    @apply text-[22px] sm:text-[24px] font-semibold tracking-tight;
+  }
+  
+  /* Card titles */
+  .ios-card-title {
+    @apply text-[17px] font-semibold tracking-tight;
+  }
+  
+  /* Body text */
+  .ios-body {
+    @apply text-[15px] leading-relaxed;
+  }
+  
+  /* Caption/secondary text */
+  .ios-caption {
+    @apply text-[13px] text-muted-foreground;
+  }
+  
+  /* Tiny labels */
+  .ios-label {
+    @apply text-[11px] font-medium uppercase tracking-wider text-muted-foreground;
+  }
+
+  /* ============================================
+   * NATIVE MOBILE CARD STYLES
+   * ============================================ */
+  
+  /* Native feed card - like a social media post */
+  .feed-card {
+    @apply bg-card rounded-2xl overflow-hidden border;
+    border-color: hsl(var(--border) / 0.5);
+    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
+  }
+  
+  /* Elevated card with subtle depth */
+  .card-elevated {
+    @apply bg-card rounded-2xl overflow-hidden border-0;
+    box-shadow: 
+      0 2px 8px hsl(var(--foreground) / 0.04),
+      0 1px 2px hsl(var(--foreground) / 0.06);
+  }
+  
+  /* Primary action card with accent border */
+  .card-accent {
+    @apply bg-card rounded-2xl overflow-hidden;
+    border: 2px solid hsl(var(--trade) / 0.2);
+    background: linear-gradient(
+      180deg,
+      hsl(var(--trade) / 0.03) 0%,
+      hsl(var(--card)) 100%
+    );
+  }
+
+  /* ============================================
+   * NATIVE ANIMATIONS & MICRO-INTERACTIONS
+   * ============================================ */
+  
+  /* Springy press feedback */
+  .press-scale {
+    @apply transition-transform duration-100;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+  
+  /* Smooth card press */
+  .card-press {
+    @apply transition-all duration-150 ease-out;
+  }
+  .card-press:active {
+    transform: scale(0.985);
+    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
+  }
+  
+  /* List item slide animation */
+  @keyframes slideInFromRight {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  .animate-slide-in {
+    animation: slideInFromRight 300ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  /* Staggered list item delays */
+  .stagger-delay-1 { animation-delay: 30ms; }
+  .stagger-delay-2 { animation-delay: 60ms; }
+  .stagger-delay-3 { animation-delay: 90ms; }
+  .stagger-delay-4 { animation-delay: 120ms; }
+  .stagger-delay-5 { animation-delay: 150ms; }
+  .stagger-delay-6 { animation-delay: 180ms; }
+  .stagger-delay-7 { animation-delay: 210ms; }
+  .stagger-delay-8 { animation-delay: 240ms; }
+  
+  /* Bounce in animation for badges/indicators */
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  .animate-bounce-in {
+    animation: bounceIn 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+  
+  /* Fade up animation for content sections */
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-up {
+    animation: fadeUp 350ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  /* Timeline connector line */
+  .timeline-line {
+    @apply absolute left-5 top-12 bottom-0 w-0.5;
+    background: linear-gradient(
+      180deg,
+      hsl(var(--border)) 0%,
+      transparent 100%
+    );
+  }
+  
+  /* Activity dot with pulse */
+  .activity-dot {
+    @apply w-2.5 h-2.5 rounded-full;
+    background: hsl(var(--trade));
+  }
+  
+  .activity-dot-pulse {
+    @apply relative;
+  }
+  .activity-dot-pulse::after {
+    content: '';
+    @apply absolute inset-0 rounded-full;
+    background: hsl(var(--trade));
+    animation: dot-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes dot-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.8); opacity: 0; }
+  }
+
+  /* Celebration overlay - brief delight on key wins */
+  @keyframes celebrate-pop {
+    0% { opacity: 0; transform: scale(0.5); }
+    55% { opacity: 1; transform: scale(1.08); }
+    75% { transform: scale(0.96); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .animate-celebrate-pop {
+    animation: celebrate-pop 360ms cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  }
+
+  @keyframes confetti-fall {
+    0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg); }
+    10% { opacity: 1; }
+    100% {
+      opacity: 0;
+      transform: translate3d(var(--confetti-x, 0), var(--confetti-y, 160px), 0) rotate(var(--confetti-r, 180deg));
+    }
+  }
+  .confetti-piece {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    animation: confetti-fall var(--confetti-duration, 1100ms) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  /* ============================================
+   * NATIVE SPACING UTILITIES
+   * ============================================ */
+  
+  /* iOS-style section spacing */
+  .section-gap {
+    @apply space-y-6;
+  }
+  
+  /* Card content padding */
+  .card-padding {
+    @apply p-4 sm:p-5;
+  }
+  
+  /* Feed item gap */
+  .feed-gap {
+    @apply space-y-3;
+  }
+}
+
+/* Override any cached width constraints on scroll container children */
+main[data-scroll-container] > * {
+  max-width: none !important;
+  margin-inline: 0 !important;
+}
+
+/* Hide scrollbar utility class - for horizontal scroll areas */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Thin scrollbar for horizontal scroll areas */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.2) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.2);
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.4);
+}
+
+/* Hide scrollbar on mobile and touch devices to maximize content width */
+/* Scrolling functionality remains fully intact */
+@media (pointer: coarse), (max-width: 768px) {
+  [data-scroll-container] {
+    /* Firefox */
+    scrollbar-width: none;
+    /* IE and Edge */
+    -ms-overflow-style: none;
+  }
+  
+  /* Chrome, Safari, and Opera */
+  [data-scroll-container]::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ============================================
+ * PRINT STYLES - Match PDF Download Styling
+ * These styles ensure browser print preview 
+ * matches the server-generated PDF exactly
+ * ============================================ */
+@media print {
+  /* Force color printing and hide backgrounds */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Reset body for print */
+  body {
+    background: white !important;
+    color: #1a1a1a !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide non-printable elements */
+  .no-print,
+  [data-no-print],
+  header:not(.print-header),
+  nav,
+  aside,
+  footer:not(.print-footer),
+  .sidebar,
+  .bottom-nav,
+  button:not(.print-button),
+  .floating-action,
+  .toast,
+  .dialog,
+  .modal,
+  [role="dialog"],
+  [role="menu"],
+  .print-hide {
+    display: none !important;
+  }
+
+  /* Document container - matches PDF .document class */
+  .print-document,
+  [data-print-document] {
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 20px 40px !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* Document header - matches PDF .header class */
+  .print-header,
+  [data-print-header] {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    margin-bottom: 30px !important;
+    padding-bottom: 16px !important;
+    border-bottom: 3px solid var(--print-brand-color, #2563eb) !important;
+    background: transparent !important;
+  }
+
+  /* Company info section */
+  .print-company-info {
+    flex: 1 !important;
+  }
+
+  .print-company-name {
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: var(--print-brand-color, #2563eb) !important;
+    margin-bottom: 8px !important;
+  }
+
+  .print-company-details {
+    color: #666 !important;
+    font-size: 10px !important;
+    line-height: 1.6 !important;
+  }
+
+  .print-company-details p {
+    margin: 2px 0 !important;
+  }
+
+  /* Logo styling */
+  .print-logo {
+    max-width: 150px !important;
+    max-height: 60px !important;
+    object-fit: contain !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* Document type section (right side) */
+  .print-document-type {
+    text-align: right !important;
+  }
+
+  .print-document-title {
+    font-size: 32px !important;
+    font-weight: 700 !important;
+    color: var(--print-brand-color, #2563eb) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 2px !important;
+  }
+
+  .print-document-number {
+    font-size: 14px !important;
+    color: #666 !important;
+    margin-top: 4px !important;
+  }
+
+  /* Info section - client/quote details */
+  .print-info-section {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-bottom: 24px !important;
+    gap: 40px !important;
+  }
+
+  .print-info-block {
+    flex: 1 !important;
+  }
+
+  .print-info-label {
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    color: #888 !important;
+    margin-bottom: 6px !important;
+    font-weight: 600 !important;
+  }
+
+  .print-info-value {
+    color: #1a1a1a !important;
+    line-height: 1.5 !important;
+  }
+
+  .print-info-value strong {
+    font-weight: 600 !important;
+  }
+
+  /* Description section */
+  .print-description-section {
+    margin-bottom: 24px !important;
+    padding: 16px !important;
+    background: #f8f9fa !important;
+    border-radius: 6px !important;
+  }
+
+  .print-description-title {
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    color: var(--print-brand-color, #2563eb) !important;
+  }
+
+  /* Line items table - matches PDF exactly */
+  .print-line-items-table,
+  [data-print-table] {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 24px !important;
+    font-size: 11px !important;
+  }
+
+  .print-line-items-table th,
+  [data-print-table] th {
+    background: var(--print-brand-color, #2563eb) !important;
+    color: white !important;
+    padding: 12px !important;
+    text-align: left !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .print-line-items-table th:nth-child(2),
+  .print-line-items-table th:nth-child(3),
+  .print-line-items-table th:nth-child(4),
+  [data-print-table] th:nth-child(2),
+  [data-print-table] th:nth-child(3),
+  [data-print-table] th:nth-child(4) {
+    text-align: right !important;
+  }
+
+  .print-line-items-table td,
+  [data-print-table] td {
+    padding: 12px !important;
+    border-bottom: 1px solid #eee !important;
+    vertical-align: top !important;
+    color: #1a1a1a !important;
+  }
+
+  .print-line-items-table td:nth-child(2),
+  .print-line-items-table td:nth-child(3),
+  .print-line-items-table td:nth-child(4),
+  [data-print-table] td:nth-child(2),
+  [data-print-table] td:nth-child(3),
+  [data-print-table] td:nth-child(4) {
+    text-align: right !important;
+    white-space: nowrap !important;
+  }
+
+  .print-line-items-table tr:last-child td,
+  [data-print-table] tbody tr:last-child td {
+    border-bottom: 2px solid var(--print-brand-color, #2563eb) !important;
+  }
+
+  /* Totals section - right aligned like PDF */
+  .print-totals-section {
+    display: flex !important;
+    justify-content: flex-end !important;
+    margin-bottom: 24px !important;
+  }
+
+  .print-totals-table {
+    width: 280px !important;
+  }
+
+  .print-totals-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    padding: 8px 0 !important;
+    border-bottom: 1px solid #eee !important;
+  }
+
+  .print-totals-row.print-total-final {
+    border-bottom: none !important;
+    border-top: 2px solid var(--print-brand-color, #2563eb) !important;
+    padding-top: 12px !important;
+    margin-top: 4px !important;
+  }
+
+  .print-totals-row.print-total-final .print-totals-label,
+  .print-totals-row.print-total-final .print-totals-value {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: var(--print-brand-color, #2563eb) !important;
+  }
+
+  .print-totals-label {
+    color: #666 !important;
+  }
+
+  .print-totals-value {
+    font-weight: 600 !important;
+  }
+
+  .print-gst-note {
+    text-align: right !important;
+    font-size: 9px !important;
+    color: #888 !important;
+    margin-top: 4px !important;
+  }
+
+  /* Notes section */
+  .print-notes-section {
+    margin-bottom: 24px !important;
+    padding: 16px !important;
+    background: #fafafa !important;
+    border-left: 4px solid var(--print-brand-color, #2563eb) !important;
+    border-radius: 0 6px 6px 0 !important;
+  }
+
+  .print-notes-title {
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    color: #333 !important;
+  }
+
+  .print-notes-content {
+    color: #666 !important;
+    font-size: 10px !important;
+    white-space: pre-wrap !important;
+  }
+
+  /* Terms section */
+  .print-terms-section {
+    margin-bottom: 24px !important;
+  }
+
+  .print-terms-title {
+    font-weight: 600 !important;
+    margin-bottom: 8px !important;
+    color: #333 !important;
+    font-size: 11px !important;
+  }
+
+  .print-terms-content {
+    color: #666 !important;
+    font-size: 9px !important;
+    line-height: 1.6 !important;
+    white-space: pre-wrap !important;
+  }
+
+  /* Signature/acceptance section */
+  .print-acceptance-section {
+    margin-top: 30px !important;
+    padding: 20px !important;
+    border: 2px dashed #ddd !important;
+    border-radius: 8px !important;
+  }
+
+  .print-acceptance-title {
+    font-weight: 600 !important;
+    margin-bottom: 16px !important;
+    color: #333 !important;
+  }
+
+  .print-signature-line {
+    display: flex !important;
+    gap: 40px !important;
+    margin-top: 20px !important;
+  }
+
+  .print-signature-block {
+    flex: 1 !important;
+  }
+
+  .print-signature-label {
+    font-size: 10px !important;
+    color: #888 !important;
+    margin-bottom: 30px !important;
+  }
+
+  .print-signature-underline {
+    border-bottom: 1px solid #333 !important;
+    height: 1px !important;
+  }
+
+  /* Footer */
+  .print-footer {
+    margin-top: 30px !important;
+    padding-top: 16px !important;
+    border-top: 1px solid #eee !important;
+    text-align: center !important;
+    font-size: 9px !important;
+    color: #999 !important;
+    display: block !important;
+  }
+
+  /* Status badges for print */
+  .print-status-badge {
+    display: inline-block !important;
+    padding: 4px 12px !important;
+    border-radius: 20px !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .print-status-draft { background: #e5e7eb !important; color: #374151 !important; }
+  .print-status-sent { background: #dbeafe !important; color: #1d4ed8 !important; }
+  .print-status-accepted { background: #dcfce7 !important; color: #166534 !important; }
+  .print-status-declined { background: #fee2e2 !important; color: #991b1b !important; }
+  .print-status-paid { background: #dcfce7 !important; color: #166534 !important; }
+  .print-status-overdue { background: #fee2e2 !important; color: #991b1b !important; }
+
+  /* Accepted/Paid stamp overlay */
+  .print-stamp {
+    position: absolute !important;
+    top: 100px !important;
+    right: 60px !important;
+    padding: 10px 20px !important;
+    border: 3px solid #22c55e !important;
+    color: #22c55e !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    transform: rotate(-15deg) !important;
+    opacity: 0.8 !important;
+  }
+
+  /* Page break handling */
+  .print-page-break-before {
+    page-break-before: always !important;
+  }
+
+  .print-page-break-after {
+    page-break-after: always !important;
+  }
+
+  .print-avoid-break {
+    page-break-inside: avoid !important;
+  }
+
+  /* Keep headers with content */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+  }
+
+  /* Keep tables together when possible */
+  table, figure {
+    page-break-inside: avoid !important;
+  }
+
+  /* Links - show URL for reference but don't style as links */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Remove shadows and unnecessary visual effects */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Ensure proper margins for printing */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+
+  /* First page specific */
+  @page :first {
+    margin-top: 1.5cm;
+  }
+}

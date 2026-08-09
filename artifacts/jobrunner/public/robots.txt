@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /auth
+Disallow: /reset-password
+Disallow: /verify-email
+Disallow: /verify-email-pending
+Disallow: /settings
+Disallow: /api/
+
+Sitemap: https://jobrunner.com.au/sitemap.xml

@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "JobRunner"
+description = "JobRunner is a field service management web app for tradespeople and service businesses. It lets owners and their teams manage jobs, clients, invoices, quotes, scheduling, payments, and team collaboration — all in one place. Designed for sole traders through to small businesses needing multi-user support."
+version = "1.0.0"
+id = "artifacts/jobrunner"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22128
+
+[services.development]
+run = "pnpm --filter @workspace/jobrunner run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/jobrunner", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/jobrunner/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22128"
+BASE_PATH = "/"
