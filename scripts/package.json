@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check-schema-imports": "tsx ./src/check-schema-imports.ts",
+    "check-schema-imports:test": "tsx ./src/check-schema-imports.test.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
