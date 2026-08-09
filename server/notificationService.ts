@@ -376,7 +376,7 @@ export async function notifyJobScheduled(
 // ===== OWNER SMS NOTIFICATIONS =====
 // These send SMS to the business OWNER when critical events happen
 
-const ownerSmsTemplates = {
+export const ownerSmsTemplates = {
   paymentReceived: (clientName: string, amount: string, invoiceNumber: string) =>
     `Payment received! ${clientName} paid $${amount} on invoice #${invoiceNumber}`,
   quoteAccepted: (clientName: string, quoteNumber: string, total: string) =>
