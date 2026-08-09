@@ -14,27 +14,32 @@ import { useLocation, useSearch } from "wouter";
 import { ToastAction } from "@/components/ui/toast";
 import { isDedicatedNumberError, GET_NUMBER_TOAST, GET_NUMBER_URL } from "@/lib/dedicatedNumber";
 import { getJobUrgency, getInProgressDuration } from "@/lib/jobUrgency";
-import JobPhotoGallery from "./JobPhotoGallery";
-import { JobVoiceNotes } from "./JobVoiceNotes";
-import { JobDocuments } from "./JobDocuments";
-import { JobVariations } from "./JobVariations";
-import { JobSignature } from "./JobSignature";
-import { AIPhotoAnalysis } from "./AIPhotoAnalysis";
 import { useFeatureAccess } from "@/hooks/use-subscription";
-import { JobForms, JobCardSection, JobTasksSection } from "./CustomFormRenderer";
-import { SafetyFormsSection, SafetyCheckDialog } from "./SafetyFormsSection";
-import { JobChat } from "./JobChat";
 import SmartActionsPanel, { getJobSmartActions, SmartAction } from "./SmartActionsPanel";
-import EmailTemplateEditor, { EmailTemplate } from "./EmailTemplateEditor";
-import GeofenceSettingsCard from "./GeofenceSettingsCard";
-import { LinkedDocumentsCard } from "./JobWorkflowComponents";
-import JobFlowWizard from "@/components/JobFlowWizard";
-import QuickCollectPayment from "./QuickCollectPayment";
-import { BeforePhotoPrompt } from "./BeforePhotoPrompt";
-import LinkedJobsCard from "./LinkedJobsCard";
-import JobProfitabilityCard from "./JobProfitabilityCard";
-import { UnifiedSendModal } from "./UnifiedSendModal";
-import { ManualSmsComposer } from "./ManualSmsComposer";
+import type { EmailTemplate } from "./EmailTemplateEditor";
+import {
+  JobPhotoGallery,
+  JobVoiceNotes,
+  JobDocuments,
+  JobVariations,
+  JobSignature,
+  AIPhotoAnalysis,
+  SafetyFormsSection,
+  SafetyCheckDialog,
+  JobForms,
+  JobCardSection,
+  JobTasksSection,
+  EmailTemplateEditor,
+  GeofenceSettingsCard,
+  LinkedDocumentsCard,
+  JobFlowWizard,
+  QuickCollectPayment,
+  BeforePhotoPrompt,
+  LinkedJobsCard,
+  JobProfitabilityCard,
+  UnifiedSendModal,
+  ManualSmsComposer,
+} from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
 import { useJobCollaboration } from '@/hooks/use-job-collaboration';
