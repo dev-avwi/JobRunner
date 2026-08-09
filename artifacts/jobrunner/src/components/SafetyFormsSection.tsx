@@ -34,7 +34,7 @@ import { format } from "date-fns";
 import { FormRenderer } from "./CustomFormRenderer";
 import { SwmsBuilder } from "./SwmsBuilder";
 import type { CustomForm, FormSubmission } from "@shared/schema";
-import { SAFETY_FORM_TYPES } from "@shared/schema";
+import { SAFETY_FORM_TYPES } from "@shared/safety-forms";
 
 interface SwmsListItem {
   id: string;

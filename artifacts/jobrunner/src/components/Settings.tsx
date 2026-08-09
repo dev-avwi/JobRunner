@@ -88,7 +88,7 @@ import { QuickRepliesSettings } from "./QuickRepliesSettings";
 import { useToast } from "@/hooks/use-toast";
 import DataSafetyBanner from "./DataSafetyBanner";
 import { TemplateId, TemplateCustomization } from "@/lib/document-templates";
-import { PRICING } from "@shared/schema";
+import { PRICING } from "@shared/pricing";
 import { tradeCatalog, getTradeDefinition } from "@shared/tradeCatalog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {

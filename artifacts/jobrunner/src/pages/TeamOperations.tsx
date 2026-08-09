@@ -121,7 +121,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { TeamMember, UserRole, TeamMemberSkill, TeamMemberAvailability, TeamMemberTimeOff } from "@shared/schema";
 import { getWorkerDisplayName } from "@shared/displayName";
-import { PERMISSION_CATEGORIES, PERMISSION_LABELS, type WorkerPermission, DEFAULT_WORKER_PERMISSIONS, ALL_WORKER_PERMISSIONS, ROLE_PRESETS, WORKER_PERMISSIONS } from "@shared/schema";
+import { PERMISSION_CATEGORIES, PERMISSION_LABELS, type WorkerPermission, DEFAULT_WORKER_PERMISSIONS, ALL_WORKER_PERMISSIONS, ROLE_PRESETS, WORKER_PERMISSIONS } from "@shared/permissions";
 import {
   Tooltip,
   TooltipContent,

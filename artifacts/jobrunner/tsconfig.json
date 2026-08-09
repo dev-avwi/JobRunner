@@ -14,6 +14,8 @@
       "@/*": ["./src/*"],
       "@shared/schema": ["../../lib/db/src/schema/schema.ts"],
       "@shared/permissions": ["../../lib/db/src/schema/permissions.ts"],
+      "@shared/pricing": ["../../lib/db/src/schema/pricing.ts"],
+      "@shared/safety-forms": ["../../lib/db/src/schema/safety-forms.ts"],
       "@shared/dateUtils": ["./src/lib/shared-dateUtils.ts"],
       "@shared/displayName": ["./src/lib/shared-displayName.ts"],
       "@shared/tradeCatalog": ["./src/lib/shared-tradeCatalog.ts"]

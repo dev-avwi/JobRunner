@@ -45,8 +45,14 @@ export default defineConfig({
         '..',
         'attached_assets',
       ),
+      // NOTE: only use `import type` from @shared/schema in frontend code — runtime
+      // imports pull the full drizzle schema (+drizzle-orm+zod, ~240 kB min) into the
+      // page chunk. Runtime constants live in dependency-free modules below
+      // (@shared/permissions, @shared/pricing, @shared/safety-forms).
       '@shared/schema': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'schema.ts'),
       '@shared/permissions': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'permissions.ts'),
+      '@shared/pricing': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'pricing.ts'),
+      '@shared/safety-forms': path.resolve(import.meta.dirname, '..', '..', 'lib', 'db', 'src', 'schema', 'safety-forms.ts'),
       '@shared/dateUtils': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-dateUtils.ts'),
       '@shared/displayName': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-displayName.ts'),
       '@shared/tradeCatalog': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-tradeCatalog.ts'),
