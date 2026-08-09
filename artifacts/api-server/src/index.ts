@@ -301,6 +301,9 @@ if (process.env.DATABASE_URL) {
     next();
   });
 
+  const { default: apiRouter } = await import('./routes');
+  app.use('/api', apiRouter);
+
   const server = await registerRoutes(app);
   Sentry.setupExpressErrorHandler(app);
 
