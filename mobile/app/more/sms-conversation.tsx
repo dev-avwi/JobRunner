@@ -22,7 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, shadows, sizes, fontWeights } from '../../src/lib/design-tokens';
 
 import api from '../../src/lib/api';
-import { handleDedicatedNumberError } from '../../src/lib/smsGate';
+import { handleDedicatedNumberError, isDedicatedNumberReason } from '../../src/lib/smsGate';
 import { useAuthStore } from '../../src/lib/store';
 import { useTeamMemberColors, memberColorFor } from '../../src/lib/team-colors';
 
@@ -51,6 +51,7 @@ interface SmsMessage {
   mediaUrls?: string[] | null;
   senderUserId?: string | null;
   senderName?: string | null;
+  errorMessage?: string | null;
 }
 
 function buildQuickReplies(clientFirstName: string, senderName: string) {
@@ -741,6 +742,23 @@ export default function SmsConversationScreen() {
                       </View>
                     )}
                   </View>
+                  {isOutbound && msg.status === 'failed' && msg.errorMessage && (
+                    isDedicatedNumberReason(msg.errorMessage) ? (
+                      <PressableRow
+                        onPress={() => router.push('/more/phone-numbers' as any)}
+                        style={{ alignSelf: 'flex-end', marginTop: 2, maxWidth: '80%' }}
+                      >
+                        <Text style={{ fontSize: 11, color: colors.destructive, textAlign: 'right' }}>
+                          Not sent — no business number.{' '}
+                          <Text style={{ textDecorationLine: 'underline', fontWeight: '600' }}>Get a business number</Text>
+                        </Text>
+                      </PressableRow>
+                    ) : (
+                      <Text style={{ fontSize: 11, color: colors.destructive, alignSelf: 'flex-end', marginTop: 2, maxWidth: '80%', textAlign: 'right' }}>
+                        Not sent — {msg.errorMessage}
+                      </Text>
+                    )
+                  )}
                 </View>
               );
             })

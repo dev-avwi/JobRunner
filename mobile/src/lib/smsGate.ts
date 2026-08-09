@@ -22,6 +22,12 @@ export function isDedicatedNumberError(response: ApiErrorLike | null | undefined
   return /dedicated (phone )?number/i.test(response.error);
 }
 
+/** True when a persisted failure reason string is the "no dedicated number" reason. */
+export function isDedicatedNumberReason(reason?: string | null): boolean {
+  if (!reason) return false;
+  return /dedicated (phone )?number/i.test(reason) || /no business phone number/i.test(reason);
+}
+
 export function showGetNumberPrompt() {
   Alert.alert(
     'Get your business number',

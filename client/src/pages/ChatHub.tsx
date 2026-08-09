@@ -169,6 +169,7 @@ interface SmsMessage {
   body: string;
   senderUserId: string | null;
   status: string;
+  errorMessage?: string | null;
   twilioSid: string | null;
   isQuickAction: boolean;
   quickActionType: string | null;
@@ -2520,7 +2521,23 @@ export default function ChatHub() {
                           </div>
                         </div>
                         
-                        {isOwn && msg.status === 'failed' && (
+                        {isOwn && msg.status === 'failed' && msg.errorMessage && (
+                          isDedicatedNumberError(msg.errorMessage) ? (
+                            <button
+                              type="button"
+                              className="text-[11px] text-red-600 dark:text-red-400 text-right max-w-[240px]"
+                              onClick={() => setShowSmsUpgrade(true)}
+                              data-testid={`button-get-number-${msg.id}`}
+                            >
+                              Not sent — no business number. <span className="underline font-medium">Get a business number</span>
+                            </button>
+                          ) : (
+                            <p className="text-[11px] text-red-600 dark:text-red-400 text-right max-w-[240px]">
+                              Not sent — {msg.errorMessage}
+                            </p>
+                          )
+                        )}
+                        {isOwn && msg.status === 'failed' && !isDedicatedNumberError(msg.errorMessage || '') && (
                           <Button
                             variant="ghost"
                             size="sm"
