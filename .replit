@@ -65,12 +65,13 @@ args = "npm run check"
 name = "Expo Tunnel"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd mobile && npx expo start --tunnel"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd mobile && npx expo start"
+waitForPort = 8081
 
 [[workflows.workflow]]
 name = "server-tests"
