@@ -1,0 +1,31 @@
+Last login: Mon Aug 10 18:10:51 on ttys000
+aydshomefolder@Aydens-MacBook-Pro ~ % echo "mobile/.env" >> .gitignore       
+echo ".env" >> mobile/android/.gitignore
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % echo ".env" > mobile/android/.gitignore
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % cd path/to/your/JobRunner/project
+echo "mobile/.env" >> .gitignore
+echo ".env" > mobile/android/.gitignore
+cd: no such file or directory: path/to/your/JobRunner/project
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % cd ~/path/to/JobRunner    # or wherever you cloned the repo
+echo "mobile/.env" >> .gitignore
+echo ".env" > mobile/android/.gitignore
+cd: too many arguments
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % find ~ -name "mobile" -type d 2>/dev/null | grep -i jobrunner
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/87F99E48-1BCA-4C2F-8B36-9B3A5C384B4F.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/DAB97BEC-4732-4F96-B160-0A1F5CAA0DC3.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/EF8534B5-60BF-47C5-BD97-950921620FA2.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/E972FAFE-16BB-4442-9DFB-EEE3C282F6EE.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/3C5DBF7D-D63B-44AD-BD68-6CB89B390912.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/B8F7BE91-0C00-467B-BA64-92103FEBACB9.snapshotscodepreview/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/.migration-backup/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-reanimated/android/.cxx/Debug/414n4r1u/arm64-v8a/CMakeFiles/reanimated.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-worklets/android/.cxx/Debug/521u246t/arm64-v8a/CMakeFiles/worklets.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/expo-modules-core/android/.cxx/Debug/5t6k4n3c/arm64-v8a/CMakeFiles/expo-modules-core.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/expo-modules-core/android/.cxx/Debug/5t6k4n3c/arm64-v8a/src/fabric/CMakeFiles/fabric.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-screens/android/.cxx/Debug/4k2ji5s3/arm64-v8a/CMakeFiles/rnscreens.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+aydshomefolder@Aydens-MacBook-Pro ~ % 
