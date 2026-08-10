@@ -528,42 +528,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.warningLight,
     marginHorizontal: pageShell.paddingHorizontal,
-    marginBottom: spacing.sm,
-    marginTop: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius['2xl'],
+    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
     gap: spacing.sm,
-    ...shadows.sm,
-  },
-  twilioSetupIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.xl,
-    backgroundColor: colors.warning,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  twilioSetupContent: {
-    flex: 1,
   },
   twilioSetupTitle: {
-    ...typography.cardTitle,
+    flex: 1,
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
     color: colors.foreground,
   },
-  twilioSetupDescription: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
   twilioSetupButton: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.warning,
-    borderRadius: radius.pill,
-  },
-  twilioSetupButtonText: {
-    ...typography.button,
-    color: colors.white,
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.semibold,
+    color: colors.primary,
   },
   twilioConnectedBanner: {
     alignSelf: 'stretch',
@@ -1344,20 +1325,11 @@ export default function ChatHubScreen() {
     }
 
     return (
-      <View style={styles.twilioSetupBanner}>
-        <View style={styles.twilioSetupIcon}>
-          <Feather name="alert-triangle" size={16} color={colors.white} />
-        </View>
-        <View style={styles.twilioSetupContent}>
-          <Text style={styles.twilioSetupTitle}>Business Number Not Set Up</Text>
-          <Text style={styles.twilioSetupDescription}>
-            Connect a number for SMS and AI Receptionist calls
-          </Text>
-        </View>
-        <PressableRow style={styles.twilioSetupButton} onPress={() => router.push(asHref('/more/phone-numbers'))} >
-          <Text style={styles.twilioSetupButtonText}>Set Up</Text>
-        </PressableRow>
-      </View>
+      <PressableRow style={styles.twilioSetupBanner} onPress={() => router.push(asHref('/more/phone-numbers'))}>
+        <Feather name="phone-missed" size={13} color={colors.warning} />
+        <Text style={styles.twilioSetupTitle} numberOfLines={1}>No business number set up</Text>
+        <Text style={styles.twilioSetupButton}>Set Up →</Text>
+      </PressableRow>
     );
   };
 

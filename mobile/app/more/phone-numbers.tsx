@@ -922,92 +922,7 @@ export default function PhoneNumbersPage() {
               </View>
             )}
 
-            <View onLayout={(e) => { searchSectionY.current = e.nativeEvent.layout.y; }} style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
-              <PressableRow style={{ flex: 1, backgroundColor: showPortForm ? `${colors.primary}15` : colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: showPortForm ? colors.primary : colors.border, alignItems: 'center', gap: spacing.xs }} onPress={() => setShowPortForm(true)} >
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Feather name="phone-forwarded" size={16} color={colors.primary} />
-                </View>
-                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Port My Number</Text>
-                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center' }}>Keep your existing number</Text>
-              </PressableRow>
-              <PressableRow style={{ flex: 1, backgroundColor: !showPortForm ? `${colors.primary}15` : colors.card, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: !showPortForm ? colors.primary : colors.border, alignItems: 'center', gap: spacing.xs }} onPress={() => setShowPortForm(false)} >
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                  <Feather name="plus" size={16} color={colors.primary} />
-                </View>
-                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Get New Number</Text>
-                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textAlign: 'center' }}>Search Australian numbers</Text>
-              </PressableRow>
-            </View>
-
-            {showPortForm ? (
-              <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, marginBottom: spacing.lg }}>
-                <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>Port Your Existing Number</Text>
-                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, lineHeight: 18, marginBottom: spacing.md }}>
-                  Bring your current business number to JobRunner. Your clients keep calling the same number — and our AI can answer it.
-                </Text>
-
-                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Phone Number</Text>
-                <TextInput
-                  style={[styles.searchInput, { marginBottom: spacing.sm }]}
-                  placeholder="e.g. 0412 345 678"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={portPhone}
-                  onChangeText={setPortPhone}
-                  keyboardType="phone-pad"
-                />
-
-                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Current Carrier / Provider</Text>
-                <TextInput
-                  style={[styles.searchInput, { marginBottom: spacing.sm }]}
-                  placeholder="e.g. Telstra, Optus, Vodafone"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={portCarrier}
-                  onChangeText={setPortCarrier}
-                />
-
-                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 4 }}>Account Number</Text>
-                <TextInput
-                  style={[styles.searchInput, { marginBottom: spacing.md }]}
-                  placeholder="Your carrier account number"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={portAccount}
-                  onChangeText={setPortAccount}
-                />
-
-                <PressableRow style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, marginBottom: spacing.md }} onPress={() => setPortLoaAgreed(!portLoaAgreed)} >
-                  <View style={{
-                    width: 22, height: 22, borderRadius: 4, borderWidth: 2,
-                    borderColor: portLoaAgreed ? colors.primary : colors.border,
-                    backgroundColor: portLoaAgreed ? colors.primary : 'transparent',
-                    alignItems: 'center', justifyContent: 'center', marginTop: 1,
-                  }}>
-                    {portLoaAgreed && <Feather name="check" size={14} color={colors.primaryForeground} />}
-                  </View>
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, flex: 1, lineHeight: 18 }}>
-                    I authorise JobRunner to submit a porting request on my behalf (Letter of Authorisation). I confirm I am the authorised account holder for this number.
-                  </Text>
-                </PressableRow>
-
-                <View style={{ backgroundColor: `${colors.info}10`, borderRadius: radius.sm, padding: spacing.sm, marginBottom: spacing.md, flexDirection: 'row', gap: spacing.xs }}>
-                  <Feather name="clock" size={12} color={colors.info} style={{ marginTop: 2 }} />
-                  <Text style={{ fontSize: typography.sizes.xs, color: colors.info, flex: 1, lineHeight: 16 }}>
-                    Australian number ports typically take 5–10 business days. Your number will continue working with your current carrier during this time.
-                  </Text>
-                </View>
-
-                <PressableRow style={{ backgroundColor: (portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primary : colors.muted, borderRadius: radius.md, paddingVertical: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, opacity: (portPhone && portCarrier && portAccount && portLoaAgreed) ? 1 : 0.5, }} onPress={submitPortRequest} disabled={submittingPort || !portPhone || !portCarrier || !portAccount || !portLoaAgreed} >
-                  {submittingPort ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Feather name="send" size={14} color={(portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primaryForeground : colors.mutedForeground} />
-                  )}
-                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: (portPhone && portCarrier && portAccount && portLoaAgreed) ? colors.primaryForeground : colors.mutedForeground }}>
-                    {submittingPort ? 'Submitting...' : 'Submit Port Request'}
-                  </Text>
-                </PressableRow>
-              </View>
-            ) : (
-            <>
+            <View onLayout={(e) => { searchSectionY.current = e.nativeEvent.layout.y; }}>
             <View style={styles.searchCard}>
               <Text style={styles.searchLabel}>Filter by area (optional)</Text>
               <View style={styles.searchRow}>
@@ -1093,8 +1008,7 @@ export default function PhoneNumbersPage() {
                 </PressableRow>
               </View>
             ) : null}
-          </>
-        )}
+            </View>
           </>
         )}
 

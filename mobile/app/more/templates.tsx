@@ -1989,20 +1989,19 @@ export default function TemplatesScreen() {
             />
           </View>
 
-          {/* Style Presets Section */}
+          {/* Style Presets Section — only shown when custom presets exist */}
+          {stylePresets.length > 0 && (
           <View style={styles.stylePresetsSection}>
             <View style={styles.stylePresetsSectionHeader}>
               <Text style={styles.stylePresetsSectionTitle}>Style Presets</Text>
-              {stylePresets.length > 0 && (
-                <TouchableOpacity
-                  style={styles.viewAllButton}
-                  onPress={() => setShowPresetsModal(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.viewAllButtonText}>View All</Text>
-                  <Feather name="chevron-right" size={16} color={colors.primary} />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.viewAllButton}
+                onPress={() => setShowPresetsModal(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.viewAllButtonText}>View All</Text>
+                <Feather name="chevron-right" size={16} color={colors.primary} />
+              </TouchableOpacity>
             </View>
 
             {isLoadingPresets ? (
@@ -2011,15 +2010,6 @@ export default function TemplatesScreen() {
                 <Text style={[styles.stylePresetDetailText, { marginTop: spacing.sm }]}>
                   Loading style presets...
                 </Text>
-              </View>
-            ) : stylePresets.length === 0 ? (
-              <View style={styles.stylePresetCard}>
-                <View style={styles.emptyStylePresets}>
-                  <Feather name="droplet" size={32} color={colors.mutedForeground} style={{ marginBottom: spacing.md }} />
-                  <Text style={styles.emptyStylePresetsText}>
-                    No style presets yet. Create them in the web dashboard to customize your document appearance.
-                  </Text>
-                </View>
               </View>
             ) : selectedPreset ? (
               <PressableRow
@@ -2102,6 +2092,7 @@ export default function TemplatesScreen() {
               </PressableRow>
             ) : null}
           </View>
+          )}
 
           {/* Customise Template Section */}
           <View style={styles.customizeSection}>
@@ -2569,7 +2560,6 @@ export default function TemplatesScreen() {
         <Modal
           visible={showCreateModal}
           animationType="slide"
-          presentationStyle="pageSheet"
           onRequestClose={() => {
             setShowCreateModal(false);
             resetForm();
@@ -2578,14 +2568,10 @@ export default function TemplatesScreen() {
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            // iOS pageSheet modals sit ~status-bar height below the window
-            // top; KAV measures relative to the sheet, so compensate or the
-            // keyboard padding is short by that gap. Android modals are
-            // full-screen, no offset needed.
-            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+            keyboardVerticalOffset={0}
           >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalHeader, Platform.OS === 'android' && { paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }]}>
               <TouchableOpacity
                 onPress={() => {
                   setShowCreateModal(false);

@@ -1007,7 +1007,7 @@ ${businessName}`;
                     )}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#e5e7eb' }}>
                       <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#6b7280' }}>Transaction ID</Text>
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }} numberOfLines={1}>{receipt.id.slice(0, 12)}...</Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.medium, color: '#1a1a1a' }} numberOfLines={1}>{receipt.id?.slice(0, 12) ?? '—'}...</Text>
                     </View>
                     {receipt.paidAt && (
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs }}>
@@ -1050,7 +1050,7 @@ ${businessName}`;
           documentId={receipt.id}
           clientName={client.name || 'Customer'}
           clientEmail={client.email || ''}
-          documentNumber={receipt.receiptNumber || receipt.id.slice(0, 8)}
+          documentNumber={receipt.receiptNumber || receipt.id?.slice(0, 8) || ''}
           documentTitle={invoice?.title || job?.title || 'Payment'}
           total={formatCurrency(receipt.amount)}
           businessName={businessSettings?.businessName || 'Your Business'}

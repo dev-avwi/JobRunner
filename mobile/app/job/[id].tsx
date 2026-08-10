@@ -78,6 +78,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { showToast } from '../../src/lib/toast';
 import { SignatureSection } from '../../src/components/jobDetail/SignatureSection';
 import { SwmsSection } from '../../src/components/jobDetail/SwmsSection';
+import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
 import { ChatSection } from '../../src/components/jobDetail/ChatSection';
 import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
@@ -5068,6 +5069,67 @@ export default function JobDetailScreen() {
     });
   };
 
+  const handleQuickCollectCard = async () => {
+    if (!job || isQuickCollecting) return;
+    const total = getQuickCollectTotal();
+    if (total <= 0) {
+      showToast({ type: 'info', message: 'No Amount', description: 'Add materials with pricing or a quote to use quick collect.' });
+      return;
+    }
+    setIsQuickCollecting(true);
+    try {
+      // Create an invoice (without recording payment), then send a Stripe payment link
+      const body: any = { jobId: job.id, status: 'pending' };
+      if (quote?.status === 'accepted') {
+        body.quoteId = quote.id;
+      } else {
+        body.lineItems = getQuickCollectLineItems();
+      }
+      if (client?.id) body.clientId = client.id;
+      const invoiceRes = await api.post<{ id: string }>('/api/invoices', body);
+      if (invoiceRes.error || !invoiceRes.data?.id) {
+        showToast({ type: 'error', message: 'Error', description: invoiceRes.error || 'Could not create invoice' });
+        return;
+      }
+      handleRefresh();
+      router.push(`/more/collect-payment?tab=link&invoiceId=${invoiceRes.data.id}&jobId=${job.id}`);
+    } catch (error: any) {
+      showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to create invoice' });
+    } finally {
+      setIsQuickCollecting(false);
+    }
+  };
+
+  const handleTapToPayQuickCollect = async () => {
+    if (!job || isQuickCollecting) return;
+    const total = getQuickCollectTotal();
+    if (total <= 0) {
+      showToast({ type: 'info', message: 'No Amount', description: 'Add materials with pricing or a quote to use quick collect.' });
+      return;
+    }
+    setIsQuickCollecting(true);
+    try {
+      const body: any = { jobId: job.id, status: 'pending' };
+      if (quote?.status === 'accepted') {
+        body.quoteId = quote.id;
+      } else {
+        body.lineItems = getQuickCollectLineItems();
+      }
+      if (client?.id) body.clientId = client.id;
+      const invoiceRes = await api.post<{ id: string }>('/api/invoices', body);
+      if (invoiceRes.error || !invoiceRes.data?.id) {
+        showToast({ type: 'error', message: 'Error', description: invoiceRes.error || 'Could not create invoice' });
+        return;
+      }
+      handleRefresh();
+      router.push(`/more/collect-payment?tab=tap&invoiceId=${invoiceRes.data.id}&jobId=${job.id}`);
+    } catch (error: any) {
+      showToast({ type: 'error', message: 'Error', description: error.message || 'Failed to create invoice' });
+    } finally {
+      setIsQuickCollecting(false);
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     const { formatCurrency: fmt } = require('../../src/lib/format');
     return fmt(amount);
@@ -7897,14 +7959,14 @@ export default function JobDetailScreen() {
               )}
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
-              onPress={() => handleQuickCollect('card')}
+              style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.primary, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.primary, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+              onPress={handleQuickCollectCard}
               activeOpacity={0.8}
               disabled={isQuickCollecting}
               data-testid="button-quick-collect-card"
             >
-              <Feather name="credit-card" size={iconSizes.md} color={colors.foreground} />
-              <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Card</Text>
+              <Feather name="credit-card" size={iconSizes.md} color={colors.primary} />
+              <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
@@ -7916,6 +7978,18 @@ export default function JobDetailScreen() {
               <Feather name="home" size={iconSizes.md} color={colors.foreground} />
               <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Bank</Text>
             </TouchableOpacity>
+            {Platform.OS === 'ios' && isTapToPayAvailable() && (
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.success, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={handleTapToPayQuickCollect}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-tap"
+              >
+                <Feather name="wifi" size={iconSizes.md} color={colors.success} />
+                <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Tap to Pay</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       )}
