@@ -265,11 +265,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterContainerContent: {
     flexDirection: 'row',
-    gap: 3,
+    gap: spacing.sm,
     alignItems: 'center',
-    backgroundColor: colors.muted,
-    borderRadius: radius.pill,
-    padding: 3,
   },
   filterButton: {
     flex: 1,
@@ -278,25 +275,23 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 11,
     borderRadius: radius.pill,
-    backgroundColor: 'transparent',
+    backgroundColor: colors.muted,
     minHeight: 46,
     justifyContent: 'center',
     gap: spacing.xs,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   filterButtonActive: {
-    backgroundColor: colors.background,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.muted,
   },
   filterButtonText: {
     ...typography.button,
     color: colors.mutedForeground,
   },
   filterButtonTextActive: {
-    color: colors.foreground,
+    color: colors.primary,
   },
   filterBadge: {
     backgroundColor: colors.destructive || '#ef4444',
@@ -1158,6 +1153,10 @@ export default function ChatHubScreen() {
         'Client SMS messaging requires a business number. Opening the internal job notes instead.',
         [
           { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Set Up Number',
+            onPress: () => router.push(asHref('/more/phone-numbers')),
+          },
           {
             text: 'Open Job Notes',
             onPress: () => {

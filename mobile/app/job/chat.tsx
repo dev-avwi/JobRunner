@@ -1177,12 +1177,6 @@ export default function JobChatScreen() {
           <Text style={styles.emptySubtext}>
             Add internal notes about this job — only your team can see these
           </Text>
-          {client?.phone && (
-            <PressableRow style={[styles.contactClientBtn, { marginTop: 12 }]} onPress={handleContactClient} >
-              <Feather name="smartphone" size={14} color={colors.primaryForeground} />
-              <Text style={[styles.contactClientText, { fontSize: typography.sizes.sm }]}>Text Client Instead</Text>
-            </PressableRow>
-          )}
           <View style={styles.emptyHint}>
             <Feather name="arrow-down" size={14} color={colors.mutedForeground} />
             <Text style={styles.emptyHintText}>Add a note below</Text>
