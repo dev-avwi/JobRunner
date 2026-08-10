@@ -284,7 +284,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary + '70',
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   filterButtonText: {
     ...typography.button,
@@ -312,12 +312,12 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   subFilterContainer: {
     paddingHorizontal: pageShell.paddingHorizontal,
-    marginTop: spacing.xs,
-    maxHeight: 44,
+    marginTop: spacing.sm,
+    maxHeight: 48,
     flexGrow: 0,
   },
   subFilterButton: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radius.pill,
     backgroundColor: 'transparent',
