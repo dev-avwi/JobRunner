@@ -848,6 +848,72 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     color: colors.primary,
     fontWeight: fontWeights.semibold,
   },
+  templateStylePreview: {
+    width: '100%',
+    height: 64,
+    backgroundColor: colors.background,
+    borderRadius: 6,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: spacing.sm,
+  },
+  templatePreviewHeader: {
+    height: 16,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+  },
+  templatePreviewHeaderTall: {
+    height: 22,
+    paddingHorizontal: 6,
+    justifyContent: 'center',
+    gap: 3,
+  },
+  templatePreviewHeaderLine: {
+    width: 28,
+    height: 3,
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    borderRadius: 1,
+  },
+  templatePreviewHeaderLineSm: {
+    width: 18,
+    height: 2,
+    borderRadius: 1,
+  },
+  templatePreviewBody: {
+    padding: 5,
+    gap: 4,
+  },
+  templatePreviewRow: {
+    flexDirection: 'row',
+    gap: 4,
+    alignItems: 'center',
+  },
+  templatePreviewLineWide: {
+    flex: 2,
+    height: 2,
+    borderRadius: 1,
+  },
+  templatePreviewLineNarrow: {
+    flex: 1,
+    height: 2,
+    borderRadius: 1,
+  },
+  templatePreviewDivider: {
+    height: 1,
+    borderRadius: 1,
+    marginTop: 2,
+  },
+  templatePreviewAccentBar: {
+    height: 5,
+    borderRadius: 2,
+    marginTop: 2,
+  },
+  templatePreviewMinimalTop: {
+    borderBottomWidth: 1.5,
+    paddingHorizontal: 6,
+    paddingVertical: 5,
+  },
   customizeOptionRow: {
     marginBottom: spacing.md,
   },
@@ -2113,28 +2179,83 @@ export default function TemplatesScreen() {
               <View style={styles.customizeOptionRow}>
                 <Text style={styles.customizeOptionLabel}>Template Style</Text>
                 <View style={styles.templateStyleButtons}>
-                  {templateStyles.map((style) => (
-                    <TouchableOpacity
-                      key={style.id}
-                      style={[
-                        styles.templateStyleButton,
-                        selectedTemplateStyle === style.id && styles.templateStyleButtonActive
-                      ]}
-                      onPress={() => handleSelectTemplateStyle(style.id)}
-                      activeOpacity={0.7}
-                      disabled={isUpdatingPreset}
-                    >
-                      <Text style={[
-                        styles.templateStyleButtonText,
-                        selectedTemplateStyle === style.id && styles.templateStyleButtonTextActive
-                      ]}>
-                        {style.name}
-                      </Text>
-                      {selectedTemplateStyle === style.id && (
-                        <Feather name="check" size={14} color={colors.primary} style={{ marginTop: 4 }} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
+                  {templateStyles.map((style) => {
+                    const isActive = selectedTemplateStyle === style.id;
+                    const previewAccent = style.id === 'professional' ? '#1e3a5f' : style.id === 'modern' ? '#2563eb' : '#6b7280';
+                    return (
+                      <TouchableOpacity
+                        key={style.id}
+                        style={[
+                          styles.templateStyleButton,
+                          isActive && styles.templateStyleButtonActive
+                        ]}
+                        onPress={() => handleSelectTemplateStyle(style.id)}
+                        activeOpacity={0.7}
+                        disabled={isUpdatingPreset}
+                      >
+                        {/* Mini document preview */}
+                        <View style={styles.templateStylePreview}>
+                          {style.id === 'professional' && (
+                            <>
+                              <View style={[styles.templatePreviewHeader, { backgroundColor: previewAccent }]}>
+                                <View style={styles.templatePreviewHeaderLine} />
+                              </View>
+                              <View style={styles.templatePreviewBody}>
+                                {[0,1,2].map(i => (
+                                  <View key={i} style={styles.templatePreviewRow}>
+                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
+                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: colors.border }]} />
+                                  </View>
+                                ))}
+                                <View style={[styles.templatePreviewDivider, { backgroundColor: previewAccent, opacity: 0.5 }]} />
+                              </View>
+                            </>
+                          )}
+                          {style.id === 'modern' && (
+                            <>
+                              <View style={[styles.templatePreviewHeaderTall, { backgroundColor: previewAccent }]}>
+                                <View style={styles.templatePreviewHeaderLine} />
+                                <View style={[styles.templatePreviewHeaderLineSm, { backgroundColor: 'rgba(255,255,255,0.5)' }]} />
+                              </View>
+                              <View style={styles.templatePreviewBody}>
+                                {[0,1].map(i => (
+                                  <View key={i} style={styles.templatePreviewRow}>
+                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
+                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: previewAccent, opacity: 0.4 }]} />
+                                  </View>
+                                ))}
+                                <View style={[styles.templatePreviewAccentBar, { backgroundColor: previewAccent, opacity: 0.2 }]} />
+                              </View>
+                            </>
+                          )}
+                          {style.id === 'minimal' && (
+                            <>
+                              <View style={[styles.templatePreviewMinimalTop, { borderBottomColor: previewAccent }]}>
+                                <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.foreground, opacity: 0.4 }]} />
+                              </View>
+                              <View style={styles.templatePreviewBody}>
+                                {[0,1,2].map(i => (
+                                  <View key={i} style={styles.templatePreviewRow}>
+                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
+                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: colors.border }]} />
+                                  </View>
+                                ))}
+                              </View>
+                            </>
+                          )}
+                        </View>
+                        <Text style={[
+                          styles.templateStyleButtonText,
+                          isActive && styles.templateStyleButtonTextActive
+                        ]}>
+                          {style.name}
+                        </Text>
+                        {isActive && (
+                          <Feather name="check" size={12} color={colors.primary} style={{ marginTop: 2 }} />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
 

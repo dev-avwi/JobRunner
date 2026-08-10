@@ -1274,6 +1274,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontWeight: fontWeights.bold,
   },
   quickCollectButtons: {
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
+  quickCollectButtonRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
@@ -1283,9 +1287,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
+    minHeight: 52,
   },
   quickCollectButtonText: {
     fontSize: typography.button.fontSize,
@@ -7942,54 +7947,60 @@ export default function JobDetailScreen() {
             </View>
           )}
           <View style={styles.quickCollectButtons}>
-            <TouchableOpacity
-              style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
-              onPress={() => handleQuickCollect('cash')}
-              activeOpacity={0.8}
-              disabled={isQuickCollecting}
-              data-testid="button-quick-collect-cash"
-            >
-              {isQuickCollecting ? (
-                <ActivityIndicator size="small" color={colors.foreground} />
-              ) : (
-                <>
-                  <Feather name="dollar-sign" size={iconSizes.md} color={colors.foreground} />
-                  <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Cash</Text>
-                </>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.primary, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.primary, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
-              onPress={handleQuickCollectCard}
-              activeOpacity={0.8}
-              disabled={isQuickCollecting}
-              data-testid="button-quick-collect-card"
-            >
-              <Feather name="credit-card" size={iconSizes.md} color={colors.primary} />
-              <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
-              onPress={() => handleQuickCollect('bank_transfer')}
-              activeOpacity={0.8}
-              disabled={isQuickCollecting}
-              data-testid="button-quick-collect-bank"
-            >
-              <Feather name="home" size={iconSizes.md} color={colors.foreground} />
-              <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Bank</Text>
-            </TouchableOpacity>
-            {Platform.OS === 'ios' && isTapToPayAvailable() && (
+            {/* Top row: Cash + Card Link */}
+            <View style={styles.quickCollectButtonRow}>
               <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.success, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
-                onPress={handleTapToPayQuickCollect}
+                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={() => handleQuickCollect('cash')}
                 activeOpacity={0.8}
                 disabled={isQuickCollecting}
-                data-testid="button-quick-collect-tap"
+                data-testid="button-quick-collect-cash"
               >
-                <Feather name="wifi" size={iconSizes.md} color={colors.success} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Tap to Pay</Text>
+                {isQuickCollecting ? (
+                  <ActivityIndicator size="small" color={colors.foreground} />
+                ) : (
+                  <>
+                    <Feather name="dollar-sign" size={iconSizes.md} color={colors.foreground} />
+                    <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Cash</Text>
+                  </>
+                )}
               </TouchableOpacity>
-            )}
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.primary, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.primary, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={handleQuickCollectCard}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-card"
+              >
+                <Feather name="credit-card" size={iconSizes.md} color={colors.primary} />
+                <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
+              </TouchableOpacity>
+            </View>
+            {/* Bottom row: Bank + Tap to Pay (Tap to Pay iOS-only) */}
+            <View style={styles.quickCollectButtonRow}>
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={() => handleQuickCollect('bank_transfer')}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-bank"
+              >
+                <Feather name="home" size={iconSizes.md} color={colors.foreground} />
+                <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Bank</Text>
+              </TouchableOpacity>
+              {Platform.OS === 'ios' && isTapToPayAvailable() && (
+                <TouchableOpacity
+                  style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.success, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+                  onPress={handleTapToPayQuickCollect}
+                  activeOpacity={0.8}
+                  disabled={isQuickCollecting}
+                  data-testid="button-quick-collect-tap"
+                >
+                  <Feather name="wifi" size={iconSizes.md} color={colors.success} />
+                  <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Tap to Pay</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
       )}

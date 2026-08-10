@@ -438,6 +438,29 @@ function createStyles(colors: ThemeColors) {
       marginTop: spacing.md,
       textAlign: 'center',
     },
+    depositCustomRow: {
+      marginTop: spacing.sm,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.muted,
+      borderRadius: 10,
+      paddingHorizontal: spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    depositCustomPrefix: {
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.medium,
+      color: colors.mutedForeground,
+      marginRight: spacing.xs,
+    },
+    depositCustomInput: {
+      flex: 1,
+      paddingVertical: spacing.md,
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
+      color: colors.foreground,
+    },
     submitButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -651,6 +674,7 @@ export default function NewQuoteScreen() {
     quoteDate: formatLocalDate(new Date()),
     requireDeposit: false,
     depositPercent: '50',
+    depositCustomAmount: '',
   });
   
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
@@ -704,6 +728,7 @@ export default function NewQuoteScreen() {
             quoteDate: q.quoteDate ? formatLocalDate(new Date(q.quoteDate)) : formatLocalDate(new Date()),
             requireDeposit: !!q.depositRequired || !!q.depositAmount,
             depositPercent: q.depositPercent ? String(q.depositPercent) : '50',
+            depositCustomAmount: '',
           });
           if (q.jobId) setJobId(q.jobId);
           if (q.lineItems && Array.isArray(q.lineItems)) {
@@ -906,8 +931,12 @@ export default function NewQuoteScreen() {
       gstAmount: parseFloat(gst.toFixed(2)),
       total: parseFloat(total.toFixed(2)),
       depositRequired: form.requireDeposit,
-      depositPercent: form.requireDeposit ? parseInt(form.depositPercent) : 0,
-      depositAmount: form.requireDeposit ? parseFloat((total * (parseInt(form.depositPercent) / 100)).toFixed(2)) : 0,
+      depositPercent: form.requireDeposit && form.depositPercent !== 'custom' ? parseInt(form.depositPercent) : 0,
+      depositAmount: form.requireDeposit
+        ? form.depositPercent === 'custom'
+          ? parseFloat(parseFloat(form.depositCustomAmount || '0').toFixed(2))
+          : parseFloat((total * (parseInt(form.depositPercent) / 100)).toFixed(2))
+        : 0,
       documentTemplate: (businessSettings as any)?.documentTemplate || 'professional',
       documentTemplateSettings: (businessSettings as any)?.documentTemplateSettings || null,
       lineItems: lineItems.map(item => ({
@@ -1525,19 +1554,36 @@ export default function NewQuoteScreen() {
                   <View style={styles.depositOptions}>
                     <Text style={styles.depositLabel}>Deposit Amount</Text>
                     <View style={styles.depositPercentRow}>
-                      {['25', '50', '75'].map((percent) => (
-                        <PressableRow key={percent} style={[ styles.depositPercentOption, form.depositPercent === percent && styles.depositPercentSelected ]} onPress={() => setForm({ ...form, depositPercent: percent })} >
-                          <Text style={[
-                            styles.depositPercentText,
-                            form.depositPercent === percent && styles.depositPercentTextSelected
-                          ]}>
-                            {percent}%
+                      {(['25', '50', '75', 'custom'] as const).map((option) => (
+                        <PressableRow
+                          key={option}
+                          style={[styles.depositPercentOption, form.depositPercent === option && styles.depositPercentSelected]}
+                          onPress={() => setForm({ ...form, depositPercent: option })}
+                        >
+                          <Text style={[styles.depositPercentText, form.depositPercent === option && styles.depositPercentTextSelected]}>
+                            {option === 'custom' ? 'Custom' : `${option}%`}
                           </Text>
                         </PressableRow>
                       ))}
                     </View>
+                    {form.depositPercent === 'custom' ? (
+                      <View style={styles.depositCustomRow}>
+                        <Text style={styles.depositCustomPrefix}>$</Text>
+                        <TextInput
+                          style={styles.depositCustomInput}
+                          value={form.depositCustomAmount}
+                          onChangeText={(text) => setForm({ ...form, depositCustomAmount: text.replace(/[^0-9.]/g, '') })}
+                          placeholder="0.00"
+                          placeholderTextColor={colors.mutedForeground}
+                          keyboardType="decimal-pad"
+                        />
+                      </View>
+                    ) : null}
                     <Text style={styles.depositAmount}>
-                      Deposit: {formatCurrency(total * (parseInt(form.depositPercent) / 100))}
+                      Deposit:{' '}
+                      {form.depositPercent === 'custom'
+                        ? formatCurrency(parseFloat(form.depositCustomAmount || '0') || 0)
+                        : formatCurrency(total * (parseInt(form.depositPercent) / 100))}
                     </Text>
                   </View>
                 )}

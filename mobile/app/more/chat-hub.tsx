@@ -261,18 +261,18 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   filterContainer: {
     paddingBottom: 0,
     marginTop: spacing.xs,
-    flexGrow: 0,
+    paddingHorizontal: pageShell.paddingHorizontal,
   },
   filterContainerContent: {
     flexDirection: 'row',
-    paddingHorizontal: pageShell.paddingHorizontal,
     gap: spacing.sm,
     alignItems: 'center',
   },
   filterButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.pill,
     backgroundColor: colors.muted,
     minHeight: sizes.filterChipHeight,
@@ -528,8 +528,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.warningLight,
     marginHorizontal: pageShell.paddingHorizontal,
-    marginBottom: spacing.xs,
-    marginTop: spacing.xs,
+    marginBottom: spacing.md,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
@@ -1418,13 +1418,7 @@ export default function ChatHubScreen() {
           </View>
         </View>
         
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContainerContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={[styles.filterContainer, styles.filterContainerContent]}>
           {(isSubcontractor ? ['jobs', 'jobchats'] as FilterType[] : ['jobs', 'jobchats', 'team'] as FilterType[]).map((filter) => {
             const count = getFilterUnreadCount(filter);
             const isActive = activeFilter === filter;
@@ -1449,7 +1443,7 @@ export default function ChatHubScreen() {
               </PressableRow>
             );
           })}
-        </ScrollView>
+        </View>
 
         {activeFilter === 'jobs' && (
           <ScrollView
