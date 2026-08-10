@@ -23,7 +23,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { API_URL } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, fontWeights } from '../../src/lib/design-tokens';
 import LiveDocumentPreview from '../../src/components/LiveDocumentPreview';
-import { TemplateId, DOCUMENT_TEMPLATES, TemplateCustomization, DOCUMENT_ACCENT_COLOR } from '../../src/lib/document-templates';
+import { TemplateId, DOCUMENT_TEMPLATES, TemplateCustomization, DOCUMENT_ACCENT_COLOR, getTemplateStyles } from '../../src/lib/document-templates';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -98,6 +98,114 @@ const templateStyles: { id: TemplateId; name: string; description: string }[] = 
   { id: 'modern', name: 'Modern', description: 'Clean design with bold brand colors' },
   { id: 'minimal', name: 'Minimal', description: 'Ultra-clean with subtle styling' },
 ];
+
+// Thumbnail dimensions — document rendered at DOC_W px wide, first DOC_H_SHOW px shown, scaled by SCALE
+const THUMB_DOC_W = 320;
+const THUMB_DOC_H_SHOW = 210;
+const THUMB_SCALE = 0.24;
+const THUMB_CONTAINER_H = Math.round(THUMB_DOC_H_SHOW * THUMB_SCALE); // ~50px
+const THUMB_MARGIN_LEFT = -(THUMB_DOC_W * (1 - THUMB_SCALE)) / 2;       // ~-121.6
+const THUMB_MARGIN_TOP = -(THUMB_DOC_H_SHOW * (1 - THUMB_SCALE)) / 2;   // ~-79.8
+
+function TemplateStyleThumbnail({ templateId, customization }: { templateId: TemplateId; customization: TemplateCustomization }) {
+  const { colors } = useTheme();
+  const { template, primaryColor } = getTemplateStyles(templateId, customization?.accentColor || DOCUMENT_ACCENT_COLOR, customization);
+  const isModern = template.headerLayout === 'modern';
+  const isMinimal = template.headerLayout === 'minimal';
+
+  return (
+    <View style={{ width: '100%', height: THUMB_CONTAINER_H, overflow: 'hidden', borderRadius: 6, marginBottom: 8, backgroundColor: '#fff' }}>
+      <View
+        pointerEvents="none"
+        style={{
+          width: THUMB_DOC_W,
+          height: THUMB_DOC_H_SHOW,
+          overflow: 'hidden',
+          transform: [{ scale: THUMB_SCALE }],
+          marginLeft: THUMB_MARGIN_LEFT,
+          marginTop: THUMB_MARGIN_TOP,
+        }}
+      >
+        {/* HEADER */}
+        {isModern ? (
+          <View style={{ backgroundColor: primaryColor, paddingHorizontal: 16, paddingVertical: 14 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+              <View>
+                <Text style={{ fontSize: 22, fontWeight: '800', color: '#fff', letterSpacing: 0.5 }}>QUOTE</Text>
+                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 3 }}>Your Business Pty Ltd</Text>
+              </View>
+              <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>Q-2025-001</Text>
+            </View>
+          </View>
+        ) : isMinimal ? (
+          <View style={{ paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 2, borderBottomColor: primaryColor, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: '#1a1a1a' }}>Your Business Pty Ltd</Text>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: primaryColor, letterSpacing: 0.5 }}>QUOTE</Text>
+          </View>
+        ) : (
+          /* classic / professional */
+          <View style={{ backgroundColor: primaryColor, paddingHorizontal: 16, paddingVertical: 12 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <View>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Your Business Pty Ltd</Text>
+                <Text style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>ABN 12 345 678 901</Text>
+              </View>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#fff', letterSpacing: 1 }}>QUOTE</Text>
+            </View>
+          </View>
+        )}
+
+        {/* CLIENT & META */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 8 }}>
+          <Text style={{ fontSize: 9, color: '#aaa', letterSpacing: 0.5 }}>TO</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#1a1a1a', marginTop: 1 }}>John Smith</Text>
+          <Text style={{ fontSize: 10, color: '#888', marginTop: 1 }}>123 Sample Street, Sydney NSW</Text>
+        </View>
+
+        {/* TABLE HEADER */}
+        <View style={{
+          flexDirection: 'row',
+          marginHorizontal: 12,
+          paddingHorizontal: 8,
+          paddingVertical: 6,
+          backgroundColor: template.tableStyle === 'minimal' ? 'transparent' : primaryColor,
+          borderRadius: isModern ? 6 : 0,
+          borderBottomWidth: template.tableStyle === 'minimal' ? 2 : 0,
+          borderBottomColor: primaryColor,
+        }}>
+          <Text style={{ flex: 3, fontSize: 9, fontWeight: '700', color: template.tableStyle === 'minimal' ? '#555' : '#fff' }}>DESCRIPTION</Text>
+          <Text style={{ flex: 1, fontSize: 9, fontWeight: '700', color: template.tableStyle === 'minimal' ? '#555' : '#fff', textAlign: 'right' }}>AMOUNT</Text>
+        </View>
+
+        {/* LINE ITEMS */}
+        {[
+          { desc: 'Labour — Site Inspection', total: '$360.00', idx: 0 },
+          { desc: 'Materials & Parts', total: '$85.00', idx: 1 },
+          { desc: 'Call-out Fee', total: '$75.00', idx: 2 },
+        ].map((item) => (
+          <View key={item.idx} style={{
+            flexDirection: 'row',
+            marginHorizontal: 12,
+            paddingHorizontal: 8,
+            paddingVertical: 7,
+            backgroundColor: template.tableStyle === 'striped' && item.idx % 2 === 0 ? `${primaryColor}14` : 'transparent',
+            borderBottomWidth: template.tableStyle === 'bordered' ? 1 : 0,
+            borderBottomColor: '#e5e7eb',
+          }}>
+            <Text style={{ flex: 3, fontSize: 11, color: '#333' }}>{item.desc}</Text>
+            <Text style={{ flex: 1, fontSize: 11, fontWeight: '600', color: '#111', textAlign: 'right' }}>{item.total}</Text>
+          </View>
+        ))}
+
+        {/* TOTAL */}
+        <View style={{ flexDirection: 'row', marginHorizontal: 12, paddingHorizontal: 8, paddingVertical: 8, marginTop: 6, backgroundColor: `${primaryColor}18`, borderRadius: 4 }}>
+          <Text style={{ flex: 3, fontSize: 12, fontWeight: '700', color: '#1a1a1a' }}>TOTAL (inc. GST)</Text>
+          <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: primaryColor, textAlign: 'right' }}>$572.00</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
 
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -2193,57 +2301,7 @@ export default function TemplatesScreen() {
                         activeOpacity={0.7}
                         disabled={isUpdatingPreset}
                       >
-                        {/* Mini document preview */}
-                        <View style={styles.templateStylePreview}>
-                          {style.id === 'professional' && (
-                            <>
-                              <View style={[styles.templatePreviewHeader, { backgroundColor: previewAccent }]}>
-                                <View style={styles.templatePreviewHeaderLine} />
-                              </View>
-                              <View style={styles.templatePreviewBody}>
-                                {[0,1,2].map(i => (
-                                  <View key={i} style={styles.templatePreviewRow}>
-                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
-                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: colors.border }]} />
-                                  </View>
-                                ))}
-                                <View style={[styles.templatePreviewDivider, { backgroundColor: previewAccent, opacity: 0.5 }]} />
-                              </View>
-                            </>
-                          )}
-                          {style.id === 'modern' && (
-                            <>
-                              <View style={[styles.templatePreviewHeaderTall, { backgroundColor: previewAccent }]}>
-                                <View style={styles.templatePreviewHeaderLine} />
-                                <View style={[styles.templatePreviewHeaderLineSm, { backgroundColor: 'rgba(255,255,255,0.5)' }]} />
-                              </View>
-                              <View style={styles.templatePreviewBody}>
-                                {[0,1].map(i => (
-                                  <View key={i} style={styles.templatePreviewRow}>
-                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
-                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: previewAccent, opacity: 0.4 }]} />
-                                  </View>
-                                ))}
-                                <View style={[styles.templatePreviewAccentBar, { backgroundColor: previewAccent, opacity: 0.2 }]} />
-                              </View>
-                            </>
-                          )}
-                          {style.id === 'minimal' && (
-                            <>
-                              <View style={[styles.templatePreviewMinimalTop, { borderBottomColor: previewAccent }]}>
-                                <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.foreground, opacity: 0.4 }]} />
-                              </View>
-                              <View style={styles.templatePreviewBody}>
-                                {[0,1,2].map(i => (
-                                  <View key={i} style={styles.templatePreviewRow}>
-                                    <View style={[styles.templatePreviewLineWide, { backgroundColor: colors.border }]} />
-                                    <View style={[styles.templatePreviewLineNarrow, { backgroundColor: colors.border }]} />
-                                  </View>
-                                ))}
-                              </View>
-                            </>
-                          )}
-                        </View>
+                        <TemplateStyleThumbnail templateId={style.id as TemplateId} customization={templateCustomization} />
                         <Text style={[
                           styles.templateStyleButtonText,
                           isActive && styles.templateStyleButtonTextActive

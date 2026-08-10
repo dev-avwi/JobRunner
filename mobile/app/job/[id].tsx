@@ -5074,6 +5074,22 @@ export default function JobDetailScreen() {
     });
   };
 
+  const ensureStripeConnected = async (): Promise<boolean> => {
+    const res = await api.get<{ connected: boolean; chargesEnabled?: boolean }>('/api/stripe-connect/status');
+    const isReady = !res.error && res.data?.connected === true && res.data?.chargesEnabled !== false;
+    if (!isReady) {
+      Alert.alert(
+        'Connect Stripe First',
+        'Card links and Tap to Pay require your Stripe account to be set up and verified so customers can pay you.',
+        [
+          { text: 'Not Now', style: 'cancel' },
+          { text: 'Set Up Payments', onPress: () => router.push('/more/payment-hub') },
+        ]
+      );
+    }
+    return isReady;
+  };
+
   const handleQuickCollectCard = async () => {
     if (!job || isQuickCollecting) return;
     const total = getQuickCollectTotal();
@@ -5081,9 +5097,10 @@ export default function JobDetailScreen() {
       showToast({ type: 'info', message: 'No Amount', description: 'Add materials with pricing or a quote to use quick collect.' });
       return;
     }
+    const stripeOk = await ensureStripeConnected();
+    if (!stripeOk) return;
     setIsQuickCollecting(true);
     try {
-      // Create an invoice (without recording payment), then send a Stripe payment link
       const body: any = { jobId: job.id, status: 'pending' };
       if (quote?.status === 'accepted') {
         body.quoteId = quote.id;
@@ -5112,6 +5129,8 @@ export default function JobDetailScreen() {
       showToast({ type: 'info', message: 'No Amount', description: 'Add materials with pricing or a quote to use quick collect.' });
       return;
     }
+    const stripeOk = await ensureStripeConnected();
+    if (!stripeOk) return;
     setIsQuickCollecting(true);
     try {
       const body: any = { jobId: job.id, status: 'pending' };
