@@ -166,9 +166,7 @@
         ]
       },
       "newArchEnabled": true,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      },
+      "runtimeVersion": "1.0.0",
       "associatedDomains": [
         "applinks:jobrunner.com.au",
         "webcredentials:jobrunner.com.au"
@@ -206,9 +204,7 @@
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
       "newArchEnabled": true,
-      "runtimeVersion": {
-        "policy": "appVersion"
-      },
+      "runtimeVersion": "1.0.0",
       "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
@@ -398,9 +394,7 @@
     "updates": {
       "url": "https://u.expo.dev/78e88ca7-014e-438b-8170-1ccae4cd9386"
     },
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "owner": "avwi"
   }
 }

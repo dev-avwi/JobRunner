@@ -1,0 +1,131 @@
+Last login: Mon Aug 10 18:10:51 on ttys000
+aydshomefolder@Aydens-MacBook-Pro ~ % echo "mobile/.env" >> .gitignore       
+echo ".env" >> mobile/android/.gitignore
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % echo ".env" > mobile/android/.gitignore
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % cd path/to/your/JobRunner/project
+echo "mobile/.env" >> .gitignore
+echo ".env" > mobile/android/.gitignore
+cd: no such file or directory: path/to/your/JobRunner/project
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % cd ~/path/to/JobRunner    # or wherever you cloned the repo
+echo "mobile/.env" >> .gitignore
+echo ".env" > mobile/android/.gitignore
+cd: too many arguments
+zsh: no such file or directory: mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro ~ % find ~ -name "mobile" -type d 2>/dev/null | grep -i jobrunner
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/87F99E48-1BCA-4C2F-8B36-9B3A5C384B4F.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/DAB97BEC-4732-4F96-B160-0A1F5CAA0DC3.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/EF8534B5-60BF-47C5-BD97-950921620FA2.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/E972FAFE-16BB-4442-9DFB-EEE3C282F6EE.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/3C5DBF7D-D63B-44AD-BD68-6CB89B390912.snapshotscodepreview/mobile
+/Users/aydshomefolder/Library/Developer/Xcode/DerivedData/JobRunner-eepsuvhtnbdtyufsdlbfneyxpxub/SnapshotsPreviewCache/B8F7BE91-0C00-467B-BA64-92103FEBACB9.snapshotscodepreview/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/.migration-backup/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-reanimated/android/.cxx/Debug/414n4r1u/arm64-v8a/CMakeFiles/reanimated.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-worklets/android/.cxx/Debug/521u246t/arm64-v8a/CMakeFiles/worklets.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/expo-modules-core/android/.cxx/Debug/5t6k4n3c/arm64-v8a/CMakeFiles/expo-modules-core.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/expo-modules-core/android/.cxx/Debug/5t6k4n3c/arm64-v8a/src/fabric/CMakeFiles/fabric.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/react-native-screens/android/.cxx/Debug/4k2ji5s3/arm64-v8a/CMakeFiles/rnscreens.dir/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+aydshomefolder@Aydens-MacBook-Pro ~ % cd /Users/aydshomefolder/Documents/GitHub/JobRunner
+echo "mobile/.env" >> .gitignore
+echo ".env" > mobile/android/.gitignore
+aydshomefolder@Aydens-MacBook-Pro JobRunner % cd mobile
+npx expo start
+env: load .env
+env: export EXPO_PUBLIC_DEV_API_URL
+Starting project at /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+PluginError: Failed to resolve plugin for module "expo-contacts" relative to "/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile". Do you have node modules installed?
+PluginError: Failed to resolve plugin for module "expo-contacts" relative to "/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile". Do you have node modules installed?
+    at resolvePluginForModule (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:96:9)
+    at resolveConfigPluginFunctionWithInfo (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:145:7)
+    at resolveConfigPluginFunction (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js:136:7)
+    at withStaticPlugin (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/plugins/withStaticPlugin.js:85:70)
+    at /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/plugins/withPlugins.js:30:84
+    at Array.reduce (<anonymous>)
+    at withPlugins (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config-plugins/build/plugins/withPlugins.js:30:18)
+    at withConfigPlugins (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config/build/plugins/withConfigPlugins.js:35:47)
+    at fillAndReturnConfig (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config/build/Config.js:236:78)
+    at getConfig (/Users/aydshomefolder/Documents/GitHub/JobRunner/mobile/node_modules/@expo/config/build/Config.js:289:12)
+aydshomefolder@Aydens-MacBook-Pro mobile % npm install
+npx expo start
+
+> jobrunner-mobile@1.0.0 postinstall
+> npx patch-package
+
+patch-package 8.0.1
+Applying patches...
+@stripe/stripe-terminal-react-native@0.0.1-beta.29 ✔
+react-native-iap@12.16.4 ✔
+
+added 1 package, removed 1 package, changed 2 packages, and audited 1089 packages in 13s
+
+128 packages are looking for funding
+  run `npm fund` for details
+
+45 vulnerabilities (1 low, 20 moderate, 24 high)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues possible (including breaking changes), run:
+  npm audit fix --force
+
+Some issues need review, and may require choosing
+a different dependency.
+
+Run `npm audit` for details.
+env: load .env
+env: export EXPO_PUBLIC_DEV_API_URL
+Starting project at /Users/aydshomefolder/Documents/GitHub/JobRunner/mobile
+Starting Metro Bundler
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄▄ █ ▀▀▄ ▀▀▄ ▄▀█▄▄███▀ █▀█ ▄▄▄▄▄ █
+█ █   █ ███ ▄▄█ ▄▄ █▀█ ▄▄▀  ▄██ █   █ █
+█ █▄▄▄█ █ ▄▄ █▄▄ █▄██▄▄ ██▄▀█▀█ █▄▄▄█ █
+█▄▄▄▄▄▄▄█ █ ▀ █ ▀ █▄█▄█ █ █▄█ █▄▄▄▄▄▄▄█
+█  ▄▀▀ ▄▀▄▄ ██  ██▀▄▀██  ▀▀▄▀ ▄  ▄██  █
+█▀▄▄█ ▄▄ ▀█ ▄█▀█▄███  █ ▄▄▄▀▄▄▀▄▀▀ ██▄█
+██▄  ▀ ▄▄█▀▀▄ ▄█▄ █  █▄█▀ ██ ▀▀ ▄█▄█▀ █
+█ ▀  █ ▄▀▄ █▀ ▄ ▀ ██▄█▄ ▄▀█  ▀▄█▀▀▀▄▀ █
+█ ▀▄ ▄▄▄▀▄ ▀██  ███  ██▄▀█▀█▀ ▀ ▄█ █▄▀█
+█▀ ▄▄▀▀▄▄ ▀ ▄█▀█▄█▄   ▄▀▄ ▄█▄ ▄▄▄▀ ▄▄▄█
+██▀█▀▀█▄█ ██▄ ▄█▄ █▄▀▄█ ▀ ▀█▀ █ ██▄▀  █
+█▀▄▄▀▀▀▄▀▀▄ ▀ ▄ ▀ ▄▀ ▄█▄ ▄▄ ▄▀▀▀█▀▀▄█▄█
+███▀▀ █▄███ ██  █▄█  █▄█ ▀██  ▄  █ █ ▀█
+█▄▄█▄▀▀▄ ▄▄▄▄█▀█▄██ ▄███▄▀▄▀  ▀███▀▄▀▄█
+█▄▄▄▄█▄▄▄▀▄▄▄ ▄█ █▄█▀██▄ ▀▀█  ▄▄▄ ▀██ █
+█ ▄▄▄▄▄ █▀ ▀▀ ▄ ▄▄▄ ▄█▄▀ ▀██▀ █▄█  ▄█▄█
+█ █   █ ██▄ ██  ▀█▀  ██ ▀██▀ ▄ ▄▄ ██ ▄█
+█ █▄▄▄█ █  ▀▄█▀█▄▄▄▄  █▄ ▀▄██  █▀▄ ██▄█
+█▄▄▄▄▄▄▄█▄█▄▄▄▄█▄██▄▄▄▄██▄█▄█▄▄▄▄▄▄██▄█
+
+› Metro waiting on exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081
+› Scan the QR code above to open the project in a development build. Learn more: https://expo.fyi/start
+
+› Using development build
+› Press s │ switch to Expo Go
+
+› Press a │ open Android
+› Press i │ open iOS simulator
+› Press w │ open web
+
+› Press j │ open debugger
+› Press r │ reload app
+› Press m │ toggle menu
+› shift+m │ more tools
+› Press o │ open project code in your editor
+
+› Press ? │ show all commands
+
+Logs for your project will appear below. Press Ctrl+C to exit.
+› Opening on iOS...
+› Opening exp+tradietrack://expo-development-client/?url=http%3A%2F%2F192.168.50.61%3A8081 on iPhone Air
+› Opening the iOS simulator, this might take a moment.
+› Press ? │ show all commands
+Error: CommandError: You're currently using the bare workflow, where runtime version policies are not supported. You must set your runtime version manually. For example, define your runtime version as "1.0.0", not {"policy": "appVersion"} in your app config. https://docs.expo.dev/eas-update/runtime-versions
+
+Error: CommandError: You're currently using the bare workflow, where runtime version policies are not supported. You must set your runtime version manually. For example, define your runtime version as "1.0.0", not {"policy": "appVersion"} in your app config. https://docs.expo.dev/eas-update/runtime-versions
+
+
