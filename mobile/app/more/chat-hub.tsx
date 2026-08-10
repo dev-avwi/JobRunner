@@ -283,15 +283,15 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: 'transparent',
   },
   filterButtonActive: {
-    borderColor: colors.primary + '60',
-    backgroundColor: colors.primaryLight ?? colors.primary + '12',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary + '70',
   },
   filterButtonText: {
     ...typography.button,
     color: colors.mutedForeground,
   },
   filterButtonTextActive: {
-    color: colors.primary,
+    color: colors.primaryForeground,
   },
   filterBadge: {
     backgroundColor: colors.destructive || '#ef4444',
@@ -1482,7 +1482,7 @@ export default function ChatHubScreen() {
                 <Feather
                   name={filter === 'jobs' ? 'message-square' : filter === 'jobchats' ? 'briefcase' : 'users'}
                   size={14}
-                  color={isActive ? colors.primary : colors.mutedForeground}
+                  color={isActive ? colors.primaryForeground : colors.mutedForeground}
                 />
                 <Text style={[
                   styles.filterButtonText,
