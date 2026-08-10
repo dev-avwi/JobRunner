@@ -1,0 +1,91 @@
+ReferenceError: Property 'handleSkip' doesn't exist
+
+This error is located at:
+    at WelcomeScreen (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:2944941)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1426614)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1433665)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1398266)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1343142)
+    at SceneView (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1396050)
+    at RNSScreenContentWrapper (<anonymous>)
+    at ScreenContentWrapper (<anonymous>)
+    at DebugContainer (<anonymous>)
+    at RNSScreen (<anonymous>)
+    at Animated(Anonymous) (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:660834)
+    at Suspender (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1505245)
+    at Suspense (<anonymous>)
+    at Freeze (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1505305)
+    at DelayedFreeze (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1504887)
+    at InnerScreen (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1502547)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1504285)
+    at ScreenStackItem (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1514477)
+    at SceneView (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1538080)
+    at RNSScreenStack (<anonymous>)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1513549)
+    at ScreenStack (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1512736)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:572743)
+    at FrameSizeProvider (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1475287)
+    at SafeAreaProviderCompat (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1487215)
+    at NativeStackView (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1536627)
+    at PreventRemoveProvider (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1374340)
+    at NavigationStateListenerProvider (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1403604)
+    at NavigationContent (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1393132)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1393035)
+    at NativeStackNavigator (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1532981)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1425533)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1315630)
+    at AuthLayout (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1310603)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1426614)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1433665)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1398266)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1343142)
+    at SceneView (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1396050)
+    at RNSScreenContentWrapper (<anonymous>)
+    at ScreenContentWrapper (<anonymous>)
+    at DebugContainer (<anonymous>)
+    at RNSScreen (<anonymous>)
+    at Animated(Anonymous) (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:660834)
+    at Suspender (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1505245)
+    at Suspense (<anonymous>)
+    at Freeze (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1505305)
+    at DelayedFreeze (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1504887)
+    at InnerScreen (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1502547)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1504285)
+    at ScreenStackItem (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1514477)
+    at SceneView (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1538080)
+    at RNSScreenStack (<anonymous>)
+    at anonymous (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1513549)
+    at ScreenStack (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1512736)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:572743)
+    at FrameSizeProvider (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1475287)
+    at SafeAreaProviderCompat (address at /var/mobile/Containers/Data/Application/9D1713A1-0C6F-40EA-813A-BB08896829D8/Library/Application Support/.expo-internal/48f7424b64d7a747c4266f39be4cdcb5.bundle:1:1487215)
+ 
+
+WelcomeScreen
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:2945093
+renderWithHooks
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:330992
+updateFunctionComponent
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:349861
+beginWork
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:357749
+performUnitOfWork
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:376486
+workLoopSync
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:375493
+renderRootSync
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:375325
+performWorkOnRoot
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:372966
+performSyncWorkOnRoot
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:326560
+flushSyncWorkAcrossRoots_impl
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:325449
+processRootScheduleInMicrotask
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:325809
+anonymous
+    48f7424b64d7a747c4266f39be4cdcb5.bundle:1:326655

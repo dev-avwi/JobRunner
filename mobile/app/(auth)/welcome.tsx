@@ -88,7 +88,7 @@ export default function WelcomeScreen() {
         </View>
       </View>
     );
-  }, [insets.top, colors, handleSkip]);
+  }, [insets.top, colors]);
 
   return (
     // Root bg matches the first slide — prevents any white flash at edges
