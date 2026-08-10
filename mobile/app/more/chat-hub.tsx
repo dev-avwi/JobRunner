@@ -283,8 +283,8 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: 'transparent',
   },
   filterButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.muted,
+    borderColor: colors.primary + '60',
+    backgroundColor: colors.primaryLight ?? colors.primary + '12',
   },
   filterButtonText: {
     ...typography.button,
