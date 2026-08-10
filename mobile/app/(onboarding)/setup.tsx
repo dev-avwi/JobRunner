@@ -766,7 +766,7 @@ export default function OnboardingSetupScreen() {
     <ScrollView style={styles.stepContainer} contentContainerStyle={styles.stepContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>Tell us about your business</Text>
-        <Text style={styles.stepSubtitle}>We'll use this to set up your account</Text>
+        <Text style={styles.stepSubtitle}>Used on your quotes and invoices.</Text>
       </View>
 
       <View style={styles.fieldGroup}>
@@ -855,29 +855,30 @@ export default function OnboardingSetupScreen() {
   );
 
   const renderOwnerTrade = () => (
-    <ScrollView style={styles.stepContainer} contentContainerStyle={styles.centeredContent} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.stepContainer} contentContainerStyle={styles.stepContent} showsVerticalScrollIndicator={false}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>What's your trade?</Text>
-        <Text style={styles.stepSubtitle}>This personalises your templates and demo data</Text>
+        <Text style={styles.stepSubtitle}>We'll use this to set up your templates and demo data.</Text>
       </View>
 
-      <View style={styles.tradeGrid}>
+      <View style={styles.selectionList}>
         {tradeTypes.map((trade) => {
           const selected = businessData.tradeType === trade.value;
           return (
             <TouchableOpacity
               key={trade.value}
-              style={[styles.tradePill, selected && styles.tradePillSelected]}
+              style={[styles.selectionCard, selected && styles.selectionCardSelected]}
               onPress={() => setBusinessData(prev => ({ ...prev, tradeType: trade.value }))}
               activeOpacity={0.7}
               testID={`option-trade-${trade.value}`}
             >
-              <Ionicons 
-                name={trade.icon} 
-                size={18} 
-                color={selected ? colors.primary : colors.mutedForeground} 
-              />
-              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>{trade.label}</Text>
+              <View style={[styles.selectionIconWrap, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
+                <Ionicons name={trade.icon} size={20} color={selected ? colors.primary : colors.mutedForeground} />
+              </View>
+              <Text style={[styles.selectionLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
+                {trade.label}
+              </Text>
+              {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
@@ -892,7 +893,6 @@ export default function OnboardingSetupScreen() {
           setOwnerStep('teamSize');
         }} activeOpacity={0.8}>
           <Text style={styles.ctaText}>Continue</Text>
-          <Ionicons name="arrow-forward" size={18} color={colors.primaryForeground} />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -902,27 +902,30 @@ export default function OnboardingSetupScreen() {
     <ScrollView style={styles.stepContainer} contentContainerStyle={styles.centeredContent} showsVerticalScrollIndicator={false}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>How big is your team?</Text>
-        <Text style={styles.stepSubtitle}>We'll tailor the experience to your needs</Text>
+        <Text style={styles.stepSubtitle}>Helps us tailor the features you'll use most.</Text>
       </View>
 
-      <View style={styles.teamGrid}>
+      <View style={styles.selectionList}>
         {teamSizes.map((size) => {
           const selected = businessData.teamSize === size.value;
           return (
             <TouchableOpacity
               key={size.value}
-              style={[styles.teamCard, selected && styles.teamCardSelected]}
+              style={[styles.selectionCard, selected && styles.selectionCardSelected]}
               onPress={() => setBusinessData(prev => ({ ...prev, teamSize: size.value }))}
               activeOpacity={0.7}
               testID={`option-team-${size.value}`}
             >
-              <Ionicons 
-                name={size.icon} 
-                size={24} 
-                color={selected ? colors.primary : colors.mutedForeground} 
-              />
-              <Text style={[styles.teamLabel, selected && { color: colors.primary }]}>{size.label}</Text>
-              <Text style={styles.teamDesc}>{size.description}</Text>
+              <View style={[styles.selectionIconWrap, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
+                <Ionicons name={size.icon} size={20} color={selected ? colors.primary : colors.mutedForeground} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.selectionLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
+                  {size.label}
+                </Text>
+                <Text style={styles.selectionDesc}>{size.description}</Text>
+              </View>
+              {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
@@ -1151,18 +1154,23 @@ export default function OnboardingSetupScreen() {
       </View>
 
       <Text style={styles.sectionHeading}>Trade</Text>
-      <View style={styles.tradeGrid}>
+      <View style={styles.selectionList}>
         {tradeTypes.map((trade) => {
           const selected = subTradeType === trade.value;
           return (
             <TouchableOpacity
               key={trade.value}
-              style={[styles.tradePill, selected && styles.tradePillSelected]}
+              style={[styles.selectionCard, selected && styles.selectionCardSelected]}
               onPress={() => setSubTradeType(trade.value)}
               activeOpacity={0.7}
             >
-              <Ionicons name={trade.icon} size={18} color={selected ? colors.primary : colors.mutedForeground} />
-              <Text style={[styles.tradePillLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>{trade.label}</Text>
+              <View style={[styles.selectionIconWrap, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
+                <Ionicons name={trade.icon} size={20} color={selected ? colors.primary : colors.mutedForeground} />
+              </View>
+              <Text style={[styles.selectionLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
+                {trade.label}
+              </Text>
+              {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
@@ -1318,11 +1326,11 @@ export default function OnboardingSetupScreen() {
       <View style={[styles.stepContainer, styles.doneContainer, { paddingBottom: spacing['2xl'] + setupInsets.bottom }]}>
         <View style={styles.doneContent}>
           <View style={styles.doneBadge}>
-            <Ionicons name="checkmark" size={36} color={colors.primaryForeground} />
+            <Ionicons name="checkmark" size={44} color={colors.primaryForeground} />
           </View>
           
           <Text style={styles.doneTitle}>
-            {isWorkerPath ? 'Welcome to the team' : isSubPath ? "You're all set" : "You're good to go"}
+            {isWorkerPath ? 'Welcome to the team' : "You're all set."}
           </Text>
           <Text style={styles.doneSubtitle}>
             {isWorkerPath 
@@ -1432,14 +1440,31 @@ export default function OnboardingSetupScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'right', 'bottom', 'left']}>
       <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
         {currentStep !== 'complete' && (
-          <View style={styles.topBar}>
-            {canGoBack() ? (
-              <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                <Ionicons name="chevron-back" size={20} color={colors.foreground} />
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 40 }} />
-            )}
+          <View>
+            <View style={styles.topBar}>
+              {canGoBack() ? (
+                <TouchableOpacity onPress={handleBack} style={styles.backBtn} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Ionicons name="chevron-back" size={22} color={colors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 40 }} />
+              )}
+
+              {canSkipCurrentStep() ? (
+                <TouchableOpacity
+                  onPress={handleSkipOnboarding}
+                  disabled={isLoading}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  testID="button-skip-onboarding"
+                  style={styles.skipChip}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.skipChipText}>Skip</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ width: 40 }} />
+              )}
+            </View>
 
             {total > 1 && (
               <View style={styles.progressTrack}>
@@ -1455,22 +1480,6 @@ export default function OnboardingSetupScreen() {
                   ]}
                 />
               </View>
-            )}
-
-            {canSkipCurrentStep() ? (
-              <TouchableOpacity
-                onPress={handleSkipOnboarding}
-                disabled={isLoading}
-                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                testID="button-skip-onboarding"
-                style={styles.skipChip}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.skipChipText}>Skip</Text>
-                <Ionicons name="arrow-forward" size={14} color={colors.primary} />
-              </TouchableOpacity>
-            ) : (
-              <View style={{ width: 40 }} />
             )}
           </View>
         )}
@@ -1514,16 +1523,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   progressTrack: {
-    flex: 1,
-    height: 5,
-    borderRadius: 3,
-    marginHorizontal: spacing.lg,
+    height: 3,
+    borderRadius: 2,
     backgroundColor: colors.border,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 2,
     backgroundColor: colors.primary,
   },
 
@@ -1535,14 +1542,14 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
   },
   stepContent: {
-    paddingHorizontal: 28,
-    paddingTop: spacing.md,
+    paddingHorizontal: 24,
+    paddingTop: 28,
     paddingBottom: spacing['4xl'],
   },
   centeredContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingTop: 48,
     paddingBottom: spacing['4xl'],
   },
 
@@ -1556,11 +1563,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: 6,
   },
   welcomeTitle: {
-    fontSize: typography.sizes.xxl,
+    fontSize: 30,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
-    lineHeight: 32,
-    letterSpacing: -0.5,
+    lineHeight: 36,
+    letterSpacing: -0.7,
   },
 
   roleCardsWrap: {
@@ -1618,17 +1625,17 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginBottom: spacing['2xl'],
   },
   stepTitle: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: 30,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
-    lineHeight: 28,
-    letterSpacing: -0.3,
-    marginBottom: 6,
+    lineHeight: 36,
+    letterSpacing: -0.7,
+    marginBottom: 8,
   },
   stepSubtitle: {
-    fontSize: typography.sizes.md,
+    fontSize: 14,
     color: colors.mutedForeground,
-    lineHeight: 22,
+    lineHeight: 20,
   },
 
   fieldGroup: {
@@ -1669,62 +1676,42 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  tradeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  selectionList: {
+    gap: 10,
     marginBottom: spacing['2xl'],
   },
-  tradePill: {
+  selectionCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 11,
     backgroundColor: colors.card,
-    borderRadius: 24,
-    borderWidth: 1.5,
+    borderRadius: 12,
+    borderWidth: 1,
     borderColor: colors.cardBorder,
-    gap: 7,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    gap: 14,
   },
-  tradePillSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + '0A',
-  },
-  tradePillLabel: {
-    fontSize: typography.button.fontSize,
-    color: colors.foreground,
-  },
-
-  teamGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-    marginBottom: spacing['2xl'],
-  },
-  teamCard: {
-    width: (SCREEN_WIDTH - 68) / 2,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: 14,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: colors.cardBorder,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  teamCardSelected: {
+  selectionCardSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary + '08',
   },
-  teamLabel: {
-    fontSize: typography.sizes.lg,
-    fontWeight: fontWeights.semibold,
-    color: colors.foreground,
-    letterSpacing: -0.2,
+  selectionIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  teamDesc: {
-    fontSize: typography.captionSmall.fontSize,
+  selectionLabel: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: fontWeights.medium,
+    color: colors.foreground,
+  },
+  selectionDesc: {
+    fontSize: 12,
     color: colors.mutedForeground,
+    marginTop: 2,
   },
 
   sampleToggleRow: {
@@ -1891,20 +1878,20 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     justifyContent: 'center',
   },
   doneBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 28,
   },
   doneTitle: {
-    fontSize: typography.sizes.xxl,
+    fontSize: 28,
     fontWeight: fontWeights.bold,
     color: colors.foreground,
     textAlign: 'center',
-    lineHeight: 32,
+    lineHeight: 34,
     letterSpacing: -0.5,
     marginBottom: 10,
   },

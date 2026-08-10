@@ -20,7 +20,7 @@ export default function Index() {
         router.replace('/(tabs)');
       }
     } else {
-      router.replace('/(auth)/register');
+      router.replace('/(auth)/welcome' as any);
     }
   }, [isAuthenticated, isLoading, isInitialized, user, businessSettings]);
 

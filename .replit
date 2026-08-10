@@ -28,13 +28,13 @@ args = "schema-imports"
 name = "Expo"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd mobile && npx expo start"
-waitForPort = 8081
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd mobile && npx expo start --port 8082"
+waitForPort = 8082
 
 [[workflows.workflow]]
 name = "schema-imports"
