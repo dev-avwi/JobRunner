@@ -611,6 +611,36 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     ...typography.badge,
     color: colors.warning,
   },
+  smsLockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.muted,
+  },
+  smsLockedBadgeText: {
+    ...typography.badge,
+    color: colors.mutedForeground,
+  },
+  smsLockedNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: pageShell.paddingHorizontal,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    backgroundColor: colors.muted,
+  },
+  smsLockedNoticeText: {
+    flex: 1,
+    fontSize: typography.sizes.xs,
+    color: colors.mutedForeground,
+    lineHeight: 16,
+  },
 });
 
 export default function ChatHubScreen() {
@@ -1118,7 +1148,8 @@ export default function ChatHubScreen() {
   const smsLocked = twilioStatus !== null && !twilioConnected;
 
   const handleConversationPress = (item: ConversationItem) => {
-    if (smsLocked && (item.type === 'sms' || (item.type === 'job' && item.data?.linkedSms))) {
+    // When SMS is locked, only block pure SMS-type items; jobs always open to team notes
+    if (smsLocked && item.type === 'sms') {
       showGetNumberPrompt();
       return;
     }
@@ -1126,7 +1157,7 @@ export default function ChatHubScreen() {
       router.push('/more/team-chat');
     } else if (item.type === 'job') {
       const linkedSms = item.data?.linkedSms;
-      if (linkedSms) {
+      if (linkedSms && !smsLocked) {
         const smsClientName = linkedSms.clientName || getClientName(item.data?.clientId) || getClientName(linkedSms.clientId) || item.subtitle || item.title;
         router.push(`/more/sms-conversation?id=${linkedSms.id}&phone=${encodeURIComponent(linkedSms.clientPhone || '')}&name=${encodeURIComponent(smsClientName)}&jobId=${item.data.id}` as any);
       } else {
@@ -1239,7 +1270,11 @@ export default function ChatHubScreen() {
           item.type === 'member' && styles.conversationAvatarMember,
         ]}>
           {item.type === 'job' ? (
-            <Feather name="message-square" size={20} color={colors.primary} />
+            <Feather
+              name={smsLocked ? 'file-text' : 'message-square'}
+              size={20}
+              color={smsLocked ? colors.mutedForeground : colors.primary}
+            />
           ) : item.type === 'jobchat' ? (
             <Feather name="briefcase" size={20} color={colors.primary} />
           ) : item.type === 'team' ? (
@@ -1290,10 +1325,16 @@ export default function ChatHubScreen() {
                 </Text>
               </View>
             )}
-            {linkedSms && (
+            {linkedSms && !smsLocked && (
               <View style={styles.smsBadge}>
                 <Feather name="smartphone" size={10} color={colors.success} />
                 <Text style={styles.smsBadgeText}>SMS</Text>
+              </View>
+            )}
+            {smsLocked && item.type === 'job' && (
+              <View style={styles.smsLockedBadge}>
+                <Feather name="lock" size={9} color={colors.mutedForeground} />
+                <Text style={styles.smsLockedBadgeText}>Team notes only</Text>
               </View>
             )}
             {(item.type === 'job' || item.type === 'sms') && (
@@ -1371,7 +1412,10 @@ export default function ChatHubScreen() {
 
   const getSectionInfo = () => {
     switch (activeFilter) {
-      case 'jobs': return { title: 'CLIENT CONVERSATIONS', icon: 'message-square' as const };
+      case 'jobs': return {
+        title: smsLocked ? 'JOBS & TEAM NOTES' : 'CLIENT CONVERSATIONS',
+        icon: (smsLocked ? 'file-text' : 'message-square') as const,
+      };
       case 'jobchats': return { title: 'TEAM JOB CHATS', icon: 'briefcase' as const };
       case 'team': return { title: 'TEAM & DIRECT MESSAGES', icon: 'users' as const };
       default: return { title: 'CONVERSATIONS', icon: 'message-circle' as const };
@@ -1521,6 +1565,14 @@ export default function ChatHubScreen() {
                 </View>
                 <Text style={styles.sectionCount}>{conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}</Text>
               </View>
+              {smsLocked && activeFilter === 'jobs' && (
+                <View style={styles.smsLockedNotice}>
+                  <Feather name="lock" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.smsLockedNoticeText}>
+                    Client SMS needs a business number. Tap any job to view team notes.
+                  </Text>
+                </View>
+              )}
               {conversations.map(renderConversation)}
               <View style={{ height: spacing['4xl'] * 2 + spacing.lg }} />
             </>
