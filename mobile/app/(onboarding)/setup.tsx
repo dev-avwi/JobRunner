@@ -1661,6 +1661,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: 12,
     color: colors.foreground,
     fontSize: typography.subtitle.fontSize,
+    letterSpacing: 0,
   },
   fieldError: {
     color: colors.destructive,
