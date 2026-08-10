@@ -265,30 +265,38 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterContainerContent: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: 4,
     alignItems: 'center',
+    backgroundColor: colors.muted,
+    borderRadius: radius.pill,
+    padding: 4,
   },
   filterButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingVertical: 10,
     borderRadius: radius.pill,
-    backgroundColor: colors.muted,
-    minHeight: 52,
+    backgroundColor: 'transparent',
+    minHeight: 44,
     justifyContent: 'center',
     gap: spacing.xs,
   },
   filterButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.background,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   filterButtonText: {
     ...typography.button,
     color: colors.mutedForeground,
   },
   filterButtonTextActive: {
-    color: colors.primaryForeground,
+    color: colors.foreground,
   },
   filterBadge: {
     backgroundColor: colors.destructive || '#ef4444',
@@ -530,7 +538,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     backgroundColor: colors.warningLight,
     marginHorizontal: pageShell.paddingHorizontal,
     marginBottom: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
@@ -1428,7 +1436,7 @@ export default function ChatHubScreen() {
                 <Feather
                   name={filter === 'jobs' ? 'message-square' : filter === 'jobchats' ? 'briefcase' : 'users'}
                   size={14}
-                  color={isActive ? colors.primaryForeground : colors.mutedForeground}
+                  color={isActive ? colors.primary : colors.mutedForeground}
                 />
                 <Text style={[
                   styles.filterButtonText,
