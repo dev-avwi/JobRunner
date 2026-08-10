@@ -9,7 +9,6 @@ import {
   Image,
   ListRenderItemInfo,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
@@ -17,10 +16,10 @@ import { fontWeights } from '../../src/lib/design-tokens';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const PHONE_W  = SCREEN_WIDTH * 0.60;
-const PHONE_H  = PHONE_W * 2.06;
-// How far the bottom of the phone sinks into the white sheet below it
-const PHONE_OVERLAP = 60;
+const PHONE_W       = SCREEN_WIDTH * 0.60;
+const PHONE_H       = PHONE_W * 2.06;
+// How far the phone bottom sinks below the colour-area edge into the white sheet
+const PHONE_OVERLAP = 100;
 
 const slides = [
   {
@@ -52,68 +51,55 @@ export default function WelcomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const handleSkip = useCallback(() => {
-    flatListRef.current?.scrollToIndex({ index: slides.length - 1, animated: true });
-  }, []);
-
   const handleMomentumScrollEnd = useCallback((event: any) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setCurrentIndex(index);
   }, []);
 
-  const renderSlide = useCallback(({ item }: ListRenderItemInfo<typeof slides[number]>) => (
-    <View style={[styles.slide, { backgroundColor: item.bg }]}>
+  const renderSlide = useCallback(({ item }: ListRenderItemInfo<typeof slides[number]>) => {
+    return (
+      <View style={[styles.slide, { backgroundColor: item.bg }]}>
 
-      {/* ── Brand ── sits at the very top, inside the colour */}
-      <View style={[styles.brand, { paddingTop: insets.top + 12 }]}>
-        <Image
-          source={require('../../assets/jobrunner-logo-header.png')}
-          style={styles.brandIcon}
-          resizeMode="contain"
-        />
-        <Text style={styles.brandText}>JobRunner</Text>
-      </View>
+        {/* ── Brand row — top of the coloured area ── */}
+        <View style={[styles.topRow, { paddingTop: insets.top + 14 }]}>
+          <View style={styles.brand}>
+            <Image
+              source={require('../../assets/jobrunner-logo-header.png')}
+              style={styles.brandIcon}
+              resizeMode="contain"
+            />
+            <Text style={styles.brandText}>JobRunner</Text>
+          </View>
+        </View>
 
-      {/* ── Phone mockup ── flex space between brand and sheet */}
-      <View style={styles.phoneArea}>
-        <View style={styles.phoneWrap}>
-          <Image source={item.image} style={styles.phone} resizeMode="contain" />
+        {/* ── Phone area — fills the remaining colour space, phone hangs below ── */}
+        <View style={styles.phoneArea}>
+          <View style={styles.phoneWrap}>
+            <Image source={item.image} style={styles.phone} resizeMode="contain" />
+          </View>
+        </View>
+
+        {/* ── White sheet — phone overlaps from above ── */}
+        <View style={styles.sheet}>
+          {/* Spacer so headline starts below the overlapping phone */}
+          <View style={{ height: PHONE_OVERLAP + 16 }} />
+          <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
+          <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
         </View>
       </View>
-
-      {/* ── White sheet ── rises from bottom, phone overlaps from above */}
-      <View style={styles.sheet}>
-        {/* Spacer so text sits below the overlapping phone */}
-        <View style={{ height: PHONE_OVERLAP + 12 }} />
-        <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
-        <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
-      </View>
-    </View>
-  ), [insets.top, colors]);
-
-  const isLastSlide = currentIndex === slides.length - 1;
+    );
+  }, [insets.top, colors, handleSkip]);
 
   return (
-    // Plain View — no SafeAreaView so colour fills right under the status bar
-    <View style={styles.root}>
-
-      {/* Skip — floated above everything */}
-      {!isLastSlide && (
-        <TouchableOpacity
-          style={[styles.skipBtn, { top: insets.top + 10 }]}
-          onPress={handleSkip}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Skip</Text>
-        </TouchableOpacity>
-      )}
+    // Root bg matches the first slide — prevents any white flash at edges
+    <View style={[styles.root, { backgroundColor: slides[currentIndex].bg }]}>
 
       {/* Carousel */}
       <FlatList
         ref={flatListRef}
-        data={slides}
-        renderItem={renderSlide}
-        keyExtractor={(item) => item.key}
+        data={slides as unknown as typeof slides[number][]}
+        renderItem={renderSlide as any}
+        keyExtractor={(item: any) => item.key}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -121,6 +107,7 @@ export default function WelcomeScreen() {
         scrollEventThrottle={16}
         style={styles.list}
         bounces={false}
+        extraData={currentIndex}
         getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
           offset: SCREEN_WIDTH * index,
@@ -128,7 +115,7 @@ export default function WelcomeScreen() {
         })}
       />
 
-      {/* ── Sticky bottom — continues the white sheet ── */}
+      {/* ── Sticky bottom — white, continues the white sheet ── */}
       <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
         <View style={styles.dots}>
           {slides.map((_, i) => (
@@ -171,34 +158,29 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#fff',
+    // bg is set dynamically above to match the active slide colour
   },
-
-  // Skip sits above the FlatList, positioned from top of screen
-  skipBtn: {
-    position: 'absolute',
-    right: 24,
-    zIndex: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  skipText: { fontSize: 14, fontWeight: '500' },
 
   list: { flex: 1 },
 
-  // Each slide = full width, flex 1, coloured bg
+  // Each slide = full-width, fills the FlatList height
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
   },
 
-  // Brand — icon + wordmark, left aligned, top of coloured area
+  // Brand + Skip sit in the same row at the top of the coloured area
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginBottom: 8,
+  },
   brand: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
     gap: 9,
-    marginBottom: 4,
   },
   brandIcon: {
     width: 30,
@@ -210,39 +192,35 @@ const styles = StyleSheet.create({
     color: '#0F172A',
     letterSpacing: -0.4,
   },
-
-  // Phone area takes remaining flex space between brand and sheet
+  // Phone area takes remaining flex, phone bottom sinks into the sheet
   phoneArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    // Sink the phone into the white sheet below by PHONE_OVERLAP px
     marginBottom: -PHONE_OVERLAP,
     zIndex: 10,
   },
   phoneWrap: {
     width: PHONE_W,
     height: PHONE_H,
-    // Subtle shadow — no elevation bleed
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 24,
+    elevation: 12,
   },
   phone: {
     width: '100%',
     height: '100%',
   },
 
-  // White sheet — rounded top, sits at bottom of the coloured slide
+  // White sheet — rounded top, phone overlaps from above
   sheet: {
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 28,
     paddingBottom: 12,
-    // zIndex lower than phoneArea so phone appears above the sheet
     zIndex: 1,
   },
   headline: {
@@ -257,7 +235,7 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  // Sticky bottom continues the white sheet (no border, no shadow)
+  // Sticky bottom — white, no border, seamlessly continues the sheet
   bottomSection: {
     backgroundColor: '#ffffff',
     paddingHorizontal: 24,
