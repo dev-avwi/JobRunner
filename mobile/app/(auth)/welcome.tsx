@@ -16,31 +16,32 @@ import { fontWeights } from '../../src/lib/design-tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-// Phone image is tall — fill most of the illustration area
-const PHONE_W = SCREEN_WIDTH * 0.68;
-const PHONE_H = PHONE_W * 2.08;
+const PHONE_W = SCREEN_WIDTH * 0.62;
+const PHONE_H = PHONE_W * 2.06;
+// How far the phone hangs below the coloured section into the white text area
+const PHONE_HANG = PHONE_H * 0.30;
 
 const slides = [
   {
     key: 'dashboard',
     image: require('../../assets/welcome/dashboard.png'),
-    bg: '#DBEAFE',          // JobRunner blue (light)
+    bg: '#DBEAFE',
     headline: 'Run every job,\nend to end.',
     subtitle: 'Schedule jobs, track your team and stay on top of your day — all in one place.',
   },
   {
     key: 'map',
     image: require('../../assets/welcome/map.png'),
-    bg: '#D1FAE5',          // soft green
+    bg: '#D1FAE5',
     headline: 'See your whole\nteam, live.',
-    subtitle: 'Watch who\'s where, who\'s working and which jobs are active — in real time.',
+    subtitle: "Watch who's where, who's working and which jobs are active — in real time.",
   },
   {
     key: 'quote',
     image: require('../../assets/welcome/quote.png'),
-    bg: '#FFEDD5',          // JobRunner orange (light)
+    bg: '#FFEDD5',
     headline: 'Quote, invoice\nand get paid.',
-    subtitle: 'Send professional quotes in seconds and get notified the moment you\'re paid.',
+    subtitle: "Send professional quotes in seconds and get notified the moment you're paid.",
   },
 ] as const;
 
@@ -60,17 +61,21 @@ export default function WelcomeScreen() {
   }, []);
 
   const renderSlide = ({ item }: ListRenderItemInfo<typeof slides[number]>) => (
-    <View style={[styles.slide, { backgroundColor: colors.background }]}>
-      {/* Coloured illustration area */}
-      <View style={[styles.illustrationArea, { backgroundColor: item.bg }]}>
-        {/* Phone mockup — lifted with shadow */}
+    <View style={[styles.slide, { backgroundColor: '#fff' }]}>
+
+      {/* ── Coloured hero area ── */}
+      <View style={[styles.coloredSection, { backgroundColor: item.bg }]}>
+        {/* Brand wordmark — like Strava has their logo */}
+        <Text style={styles.wordmark}>JobRunner</Text>
+
+        {/* Phone mockup sits at the bottom, hangs below */}
         <View style={styles.phoneWrap}>
           <Image source={item.image} style={styles.phone} resizeMode="contain" />
         </View>
       </View>
 
-      {/* Text below */}
-      <View style={styles.textArea}>
+      {/* ── White text area — padded to clear the hanging phone ── */}
+      <View style={[styles.textArea, { paddingTop: PHONE_HANG + 20 }]}>
         <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
         <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
       </View>
@@ -80,7 +85,7 @@ export default function WelcomeScreen() {
   const isLastSlide = currentIndex === slides.length - 1;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#fff' }]} edges={['top', 'left', 'right']}>
       {!isLastSlide && (
         <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
           <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Skip</Text>
@@ -106,7 +111,8 @@ export default function WelcomeScreen() {
         })}
       />
 
-      <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28), backgroundColor: colors.background }]}>
+      {/* Sticky bottom */}
+      <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
         <View style={styles.dots}>
           {slides.map((_, i) => (
             <View
@@ -152,14 +158,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     right: 24,
-    zIndex: 10,
+    zIndex: 20,
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
-  skipText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  skipText: { fontSize: 14, fontWeight: '500' },
 
   list: { flex: 1 },
 
@@ -168,23 +171,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Coloured top block — phone sits here
-  illustrationArea: {
-    flex: 1,
+  // Coloured hero — takes ~58% of slide height
+  coloredSection: {
+    height: SCREEN_HEIGHT * 0.50,
     alignItems: 'center',
-    justifyContent: 'flex-end',   // phone anchors to the bottom of this area
-    overflow: 'hidden',
+    // overflow visible so phone hangs below
+    overflow: 'visible',
+    zIndex: 2,
   },
 
-  // Shadow wrapper lifts the phone off the coloured bg
+  wordmark: {
+    marginTop: 20,
+    fontSize: 26,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+    color: '#1D4ED8',   // JobRunner blue
+  },
+
+  // Phone anchored to the BOTTOM of the coloured section, hanging into white
   phoneWrap: {
+    position: 'absolute',
+    bottom: -PHONE_HANG,   // negative = hangs below coloured section
     width: PHONE_W,
     height: PHONE_H,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.22,
-    shadowRadius: 32,
-    elevation: 18,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 16,
+    zIndex: 10,
   },
 
   phone: {
@@ -192,17 +207,17 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  // Text underneath
+  // White text section — padded top so text appears below the hanging phone
   textArea: {
     paddingHorizontal: 28,
-    paddingTop: 24,
     paddingBottom: 8,
+    zIndex: 1,
   },
   headline: {
-    fontSize: 36,
+    fontSize: 34,
     fontWeight: '800',
-    lineHeight: 42,
-    letterSpacing: -1,
+    lineHeight: 40,
+    letterSpacing: -0.9,
     marginBottom: 10,
   },
   slideSubtitle: {
@@ -210,11 +225,12 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  // Sticky bottom
+  // Sticky bottom CTA area
   bottomSection: {
     paddingHorizontal: 24,
     paddingTop: 8,
     gap: 12,
+    backgroundColor: '#fff',
   },
   dots: {
     flexDirection: 'row',
@@ -223,10 +239,7 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 2,
   },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-  },
+  dot: { height: 6, borderRadius: 3 },
   primaryBtn: {
     height: 54,
     borderRadius: 14,
@@ -238,12 +251,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: -0.2,
   },
-  loginLink: {
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  loginText: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
+  loginLink: { alignItems: 'center', paddingVertical: 8 },
+  loginText: { fontSize: 14, lineHeight: 20 },
 });
