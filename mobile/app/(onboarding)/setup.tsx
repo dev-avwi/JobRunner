@@ -116,7 +116,7 @@ export default function OnboardingSetupScreen() {
   // Owner-only choice on the final setup step: whether to preload sample
   // clients/jobs/quotes so the app isn't empty while they explore. Defaults on,
   // but is now an explicit, visible toggle (previously it always seeded).
-  const [loadSampleData, setLoadSampleData] = useState(true);
+  const [loadSampleData, setLoadSampleData] = useState(false);
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
   const [showMagic, setShowMagic] = useState(false);
   const [showTour, setShowTour] = useState(false);
@@ -861,24 +861,23 @@ export default function OnboardingSetupScreen() {
         <Text style={styles.stepSubtitle}>We'll use this to set up your templates and demo data.</Text>
       </View>
 
-      <View style={styles.selectionList}>
+      <View style={styles.tradeGrid}>
         {tradeTypes.map((trade) => {
           const selected = businessData.tradeType === trade.value;
           return (
             <TouchableOpacity
               key={trade.value}
-              style={[styles.selectionCard, selected && styles.selectionCardSelected]}
+              style={[styles.tradeGridCard, selected && styles.tradeGridCardSelected]}
               onPress={() => setBusinessData(prev => ({ ...prev, tradeType: trade.value }))}
               activeOpacity={0.7}
               testID={`option-trade-${trade.value}`}
             >
-              <View style={[styles.selectionIconWrap, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
-                <Ionicons name={trade.icon} size={20} color={selected ? colors.primary : colors.mutedForeground} />
+              <View style={[styles.tradeGridIcon, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
+                <Ionicons name={trade.icon} size={22} color={selected ? colors.primary : colors.mutedForeground} />
               </View>
-              <Text style={[styles.selectionLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
+              <Text style={[styles.tradeGridLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
                 {trade.label}
               </Text>
-              {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
@@ -965,7 +964,7 @@ export default function OnboardingSetupScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.bringBusinessLink}
+          style={styles.bringBusinessCard}
           onPress={() => {
             if (!businessData.teamSize) {
               Alert.alert('Required', 'Please select your team size');
@@ -974,11 +973,17 @@ export default function OnboardingSetupScreen() {
             handleBringBusinessAcross();
           }}
           disabled={isLoading}
-          activeOpacity={0.7}
+          activeOpacity={0.75}
           testID="button-bring-business"
         >
-          <Ionicons name="briefcase-outline" size={16} color={colors.primary} />
-          <Text style={styles.bringBusinessLinkText}>Already running a business? Bring it across</Text>
+          <View style={styles.bringBusinessCardIcon}>
+            <Ionicons name="briefcase-outline" size={22} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bringBusinessCardTitle}>Already running a business?</Text>
+            <Text style={styles.bringBusinessCardSub}>Import your clients, jobs and invoices</Text>
+          </View>
+          <Ionicons name="arrow-forward" size={16} color={colors.primary} />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -1154,23 +1159,22 @@ export default function OnboardingSetupScreen() {
       </View>
 
       <Text style={styles.sectionHeading}>Trade</Text>
-      <View style={styles.selectionList}>
+      <View style={styles.tradeGrid}>
         {tradeTypes.map((trade) => {
           const selected = subTradeType === trade.value;
           return (
             <TouchableOpacity
               key={trade.value}
-              style={[styles.selectionCard, selected && styles.selectionCardSelected]}
+              style={[styles.tradeGridCard, selected && styles.tradeGridCardSelected]}
               onPress={() => setSubTradeType(trade.value)}
               activeOpacity={0.7}
             >
-              <View style={[styles.selectionIconWrap, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
-                <Ionicons name={trade.icon} size={20} color={selected ? colors.primary : colors.mutedForeground} />
+              <View style={[styles.tradeGridIcon, { backgroundColor: selected ? colors.primary + '14' : colors.muted }]}>
+                <Ionicons name={trade.icon} size={22} color={selected ? colors.primary : colors.mutedForeground} />
               </View>
-              <Text style={[styles.selectionLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
+              <Text style={[styles.tradeGridLabel, selected && { color: colors.primary, fontWeight: fontWeights.semibold }]}>
                 {trade.label}
               </Text>
-              {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
             </TouchableOpacity>
           );
         })}
@@ -1759,18 +1763,73 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.sizes.md,
     fontWeight: fontWeights.semibold,
   },
-  bringBusinessLink: {
+  // Trade 2-column grid
+  tradeGrid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: spacing['2xl'],
+  },
+  tradeGridCard: {
+    width: '48%',
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: 16,
+    alignItems: 'center',
+    gap: 10,
+  },
+  tradeGridCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '08',
+  },
+  tradeGridIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: 14,
-    marginTop: spacing.sm,
   },
-  bringBusinessLinkText: {
-    fontSize: typography.sizes.sm,
+  tradeGridLabel: {
+    fontSize: 14,
+    fontWeight: fontWeights.medium as any,
+    color: colors.foreground,
+    textAlign: 'center',
+    letterSpacing: 0,
+  },
+
+  // Bring your business card
+  bringBusinessCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    padding: 16,
+    backgroundColor: colors.primary + '08',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '40',
+    marginTop: 12,
+  },
+  bringBusinessCardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 11,
+    backgroundColor: colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bringBusinessCardTitle: {
+    fontSize: 14,
+    fontWeight: fontWeights.semibold as any,
     color: colors.primary,
-    fontWeight: fontWeights.semibold,
+    letterSpacing: 0,
+  },
+  bringBusinessCardSub: {
+    fontSize: 12,
+    color: colors.mutedForeground,
+    marginTop: 2,
+    letterSpacing: 0,
   },
 
   skipTopText: {
