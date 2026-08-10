@@ -784,8 +784,18 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const isTeamOwner = isOwner() && hasActiveTeam();
 
   if (!isAuthenticated || isAuthScreen) {
+    // Welcome screen manages its own top inset so the slide colour fills behind
+    // the status bar. All other auth screens (login, register, …) keep the
+    // safe-area padding so their content starts below the status bar.
+    const isWelcome = pathname?.includes('welcome');
     return (
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: colors.background }]}>
+      <View style={[
+        styles.container,
+        {
+          paddingTop: isWelcome ? 0 : insets.top,
+          backgroundColor: isWelcome ? 'transparent' : colors.background,
+        },
+      ]}>
         {children}
       </View>
     );
@@ -1027,8 +1037,8 @@ function RootLayoutContent() {
       <ServicesInitializer />
       <StatusBar
         style={isDark ? 'light' : 'dark'}
-        backgroundColor={colors.background}
-        translucent={false}
+        backgroundColor="transparent"
+        translucent
       />
       <MapPreferenceModal />
       <WhatYouMissedPopup />
