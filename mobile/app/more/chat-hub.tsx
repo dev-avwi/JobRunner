@@ -279,12 +279,9 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     minHeight: 46,
     justifyContent: 'center',
     gap: spacing.xs,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
   filterButtonActive: {
     backgroundColor: colors.primary,
-    borderColor: 'rgba(255,255,255,0.35)',
   },
   filterButtonText: {
     ...typography.button,
