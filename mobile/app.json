@@ -24,6 +24,9 @@
       "bundleIdentifier": "com.jobrunner.app",
       "buildNumber": "49",
       "usesAppleSignIn": true,
+      "entitlements": {
+        "com.apple.developer.proximity-reader.payment.acceptance": true
+      },
       "config": {
         "usesNonExemptEncryption": false
       },
