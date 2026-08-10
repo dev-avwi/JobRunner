@@ -9,17 +9,18 @@ import {
   Image,
   ListRenderItemInfo,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
 import { fontWeights } from '../../src/lib/design-tokens';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const PHONE_W = SCREEN_WIDTH * 0.62;
-const PHONE_H = PHONE_W * 2.06;
-// How far the phone hangs below the coloured section into the white text area
-const PHONE_HANG = PHONE_H * 0.30;
+const PHONE_W  = SCREEN_WIDTH * 0.60;
+const PHONE_H  = PHONE_W * 2.06;
+// How far the bottom of the phone sinks into the white sheet below it
+const PHONE_OVERLAP = 60;
 
 const slides = [
   {
@@ -60,38 +61,54 @@ export default function WelcomeScreen() {
     setCurrentIndex(index);
   }, []);
 
-  const renderSlide = ({ item }: ListRenderItemInfo<typeof slides[number]>) => (
-    <View style={[styles.slide, { backgroundColor: '#fff' }]}>
+  const renderSlide = useCallback(({ item }: ListRenderItemInfo<typeof slides[number]>) => (
+    <View style={[styles.slide, { backgroundColor: item.bg }]}>
 
-      {/* ── Coloured hero area ── */}
-      <View style={[styles.coloredSection, { backgroundColor: item.bg }]}>
-        {/* Brand wordmark — like Strava has their logo */}
-        <Text style={styles.wordmark}>JobRunner</Text>
+      {/* ── Brand ── sits at the very top, inside the colour */}
+      <View style={[styles.brand, { paddingTop: insets.top + 12 }]}>
+        <Image
+          source={require('../../assets/jobrunner-logo-header.png')}
+          style={styles.brandIcon}
+          resizeMode="contain"
+        />
+        <Text style={styles.brandText}>JobRunner</Text>
+      </View>
 
-        {/* Phone mockup sits at the bottom, hangs below */}
+      {/* ── Phone mockup ── flex space between brand and sheet */}
+      <View style={styles.phoneArea}>
         <View style={styles.phoneWrap}>
           <Image source={item.image} style={styles.phone} resizeMode="contain" />
         </View>
       </View>
 
-      {/* ── White text area — padded to clear the hanging phone ── */}
-      <View style={[styles.textArea, { paddingTop: PHONE_HANG + 20 }]}>
+      {/* ── White sheet ── rises from bottom, phone overlaps from above */}
+      <View style={styles.sheet}>
+        {/* Spacer so text sits below the overlapping phone */}
+        <View style={{ height: PHONE_OVERLAP + 12 }} />
         <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
         <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
       </View>
     </View>
-  );
+  ), [insets.top, colors]);
 
   const isLastSlide = currentIndex === slides.length - 1;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#fff' }]} edges={['top', 'left', 'right']}>
+    // Plain View — no SafeAreaView so colour fills right under the status bar
+    <View style={styles.root}>
+
+      {/* Skip — floated above everything */}
       {!isLastSlide && (
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.skipBtn, { top: insets.top + 10 }]}
+          onPress={handleSkip}
+          activeOpacity={0.7}
+        >
           <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Skip</Text>
         </TouchableOpacity>
       )}
 
+      {/* Carousel */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -111,7 +128,7 @@ export default function WelcomeScreen() {
         })}
       />
 
-      {/* Sticky bottom */}
+      {/* ── Sticky bottom — continues the white sheet ── */}
       <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
         <View style={styles.dots}>
           {slides.map((_, i) => (
@@ -147,16 +164,19 @@ export default function WelcomeScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  root: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
 
+  // Skip sits above the FlatList, positioned from top of screen
   skipBtn: {
     position: 'absolute',
-    top: 16,
     right: 24,
     zIndex: 20,
     paddingVertical: 8,
@@ -166,51 +186,63 @@ const styles = StyleSheet.create({
 
   list: { flex: 1 },
 
+  // Each slide = full width, flex 1, coloured bg
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
   },
 
-  // Coloured hero — takes ~58% of slide height
-  coloredSection: {
-    height: SCREEN_HEIGHT * 0.50,
+  // Brand — icon + wordmark, left aligned, top of coloured area
+  brand: {
+    flexDirection: 'row',
     alignItems: 'center',
-    // overflow visible so phone hangs below
-    overflow: 'visible',
-    zIndex: 2,
+    paddingHorizontal: 24,
+    gap: 9,
+    marginBottom: 4,
+  },
+  brandIcon: {
+    width: 30,
+    height: 30,
+  },
+  brandText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.4,
   },
 
-  wordmark: {
-    marginTop: 20,
-    fontSize: 26,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-    color: '#1D4ED8',   // JobRunner blue
-  },
-
-  // Phone anchored to the BOTTOM of the coloured section, hanging into white
-  phoneWrap: {
-    position: 'absolute',
-    bottom: -PHONE_HANG,   // negative = hangs below coloured section
-    width: PHONE_W,
-    height: PHONE_H,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    elevation: 16,
+  // Phone area takes remaining flex space between brand and sheet
+  phoneArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    // Sink the phone into the white sheet below by PHONE_OVERLAP px
+    marginBottom: -PHONE_OVERLAP,
     zIndex: 10,
   },
-
+  phoneWrap: {
+    width: PHONE_W,
+    height: PHONE_H,
+    // Subtle shadow — no elevation bleed
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 10,
+  },
   phone: {
     width: '100%',
     height: '100%',
   },
 
-  // White text section — padded top so text appears below the hanging phone
-  textArea: {
+  // White sheet — rounded top, sits at bottom of the coloured slide
+  sheet: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 28,
-    paddingBottom: 8,
+    paddingBottom: 12,
+    // zIndex lower than phoneArea so phone appears above the sheet
     zIndex: 1,
   },
   headline: {
@@ -225,12 +257,12 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
 
-  // Sticky bottom CTA area
+  // Sticky bottom continues the white sheet (no border, no shadow)
   bottomSection: {
+    backgroundColor: '#ffffff',
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 4,
     gap: 12,
-    backgroundColor: '#fff',
   },
   dots: {
     flexDirection: 'row',
