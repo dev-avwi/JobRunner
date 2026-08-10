@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Image,
+  StatusBar,
   ListRenderItemInfo,
 } from 'react-native';
 import { router } from 'expo-router';
@@ -60,19 +61,7 @@ export default function WelcomeScreen() {
     return (
       <View style={[styles.slide, { backgroundColor: item.bg }]}>
 
-        {/* ── Brand row — top of the coloured area ── */}
-        <View style={[styles.topRow, { paddingTop: insets.top + 14 }]}>
-          <View style={styles.brand}>
-            <Image
-              source={require('../../assets/jobrunner-logo-header.png')}
-              style={styles.brandIcon}
-              resizeMode="contain"
-            />
-            <Text style={styles.brandText}>JobRunner</Text>
-          </View>
-        </View>
-
-        {/* ── Phone area — fills the remaining colour space, phone hangs below ── */}
+        {/* ── Phone area — fills the colour space, phone hangs below ── */}
         <View style={styles.phoneArea}>
           <View style={styles.phoneWrap}>
             <Image source={item.image} style={styles.phone} resizeMode="contain" />
@@ -88,11 +77,12 @@ export default function WelcomeScreen() {
         </View>
       </View>
     );
-  }, [insets.top, colors]);
+  }, [colors]);
 
   return (
     // Root bg matches the first slide — prevents any white flash at edges
     <View style={[styles.root, { backgroundColor: slides[currentIndex].bg }]}>
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
 
       {/* Carousel */}
       <FlatList
@@ -108,6 +98,8 @@ export default function WelcomeScreen() {
         style={styles.list}
         bounces={false}
         extraData={currentIndex}
+        automaticallyAdjustContentInsets={false}
+        contentInsetAdjustmentBehavior="never"
         getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
           offset: SCREEN_WIDTH * index,
@@ -169,29 +161,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Brand + Skip sit in the same row at the top of the coloured area
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 24,
-    marginBottom: 8,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 9,
-  },
-  brandIcon: {
-    width: 30,
-    height: 30,
-  },
-  brandText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-    letterSpacing: -0.4,
-  },
   // Phone area takes remaining flex, phone bottom sinks into the sheet
   phoneArea: {
     flex: 1,
