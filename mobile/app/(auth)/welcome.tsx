@@ -9,36 +9,46 @@ import {
   Image,
   ListRenderItemInfo,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
 import { fontWeights } from '../../src/lib/design-tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
+const PHONE_W = SCREEN_WIDTH * 0.70;
+const PHONE_H = PHONE_W * 2.06; // ~iPhone aspect ratio
+
 const slides = [
   {
     key: 'dashboard',
     image: require('../../assets/welcome/dashboard.png'),
-    bg: '#EEF2FF',
+    gradient: ['#060D1F', '#0D1F42'] as const,
+    glow: '#3B82F6',
+    badge: 'SCHEDULING & DISPATCH',
     headline: 'Run every job,\nend to end.',
-    subtitle: 'Schedule jobs, track your team and stay on top of your day — all from one screen.',
+    subtitle: 'Schedule jobs, track your team and stay on top of your day — from one screen.',
   },
   {
     key: 'map',
     image: require('../../assets/welcome/map.png'),
-    bg: '#ECFDF5',
+    gradient: ['#051209', '#0B2214'] as const,
+    glow: '#10B981',
+    badge: 'LIVE TEAM TRACKING',
     headline: 'See your whole\nteam, live.',
-    subtitle: 'Watch where everyone is, who\'s working and which jobs are active — in real time.',
+    subtitle: 'Watch who\'s where, who\'s working and which jobs are active — in real time.',
   },
   {
     key: 'quote',
     image: require('../../assets/welcome/quote.png'),
-    bg: '#FFF7ED',
+    gradient: ['#140900', '#271400'] as const,
+    glow: '#F59E0B',
+    badge: 'QUOTES & INVOICES',
     headline: 'Quote, invoice\nand get paid.',
     subtitle: 'Send professional quotes in seconds and get notified the moment you\'re paid.',
   },
-] as const;
+];
 
 export default function WelcomeScreen() {
   const { colors } = useTheme();
@@ -56,32 +66,62 @@ export default function WelcomeScreen() {
   }, []);
 
   const renderSlide = ({ item }: ListRenderItemInfo<typeof slides[number]>) => (
-    <View style={[styles.slide, { backgroundColor: item.bg }]}>
-      <View style={styles.imageWrap}>
-        <Image
-          source={item.image}
-          style={styles.screenshot}
-          resizeMode="contain"
+    <LinearGradient colors={item.gradient} style={styles.slide}>
+      {/* Glow bloom behind phone */}
+      <View
+        style={[
+          styles.glow,
+          {
+            backgroundColor: item.glow,
+            shadowColor: item.glow,
+          },
+        ]}
+      />
+
+      {/* Phone mockup — perspective tilt for 3D depth */}
+      <View style={styles.phoneWrap}>
+        <Image source={item.image} style={styles.phone} resizeMode="contain" />
+        {/* Glass shine overlay */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.04)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.phoneShine}
+          pointerEvents="none"
         />
       </View>
 
-      <View style={[styles.textArea, { backgroundColor: colors.background }]}>
-        <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
-        <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
+      {/* Text section */}
+      <View style={styles.textSection}>
+        {/* Feature badge */}
+        <View style={[styles.badge, { borderColor: item.glow + '60', backgroundColor: item.glow + '18' }]}>
+          <View style={[styles.badgeDot, { backgroundColor: item.glow }]} />
+          <Text style={[styles.badgeText, { color: item.glow }]}>{item.badge}</Text>
+        </View>
+
+        <Text style={styles.headline}>{item.headline}</Text>
+        <Text style={styles.subtitle}>{item.subtitle}</Text>
       </View>
-    </View>
+    </LinearGradient>
   );
 
   const isLastSlide = currentIndex === slides.length - 1;
+  const currentSlide = slides[currentIndex];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: slides[currentIndex].bg }]} edges={['top', 'left', 'right']}>
+    <View style={styles.root}>
+      {/* Skip */}
       {!isLastSlide && (
-        <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
-          <Text style={[styles.skipText, { color: '#00000066' }]}>Skip</Text>
+        <TouchableOpacity
+          style={[styles.skipBtn, { top: insets.top + 12 }]}
+          onPress={handleSkip}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       )}
 
+      {/* Carousel */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -92,7 +132,7 @@ export default function WelcomeScreen() {
         showsHorizontalScrollIndicator={false}
         onMomentumScrollEnd={handleMomentumScrollEnd}
         scrollEventThrottle={16}
-        style={styles.flatList}
+        style={styles.list}
         bounces={false}
         getItemLayout={(_, index) => ({
           length: SCREEN_WIDTH,
@@ -101,28 +141,34 @@ export default function WelcomeScreen() {
         })}
       />
 
-      <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28), backgroundColor: colors.background }]}>
+      {/* Bottom sheet */}
+      <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
+        {/* Accent line */}
+        <View style={[styles.accentLine, { backgroundColor: currentSlide.glow }]} />
+
+        {/* Dots */}
         <View style={styles.dots}>
-          {slides.map((_, i) => (
+          {slides.map((s, i) => (
             <View
               key={i}
               style={[
                 styles.dot,
                 {
-                  backgroundColor: i === currentIndex ? colors.primary : colors.border,
-                  width: i === currentIndex ? 20 : 6,
+                  backgroundColor: i === currentIndex ? currentSlide.glow : colors.border,
+                  width: i === currentIndex ? 22 : 6,
                 },
               ]}
             />
           ))}
         </View>
 
+        {/* CTA */}
         <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+          style={[styles.primaryBtn, { backgroundColor: currentSlide.glow }]}
           onPress={() => router.replace('/(auth)/register')}
           activeOpacity={0.85}
         >
-          <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Get Started</Text>
+          <Text style={styles.primaryBtnText}>Get Started</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -132,94 +178,172 @@ export default function WelcomeScreen() {
         >
           <Text style={[styles.loginText, { color: colors.mutedForeground }]}>
             Already have an account?{' '}
-            <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold }}>Log in</Text>
+            <Text style={{ color: currentSlide.glow, fontWeight: fontWeights.semibold }}>Log in</Text>
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
+    backgroundColor: '#060D1F',
   },
   skipBtn: {
     position: 'absolute',
-    top: 16,
     right: 24,
-    zIndex: 10,
+    zIndex: 20,
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
   skipText: {
     fontSize: 14,
     fontWeight: '500',
+    color: 'rgba(255,255,255,0.55)',
   },
-  flatList: {
+  list: {
     flex: 1,
   },
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
-  },
-  imageWrap: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingTop: 16,
+    paddingTop: 0,
+    overflow: 'hidden',
   },
-  screenshot: {
-    width: SCREEN_WIDTH * 0.72,
-    height: SCREEN_HEIGHT * 0.52,
+  glow: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT * 0.04,
+    width: PHONE_W * 1.3,
+    height: PHONE_W * 1.3,
+    borderRadius: PHONE_W * 0.65,
+    opacity: 0.22,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 80,
   },
-  textArea: {
+  phoneWrap: {
+    marginTop: SCREEN_HEIGHT * 0.06,
+    width: PHONE_W,
+    height: PHONE_H,
+    transform: [
+      { perspective: 900 },
+      { rotateX: '-10deg' },
+      { rotateZ: '-3deg' },
+    ],
+    shadowColor: '#000',
+    shadowOffset: { width: -8, height: 32 },
+    shadowOpacity: 0.75,
+    shadowRadius: 48,
+    elevation: 30,
+  },
+  phone: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+  },
+  phoneShine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 40,
+  },
+  textSection: {
+    width: SCREEN_WIDTH,
     paddingHorizontal: 28,
-    paddingTop: 24,
-    paddingBottom: 8,
+    paddingTop: 20,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginBottom: 14,
+    gap: 6,
+  },
+  badgeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.1,
   },
   headline: {
-    fontSize: 36,
-    fontWeight: '700',
-    lineHeight: 42,
-    letterSpacing: -1,
+    fontSize: 38,
+    fontWeight: '800',
+    lineHeight: 44,
+    letterSpacing: -1.2,
+    color: '#FFFFFF',
     marginBottom: 10,
   },
-  slideSubtitle: {
+  subtitle: {
     fontSize: 15,
     lineHeight: 22,
+    color: 'rgba(255,255,255,0.60)',
     fontWeight: '400',
   },
-  bottomSection: {
+
+  // Bottom sheet
+  sheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 20,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  accentLine: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 4,
+    opacity: 0.8,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 4,
   },
   dot: {
     height: 6,
     borderRadius: 3,
   },
   primaryBtn: {
-    height: 54,
-    borderRadius: 14,
+    height: 56,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 8,
   },
   primaryBtnText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#FFFFFF',
     letterSpacing: -0.2,
   },
   loginLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   loginText: {
     fontSize: 14,
