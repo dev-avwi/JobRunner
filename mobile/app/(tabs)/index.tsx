@@ -27,7 +27,7 @@ import { locationTracking } from '../../src/lib/location-tracking';
 import { useAuthStore, useJobsStore, useDashboardStore, useClientsStore, useTimeTrackingStore } from '../../src/lib/store';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { api } from '../../src/lib/api';
-import { handleDedicatedNumberError } from '../../src/lib/smsGate';
+import { handleDedicatedNumberError, showSmsLockedAlert, useSmsLocked } from '../../src/lib/smsGate';
 import { formatCurrency as formatCurrencyUtil } from '../../src/lib/format';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
@@ -1563,6 +1563,7 @@ function TodayJobCard({
   onGetDirections,
   orderNumber,
   distanceInfo,
+  smsLocked,
 }: { 
   job: any;
   clients: any[];
@@ -1575,6 +1576,7 @@ function TodayJobCard({
   onGetDirections?: (job: any) => void;
   orderNumber?: number;
   distanceInfo?: { distanceKm: number; driveMinutes: number };
+  smsLocked?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -1608,36 +1610,25 @@ function TodayJobCard({
   const [isSendingSms, setIsSendingSms] = useState(false);
 
   const handleSMS = async () => {
-    if (client?.phone) {
-      const message = `Hi${client.name ? ` ${client.name.split(' ')[0]}` : ''}, just reaching out about ${job.title || 'your job'}.`;
-      setIsSendingSms(true);
-      try {
-        const response = await api.post('/api/sms/send', {
-          clientPhone: client.phone,
-          message,
-          clientId: client.id,
-          jobId: job.id,
-        });
-        if (response.error) {
-          if (handleDedicatedNumberError(response)) return;
-          Alert.alert(
-            'Send via SMS App?',
-            'Could not send directly. Would you like to open your messaging app instead?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open SMS App',
-                onPress: () => {
-                  const url = `sms:${client.phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
-                  Linking.openURL(url).catch(() => showToast({ type: 'error', message: 'Error', description: 'Could not open SMS app' }));
-                },
-              },
-            ]
-          );
-        } else {
-          showToast({ type: 'success', message: 'SMS Sent', description: `Message sent to ${client.name || client.phone}` });
-        }
-      } catch {
+    if (!client?.phone) return;
+    if (smsLocked) {
+      showSmsLockedAlert({
+        label: 'Call Instead',
+        onPress: () => Linking.openURL(`tel:${client.phone}`),
+      });
+      return;
+    }
+    const message = `Hi${client.name ? ` ${client.name.split(' ')[0]}` : ''}, just reaching out about ${job.title || 'your job'}.`;
+    setIsSendingSms(true);
+    try {
+      const response = await api.post('/api/sms/send', {
+        clientPhone: client.phone,
+        message,
+        clientId: client.id,
+        jobId: job.id,
+      });
+      if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         Alert.alert(
           'Send via SMS App?',
           'Could not send directly. Would you like to open your messaging app instead?',
@@ -1652,9 +1643,26 @@ function TodayJobCard({
             },
           ]
         );
-      } finally {
-        setIsSendingSms(false);
+      } else {
+        showToast({ type: 'success', message: 'SMS Sent', description: `Message sent to ${client.name || client.phone}` });
       }
+    } catch {
+      Alert.alert(
+        'Send via SMS App?',
+        'Could not send directly. Would you like to open your messaging app instead?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open SMS App',
+            onPress: () => {
+              const url = `sms:${client.phone}${Platform.OS === 'ios' ? '&' : '?'}body=${encodeURIComponent(message)}`;
+              Linking.openURL(url).catch(() => showToast({ type: 'error', message: 'Error', description: 'Could not open SMS app' }));
+            },
+          },
+        ]
+      );
+    } finally {
+      setIsSendingSms(false);
     }
   };
 
@@ -1841,12 +1849,12 @@ function TodayJobCard({
                   <Text style={styles.quickContactText}>Call</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                  style={styles.quickContactButton}
+                  style={[styles.quickContactButton, smsLocked && { opacity: 0.65 }]}
                   onPress={handleSMS}
                   activeOpacity={0.7}
                   data-testid={`button-sms-${job.id}`}
                 >
-                  <Feather name="message-square" size={iconSizes.md} color={colors.foreground} />
+                  <Feather name={smsLocked ? 'lock' : 'message-square'} size={iconSizes.md} color={colors.foreground} />
                   <Text style={styles.quickContactText}>SMS</Text>
                 </TouchableOpacity>
               </>
@@ -2437,6 +2445,7 @@ function OwnerDashboardScreen() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+  const smsLocked = useSmsLocked();
 
   // Signal that the dashboard has finished its initial load so deferred UI
   // (e.g. the "What you missed" popup) only appears once content is visible.
@@ -3815,6 +3824,7 @@ function OwnerDashboardScreen() {
                 onGetDirections={openDirections}
                 orderNumber={isRouteOptimized ? index + 1 : undefined}
                 distanceInfo={jobDistances[job.id]}
+                smsLocked={smsLocked}
               />
             ))}
           </View>

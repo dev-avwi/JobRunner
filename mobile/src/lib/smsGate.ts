@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
+import { useState, useEffect } from 'react';
 
 /**
  * Business SMS requires the business's own dedicated number. The server
@@ -71,4 +72,82 @@ export function handleStatusSmsOutcome(data: unknown): boolean {
     return true;
   }
   return false;
+}
+
+/**
+ * Show the standard "No Business Number Set Up" gate alert.
+ * Always offers "Set Up Number" → /more/phone-numbers.
+ * Pass an optional `fallback` button (e.g. "Call Instead", "Open Notes")
+ * that appears between Cancel and Set Up Number.
+ */
+export function showSmsLockedAlert(fallback?: { label: string; onPress: () => void }) {
+  const buttons: Array<{ text: string; style?: 'cancel' | 'default' | 'destructive'; onPress?: () => void }> = [
+    { text: 'Cancel', style: 'cancel' },
+  ];
+  if (fallback) {
+    buttons.push({ text: fallback.label, onPress: fallback.onPress });
+  }
+  buttons.push({
+    text: 'Set Up Number',
+    onPress: () => router.push('/more/phone-numbers' as any),
+  });
+  Alert.alert(
+    'No Business Number Set Up',
+    'To send SMS to clients, your business needs a dedicated phone number. Set one up in a minute — clients will see messages from your business number.',
+    buttons
+  );
+}
+
+// Module-level cache so repeated hook uses share one fetch per minute.
+// An in-flight promise is shared so simultaneous hook mounts never fire
+// more than one network request even if the cache hasn't settled yet.
+let _smsLockedCache: boolean | null = null;
+let _smsLockedFetchedAt = 0;
+let _smsLockedInFlight: Promise<boolean> | null = null;
+const SMS_LOCKED_CACHE_TTL_MS = 60_000;
+
+async function _fetchSmsLocked(): Promise<boolean> {
+  const now = Date.now();
+  if (_smsLockedCache !== null && now - _smsLockedFetchedAt < SMS_LOCKED_CACHE_TTL_MS) {
+    return _smsLockedCache;
+  }
+  // Share the in-flight request across concurrent callers.
+  if (_smsLockedInFlight) return _smsLockedInFlight;
+  _smsLockedInFlight = (async () => {
+    try {
+      const { default: api } = await import('./api');
+      const res = await api.get<{
+        enabled?: boolean;
+        hasDedicatedNumber?: boolean;
+        hasPhoneNumber?: boolean;
+        phoneNumber?: string | null;
+      }>('/api/sms/status');
+      const d = res.data;
+      const connected =
+        d?.hasDedicatedNumber === true ||
+        (!!d?.phoneNumber && d?.hasPhoneNumber === true);
+      _smsLockedCache = !!d && !connected;
+      _smsLockedFetchedAt = Date.now();
+      return _smsLockedCache;
+    } catch {
+      // Fail-open: don't block SMS actions when the network is unavailable.
+      return false;
+    } finally {
+      _smsLockedInFlight = null;
+    }
+  })();
+  return _smsLockedInFlight;
+}
+
+/**
+ * Hook that returns `true` when no dedicated business number is configured.
+ * Uses a module-level 1-minute cache so multiple components on the same screen
+ * share a single API call.
+ */
+export function useSmsLocked(): boolean {
+  const [locked, setLocked] = useState(false);
+  useEffect(() => {
+    _fetchSmsLocked().then(setLocked);
+  }, []);
+  return locked;
 }

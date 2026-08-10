@@ -23,7 +23,7 @@ import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, shadows, typography, iconSizes, sizes, pageShell, usePageShell, fontWeights } from '../../src/lib/design-tokens';
 import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable';
 import api from '../../src/lib/api';
-import { handleDedicatedNumberError } from '../../src/lib/smsGate';
+import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 
 type FilterKey = 'all' | 'residential' | 'commercial' | 'vip' | 'outstanding' | 'inactive_6mo' | 'with_email' | 'with_phone' | 'with_address';
@@ -81,6 +81,7 @@ function ClientCard({
   onSms,
   onCreateJob,
   onDelete,
+  smsLocked,
 }: { 
   client: any; 
   onPress: () => void;
@@ -89,6 +90,7 @@ function ClientCard({
   onSms?: () => void;
   onCreateJob?: () => void;
   onDelete?: () => void;
+  smsLocked?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -171,8 +173,8 @@ function ClientCard({
           </PressableRow>
         )}
         {client.phone && (
-          <PressableRow style={styles.cardActionButton} onPress={(e) => { e.stopPropagation(); onSms?.(); }} >
-            <Feather name="message-circle" size={14} color={colors.primary} />
+          <PressableRow style={[styles.cardActionButton, smsLocked && { opacity: 0.65 }]} onPress={(e) => { e.stopPropagation(); onSms?.(); }} >
+            <Feather name={smsLocked ? 'lock' : 'message-circle'} size={14} color={colors.primary} />
             <Text style={styles.cardActionText}>SMS</Text>
           </PressableRow>
         )}
@@ -200,6 +202,7 @@ export default function ClientsScreen() {
   const responsiveShell = usePageShell();
   const bottomInset = useBottomInset(40);
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const smsLocked = useSmsLocked();
 
   const refreshData = useCallback(async () => {
     await Promise.all([fetchClients(), fetchInvoices(), fetchJobs()]);
@@ -310,6 +313,13 @@ export default function ClientsScreen() {
   const [isSendingSms, setIsSendingSms] = useState(false);
 
   const handleSms = async (phone: string) => {
+    if (smsLocked) {
+      showSmsLockedAlert({
+        label: 'Call Instead',
+        onPress: () => Linking.openURL(`tel:${phone}`),
+      });
+      return;
+    }
     const message = `Hi, just reaching out regarding your service.`;
     setIsSendingSms(true);
     try {
@@ -388,9 +398,10 @@ export default function ClientsScreen() {
         onSms={() => item.phone && handleSms(item.phone)}
         onCreateJob={() => handleCreateJob(item.id)}
         onDelete={() => handleDeleteClient(item)}
+        smsLocked={smsLocked}
       />
     </View>
-  ), [styles, handleCall, handleEmail, handleSms, handleCreateJob, handleDeleteClient]);
+  ), [styles, handleCall, handleEmail, handleSms, handleCreateJob, handleDeleteClient, smsLocked]);
 
   const ListHeaderComponent = useMemo(() => (
     <>

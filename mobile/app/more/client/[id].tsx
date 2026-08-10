@@ -19,7 +19,7 @@ import { useClientsStore, useJobsStore, useQuotesStore, useInvoicesStore } from 
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, sizes, fontWeights } from '../../../src/lib/design-tokens';
 import api from '../../../src/lib/api';
-import { handleDedicatedNumberError } from '../../../src/lib/smsGate';
+import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../../src/lib/smsGate';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 
@@ -51,6 +51,7 @@ export default function ClientDetailScreen() {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors), [colors]);
   const confirm = useConfirmDialog();
+  const smsLocked = useSmsLocked();
 
   useEffect(() => {
     loadData();
@@ -176,35 +177,24 @@ export default function ClientDetailScreen() {
   const [isSendingSms, setIsSendingSms] = useState(false);
 
   const handleSms = async () => {
-    if (client?.phone) {
-      const message = `Hi${client.firstName ? ` ${client.firstName}` : ''}, just reaching out regarding your service.`;
-      setIsSendingSms(true);
-      try {
-        const response = await api.post('/api/sms/send', {
-          clientPhone: client.phone,
-          message,
-          clientId: client.id,
-        });
-        if (response.error) {
-          if (handleDedicatedNumberError(response)) return;
-          Alert.alert(
-            'Send via SMS App?',
-            'Could not send directly. Would you like to open your messaging app instead?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Open SMS App',
-                onPress: () => {
-                  const url = `sms:${client.phone}`;
-                  Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open SMS app'));
-                },
-              },
-            ]
-          );
-        } else {
-          Alert.alert('SMS Sent', `Message sent to ${client.firstName || client.phone}`);
-        }
-      } catch {
+    if (!client?.phone) return;
+    if (smsLocked) {
+      showSmsLockedAlert({
+        label: 'Call Instead',
+        onPress: () => Linking.openURL(`tel:${client.phone}`),
+      });
+      return;
+    }
+    const message = `Hi${client.firstName ? ` ${client.firstName}` : ''}, just reaching out regarding your service.`;
+    setIsSendingSms(true);
+    try {
+      const response = await api.post('/api/sms/send', {
+        clientPhone: client.phone,
+        message,
+        clientId: client.id,
+      });
+      if (response.error) {
+        if (handleDedicatedNumberError(response)) return;
         Alert.alert(
           'Send via SMS App?',
           'Could not send directly. Would you like to open your messaging app instead?',
@@ -219,9 +209,26 @@ export default function ClientDetailScreen() {
             },
           ]
         );
-      } finally {
-        setIsSendingSms(false);
+      } else {
+        Alert.alert('SMS Sent', `Message sent to ${client.firstName || client.phone}`);
       }
+    } catch {
+      Alert.alert(
+        'Send via SMS App?',
+        'Could not send directly. Would you like to open your messaging app instead?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open SMS App',
+            onPress: () => {
+              const url = `sms:${client.phone}`;
+              Linking.openURL(url).catch(() => Alert.alert('Error', 'Could not open SMS app'));
+            },
+          },
+        ]
+      );
+    } finally {
+      setIsSendingSms(false);
     }
   };
 
@@ -678,8 +685,8 @@ export default function ClientDetailScreen() {
                   Email
                 </Text>
               </PressableRow>
-              <PressableRow style={[styles.actionButton, !client.phone && styles.actionButtonDisabled]} onPress={handleSms} disabled={!client.phone} >
-                <Feather name="message-circle" size={16} color={client.phone ? colors.primaryForeground : colors.mutedForeground} />
+              <PressableRow style={[styles.actionButton, !client.phone && styles.actionButtonDisabled, smsLocked && client.phone && { opacity: 0.7 }]} onPress={handleSms} disabled={!client.phone} >
+                <Feather name={smsLocked && client.phone ? 'lock' : 'message-circle'} size={16} color={client.phone ? colors.primaryForeground : colors.mutedForeground} />
                 <Text style={[styles.actionButtonText, !client.phone && styles.actionButtonTextDisabled]}>
                   SMS
                 </Text>

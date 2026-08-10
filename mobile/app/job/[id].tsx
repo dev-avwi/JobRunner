@@ -47,7 +47,7 @@ import * as Location from 'expo-location';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
-import { handleDedicatedNumberError } from '../../src/lib/smsGate';
+import { handleDedicatedNumberError, showSmsLockedAlert, useSmsLocked } from '../../src/lib/smsGate';
 import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
 import { useJobsStore, useTimeTrackingStore, useAuthStore } from '../../src/lib/store';
@@ -2222,6 +2222,7 @@ export default function JobDetailScreen() {
   
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendModalDefaultTab, setSendModalDefaultTab] = useState<'email' | 'sms'>('email');
+  const smsLocked = useSmsLocked();
 
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
   const [isExportingProofPackTsv, setIsExportingProofPackTsv] = useState(false);
@@ -3646,6 +3647,14 @@ export default function JobDetailScreen() {
 
         case 'send_invoice_sms':
           if (client?.phone) {
+            if (smsLocked) {
+              showSmsLockedAlert(
+                client?.email
+                  ? { label: 'Send Email Instead', onPress: () => Linking.openURL(`mailto:${client.email}`) }
+                  : undefined
+              );
+              return true;
+            }
             const invoiceSmsMessage = `Hi! Your invoice for ${job.title} is ready. Please check your email for payment details.`;
             try {
               const smsResponse = await api.post('/api/sms/send', {
@@ -3742,6 +3751,14 @@ export default function JobDetailScreen() {
 
             case 'send_sms':
               if (client?.phone) {
+                if (smsLocked) {
+                  showSmsLockedAlert(
+                    client?.phone
+                      ? { label: 'Call Instead', onPress: () => Linking.openURL(`tel:${client.phone}`) }
+                      : undefined
+                  );
+                  return true;
+                }
                 // Open the in-app SMS composer so the worker can pick a
                 // template rather than firing a canned message blind.
                 try {
@@ -5216,6 +5233,14 @@ export default function JobDetailScreen() {
 
   const handleSMS = async () => {
     if (!client?.phone) return;
+    if (smsLocked) {
+      showSmsLockedAlert(
+        client.phone
+          ? { label: 'Call Instead', onPress: () => Linking.openURL(`tel:${client.phone}`) }
+          : undefined
+      );
+      return;
+    }
     // Open the in-app SMS composer (with saved templates + real merge fields)
     // linked to this job. Falls back to the native SMS app if that fails.
     try {
@@ -7416,11 +7441,11 @@ export default function JobDetailScreen() {
             )}
             {client.phone && (
               <TouchableOpacity 
-                style={[styles.clientActionButton, { backgroundColor: `${colors.scheduled}15` }]}
+                style={[styles.clientActionButton, { backgroundColor: `${colors.scheduled}15` }, smsLocked && { opacity: 0.65 }]}
                 onPress={handleSMS}
                 activeOpacity={0.7}
               >
-                <Feather name="message-square" size={iconSizes.md} color={colors.scheduled} />
+                <Feather name={smsLocked ? 'lock' : 'message-square'} size={iconSizes.md} color={colors.scheduled} />
                 <Text style={[styles.clientActionText, { color: colors.scheduled }]}>SMS</Text>
               </TouchableOpacity>
             )}
