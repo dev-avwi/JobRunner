@@ -6,40 +6,37 @@ import {
   FlatList,
   TouchableOpacity,
   Dimensions,
+  Image,
   ListRenderItemInfo,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
 import { fontWeights } from '../../src/lib/design-tokens';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const slides = [
   {
-    key: 'jobs',
-    icon: 'clipboard-outline' as const,
-    accentBg: '#EEF2FF',
-    accentColor: '#4F46E5',
+    key: 'dashboard',
+    image: require('../../assets/welcome/dashboard.png'),
+    bg: '#EEF2FF',
     headline: 'Run every job,\nend to end.',
-    subtitle: 'Track jobs from first quote to final invoice\n— all in one place.',
+    subtitle: 'Schedule jobs, track your team and stay on top of your day — all from one screen.',
   },
   {
-    key: 'quotes',
-    icon: 'document-text-outline' as const,
-    accentBg: '#F0FDF4',
-    accentColor: '#16A34A',
-    headline: 'Send quotes\nin seconds.',
-    subtitle: 'Win more work with professional quotes\ndelivered instantly.',
+    key: 'map',
+    image: require('../../assets/welcome/map.png'),
+    bg: '#ECFDF5',
+    headline: 'See your whole\nteam, live.',
+    subtitle: 'Watch where everyone is, who\'s working and which jobs are active — in real time.',
   },
   {
-    key: 'payment',
-    icon: 'checkmark-circle-outline' as const,
-    accentBg: '#FFF7ED',
-    accentColor: '#EA580C',
-    headline: 'Get paid\nfaster.',
-    subtitle: 'Invoice on-site and get notified the\nmoment you\'re paid.',
+    key: 'quote',
+    image: require('../../assets/welcome/quote.png'),
+    bg: '#FFF7ED',
+    headline: 'Quote, invoice\nand get paid.',
+    subtitle: 'Send professional quotes in seconds and get notified the moment you\'re paid.',
   },
 ] as const;
 
@@ -59,16 +56,16 @@ export default function WelcomeScreen() {
   }, []);
 
   const renderSlide = ({ item }: ListRenderItemInfo<typeof slides[number]>) => (
-    <View style={[styles.slide, { backgroundColor: colors.background }]}>
-      {/* Illustration area */}
-      <View style={styles.illustrationArea}>
-        <View style={[styles.iconCard, { backgroundColor: item.accentBg }]}>
-          <Ionicons name={item.icon} size={96} color={item.accentColor} />
-        </View>
+    <View style={[styles.slide, { backgroundColor: item.bg }]}>
+      <View style={styles.imageWrap}>
+        <Image
+          source={item.image}
+          style={styles.screenshot}
+          resizeMode="contain"
+        />
       </View>
 
-      {/* Text area */}
-      <View style={styles.textArea}>
+      <View style={[styles.textArea, { backgroundColor: colors.background }]}>
         <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
         <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
       </View>
@@ -78,15 +75,13 @@ export default function WelcomeScreen() {
   const isLastSlide = currentIndex === slides.length - 1;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
-      {/* Skip button — only visible on slides 1 and 2 */}
+    <SafeAreaView style={[styles.container, { backgroundColor: slides[currentIndex].bg }]} edges={['top', 'left', 'right']}>
       {!isLastSlide && (
         <TouchableOpacity style={styles.skipBtn} onPress={handleSkip} activeOpacity={0.7}>
-          <Text style={[styles.skipText, { color: colors.mutedForeground }]}>Skip</Text>
+          <Text style={[styles.skipText, { color: '#00000066' }]}>Skip</Text>
         </TouchableOpacity>
       )}
 
-      {/* Carousel */}
       <FlatList
         ref={flatListRef}
         data={slides}
@@ -106,9 +101,7 @@ export default function WelcomeScreen() {
         })}
       />
 
-      {/* Sticky bottom — always visible */}
       <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28), backgroundColor: colors.background }]}>
-        {/* Pagination dots */}
         <View style={styles.dots}>
           {slides.map((_, i) => (
             <View
@@ -124,7 +117,6 @@ export default function WelcomeScreen() {
           ))}
         </View>
 
-        {/* Primary CTA */}
         <TouchableOpacity
           style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
           onPress={() => router.replace('/(auth)/register')}
@@ -133,7 +125,6 @@ export default function WelcomeScreen() {
           <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Get Started</Text>
         </TouchableOpacity>
 
-        {/* Login link */}
         <TouchableOpacity
           style={styles.loginLink}
           onPress={() => router.replace('/(auth)/login')}
@@ -171,38 +162,37 @@ const styles = StyleSheet.create({
   slide: {
     width: SCREEN_WIDTH,
     flex: 1,
-    paddingHorizontal: 32,
   },
-  illustrationArea: {
+  imageWrap: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingTop: 16,
   },
-  iconCard: {
-    width: 200,
-    height: 200,
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  screenshot: {
+    width: SCREEN_WIDTH * 0.72,
+    height: SCREEN_HEIGHT * 0.52,
   },
   textArea: {
-    paddingBottom: 24,
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 8,
   },
   headline: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: '700',
-    lineHeight: 46,
-    letterSpacing: -1.2,
-    marginBottom: 14,
+    lineHeight: 42,
+    letterSpacing: -1,
+    marginBottom: 10,
   },
   slideSubtitle: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
     fontWeight: '400',
   },
   bottomSection: {
     paddingHorizontal: 24,
-    paddingTop: 8,
+    paddingTop: 16,
     gap: 12,
   },
   dots: {
