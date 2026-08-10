@@ -260,26 +260,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   filterContainer: {
     paddingBottom: 0,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     paddingHorizontal: pageShell.paddingHorizontal,
   },
   filterContainerContent: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 3,
     alignItems: 'center',
     backgroundColor: colors.muted,
     borderRadius: radius.pill,
-    padding: 4,
+    padding: 3,
   },
   filterButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 11,
     borderRadius: radius.pill,
     backgroundColor: 'transparent',
-    minHeight: 44,
+    minHeight: 46,
     justifyContent: 'center',
     gap: spacing.xs,
   },
@@ -1148,16 +1148,32 @@ export default function ChatHubScreen() {
   const smsLocked = twilioStatus !== null && !twilioConnected;
 
   const handleConversationPress = (item: ConversationItem) => {
-    // When SMS is locked, only block pure SMS-type items; jobs always open to team notes
     if (smsLocked && item.type === 'sms') {
       showGetNumberPrompt();
+      return;
+    }
+    if (smsLocked && item.type === 'job') {
+      Alert.alert(
+        'No Business Number Set Up',
+        'Client SMS messaging requires a business number. Opening the internal job notes instead.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Job Notes',
+            onPress: () => {
+              setActiveFilter('jobchats');
+              router.push(`/job/chat?jobId=${item.data.id}` as any);
+            },
+          },
+        ]
+      );
       return;
     }
     if (item.type === 'team') {
       router.push('/more/team-chat');
     } else if (item.type === 'job') {
       const linkedSms = item.data?.linkedSms;
-      if (linkedSms && !smsLocked) {
+      if (linkedSms) {
         const smsClientName = linkedSms.clientName || getClientName(item.data?.clientId) || getClientName(linkedSms.clientId) || item.subtitle || item.title;
         router.push(`/more/sms-conversation?id=${linkedSms.id}&phone=${encodeURIComponent(linkedSms.clientPhone || '')}&name=${encodeURIComponent(smsClientName)}&jobId=${item.data.id}` as any);
       } else {
@@ -1270,11 +1286,7 @@ export default function ChatHubScreen() {
           item.type === 'member' && styles.conversationAvatarMember,
         ]}>
           {item.type === 'job' ? (
-            <Feather
-              name={smsLocked ? 'file-text' : 'message-square'}
-              size={20}
-              color={smsLocked ? colors.mutedForeground : colors.primary}
-            />
+            <Feather name="message-square" size={20} color={colors.primary} />
           ) : item.type === 'jobchat' ? (
             <Feather name="briefcase" size={20} color={colors.primary} />
           ) : item.type === 'team' ? (
@@ -1325,19 +1337,13 @@ export default function ChatHubScreen() {
                 </Text>
               </View>
             )}
-            {linkedSms && !smsLocked && (
+            {linkedSms && (
               <View style={styles.smsBadge}>
                 <Feather name="smartphone" size={10} color={colors.success} />
                 <Text style={styles.smsBadgeText}>SMS</Text>
               </View>
             )}
-            {smsLocked && item.type === 'job' && (
-              <View style={styles.smsLockedBadge}>
-                <Feather name="lock" size={9} color={colors.mutedForeground} />
-                <Text style={styles.smsLockedBadgeText}>Team notes only</Text>
-              </View>
-            )}
-            {(item.type === 'job' || item.type === 'sms') && (
+            {(item.type === 'job' || item.type === 'sms') && !smsLocked && (
               <PressableRow style={styles.quickActionBadge} onPress={(e) => { e.stopPropagation?.(); showQuickActions(item); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} >
                 <Feather name="zap" size={10} color={colors.warning} />
                 <Text style={styles.quickActionBadgeText}>Quick</Text>
@@ -1412,10 +1418,7 @@ export default function ChatHubScreen() {
 
   const getSectionInfo = () => {
     switch (activeFilter) {
-      case 'jobs': return {
-        title: smsLocked ? 'JOBS & TEAM NOTES' : 'CLIENT CONVERSATIONS',
-        icon: (smsLocked ? 'file-text' : 'message-square') as const,
-      };
+      case 'jobs': return { title: 'CLIENT CONVERSATIONS', icon: 'message-square' as const };
       case 'jobchats': return { title: 'TEAM JOB CHATS', icon: 'briefcase' as const };
       case 'team': return { title: 'TEAM & DIRECT MESSAGES', icon: 'users' as const };
       default: return { title: 'CONVERSATIONS', icon: 'message-circle' as const };
@@ -1565,14 +1568,6 @@ export default function ChatHubScreen() {
                 </View>
                 <Text style={styles.sectionCount}>{conversations.length} {conversations.length === 1 ? 'conversation' : 'conversations'}</Text>
               </View>
-              {smsLocked && activeFilter === 'jobs' && (
-                <View style={styles.smsLockedNotice}>
-                  <Feather name="lock" size={13} color={colors.mutedForeground} />
-                  <Text style={styles.smsLockedNoticeText}>
-                    Client SMS needs a business number. Tap any job to view team notes.
-                  </Text>
-                </View>
-              )}
               {conversations.map(renderConversation)}
               <View style={{ height: spacing['4xl'] * 2 + spacing.lg }} />
             </>
