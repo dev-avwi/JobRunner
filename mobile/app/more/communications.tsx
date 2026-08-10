@@ -140,8 +140,10 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     gap: spacing.sm,
   },
   filterChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingVertical: spacing.sm,
     paddingHorizontal: 14,
@@ -700,31 +702,29 @@ export default function CommunicationsScreen() {
         ))}
       </View>
       
-      <View style={{ flexGrow: 0, flexShrink: 0 }}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
-          {(['all', 'email', 'sms'] as TabType[]).map((tab) => {
-            const count = tab === 'all' ? stats.total : tab === 'email' ? stats.emails : stats.sms;
-            const isActive = activeTab === tab;
-            const iconName = tab === 'all' ? 'inbox' : tab === 'email' ? 'mail' : 'message-square';
-            return (
-              <PressableRow key={tab} style={[styles.filterChip, isActive && styles.filterChipActive]} onPress={() => setActiveTab(tab)} >
-                <Feather
-                  name={iconName as any}
-                  size={13}
-                  color={isActive ? colors.primaryForeground : colors.mutedForeground}
-                />
-                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
-                  {tab === 'all' ? 'All' : tab === 'email' ? 'Email' : 'SMS'}
+      <View style={styles.filterRow}>
+        {(['all', 'email', 'sms'] as TabType[]).map((tab) => {
+          const count = tab === 'all' ? stats.total : tab === 'email' ? stats.emails : stats.sms;
+          const isActive = activeTab === tab;
+          const iconName = tab === 'all' ? 'inbox' : tab === 'email' ? 'mail' : 'message-square';
+          return (
+            <PressableRow key={tab} style={[styles.filterChip, isActive && styles.filterChipActive]} onPress={() => setActiveTab(tab)} >
+              <Feather
+                name={iconName as any}
+                size={13}
+                color={isActive ? colors.primaryForeground : colors.mutedForeground}
+              />
+              <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                {tab === 'all' ? 'All' : tab === 'email' ? 'Email' : 'SMS'}
+              </Text>
+              <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
+                <Text style={[styles.filterBadgeText, isActive && styles.filterBadgeTextActive]}>
+                  {count}
                 </Text>
-                <View style={[styles.filterBadge, isActive && styles.filterBadgeActive]}>
-                  <Text style={[styles.filterBadgeText, isActive && styles.filterBadgeTextActive]}>
-                    {count}
-                  </Text>
-                </View>
-              </PressableRow>
-            );
-          })}
-        </ScrollView>
+              </View>
+            </PressableRow>
+          );
+        })}
       </View>
       
       <View style={styles.searchContainer}>
