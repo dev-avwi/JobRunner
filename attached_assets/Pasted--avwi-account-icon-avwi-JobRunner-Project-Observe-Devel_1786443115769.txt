@@ -1,0 +1,372 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+
+Observe
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+b5bc6b11
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS internal distribution build
+9e432a1 · Update welcome screen and add asset image Replit-Commit-Author: Agent
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+development
+
+development
+
+
+1.0.0
+
+
+development
+
+ 1.1.4 (43)
+
+bb51099
+
+9e432a1
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Aug 11, 2026 8:09 PM
+< 1s
+
+26s
+
+1m 28s
+
+1m 55s
+
+89 days
+
+Logs
+
+Waiting to start
+
+26s
+
+
+Spin up build environment
+
+< 1s
+
+
+Install custom tools
+
+13s
+
+
+Prepare project
+
+10s
+
+
+Read eas.json
+
+< 1s
+
+
+Read package.json
+
+< 1s
+
+
+Install dependencies
+
+12s
+
+
+Read app config
+
+
+1
+< 1s
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+< 1s
+
+
+Install pods
+
+22s
+
+
+Calculate expo-updates runtime version
+
+< 1s
+
+
+Configure Xcode project
+
+< 1s
+
+
+Configure expo-updates
+
+< 1s
+
+
+Run fastlane
+
+
+3
+13s
+
+
+Creating Gymfile
+Gymfile created
+WARNING: Support for your Ruby version (3.2.11) is going away. fastlane will soon require Ruby 3.3.0 or newer.
+Successfully loaded '/Users/expo/workingdir/build/mobile/ios/Gymfile' 📄
++---------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                  Detected Values from './Gymfile'                                                                   |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| suppress_xcode_output | true                                                                                                                                        |
+| clean                 | false                                                                                                                                       |
+| scheme                | JobRunner                                                                                                                                   |
+| configuration         | Debug                                                                                                                                       |
+| export_options        |                                                                                                                                             |
+| export_xcargs         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/eas-build-ca57b5f6-b3be-4f78-9b69-83555895c498.keychain" |
+| disable_xcpretty      | true                                                                                                                                        |
+| buildlog_path         | /Users/expo/workingdir/logs                                                                                                                 |
+| derived_data_path     | ./build                                                                                                                                     |
+| result_bundle         | true                                                                                                                                        |
+| result_bundle_path    | /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786443072666.xcresult                                                       |
+| output_directory      | ./build                                                                                                                                     |
++-----------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+Resolving Swift Package Manager dependencies...
+$ xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build
+▸ Command line invocation:
+▸     /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -resolvePackageDependencies -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build
+▸ resolved source packages:
+$ xcodebuild -showBuildSettings -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build 2>&1
+Detected provisioning profile mapping: {:"com.*********.app"=>"dbf4a383-a069-4416-bb68-e8415df44d8c"}
++-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                                                       Summary for gym 2.236.1                                                                                       |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| workspace                                             | ./JobRunner.xcworkspace                                                                                                                     |
+| scheme                                                | JobRunner                                                                                                                                   |
+| clean                                                 | false                                                                                                                                       |
+| output_directory                                      | ./build                                                                                                                                     |
+| output_name                                           | JobRunner                                                                                                                                   |
+| configuration                                         | Debug                                                                                                                                       |
+| silent                                                | false                                                                                                                                       |
+| skip_package_ipa                                      | false                                                                                                                                       |
+| skip_package_pkg                                      | false                                                                                                                                       |
+| export_options.method                                 | ad-hoc                                                                                                                                      |
+| export_options.provisioningProfiles.com.*********.app | dbf4a383-a069-4416-bb68-e8415df44d8c                                                                                                        |
+| export_xcargs                                         | OTHER_CODE_SIGN_FLAGS="--keychain /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/eas-build-ca57b5f6-b3be-4f78-9b69-83555895c498.keychain" |
+| build_path                                            | /Users/expo/Library/Developer/Xcode/Archives/2026-08-11                                                                                     |
+| derived_data_path                                     | ./build                                                                                                                                     |
+| result_bundle                                         | true                                                                                                                                        |
+| result_bundle_path                                    | /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786443072666.xcresult                                                       |
+| buildlog_path                                         | /Users/expo/workingdir/logs                                                                                                                 |
+| destination                                           | generic/platform=iOS                                                                                                                        |
+| suppress_xcode_output                                 | true                                                                                                                                        |
+| xcodebuild_formatter                                  | xcpretty                                                                                                                                    |
+| build_timing_summary                                  | false                                                                                                                                       |
+| disable_xcpretty                                      | true                                                                                                                                        |
+| skip_profile_detection                                | false                                                                                                                                       |
+| xcodebuild_command                                    | xcodebuild                                                                                                                                  |
+| skip_package_dependencies_resolution                  | false                                                                                                                                       |
+| disable_package_automatic_updates                     | false                                                                                                                                       |
+| skip_package_repository_fetches                       | false                                                                                                                                       |
+| use_system_scm                                        | false                                                                                                                                       |
+| generate_appstore_info                                | false                                                                                                                                       |
+| xcode_path                                            | /Applications/Xcode.app                                                                                                                     |
++-------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+$ set -o pipefail && xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build -destination 'generic/platform=iOS' -archivePath /Users/expo/Library/Developer/Xcode/Archives/2026-08-11/JobRunner\ 2026-08-11\ 03.11.18.xcarchive -resultBundlePath '/var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786443072666.xcresult' archive | tee /Users/expo/workingdir/logs/JobRunner-JobRunner.log > /dev/null
+
+❌  No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+
+⚠️  Pods/Sentry-Sentry: iOS@11.0 deployment version mismatch, expected >= 2.0 <= 26.5.99
+⚠️  Pods/react-native-maps-ReactNativeMapsPrivacy: iOS@11.0 deployment version mismatch, expected >= 2.0 <= 26.5.99
+⚠️  Script has ambiguous dependencies causing it to run on every build.
+   To fix, go to: Xcode » JobRunner/JobRunner » Build Phases » 'Upload Debug Symbols to Sentry'
+   Either: Uncheck "Based on dependency analysis", or select output files to trigger the script
+▸ ** ARCHIVE FAILED **
+▸ The following build commands failed:
+▸ 	Archiving workspace JobRunner with scheme JobRunner
+▸ (1 failure)
+Exit status: 65
++---------------------------------------+
+|           Build environment           |
++-------------+-------------------------+
+| xcode_path  | /Applications/Xcode.app |
+| gym_version | 2.236.1                 |
+| sdk         | iPhoneOS26.5.sdk        |
++-------------+-------------------------+
+Looks like fastlane ran into a build/archive error with your project
+It's hard to tell what's causing the error, so we wrote some guides on how
+to troubleshoot build and signing issues: https://docs.fastlane.tools/codesigning/getting-started/
+Before submitting an issue on GitHub, please follow the guide above and make
+sure your project is set up correctly.
+fastlane uses `xcodebuild` commands to generate your binary, you can see the
+the full commands printed out in yellow in the above log.
+Make sure to inspect the output above, as usually you'll find more error information there
+WARNING: Support for your Ruby version (3.2.11) is going away. fastlane will soon require Ruby 3.3.0 or newer.
+[!] Error building the application - see the log above
+Error: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+< 1s
+
+
+Fail job
+
+
+1
+< 1s
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+Command line invocation:
+
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build -destination generic/platform=iOS -archivePath "/Users/expo/Library/Developer/Xcode/Archives/2026-08-11/JobRunner 2026-08-11 03.11.18.xcarchive" -resultBundlePath /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786443072666.xcresult archive
+
+​
+
+Writing result bundle at path:
+
+	/var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786443072666.xcresult
+
+​
+
+ComputePackagePrebuildTargetDependencyGraph
+
+​
+
+Prepare packages
+
+​
+
+CreateBuildRequest
+
+​
+
+SendProjectDescription
+
+​
+
+CreateBuildOperation
+
+​
+
+ComputeTargetDependencyGraph
+
+note: Building targets in dependency order
+
+note: Target dependency graph (156 targets)
+
+    Target 'JobRunner' in project 'JobRunner'
+
+        ➜ Implicit dependency on target 'Pods-JobRunner' in project 'Pods' via file 'Pods_JobRunner.framework' in build phase 'Link Binary'
+
+
