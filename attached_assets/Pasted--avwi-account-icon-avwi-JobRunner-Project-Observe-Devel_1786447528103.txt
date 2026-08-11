@@ -1,0 +1,234 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+
+Observe
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+91048232
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS internal distribution build
+59b0d36 · Add iOS build configuration and icon asset Replit-Commit-Author: Agent
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+development
+
+development
+
+
+1.0.0
+
+
+development
+
+ 1.1.4 (43)
+
+1c8c06a
+
+59b0d36
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Aug 11, 2026 8:16 PM
+1s
+
+23s
+
+1m 14s
+
+1m 40s
+
+89 days
+
+Logs
+
+Waiting to start
+
+25s
+
+
+Spin up build environment
+
+< 1s
+
+
+Install custom tools
+
+13s
+
+
+Prepare project
+
+10s
+
+
+Read eas.json
+
+< 1s
+
+
+Read package.json
+
+< 1s
+
+
+Install dependencies
+
+11s
+
+
+Read app config
+
+
+1
+< 1s
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+2s
+
+
+Prebuild
+
+< 1s
+
+
+Install pods
+
+20s
+
+
+Calculate expo-updates runtime version
+
+< 1s
+
+
+Configure Xcode project
+
+< 1s
+
+
+Configure expo-updates
+
+< 1s
+
+
+Run fastlane
+
+< 1s
+
+
+Gymfile already exists
+WARNING: Support for your Ruby version (3.2.11) is going away. fastlane will soon require Ruby 3.3.0 or newer.
+Successfully loaded '/Users/expo/workingdir/build/mobile/ios/Gymfile' 📄
++----------------------------------+
+| Detected Values from './Gymfile' |
++-----------------+----------------+
+| scheme          | JobRunner      |
+| clean           | false          |
++-----------------+----------------+
+[!] Could not find option 'allow_provisioning_updates' in the list of available options: workspace, project, scheme, clean, output_directory, output_name, app_name, configuration, silent, codesigning_identity, skip_package_ipa, skip_package_pkg, include_symbols, include_bitcode, export_method, export_options, export_xcargs, skip_build_archive, skip_archive, skip_codesigning, catalyst_platform, installer_cert_name, build_path, archive_path, derived_data_path, result_bundle, result_bundle_path, buildlog_path, sdk, toolchain, destination, export_team_id, xcargs, xcconfig, suppress_xcode_output, xcodebuild_formatter, build_timing_summary, disable_xcpretty, xcpretty_test_format, xcpretty_formatter, xcpretty_report_junit, xcpretty_report_html, xcpretty_report_json, xcpretty_utf, analyze_build_time, skip_profile_detection, xcodebuild_command, cloned_source_packages_path, package_cache_path, skip_package_dependencies_resolution, disable_package_automatic_updates, skip_package_repository_fetches, use_system_scm, package_authorization_provider, generate_appstore_info
+WARNING: Support for your Ruby version (3.2.11) is going away. fastlane will soon require Ruby 3.3.0 or newer.
+Error: The "Run fastlane" step failed with an unknown error. Refer to "Xcode Logs" below for additional, more detailed logs.
+Clean up credentials
+
+< 1s
+
+
+Fail job
+
+< 1s
+
+
+Build failed: The "Run fastlane" step failed with an unknown error. Refer to "Xcode Logs" below for additional, more detailed logs.
