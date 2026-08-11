@@ -4,3 +4,7 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# iOS credentials — never commit; place files in credentials/ios/ locally
+credentials/ios/*.p12
+credentials/ios/*.mobileprovision
