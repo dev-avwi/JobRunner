@@ -5,7 +5,7 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Dimensions,
+  useWindowDimensions,
   Image,
   StatusBar,
   ListRenderItemInfo,
@@ -15,12 +15,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
 import { fontWeights } from '../../src/lib/design-tokens';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-const PHONE_W       = SCREEN_WIDTH * 0.60;
-const PHONE_H       = PHONE_W * 2.06;
 // How far the phone bottom sinks below the colour-area edge into the white sheet
 const PHONE_OVERLAP = 100;
+// Maximum phone width so it doesn't look absurd on tablets / foldables
+const MAX_PHONE_W   = 280;
 
 const slides = [
   {
@@ -49,21 +47,26 @@ const slides = [
 export default function WelcomeScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
+  // Recompute whenever screen width changes (fold/unfold, rotation)
+  const phoneW = Math.min(screenWidth * 0.60, MAX_PHONE_W);
+  const phoneH = phoneW * 2.06;
+
   const handleMomentumScrollEnd = useCallback((event: any) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
     setCurrentIndex(index);
-  }, []);
+  }, [screenWidth]);
 
   const renderSlide = useCallback(({ item }: ListRenderItemInfo<typeof slides[number]>) => {
     return (
-      <View style={[styles.slide, { backgroundColor: item.bg }]}>
+      <View style={[styles.slide, { backgroundColor: item.bg, width: screenWidth }]}>
 
         {/* ── Phone area — fills the colour space, phone hangs below ── */}
         <View style={styles.phoneArea}>
-          <View style={styles.phoneWrap}>
+          <View style={[styles.phoneWrap, { width: phoneW, height: phoneH }]}>
             <Image source={item.image} style={styles.phone} resizeMode="contain" />
           </View>
         </View>
@@ -77,7 +80,7 @@ export default function WelcomeScreen() {
         </View>
       </View>
     );
-  }, [colors]);
+  }, [colors, screenWidth, phoneW, phoneH]);
 
   return (
     // Root bg matches the first slide — prevents any white flash at edges
@@ -97,12 +100,12 @@ export default function WelcomeScreen() {
         scrollEventThrottle={16}
         style={styles.list}
         bounces={false}
-        extraData={currentIndex}
+        extraData={[currentIndex, screenWidth]}
         automaticallyAdjustContentInsets={false}
         contentInsetAdjustmentBehavior="never"
         getItemLayout={(_, index) => ({
-          length: SCREEN_WIDTH,
-          offset: SCREEN_WIDTH * index,
+          length: screenWidth,
+          offset: screenWidth * index,
           index,
         })}
       />
@@ -170,8 +173,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   phoneWrap: {
-    width: PHONE_W,
-    height: PHONE_H,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.14,
