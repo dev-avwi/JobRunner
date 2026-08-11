@@ -73,10 +73,12 @@ export default function WelcomeScreen() {
 
         {/* ── White sheet — phone overlaps from above ── */}
         <View style={styles.sheet}>
-          {/* Spacer so headline starts below the overlapping phone */}
-          <View style={{ height: PHONE_OVERLAP + 16 }} />
-          <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
-          <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
+          <View style={styles.sheetInner}>
+            {/* Spacer so headline starts below the overlapping phone */}
+            <View style={{ height: PHONE_OVERLAP + 16 }} />
+            <Text style={[styles.headline, { color: colors.foreground }]}>{item.headline}</Text>
+            <Text style={[styles.slideSubtitle, { color: colors.mutedForeground }]}>{item.subtitle}</Text>
+          </View>
         </View>
       </View>
     );
@@ -112,39 +114,41 @@ export default function WelcomeScreen() {
 
       {/* ── Sticky bottom — white, continues the white sheet ── */}
       <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom + 8, 28) }]}>
-        <View style={styles.dots}>
-          {slides.map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                {
-                  backgroundColor: i === currentIndex ? colors.primary : colors.border,
-                  width: i === currentIndex ? 20 : 6,
-                },
-              ]}
-            />
-          ))}
+        <View style={styles.bottomInner}>
+          <View style={styles.dots}>
+            {slides.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  {
+                    backgroundColor: i === currentIndex ? colors.primary : colors.border,
+                    width: i === currentIndex ? 20 : 6,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
+            onPress={() => router.replace('/(auth)/register')}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Get Started</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.loginLink}
+            onPress={() => router.replace('/(auth)/login')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.loginText, { color: colors.mutedForeground }]}>
+              Already have an account?{' '}
+              <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold }}>Log in</Text>
+            </Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.primaryBtn, { backgroundColor: colors.primary }]}
-          onPress={() => router.replace('/(auth)/register')}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.primaryBtnText, { color: colors.primaryForeground }]}>Get Started</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.loginLink}
-          onPress={() => router.replace('/(auth)/login')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.loginText, { color: colors.mutedForeground }]}>
-            Already have an account?{' '}
-            <Text style={{ color: colors.primary, fontWeight: fontWeights.semibold }}>Log in</Text>
-          </Text>
-        </TouchableOpacity>
       </View>
     </View>
   );
@@ -188,9 +192,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    paddingHorizontal: 28,
     paddingBottom: 12,
     zIndex: 1,
+    alignItems: 'center',
+  },
+  sheetInner: {
+    width: '100%',
+    maxWidth: 520,
+    paddingHorizontal: 28,
   },
   headline: {
     fontSize: 34,
@@ -207,8 +216,13 @@ const styles = StyleSheet.create({
   // Sticky bottom — white, no border, seamlessly continues the sheet
   bottomSection: {
     backgroundColor: '#ffffff',
-    paddingHorizontal: 24,
     paddingTop: 4,
+    alignItems: 'center',
+  },
+  bottomInner: {
+    width: '100%',
+    maxWidth: 520,
+    paddingHorizontal: 24,
     gap: 12,
   },
   dots: {
