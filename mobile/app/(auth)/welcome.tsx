@@ -158,9 +158,8 @@ const styles = StyleSheet.create({
 
   list: { flex: 1 },
 
-  // Each slide = full-width, fills the FlatList height
+  // Each slide = full-width, fills the FlatList height (width set inline via useWindowDimensions)
   slide: {
-    width: SCREEN_WIDTH,
     flex: 1,
   },
 
