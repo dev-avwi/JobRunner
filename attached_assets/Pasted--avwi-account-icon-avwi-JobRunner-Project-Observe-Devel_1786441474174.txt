@@ -1,0 +1,277 @@
+
+
+
+
+
+avwi account icon
+avwi
+
+
+JobRunner
+
+
+Project
+
+
+
+
+
+Observe
+
+Develop
+
+
+
+Deploy
+
+
+
+
+Over-the-air updates
+
+
+Hosting
+
+
+Entities
+
+
+
+Project settings
+
+
+
+
+
+
+
+Builds
+
+8a516ee9
+
+
+Copy error as prompt
+
+Compare
+This build does not count towards your EAS Build usage.
+iOS internal distribution build
+ceb756e · Add image asset Replit-Commit-Author: Agent
+
+
+Profile
+
+
+Environment
+
+Deployment
+
+Version
+
+Fingerprint
+
+Commit
+
+Created by
+
+development
+
+development
+
+
+1.0.0
+
+
+development
+
+ 1.1.4 (43)
+
+bb51099
+
+ceb756e
+
+avwi account icon
+avwi
+
+Build artifact
+
+Status
+
+Start time
+
+Wait time
+
+Queue time
+
+
+Build time
+
+Total time
+
+Availability
+
+
+Errored
+
+Aug 11, 2026 7:41 PM
+3s
+
+25s
+
+1m 36s
+
+2m 5s
+
+89 days
+
+Logs
+
+Waiting to start
+
+28s
+
+
+Spin up build environment
+
+< 1s
+
+
+Install custom tools
+
+14s
+
+
+Prepare project
+
+12s
+
+
+Read eas.json
+
+< 1s
+
+
+Read package.json
+
+< 1s
+
+
+Install dependencies
+
+13s
+
+
+Read app config
+
+
+1
+< 1s
+
+
+Run expo doctor
+
+
+1
+3s
+
+
+Prepare credentials
+
+3s
+
+
+Prebuild
+
+< 1s
+
+
+Install pods
+
+23s
+
+
+Calculate expo-updates runtime version
+
+< 1s
+
+
+Configure Xcode project
+
+< 1s
+
+
+Configure expo-updates
+
+< 1s
+
+
+Run fastlane
+
+
+3
+13s
+
+
+Clean up credentials
+
+< 1s
+
+
+Fail job
+
+
+1
+< 1s
+
+
+Build failed: The "Run fastlane" step failed because of an error in the Xcode build process. We automatically detected following errors in your Xcode build logs:
+- No profiles for 'com.*********.app.liveactivity' were found: Xcode couldn't find any iOS App Development provisioning profiles matching 'com.*********.app.liveactivity'. Automatic signing is disabled and unable to generate a profile. To enable automatic signing, pass -allowProvisioningUpdates to xcodebuild. (in target 'JobRunnerLiveActivity' from project 'JobRunner')
+Refer to "Xcode Logs" below for additional, more detailed logs.
+Xcode logs
+
+The logs are not displayed by default because the content is too large.
+
+
+Download
+Command line invocation:
+
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild -workspace ./JobRunner.xcworkspace -scheme JobRunner -configuration Debug -derivedDataPath ./build -destination generic/platform=iOS -archivePath "/Users/expo/Library/Developer/Xcode/Archives/2026-08-11/JobRunner 2026-08-11 02.43.45.xcarchive" -resultBundlePath /var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786441419715.xcresult archive
+
+​
+
+Writing result bundle at path:
+
+	/var/folders/5r/jggtw0px53jdd9wfmw74bndr0000gn/T/result-bundle-1786441419715.xcresult
+
+​
+
+ComputePackagePrebuildTargetDependencyGraph
+
+​
+
+Prepare packages
+
+​
+
+CreateBuildRequest
+
+​
+
+SendProjectDescription
+
+​
+
+CreateBuildOperation
+
+​
+
+ComputeTargetDependencyGraph
+
+note: Building targets in dependency order
+
+note: Target dependency graph (156 targets)
+
+    Target 'JobRunner' in project 'JobRunner'
+
+        ➜ Implicit dependency on target 'Pods-JobRunner' in project 'Pods' via file 'Pods_JobRunner.framework' in build phase 'Link Binary'
+
+
