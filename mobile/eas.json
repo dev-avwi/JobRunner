@@ -12,7 +12,8 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_API_URL": "https://jobrunner.com.au",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "false"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "false",
+        "EXPO_NO_CAPABILITY_SYNC": "1"
       },
       "ios": {
         "resourceClass": "m-medium",
@@ -30,7 +31,8 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_API_URL": "https://jobrunner.com.au",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "false"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "false",
+        "EXPO_NO_CAPABILITY_SYNC": "1"
       },
       "ios": {
         "resourceClass": "m-medium",
@@ -47,7 +49,8 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_API_URL": "https://jobrunner.com.au",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "false"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "false",
+        "EXPO_NO_CAPABILITY_SYNC": "1"
       },
       "ios": {
         "resourceClass": "m-medium",
