@@ -30,7 +30,7 @@ import { logger } from './lib/logger';
 
 // ─── Channel IDs ─────────────────────────────────────────────────────────────
 const CLAUDE_COMMANDS_CHANNEL = 'C0BPA019Q15';
-const AI_LOGS_CHANNEL = 'C0BPA019Q15'; // update to your actual #ai-logs channel ID
+const AI_LOGS_CHANNEL = 'C0BPV2HB43W'; // #ai-logs
 const BUGS_CHANNEL = 'C0BQKM72ZC0';
 
 // ─── Slack Web API via Replit connector ──────────────────────────────────────
