@@ -208,6 +208,8 @@ export function useRealtimeUpdates({
   const { toast } = useToast();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isConnected, setIsConnected] = useState(false);
+  const [hadPriorConnection, setHadPriorConnection] = useState(false);
+  const [gaveUp, setGaveUp] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
@@ -217,6 +219,7 @@ export function useRealtimeUpdates({
   const pongTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const awaitingPongRef = useRef(false);
   const hadPriorConnectionRef = useRef(false);
+  const disconnectedAtRef = useRef<number | null>(null);
 
   const callbacksRef = useRef({
     onJobStatusChange,
@@ -488,12 +491,30 @@ export function useRealtimeUpdates({
           if (message.type === 'connected') {
             console.log('[RealtimeUpdates] Authenticated successfully');
             setIsConnected(true);
+            setGaveUp(false);
             reconnectAttempts.current = 0;
             if (hadPriorConnectionRef.current) {
-              console.log('[RealtimeUpdates] Reconnected — invalidating all queries to catch up on missed events');
-              queryClient.invalidateQueries();
+              // Only do a targeted catch-up if we were disconnected for more than
+              // 10 seconds — short bounces (server restart during dev) don't need
+              // a full refetch and would flood the API with simultaneous requests.
+              const downMs = disconnectedAtRef.current
+                ? Date.now() - disconnectedAtRef.current
+                : 0;
+              if (downMs > 10000) {
+                console.log(`[RealtimeUpdates] Reconnected after ${Math.round(downMs / 1000)}s — syncing critical queries`);
+                const criticalKeys = [
+                  ['/api/jobs'], ['/api/notifications'], ['/api/chat/unread-counts'],
+                  ['/api/time-entries/active/current'], ['/api/dashboard'],
+                  ['/api/team/presence'],
+                ];
+                criticalKeys.forEach(queryKey => safeInvalidateQueries({ queryKey }));
+              } else {
+                console.log('[RealtimeUpdates] Reconnected quickly — skipping catch-up refetch');
+              }
             }
+            disconnectedAtRef.current = null;
             hadPriorConnectionRef.current = true;
+            setHadPriorConnection(true);
             return;
           }
           
@@ -528,6 +549,9 @@ export function useRealtimeUpdates({
         setIsConnected(false);
         wsRef.current = null;
         isConnectingRef.current = false;
+        if (hadPriorConnectionRef.current && disconnectedAtRef.current === null) {
+          disconnectedAtRef.current = Date.now();
+        }
 
         // Don't reconnect if authentication failed (4001) or access denied (4003)
         // These are permanent failures that won't resolve with retries
@@ -537,9 +561,13 @@ export function useRealtimeUpdates({
         }
 
         if (enabled) {
-          const delay = reconnectAttempts.current < maxReconnectAttempts
-            ? Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000)
-            : 60000;
+          if (reconnectAttempts.current >= maxReconnectAttempts) {
+            // Gave up — show a static "Connection lost" state with a manual reconnect button
+            console.log('[RealtimeUpdates] Max reconnect attempts reached, giving up');
+            setGaveUp(true);
+            return;
+          }
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
           reconnectAttempts.current++;
           console.log(`[RealtimeUpdates] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
           reconnectTimeoutRef.current = setTimeout(connect, delay);
@@ -573,9 +601,10 @@ export function useRealtimeUpdates({
       wsRef.current = null;
     }
     setIsConnected(false);
+    setGaveUp(false);
     isConnectingRef.current = false;
     awaitingPongRef.current = false;
-    reconnectAttempts.current = maxReconnectAttempts;
+    reconnectAttempts.current = 0;
   }, []);
 
   useEffect(() => {
@@ -641,10 +670,19 @@ export function useRealtimeUpdates({
     }
   }, []);
 
+  const forceReconnect = useCallback(() => {
+    setGaveUp(false);
+    reconnectAttempts.current = 0;
+    connect();
+  }, [connect]);
+
   return {
     isConnected,
+    hadPriorConnection,
+    gaveUp,
     disconnect,
     reconnect: connect,
+    forceReconnect,
     sendMessage,
   };
 }

@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/react";
 import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, WifiOff, X } from "lucide-react";
 import { Switch, Route, useLocation, Redirect, Router as WouterRouter } from "wouter";
 import { queryClient, clearSessionToken, getSessionToken, apiRequest } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -1245,7 +1245,7 @@ function AppLayout() {
     collaborationCtx?._dispatchFieldUpdate(event);
   }, [collaborationCtx]);
   
-  const { isConnected: wsConnected, sendMessage: wsSendMessage } = useRealtimeUpdates({
+  const { isConnected: wsConnected, hadPriorConnection: wsHadPriorConnection, gaveUp: wsGaveUp, forceReconnect: wsForceReconnect, sendMessage: wsSendMessage } = useRealtimeUpdates({
     businessId: realtimeBusinessId,
     enabled: wsEnabled,
     onJobEditingPresence: handleJobEditingPresence,
@@ -1263,14 +1263,19 @@ function AppLayout() {
     }
   }, [collaborationCtx, wsSendMessage, wsConnected]);
   const [showReconnecting, setShowReconnecting] = useState(false);
+  const [reconnectingDismissed, setReconnectingDismissed] = useState(false);
   useEffect(() => {
-    if (wsEnabled && !wsConnected) {
-      const timer = setTimeout(() => setShowReconnecting(true), 3000);
+    // Only show the banner if: enabled, disconnected, AND the user has had a
+    // prior successful connection (avoid flashing on first-ever load).
+    if (wsEnabled && !wsConnected && wsHadPriorConnection && !reconnectingDismissed) {
+      const timer = setTimeout(() => setShowReconnecting(true), 6000);
       return () => clearTimeout(timer);
     }
     setShowReconnecting(false);
+    // When we reconnect, clear the dismissed state so it can show again next time
+    if (wsConnected) setReconnectingDismissed(false);
     return;
-  }, [wsEnabled, wsConnected]);
+  }, [wsEnabled, wsConnected, wsHadPriorConnection, reconnectingDismissed]);
 
   // Initialize and update trade colors based on theme and trade selection
   // IMPORTANT: All useEffect hooks must be called before any conditional returns
@@ -1774,9 +1779,29 @@ function AppLayout() {
               <OfflineIndicator />
               {/* WebSocket Reconnecting Indicator */}
               {showReconnecting && (
-                <div className="flex items-center justify-center gap-2 px-3 py-1.5 bg-muted border-b border-border text-muted-foreground text-xs font-medium" role="status" aria-live="polite" data-testid="ws-reconnecting-banner">
-                  <RefreshCw className="h-3 w-3 animate-spin" />
-                  <span>Reconnecting to live updates...</span>
+                <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-muted border-b border-border text-muted-foreground text-xs font-medium" role="status" aria-live="polite" data-testid="ws-reconnecting-banner">
+                  <div className="flex items-center gap-2">
+                    {wsGaveUp
+                      ? <WifiOff className="h-3 w-3 text-destructive" />
+                      : <RefreshCw className="h-3 w-3 animate-spin" />
+                    }
+                    <span>{wsGaveUp ? 'Live updates disconnected.' : 'Reconnecting to live updates...'}</span>
+                    {wsGaveUp && (
+                      <button
+                        onClick={() => { setReconnectingDismissed(false); wsForceReconnect(); }}
+                        className="underline hover:text-foreground transition-colors"
+                      >
+                        Try again
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setReconnectingDismissed(true)}
+                    className="ml-2 hover:text-foreground transition-colors"
+                    aria-label="Dismiss"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
               )}
               {/* Trial Banner */}
