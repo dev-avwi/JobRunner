@@ -1,0 +1,21 @@
+The core problem right now is that JobRunner is built around simple jobs. One job, a few tasks, invoice it, done. But what your uncle is describing — and what big construction and engineering businesses actually need — is project-style thinking. A "job" becomes a project with phases, budgets, procurement, and milestone billing.
+
+Here's how the whole thing would connect:
+
+A job gets created with a number like GEM1004 (prefix set per business in settings). Then instead of just having a status, the job has phases — each with a code (P01, P02), a name (Site Prep, Footings), booked hours, scheduled dates, and its own budget. Everything else hangs off phases.
+
+Purchase orders get raised against a specific phase. When you order $100 of materials, the PO is logged against Phase P02 with the supplier and amount. Before the phase — or the job — can be marked complete, all POs need to be either received or accounted for. No loose ends.
+
+Markup gets applied at the PO/material level. You set 35% markup for materials. So that $100 of granite gets tracked as $100 cost, $135 charge. When the invoice is generated, it pulls those marked-up figures automatically — not manual calculations.
+
+Progress claims are how you bill on big government jobs. Instead of one final invoice, you claim against each phase as it's done — "P01 complete, claiming $22,000." That claim has a schedule of values showing the original contract, what's been claimed before, what you're claiming now, and what's left. It pushes straight to Xero as an invoice. Retention gets held back and released at practical completion.
+
+Job costing then becomes powerful because you have all the data: quoted vs actual hours per phase, materials budget vs actual spend, markup captured vs charged. The system can show you "on this job you budgeted 40 hours for footings, your workers spent 61 hours — that's a $1,750 overrun." It can pull historical data — "last 5 slab jobs you ran, average margin was 28%, this one is tracking at 14%." Negative profit gets flagged early, not discovered after the fact.
+
+Staff/HR needs to grow with the job complexity. If you've got 20 workers on a government site you need licence expiry tracking (white cards, rigger tickets, etc.), emergency contacts surfaced properly, and a leave request flow where workers submit → supervisor approves → it rolls into the schedule automatically.
+
+Government reporting becomes a byproduct of all this — you already have the data structured properly, so generating a variation register, a phase progress report, or a cost-code breakdown is just presenting what's already there.
+
+The way I'd sequence building this: phases and job numbering first (everything else references phases), then purchase orders and markup (procurement flow), then claims (billing flow), then job cost intelligence (visibility layer on top of real data), then HR depth.
+
+What part of this feels most urgent for your granite engineering work right now?
