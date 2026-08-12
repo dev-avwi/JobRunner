@@ -3428,6 +3428,268 @@ function SchedulingTab() {
   );
 }
 
+function EmergencyContactsTab() {
+  const { toast } = useToast();
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+
+  // Form state
+  const [formName, setFormName] = useState("");
+  const [formRelationship, setFormRelationship] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formSecondaryPhone, setFormSecondaryPhone] = useState("");
+  const [formIsPrimary, setFormIsPrimary] = useState(false);
+  const [formNotes, setFormNotes] = useState("");
+
+  const { data: teamMembers = [] } = useQuery<TeamMemberData[]>({ queryKey: ['/api/team/members'] });
+
+  const { data: contacts = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/team/emergency-contacts', selectedMemberId],
+    queryFn: async () => {
+      if (!selectedMemberId) return [];
+      const r = await apiRequest('GET', `/api/team/emergency-contacts?teamMemberId=${selectedMemberId}`);
+      return r.json();
+    },
+    enabled: !!selectedMemberId,
+  });
+
+  const acceptedMembers = teamMembers.filter((m) => m.inviteStatus === 'accepted');
+
+  function openAdd() {
+    setEditingContact(null);
+    setFormName(""); setFormRelationship(""); setFormPhone("");
+    setFormSecondaryPhone(""); setFormIsPrimary(contacts.length === 0); setFormNotes("");
+    setDialogOpen(true);
+  }
+
+  function openEdit(c: any) {
+    setEditingContact(c);
+    setFormName(c.name || ""); setFormRelationship(c.relationship || "");
+    setFormPhone(c.phone || ""); setFormSecondaryPhone(c.secondaryPhone || "");
+    setFormIsPrimary(!!c.isPrimary); setFormNotes(c.notes || "");
+    setDialogOpen(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const body = {
+        teamMemberId: selectedMemberId,
+        name: formName.trim(),
+        relationship: formRelationship.trim(),
+        phone: formPhone.trim(),
+        secondaryPhone: formSecondaryPhone.trim() || null,
+        isPrimary: formIsPrimary,
+        notes: formNotes.trim() || null,
+      };
+      if (editingContact) {
+        const r = await apiRequest('PATCH', `/api/team/emergency-contacts/${editingContact.id}`, body);
+        return r.json();
+      }
+      const r = await apiRequest('POST', '/api/team/emergency-contacts', body);
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team/emergency-contacts', selectedMemberId] });
+      toast({ title: editingContact ? "Contact updated" : "Contact added" });
+      setDialogOpen(false);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const r = await apiRequest('DELETE', `/api/team/emergency-contacts/${id}`);
+      return r.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/team/emergency-contacts', selectedMemberId] });
+      toast({ title: "Contact removed" });
+      setDeleteTarget(null);
+    },
+    onError: (e: any) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+  });
+
+  const selectedMember = acceptedMembers.find((m) => m.id === selectedMemberId);
+
+  return (
+    <div className="p-4 sm:p-5 section-gap overflow-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+        <div>
+          <h3 className="text-base font-semibold">Emergency Contacts</h3>
+          <p className="text-sm text-muted-foreground">Who to call if a worker needs help on site</p>
+        </div>
+        <Select value={selectedMemberId || ""} onValueChange={(v) => setSelectedMemberId(v || null)}>
+          <SelectTrigger className="w-full sm:w-[200px]">
+            <SelectValue placeholder="Select worker…" />
+          </SelectTrigger>
+          <SelectContent>
+            {acceptedMembers.map((m) => (
+              <SelectItem key={m.id} value={m.id}>
+                {m.firstName} {m.lastName}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {selectedMemberId ? (
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-muted-foreground">
+              {selectedMember ? `${selectedMember.firstName} ${selectedMember.lastName}` : ''}
+            </p>
+            <Button size="sm" onClick={openAdd} className="gap-1.5">
+              <Plus className="h-3.5 w-3.5" />
+              Add Contact
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => <Skeleton key={i} className="h-20 w-full" />)}
+            </div>
+          ) : contacts.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="p-8 text-center">
+                <AlertTriangle className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+                <p className="text-sm font-medium text-muted-foreground">No emergency contacts</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Add at least one emergency contact so supervisors can reach them on site
+                </p>
+                <Button size="sm" variant="outline" className="mt-4 gap-1.5" onClick={openAdd}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Add First Contact
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {contacts.map((c) => (
+                <Card key={c.id} className={c.isPrimary ? "border-destructive/40 bg-destructive/5" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-full bg-destructive/15 flex items-center justify-center shrink-0 mt-0.5">
+                          <User className="h-4 w-4 text-destructive" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-semibold">{c.name}</p>
+                            {c.isPrimary && (
+                              <Badge variant="destructive" className="text-[10px] py-0">Primary</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground capitalize">{c.relationship}</p>
+                          <a href={`tel:${c.phone}`} className="text-sm text-green-600 font-medium flex items-center gap-1 mt-1 hover:underline">
+                            <Phone className="h-3 w-3" />
+                            {c.phone}
+                          </a>
+                          {c.secondaryPhone && (
+                            <a href={`tel:${c.secondaryPhone}`} className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 hover:underline">
+                              <Phone className="h-3 w-3" />
+                              {c.secondaryPhone}
+                            </a>
+                          )}
+                          {c.notes && <p className="text-xs text-muted-foreground mt-1 italic">{c.notes}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEdit(c)}>
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(c.id)}>
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-40" />
+            <p className="text-sm text-muted-foreground">Select a worker to view or add emergency contacts</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add / Edit dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingContact ? "Edit" : "Add"} Emergency Contact</DialogTitle>
+            <DialogDescription>
+              {selectedMember ? `For ${selectedMember.firstName} ${selectedMember.lastName}` : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5 col-span-2">
+                <Label>Full Name *</Label>
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Jane Smith" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Relationship *</Label>
+                <Input value={formRelationship} onChange={(e) => setFormRelationship(e.target.value)} placeholder="Spouse, Parent…" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Primary Phone *</Label>
+                <Input value={formPhone} onChange={(e) => setFormPhone(e.target.value)} placeholder="04xx xxx xxx" />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Secondary Phone</Label>
+                <Input value={formSecondaryPhone} onChange={(e) => setFormSecondaryPhone(e.target.value)} placeholder="Optional" />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Notes</Label>
+                <Textarea value={formNotes} onChange={(e) => setFormNotes(e.target.value)} placeholder="Any additional information…" rows={2} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={formIsPrimary} onCheckedChange={setFormIsPrimary} id="is-primary" />
+              <Label htmlFor="is-primary" className="cursor-pointer">Mark as primary contact</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={saveMutation.isPending || !formName.trim() || !formRelationship.trim() || !formPhone.trim()}
+            >
+              {saveMutation.isPending ? "Saving…" : editingContact ? "Save Changes" : "Add Contact"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove contact?</AlertDialogTitle>
+            <AlertDialogDescription>This emergency contact will be permanently deleted.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive hover:bg-destructive/90"
+              onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+            >
+              {deleteMutation.isPending ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 function SkillsTab() {
   const { toast } = useToast();
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
@@ -4166,7 +4428,7 @@ export default function TeamOperations() {
   const { isOwner, isManager } = useAppMode();
   const [, headerNavigate] = useLocation();
   const canManageTeam = isOwner || isManager;
-  const [activeTab, setActiveTab] = useState<"live" | "admin" | "scheduling" | "performance">("live");
+  const [activeTab, setActiveTab] = useState<"live" | "admin" | "scheduling" | "performance" | "hr">("live");
 
   // Lightweight stats for the header strip
   const { data: presence = [] } = useQuery<TeamPresenceData[]>({ queryKey: ["/api/team/presence"] });
@@ -4186,6 +4448,7 @@ export default function TeamOperations() {
     { id: "admin" as const, label: "Team Admin", short: "Admin", icon: Users, gated: !canManageTeam },
     { id: "scheduling" as const, label: "Scheduling", short: "Schedule", icon: CalendarDays, gated: false },
     { id: "performance" as const, label: "Performance", short: "Stats", icon: TrendingUp, gated: false },
+    { id: "hr" as const, label: "HR & Licences", short: "HR", icon: Shield, gated: !canManageTeam },
   ].filter((t) => !t.gated);
 
   return (
@@ -4313,6 +4576,18 @@ export default function TeamOperations() {
         <TabsContent value="performance" className="m-0 flex-1 min-h-0 data-[state=inactive]:hidden">
           <PerformanceTab />
         </TabsContent>
+        {canManageTeam && (
+          <TabsContent value="hr" className="m-0 flex-1 min-h-0 data-[state=inactive]:hidden overflow-auto">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-0 divide-y xl:divide-y-0 xl:divide-x divide-border h-full">
+              <div className="overflow-auto">
+                <EmergencyContactsTab />
+              </div>
+              <div className="overflow-auto">
+                <SkillsTab />
+              </div>
+            </div>
+          </TabsContent>
+        )}
       </div>
     </Tabs>
   );

@@ -226,6 +226,17 @@ export const mainMenuItems: NavItem[] = [
     requiredPermission: ['manage_team', 'manage_roles'],
   },
   {
+    title: "Leave",
+    url: "/more/leave-request",
+    icon: "calendar",
+    description: "Submit and track leave requests",
+    color: "primary",
+    bgColor: "primary",
+    showInMore: true,
+    category: "team",
+    allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie', 'staff'],
+  },
+  {
     title: "Dispatch Board",
     url: "/more/dispatch-board",
     icon: "grid",

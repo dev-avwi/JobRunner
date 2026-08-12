@@ -166,6 +166,8 @@ import {
   teamMemberAvailability,
   teamMemberTimeOff,
   teamMemberMetrics,
+  teamMemberEmergencyContacts,
+  teamMemberLeaveBalances,
   // Job assignment requests
   jobAssignmentRequests,
   jobAssignments,
@@ -15860,9 +15862,31 @@ Be specific about materials, colors, and features that would be included.`
           }
         } catch (e) {}
 
-        let status: 'available' | 'on_job' | 'upcoming' = 'available';
+        let status: 'available' | 'on_job' | 'upcoming' | 'on_leave' = 'available';
         if (activeTimer) status = 'on_job';
         else if (nextScheduledJob) status = 'upcoming';
+
+        // Check for approved leave covering today
+        let onLeave = false;
+        let leaveType: string | null = null;
+        try {
+          const todayStr = now.toISOString().slice(0, 10);
+          const [leaveRecord] = await db.select().from(teamMemberTimeOff)
+            .where(
+              and(
+                eq(teamMemberTimeOff.teamMemberId, member.id),
+                eq(teamMemberTimeOff.status, 'approved'),
+                lte(teamMemberTimeOff.startDate, todayStr),
+                gte(teamMemberTimeOff.endDate, todayStr),
+              )
+            )
+            .limit(1);
+          if (leaveRecord) {
+            onLeave = true;
+            leaveType = leaveRecord.reason || null;
+            if (status === 'available') status = 'on_leave';
+          }
+        } catch (e) {}
 
         let workerState = null;
         try {
@@ -15872,6 +15896,8 @@ Be specific about materials, colors, and features that would be included.`
         availability.push({
           memberId,
           status,
+          onLeave,
+          leaveType,
           workerState: workerState?.state || 'available',
           workerStateNote: workerState?.note || null,
           workerStateJobId: workerState?.jobId || null,
@@ -42322,7 +42348,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       const userId = req.userId!;
       const { id } = req.params;
-      const { status } = req.body;
+      const { status, approverComment } = req.body;
       
       if (!status || !['approved', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Status must be approved or rejected' });
@@ -42346,11 +42372,73 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           status,
           approvedBy: userId,
           approvedAt: new Date(),
+          approverComment: approverComment || null,
           updatedAt: new Date(),
         })
         .where(eq(teamMemberTimeOff.id, id))
         .returning();
       
+      // Send push notification to the worker whose leave was actioned
+      try {
+        const [member] = await db.select().from(teamMembers)
+          .where(eq(teamMembers.id, existingTimeOff.teamMemberId));
+        if (member?.memberId) {
+          const { sendPushNotification } = await import('./pushNotifications');
+          const statusLabel = status === 'approved' ? 'approved ✅' : 'declined ❌';
+          const leaveTypeLabel = existingTimeOff.reason?.replace(/_/g, ' ') || 'leave';
+          await sendPushNotification({
+            userId: member.memberId,
+            type: 'leave_decision',
+            title: `Leave ${status === 'approved' ? 'Approved' : 'Declined'}`,
+            body: `Your ${leaveTypeLabel} request has been ${statusLabel}${approverComment ? `: ${approverComment}` : '.'}`,
+            data: { timeOffId: id, status },
+          });
+        }
+      } catch (notifErr) {
+        console.error('Failed to send leave decision notification:', notifErr);
+      }
+
+      // When approving, increment taken days in team_member_leave_balances (idempotent upsert)
+      if (status === 'approved' && existingTimeOff.startDate && existingTimeOff.endDate) {
+        try {
+          const startMs = new Date(existingTimeOff.startDate).getTime();
+          const endMs = new Date(existingTimeOff.endDate).getTime();
+          const daysTaken = Math.max(1, Math.ceil((endMs - startMs) / (1000 * 60 * 60 * 24)) + 1);
+          const leaveYear = new Date(existingTimeOff.startDate).getFullYear();
+          const leaveType = existingTimeOff.reason || 'other';
+
+          // Resolve businessOwnerId for this team member
+          const [memberRow] = await db.select().from(teamMembers)
+            .where(eq(teamMembers.id, existingTimeOff.teamMemberId)).limit(1);
+          const bizOwnerId = memberRow?.businessOwnerId || userId;
+
+          const [existing] = await db.select().from(teamMemberLeaveBalances)
+            .where(and(
+              eq(teamMemberLeaveBalances.teamMemberId, existingTimeOff.teamMemberId),
+              eq(teamMemberLeaveBalances.leaveType, leaveType),
+              eq(teamMemberLeaveBalances.year, leaveYear),
+            )).limit(1);
+
+          if (existing) {
+            const newTaken = parseFloat(existing.taken || '0') + daysTaken;
+            await db.update(teamMemberLeaveBalances)
+              .set({ taken: newTaken.toString(), updatedAt: new Date() })
+              .where(eq(teamMemberLeaveBalances.id, existing.id));
+          } else {
+            await db.insert(teamMemberLeaveBalances).values({
+              teamMemberId: existingTimeOff.teamMemberId,
+              businessOwnerId: bizOwnerId,
+              leaveType,
+              year: leaveYear,
+              accrued: '0',
+              taken: daysTaken.toString(),
+            });
+          }
+        } catch (balErr) {
+          console.error('Failed to update leave balance on approval:', balErr);
+        }
+      }
+
       res.json(timeOff);
     } catch (error: any) {
       console.error('Error updating time off:', error);
@@ -42381,6 +42469,348 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting time off:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Worker self-submit time off request (any authenticated worker for themselves)
+  app.post("/api/team/time-off/self-request", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { startDate, endDate, reason, notes } = req.body;
+
+      if (!startDate || !endDate || !reason) {
+        return res.status(400).json({ error: 'startDate, endDate, and reason are required' });
+      }
+
+      // Find the team member record for this user
+      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
+      if (!teamMembership) {
+        return res.status(403).json({ error: 'You must be a team member to submit a leave request' });
+      }
+
+      const [timeOff] = await db.insert(teamMemberTimeOff).values({
+        teamMemberId: teamMembership.id,
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        reason,
+        notes: notes || null,
+        status: 'pending',
+      }).returning();
+
+      // Notify the business owner
+      try {
+        const { sendPushNotification } = await import('./pushNotifications');
+        const memberName = [teamMembership.firstName, teamMembership.lastName].filter(Boolean).join(' ') || 'A team member';
+        const leaveTypeLabel = reason.replace(/_/g, ' ');
+        await sendPushNotification({
+          userId: teamMembership.businessOwnerId,
+          type: 'leave_request',
+          title: 'New Leave Request',
+          body: `${memberName} has submitted a ${leaveTypeLabel} request`,
+          data: { timeOffId: timeOff.id },
+        });
+      } catch (notifErr) {
+        console.error('Failed to notify owner of leave request:', notifErr);
+      }
+
+      res.status(201).json(timeOff);
+    } catch (error: any) {
+      console.error('Error submitting self leave request:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get own time-off requests (for workers viewing their own leave)
+  app.get("/api/team/time-off/my-requests", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
+      if (!teamMembership) {
+        return res.json([]);
+      }
+
+      const myRequests = await db.select().from(teamMemberTimeOff)
+        .where(eq(teamMemberTimeOff.teamMemberId, teamMembership.id))
+        .orderBy(desc(teamMemberTimeOff.startDate));
+
+      res.json(myRequests);
+    } catch (error: any) {
+      console.error('Error getting own time-off requests:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // EMERGENCY CONTACTS ROUTES
+  // ============================================
+
+  // Get emergency contacts for the team (or specific member)
+  app.get("/api/team/emergency-contacts", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { teamMemberId } = req.query;
+      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
+      const businessOwnerId = teamMembership?.businessOwnerId || userId;
+
+      if (teamMemberId) {
+        // Verify the member belongs to this business before returning sensitive PII
+        const isOwned = await verifyTeamMemberOwnership(userId, teamMemberId as string);
+        if (!isOwned) {
+          return res.status(403).json({ error: 'Team member does not belong to your business' });
+        }
+        const contacts = await db.select().from(teamMemberEmergencyContacts)
+          .where(eq(teamMemberEmergencyContacts.teamMemberId, teamMemberId as string))
+          .orderBy(desc(teamMemberEmergencyContacts.isPrimary));
+        return res.json(contacts);
+      }
+
+      // Return all contacts for the business when no specific member is requested
+      const results = await db.select().from(teamMemberEmergencyContacts)
+        .innerJoin(teamMembers, eq(teamMemberEmergencyContacts.teamMemberId, teamMembers.id))
+        .where(eq(teamMembers.businessOwnerId, businessOwnerId));
+      res.json(results.map(r => r.team_member_emergency_contacts));
+    } catch (error: any) {
+      console.error('Error getting emergency contacts:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Add emergency contact (owner/manager only)
+  app.post("/api/team/emergency-contacts", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { teamMemberId, name, relationship, phone, secondaryPhone, isPrimary, notes } = req.body;
+
+      if (!teamMemberId || !name || !relationship || !phone) {
+        return res.status(400).json({ error: 'teamMemberId, name, relationship, and phone are required' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Team member does not belong to your business' });
+      }
+
+      // If marking as primary, unset other primaries for this member
+      if (isPrimary) {
+        await db.update(teamMemberEmergencyContacts)
+          .set({ isPrimary: false })
+          .where(eq(teamMemberEmergencyContacts.teamMemberId, teamMemberId));
+      }
+
+      const [contact] = await db.insert(teamMemberEmergencyContacts).values({
+        teamMemberId,
+        name,
+        relationship,
+        phone,
+        secondaryPhone: secondaryPhone || null,
+        isPrimary: isPrimary || false,
+        notes: notes || null,
+      }).returning();
+
+      res.status(201).json(contact);
+    } catch (error: any) {
+      console.error('Error adding emergency contact:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update emergency contact
+  app.patch("/api/team/emergency-contacts/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id } = req.params;
+      const { name, relationship, phone, secondaryPhone, isPrimary, notes } = req.body;
+
+      const [existing] = await db.select().from(teamMemberEmergencyContacts)
+        .where(eq(teamMemberEmergencyContacts.id, id));
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Emergency contact not found' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, existing.teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Emergency contact does not belong to your business' });
+      }
+
+      // If marking as primary, unset other primaries for this member
+      if (isPrimary) {
+        await db.update(teamMemberEmergencyContacts)
+          .set({ isPrimary: false })
+          .where(and(
+            eq(teamMemberEmergencyContacts.teamMemberId, existing.teamMemberId),
+            ne(teamMemberEmergencyContacts.id, id)
+          ));
+      }
+
+      const updateFields: any = { updatedAt: new Date() };
+      if (name !== undefined) updateFields.name = name;
+      if (relationship !== undefined) updateFields.relationship = relationship;
+      if (phone !== undefined) updateFields.phone = phone;
+      if (secondaryPhone !== undefined) updateFields.secondaryPhone = secondaryPhone;
+      if (isPrimary !== undefined) updateFields.isPrimary = isPrimary;
+      if (notes !== undefined) updateFields.notes = notes;
+
+      const [contact] = await db.update(teamMemberEmergencyContacts)
+        .set(updateFields)
+        .where(eq(teamMemberEmergencyContacts.id, id))
+        .returning();
+
+      res.json(contact);
+    } catch (error: any) {
+      console.error('Error updating emergency contact:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete emergency contact
+  app.delete("/api/team/emergency-contacts/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id } = req.params;
+
+      const [existing] = await db.select().from(teamMemberEmergencyContacts)
+        .where(eq(teamMemberEmergencyContacts.id, id));
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Emergency contact not found' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, existing.teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Emergency contact does not belong to your business' });
+      }
+
+      await db.delete(teamMemberEmergencyContacts).where(eq(teamMemberEmergencyContacts.id, id));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting emergency contact:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ============================================
+  // LEAVE BALANCE ROUTES
+  // ============================================
+
+  // Get leave balances for the team
+  app.get("/api/team/leave-balances", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { teamMemberId, year } = req.query;
+      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
+      const businessOwnerId = teamMembership?.businessOwnerId || userId;
+
+      let conditions: any[] = [eq(teamMemberLeaveBalances.businessOwnerId, businessOwnerId)];
+      if (teamMemberId) conditions.push(eq(teamMemberLeaveBalances.teamMemberId, teamMemberId as string));
+      if (year) conditions.push(eq(teamMemberLeaveBalances.year, parseInt(year as string)));
+
+      const balances = await db.select().from(teamMemberLeaveBalances)
+        .where(and(...conditions))
+        .orderBy(teamMemberLeaveBalances.teamMemberId, teamMemberLeaveBalances.leaveType);
+
+      res.json(balances);
+    } catch (error: any) {
+      console.error('Error getting leave balances:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Upsert leave balance (owner/manager sets accrued days)
+  app.post("/api/team/leave-balances", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { teamMemberId, year, leaveType, accrued } = req.body;
+      const teamMembership = await storage.getTeamMembershipByMemberId(userId);
+      const businessOwnerId = teamMembership?.businessOwnerId || userId;
+
+      if (!teamMemberId || !year || !leaveType || accrued === undefined) {
+        return res.status(400).json({ error: 'teamMemberId, year, leaveType, and accrued are required' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Team member does not belong to your business' });
+      }
+
+      // Upsert: insert or update on conflict
+      const [balance] = await db.insert(teamMemberLeaveBalances).values({
+        teamMemberId,
+        businessOwnerId,
+        year: parseInt(year),
+        leaveType,
+        accrued: accrued.toString(),
+        taken: '0',
+      }).onConflictDoUpdate({
+        target: [teamMemberLeaveBalances.teamMemberId, teamMemberLeaveBalances.year, teamMemberLeaveBalances.leaveType],
+        set: { accrued: accrued.toString(), updatedAt: new Date() },
+      }).returning();
+
+      res.status(201).json(balance);
+    } catch (error: any) {
+      console.error('Error setting leave balance:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Update taken days for a leave balance (auto-called on approval)
+  app.patch("/api/team/leave-balances/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id } = req.params;
+      const { accrued, taken } = req.body;
+
+      const [existing] = await db.select().from(teamMemberLeaveBalances)
+        .where(eq(teamMemberLeaveBalances.id, id));
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Leave balance not found' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, existing.teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Leave balance does not belong to your business' });
+      }
+
+      const updateFields: any = { updatedAt: new Date() };
+      if (accrued !== undefined) updateFields.accrued = accrued.toString();
+      if (taken !== undefined) updateFields.taken = taken.toString();
+
+      const [balance] = await db.update(teamMemberLeaveBalances)
+        .set(updateFields)
+        .where(eq(teamMemberLeaveBalances.id, id))
+        .returning();
+
+      res.json(balance);
+    } catch (error: any) {
+      console.error('Error updating leave balance:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Delete leave balance record
+  app.delete("/api/team/leave-balances/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id } = req.params;
+
+      const [existing] = await db.select().from(teamMemberLeaveBalances)
+        .where(eq(teamMemberLeaveBalances.id, id));
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Leave balance not found' });
+      }
+
+      const isOwned = await verifyTeamMemberOwnership(userId, existing.teamMemberId);
+      if (!isOwned) {
+        return res.status(403).json({ error: 'Leave balance does not belong to your business' });
+      }
+
+      await db.delete(teamMemberLeaveBalances).where(eq(teamMemberLeaveBalances.id, id));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting leave balance:', error);
       res.status(500).json({ error: error.message });
     }
   });

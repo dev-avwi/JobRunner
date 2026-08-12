@@ -1569,6 +1569,44 @@ pool
     console.error('[Schema] Failed to ensure job phases / job number columns:', err.message);
   });
 
+// Ensure staff HR tables: emergency contacts, leave balances, and approver comment on time-off
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS team_member_emergency_contacts (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      team_member_id varchar NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      relationship text NOT NULL,
+      phone text NOT NULL,
+      secondary_phone text,
+      is_primary boolean DEFAULT false,
+      notes text,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_tm_emergency_contacts_member_id ON team_member_emergency_contacts (team_member_id);
+
+    CREATE TABLE IF NOT EXISTS team_member_leave_balances (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      team_member_id varchar NOT NULL REFERENCES team_members(id) ON DELETE CASCADE,
+      business_owner_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      year integer NOT NULL,
+      leave_type text NOT NULL,
+      accrued decimal(5,1) DEFAULT 0,
+      taken decimal(5,1) DEFAULT 0,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_leave_balance_member_year_type ON team_member_leave_balances (team_member_id, year, leave_type);
+    CREATE INDEX IF NOT EXISTS idx_tm_leave_balances_member_id ON team_member_leave_balances (team_member_id);
+    CREATE INDEX IF NOT EXISTS idx_tm_leave_balances_owner_id ON team_member_leave_balances (business_owner_id);
+
+    ALTER TABLE team_member_time_off ADD COLUMN IF NOT EXISTS approver_comment text;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure staff HR tables:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {

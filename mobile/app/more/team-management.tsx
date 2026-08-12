@@ -1933,6 +1933,15 @@ export default function TeamManagementScreen() {
   const [memberTimeStats, setMemberTimeStats] = useState({ today: 0, week: 0, month: 0 });
   const [memberStatus, setMemberStatus] = useState<'active' | 'offline' | 'on_job'>('offline');
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [memberEmergencyContacts, setMemberEmergencyContacts] = useState<Array<{
+    id: string;
+    name: string;
+    relationship: string;
+    phone: string;
+    secondaryPhone?: string | null;
+    isPrimary: boolean;
+    notes?: string | null;
+  }>>([]);
   
   // Edit member modal state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -2100,11 +2109,17 @@ export default function TeamManagementScreen() {
 
   const fetchMemberDetails = useCallback(async (member: TeamMember) => {
     setIsLoadingDetail(true);
+    setMemberEmergencyContacts([]);
     try {
-      const [jobsRes, timeRes] = await Promise.all([
+      const [jobsRes, timeRes, emergencyRes] = await Promise.all([
         api.get<Job[]>(`/api/jobs?assignedTo=${member.userId}`).catch(() => ({ data: [] })),
         api.get<TimeEntry[]>(`/api/time-entries?userId=${member.userId}`).catch(() => ({ data: [] })),
+        api.get<any[]>(`/api/team/emergency-contacts?teamMemberId=${member.id}`).catch(() => ({ data: [] })),
       ]);
+
+      if (Array.isArray(emergencyRes.data)) {
+        setMemberEmergencyContacts(emergencyRes.data);
+      }
       
       const jobs = jobsRes.data || [];
       setMemberJobs(jobs.slice(0, 5));
@@ -3259,6 +3274,59 @@ export default function TeamManagementScreen() {
                         </View>
                       </View>
                     </View>
+
+                    {/* Emergency Contacts */}
+                    {memberEmergencyContacts.length > 0 && (
+                      <View style={styles.detailSection}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                          <Feather name="alert-triangle" size={14} color={colors.destructive} />
+                          <Text style={[styles.detailSectionTitle, { marginBottom: 0, color: colors.destructive }]}>
+                            Emergency Contact{memberEmergencyContacts.length > 1 ? 's' : ''}
+                          </Text>
+                        </View>
+                        <View style={styles.detailCard}>
+                          {memberEmergencyContacts.map((contact: any, idx: number) => (
+                            <View
+                              key={contact.id}
+                              style={[
+                                { paddingVertical: 10, paddingHorizontal: 14 },
+                                idx < memberEmergencyContacts.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                              ]}
+                            >
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <View style={[styles.detailIcon, { backgroundColor: colors.destructive + '15' }]}>
+                                  <Feather name="user" size={13} color={colors.destructive} />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.foreground }}>
+                                    {contact.name}{contact.isPrimary ? ' · Primary' : ''}
+                                  </Text>
+                                  <Text style={{ fontSize: 12, color: colors.mutedForeground, textTransform: 'capitalize' }}>
+                                    {contact.relationship}
+                                  </Text>
+                                </View>
+                              </View>
+                              <TouchableOpacity
+                                onPress={() => Linking.openURL(`tel:${contact.phone}`)}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 34 }}
+                              >
+                                <Feather name="phone" size={13} color={colors.success} />
+                                <Text style={{ fontSize: 13, color: colors.success, fontWeight: '500' }}>{contact.phone}</Text>
+                              </TouchableOpacity>
+                              {contact.secondaryPhone ? (
+                                <TouchableOpacity
+                                  onPress={() => Linking.openURL(`tel:${contact.secondaryPhone}`)}
+                                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 34, marginTop: 2 }}
+                                >
+                                  <Feather name="phone" size={13} color={colors.mutedForeground} />
+                                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>{contact.secondaryPhone}</Text>
+                                </TouchableOpacity>
+                              ) : null}
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
 
                     {/* Time Tracking Summary */}
                     <View style={styles.detailSection}>

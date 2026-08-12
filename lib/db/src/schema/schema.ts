@@ -1930,12 +1930,52 @@ export const teamMemberTimeOff = pgTable("team_member_time_off", {
   notes: text("notes"),
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
+  approverComment: text("approver_comment"), // Optional comment from manager when approving/declining
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_team_member_time_off_team_member_id").on(table.teamMemberId),
   index("idx_team_member_time_off_approved_by").on(table.approvedBy),
 ]);
+
+// Team Member Emergency Contacts
+export const teamMemberEmergencyContacts = pgTable("team_member_emergency_contacts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamMemberId: varchar("team_member_id").notNull().references(() => teamMembers.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  relationship: text("relationship").notNull(), // e.g. 'spouse', 'parent', 'sibling', 'friend'
+  phone: text("phone").notNull(),
+  secondaryPhone: text("secondary_phone"),
+  isPrimary: boolean("is_primary").default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_team_member_emergency_contacts_member_id").on(table.teamMemberId),
+]);
+
+export type TeamMemberEmergencyContact = typeof teamMemberEmergencyContacts.$inferSelect;
+export type InsertTeamMemberEmergencyContact = typeof teamMemberEmergencyContacts.$inferInsert;
+
+// Team Member Leave Balances — manually set by admin, updated when leave is approved
+export const teamMemberLeaveBalances = pgTable("team_member_leave_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  teamMemberId: varchar("team_member_id").notNull().references(() => teamMembers.id, { onDelete: 'cascade' }),
+  businessOwnerId: varchar("business_owner_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  year: integer("year").notNull(), // Calendar year (e.g. 2025)
+  leaveType: text("leave_type").notNull(), // 'annual_leave', 'sick_leave', 'personal', 'other'
+  accrued: decimal("accrued", { precision: 5, scale: 1 }).default('0'), // Days accrued (manually set)
+  taken: decimal("taken", { precision: 5, scale: 1 }).default('0'), // Days taken (auto-updated on approve)
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_team_member_leave_balances_member_id").on(table.teamMemberId),
+  index("idx_team_member_leave_balances_owner_id").on(table.businessOwnerId),
+  unique("uq_leave_balance_member_year_type").on(table.teamMemberId, table.year, table.leaveType),
+]);
+
+export type TeamMemberLeaveBalance = typeof teamMemberLeaveBalances.$inferSelect;
+export type InsertTeamMemberLeaveBalance = typeof teamMemberLeaveBalances.$inferInsert;
 
 // Permission Requests - team members can request additional permissions from owner/manager
 export const permissionRequests = pgTable("permission_requests", {

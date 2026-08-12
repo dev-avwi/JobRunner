@@ -6,7 +6,7 @@ import { processTimeBasedAutomations } from './automationService';
 import { runDailyBillingReminders } from './billingReminderService';
 import { notifyInstallmentDue } from './notifications';
 import { getProductionBaseUrl } from './urlHelper';
-import { jobs, quotes, invoices, smsAutomationRules, smsAutomationLogs, paymentSchedules, paymentInstallments, automationSettings, invoiceReminderLogs, complianceDocuments, trainingRecords, notifications } from '@workspace/db';
+import { jobs, quotes, invoices, smsAutomationRules, smsAutomationLogs, paymentSchedules, paymentInstallments, automationSettings, invoiceReminderLogs, complianceDocuments, trainingRecords, notifications, teamMemberSkills, teamMembers, users, businessSettings } from '@workspace/db';
 import { and, or, eq, lt, isNull, gte, lte, not, inArray } from 'drizzle-orm';
 import { getErrorMessage } from "./lib/errors";
 
@@ -20,6 +20,7 @@ let billingReminderInterval: NodeJS.Timeout | null = null;
 let installmentReminderInterval: NodeJS.Timeout | null = null;
 let complianceExpiryInterval: NodeJS.Timeout | null = null;
 let sheetSyncInterval: NodeJS.Timeout | null = null;
+let staffLicenceExpiryInterval: NodeJS.Timeout | null = null;
 
 const REMINDER_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const RECURRING_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -31,6 +32,7 @@ const BILLING_REMINDER_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 const INSTALLMENT_REMINDER_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours (twice daily)
 const COMPLIANCE_EXPIRY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 const SHEET_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (poll for due one-way spreadsheet syncs)
+const STAFF_LICENCE_EXPIRY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 
 async function processAllUserReminders(): Promise<void> {
   console.log('[Scheduler] Processing automatic reminders...');
@@ -1213,6 +1215,164 @@ export function startSheetSyncScheduler(): void {
   console.log(`[Scheduler] Sheet sync scheduler running every ${SHEET_SYNC_INTERVAL_MS / 60000} minutes`);
 }
 
+// ============================================
+// STAFF LICENCE EXPIRY ALERTS
+// ============================================
+
+/**
+ * Checks all team member licences/skills for expiry within 60 and 30 days.
+ * Sends an email alert to the business owner and creates an in-app notification.
+ * De-duplicates: only sends once per licence per threshold (60d / 30d / expired).
+ */
+export async function processStaffLicenceExpiry(): Promise<void> {
+  console.log('[Scheduler] Processing staff licence expiry alerts...');
+
+  try {
+    const now = new Date();
+    const sixtyDaysFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+    // Find all skills with an expiry date within the next 60 days (or already expired up to 30 days ago)
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const expiringSkills = await db
+      .select({
+        skill: teamMemberSkills,
+        member: teamMembers,
+      })
+      .from(teamMemberSkills)
+      .innerJoin(teamMembers, eq(teamMemberSkills.teamMemberId, teamMembers.id))
+      .where(
+        and(
+          not(isNull(teamMemberSkills.expiryDate)),
+          lte(teamMemberSkills.expiryDate, sixtyDaysFromNow),
+          gte(teamMemberSkills.expiryDate, thirtyDaysAgo),
+        )
+      );
+
+    if (expiringSkills.length === 0) {
+      console.log('[Scheduler] No expiring staff licences found');
+      return;
+    }
+
+    // Group by business owner
+    const grouped: Record<string, typeof expiringSkills> = {};
+    for (const row of expiringSkills) {
+      const ownerId = row.member.businessOwnerId;
+      if (!grouped[ownerId]) grouped[ownerId] = [];
+      grouped[ownerId].push(row);
+    }
+
+    // Check which notifications have already been sent (to avoid duplicates)
+    const skillIds = expiringSkills.map(r => r.skill.id);
+    const existingNotifs = await db.select({
+      relatedId: notifications.relatedId,
+      priority: notifications.priority,
+    }).from(notifications).where(
+      and(
+        eq(notifications.type, 'staff_licence_expiry'),
+        eq(notifications.relatedType, 'team_member_skill'),
+        inArray(notifications.relatedId, skillIds)
+      )
+    );
+    const alreadyNotified = new Set(existingNotifs.map(n => `${n.relatedId}:${n.priority}`));
+
+    for (const [businessOwnerId, rows] of Object.entries(grouped)) {
+      // Get owner details for email
+      const [owner] = await db.select().from(users).where(eq(users.id, businessOwnerId));
+      if (!owner?.email) continue;
+
+      const [settings] = await db.select({ businessName: businessSettings.businessName })
+        .from(businessSettings).where(eq(businessSettings.userId, businessOwnerId));
+      const businessName = settings?.businessName || 'Your business';
+
+      for (const { skill, member } of rows) {
+        const expiryDate = new Date(skill.expiryDate!);
+        const daysUntil = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const isExpired = daysUntil <= 0;
+        const isThirtyDay = daysUntil > 0 && daysUntil <= 30;
+        const isSixtyDay = daysUntil > 30 && daysUntil <= 60;
+
+        let priority: string;
+        if (isExpired) priority = 'urgent';
+        else if (isThirtyDay) priority = 'important';
+        else priority = 'info'; // 60-day warning
+
+        const notifKey = `${skill.id}:${priority}`;
+        if (alreadyNotified.has(notifKey)) continue;
+
+        const memberName = [member.firstName, member.lastName].filter(Boolean).join(' ') || 'Team member';
+        const licenceLabel = skill.skillName || 'Licence';
+        const expiryStr = expiryDate.toLocaleDateString('en-AU');
+
+        let title: string;
+        let message: string;
+        if (isExpired) {
+          title = `⚠️ Staff licence EXPIRED: ${licenceLabel} (${memberName})`;
+          message = `${memberName}'s ${licenceLabel}${skill.licenseNumber ? ` (#${skill.licenseNumber})` : ''} expired on ${expiryStr}. They must not perform work requiring this licence until it is renewed.`;
+        } else if (isThirtyDay) {
+          title = `Staff licence expiring in ${daysUntil} day${daysUntil === 1 ? '' : 's'}: ${licenceLabel} (${memberName})`;
+          message = `${memberName}'s ${licenceLabel}${skill.licenseNumber ? ` (#${skill.licenseNumber})` : ''} expires on ${expiryStr}. Please arrange renewal soon.`;
+        } else {
+          title = `Staff licence expiry reminder: ${licenceLabel} (${memberName})`;
+          message = `${memberName}'s ${licenceLabel}${skill.licenseNumber ? ` (#${skill.licenseNumber})` : ''} expires on ${expiryStr} (in ${daysUntil} days). Consider starting the renewal process.`;
+        }
+
+        // Create in-app notification
+        try {
+          await storage.createNotification({
+            userId: businessOwnerId,
+            type: 'staff_licence_expiry',
+            title,
+            message,
+            priority,
+            relatedType: 'team_member_skill',
+            relatedId: skill.id,
+            actionUrl: '/team-operations',
+            actionLabel: 'View Licences',
+            read: false,
+            dismissed: false,
+          });
+        } catch (notifErr) {
+          console.error(`[Scheduler] Failed to create notification for skill ${skill.id}:`, notifErr);
+        }
+
+        // Send email alert (60d and 30d only, not repeated for expired after first)
+        try {
+          const { sendSystemEmail } = await import('./emailService');
+          await sendSystemEmail({
+            to: owner.email,
+            subject: title,
+            text: `Hi ${owner.firstName || 'there'},\n\n${message}\n\nLog in to ${businessName} to manage your team's licences.\n\nJobRunner Team`,
+            html: `<p>Hi ${owner.firstName || 'there'},</p><p>${message}</p><p><a href="/team-operations">View Staff Licences</a></p><p>JobRunner Team</p>`,
+            _meta: { category: 'staff_licence_expiry', skillId: skill.id, priority },
+          });
+          console.log(`[Scheduler] Sent licence expiry alert for ${memberName} - ${licenceLabel} (${daysUntil}d)`);
+        } catch (emailErr) {
+          console.error(`[Scheduler] Failed to send licence expiry email for skill ${skill.id}:`, emailErr);
+        }
+      }
+    }
+
+    console.log('[Scheduler] Staff licence expiry processing complete');
+  } catch (error) {
+    console.error('[Scheduler] Error processing staff licence expiry:', error);
+  }
+}
+
+export function startStaffLicenceExpiryScheduler(): void {
+  console.log('[Scheduler] Starting staff licence expiry scheduler...');
+
+  if (staffLicenceExpiryInterval) {
+    clearInterval(staffLicenceExpiryInterval);
+  }
+
+  // Run after 30s delay on startup, then daily
+  setTimeout(processStaffLicenceExpiry, 30000);
+  staffLicenceExpiryInterval = setInterval(processStaffLicenceExpiry, STAFF_LICENCE_EXPIRY_INTERVAL_MS);
+
+  console.log(`[Scheduler] Staff licence expiry scheduler running every ${STAFF_LICENCE_EXPIRY_INTERVAL_MS / 3600000}h`);
+}
+
 export function startAllSchedulers(): void {
   startReminderScheduler();
   startRecurringScheduler();
@@ -1225,6 +1385,7 @@ export function startAllSchedulers(): void {
   startQuoteFollowUpScheduler();
   startComplianceExpiryScheduler();
   startSheetSyncScheduler();
+  startStaffLicenceExpiryScheduler();
 }
 
 export function stopAllSchedulers(): void {
@@ -1281,6 +1442,11 @@ export function stopAllSchedulers(): void {
   if (sheetSyncInterval) {
     clearInterval(sheetSyncInterval);
     sheetSyncInterval = null;
+  }
+
+  if (staffLicenceExpiryInterval) {
+    clearInterval(staffLicenceExpiryInterval);
+    staffLicenceExpiryInterval = null;
   }
   
   console.log('[Scheduler] All schedulers stopped');

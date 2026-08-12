@@ -79,6 +79,8 @@ const OpenApp = lazyWithReload(() => import("@/pages/OpenApp"));
 const TimeTrackingPage = lazyWithReload(() => import("@/pages/TimeTracking"));
 const TeamOperations = lazyWithReload(() => import("@/pages/TeamOperations"));
 const Team = lazyWithReload(() => import("@/pages/Team"));
+const StaffLicences = lazyWithReload(() => import("@/pages/StaffLicences"));
+const LeaveManagement = lazyWithReload(() => import("@/pages/LeaveManagement"));
 const MagicLinkLanding = lazyWithReload(() => import("@/pages/MagicLinkLanding"));
 const PaymentPage = lazyWithReload(() => import("@/pages/PaymentPage"));
 const PrivacyPolicy = lazyWithReload(() => import("@/pages/PrivacyPolicy"));
@@ -811,6 +813,18 @@ function Router({
           <TeamOperations />
         </FeatureGate>
       </Route>
+
+      <Route path="/staff-licences" component={() => (
+        <FeatureGate requiredTier="team" featureName="Staff Licences" description="Track and manage your team's licences, certifications, and compliance tickets.">
+          <StaffLicences />
+        </FeatureGate>
+      )} />
+
+      <Route path="/leave-management" component={() => (
+        <FeatureGate requiredTier="team" featureName="Leave Management" description="Manage leave requests, view the team calendar, and track leave balances.">
+          <LeaveManagement />
+        </FeatureGate>
+      )} />
       
       <Route path="/team-chat" component={() => (
         <FeatureGate requiredTier="team" featureName="Team Chat" description="Communicate with your team in real-time with built-in messaging.">
