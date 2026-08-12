@@ -5680,3 +5680,234 @@ export function generateProgressClaimPDF(data: {
 </body>
 </html>`;
 }
+
+// ─── Variation Order PDF ───────────────────────────────────────────────────
+
+export function generateVariationOrderPDF(data: {
+  variation: any;
+  job: any;
+  client: any | null;
+  business: any | null;
+  gstEnabled: boolean;
+}): string {
+  const { variation, job, client, business, gstEnabled } = data;
+
+  const rawBrand = (business?.brandColor || business?.primaryColor || '').trim();
+  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#1e3a5f';
+
+  function fmt(v: number | string | null | undefined): string {
+    const n = typeof v === 'string' ? parseFloat(v) : (v ?? 0);
+    return `$${(isNaN(n) ? 0 : n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function fmtDate(d: Date | string | null | undefined): string {
+    if (!d) return '-';
+    try { return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return String(d); }
+  }
+
+  function esc(s: string | null | undefined): string {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const statusLabel: Record<string, string> = {
+    draft: 'DRAFT', sent: 'SUBMITTED TO CLIENT', approved: 'APPROVED', rejected: 'REJECTED',
+  };
+  const statusColor: Record<string, string> = {
+    draft: '#6b7280', sent: '#2563eb', approved: '#16a34a', rejected: '#dc2626',
+  };
+
+  const varStatus = variation.status ?? 'draft';
+  const businessName = esc(business?.businessName || 'Your Business');
+  const businessAbn = business?.abn ? `ABN: ${esc(business.abn)}` : '';
+
+  const clientName = client
+    ? esc(`${(client.firstName || '')} ${(client.lastName || '')}`.trim() || client.businessName || client.name || '')
+    : '';
+  const clientAddress = esc(client?.address || '');
+
+  const additionalEx = parseFloat(variation.additionalAmount ?? '0');
+  const gstAmt = parseFloat(variation.gstAmount ?? '0');
+  const total = parseFloat(variation.totalAmount ?? '0');
+
+  const approvalMethodLabel: Record<string, string> = {
+    verbal: 'Verbal', email: 'Email', signed: 'Signed document',
+  };
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 36px; font-size: 10.5px; line-height: 1.5; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 18px; border-bottom: 3px solid ${brandColor}; }
+    .header-left h2 { margin: 0 0 4px; font-size: 13px; color: #666; letter-spacing: 0.05em; }
+    .header-left h1 { margin: 0; font-size: 20px; color: ${brandColor}; font-weight: 700; }
+    .header-right { text-align: right; }
+    .doc-label { font-size: 24px; font-weight: 800; color: ${brandColor}; margin: 0; }
+    .doc-sub { font-size: 12px; color: #555; margin: 4px 0 0; }
+    .status-chip { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; color: #fff; background: ${statusColor[varStatus] || '#6b7280'}; margin-top: 6px; letter-spacing: 0.05em; }
+    .parties { display: flex; gap: 40px; margin-bottom: 28px; }
+    .party h3 { margin: 0 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #888; }
+    .party p { margin: 2px 0; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f3f4f6; padding: 14px 16px; border-radius: 8px; margin-bottom: 24px; }
+    .meta-item label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 2px; }
+    .meta-item span { font-weight: 600; }
+    .section-title { font-size: 13px; font-weight: 700; color: ${brandColor}; margin: 0 0 10px; border-left: 3px solid ${brandColor}; padding-left: 8px; }
+    .description-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 14px; margin-bottom: 20px; white-space: pre-wrap; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+    .totals-box { min-width: 280px; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+    .totals-row { display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px solid #e5e7eb; }
+    .totals-row:last-child { border-bottom: none; }
+    .totals-row.total { font-size: 13px; font-weight: 700; color: ${brandColor}; background: #f0f4ff; }
+    .approval-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
+    .approval-box h4 { margin: 0 0 8px; font-size: 11px; font-weight: 700; color: #16a34a; }
+    .approval-row { display: flex; gap: 24px; }
+    .approval-item label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; display: block; margin-bottom: 2px; }
+    .approval-item span { font-weight: 600; font-size: 11px; }
+    .sig-block { display: flex; gap: 40px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+    .sig-area { flex: 1; }
+    .sig-area label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: #888; display: block; margin-bottom: 48px; }
+    .sig-line { border-top: 1px solid #1a1a1a; padding-top: 4px; font-size: 9px; color: #666; }
+    .footer { text-align: center; font-size: 9px; color: #aaa; margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h2>${businessName}</h2>
+      <h1>VARIATION ORDER</h1>
+      ${businessAbn ? `<p style="margin:4px 0 0;color:#666;font-size:10px;">${businessAbn}</p>` : ''}
+      ${business?.phone ? `<p style="margin:2px 0 0;color:#666;font-size:10px;">${esc(business.phone)}</p>` : ''}
+      ${business?.email ? `<p style="margin:2px 0 0;color:#666;font-size:10px;">${esc(business.email)}</p>` : ''}
+    </div>
+    <div class="header-right">
+      <p class="doc-label">${esc(variation.number)}</p>
+      <p class="doc-sub">Variation Order</p>
+      <span class="status-chip">${statusLabel[varStatus] || varStatus.toUpperCase()}</span>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party" style="flex:1">
+      <h3>Contractor</h3>
+      <p><strong>${businessName}</strong></p>
+      ${businessAbn ? `<p>${businessAbn}</p>` : ''}
+      ${business?.address ? `<p>${esc(business.address)}</p>` : ''}
+    </div>
+    ${clientName ? `
+    <div class="party" style="flex:1">
+      <h3>Client</h3>
+      <p><strong>${clientName}</strong></p>
+      ${clientAddress ? `<p>${clientAddress}</p>` : ''}
+      ${client?.email ? `<p>${esc(client.email)}</p>` : ''}
+    </div>` : ''}
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item">
+      <label>Variation No.</label>
+      <span>${esc(variation.number)}</span>
+    </div>
+    <div class="meta-item">
+      <label>Job</label>
+      <span>${esc(job.title || job.jobNumber || '')}</span>
+    </div>
+    <div class="meta-item">
+      <label>Date</label>
+      <span>${fmtDate(variation.createdAt)}</span>
+    </div>
+  </div>
+
+  <h3 class="section-title">${esc(variation.title)}</h3>
+
+  ${variation.description ? `
+  <div class="description-box">
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:4px;">Description of Work</div>
+    ${esc(variation.description)}
+  </div>` : ''}
+
+  ${variation.reason ? `
+  <div class="description-box" style="margin-bottom:20px;">
+    <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:4px;">Reason for Variation</div>
+    ${esc(variation.reason)}
+  </div>` : ''}
+
+  <div class="totals">
+    <div class="totals-box">
+      <div class="totals-row">
+        <span>Additional Amount (ex GST)</span>
+        <span>${fmt(additionalEx)}</span>
+      </div>
+      ${gstEnabled ? `
+      <div class="totals-row">
+        <span>GST (10%)</span>
+        <span>${fmt(gstAmt)}</span>
+      </div>` : ''}
+      <div class="totals-row total">
+        <span>Variation Total</span>
+        <span>${fmt(total)}</span>
+      </div>
+    </div>
+  </div>
+
+  ${variation.status === 'approved' ? `
+  <div class="approval-box">
+    <h4>✓ Client Approval Recorded</h4>
+    <div class="approval-row">
+      ${variation.approvedByName ? `
+      <div class="approval-item">
+        <label>Approved By</label>
+        <span>${esc(variation.approvedByName)}</span>
+      </div>` : ''}
+      ${variation.approvalMethod ? `
+      <div class="approval-item">
+        <label>Method</label>
+        <span>${esc(approvalMethodLabel[variation.approvalMethod] || variation.approvalMethod)}</span>
+      </div>` : ''}
+      ${variation.approvedAt ? `
+      <div class="approval-item">
+        <label>Date</label>
+        <span>${fmtDate(variation.approvedAt)}</span>
+      </div>` : ''}
+      ${variation.approvalContact ? `
+      <div class="approval-item">
+        <label>Reference</label>
+        <span>${esc(variation.approvalContact)}</span>
+      </div>` : ''}
+    </div>
+    ${(() => {
+      // SSRF guard: only allow inline data-URI signatures (base64-encoded images).
+      // Full-match regex with anchored end: restricts MIME to known safe image types
+      // and allows only valid base64 payload characters, preventing quote-injection
+      // that would let an attacker break out of the src attribute and add arbitrary HTML.
+      const sig = variation.approvedBySignature;
+      const SAFE_DATA_URI = /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/\r\n]+=*$/;
+      const safe = sig && SAFE_DATA_URI.test(sig);
+      if (!safe) return '';
+      // Extra defense-in-depth: escape double-quotes before interpolating into attribute.
+      const escapedSig = sig!.replace(/"/g, '&quot;');
+      return `
+    <div style="margin-top:12px;">
+      <div style="font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:4px;">Client Signature</div>
+      <img src="${escapedSig}" style="height:48px;border-bottom:1px solid #16a34a;" alt="Signature" />
+    </div>`;
+    })()}
+  </div>` : `
+  <div class="sig-block">
+    <div class="sig-area">
+      <label>Contractor Authorisation</label>
+      <div class="sig-line">Name &amp; signature / date</div>
+    </div>
+    <div class="sig-area">
+      <label>Client Acceptance</label>
+      <div class="sig-line">Name &amp; signature / date</div>
+    </div>
+  </div>`}
+
+  <div class="footer">
+    Generated ${new Date().toLocaleDateString('en-AU')} &bull; ${businessName} &bull; Variation ${esc(variation.number)}
+  </div>
+</body>
+</html>`;
+}

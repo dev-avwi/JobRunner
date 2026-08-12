@@ -6181,6 +6181,24 @@ import { logSystemEvent } from "../systemEventService";
       }, 0);
       const pendingRevenue = jobInvoices.filter(inv => inv.status === 'sent').reduce((sum, inv) => sum + parseFloat(inv.total || '0'), 0);
 
+      // Approved variation revenue (adds to revised contract value, shown separately)
+      let approvedVariationsTotal = 0;
+      let pendingVariationsTotal = 0;
+      let approvedVariationsCount = 0;
+      let pendingVariationsCount = 0;
+      try {
+        const jobVariationsData = await storage.getJobVariations(jobId, userId);
+        for (const v of jobVariationsData) {
+          if (v.status === 'approved') {
+            approvedVariationsTotal += parseFloat(v.totalAmount || '0');
+            approvedVariationsCount++;
+          } else if (v.status === 'sent') {
+            pendingVariationsTotal += parseFloat(v.totalAmount || '0');
+            pendingVariationsCount++;
+          }
+        }
+      } catch (_) {}
+
       // Get job expenses
       const expenses = await storage.getExpenses(userId, { jobId });
       const materialExpenses = expenses.filter(e => e.category === 'materials');
@@ -6343,11 +6361,18 @@ import { logSystemEvent } from "../systemEventService";
           amount: quotedAmount,
           gst: jobQuote ? parseFloat((jobQuote as any).gstAmount || '0') : null,
           quoteNumber: jobQuote?.number || null,
+          revisedContractValue: quotedAmount !== null ? Math.round((quotedAmount + approvedVariationsTotal) * 100) / 100 : null,
         },
         revenue: {
           invoiced: totalRevenue,
           pending: pendingRevenue,
           received: totalRevenue,
+        },
+        variations: {
+          approvedTotal: Math.round(approvedVariationsTotal * 100) / 100,
+          approvedCount: approvedVariationsCount,
+          pendingTotal: Math.round(pendingVariationsTotal * 100) / 100,
+          pendingCount: pendingVariationsCount,
         },
         costs: {
           labour: Math.round(totalLaborCost * 100) / 100,

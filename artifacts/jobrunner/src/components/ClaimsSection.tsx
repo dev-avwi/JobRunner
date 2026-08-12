@@ -463,6 +463,7 @@ interface WizardProps {
 
 interface WizardLineItem {
   phaseId?: string;
+  variationId?: string;
   description: string;
   contractValue: string;
   previouslyClaimed: string;
@@ -473,6 +474,19 @@ interface WizardLineItem {
 const EMPTY_LINE: WizardLineItem = {
   description: "", contractValue: "0.00", previouslyClaimed: "0.00", thisClaim: "0.00", retentionPercent: "",
 };
+
+interface ApprovedVariationSuggestion {
+  id: string;
+  number: string;
+  title: string;
+  totalAmount: string;
+  suggestedLineItem: {
+    description: string;
+    contractValue: string;
+    previouslyClaimed: string;
+    thisClaim: string;
+  };
+}
 
 function NewClaimWizard({ jobId, phases, onClose, onCreated }: WizardProps) {
   const { toast } = useToast();
@@ -495,6 +509,34 @@ function NewClaimWizard({ jobId, phases, onClose, onCreated }: WizardProps) {
         }))
       : [{ ...EMPTY_LINE }],
   );
+  // Track which variation IDs have already been added as line items
+  const [addedVariationIds, setAddedVariationIds] = useState<Set<string>>(new Set());
+
+  const { data: approvedVariations = [] } = useQuery<ApprovedVariationSuggestion[]>({
+    queryKey: ["approved-variations-for-claim", jobId],
+    queryFn: () =>
+      apiRequest("GET", `/api/jobs/${jobId}/variations/approved-for-claim`).then((r) =>
+        Array.isArray(r) ? r : [],
+      ),
+    staleTime: 30_000,
+  });
+
+  const unadded = approvedVariations.filter((v) => !addedVariationIds.has(v.id));
+
+  const addVariationLine = (v: ApprovedVariationSuggestion) => {
+    setLineItems((prev) => [
+      ...prev,
+      {
+        variationId: v.id,
+        description: v.suggestedLineItem.description,
+        contractValue: v.suggestedLineItem.contractValue,
+        previouslyClaimed: v.suggestedLineItem.previouslyClaimed,
+        thisClaim: v.suggestedLineItem.thisClaim,
+        retentionPercent: "",
+      },
+    ]);
+    setAddedVariationIds((prev) => new Set([...prev, v.id]));
+  };
 
   const updateLine = (idx: number, field: keyof WizardLineItem, value: string) => {
     setLineItems((prev) => prev.map((li, i) => i === idx ? { ...li, [field]: value } : li));
@@ -560,6 +602,29 @@ function NewClaimWizard({ jobId, phases, onClose, onCreated }: WizardProps) {
               />
             </div>
           </div>
+
+          {/* Approved variations — one-click add to line items */}
+          {unadded.length > 0 && (
+            <div className="rounded border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
+                Approved Variations — click to add as line items
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {unadded.map((v) => (
+                  <Button
+                    key={v.id}
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900"
+                    onClick={() => addVariationLine(v)}
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    {v.number}: {v.title} — ${parseFloat(v.totalAmount || "0").toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Schedule of values */}
           <div>

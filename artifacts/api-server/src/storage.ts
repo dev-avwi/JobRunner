@@ -1607,6 +1607,36 @@ pool
     console.error('[Schema] Failed to ensure staff HR tables:', err.message);
   });
 
+// Task #400: Variation register — approval method, contact, and phase link.
+// Kept as a separate query from claim_line_items below so a missing claims table
+// (dev DB) does not prevent the variation columns from being applied.
+pool
+  .query(`
+    ALTER TABLE job_variations ADD COLUMN IF NOT EXISTS approval_method text;
+    ALTER TABLE job_variations ADD COLUMN IF NOT EXISTS approval_contact text;
+    ALTER TABLE job_variations ADD COLUMN IF NOT EXISTS phase_id varchar REFERENCES job_phases(id) ON DELETE SET NULL;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure job_variations approval/phase columns:', err.message);
+  });
+
+// Task #400: Variation register — link claim line items back to their source variation.
+// Separate query so the job_variations migration above succeeds even if claim_line_items
+// does not exist yet (e.g. a fresh dev environment before the claims schema is pushed).
+// The partial unique index enforces one-variation-per-claim-line-item at DB level,
+// so concurrent inserts cannot duplicate a variation across claims.
+pool
+  .query(`
+    ALTER TABLE claim_line_items ADD COLUMN IF NOT EXISTS variation_id varchar REFERENCES job_variations(id) ON DELETE SET NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_claim_line_items_variation_id
+      ON claim_line_items (variation_id)
+      WHERE variation_id IS NOT NULL;
+  `)
+  .catch((err) => {
+    // Not fatal — claim_line_items may not yet exist on this environment.
+    console.warn('[Schema] claim_line_items.variation_id migration skipped:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {

@@ -34225,7 +34225,7 @@ Respond with JSON in this format:
     try {
       const userId = req.userId!;
       const { variationId } = req.params;
-      const { approvedByName, approvedBySignature } = req.body;
+      const { approvedByName, approvedBySignature, approvalMethod, approvalContact } = req.body;
       
       const userContext = await getUserContext(userId);
       const existing = await storage.getJobVariation(variationId, userContext.effectiveUserId);
@@ -34242,7 +34242,9 @@ Respond with JSON in this format:
         approvedAt: new Date(),
         approvedByName: approvedByName || 'Client',
         approvedBySignature: approvedBySignature,
-      });
+        approvalMethod: approvalMethod || null,
+        approvalContact: approvalContact || null,
+      } as any);
       
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
@@ -34300,6 +34302,43 @@ Respond with JSON in this format:
   });
 
   // Get variation summary for a job (total approved amount)
+
+  // GET /api/variations/:variationId/pdf — formal variation order document
+  app.get("/api/variations/:variationId/pdf", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { variationId } = req.params;
+      const userContext = await getUserContext(userId);
+      const variation = await storage.getJobVariation(variationId, userContext.effectiveUserId);
+      if (!variation) return res.status(404).json({ error: 'Variation not found' });
+
+      const [job, bizSettings] = await Promise.all([
+        storage.getJob(variation.jobId, userContext.effectiveUserId),
+        storage.getBusinessSettings(userContext.effectiveUserId),
+      ]);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      let client = null;
+      if (job.clientId) {
+        try {
+          const clients = await storage.getClients(userContext.effectiveUserId);
+          client = clients.find((c: any) => c.id === job.clientId) ?? null;
+        } catch (_) {}
+      }
+
+      const gstEnabled = (bizSettings as any)?.gstEnabled ?? false;
+      const { generateVariationOrderPDF, generatePDFBuffer } = await import('./pdfService');
+      const html = generateVariationOrderPDF({ variation, job, client, business: bizSettings, gstEnabled });
+      const pdfBuffer = await generatePDFBuffer(html);
+      const fileName = `variation-order-${variation.number}-${(job.title || variation.jobId).replace(/[^a-zA-Z0-9]/g, '-')}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('Error generating variation PDF:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // ===== JOB MATERIALS ROUTES =====
 
@@ -42367,7 +42406,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(403).json({ error: 'Time off request does not belong to your business' });
       }
       
-      const [timeOff] = await db.update(teamMemberTimeOff)
+      // Atomic conditional update: only transition if the current persisted status differs
+      // from the requested status. This prevents concurrent PATCH requests from both
+      // observing the old status and both running side effects (duplicate notifications,
+      // double-counted leave balance). If the row is already in the target status the
+      // update matches 0 rows and we skip all side effects.
+      const updated = await db.update(teamMemberTimeOff)
         .set({
           status,
           approvedBy: userId,
@@ -42375,10 +42419,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           approverComment: approverComment || null,
           updatedAt: new Date(),
         })
-        .where(eq(teamMemberTimeOff.id, id))
+        // Only allow transition from 'pending'. Approved/rejected requests are terminal:
+        // allowing approved→rejected would leave an unreverted balance increment,
+        // and rejected→approved would double-count leave days.
+        .where(and(eq(teamMemberTimeOff.id, id), eq(teamMemberTimeOff.status, 'pending')))
         .returning();
-      
-      // Send push notification to the worker whose leave was actioned
+
+      const [timeOff] = updated;
+      if (!timeOff) {
+        // Already in requested status — return the current row without side effects
+        const [current] = await db.select().from(teamMemberTimeOff).where(eq(teamMemberTimeOff.id, id));
+        return res.json(current);
+      }
+
+      // Send push notification to the worker whose leave was actioned (only on actual transition)
       try {
         const [member] = await db.select().from(teamMembers)
           .where(eq(teamMembers.id, existingTimeOff.teamMemberId));
@@ -42398,7 +42452,9 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         console.error('Failed to send leave decision notification:', notifErr);
       }
 
-      // When approving, increment taken days in team_member_leave_balances (idempotent upsert)
+      // When approving, increment taken days in team_member_leave_balances.
+      // Gated on actual transition (timeOff !== undefined above) so concurrent
+      // approvals cannot double-count. existingTimeOff.status is the pre-update value.
       if (status === 'approved' && existingTimeOff.startDate && existingTimeOff.endDate) {
         try {
           const startMs = new Date(existingTimeOff.startDate).getTime();

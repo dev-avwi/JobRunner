@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import { 
   FileEdit, 
+  FileText,
   Plus, 
   Loader2, 
   Trash2, 
@@ -74,6 +75,9 @@ interface JobVariation {
   sentAt: string | null;
   approvedAt: string | null;
   approvedByName: string | null;
+  approvalMethod: string | null;
+  approvalContact: string | null;
+  phaseId: string | null;
   rejectedAt: string | null;
   rejectionReason: string | null;
   notes: string | null;
@@ -155,6 +159,8 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
   });
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [approverName, setApproverName] = useState('');
+  const [approvalMethod, setApprovalMethod] = useState<'verbal' | 'email' | 'signed'>('verbal');
+  const [approvalContact, setApprovalContact] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [addingMaterialFor, setAddingMaterialFor] = useState<string | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', action: 'added' as MaterialAction, replacedWith: '' });
@@ -228,13 +234,15 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
   });
 
   const approveMutation = useMutation({
-    mutationFn: async ({ id, approvedByName }: { id: string; approvedByName: string }) => {
-      return apiRequest('POST', `/api/variations/${id}/approve`, { approvedByName });
+    mutationFn: async ({ id, approvedByName, approvalMethod, approvalContact }: { id: string; approvedByName: string; approvalMethod: string; approvalContact: string }) => {
+      return apiRequest('POST', `/api/variations/${id}/approve`, { approvedByName, approvalMethod, approvalContact });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'variations'] });
       setShowApproveDialog(null);
       setApproverName('');
+      setApprovalMethod('verbal');
+      setApprovalContact('');
       toast({ title: 'Variation approved', description: 'The variation has been approved.' });
     },
     onError: (error: any) => {
@@ -711,6 +719,17 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
                     </>
                   )}
                   
+                  {variation.status === 'approved' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(`/api/variations/${variation.id}/pdf`, '_blank')}
+                      data-testid={`button-pdf-variation-${variation.id}`}
+                    >
+                      <FileText className="h-3 w-3 mr-1" />
+                      PDF
+                    </Button>
+                  )}
                   {(variation.status === 'approved' || variation.status === 'rejected') && (
                     <Button
                       size="sm"
@@ -1064,34 +1083,59 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
           </AlertDialogContent>
         </AlertDialog>
 
-        <Dialog open={!!showApproveDialog} onOpenChange={(open) => { if (!open) { setShowApproveDialog(null); setApproverName(''); } }}>
-          <DialogContent className="sm:max-w-[350px]">
+        <Dialog open={!!showApproveDialog} onOpenChange={(open) => { if (!open) { setShowApproveDialog(null); setApproverName(''); setApprovalMethod('verbal'); setApprovalContact(''); } }}>
+          <DialogContent className="sm:max-w-[420px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
-                Approve Variation
+                Record Client Approval
               </DialogTitle>
               <DialogDescription>
-                Enter the name of the person approving this variation.
+                Record how and by whom this variation was approved.
               </DialogDescription>
             </DialogHeader>
-            <div className="py-4">
-              <Label htmlFor="approver-name">Approved By</Label>
-              <Input
-                id="approver-name"
-                value={approverName}
-                onChange={(e) => setApproverName(e.target.value)}
-                placeholder="Client's name"
-                className="mt-2"
-                data-testid="input-approver-name"
-              />
+            <div className="space-y-4 py-2">
+              <div>
+                <Label htmlFor="approver-name">Approved By <span className="text-destructive">*</span></Label>
+                <Input
+                  id="approver-name"
+                  value={approverName}
+                  onChange={(e) => setApproverName(e.target.value)}
+                  placeholder="Client's full name"
+                  className="mt-2"
+                  data-testid="input-approver-name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="approval-method">Approval Method</Label>
+                <Select value={approvalMethod} onValueChange={(v) => setApprovalMethod(v as any)}>
+                  <SelectTrigger id="approval-method" className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="verbal">Verbal</SelectItem>
+                    <SelectItem value="email">Email</SelectItem>
+                    <SelectItem value="signed">Signed document</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="approval-contact">Contact Reference <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Input
+                  id="approval-contact"
+                  value={approvalContact}
+                  onChange={(e) => setApprovalContact(e.target.value)}
+                  placeholder={approvalMethod === 'email' ? 'e.g. client@email.com' : approvalMethod === 'signed' ? 'e.g. Document ref #001' : 'e.g. Phone call on 12 Aug'}
+                  className="mt-2"
+                />
+              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => { setShowApproveDialog(null); setApproverName(''); }}>
+              <Button variant="outline" onClick={() => { setShowApproveDialog(null); setApproverName(''); setApprovalMethod('verbal'); setApprovalContact(''); }}>
                 Cancel
               </Button>
               <Button
-                onClick={() => showApproveDialog && approveMutation.mutate({ id: showApproveDialog, approvedByName: approverName })}
+                onClick={() => showApproveDialog && approveMutation.mutate({ id: showApproveDialog, approvedByName: approverName, approvalMethod, approvalContact })}
                 disabled={approveMutation.isPending || !approverName.trim()}
                 className="bg-green-500 hover:bg-green-600"
               >
@@ -1101,7 +1145,7 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
                     Approving...
                   </>
                 ) : (
-                  'Approve'
+                  'Record Approval'
                 )}
               </Button>
             </DialogFooter>
@@ -1224,6 +1268,18 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
                     <div className="flex justify-between text-green-600 dark:text-green-400">
                       <span>Approved by</span>
                       <span>{showViewDialog.approvedByName}</span>
+                    </div>
+                  )}
+                  {showViewDialog.approvalMethod && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Approval method</span>
+                      <span className="capitalize">{showViewDialog.approvalMethod}</span>
+                    </div>
+                  )}
+                  {showViewDialog.approvalContact && (
+                    <div className="flex justify-between text-green-600 dark:text-green-400">
+                      <span>Contact ref</span>
+                      <span>{showViewDialog.approvalContact}</span>
                     </div>
                   )}
                   {showViewDialog.rejectedAt && (

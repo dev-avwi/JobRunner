@@ -3205,6 +3205,9 @@ export const jobVariations = pgTable("job_variations", {
   approvedAt: timestamp("approved_at"),
   approvedByName: text("approved_by_name"), // Client name who approved
   approvedBySignature: text("approved_by_signature"), // Base64 signature data
+  approvalMethod: text("approval_method"), // email, verbal, signed
+  approvalContact: text("approval_contact"), // Contact name / email for approval record
+  phaseId: varchar("phase_id"), // Optional link to job phase
   rejectedAt: timestamp("rejected_at"),
   rejectionReason: text("rejection_reason"),
   notes: text("notes"), // Additional notes from client or tradie
@@ -5512,6 +5515,9 @@ export const claimLineItems = pgTable("claim_line_items", {
   // job_phases.id is UUID in the live DB (raw ALTER created it as UUID).
   // We store as text to avoid Drizzle type mismatch; FK enforced at DB level.
   phaseId: text("phase_id"),
+  // When a line item was seeded from an approved variation, this links back to it.
+  // Used by approved-for-claim to exclude already-claimed variations.
+  variationId: varchar("variation_id"),
   description: text("description").notNull(),
   contractValue: decimal("contract_value", { precision: 12, scale: 2 }).notNull().default('0.00'),
   previouslyClaimed: decimal("previously_claimed", { precision: 12, scale: 2 }).notNull().default('0.00'),

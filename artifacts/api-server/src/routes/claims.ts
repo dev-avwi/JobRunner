@@ -82,6 +82,7 @@ const createClaimSchema = z.object({
     .array(
       z.object({
         phaseId: z.string().optional(),
+        variationId: z.string().optional(),
         description: z.string().min(1),
         contractValue: z.string().default("0.00"),
         previouslyClaimed: z.string().default("0.00"),
@@ -142,10 +143,44 @@ export function registerClaimsRoutes(app: Express): void {
 
       const bizSettings = await storage.getBusinessSettings(effectiveUserId);
       const gstEnabled = bizSettings?.gstEnabled ?? false;
-
-      // Build placeholder totals — recalculated after line items created
       const retentionPercent = claimData.retentionPercent ?? "0.00";
 
+      // ── Variation pre-flight validation (all reads, no writes yet) ──────────
+      // Validate BEFORE creating anything so no orphan claim is left on rejection.
+      const variationLineItems = lineItems.filter((li) => (li as any).variationId);
+      if (variationLineItems.length > 0) {
+        // Check for duplicates within this request
+        const requestVariationIds = variationLineItems.map((li) => (li as any).variationId as string);
+        const uniqueRequestIds = new Set(requestVariationIds);
+        if (uniqueRequestIds.size !== requestVariationIds.length) {
+          return res.status(400).json({ error: "Duplicate variation IDs within the same claim are not allowed" });
+        }
+
+        const allJobVariations = await storage.getJobVariations(jobId, effectiveUserId);
+        const approvedVariationMap = new Map(
+          allJobVariations.filter((v: any) => v.status === 'approved').map((v: any) => [v.id, v]),
+        );
+
+        // Collect variation IDs already on any existing claim for this job
+        const existingClaims = await storage.getClaims(jobId, effectiveUserId);
+        const alreadyClaimedIds = new Set<string>();
+        for (const c of existingClaims) {
+          const lis = await storage.getClaimLineItems(c.id);
+          for (const li of lis) if ((li as any).variationId) alreadyClaimedIds.add((li as any).variationId);
+        }
+
+        for (const vId of requestVariationIds) {
+          if (!approvedVariationMap.has(vId)) {
+            return res.status(400).json({ error: `Variation ${vId} is not found, not approved, or does not belong to this job` });
+          }
+          if (alreadyClaimedIds.has(vId)) {
+            return res.status(409).json({ error: `Variation ${vId} has already been included in another claim` });
+          }
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
+      // Create the claim header
       const claim = await storage.createClaim({
         jobId,
         userId: effectiveUserId,
@@ -162,17 +197,30 @@ export function registerClaimsRoutes(app: Express): void {
         retentionAmount: "0.00",
       });
 
-      // Create line items
-      for (const [idx, li] of lineItems.entries()) {
-        await storage.createClaimLineItem({
-          claimId: claim.id,
-          phaseId: li.phaseId ?? null,
-          description: li.description,
-          contractValue: li.contractValue,
-          previouslyClaimed: li.previouslyClaimed,
-          thisClaim: li.thisClaim,
-          retentionPercent: li.retentionPercent ?? retentionPercent,
-          sortOrder: li.sortOrder ?? idx,
+      // Create line items — if any insert fails (e.g. a concurrent race fires the
+      // unique index on variation_id), clean up the orphan claim and return 409.
+      try {
+        for (const [idx, li] of lineItems.entries()) {
+          await storage.createClaimLineItem({
+            claimId: claim.id,
+            phaseId: li.phaseId ?? null,
+            variationId: (li as any).variationId ?? null,
+            description: li.description,
+            contractValue: li.contractValue,
+            previouslyClaimed: li.previouslyClaimed,
+            thisClaim: li.thisClaim,
+            retentionPercent: li.retentionPercent ?? retentionPercent,
+            sortOrder: li.sortOrder ?? idx,
+          });
+        }
+      } catch (liErr: any) {
+        // Roll back orphan claim on line item failure
+        await storage.deleteClaim?.(claim.id, effectiveUserId).catch(() => {});
+        const isUniqueViolation = liErr?.code === '23505';
+        return res.status(isUniqueViolation ? 409 : 500).json({
+          error: isUniqueViolation
+            ? "A variation in this claim was already claimed by a concurrent request"
+            : "Failed to create claim line items",
         });
       }
 
@@ -454,9 +502,117 @@ export function registerClaimsRoutes(app: Express): void {
       const bizSettings = await storage.getBusinessSettings(effectiveUserId);
       const gstEnabled = bizSettings?.gstEnabled ?? false;
       const { rows, summary } = buildScheduleOfValues(lineItems, num(claim.retentionPercent), gstEnabled);
-      res.json({ rows, summary });
+
+      // Include approved variations so the frontend can display the revised contract total.
+      // IMPORTANT: the current claim's line items may already include variation-sourced rows
+      // (identified by variationId). Those rows already contribute to summary.contractValueTotal.
+      // To avoid double-counting, only add approved variations that are NOT yet represented
+      // as a line item on any claim for this job.
+      let approvedVariations: any[] = [];
+      let approvedVariationsTotal = 0;      // total of ALL approved variations (informational)
+      let unclaimedVariationsTotal = 0;     // only those not yet in any claim line item
+      try {
+        // Collect variation IDs already present on any claim line item across this job
+        const allClaims = await storage.getClaims(jobId, effectiveUserId);
+        const claimedVariationIds = new Set<string>();
+        for (const c of allClaims) {
+          const lis = await storage.getClaimLineItems(c.id);
+          for (const li of lis) {
+            if ((li as any).variationId) claimedVariationIds.add((li as any).variationId);
+          }
+        }
+
+        const allVariations = await storage.getJobVariations(jobId, effectiveUserId);
+        approvedVariations = allVariations
+          .filter((v: any) => v.status === 'approved')
+          .map((v: any) => ({
+            id: v.id,
+            number: v.number,
+            title: v.title,
+            totalAmount: v.totalAmount,
+            additionalAmount: v.additionalAmount,   // ex-GST — needed for revisedContractTotal
+            approvedAt: v.approvedAt,
+            approvedByName: v.approvedByName,
+            approvalMethod: v.approvalMethod,
+            alreadyClaimed: claimedVariationIds.has(v.id),
+          }));
+        approvedVariationsTotal = approvedVariations.reduce(
+          (s: number, v: any) => s + parseFloat(v.totalAmount || '0'), 0,
+        );
+        // revisedContractTotal = contractValueTotal (includes claimed variation line items)
+        //                      + unclaimed approved variations (not yet in any line item)
+        // Use additionalAmount (ex-GST) for the revised contract total because the
+        // SOV applies GST separately via buildScheduleOfValues. totalAmount is inc-GST
+        // and would cause double-counting when gstEnabled is true.
+        unclaimedVariationsTotal = approvedVariations
+          .filter((v: any) => !v.alreadyClaimed)
+          .reduce((s: number, v: any) => s + parseFloat(v.additionalAmount || v.totalAmount || '0'), 0);
+      } catch (_) {}
+
+      res.json({
+        rows,
+        summary: {
+          ...summary,
+          approvedVariationsTotal: Math.round(approvedVariationsTotal * 100) / 100,
+          // revisedContractTotal correctly avoids double-counting variations
+          // already present as line items in contractValueTotal
+          revisedContractTotal: Math.round((summary.contractValueTotal + unclaimedVariationsTotal) * 100) / 100,
+        },
+        approvedVariations,
+      });
     } catch (err: any) {
       console.error("[claims] schedule-of-values error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jobs/:jobId/variations/approved-for-claim — returns approved variations as suggested claim line items.
+  // Excludes variations that have already been added to any existing claim line item for this job,
+  // preventing duplicate billing across claims.
+  app.get("/api/jobs/:jobId/variations/approved-for-claim", requireAuth, async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId } = req.params;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Find variation IDs already present on any claim line item for this job
+      const existingClaims = await storage.getClaims(jobId, effectiveUserId);
+      const alreadyClaimedVariationIds = new Set<string>();
+      for (const claim of existingClaims) {
+        const lineItems = await storage.getClaimLineItems(claim.id);
+        for (const li of lineItems) {
+          if ((li as any).variationId) {
+            alreadyClaimedVariationIds.add((li as any).variationId);
+          }
+        }
+      }
+
+      const allVariations = await storage.getJobVariations(jobId, effectiveUserId);
+      const available = allVariations
+        .filter((v: any) => v.status === 'approved' && !alreadyClaimedVariationIds.has(v.id))
+        .map((v: any) => ({
+          id: v.id,
+          number: v.number,
+          title: v.title,
+          description: v.description,
+          totalAmount: v.totalAmount,
+          additionalAmount: v.additionalAmount,
+          approvedAt: v.approvedAt,
+          approvedByName: v.approvedByName,
+          // Pre-filled values for use as claim line items.
+          // contractValue uses additionalAmount (ex-GST) because the SOV calculation
+          // applies GST separately — using totalAmount (inc. GST) would double-count GST.
+          suggestedLineItem: {
+            description: `Variation ${v.number}: ${v.title}`,
+            contractValue: v.additionalAmount,
+            previouslyClaimed: "0.00",
+            thisClaim: "0.00",
+          },
+        }));
+      res.json(available);
+    } catch (err: any) {
+      console.error("[claims] approved-for-claim error:", err);
       res.status(500).json({ error: err.message });
     }
   });
