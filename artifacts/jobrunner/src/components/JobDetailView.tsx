@@ -39,6 +39,7 @@ import {
   JobProfitabilityCard,
   UnifiedSendModal,
   ManualSmsComposer,
+  JobPhasesSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -1748,6 +1749,11 @@ export default function JobDetailView({
                   {client.name}
                 </span>
               )}
+              {(job as any).jobNumber && (
+                <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border select-all">
+                  {(job as any).jobNumber}
+                </span>
+              )}
               <PresenceIndicator editors={collaboration.otherEditors} />
               <ImportOriginBadge importRunId={(job as any).importRunId} rowNumber={(job as any).importRowNumber} />
             </div>
@@ -3404,6 +3410,9 @@ export default function JobDetailView({
             </Card>
           )}
 
+
+          {/* Job Phases */}
+          <JobPhasesSection jobId={jobId} isTradie={isTradie} />
 
           {/* Materials Tracking */}
           <Card data-testid="card-materials">

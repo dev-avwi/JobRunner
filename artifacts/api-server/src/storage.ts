@@ -427,6 +427,9 @@ import {
   type InsertClientAsset,
   type ClientAssetService,
   type InsertClientAssetService,
+  jobPhases,
+  type JobPhase,
+  type InsertJobPhase,
 } from "@workspace/db";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -518,6 +521,14 @@ export interface IStorage {
   createJobMaterial(material: InsertJobMaterial): Promise<JobMaterial>;
   updateJobMaterial(id: string, userId: string, updates: Partial<InsertJobMaterial>): Promise<JobMaterial | undefined>;
   deleteJobMaterial(id: string, userId: string): Promise<boolean>;
+
+  // Job Phases
+  getJobPhases(jobId: string, userId: string): Promise<JobPhase[]>;
+  createJobPhase(phase: InsertJobPhase): Promise<JobPhase>;
+  updateJobPhase(id: string, jobId: string, userId: string, updates: Partial<InsertJobPhase>): Promise<JobPhase | undefined>;
+  deleteJobPhase(id: string, jobId: string, userId: string): Promise<boolean>;
+  reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void>;
+  generateJobNumber(userId: string): Promise<string | null>;
 
   // Job Equipment Assignments
   getJobEquipment(jobId: string): Promise<JobEquipment[]>;
@@ -1510,6 +1521,36 @@ pool
     console.error('[Schema] Failed to ensure sheet sync columns:', err.message);
   });
 
+// Task #387: Job phases with codes, booked hours, and job number auto-generation.
+// Created idempotently with raw SQL at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS job_prefix text;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS job_next_number integer;
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_number text;
+    CREATE TABLE IF NOT EXISTS job_phases (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      job_id varchar NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      phase_code text NOT NULL,
+      name text NOT NULL,
+      description text,
+      scheduled_start timestamp,
+      scheduled_end timestamp,
+      booked_hours decimal(10,2),
+      status text NOT NULL DEFAULT 'not_started',
+      sort_order integer DEFAULT 0,
+      notes text,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_job_phases_job_id ON job_phases (job_id);
+    CREATE INDEX IF NOT EXISTS idx_job_phases_user_id ON job_phases (user_id);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure job phases / job number columns:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {
@@ -2238,6 +2279,84 @@ export class PostgresStorage implements IStorage {
     return result.length > 0;
   }
 
+  // Job Phases
+  async getJobPhases(jobId: string, userId: string): Promise<JobPhase[]> {
+    return await db
+      .select()
+      .from(jobPhases)
+      .where(and(eq(jobPhases.jobId, jobId), eq(jobPhases.userId, userId)))
+      .orderBy(asc(jobPhases.sortOrder), asc(jobPhases.createdAt));
+  }
+
+  async createJobPhase(phase: InsertJobPhase): Promise<JobPhase> {
+    const result = await db.insert(jobPhases).values({ ...phase, id: randomUUID() }).returning();
+    return result[0];
+  }
+
+  async updateJobPhase(id: string, jobId: string, userId: string, updates: Partial<InsertJobPhase>): Promise<JobPhase | undefined> {
+    // Scope by id + jobId + userId to prevent cross-job mutations
+    const result = await db
+      .update(jobPhases)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(jobPhases.id, id), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, userId)))
+      .returning();
+    return result[0];
+  }
+
+  async deleteJobPhase(id: string, jobId: string, userId: string): Promise<boolean> {
+    // Scope by id + jobId + userId to prevent cross-job mutations
+    const result = await db
+      .delete(jobPhases)
+      .where(and(eq(jobPhases.id, id), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, userId)))
+      .returning();
+    return result.length > 0;
+  }
+
+  async reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void> {
+    // Validate that orderedIds is an exact permutation of this job's current phases
+    const existing = await this.getJobPhases(jobId, userId);
+    const existingIds = new Set(existing.map((p) => p.id));
+    const submittedIds = new Set(orderedIds);
+    if (
+      orderedIds.length !== existing.length ||
+      !orderedIds.every((id) => existingIds.has(id)) ||
+      existing.some((p) => !submittedIds.has(p.id))
+    ) {
+      throw new Error('orderedIds must be an exact permutation of this job\'s phases');
+    }
+    // Update sortOrder atomically in a single transaction
+    await db.transaction(async (tx) => {
+      await Promise.all(
+        orderedIds.map((id, idx) =>
+          tx
+            .update(jobPhases)
+            .set({ sortOrder: idx, updatedAt: new Date() })
+            .where(and(eq(jobPhases.id, id), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, userId))),
+        ),
+      );
+    });
+  }
+
+  async generateJobNumber(userId: string): Promise<string | null> {
+    const settings = await this.getBusinessSettings(userId);
+    if (!settings?.jobPrefix?.trim()) return null;
+    const prefix = settings.jobPrefix.trim();
+
+    // Atomically increment jobNextNumber (start at 1001 if null) and return the new value
+    const result = await db
+      .update(businessSettings)
+      .set({
+        jobNextNumber: sql`COALESCE(${businessSettings.jobNextNumber}, 1000) + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(businessSettings.userId, userId))
+      .returning({ nextNumber: businessSettings.jobNextNumber });
+
+    const nextNum = result[0]?.nextNumber;
+    if (nextNum == null) return null;
+    return `${prefix}${nextNum}`;
+  }
+
   // Job Equipment Assignments
   async getJobEquipment(jobId: string): Promise<JobEquipment[]> {
     return await db.select().from(jobEquipment).where(eq(jobEquipment.jobId, jobId)).orderBy(desc(jobEquipment.assignedAt));
@@ -2562,9 +2681,30 @@ export class PostgresStorage implements IStorage {
 
   async createJob(job: InsertJob & { userId: string }): Promise<Job> {
     const result = await db.insert(jobs).values(job).returning();
+    let created = result[0];
     const { invalidateAggregateDashboard } = await import('./cache');
     invalidateAggregateDashboard(job.userId);
-    return result[0];
+
+    // Auto-generate job number centrally — covers ALL creation paths (routes, clone, recurring,
+    // automations, legacy routes, imports, etc.) so no caller needs its own generateJobNumber call.
+    // Only generate if the job was not already given an explicit number (e.g., imports may supply one).
+    if (!created.jobNumber) {
+      try {
+        const jobNum = await this.generateJobNumber(job.userId);
+        if (jobNum) {
+          const updated = await db
+            .update(jobs)
+            .set({ jobNumber: jobNum, updatedAt: new Date() })
+            .where(eq(jobs.id, created.id))
+            .returning();
+          if (updated[0]) created = updated[0];
+        }
+      } catch (numErr: any) {
+        console.error('[createJob] Failed to generate job number (non-fatal):', numErr.message);
+      }
+    }
+
+    return created;
   }
 
   async updateJob(id: string, userId: string, job: Partial<InsertJob>): Promise<Job | undefined> {

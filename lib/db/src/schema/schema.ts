@@ -265,6 +265,9 @@ export const businessSettings = pgTable("business_settings", {
   // year-based format, and the counter auto-increments from here.
   invoiceNextNumber: integer("invoice_next_number"),
   quoteNextNumber: integer("quote_next_number"),
+  // Job numbering — auto-generated when jobPrefix is set (e.g., "GEM" → GEM1001, GEM1002)
+  jobPrefix: text("job_prefix"),
+  jobNextNumber: integer("job_next_number"),
   paymentInstructions: text("payment_instructions"),
   brandColor: text("brand_color").default('#2563EB'),
   // Team/Business Size Settings
@@ -749,6 +752,8 @@ export const jobs = pgTable("jobs", {
   subcontractorMarkupPct: decimal("subcontractor_markup_pct", { precision: 5, scale: 2 }),
   // Optional budget for the job (used in budget vs actual tracking)
   budgetedCost: decimal("budgeted_cost", { precision: 10, scale: 2 }),
+  // Auto-generated job number (e.g., GEM1001). Set when businessSettings.jobPrefix is configured.
+  jobNumber: text("job_number"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -756,7 +761,25 @@ export const jobs = pgTable("jobs", {
   index("idx_jobs_client_id").on(table.clientId),
 ]);
 
-// Service Reminders - for recurring maintenance and service tracking
+export const jobPhases = pgTable("job_phases", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  phaseCode: text("phase_code").notNull(), // Short code e.g. P01, FOUND, FRAME
+  name: text("name").notNull(),            // Human name e.g. "Site Preparation"
+  description: text("description"),
+  scheduledStart: timestamp("scheduled_start"),
+  scheduledEnd: timestamp("scheduled_end"),
+  bookedHours: decimal("booked_hours", { precision: 10, scale: 2 }),
+  status: text("status").notNull().default('not_started'), // not_started | in_progress | complete | invoiced
+  sortOrder: integer("sort_order").default(0),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_job_phases_job_id").on(table.jobId),
+  index("idx_job_phases_user_id").on(table.userId),
+]);
 export const serviceReminders = pgTable("service_reminders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").references(() => jobs.id, { onDelete: 'set null' }),
@@ -5387,3 +5410,9 @@ export const numberPortRequests = pgTable("number_port_requests", {
 export const insertNumberPortRequestSchema = createInsertSchema(numberPortRequests).omit({ id: true, createdAt: true, updatedAt: true, completedAt: true });
 export type InsertNumberPortRequest = z.infer<typeof insertNumberPortRequestSchema>;
 export type NumberPortRequest = typeof numberPortRequests.$inferSelect;
+
+export type JobPhase = typeof jobPhases.$inferSelect;
+
+export const insertJobPhaseSchema = createInsertSchema(jobPhases).omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertJobPhase = z.infer<typeof insertJobPhaseSchema>;

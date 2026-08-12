@@ -740,6 +740,7 @@ export default function Settings({
       primaryColor: brandingData.color,
       invoicePrefix: brandingData.invoicePrefix,
       quotePrefix: brandingData.quotePrefix,
+      jobPrefix: brandingData.jobPrefix?.trim() || null,
       invoiceNextNumber: brandingData.invoiceNextNumber.trim() !== "" && parseInt(brandingData.invoiceNextNumber, 10) > 0 ? parseInt(brandingData.invoiceNextNumber, 10) : null,
       quoteNextNumber: brandingData.quoteNextNumber.trim() !== "" && parseInt(brandingData.quoteNextNumber, 10) > 0 ? parseInt(brandingData.quoteNextNumber, 10) : null,
       customThemeEnabled: brandingData.customThemeEnabled,

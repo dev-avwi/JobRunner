@@ -106,3 +106,7 @@ export const UnifiedSendModal = lazyWithSuspense(
 export const ManualSmsComposer = lazyWithSuspense(
   () => import("./ManualSmsComposer").then((m) => ({ default: m.ManualSmsComposer })),
 );
+export const JobPhasesSection = lazyWithSuspense(
+  () => import("./JobPhasesSection").then((m) => ({ default: m.JobPhasesSection })),
+  sectionFallback,
+);

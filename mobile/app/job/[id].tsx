@@ -83,6 +83,7 @@ import { ChatSection } from '../../src/components/jobDetail/ChatSection';
 import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSection';
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
+import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
 
 interface JobNoteItem {
   id: string;
@@ -2128,6 +2129,10 @@ export default function JobDetailScreen() {
   
   const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'chat' | 'manage'>('overview');
 
+  // Job Phases
+  const [phases, setPhases] = useState<JobPhase[]>([]);
+  const [isLoadingPhases, setIsLoadingPhases] = useState(false);
+
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
@@ -2584,6 +2589,19 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
+  const loadPhases = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingPhases(true);
+    try {
+      const res = await api.get<JobPhase[]>(`/api/jobs/${id}/phases`);
+      setPhases(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error('Error loading job phases:', e);
+    } finally {
+      setIsLoadingPhases(false);
+    }
+  }, [id]);
+
   const loadTeamMembers = useCallback(async () => {
     try {
       const res = await api.get<TeamMember[]>('/api/team/members');
@@ -2716,6 +2734,7 @@ export default function JobDetailScreen() {
     if (id) {
       setAssignmentsLoaded(false);
       loadMaterials();
+      loadPhases();
       loadTeamMembers();
       loadJobAssignments();
     }
@@ -3302,6 +3321,7 @@ export default function JobDetailScreen() {
     }
     if (activeTab === 'manage' && id) {
       loadMaterials();
+      loadPhases();
       loadPurchaseOrders();
     }
     if (activeTab === 'documents' && id) {
@@ -10204,6 +10224,18 @@ export default function JobDetailScreen() {
         {activeTab === 'chat' && renderChatTab()}
         {activeTab === 'manage' && (
           <>
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+              <PhasesSection
+                colors={colors}
+                phases={phases}
+                isLoading={isLoadingPhases}
+                isTradie={!(isOwnerOrManager || isSoloOwner)}
+                onStatusChange={async (phaseId, status) => {
+                  await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
+                  await loadPhases();
+                }}
+              />
+            </View>
             {renderMaterialsTab()}
             <PurchaseOrdersSection
               colors={colors}

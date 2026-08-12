@@ -1661,6 +1661,7 @@ import { logSystemEvent } from "../systemEventService";
         status: 'pending',
       });
 
+      // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
       await FreemiumService.incrementJobCount(effectiveUserId);
 
       await logActivity(
@@ -2801,6 +2802,7 @@ import { logSystemEvent } from "../systemEventService";
       }
       
       const job = await storage.createJob(jobData);
+      // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
       
       // If job was created from a quote, update the quote's jobId to link back
       // and copy quote line items as job materials
@@ -7609,6 +7611,181 @@ import { logSystemEvent } from "../systemEventService";
       res.status(500).json({ error: error.message });
     }
   });
+
+  // ─── Job Phases CRUD ─────────────────────────────────────────────────────────
+
+  app.get("/api/jobs/:jobId/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+      const userContext = req.userContext;
+
+      // Resolve job — mirror the same logic as GET /api/jobs/:id
+      let job = await storage.getJob(jobId, effectiveUserId);
+      let crossBusinessAssigned = false;
+      if (!job) {
+        // Cross-business subcontractor path: worker may be assigned to a job in another tenant
+        const ja = await storage.getJobAssignmentForUser(jobId, userId);
+        if (ja) {
+          job = await storage.getJobPublic(jobId);
+          crossBusinessAssigned = !!job;
+        }
+      }
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Staff tradies only see their assigned jobs (skip if cross-business assignment already proved)
+      const hasViewAll = userContext?.permissions?.includes('view_all') || userContext?.isOwner;
+      if (!crossBusinessAssigned && !hasViewAll && userContext?.teamMemberId) {
+        const assignIds = [userContext.teamMemberId, userId].filter(Boolean);
+        let isAssigned = assignIds.includes(job.assignedTo) ||
+                         assignIds.includes((job as any).assignedTeamMemberId);
+        if (!isAssigned) {
+          const ja = await storage.getJobAssignmentForUser(job.id, userId);
+          isAssigned = !!ja;
+        }
+        if (!isAssigned) return res.status(403).json({ error: "You can only view your assigned jobs" });
+      }
+
+      // Phases are tenant-scoped — use the job owner's userId, not the requester's effectiveUserId,
+      // so cross-business workers see the correct phases rather than an empty list from their own tenant.
+      const phaseOwnerId = job.userId;
+      const phases = await storage.getJobPhases(jobId, phaseOwnerId);
+      res.json(phases);
+    } catch (err: any) {
+      console.error("Error fetching job phases:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // Normalize blank strings to null so z.coerce.date() never receives "" and
+  // numeric/decimal columns never receive an empty string from the form.
+  // Explicit null is preserved (not converted to undefined) so PATCH can clear existing values.
+  function normalizePhaseBody(body: Record<string, any>) {
+    const out = { ...body };
+    for (const key of ['scheduledStart', 'scheduledEnd']) {
+      if (out[key] === '') out[key] = null;  // blank string → null; explicit null stays null
+    }
+    if (out['bookedHours'] === '') out['bookedHours'] = null;
+    return out;
+  }
+
+  app.post("/api/jobs/:jobId/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const bodySchema = z.object({
+        phaseCode: z.string().min(1).max(20),
+        name: z.string().min(1).max(200),
+        description: z.string().optional().nullable(),
+        scheduledStart: z.coerce.date().optional().nullable(),
+        scheduledEnd: z.coerce.date().optional().nullable(),
+        bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).default("not_started"),
+        sortOrder: z.number().int().optional(),
+        notes: z.string().optional().nullable(),
+      });
+      const parsed = bodySchema.parse(normalizePhaseBody(req.body));
+
+      // Auto-assign sortOrder = count of existing phases
+      const existing = await storage.getJobPhases(jobId, effectiveUserId);
+      const sortOrder = parsed.sortOrder ?? existing.length;
+
+      const phase = await storage.createJobPhase({
+        jobId,
+        userId: effectiveUserId,
+        phaseCode: parsed.phaseCode.trim().toUpperCase(),
+        name: parsed.name.trim(),
+        description: parsed.description ?? null,
+        scheduledStart: parsed.scheduledStart ?? null,
+        scheduledEnd: parsed.scheduledEnd ?? null,
+        bookedHours: parsed.bookedHours ?? null,
+        status: parsed.status,
+        sortOrder,
+        notes: parsed.notes ?? null,
+      });
+      res.status(201).json(phase);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: "Invalid phase data", details: err.errors });
+      console.error("Error creating job phase:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/jobs/:jobId/phases/reorder", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+      const { orderedIds } = z.object({ orderedIds: z.array(z.string()).min(1) }).parse(req.body);
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      await storage.reorderJobPhases(jobId, effectiveUserId, orderedIds);
+      res.json({ success: true });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: "Invalid request", details: err.errors });
+      if (err.message?.includes('exact permutation')) return res.status(400).json({ error: err.message });
+      console.error("Error reordering job phases:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.patch("/api/jobs/:jobId/phases/:phaseId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, phaseId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const updateSchema = z.object({
+        phaseCode: z.string().min(1).max(20).optional(),
+        name: z.string().min(1).max(200).optional(),
+        description: z.string().optional().nullable(),
+        scheduledStart: z.coerce.date().optional().nullable(),
+        scheduledEnd: z.coerce.date().optional().nullable(),
+        bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).optional(),
+        sortOrder: z.number().int().optional(),
+        notes: z.string().optional().nullable(),
+      });
+      const updates = updateSchema.parse(normalizePhaseBody(req.body));
+      if (updates.phaseCode) updates.phaseCode = updates.phaseCode.trim().toUpperCase() as any;
+      if (updates.name) updates.name = updates.name.trim() as any;
+
+      // Pass jobId so storage scopes by phaseId + jobId + userId — prevents cross-job mutations
+      const phase = await storage.updateJobPhase(phaseId, jobId, effectiveUserId, updates as any);
+      if (!phase) return res.status(404).json({ error: "Phase not found" });
+      res.json(phase);
+    } catch (err: any) {
+      if (err instanceof z.ZodError) return res.status(400).json({ error: "Invalid phase data", details: err.errors });
+      console.error("Error updating job phase:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.delete("/api/jobs/:jobId/phases/:phaseId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, phaseId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+      // Pass jobId so storage scopes by phaseId + jobId + userId — prevents cross-job mutations
+      const deleted = await storage.deleteJobPhase(phaseId, jobId, effectiveUserId);
+      if (!deleted) return res.status(404).json({ error: "Phase not found" });
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("Error deleting job phase:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
 
   app.get("/api/jobs/:jobId/materials", requireAuth, async (req: any, res) => {
     try {

@@ -323,6 +323,7 @@ async function executeAutomationActions(
               quoteId: context.quote.id,
             };
             const newJob = await storage.createJob(jobData as any);
+            // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
             console.log(`[Automations] Created job ${newJob.id} from quote ${context.quote.id}`);
           }
           break;

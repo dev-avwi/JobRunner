@@ -94,7 +94,8 @@ export async function processRecurringJobsForUser(userId: string): Promise<Recur
           parentJobId: job.id,
           isRecurring: false,
         });
-        
+
+        // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
         results.push({
           type: 'job',
           originalId: job.id,
@@ -236,7 +237,8 @@ export async function createRecurringJob(
     isRecurring: true,
     nextRecurrenceDate: nextRecurrence,
   });
-  
+
+  // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
   return job;
 }
 
