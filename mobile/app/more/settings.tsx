@@ -46,10 +46,10 @@ const PLAN_FEATURES = [
 
 const SETTINGS_TABS = [
   { key: 'account', label: 'Account', icon: 'user' },
-  { key: 'business', label: 'Business', icon: 'briefcase' },
-  { key: 'payment', label: 'Payment', icon: 'credit-card' },
-  { key: 'templates', label: 'Templates', icon: 'file-text' },
-  { key: 'alerts', label: 'Alerts', icon: 'bell' },
+  { key: 'mybusiness', label: 'My Business', icon: 'briefcase' },
+  { key: 'workflow', label: 'Workflow', icon: 'settings' },
+  { key: 'money', label: 'Money', icon: 'credit-card' },
+  { key: 'teamcomms', label: 'Team & Comms', icon: 'users' },
   { key: 'plan', label: 'Plan', icon: 'award' },
   { key: 'help', label: 'Help', icon: 'help-circle' },
 ];
@@ -1022,7 +1022,7 @@ export default function SettingsScreen() {
   const isSubcontractor = subRoleName === 'subcontractor' || subRoleName === 'sub_contractor';
   const visibleTabs = useMemo(() => (
     isSubcontractor
-      ? SETTINGS_TABS.filter(t => t.key === 'account' || t.key === 'alerts' || t.key === 'help')
+      ? SETTINGS_TABS.filter(t => t.key === 'account' || t.key === 'teamcomms' || t.key === 'help')
       : SETTINGS_TABS
   ), [isSubcontractor]);
   const [isLoading, setIsLoading] = useState(false);
@@ -1653,7 +1653,7 @@ export default function SettingsScreen() {
               <Text style={styles.pageTitle}>Settings</Text>
               <Text style={styles.pageSubtitle}>Manage your business profile and preferences</Text>
             </View>
-            {activeTab === 'payment' && (
+            {activeTab === 'money' && (
               <TouchableOpacity 
                 style={[styles.saveButton, paymentSaving && { opacity: 0.7 }]} 
                 onPress={savePaymentSettings}
@@ -1960,7 +1960,7 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {activeTab === 'business' && (
+          {activeTab === 'mybusiness' && (
             <View style={styles.tabContentSection}>
               {businessSettings && (
                 <View style={styles.subscriptionCard}>
@@ -2075,6 +2075,22 @@ export default function SettingsScreen() {
               </PressableRow>
 
 
+              {/* Templates Hub link — quick access from My Business */}
+              <PressableRow
+                style={styles.settingsCard}
+                onPress={() => router.push('/more/templates-hub')}
+                data-testid="button-templates-hub"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="file-text" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>Document Templates</Text>
+                    <Text style={styles.settingsCardSubtitle}>Quote, invoice & job card templates</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+
               {businessSettings?.simpleMode !== undefined && (
                 <View style={styles.subscriptionCard}>
                   <View style={styles.subscriptionHeader}>
@@ -2109,7 +2125,79 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {activeTab === 'payment' && (
+          {/* ── Workflow tab ── safety, automations, compliance gates ── */}
+          {activeTab === 'workflow' && (
+            <View style={styles.tabContentSection}>
+              <View style={styles.settingsInfoCard}>
+                <Text style={styles.settingsInfoTitle}>Workflow Settings</Text>
+                <Text style={styles.settingsInfoText}>
+                  Control how jobs flow — safety gates, automations, and compliance rules for your team.
+                </Text>
+              </View>
+
+              <PressableRow
+                style={styles.settingsCard}
+                onPress={() => router.push('/more/whs-hub')}
+                data-testid="button-whs-settings"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="shield" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>Safety & WHS</Text>
+                    <Text style={styles.settingsCardSubtitle}>Pre-start checks, Take 5, incidents & compliance</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+
+              <PressableRow
+                style={styles.settingsCard}
+                onPress={() => router.push('/more/autopilot')}
+                data-testid="button-autopilot-settings"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="cpu" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>Autopilot & Automations</Text>
+                    <Text style={styles.settingsCardSubtitle}>Automatic reminders, follow-ups & review requests</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+
+              <PressableRow
+                style={styles.settingsCard}
+                onPress={() => router.push('/more/business-settings')}
+                data-testid="button-compliance-settings"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="check-square" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>Compliance Gates</Text>
+                    <Text style={styles.settingsCardSubtitle}>Pre-start checks, PO reconciliation & licence blocks</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+
+              <PressableRow
+                style={styles.settingsCard}
+                onPress={() => router.push('/more/app-settings')}
+                data-testid="button-location-tracking-settings"
+              >
+                <View style={styles.settingsCardHeader}>
+                  <Feather name="map-pin" size={20} color={colors.primary} />
+                  <View style={styles.settingsCardInfo}>
+                    <Text style={styles.settingsCardTitle}>Location Tracking Hours</Text>
+                    <Text style={styles.settingsCardSubtitle}>Work hours for GPS tracking & auto clock-in</Text>
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+              </PressableRow>
+            </View>
+          )}
+
+          {activeTab === 'money' && (
             <View style={styles.tabContentSection}>
               <View style={styles.subscriptionCard}>
                 <View style={styles.subscriptionHeader}>
@@ -2499,7 +2587,7 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {activeTab === 'alerts' && (
+          {activeTab === 'teamcomms' && (
             <View style={styles.tabContentSection}>
               <View style={styles.subscriptionCard}>
                 <View style={styles.subscriptionHeader}>

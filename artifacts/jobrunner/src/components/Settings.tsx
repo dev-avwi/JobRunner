@@ -214,19 +214,26 @@ export default function Settings({
       ? localStorage.getItem('jobrunner-settings-tab') 
       : null;
     if (savedTab) {
-      // Templates tab was removed - clear invalid stored value
-      if (savedTab === 'templates') {
-        localStorage.removeItem('jobrunner-settings-tab');
-        setActiveTab(defaultTab);
-        return;
+      // Migrate legacy tab names to new grouped structure
+      const legacyTabMap: Record<string, string> = {
+        templates: defaultTab,
+        business: 'mybusiness',
+        branding: 'mybusiness',
+        payment: 'money',
+        notifications: 'teamcomms',
+        communications: 'teamcomms',
+      };
+      const resolvedTab = legacyTabMap[savedTab] || savedTab;
+      if (resolvedTab !== savedTab) {
+        localStorage.setItem('jobrunner-settings-tab', resolvedTab);
       }
       // Staff can access account, appearance and support tabs
-      if (isTradie && !['support', 'account', 'appearance'].includes(savedTab)) {
+      if (isTradie && !['support', 'account', 'appearance'].includes(resolvedTab)) {
         setActiveTab('account');
-      } else if (!canAccessBilling && savedTab === 'billing') {
+      } else if (!canAccessBilling && resolvedTab === 'billing') {
         setActiveTab(defaultTab);
       } else {
-        setActiveTab(savedTab);
+        setActiveTab(resolvedTab);
       }
     }
   }, [isTradie, canAccessBilling, defaultTab]);
@@ -243,15 +250,21 @@ export default function Settings({
     const aliases: Record<string, string> = {
       subscription: 'billing',
       plan: 'billing',
-      rates: 'payment',
-      brand: 'branding',
-      alerts: 'notifications',
-      comms: 'communications',
+      // Legacy tab names that map to new grouped structure
+      business: 'mybusiness',
+      branding: 'mybusiness',
+      brand: 'mybusiness',
+      payment: 'money',
+      rates: 'money',
+      notifications: 'teamcomms',
+      alerts: 'teamcomms',
+      comms: 'teamcomms',
+      communications: 'teamcomms',
       export: 'data',
     };
     const key = requestedRaw.toLowerCase();
     const target = aliases[key] || key;
-    const validTabs = ['account', 'appearance', 'business', 'branding', 'payment', 'notifications', 'communications', 'billing', 'support', 'data', 'developer'];
+    const validTabs = ['account', 'appearance', 'mybusiness', 'workflow', 'money', 'teamcomms', 'billing', 'support', 'data', 'developer'];
     if (!validTabs.includes(target)) return;
     // Respect role gating before switching
     const isAlwaysAvailable = ['account', 'appearance', 'support'].includes(target);
@@ -863,8 +876,8 @@ export default function Settings({
         return () => scrollToElement('[data-testid="input-abn"]');
       case 'payment_terms':
         return () => {
-          setActiveTab('payment');
-          localStorage.setItem('jobrunner-settings-tab', 'payment');
+          setActiveTab('money');
+          localStorage.setItem('jobrunner-settings-tab', 'money');
           setTimeout(() => scrollToElement('[data-testid="input-payment-terms-days"]'), 300);
         };
       default:
@@ -949,9 +962,10 @@ export default function Settings({
         }} 
         className="space-y-6"
       >
-        {/* Mobile-friendly horizontal scrolling tabs - filtered by role */}
+        {/* Grouped tab navigation — 4 purpose-based sections + utility tabs */}
         <div className="overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none">
-          <TabsList className="inline-flex w-auto min-w-max">
+          <TabsList className="inline-flex w-auto min-w-max items-center">
+            {/* Personal */}
             <TabsTrigger value="account" data-testid="tab-account" className="flex-shrink-0">
               <User className="h-4 w-4 mr-1.5" />
               <span className="hidden sm:inline">My Account</span>
@@ -962,81 +976,64 @@ export default function Settings({
               <span className="hidden sm:inline">Appearance</span>
               <span className="sm:hidden">Look</span>
             </TabsTrigger>
+
             {canAccessBusinessSettings && (
-              <TabsTrigger value="business" data-testid="tab-business" className="flex-shrink-0">
-                <Building className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">Business</span>
-                <span className="sm:hidden">Biz</span>
-              </TabsTrigger>
+              <>
+                {/* Divider */}
+                <div className="w-px h-5 bg-border mx-1 flex-shrink-0" aria-hidden />
+
+                {/* My Business group */}
+                <TabsTrigger value="mybusiness" data-testid="tab-mybusiness" className="flex-shrink-0">
+                  <Building className="h-4 w-4 mr-1.5" />
+                  <span className="hidden sm:inline">My Business</span>
+                  <span className="sm:hidden">Business</span>
+                </TabsTrigger>
+
+                {/* Workflow group */}
+                <TabsTrigger value="workflow" data-testid="tab-workflow" className="flex-shrink-0">
+                  <ClipboardList className="h-4 w-4 mr-1.5" />
+                  Workflow
+                </TabsTrigger>
+
+                {/* Money group */}
+                <TabsTrigger value="money" data-testid="tab-money" className="flex-shrink-0">
+                  <Wallet className="h-4 w-4 mr-1.5" />
+                  Money
+                </TabsTrigger>
+
+                {/* Team & Comms group */}
+                <TabsTrigger value="teamcomms" data-testid="tab-teamcomms" className="flex-shrink-0">
+                  <Users className="h-4 w-4 mr-1.5" />
+                  <span className="hidden sm:inline">Team & Comms</span>
+                  <span className="sm:hidden">Team</span>
+                </TabsTrigger>
+
+                <div className="w-px h-5 bg-border mx-1 flex-shrink-0" aria-hidden />
+              </>
             )}
-            {canAccessBusinessSettings && (
-              <TabsTrigger 
-                value="branding" 
-                data-testid="tab-branding"
-                className="flex-shrink-0"
-              >
-                <Palette className="h-4 w-4 mr-1.5" />
-                Brand
-              </TabsTrigger>
-            )}
-            {canAccessBusinessSettings && (
-              <TabsTrigger value="payment" data-testid="tab-payment" className="flex-shrink-0">
-                <CreditCard className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">Payment</span>
-                <span className="sm:hidden">Pay</span>
-              </TabsTrigger>
-            )}
-            {canAccessBusinessSettings && (
-              <TabsTrigger value="notifications" data-testid="tab-notifications" className="flex-shrink-0">
-                <Mail className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">Notifications</span>
-                <span className="sm:hidden">Alerts</span>
-              </TabsTrigger>
-            )}
-            {canAccessBusinessSettings && (
-              <TabsTrigger value="communications" data-testid="tab-communications" className="flex-shrink-0">
-                <MessageSquare className="h-4 w-4 mr-1.5" />
-                <span className="hidden sm:inline">Communications</span>
-                <span className="sm:hidden">Comms</span>
-              </TabsTrigger>
-            )}
+
+            {/* Utility tabs */}
             {canAccessBilling && (
-              <TabsTrigger 
-                value="billing" 
-                data-testid="tab-billing"
-                className="flex-shrink-0"
-              >
+              <TabsTrigger value="billing" data-testid="tab-billing" className="flex-shrink-0">
                 <Crown className="h-4 w-4 mr-1.5" />
                 <span className="hidden sm:inline">Billing</span>
                 <span className="sm:hidden">Plan</span>
               </TabsTrigger>
             )}
-            <TabsTrigger 
-              value="support" 
-              data-testid="tab-support"
-              className="flex-shrink-0"
-            >
+            <TabsTrigger value="support" data-testid="tab-support" className="flex-shrink-0">
               <Headphones className="h-4 w-4 mr-1.5" />
               <span className="hidden sm:inline">Support</span>
               <span className="sm:hidden">Help</span>
             </TabsTrigger>
             {canAccessBusinessSettings && (
-              <TabsTrigger 
-                value="data" 
-                data-testid="tab-data"
-                className="flex-shrink-0"
-              >
+              <TabsTrigger value="data" data-testid="tab-data" className="flex-shrink-0">
                 <Download className="h-4 w-4 mr-1.5" />
                 <span className="hidden sm:inline">Data Export</span>
                 <span className="sm:hidden">Export</span>
               </TabsTrigger>
             )}
             {import.meta.env.DEV && canAccessBusinessSettings && (
-              <TabsTrigger 
-                value="developer" 
-                data-testid="tab-developer"
-                className="flex-shrink-0"
-              >
+              <TabsTrigger value="developer" data-testid="tab-developer" className="flex-shrink-0">
                 <Zap className="h-4 w-4 mr-1.5" />
                 <span className="hidden sm:inline">Developer</span>
                 <span className="sm:hidden">Dev</span>
@@ -1776,7 +1773,8 @@ export default function Settings({
           )}
         </TabsContent>
 
-        <TabsContent value="business" className="space-y-6">
+        {/* ── My Business ── profile, branding, logo, GST, document templates ── */}
+        <TabsContent value="mybusiness" className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Business Profile</CardTitle>
@@ -2003,6 +2001,242 @@ export default function Settings({
             </CardContent>
           </Card>
 
+          {/* Logo Upload — part of My Business */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Business Logo</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <LogoUpload 
+                currentLogoUrl={businessSettings?.logoUrl}
+                onColorsDetected={(colors) => {
+                  if (colors.length > 0) {
+                    const primaryColor = colors[0];
+                    setBrandingDirty(true);
+                    setBrandingData(prev => ({ 
+                      ...prev, 
+                      color: primaryColor,
+                      customThemeEnabled: true
+                    }));
+                    setBrandTheme({
+                      primaryColor: primaryColor,
+                      customThemeEnabled: true
+                    });
+                    toast({
+                      title: "Color Detected",
+                      description: "Your app color has been updated to match your logo.",
+                    });
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Document Prefixes — part of My Business */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Document Prefixes & Numbering</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-prefix2">Invoice Prefix</Label>
+                  <Input
+                    id="invoice-prefix2"
+                    value={brandingData.invoicePrefix}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, invoicePrefix: e.target.value }));
+                    }}
+                    placeholder="INV-"
+                    data-testid="input-invoice-prefix"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-prefix2">Quote Prefix</Label>
+                  <Input
+                    id="quote-prefix2"
+                    value={brandingData.quotePrefix}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, quotePrefix: e.target.value }));
+                    }}
+                    placeholder="QT-"
+                    data-testid="input-quote-prefix"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job-prefix2">Job Prefix</Label>
+                  <Input
+                    id="job-prefix2"
+                    value={brandingData.jobPrefix || ''}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, jobPrefix: e.target.value }));
+                    }}
+                    placeholder="JOB-"
+                    data-testid="input-job-prefix"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-2">
+                  <Label htmlFor="invoice-next-number2">Next Invoice Number</Label>
+                  <Input
+                    id="invoice-next-number2"
+                    type="number"
+                    min="1"
+                    value={brandingData.invoiceNextNumber}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, invoiceNextNumber: e.target.value }));
+                    }}
+                    placeholder="e.g. 100"
+                    data-testid="input-invoice-next-number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-next-number2">Next Quote Number</Label>
+                  <Input
+                    id="quote-next-number2"
+                    type="number"
+                    min="1"
+                    value={brandingData.quoteNextNumber}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, quoteNextNumber: e.target.value }));
+                    }}
+                    placeholder="e.g. 100"
+                    data-testid="input-quote-next-number"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Set a next number to use simple sequential numbering (e.g. INV-0100). Leave blank to keep automatic year-based numbers.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Documents & Signature — part of My Business */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Documents & Signature
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="quote-terms2">Quote Terms & Conditions</Label>
+                <Textarea
+                  id="quote-terms2"
+                  className="min-h-[120px] font-mono"
+                  value={paymentData.quoteTerms}
+                  onChange={(e) => setPaymentData(prev => ({ ...prev, quoteTerms: e.target.value }))}
+                  placeholder="Enter your quote terms..."
+                  data-testid="textarea-quote-terms"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="invoice-terms2">Invoice Terms & Conditions</Label>
+                <Textarea
+                  id="invoice-terms2"
+                  className="min-h-[120px] font-mono"
+                  value={paymentData.invoiceTerms}
+                  onChange={(e) => setPaymentData(prev => ({ ...prev, invoiceTerms: e.target.value }))}
+                  placeholder="Enter your invoice terms..."
+                  data-testid="textarea-invoice-terms"
+                />
+              </div>
+              <Separator />
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <PenTool className="h-5 w-5" />
+                  <Label className="text-base font-semibold">Digital Signature</Label>
+                </div>
+                <div className="space-y-2">
+                  <Label>Your Signature</Label>
+                  {signatureData.defaultSignature ? (
+                    <div className="space-y-3">
+                      <div className="border-2 border-primary rounded-lg p-4 bg-white dark:bg-gray-900">
+                        <img 
+                          src={signatureData.defaultSignature} 
+                          alt="Your signature" 
+                          className="max-h-24 w-auto"
+                        />
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSignatureData(prev => ({ ...prev, defaultSignature: "" }))}
+                        data-testid="button-clear-signature"
+                      >
+                        Clear Signature
+                      </Button>
+                    </div>
+                  ) : (
+                    <SignaturePad
+                      onSignatureChange={(data) => setSignatureData(prev => ({ ...prev, defaultSignature: data || "" }))}
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="signature-name2">Name Under Signature</Label>
+                  <Input
+                    id="signature-name2"
+                    value={signatureData.signatureName}
+                    onChange={(e) => setSignatureData(prev => ({ ...prev, signatureName: e.target.value }))}
+                    placeholder="e.g., John Smith, Director"
+                    data-testid="input-signature-name"
+                  />
+                </div>
+                <div className="space-y-3">
+                  <Label className="text-sm">Automatically Include Signature On:</Label>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <Label htmlFor="signature-quotes2" className="font-medium">Quotes</Label>
+                    <Switch
+                      id="signature-quotes2"
+                      checked={signatureData.includeSignatureOnQuotes}
+                      onCheckedChange={(checked) => 
+                        setSignatureData(prev => ({ ...prev, includeSignatureOnQuotes: checked }))
+                      }
+                      data-testid="switch-signature-quotes"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 rounded-lg border">
+                    <Label htmlFor="signature-invoices2" className="font-medium">Invoices</Label>
+                    <Switch
+                      id="signature-invoices2"
+                      checked={signatureData.includeSignatureOnInvoices}
+                      onCheckedChange={(checked) => 
+                        setSignatureData(prev => ({ ...prev, includeSignatureOnInvoices: checked }))
+                      }
+                      data-testid="switch-signature-invoices"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSave}
+              disabled={saveSettingsMutation.isPending}
+              data-testid="button-save-mybusiness"
+              style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}
+            >
+              {saveSettingsMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving...</>
+              ) : (
+                <><Save className="h-4 w-4 mr-2" />Save Changes</>
+              )}
+            </Button>
+          </div>
+        </TabsContent>
+
+        {/* ── Workflow ── safety gates, location tracking, AI, simple mode ── */}
+        <TabsContent value="workflow" className="space-y-6">
 
           <Card>
             <CardHeader>
@@ -2227,7 +2461,8 @@ export default function Settings({
           <DataSafetyBanner />
         </TabsContent>
 
-        <TabsContent value="branding" className="space-y-6 animate-fade-in-up">
+        {/* Branding tab removed — logo/prefixes/docs are now in My Business tab */}
+        {false && <TabsContent value="branding-removed" className="space-y-6 animate-fade-in-up">
           {/* Logo Upload */}
           <Card>
             <CardHeader>
@@ -2461,9 +2696,10 @@ export default function Settings({
             </CardContent>
           </Card>
 
-        </TabsContent>
+        </TabsContent>}
 
-        <TabsContent value="payment" className="space-y-6">
+        {/* ── Money ── payment methods, rates, markup, invoice terms ── */}
+        <TabsContent value="money" className="space-y-6">
           {/* Card 1: Rates & Defaults */}
           <Card>
             <CardHeader>
@@ -2705,10 +2941,14 @@ export default function Settings({
           </Card>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-6">
+        {/* ── Team & Comms ── notifications, quick replies, AI, email settings ── */}
+        <TabsContent value="teamcomms" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Notifications You Receive</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Notifications You Receive
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Control which email notifications JobRunner sends to you
               </p>
@@ -2770,6 +3010,8 @@ export default function Settings({
             </CardContent>
           </Card>
 
+          {/* Quick Replies — merged from Communications tab */}
+          <QuickRepliesSettings />
         </TabsContent>
 
         <BillingTabContent />
@@ -2780,12 +3022,6 @@ export default function Settings({
         {/* Data Export Tab */}
         {canAccessBusinessSettings && (
           <DataExportTab />
-        )}
-
-        {canAccessBusinessSettings && (
-          <TabsContent value="communications" className="space-y-6">
-            <QuickRepliesSettings />
-          </TabsContent>
         )}
 
         {/* Developer Tab - only in development mode */}

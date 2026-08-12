@@ -223,14 +223,14 @@ export default function GettingStartedChecklist({
       title: "Add your logo",
       description: "Make quotes look professional",
       completed: hasBranding,
-      action: () => onNavigate?.("/settings"),
+      action: () => onNavigate?.("/settings?tab=mybusiness"),
       actionLabel: "Upload",
       icon: Palette,
       timeEstimate: "1 min",
       priority: 'medium',
       helpText: "Upload your logo so it appears on all your quotes and invoices. This makes your business look professional.",
       steps: [
-        "Go to Settings",
+        "Go to Settings → My Business",
         "Click 'Upload Logo'",
         "Choose your brand colour (optional)",
         "Your logo will appear on all documents"
