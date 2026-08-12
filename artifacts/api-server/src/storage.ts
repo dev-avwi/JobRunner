@@ -1487,6 +1487,15 @@ pool
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_status text;
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_last_error text;
     ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS sheet_sync_recipients json DEFAULT '[]'::json;
+    -- Task #388: Markup Engine — default markup percentages per cost category
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS default_material_markup_pct DECIMAL(5,2) DEFAULT 20.00;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS default_equipment_markup_pct DECIMAL(5,2) DEFAULT 15.00;
+    ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS default_subcontractor_markup_pct DECIMAL(5,2) DEFAULT 10.00;
+    -- Task #388: Markup Engine — per-job markup overrides and optional job budget
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS material_markup_pct DECIMAL(5,2);
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS equipment_markup_pct DECIMAL(5,2);
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS subcontractor_markup_pct DECIMAL(5,2);
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS budgeted_cost DECIMAL(10,2);
     -- Tokens must be encrypted at rest ('enc:v1:' prefix). Invalidate any
     -- legacy plaintext values so the owner safely reconnects instead.
     UPDATE business_settings

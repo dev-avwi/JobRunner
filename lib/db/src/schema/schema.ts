@@ -464,6 +464,12 @@ export const businessSettings = pgTable("business_settings", {
   sheetSyncLastStatus: text("sheet_sync_last_status"), // 'success' | 'error'
   sheetSyncLastError: text("sheet_sync_last_error"),
   sheetSyncRecipients: json("sheet_sync_recipients").$type<string[]>().default([]),
+  // ─── Default Markup Percentages (Task #388: Markup Engine) ───
+  // Applied when a PO/expense/material is added to a job and no per-line override is set.
+  // Per-line markupPercent on jobMaterials takes priority; these are business-wide defaults.
+  defaultMaterialMarkupPct: decimal("default_material_markup_pct", { precision: 5, scale: 2 }).default('20.00'),
+  defaultEquipmentMarkupPct: decimal("default_equipment_markup_pct", { precision: 5, scale: 2 }).default('15.00'),
+  defaultSubcontractorMarkupPct: decimal("default_subcontractor_markup_pct", { precision: 5, scale: 2 }).default('10.00'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -735,6 +741,14 @@ export const jobs = pgTable("jobs", {
   // Import traceability: which import created this row (null = created in-app)
   importRunId: varchar("import_run_id"),
   importRowNumber: integer("import_row_number"),
+  // ─── Per-job Markup Overrides (Task #388: Markup Engine) ───
+  // When set, these override the business-level defaults for this specific job.
+  // null = use business default. Priority: per-line > per-job > business default > 20%.
+  materialMarkupPct: decimal("material_markup_pct", { precision: 5, scale: 2 }),
+  equipmentMarkupPct: decimal("equipment_markup_pct", { precision: 5, scale: 2 }),
+  subcontractorMarkupPct: decimal("subcontractor_markup_pct", { precision: 5, scale: 2 }),
+  // Optional budget for the job (used in budget vs actual tracking)
+  budgetedCost: decimal("budgeted_cost", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

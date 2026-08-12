@@ -309,7 +309,11 @@ export default function Settings({
     defaultPaymentTermsDays: 14,
     quoteTerms: "",
     invoiceTerms: "",
-    warrantyPeriod: "12 months"
+    warrantyPeriod: "12 months",
+    // Markup defaults (Task #388)
+    defaultMaterialMarkupPct: 20,
+    defaultEquipmentMarkupPct: 15,
+    defaultSubcontractorMarkupPct: 10,
   });
 
   // Signature settings
@@ -581,7 +585,11 @@ export default function Settings({
         defaultPaymentTermsDays: (businessSettings as any).defaultPaymentTermsDays || 14,
         quoteTerms: (businessSettings as any).quoteTerms || "",
         invoiceTerms: (businessSettings as any).invoiceTerms || "",
-        warrantyPeriod: businessSettings.warrantyPeriod || "12 months"
+        warrantyPeriod: businessSettings.warrantyPeriod || "12 months",
+        // Markup defaults (Task #388) — use isNaN guard so a saved value of 0 is not replaced by the fallback
+        defaultMaterialMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultMaterialMarkupPct); return isNaN(v) ? 20 : v; })(),
+        defaultEquipmentMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultEquipmentMarkupPct); return isNaN(v) ? 15 : v; })(),
+        defaultSubcontractorMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultSubcontractorMarkupPct); return isNaN(v) ? 10 : v; })(),
       });
       
       // Load signature settings
@@ -745,6 +753,10 @@ export default function Settings({
       quoteTerms: paymentData.quoteTerms,
       invoiceTerms: paymentData.invoiceTerms,
       warrantyPeriod: paymentData.warrantyPeriod,
+      // Markup defaults (Task #388)
+      defaultMaterialMarkupPct: paymentData.defaultMaterialMarkupPct.toString(),
+      defaultEquipmentMarkupPct: paymentData.defaultEquipmentMarkupPct.toString(),
+      defaultSubcontractorMarkupPct: paymentData.defaultSubcontractorMarkupPct.toString(),
       // Signature settings
       defaultSignature: signatureData.defaultSignature,
       signatureName: signatureData.signatureName,
@@ -2538,6 +2550,99 @@ export default function Settings({
                     <>
                       <Save className="h-4 w-4 mr-2" />
                       Save Rates
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Markup Defaults */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Default Markup Percentages
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Applied automatically when materials, equipment, or subcontractor costs are added to a job.
+                The marked-up price rolls into invoices so you never undercharge. You can override per-job or per-line item.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="material-markup">Materials markup (%)</Label>
+                  <p className="text-xs text-muted-foreground">Parts, consumables, pipe, fittings, etc.</p>
+                  <Input
+                    id="material-markup"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={paymentData.defaultMaterialMarkupPct}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultMaterialMarkupPct: Number(e.target.value) }))}
+                    data-testid="input-material-markup"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    e.g. $100 cost → charged at ${(100 * (1 + paymentData.defaultMaterialMarkupPct / 100)).toFixed(0)}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="equipment-markup">Plant / Equipment markup (%)</Label>
+                  <p className="text-xs text-muted-foreground">Hired equipment, plant, machinery rentals.</p>
+                  <Input
+                    id="equipment-markup"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={paymentData.defaultEquipmentMarkupPct}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultEquipmentMarkupPct: Number(e.target.value) }))}
+                    data-testid="input-equipment-markup"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    e.g. $100 cost → charged at ${(100 * (1 + paymentData.defaultEquipmentMarkupPct / 100)).toFixed(0)}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="subcontractor-markup">Subcontractor markup (%)</Label>
+                  <p className="text-xs text-muted-foreground">Third-party trades, hired subcontractors.</p>
+                  <Input
+                    id="subcontractor-markup"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step={1}
+                    value={paymentData.defaultSubcontractorMarkupPct}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, defaultSubcontractorMarkupPct: Number(e.target.value) }))}
+                    data-testid="input-subcontractor-markup"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    e.g. $100 cost → charged at ${(100 * (1 + paymentData.defaultSubcontractorMarkupPct / 100)).toFixed(0)}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                <strong>How it works:</strong> When you add a material with a cost but no sell price, the marked-up price is calculated automatically
+                and stored. Invoice generation uses the sell price, so you always charge the right amount — no manual calculation needed.
+                You can set a different markup on any individual line item to override this default.
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSave}
+                  disabled={saveSettingsMutation.isPending}
+                  data-testid="button-save-markup"
+                >
+                  {saveSettingsMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Markup Defaults
                     </>
                   )}
                 </Button>

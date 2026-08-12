@@ -6184,12 +6184,21 @@ import { logSystemEvent } from "../systemEventService";
       // Get materials from job_materials table
       let jobMaterials: any[] = [];
       let materialsCostFromTable = 0;
+      let materialsPriceFromTable = 0; // marked-up sell price
       try {
         jobMaterials = await storage.getJobMaterials(jobId, userId);
         materialsCostFromTable = jobMaterials.reduce((sum, m) => sum + parseFloat(m.totalCost?.toString() || '0'), 0);
+        // totalPrice is the sell price (cost + markup). Fall back to totalCost if not set.
+        materialsPriceFromTable = jobMaterials.reduce((sum, m) => {
+          const price = parseFloat(m.totalPrice?.toString() || '0');
+          const cost = parseFloat(m.totalCost?.toString() || '0');
+          return sum + (price > 0 ? price : cost);
+        }, 0);
       } catch (e) { /* no materials */ }
 
       const totalMaterialsCost = materialExpenseCost + materialsCostFromTable;
+      // Markup captured = difference between what we charge and what we paid for materials
+      const markupCaptured = Math.max(0, materialsPriceFromTable - materialsCostFromTable);
 
       // Get time tracking costs — separate subcontractor vs employee labour
       const allTimeEntries = await storage.getTimeEntries(userId, jobId);
@@ -6244,6 +6253,80 @@ import { logSystemEvent } from "../systemEventService";
       const profit = totalRevenue - totalCosts;
       const profitMargin = totalRevenue > 0 ? Math.round((profit / totalRevenue) * 1000) / 10 : 0;
 
+      // Budget vs actual
+      // Treat budgetedCost=0 as "no budget set" — a $0 budget is not meaningful
+      // and would cause division-by-zero in percentUsed.
+      const rawBudget = (job as any).budgetedCost;
+      const budgetedCost = (rawBudget !== null && rawBudget !== undefined)
+        ? parseFloat(rawBudget)
+        : null;
+      const hasBudget = budgetedCost !== null && !isNaN(budgetedCost) && budgetedCost > 0;
+      const budgetVariance = hasBudget ? totalCosts - budgetedCost! : null;
+      const budgetTrafficLight = hasBudget
+        ? totalCosts <= budgetedCost! * 0.9 ? 'green'
+          : totalCosts <= budgetedCost! * 1.05 ? 'amber'
+          : 'red'
+        : null;
+
+      // Historical comparison: last 5 jobs of same title pattern (by first word/type)
+      let historicalComparison: { avgMargin: number; jobCount: number; jobType: string } | null = null;
+      try {
+        const allJobs = await storage.getJobs(userId);
+        const titleWords = job.title.split(/\s+/).slice(0, 2).join(' ').toLowerCase();
+        const similarCompleted = allJobs.filter((j: any) =>
+          j.id !== jobId &&
+          (j.status === 'done' || j.status === 'invoiced') &&
+          j.title.toLowerCase().startsWith(titleWords)
+        ).slice(-5);
+        if (similarCompleted.length >= 2) {
+          // For each similar job, get its invoices to compute rough margin
+          const allInvoices = await storage.getInvoices(userId);
+          const margins: number[] = [];
+          for (const sj of similarCompleted) {
+            const sjRevenue = allInvoices
+              .filter((i: any) => i.jobId === sj.id && i.status === 'paid')
+              .reduce((s: number, i: any) => s + parseFloat(i.total || '0'), 0);
+            if (sjRevenue > 0) {
+              // Rough margin using only invoice total vs material cost from expenses
+              const sjExpenses = await storage.getExpenses(userId, { jobId: sj.id });
+              const sjCost = sjExpenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+              // Add labour cost from time entries
+              try {
+                const sjTime = await storage.getTimeEntries(userId, sj.id);
+                const sjLabour = sjTime
+                  .filter((e: any) => e.endTime)
+                  .reduce((s: number, e: any) => {
+                    const hrs = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
+                    return s + hrs * parseFloat(e.hourlyRate?.toString() || '0');
+                  }, 0);
+                const sjProfit = sjRevenue - (sjCost + sjLabour);
+                margins.push(Math.round((sjProfit / sjRevenue) * 1000) / 10);
+              } catch (_) {
+                const sjProfit = sjRevenue - sjCost;
+                margins.push(Math.round((sjProfit / sjRevenue) * 1000) / 10);
+              }
+            }
+          }
+          if (margins.length >= 2) {
+            const avgMargin = Math.round((margins.reduce((s, m) => s + m, 0) / margins.length) * 10) / 10;
+            historicalComparison = { avgMargin, jobCount: margins.length, jobType: titleWords };
+          }
+        }
+      } catch (_) { /* historical comparison is best-effort */ }
+
+      // Effective markup settings for this job
+      let businessMarkupSettings: any = {};
+      try {
+        const biz = await storage.getBusinessSettings(userId);
+        if (biz) {
+          businessMarkupSettings = {
+            defaultMaterialMarkupPct: parseFloat(String((biz as any).defaultMaterialMarkupPct ?? '20')),
+            defaultEquipmentMarkupPct: parseFloat(String((biz as any).defaultEquipmentMarkupPct ?? '15')),
+            defaultSubcontractorMarkupPct: parseFloat(String((biz as any).defaultSubcontractorMarkupPct ?? '10')),
+          };
+        }
+      } catch (_) {}
+
       res.json({
         jobId,
         jobTitle: job.title,
@@ -6263,13 +6346,30 @@ import { logSystemEvent } from "../systemEventService";
           labour: Math.round(totalLaborCost * 100) / 100,
           subcontractor: Math.round(totalSubcontractorCost * 100) / 100,
           materials: Math.round(totalMaterialsCost * 100) / 100,
+          materialsSellPrice: Math.round(materialsPriceFromTable * 100) / 100,
           otherExpenses: Math.round(nonSubNonMaterialExpenses * 100) / 100,
           total: Math.round(totalCosts * 100) / 100,
         },
+        markup: {
+          captured: Math.round(markupCaptured * 100) / 100,
+          materialMarkupPct: (job as any).materialMarkupPct !== null && (job as any).materialMarkupPct !== undefined ? parseFloat((job as any).materialMarkupPct) : null,
+          equipmentMarkupPct: (job as any).equipmentMarkupPct !== null && (job as any).equipmentMarkupPct !== undefined ? parseFloat((job as any).equipmentMarkupPct) : null,
+          subcontractorMarkupPct: (job as any).subcontractorMarkupPct !== null && (job as any).subcontractorMarkupPct !== undefined ? parseFloat((job as any).subcontractorMarkupPct) : null,
+          ...businessMarkupSettings,
+        },
+        budget: hasBudget ? {
+          budgetedCost: Math.round(budgetedCost! * 100) / 100,
+          actualCost: Math.round(totalCosts * 100) / 100,
+          variance: Math.round((budgetVariance ?? 0) * 100) / 100,
+          trafficLight: budgetTrafficLight,
+          // percentUsed is always finite here because budgetedCost > 0 is enforced above
+          percentUsed: Math.round((totalCosts / budgetedCost!) * 1000) / 10,
+        } : null,
         profit: {
           amount: Math.round(profit * 100) / 100,
           margin: Math.round(profitMargin * 10) / 10,
-          vsQuote: quotedAmount !== null ? (quotedAmount - totalCosts) - profit : null,
+          vsQuote: quotedAmount !== null ? Math.round((quotedAmount - totalCosts - profit) * 100) / 100 : null,
+          isNegative: profit < 0,
         },
         hours: {
           total: Math.round(totalHours * 10) / 10,
@@ -6277,6 +6377,7 @@ import { logSystemEvent } from "../systemEventService";
           nonBillable: Math.round(nonBillableHours * 10) / 10,
         },
         status: profitMargin > 15 ? 'profitable' : profitMargin > 5 ? 'tight' : 'loss',
+        historicalComparison,
         expenses: expenses.map(expense => ({
           id: expense.id,
           description: expense.description,
@@ -6298,7 +6399,10 @@ import { logSystemEvent } from "../systemEventService";
           name: m.name,
           quantity: m.quantity,
           unitCost: m.unitCost,
+          unitPrice: m.unitPrice,
           totalCost: parseFloat(m.totalCost?.toString() || '0'),
+          totalPrice: parseFloat(m.totalPrice?.toString() || '0'),
+          markupPercent: m.markupPercent,
           supplier: m.supplier,
           status: m.status,
         })),
@@ -6306,6 +6410,50 @@ import { logSystemEvent } from "../systemEventService";
     } catch (error) {
       console.error("Get job profitability error:", error);
       res.status(500).json({ error: "Failed to fetch job profitability" });
+    }
+  });
+
+  // Per-job markup override settings
+  // Per-job markup and budget override — requires WRITE_JOBS permission (same as PATCH /api/jobs/:id)
+  app.patch("/api/jobs/:id/markup", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id: jobId } = req.params;
+      const userContext = await getUserContext(userId);
+      const effectiveUserId = userContext.effectiveUserId;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const schema = z.object({
+        materialMarkupPct: z.number().min(0).max(500).nullable().optional(),
+        equipmentMarkupPct: z.number().min(0).max(500).nullable().optional(),
+        subcontractorMarkupPct: z.number().min(0).max(500).nullable().optional(),
+        budgetedCost: z.number().min(0).nullable().optional(),
+      });
+
+      const parsed = schema.parse(req.body);
+      const updateFields: Record<string, any> = {};
+      // Use explicit key-presence checks so that 0 is preserved as a valid value
+      if (Object.prototype.hasOwnProperty.call(parsed, 'materialMarkupPct')) {
+        updateFields.materialMarkupPct = parsed.materialMarkupPct !== null && parsed.materialMarkupPct !== undefined ? String(parsed.materialMarkupPct) : null;
+      }
+      if (Object.prototype.hasOwnProperty.call(parsed, 'equipmentMarkupPct')) {
+        updateFields.equipmentMarkupPct = parsed.equipmentMarkupPct !== null && parsed.equipmentMarkupPct !== undefined ? String(parsed.equipmentMarkupPct) : null;
+      }
+      if (Object.prototype.hasOwnProperty.call(parsed, 'subcontractorMarkupPct')) {
+        updateFields.subcontractorMarkupPct = parsed.subcontractorMarkupPct !== null && parsed.subcontractorMarkupPct !== undefined ? String(parsed.subcontractorMarkupPct) : null;
+      }
+      if (Object.prototype.hasOwnProperty.call(parsed, 'budgetedCost')) {
+        updateFields.budgetedCost = parsed.budgetedCost !== null && parsed.budgetedCost !== undefined ? String(parsed.budgetedCost) : null;
+      }
+
+      const updated = await storage.updateJob(jobId, effectiveUserId, updateFields);
+      res.json(updated);
+    } catch (error: any) {
+      if (error.name === 'ZodError') return res.status(400).json({ error: 'Invalid markup data', details: error.errors });
+      console.error("Patch job markup error:", error);
+      res.status(500).json({ error: "Failed to update markup settings" });
     }
   });
 
@@ -7511,12 +7659,37 @@ import { logSystemEvent } from "../systemEventService";
 
       const quantity = parseFloat(String(parsed.quantity || '1'));
       const unitCost = parseFloat(String(parsed.unitCost || '0'));
-      const unitPrice = parseFloat(String(parsed.unitPrice || '0'));
+      let unitPrice = parseFloat(String(parsed.unitPrice || '0'));
+      let markupPercent = parsed.markupPercent ? parseFloat(String(parsed.markupPercent)) : null;
+
+      // Auto-calculate unitPrice via markup if not explicitly provided
+      if (unitPrice === 0 && unitCost > 0) {
+        // Resolve effective markup: per-line > per-job > business default > 20%
+        if (markupPercent === null || isNaN(markupPercent)) {
+          const rawJobMarkup = (job as any).materialMarkupPct;
+          const jobMarkup = rawJobMarkup !== null && rawJobMarkup !== undefined ? parseFloat(rawJobMarkup) : null;
+          if (jobMarkup !== null && !isNaN(jobMarkup)) {
+            markupPercent = jobMarkup;
+          } else {
+            try {
+              const biz = await storage.getBusinessSettings(effectiveUserId);
+              const bizMarkup = biz ? parseFloat(String((biz as any).defaultMaterialMarkupPct ?? '20')) : 20;
+              markupPercent = isNaN(bizMarkup) ? 20 : bizMarkup;
+            } catch (_) {
+              markupPercent = 20;
+            }
+          }
+        }
+        unitPrice = Math.round(unitCost * (1 + (markupPercent ?? 20) / 100) * 100) / 100;
+      }
+
       const totalCost = (quantity * unitCost).toFixed(2);
       const totalPrice = (quantity * unitPrice).toFixed(2);
 
       const material = await storage.createJobMaterial({
         ...parsed,
+        markupPercent: markupPercent !== null ? String(markupPercent) : parsed.markupPercent,
+        unitPrice: String(unitPrice),
         totalCost,
         totalPrice,
       });
