@@ -430,6 +430,12 @@ import {
   jobPhases,
   type JobPhase,
   type InsertJobPhase,
+  claims,
+  type Claim,
+  type InsertClaim,
+  claimLineItems,
+  type ClaimLineItem,
+  type InsertClaimLineItem,
 } from "@workspace/db";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -529,6 +535,18 @@ export interface IStorage {
   deleteJobPhase(id: string, jobId: string, userId: string): Promise<boolean>;
   reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void>;
   generateJobNumber(userId: string): Promise<string | null>;
+
+  // Progress Claims
+  getClaims(jobId: string, userId: string): Promise<Claim[]>;
+  getClaim(id: string, userId: string): Promise<Claim | undefined>;
+  createClaim(claim: InsertClaim): Promise<Claim>;
+  updateClaim(id: string, userId: string, updates: Partial<InsertClaim>): Promise<Claim | undefined>;
+  deleteClaim(id: string, userId: string): Promise<boolean>;
+  getClaimLineItems(claimId: string): Promise<ClaimLineItem[]>;
+  createClaimLineItem(item: InsertClaimLineItem): Promise<ClaimLineItem>;
+  updateClaimLineItem(id: string, claimId: string, updates: Partial<InsertClaimLineItem>): Promise<ClaimLineItem | undefined>;
+  deleteClaimLineItem(id: string, claimId: string): Promise<boolean>;
+  getNextClaimNumber(jobId: string, userId: string): Promise<string>;
 
   // Job Equipment Assignments
   getJobEquipment(jobId: string): Promise<JobEquipment[]>;
@@ -9707,6 +9725,96 @@ Thank you for your prompt attention to this matter.`,
   async updateNumberPortRequest(id: string, updates: Partial<NumberPortRequest>): Promise<NumberPortRequest | undefined> {
     const [result] = await db.update(numberPortRequests).set({ ...updates, updatedAt: new Date() }).where(eq(numberPortRequests.id, id)).returning();
     return result;
+  }
+
+  // ─── Progress Claims ────────────────────────────────────────────────────────
+
+  async getClaims(jobId: string, userId: string): Promise<Claim[]> {
+    try {
+      return await db.select().from(claims)
+        .where(and(eq(claims.jobId, jobId), eq(claims.userId, userId)))
+        .orderBy(asc(claims.claimNumber));
+    } catch (err: unknown) {
+      if (getErrorMessage(err)?.includes('does not exist')) return [];
+      throw err;
+    }
+  }
+
+  async getClaim(id: string, userId: string): Promise<Claim | undefined> {
+    try {
+      const [result] = await db.select().from(claims)
+        .where(and(eq(claims.id, id), eq(claims.userId, userId)))
+        .limit(1);
+      return result;
+    } catch (err: unknown) {
+      if (getErrorMessage(err)?.includes('does not exist')) return undefined;
+      throw err;
+    }
+  }
+
+  async createClaim(claim: InsertClaim): Promise<Claim> {
+    const [result] = await db.insert(claims).values({ ...claim, id: randomUUID() }).returning();
+    return result;
+  }
+
+  async updateClaim(id: string, userId: string, updates: Partial<InsertClaim>): Promise<Claim | undefined> {
+    const [result] = await db.update(claims)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(and(eq(claims.id, id), eq(claims.userId, userId)))
+      .returning();
+    return result;
+  }
+
+  async deleteClaim(id: string, userId: string): Promise<boolean> {
+    const result = await db.delete(claims)
+      .where(and(eq(claims.id, id), eq(claims.userId, userId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getClaimLineItems(claimId: string): Promise<ClaimLineItem[]> {
+    try {
+      return await db.select().from(claimLineItems)
+        .where(eq(claimLineItems.claimId, claimId))
+        .orderBy(asc(claimLineItems.sortOrder), asc(claimLineItems.createdAt));
+    } catch (err: unknown) {
+      if (getErrorMessage(err)?.includes('does not exist')) return [];
+      throw err;
+    }
+  }
+
+  async createClaimLineItem(item: InsertClaimLineItem): Promise<ClaimLineItem> {
+    const [result] = await db.insert(claimLineItems).values({ ...item, id: randomUUID() }).returning();
+    return result;
+  }
+
+  async updateClaimLineItem(id: string, claimId: string, updates: Partial<InsertClaimLineItem>): Promise<ClaimLineItem | undefined> {
+    const [result] = await db.update(claimLineItems)
+      .set(updates)
+      .where(and(eq(claimLineItems.id, id), eq(claimLineItems.claimId, claimId)))
+      .returning();
+    return result;
+  }
+
+  async deleteClaimLineItem(id: string, claimId: string): Promise<boolean> {
+    const result = await db.delete(claimLineItems)
+      .where(and(eq(claimLineItems.id, id), eq(claimLineItems.claimId, claimId)));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getNextClaimNumber(jobId: string, userId: string): Promise<string> {
+    try {
+      const existing = await db.select({ claimNumber: claims.claimNumber })
+        .from(claims)
+        .where(and(eq(claims.jobId, jobId), eq(claims.userId, userId)));
+      const nums = existing.map(r => {
+        const m = r.claimNumber.match(/(\d+)$/);
+        return m ? parseInt(m[1], 10) : 0;
+      });
+      const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+      return `PC-${String(next).padStart(3, '0')}`;
+    } catch {
+      return 'PC-001';
+    }
   }
 }
 

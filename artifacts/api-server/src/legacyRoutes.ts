@@ -274,6 +274,7 @@ import {
 } from "./routes/import-history";
 import { registerTeamGroupsRoutes } from "./routes/team-groups";
 import { registerSheetSyncRoutes } from "./routes/sheet-sync";
+import { registerClaimsRoutes } from "./routes/claims";
 
 // Mass-assignment guard: strip server-controlled identity/ownership/timestamp
 // fields from a client-supplied update payload before it reaches a storage
@@ -15251,6 +15252,7 @@ Be specific about materials, colors, and features that would be included.`
   registerImportHistoryRoutes(app);
   registerTeamGroupsRoutes(app);
   registerSheetSyncRoutes(app);
+  registerClaimsRoutes(app);
   // Get site photos for all jobs (for chat list display)
   // Optimized: batches photo lookups and generates signed URLs in parallel
   const sitePhotoCache = new Map<string, { url: string; expires: number }>();

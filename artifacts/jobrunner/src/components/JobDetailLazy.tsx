@@ -110,3 +110,7 @@ export const JobPhasesSection = lazyWithSuspense(
   () => import("./JobPhasesSection").then((m) => ({ default: m.JobPhasesSection })),
   sectionFallback,
 );
+export const ClaimsSection = lazyWithSuspense(
+  () => import("./ClaimsSection").then((m) => ({ default: m.ClaimsSection })),
+  sectionFallback,
+);

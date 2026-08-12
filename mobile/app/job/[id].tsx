@@ -84,6 +84,7 @@ import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSectio
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 
 interface JobNoteItem {
   id: string;
@@ -2133,6 +2134,10 @@ export default function JobDetailScreen() {
   const [phases, setPhases] = useState<JobPhase[]>([]);
   const [isLoadingPhases, setIsLoadingPhases] = useState(false);
 
+  // Progress Claims
+  const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
+  const [isLoadingClaims, setIsLoadingClaims] = useState(false);
+
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
@@ -2602,6 +2607,19 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
+  const loadClaims = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingClaims(true);
+    try {
+      const res = await api.get<ProgressClaim[]>(`/api/jobs/${id}/claims`);
+      setProgressClaims(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error('Error loading progress claims:', e);
+    } finally {
+      setIsLoadingClaims(false);
+    }
+  }, [id]);
+
   const loadTeamMembers = useCallback(async () => {
     try {
       const res = await api.get<TeamMember[]>('/api/team/members');
@@ -2735,6 +2753,7 @@ export default function JobDetailScreen() {
       setAssignmentsLoaded(false);
       loadMaterials();
       loadPhases();
+      loadClaims();
       loadTeamMembers();
       loadJobAssignments();
     }
@@ -3323,6 +3342,7 @@ export default function JobDetailScreen() {
       loadMaterials();
       loadPhases();
       loadPurchaseOrders();
+      loadClaims();
     }
     if (activeTab === 'documents' && id) {
       loadSwmsDocuments();
@@ -10242,6 +10262,16 @@ export default function JobDetailScreen() {
               purchaseOrders={jobPurchaseOrders}
               isLoadingPOs={isLoadingPOs}
             />
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md, paddingVertical: spacing.sm }}>
+              <ClaimsSection
+                colors={colors}
+                claims={progressClaims}
+                isLoading={isLoadingClaims}
+                jobId={id as string}
+                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                onRefresh={loadClaims}
+              />
+            </View>
             {renderManageTab()}
           </>
         )}

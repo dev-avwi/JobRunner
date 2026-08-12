@@ -5475,3 +5475,208 @@ export function generateJobCardHTML(data: JobCardPdfData): string {
     </html>
   `;
 }
+
+// ─── Progress Claim PDF ───────────────────────────────────────────────────────
+
+export function generateProgressClaimPDF(data: {
+  claim: any;
+  job: any;
+  client: any | null;
+  business: any | null;
+  lineItems: any[];
+  summary: {
+    contractValueTotal: number;
+    previouslyClaimedTotal: number;
+    thisClaimTotal: number;
+    retentionTotal: number;
+    subtotal: number;
+    gstAmount: number;
+    total: number;
+    balanceTotal: number;
+  };
+  gstEnabled: boolean;
+}): string {
+  const { claim, job, client, business, lineItems, summary, gstEnabled } = data;
+
+  const rawBrand = (business?.brandColor || business?.primaryColor || '').trim();
+  const brandColor = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(rawBrand) ? rawBrand : '#1e3a5f';
+
+  function fmt(v: number | string | null | undefined): string {
+    const n = typeof v === 'string' ? parseFloat(v) : (v ?? 0);
+    return `$${(isNaN(n) ? 0 : n).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  function fmtDate(d: Date | string | null | undefined): string {
+    if (!d) return '-';
+    try { return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return String(d); }
+  }
+
+  function esc(s: string | null | undefined): string {
+    if (!s) return '';
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  const statusLabel: Record<string, string> = {
+    draft: 'DRAFT', submitted: 'SUBMITTED', approved: 'APPROVED', paid: 'PAID',
+  };
+  const statusColors: Record<string, string> = {
+    draft: '#6b7280', submitted: '#2563eb', approved: '#16a34a', paid: '#7c3aed',
+  };
+
+  const lineRows = lineItems.map((li, i) => {
+    const cv = parseFloat(li.contractValue ?? '0');
+    const prev = parseFloat(li.previouslyClaimed ?? '0');
+    const thisClaim = parseFloat(li.thisClaim ?? '0');
+    const balance = cv - prev - thisClaim;
+    const cumPct = cv > 0 ? ((prev + thisClaim) / cv * 100).toFixed(1) : '0.0';
+    return `
+      <tr style="background:${i % 2 === 0 ? '#ffffff' : '#f9fafb'}">
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;">${esc(li.description)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmt(cv)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmt(prev)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600;color:${brandColor};">${fmt(thisClaim)}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;">${cumPct}%</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmt(parseFloat(li.retentionAmount ?? '0'))}</td>
+        <td style="padding:9px 10px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmt(balance)}</td>
+      </tr>`;
+  }).join('');
+
+  const claimStatus = claim.status ?? 'draft';
+  const businessName = esc(business?.businessName || 'Your Business');
+  const businessAbn = business?.abn ? `ABN: ${esc(business.abn)}` : '';
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 36px; font-size: 10.5px; line-height: 1.5; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; padding-bottom: 18px; border-bottom: 3px solid ${brandColor}; }
+    .header-left h2 { margin: 0 0 4px; font-size: 13px; color: #666; letter-spacing: 0.05em; }
+    .header-left h1 { margin: 0; font-size: 20px; color: ${brandColor}; font-weight: 700; }
+    .header-right { text-align: right; }
+    .doc-label { font-size: 24px; font-weight: 800; color: ${brandColor}; margin: 0; }
+    .doc-sub { font-size: 12px; color: #555; margin: 4px 0 0; }
+    .status-chip { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 700; color: #fff; background: ${statusColors[claimStatus] || '#6b7280'}; margin-top: 6px; letter-spacing: 0.05em; }
+    .parties { display: flex; gap: 40px; margin-bottom: 28px; }
+    .party h3 { margin: 0 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: #888; }
+    .party p { margin: 2px 0; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; background: #f3f4f6; padding: 14px 16px; border-radius: 8px; margin-bottom: 24px; }
+    .meta-item label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: #888; margin-bottom: 2px; }
+    .meta-item span { font-weight: 600; }
+    .sov-title { font-size: 13px; font-weight: 700; color: ${brandColor}; margin: 0 0 10px; border-left: 3px solid ${brandColor}; padding-left: 8px; }
+    table.sov { width: 100%; border-collapse: collapse; font-size: 10px; margin-bottom: 24px; }
+    table.sov th { background: ${brandColor}; color: #fff; padding: 9px 10px; text-align: right; font-weight: 600; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+    table.sov th:first-child { text-align: left; }
+    .totals { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+    .totals-box { min-width: 300px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e5e7eb; }
+    .totals-row.total { font-size: 13px; font-weight: 700; color: ${brandColor}; border-bottom: 2px solid ${brandColor}; }
+    .notes { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px 14px; margin-bottom: 24px; font-size: 10px; }
+    .notes h4 { margin: 0 0 6px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: #888; }
+    .sig-block { display: flex; gap: 40px; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+    .sig-line { flex: 1; border-top: 1px solid #1a1a1a; padding-top: 6px; font-size: 9px; color: #666; }
+    .footer { text-align: center; font-size: 9px; color: #aaa; margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h2>${businessName}</h2>
+      <h1>PROGRESS CLAIM</h1>
+      ${businessAbn ? `<p style="margin:4px 0 0;color:#666;font-size:10px;">${businessAbn}</p>` : ''}
+      ${business?.phone ? `<p style="margin:2px 0 0;color:#666;font-size:10px;">${esc(business.phone)}</p>` : ''}
+      ${business?.email ? `<p style="margin:2px 0 0;color:#666;font-size:10px;">${esc(business.email)}</p>` : ''}
+    </div>
+    <div class="header-right">
+      <p class="doc-label">${esc(claim.claimNumber)}</p>
+      <p class="doc-sub">Progress Claim</p>
+      <span class="status-chip">${statusLabel[claimStatus] || claimStatus.toUpperCase()}</span>
+    </div>
+  </div>
+
+  <div class="parties">
+    <div class="party" style="flex:1">
+      <h3>Contractor</h3>
+      <p><strong>${businessName}</strong></p>
+      ${business?.address ? `<p>${esc(business.address)}</p>` : ''}
+      ${businessAbn ? `<p>${businessAbn}</p>` : ''}
+    </div>
+    <div class="party" style="flex:1">
+      <h3>Principal / Client</h3>
+      <p><strong>${client ? esc(client.name) : '-'}</strong></p>
+      ${client?.email ? `<p>${esc(client.email)}</p>` : ''}
+      ${client?.phone ? `<p>${esc(client.phone)}</p>` : ''}
+      ${client?.address ? `<p>${esc(client.address)}</p>` : ''}
+    </div>
+    <div class="party" style="flex:1">
+      <h3>Project</h3>
+      <p><strong>${esc(job?.title || 'Unnamed Job')}</strong></p>
+      ${job?.address ? `<p>${esc(job.address)}</p>` : ''}
+      ${job?.number ? `<p>Job #${esc(String(job.number))}</p>` : ''}
+    </div>
+  </div>
+
+  <div class="meta-grid">
+    <div class="meta-item"><label>Claim Date</label><span>${fmtDate(claim.claimDate)}</span></div>
+    <div class="meta-item"><label>Period From</label><span>${fmtDate(claim.periodStart)}</span></div>
+    <div class="meta-item"><label>Period To</label><span>${fmtDate(claim.periodEnd)}</span></div>
+    <div class="meta-item"><label>Retention Rate</label><span>${parseFloat(claim.retentionPercent ?? '0').toFixed(1)}%</span></div>
+    <div class="meta-item"><label>Retention Held</label><span>${fmt(summary.retentionTotal)}</span></div>
+    <div class="meta-item"><label>Balance Remaining</label><span>${fmt(summary.balanceTotal)}</span></div>
+  </div>
+
+  <p class="sov-title">Schedule of Values</p>
+  <table class="sov">
+    <thead>
+      <tr>
+        <th style="text-align:left;width:35%;">Description / Phase</th>
+        <th>Contract Value</th>
+        <th>Prev. Claimed</th>
+        <th style="background:${brandColor};">This Claim</th>
+        <th>Cumulative %</th>
+        <th>Retention</th>
+        <th>Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${lineRows}
+      <tr style="background:#f3f4f6;font-weight:700;font-size:10.5px;">
+        <td style="padding:10px;border-top:2px solid ${brandColor};">TOTALS</td>
+        <td style="padding:10px;text-align:right;border-top:2px solid ${brandColor};">${fmt(summary.contractValueTotal)}</td>
+        <td style="padding:10px;text-align:right;border-top:2px solid ${brandColor};">${fmt(summary.previouslyClaimedTotal)}</td>
+        <td style="padding:10px;text-align:right;color:${brandColor};border-top:2px solid ${brandColor};">${fmt(summary.thisClaimTotal)}</td>
+        <td style="padding:10px;text-align:right;border-top:2px solid ${brandColor};">${summary.contractValueTotal > 0 ? (((summary.previouslyClaimedTotal + summary.thisClaimTotal) / summary.contractValueTotal) * 100).toFixed(1) : '0.0'}%</td>
+        <td style="padding:10px;text-align:right;border-top:2px solid ${brandColor};">${fmt(summary.retentionTotal)}</td>
+        <td style="padding:10px;text-align:right;border-top:2px solid ${brandColor};">${fmt(summary.balanceTotal)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-box">
+      <div class="totals-row"><span>This Claim (excl. retention)</span><span>${fmt(summary.thisClaimTotal)}</span></div>
+      <div class="totals-row"><span>Less Retention</span><span>-${fmt(summary.retentionTotal)}</span></div>
+      <div class="totals-row"><span>Subtotal</span><span>${fmt(summary.subtotal)}</span></div>
+      ${gstEnabled ? `<div class="totals-row"><span>GST (10%)</span><span>${fmt(summary.gstAmount)}</span></div>` : ''}
+      <div class="totals-row total"><span>TOTAL DUE</span><span>${fmt(summary.total)}</span></div>
+    </div>
+  </div>
+
+  ${claim.notes ? `<div class="notes"><h4>Notes</h4><p>${esc(claim.notes)}</p></div>` : ''}
+
+  <div class="sig-block">
+    <div>
+      <div class="sig-line">Submitted by: ___________________________</div>
+      <p style="margin:4px 0 0;font-size:9px;color:#666;">Name &amp; Date</p>
+    </div>
+    <div>
+      <div class="sig-line">Authorised by (Principal): ___________________________</div>
+      <p style="margin:4px 0 0;font-size:9px;color:#666;">Name &amp; Date</p>
+    </div>
+  </div>
+
+  <div class="footer">Generated ${new Date().toLocaleDateString('en-AU')} &bull; ${businessName} &bull; ${esc(claim.claimNumber)}</div>
+</body>
+</html>`;
+}

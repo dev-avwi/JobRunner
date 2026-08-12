@@ -5416,3 +5416,69 @@ export type JobPhase = typeof jobPhases.$inferSelect;
 export const insertJobPhaseSchema = createInsertSchema(jobPhases).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertJobPhase = z.infer<typeof insertJobPhaseSchema>;
+
+// ─── Progress Claims ───────────────────────────────────────────────────────
+// A progress claim is a milestone billing document for large construction /
+// engineering jobs. Each claim references phases, tracks schedule of values
+// (contract amount, cumulative claimed, this claim, retention, balance), and
+// can be pushed to Xero as an ACCREC invoice.
+
+export const CLAIM_STATUSES = ['draft', 'submitted', 'approved', 'paid'] as const;
+export type ClaimStatus = typeof CLAIM_STATUSES[number];
+
+export const claims = pgTable("claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  claimNumber: text("claim_number").notNull(),          // e.g. PC-001
+  status: text("status").notNull().default('draft'),    // draft | submitted | approved | paid
+  claimDate: timestamp("claim_date").defaultNow(),
+  periodStart: date("period_start"),
+  periodEnd: date("period_end"),
+  // Schedule of values totals (computed and stored for PDF / history)
+  subtotal: decimal("subtotal", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  gstAmount: decimal("gst_amount", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  total: decimal("total", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).default('0.00'),
+  retentionAmount: decimal("retention_amount", { precision: 12, scale: 2 }).default('0.00'),
+  notes: text("notes"),
+  // Xero sync
+  xeroInvoiceId: varchar("xero_invoice_id"),
+  xeroSyncedAt: timestamp("xero_synced_at"),
+  // Audit trail
+  submittedAt: timestamp("submitted_at"),
+  approvedAt: timestamp("approved_at"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_claims_job_id").on(table.jobId),
+  index("idx_claims_user_id").on(table.userId),
+  index("idx_claims_status").on(table.status),
+]);
+
+export const insertClaimSchema = createInsertSchema(claims).omit({ id: true, createdAt: true, updatedAt: true, submittedAt: true, approvedAt: true, paidAt: true, xeroInvoiceId: true, xeroSyncedAt: true });
+export type InsertClaim = z.infer<typeof insertClaimSchema>;
+export type Claim = typeof claims.$inferSelect;
+
+// Claim line items — one row per phase (or manual line)
+export const claimLineItems = pgTable("claim_line_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimId: varchar("claim_id").notNull().references(() => claims.id, { onDelete: 'cascade' }),
+  // job_phases.id is UUID in the live DB (raw ALTER created it as UUID).
+  // We store as text to avoid Drizzle type mismatch; FK enforced at DB level.
+  phaseId: text("phase_id"),
+  description: text("description").notNull(),
+  contractValue: decimal("contract_value", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  previouslyClaimed: decimal("previously_claimed", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  thisClaim: decimal("this_claim", { precision: 12, scale: 2 }).notNull().default('0.00'),
+  retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).default('0.00'),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_claim_line_items_claim_id").on(table.claimId),
+]);
+
+export const insertClaimLineItemSchema = createInsertSchema(claimLineItems).omit({ id: true, createdAt: true });
+export type InsertClaimLineItem = z.infer<typeof insertClaimLineItemSchema>;
+export type ClaimLineItem = typeof claimLineItems.$inferSelect;

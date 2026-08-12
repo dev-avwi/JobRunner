@@ -40,6 +40,7 @@ import {
   UnifiedSendModal,
   ManualSmsComposer,
   JobPhasesSection,
+  ClaimsSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -3413,6 +3414,9 @@ export default function JobDetailView({
 
           {/* Job Phases */}
           <JobPhasesSection jobId={jobId} isTradie={isTradie} />
+
+          {/* Progress Claims */}
+          <ClaimsSection jobId={jobId} isTradie={isTradie} />
 
           {/* Materials Tracking */}
           <Card data-testid="card-materials">

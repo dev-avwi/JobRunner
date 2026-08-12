@@ -2879,3 +2879,81 @@ export async function pushSelectedQuotesToXero(userId: string, localIds: string[
   }
   return result;
 }
+
+// ─── Progress Claims ──────────────────────────────────────────────────────────
+
+/**
+ * Push a progress claim to Xero as an ACCREC invoice.
+ * Called after a claim is approved. Returns the Xero invoice ID on success.
+ */
+export async function pushProgressClaimToXero(
+  userId: string,
+  params: {
+    claim: { id: string; claimNumber: string; claimDate: Date | null; retentionAmount: string | null; notes: string | null };
+    client: { name: string; email?: string | null };
+    job: { title: string };
+    lineItems: Array<{ description: string; thisClaim: string; retentionPercent: string | null }>;
+    salesAccountCode: string;
+    taxType: string;
+  },
+): Promise<{ success: boolean; xeroInvoiceId?: string; error?: string }> {
+  try {
+    const connection = await storage.getXeroConnection(userId);
+    if (!connection || connection.status !== "active") {
+      return { success: true };
+    }
+
+    const refreshedConnection = await refreshTokenIfNeeded(connection);
+    const xero = prepareXeroClient(refreshedConnection);
+
+    const { claim, client, lineItems, salesAccountCode, taxType } = params;
+
+    const xeroLineItems: any[] = lineItems.map((li) => ({
+      description: li.description,
+      quantity: 1,
+      unitAmount: parseFloat(li.thisClaim || "0"),
+      accountCode: salesAccountCode,
+      taxType: taxType,
+    }));
+
+    const retentionAmt = parseFloat(claim.retentionAmount || "0");
+    if (retentionAmt > 0) {
+      xeroLineItems.push({
+        description: "Retention held",
+        quantity: 1,
+        unitAmount: -retentionAmt,
+        accountCode: salesAccountCode,
+        taxType: taxType,
+      });
+    }
+
+    const xeroInvoice = {
+      type: "ACCREC" as any,
+      contact: {
+        name: client.name,
+        emailAddress: client.email || undefined,
+      },
+      lineItems: xeroLineItems,
+      date: claim.claimDate
+        ? new Date(claim.claimDate).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0],
+      reference: claim.claimNumber,
+      status: "AUTHORISED" as any,
+    };
+
+    const response = await xeroApiCall(refreshedConnection, "createProgressClaimInvoice", () =>
+      xero.accountingApi.createInvoices(refreshedConnection.tenantId, { invoices: [xeroInvoice as any] }),
+    );
+
+    const created = response.body.invoices?.[0];
+    if (created?.invoiceID) {
+      xeroLog("pushProgressClaim", { userId, claimId: claim.id, xeroInvoiceId: created.invoiceID, status: "success" });
+      return { success: true, xeroInvoiceId: created.invoiceID };
+    }
+
+    return { success: true };
+  } catch (err) {
+    xeroLog("pushProgressClaim", { userId, claimId: params.claim.id, status: "error", error: String(err) });
+    return { success: false, error: String(err) };
+  }
+}
