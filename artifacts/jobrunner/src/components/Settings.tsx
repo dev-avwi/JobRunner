@@ -2024,6 +2024,17 @@ export default function Settings({
                   data-testid="switch-block-expired-compliance"
                 />
               </div>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <Label>Require PO reconciliation before closing a job</Label>
+                  <p className="text-sm text-muted-foreground">All purchase orders linked to a job must be Fully Received or Cancelled before the job can be marked done</p>
+                </div>
+                <Switch
+                  checked={!!(businessSettings as any)?.requirePoReconciliation}
+                  onCheckedChange={(checked) => handleBusinessSave({ requirePoReconciliation: checked } as any)}
+                  data-testid="switch-require-po-reconciliation"
+                />
+              </div>
             </CardContent>
           </Card>
 

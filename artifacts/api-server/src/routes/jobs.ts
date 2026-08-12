@@ -450,6 +450,23 @@ import { logSystemEvent } from "../systemEventService";
       } catch (err) {
         console.error('[getJobCompletionErrors] job card gate check failed:', err);
       }
+
+      // PO reconciliation gate: when enabled, all POs for this job must be
+      // Fully Received or Cancelled before the job can be marked done.
+      // NOTE: errors here fail CLOSED — an unreadable gate blocks completion
+      // rather than silently allowing a job to close with open POs.
+      const biz = await storage.getBusinessSettings(effectiveUserId);
+      if ((biz as any)?.requirePoReconciliation) {
+        const pos = await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId);
+        const unresolved = pos.filter(
+          (po) => po.status !== 'received' && po.status !== 'cancelled',
+        );
+        if (unresolved.length > 0) {
+          validationErrors.push(
+            `${unresolved.length} purchase order${unresolved.length > 1 ? 's' : ''} (${unresolved.map(p => p.poNumber).join(', ')}) must be fully received or cancelled before closing this job`,
+          );
+        }
+      }
     }
 
     const openEntries = timeEntries.filter(e => !e.endTime && !e.isBreak);

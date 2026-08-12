@@ -433,6 +433,7 @@ export const businessSettings = pgTable("business_settings", {
   emailOnInvoicePaid: boolean("email_on_invoice_paid").default(false),
   requireTake5BeforeStart: boolean("require_take5_before_start").default(false), // Block starting a job until a pre-start/Take 5 safety form is submitted
   blockJobStartOnExpiredCompliance: boolean("block_job_start_on_expired_compliance").default(false), // Block starting a job when the worker/business has an expired licence/cert
+  requirePoReconciliation: boolean("require_po_reconciliation").default(false), // Block marking a job done until all POs are Fully Received or Cancelled
   simpleMode: boolean("simple_mode").default(true),
   scheduleStartHour: integer("schedule_start_hour").default(6),
   scheduleEndHour: integer("schedule_end_hour").default(20),
@@ -2475,6 +2476,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   requiredDate: timestamp("required_date"),
   deliveryDate: timestamp("delivery_date"),
   status: text("status").default('pending'), // 'pending', 'approved', 'sent', 'received', 'cancelled'
+  sentAt: timestamp("sent_at"), // When PO was emailed to supplier
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default('0.00'),
   gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).default('0.00'),
   total: decimal("total", { precision: 10, scale: 2 }).default('0.00'),

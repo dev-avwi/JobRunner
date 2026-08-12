@@ -81,6 +81,7 @@ import { SwmsSection } from '../../src/components/jobDetail/SwmsSection';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
 import { ChatSection } from '../../src/components/jobDetail/ChatSection';
 import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSection';
+import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 
 interface JobNoteItem {
@@ -2129,6 +2130,8 @@ export default function JobDetailScreen() {
 
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
+  const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
+  const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
@@ -2561,6 +2564,23 @@ export default function JobDetailScreen() {
       console.error('Error loading materials:', e);
     } finally {
       setIsLoadingMaterials(false);
+    }
+  }, [id]);
+
+  const loadPurchaseOrders = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingPOs(true);
+    try {
+      const res = await api.get<any[]>(`/api/jobs/${id}/purchase-orders`);
+      if (Array.isArray(res.data)) {
+        setJobPurchaseOrders(res.data);
+      } else {
+        setJobPurchaseOrders([]);
+      }
+    } catch (e) {
+      console.error('Error loading purchase orders:', e);
+    } finally {
+      setIsLoadingPOs(false);
     }
   }, [id]);
 
@@ -3282,6 +3302,7 @@ export default function JobDetailScreen() {
     }
     if (activeTab === 'manage' && id) {
       loadMaterials();
+      loadPurchaseOrders();
     }
     if (activeTab === 'documents' && id) {
       loadSwmsDocuments();
@@ -10184,6 +10205,11 @@ export default function JobDetailScreen() {
         {activeTab === 'manage' && (
           <>
             {renderMaterialsTab()}
+            <PurchaseOrdersSection
+              colors={colors}
+              purchaseOrders={jobPurchaseOrders}
+              isLoadingPOs={isLoadingPOs}
+            />
             {renderManageTab()}
           </>
         )}

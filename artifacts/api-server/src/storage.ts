@@ -801,6 +801,8 @@ export interface IStorage {
   
   getPurchaseOrderItems(poId: string): Promise<PurchaseOrderItem[]>;
   createPurchaseOrderItem(item: InsertPurchaseOrderItem): Promise<PurchaseOrderItem>;
+  updatePurchaseOrderItem(id: string, poId: string, data: Partial<InsertPurchaseOrderItem>): Promise<PurchaseOrderItem | undefined>;
+  getPurchaseOrdersByJobId(jobId: string, userId: string): Promise<PurchaseOrder[]>;
   
   // Team Management
   getUserRoles(): Promise<UserRole[]>;
@@ -4355,6 +4357,20 @@ export class PostgresStorage implements IStorage {
   async createPurchaseOrderItem(item: InsertPurchaseOrderItem): Promise<PurchaseOrderItem> {
     const result = await db.insert(purchaseOrderItems).values(item).returning();
     return result[0];
+  }
+
+  async updatePurchaseOrderItem(id: string, poId: string, data: Partial<InsertPurchaseOrderItem>): Promise<PurchaseOrderItem | undefined> {
+    const result = await db.update(purchaseOrderItems)
+      .set(data)
+      .where(and(eq(purchaseOrderItems.id, id), eq(purchaseOrderItems.poId, poId)))
+      .returning();
+    return result[0];
+  }
+
+  async getPurchaseOrdersByJobId(jobId: string, userId: string): Promise<PurchaseOrder[]> {
+    return await db.select().from(purchaseOrders)
+      .where(and(eq(purchaseOrders.jobId, jobId), eq(purchaseOrders.userId, userId)))
+      .orderBy(desc(purchaseOrders.orderDate));
   }
 
   // Team Management

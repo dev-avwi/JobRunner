@@ -54,6 +54,9 @@ import {
   Gauge,
   Route,
   ChevronDown,
+  Send,
+  Mail,
+  X,
 } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
@@ -81,6 +84,7 @@ const statusColors: Record<string, string> = {
   pending: "bg-warning/10 text-warning",
   approved: "bg-primary/10 text-primary",
   sent: "bg-info/10 text-info",
+  partial: "bg-primary/10 text-primary",
   received: "bg-success/10 text-success",
   cancelled: "bg-destructive/10 text-destructive",
 };
@@ -433,6 +437,7 @@ function StockSection() {
       {activeTab === "purchase-orders" && (
         <PurchaseOrdersTab
           purchaseOrders={purchaseOrders}
+          suppliers={suppliers}
           isLoading={posLoading}
           getSupplierName={getSupplierName}
           onAdd={() => setShowPODialog(true)}
@@ -1959,19 +1964,90 @@ function LowStockTab({
   );
 }
 
+// Per-line-item status badge
+const itemStatusConfig: Record<string, { label: string; className: string }> = {
+  pending:  { label: "Pending",  className: "bg-warning/10 text-warning" },
+  partial:  { label: "Partial",  className: "bg-primary/10 text-primary" },
+  received: { label: "Received", className: "bg-success/10 text-success" },
+  cancelled:{ label: "Cancelled",className: "bg-destructive/10 text-destructive" },
+};
+
 function PurchaseOrdersTab({
   purchaseOrders,
+  suppliers,
   isLoading,
   getSupplierName,
   onAdd,
   onUpdateStatus,
 }: {
   purchaseOrders: PurchaseOrder[];
+  suppliers: Supplier[];
   isLoading: boolean;
   getSupplierName: (id: string | null) => string;
   onAdd: () => void;
   onUpdateStatus: (id: string, status: string) => void;
 }) {
+  const [expandedPO, setExpandedPO] = useState<string | null>(null);
+  const [poItems, setPOItems] = useState<Record<string, any[]>>({});
+  const [sendDialogPO, setSendDialogPO] = useState<PurchaseOrder | null>(null);
+  const [sendEmail, setSendEmail] = useState("");
+  const [sendingPO, setSendingPO] = useState(false);
+  const { toast } = useToast();
+
+  const togglePO = async (poId: string) => {
+    if (expandedPO === poId) {
+      setExpandedPO(null);
+      return;
+    }
+    setExpandedPO(poId);
+    if (!poItems[poId]) {
+      try {
+        const res = await apiRequest("GET", `/api/purchase-orders/${poId}/items`);
+        const data = await res.json();
+        setPOItems(prev => ({ ...prev, [poId]: data }));
+      } catch {}
+    }
+  };
+
+  const updateItemStatus = async (poId: string, itemId: string, receivedQty: number, status: string) => {
+    try {
+      const res = await apiRequest("PATCH", `/api/purchase-orders/${poId}/items/${itemId}`, {
+        receivedQuantity: receivedQty,
+        status,
+      });
+      const updated = await res.json();
+      setPOItems(prev => ({
+        ...prev,
+        [poId]: (prev[poId] || []).map(i => i.id === itemId ? updated : i),
+      }));
+      queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
+      toast({ title: "Item updated" });
+    } catch {
+      toast({ title: "Failed to update item", variant: "destructive" });
+    }
+  };
+
+  const openSendDialog = (po: PurchaseOrder) => {
+    const supplier = suppliers.find(s => s.id === po.supplierId);
+    setSendEmail(supplier?.email || "");
+    setSendDialogPO(po);
+  };
+
+  const handleSendPO = async () => {
+    if (!sendDialogPO) return;
+    setSendingPO(true);
+    try {
+      await apiRequest("POST", `/api/purchase-orders/${sendDialogPO.id}/send`, { email: sendEmail });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
+      toast({ title: "Purchase order sent to supplier" });
+      setSendDialogPO(null);
+    } catch (e: any) {
+      toast({ title: e?.message || "Failed to send PO", variant: "destructive" });
+    } finally {
+      setSendingPO(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -1998,61 +2074,181 @@ function PurchaseOrdersTab({
   }
 
   return (
-    <Card>
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-muted-foreground">
-              <th className="p-3 font-medium">PO Number</th>
-              <th className="p-3 font-medium hidden sm:table-cell">Supplier</th>
-              <th className="p-3 font-medium">Status</th>
-              <th className="p-3 font-medium hidden sm:table-cell">Total</th>
-              <th className="p-3 font-medium hidden md:table-cell">Order Date</th>
-              <th className="p-3 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {purchaseOrders.map((po) => (
-              <tr key={po.id} className="border-b last:border-0">
-                <td className="p-3 font-medium">{po.poNumber}</td>
-                <td className="p-3 hidden sm:table-cell text-muted-foreground">
-                  {getSupplierName(po.supplierId)}
-                </td>
-                <td className="p-3">
-                  <Badge className={statusColors[po.status || "pending"]}>
-                    {(po.status || "pending").charAt(0).toUpperCase() +
-                      (po.status || "pending").slice(1)}
-                  </Badge>
-                </td>
-                <td className="p-3 hidden sm:table-cell text-muted-foreground">
-                  ${parseFloat(po.total || "0").toFixed(2)}
-                </td>
-                <td className="p-3 hidden md:table-cell text-muted-foreground">
-                  {po.orderDate ? format(new Date(po.orderDate), "dd MMM yyyy") : "-"}
-                </td>
-                <td className="p-3">
+    <>
+      <div className="space-y-3">
+        {purchaseOrders.map((po) => {
+          const isExpanded = expandedPO === po.id;
+          const items: any[] = poItems[po.id] || [];
+          return (
+            <Card key={po.id} className="overflow-hidden">
+              {/* PO header row */}
+              <div
+                className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+                onClick={() => togglePO(po.id)}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold">{po.poNumber}</span>
+                    <Badge className={statusColors[po.status || "pending"]}>
+                      {(po.status || "pending").charAt(0).toUpperCase() + (po.status || "pending").slice(1)}
+                    </Badge>
+                    {(po as any).sentAt && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Mail className="w-3 h-3" /> Sent
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex gap-3 mt-0.5 text-sm text-muted-foreground flex-wrap">
+                    <span>{getSupplierName(po.supplierId)}</span>
+                    {po.orderDate && <span>{format(new Date(po.orderDate), "dd MMM yyyy")}</span>}
+                    <span className="font-medium text-foreground">${parseFloat(po.total || "0").toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs"
+                    onClick={(e) => { e.stopPropagation(); openSendDialog(po); }}
+                    title="Email PO to supplier"
+                  >
+                    <Send className="w-3.5 h-3.5" /> Send
+                  </Button>
                   <Select
                     value={po.status || "pending"}
                     onValueChange={(val) => onUpdateStatus(po.id, val)}
                   >
-                    <SelectTrigger className="w-[120px]">
+                    <SelectTrigger className="w-[110px] h-8 text-xs" onClick={e => e.stopPropagation()}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="approved">Approved</SelectItem>
                       <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="partial">Partially Received</SelectItem>
                       <SelectItem value="received">Received</SelectItem>
                       <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                </div>
+              </div>
+
+              {/* Expanded line items */}
+              {isExpanded && (
+                <div className="border-t">
+                  {items.length === 0 ? (
+                    <p className="text-sm text-muted-foreground p-4">No line items on this PO.</p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b bg-muted/30 text-muted-foreground">
+                            <th className="p-3 text-left font-medium">Description</th>
+                            <th className="p-3 text-center font-medium">Ordered</th>
+                            <th className="p-3 text-center font-medium">Received</th>
+                            <th className="p-3 text-left font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {items.map((item) => {
+                            const cfg = itemStatusConfig[item.status || "pending"];
+                            return (
+                              <tr key={item.id} className="border-b last:border-0">
+                                <td className="p-3">{item.description}</td>
+                                <td className="p-3 text-center">{item.quantity}</td>
+                                <td className="p-3 text-center">
+                                  <Input
+                                    type="number"
+                                    min={0}
+                                    max={item.quantity}
+                                    className="w-16 h-7 text-center text-xs p-1"
+                                    defaultValue={item.receivedQuantity ?? 0}
+                                    onBlur={(e) => {
+                                      const qty = Math.min(parseInt(e.target.value) || 0, item.quantity);
+                                      const newStatus =
+                                        qty === 0 ? "pending"
+                                        : qty >= item.quantity ? "received"
+                                        : "partial";
+                                      if (qty !== (item.receivedQuantity ?? 0) || newStatus !== item.status) {
+                                        updateItemStatus(po.id, item.id, qty, newStatus);
+                                      }
+                                    }}
+                                  />
+                                </td>
+                                <td className="p-3">
+                                  <Select
+                                    value={item.status || "pending"}
+                                    onValueChange={(val) =>
+                                      updateItemStatus(
+                                        po.id,
+                                        item.id,
+                                        val === "received" ? item.quantity : (item.receivedQuantity ?? 0),
+                                        val,
+                                      )
+                                    }
+                                  >
+                                    <SelectTrigger className="w-[110px] h-7 text-xs">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="pending">Pending</SelectItem>
+                                      <SelectItem value="partial">Partial</SelectItem>
+                                      <SelectItem value="received">Received</SelectItem>
+                                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          );
+        })}
       </div>
-    </Card>
+
+      {/* Send PO dialog */}
+      <Dialog open={!!sendDialogPO} onOpenChange={(v) => !v && setSendDialogPO(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-4 h-4" /> Send Purchase Order
+            </DialogTitle>
+          </DialogHeader>
+          {sendDialogPO && (
+            <div className="space-y-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                PO <strong>{sendDialogPO.poNumber}</strong> will be emailed to the supplier as an HTML document.
+              </p>
+              <div className="space-y-2">
+                <Label>Supplier email *</Label>
+                <Input
+                  type="email"
+                  value={sendEmail}
+                  onChange={(e) => setSendEmail(e.target.value)}
+                  placeholder="supplier@example.com"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendDialogPO(null)}>Cancel</Button>
+            <Button
+              onClick={handleSendPO}
+              disabled={sendingPO || !sendEmail}
+            >
+              {sendingPO ? "Sending..." : "Send PO"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
