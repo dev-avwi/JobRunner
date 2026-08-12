@@ -10,34 +10,47 @@
  * 3. Under "OAuth & Permissions" → Bot Token Scopes, add:
  *      chat:write       (post messages)
  *      channels:history (read messages)
- *      incoming-webhook (if you want webhook posting)
- * 4. Install app to workspace → copy the xoxb- token → set SLACK_BOT_TOKEN
- * 5. Under "Basic Information" → App Credentials → Signing Secret → set SLACK_SIGNING_SECRET
- * 6. Create an Incoming Webhook for #ai-logs → set SLACK_AI_LOGS_WEBHOOK
- * 7. Add the bot to #claude-commands: /invite @YourBotName
- * 8. Add the bot to #ai-logs and #jobrunner-bugs the same way
- * ─────────────────────────────────────────────────────────────────────────────
+ * 4. Install app to workspace
+ * 5. Under "Basic Information" → App Credentials → Signing Secret
+ *    → add as Replit secret: SLACK_SIGNING_SECRET
+ * 6. Add the bot to #claude-commands: /invite @YourBotName
+ * 7. Add the bot to #ai-logs and #jobrunner-bugs the same way
  *
- * Required env vars:
- *   SLACK_SIGNING_SECRET  — from Basic Information → Signing Secret
- *   SLACK_BOT_TOKEN       — xoxb- token from OAuth & Permissions
- *   SLACK_AI_LOGS_WEBHOOK — Incoming Webhook URL for #ai-logs
+ * Message posting uses the Replit-managed Slack connector (no SLACK_BOT_TOKEN
+ * or webhook URL needed). Only ONE secret is required:
+ *   SLACK_SIGNING_SECRET — from Basic Information → App Credentials
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
 import crypto from 'crypto';
-import axios from 'axios';
 import type { Application, Request, Response } from 'express';
-import { WebClient } from '@slack/web-api';
+import { ReplitConnectors } from '@replit/connectors-sdk';
 import { pool } from './storage';
 import { logger } from './lib/logger';
 
 // ─── Channel IDs ─────────────────────────────────────────────────────────────
 const CLAUDE_COMMANDS_CHANNEL = 'C0BPA019Q15';
+const AI_LOGS_CHANNEL = 'C0BPA019Q15'; // update to your actual #ai-logs channel ID
 const BUGS_CHANNEL = 'C0BQKM72ZC0';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Slack Web API via Replit connector ──────────────────────────────────────
 
-/** Verify Slack's HMAC-SHA256 signature on the raw request body */
+async function slackPost(channel: string, text: string): Promise<void> {
+  const connectors = new ReplitConnectors();
+  const response = await connectors.proxy('slack', '/chat.postMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel, text }),
+  });
+  const data: any = await response.json();
+  if (!data.ok) {
+    logger.error({ slackError: data.error, channel }, '[Slack] chat.postMessage failed');
+    throw new Error(`Slack API error: ${data.error}`);
+  }
+}
+
+// ─── Signature verification ───────────────────────────────────────────────────
+
 function verifySlackSignature(req: Request): boolean {
   const secret = process.env.SLACK_SIGNING_SECRET;
   if (!secret) {
@@ -49,28 +62,16 @@ function verifySlackSignature(req: Request): boolean {
   if (!timestamp || !slackSig) return false;
 
   // Guard against replay attacks (5-minute window)
-  const ageSeconds = Math.abs(Date.now() / 1000 - Number(timestamp));
-  if (ageSeconds > 300) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
 
-  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body);
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body ?? '');
   const sigBase = `v0:${timestamp}:${rawBody}`;
   const expected = `v0=${crypto.createHmac('sha256', secret).update(sigBase).digest('hex')}`;
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(slackSig));
-}
-
-/** Post a plain text message to #ai-logs via Incoming Webhook */
-async function postToAiLogs(text: string): Promise<void> {
-  const url = process.env.SLACK_AI_LOGS_WEBHOOK;
-  if (!url) {
-    logger.warn('[Slack] SLACK_AI_LOGS_WEBHOOK not set — cannot post to #ai-logs');
-    return;
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(slackSig));
+  } catch {
+    return false;
   }
-  await axios.post(url, { text }, { timeout: 8000 });
-}
-
-/** Post to any channel using the Bot token (needed for #jobrunner-bugs) */
-function getSlackClient(): WebClient {
-  return new WebClient(process.env.SLACK_BOT_TOKEN);
 }
 
 // ─── Command handlers ─────────────────────────────────────────────────────────
@@ -84,32 +85,31 @@ async function handleStatus(): Promise<void> {
   }
 
   const uptimeSecs = Math.floor(process.uptime());
-  const hours = Math.floor(uptimeSecs / 3600);
-  const mins = Math.floor((uptimeSecs % 3600) / 60);
-  const secs = uptimeSecs % 60;
-  const uptime = `${hours}h ${mins}m ${secs}s`;
-
+  const h = Math.floor(uptimeSecs / 3600);
+  const m = Math.floor((uptimeSecs % 3600) / 60);
+  const s = uptimeSecs % 60;
   const mem = process.memoryUsage();
-  const mb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  const mb = (b: number) => (b / 1024 / 1024).toFixed(1) + ' MB';
+  const now = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' });
 
   const text = [
     '*🟢 JobRunner API — Health Check*',
-    `Database:     ${dbStatus}`,
-    `Server uptime: ${uptime}`,
+    `Database:      ${dbStatus}`,
+    `Uptime:        ${h}h ${m}m ${s}s`,
     `Memory (RSS):  ${mb(mem.rss)}`,
-    `Memory (heap used): ${mb(mem.heapUsed)} / ${mb(mem.heapTotal)}`,
-    `Time: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })} AEST`,
+    `Heap used:     ${mb(mem.heapUsed)} / ${mb(mem.heapTotal)}`,
+    `Time:          ${now} AEST`,
   ].join('\n');
 
-  await postToAiLogs(text);
+  await slackPost(AI_LOGS_CHANNEL, text);
 }
 
 async function handleReport(): Promise<void> {
   const now = new Date();
-  const minus24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const minus7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const minus24h = new Date(now.getTime() - 86400_000);
+  const minus7d = new Date(now.getTime() - 7 * 86400_000);
 
-  const [usersRes, activeSubsRes, new24hRes, new7dRes] = await Promise.all([
+  const [total, subs, d1, d7] = await Promise.all([
     pool.query('SELECT COUNT(*) FROM users'),
     pool.query(`SELECT COUNT(*) FROM subscriptions WHERE status = 'active'`),
     pool.query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [minus24h]),
@@ -118,21 +118,21 @@ async function handleReport(): Promise<void> {
 
   const text = [
     '*📊 JobRunner — User Report*',
-    `Total users:          ${usersRes.rows[0].count}`,
-    `Active subscriptions: ${activeSubsRes.rows[0].count}`,
-    `New users (24h):      ${new24hRes.rows[0].count}`,
-    `New users (7d):       ${new7dRes.rows[0].count}`,
+    `Total users:          ${total.rows[0].count}`,
+    `Active subscriptions: ${subs.rows[0].count}`,
+    `New users (24h):      ${d1.rows[0].count}`,
+    `New users (7 days):   ${d7.rows[0].count}`,
     `Generated: ${now.toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })} AEST`,
   ].join('\n');
 
-  await postToAiLogs(text);
+  await slackPost(AI_LOGS_CHANNEL, text);
 }
 
 async function handleCustomers(): Promise<void> {
   const now = new Date();
-  const minus30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const minus30d = new Date(now.getTime() - 30 * 86400_000);
 
-  const [usersRes, activeSubsRes, new30dRes] = await Promise.all([
+  const [total, subs, d30] = await Promise.all([
     pool.query('SELECT COUNT(*) FROM users'),
     pool.query(`SELECT COUNT(*) FROM subscriptions WHERE status = 'active'`),
     pool.query('SELECT COUNT(*) FROM users WHERE created_at >= $1', [minus30d]),
@@ -140,65 +140,58 @@ async function handleCustomers(): Promise<void> {
 
   const text = [
     '*👥 JobRunner — Customer Summary*',
-    `Total users:            ${usersRes.rows[0].count}`,
-    `Active subscriptions:   ${activeSubsRes.rows[0].count}`,
-    `New signups (30 days):  ${new30dRes.rows[0].count}`,
+    `Total users:           ${total.rows[0].count}`,
+    `Active subscriptions:  ${subs.rows[0].count}`,
+    `New signups (30 days): ${d30.rows[0].count}`,
     `Generated: ${now.toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })} AEST`,
   ].join('\n');
 
-  await postToAiLogs(text);
+  await slackPost(AI_LOGS_CHANNEL, text);
 }
 
 async function handleBug(description: string): Promise<void> {
-  const slack = getSlackClient();
-  const timestamp = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' });
-
-  await slack.chat.postMessage({
-    channel: BUGS_CHANNEL,
-    text: [
+  const ts = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' });
+  await slackPost(
+    BUGS_CHANNEL,
+    [
       '🔴 *BUG REPORT*',
       `From: Slack command`,
       `Description: ${description || '(no description provided)'}`,
       `Status: Open`,
-      `Time: ${timestamp} AEST`,
-    ].join('\n'),
-  });
-
-  await postToAiLogs(`✅ Bug report filed to #jobrunner-bugs:\n_"${description}"_`);
+      `Time: ${ts} AEST`,
+    ].join('\n')
+  );
+  await slackPost(AI_LOGS_CHANNEL, `✅ Bug report filed to #jobrunner-bugs:\n_"${description}"_`);
 }
 
 async function handleHelp(): Promise<void> {
   const text = [
     '*🤖 JobRunner Slack Bot — Available Commands*',
-    'Type in #claude-commands:',
+    'Type any of these in *#claude-commands*:',
     '',
-    '`status`      — Server health: DB, uptime, memory usage',
-    '`report`      — User counts and new signups (24h / 7d)',
-    '`customers`   — Customer summary (total, active subs, 30-day signups)',
-    '`bug [text]`  — File a bug report to #jobrunner-bugs',
-    '`help`        — Show this message',
+    '`status`        — Server health: DB, uptime, memory',
+    '`report`        — User counts and new signups (24h / 7d)',
+    '`customers`     — Customer summary (total, active subs, 30-day signups)',
+    '`bug [text]`    — File a bug report to #jobrunner-bugs',
+    '`help`          — Show this message',
     '',
-    'All results are posted to #ai-logs.',
+    '_All results are posted to #ai-logs._',
   ].join('\n');
 
-  await postToAiLogs(text);
+  await slackPost(AI_LOGS_CHANNEL, text);
 }
 
 // ─── Route registration ───────────────────────────────────────────────────────
 
 export function registerSlackCommands(app: Application): void {
-  // Must be registered before express.json() so the raw body is available
-  // for HMAC signature verification.
+  // Must be registered BEFORE express.json() so req.body arrives as a raw
+  // Buffer — required for HMAC-SHA256 signature verification.
   app.post(
     '/slack/events',
-    // express.raw preserves the original body as a Buffer — required for HMAC
     (req: any, res: any, next: any) => {
-      // Only apply raw parsing if Content-Type is application/json
-      const ct = req.headers['content-type'] || '';
-      if (ct.includes('application/json') || ct.includes('application/x-www-form-urlencoded')) {
-        return (require('express').raw({ type: '*/*', limit: '1mb' }))(req, res, next);
-      }
-      next();
+      // Capture the raw body before any JSON parsing touches it
+      const express = require('express');
+      express.raw({ type: '*/*', limit: '1mb' })(req, res, next);
     },
     async (req: Request, res: Response) => {
       try {
@@ -208,7 +201,7 @@ export function registerSlackCommands(app: Application): void {
           return res.status(403).json({ error: 'Invalid signature' });
         }
 
-        // Parse body (it's a raw Buffer at this point)
+        // Parse raw buffer → JSON
         let body: any;
         try {
           const raw = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body ?? '');
@@ -222,57 +215,46 @@ export function registerSlackCommands(app: Application): void {
           return res.status(200).type('text/plain').send(body.challenge);
         }
 
-        // 3. Respond immediately (Slack requires <3s)
+        // 3. Respond 200 immediately — Slack requires a response within 3 seconds
         res.status(200).send();
 
-        // 4. Only handle messages from #claude-commands; ignore bots/edits
+        // 4. Filter: only process messages from #claude-commands; ignore bots/edits
         const event = body.event;
         if (
           !event ||
           event.type !== 'message' ||
           event.channel !== CLAUDE_COMMANDS_CHANNEL ||
           event.bot_id ||
-          event.subtype // edits, deletions, etc.
+          event.subtype // edits, deletions, thread broadcasts, etc.
         ) {
           return;
         }
 
+        // 5. Parse command (strip leading slash if present)
         const raw = (event.text || '').trim();
-        // Strip leading slash if the user typed e.g. /status
         const text = raw.startsWith('/') ? raw.slice(1) : raw;
-        const [cmd, ...args] = text.toLowerCase().split(/\s+/);
-        const rest = args.join(' ');
+        const spaceIdx = text.indexOf(' ');
+        const cmd = (spaceIdx === -1 ? text : text.slice(0, spaceIdx)).toLowerCase();
+        const args = spaceIdx === -1 ? '' : text.slice(spaceIdx + 1).trim();
 
         logger.info({ cmd, channel: event.channel }, '[Slack] Command received');
 
-        // 5. Dispatch command
+        // 6. Dispatch
         switch (cmd) {
-          case 'status':
-            await handleStatus();
-            break;
-          case 'report':
-            await handleReport();
-            break;
-          case 'customers':
-            await handleCustomers();
-            break;
-          case 'bug': {
-            // Preserve original casing for the bug description
-            const originalArgs = text.slice(text.toLowerCase().indexOf('bug') + 3).trim();
-            await handleBug(originalArgs || rest);
-            break;
-          }
-          case 'help':
-            await handleHelp();
-            break;
+          case 'status':    await handleStatus(); break;
+          case 'report':    await handleReport(); break;
+          case 'customers': await handleCustomers(); break;
+          case 'bug':       await handleBug(args); break;
+          case 'help':      await handleHelp(); break;
           default:
-            await postToAiLogs(
-              `❓ Unknown command: \`${cmd}\`\nType \`help\` for available commands.`
+            await slackPost(
+              AI_LOGS_CHANNEL,
+              `❓ Unknown command: \`${cmd || '(empty)'}\`\nType \`help\` for available commands.`
             );
         }
       } catch (err: any) {
         logger.error({ err }, '[Slack] Command handler error');
-        // Body already sent — just log, can't reply to Slack
+        // res already sent — can't reply to Slack; just log
       }
     }
   );

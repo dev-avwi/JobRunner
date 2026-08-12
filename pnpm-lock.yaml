@@ -177,6 +177,9 @@ importers:
       '@paypal/paypal-server-sdk':
         specifier: ^2.4.0
         version: 2.4.0
+      '@replit/connectors-sdk':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@sendgrid/mail':
         specifier: ^8.1.6
         version: 8.1.6
