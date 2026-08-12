@@ -77,6 +77,7 @@ import {
   insertInvoiceLineItemSchema,
   insertDocumentTemplateSchema,
   insertLineItemCatalogSchema,
+  insertPriceListItemSchema,
   insertRateCardSchema,
   // Advanced features schemas
   insertTimeEntrySchema,
@@ -26360,6 +26361,68 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error) {
       console.error("Error deleting catalog item:", error);
       res.status(500).json({ error: "Failed to delete catalog item" });
+    }
+  });
+
+  // Price List Items Routes
+  app.get("/api/price-list-items", requireAuth, async (req: any, res) => {
+    try {
+      const { tradeType, itemType, isActive } = req.query;
+      const options: { tradeType?: string; itemType?: string; isActive?: boolean } = {};
+      if (tradeType) options.tradeType = tradeType as string;
+      if (itemType) options.itemType = itemType as string;
+      if (isActive !== undefined) options.isActive = isActive === 'true';
+      const items = await storage.getPriceListItems(req.userId, options);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching price list items:", error);
+      res.status(500).json({ error: "Failed to fetch price list items" });
+    }
+  });
+
+  app.post("/api/price-list-items", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
+    try {
+      const data = insertPriceListItemSchema.parse(req.body);
+      const item = await storage.createPriceListItem({ ...data, userId: req.userId });
+      res.status(201).json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid input", details: error.errors });
+      }
+      console.error("Error creating price list item:", error);
+      res.status(500).json({ error: "Failed to create price list item" });
+    }
+  });
+
+  app.patch("/api/price-list-items/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
+    try {
+      const existing = await storage.getPriceListItem(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Price list item not found" });
+      }
+      const data = insertPriceListItemSchema.partial().parse(req.body);
+      const item = await storage.updatePriceListItem(req.params.id, data);
+      res.json(item);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid input", details: error.errors });
+      }
+      console.error("Error updating price list item:", error);
+      res.status(500).json({ error: "Failed to update price list item" });
+    }
+  });
+
+  app.delete("/api/price-list-items/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
+    try {
+      const existing = await storage.getPriceListItem(req.params.id);
+      if (!existing || existing.userId !== req.userId) {
+        return res.status(404).json({ error: "Price list item not found" });
+      }
+      await storage.deletePriceListItem(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting price list item:", error);
+      res.status(500).json({ error: "Failed to delete price list item" });
     }
   });
 

@@ -3057,6 +3057,11 @@ import { logSystemEvent } from "../systemEventService";
         }
       }
       
+      // Validate jobType enum on updates (same constraint enforced on create)
+      if (data.jobType !== undefined && data.jobType !== null && !['service', 'project'].includes(data.jobType)) {
+        return res.status(400).json({ error: "jobType must be 'service' or 'project'" });
+      }
+
       console.log('[PATCH /api/jobs/:id] Parsed data after validation:', JSON.stringify(data, null, 2));
       
       const existingJob = await storage.getJob(req.params.id, effectiveUserId);

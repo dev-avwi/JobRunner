@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
-import { Plus, Trash2, Edit2, Package, DollarSign, Hash, BookOpen, Sparkles, TrendingUp, History, Loader2 } from "lucide-react";
+import { Plus, Trash2, Edit2, Package, DollarSign, Hash, BookOpen, Sparkles, TrendingUp, History, Loader2, Tag } from "lucide-react";
 import CatalogModal from "@/components/CatalogModal";
+import PriceListModal from "@/components/PriceListModal";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureAccess } from "@/hooks/use-subscription";
+import { useQuery } from "@tanstack/react-query";
+import { type PriceListItem } from "@shared/schema";
 
 interface QuoteSuggestion {
   description: string;
@@ -28,7 +31,14 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
   const { toast } = useToast();
   const { canUseAIFeatures } = useFeatureAccess();
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [priceListOpen, setPriceListOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
+
+  const { data: businessSettings } = useQuery<{ defaultMaterialMarkupPct?: string | number }>({
+    queryKey: ["/api/business-settings"],
+    staleTime: 60000,
+  });
+  const materialMarkupPct = parseFloat(String(businessSettings?.defaultMaterialMarkupPct ?? 0)) || 0;
   const [editForm, setEditForm] = useState({ description: "", quantity: "1", unitPrice: "" });
   
   const [suggestions, setSuggestions] = useState<QuoteSuggestion[]>([]);
@@ -182,6 +192,19 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
     });
   };
 
+  const handlePriceListSelect = (item: PriceListItem, appliedPrice: number) => {
+    append({
+      description: item.name + (item.description ? ` — ${item.description}` : ""),
+      quantity: String(item.defaultQuantity || 1),
+      unitPrice: appliedPrice.toFixed(2),
+    });
+    setPriceListOpen(false);
+    toast({
+      title: "Item added",
+      description: `${item.name} has been added from your price list`,
+    });
+  };
+
   const handleRemoveItem = (index: number) => {
     if (fields.length > 1) {
       remove(index);
@@ -219,6 +242,19 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
         >
           <BookOpen className="h-5 w-5 mr-2" />
           Catalog
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="flex-1 min-h-[48px]"
+          style={{ borderRadius: '12px' }}
+          onClick={() => setPriceListOpen(true)}
+          data-testid="button-browse-price-list"
+        >
+          <Tag className="h-5 w-5 mr-2" />
+          Price List
         </Button>
       </div>
 
@@ -496,6 +532,15 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
         onSelectItem={handleCatalogSelect}
         tradeType={tradeType}
         data-testid="catalog-modal"
+      />
+
+      <PriceListModal
+        open={priceListOpen}
+        onOpenChange={setPriceListOpen}
+        onSelectItem={handlePriceListSelect}
+        tradeType={tradeType}
+        materialMarkupPct={materialMarkupPct}
+        data-testid="price-list-modal"
       />
     </div>
   );

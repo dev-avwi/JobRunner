@@ -1467,6 +1467,25 @@ export const insertLineItemCatalogSchema = createInsertSchema(lineItemCatalog).o
   updatedAt: true,
 });
 
+export const priceListItems = pgTable("price_list_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  description: text("description"),
+  unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull().default('0.00'),
+  category: text("category").default('General'),
+  unit: text("unit").default('each'), // each, hour, m², m, kg, l, day, week, etc.
+  itemType: text("item_type").notNull().default('service'), // service, material, equipment
+  tradeType: text("trade_type"), // plumbing, electrical, general, etc.
+  defaultQuantity: decimal("default_quantity", { precision: 10, scale: 2 }).default('1.00'),
+  gstIncluded: boolean("gst_included").default(true),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_price_list_items_user_id").on(table.userId),
+  index("idx_price_list_items_item_type").on(table.itemType),
+]);
 export const insertRateCardSchema = createInsertSchema(rateCards).omit({
   id: true,
   userId: true,
@@ -5532,3 +5551,14 @@ export const claimLineItems = pgTable("claim_line_items", {
 export const insertClaimLineItemSchema = createInsertSchema(claimLineItems).omit({ id: true, createdAt: true });
 export type InsertClaimLineItem = z.infer<typeof insertClaimLineItemSchema>;
 export type ClaimLineItem = typeof claimLineItems.$inferSelect;
+
+export type PriceListItem = typeof priceListItems.$inferSelect;
+
+export const insertPriceListItemSchema = createInsertSchema(priceListItems).omit({
+  id: true,
+  userId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertPriceListItem = z.infer<typeof insertPriceListItemSchema>;

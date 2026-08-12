@@ -57,12 +57,14 @@ import {
   Mail,
   Download,
   Briefcase,
+  Tag,
+  Wrench,
 } from "lucide-react";
 import TemplateManagement from "@/components/TemplateManagement";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import type { StylePreset, RateCard, LineItemCatalog, CustomForm, QuoteTemplate } from "@shared/schema";
+import type { StylePreset, RateCard, LineItemCatalog, CustomForm, QuoteTemplate, PriceListItem } from "@shared/schema";
 import { format } from "date-fns";
 import LiveDocumentPreview from "@/components/LiveDocumentPreview";
 import { SwmsBuilder } from "@/components/SwmsBuilder";
@@ -1407,6 +1409,407 @@ function LineItemsCatalogSection() {
             <AlertDialogTitle>Delete Catalog Item</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setItemToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => itemToDelete && deleteMutation.mutate(itemToDelete.id)}
+              className="bg-destructive text-destructive-foreground"
+            >
+              {deleteMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+const PRICE_LIST_UNIT_OPTIONS = [
+  { value: "each", label: "Each" },
+  { value: "hour", label: "Hour" },
+  { value: "day", label: "Day" },
+  { value: "m", label: "Metre (m)" },
+  { value: "m²", label: "Square Metre (m²)" },
+  { value: "m³", label: "Cubic Metre (m³)" },
+  { value: "kg", label: "Kilogram (kg)" },
+  { value: "l", label: "Litre (l)" },
+  { value: "item", label: "Item" },
+  { value: "week", label: "Week" },
+  { value: "job", label: "Job" },
+];
+
+const PRICE_LIST_TRADE_TYPES = [
+  "general", "plumbing", "electrical", "hvac", "carpentry", "painting",
+  "landscaping", "tiling", "roofing", "concreting", "plastering", "cleaning",
+];
+
+function PriceListSection() {
+  const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [editingItem, setEditingItem] = useState<PriceListItem | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<PriceListItem | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    unitPrice: "0.00",
+    category: "General",
+    unit: "each",
+    itemType: "service",
+    tradeType: "",
+    defaultQuantity: "1.00",
+    gstIncluded: true,
+    isActive: true,
+  });
+
+  const { data: user } = useQuery<{ tradeType?: string }>({ queryKey: ["/api/auth/me"] });
+
+  const { data: priceListItems = [], isLoading } = useQuery<PriceListItem[]>({
+    queryKey: ["/api/price-list-items"],
+  });
+
+  const resetFormData = () => setFormData({
+    name: "",
+    description: "",
+    unitPrice: "0.00",
+    category: "General",
+    unit: "each",
+    itemType: "service",
+    tradeType: user?.tradeType || "",
+    defaultQuantity: "1.00",
+    gstIncluded: true,
+    isActive: true,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof formData) => apiRequest("POST", "/api/price-list-items", data),
+    onSuccess: () => {
+      toast({ title: "Price list item created" });
+      setDialogOpen(false);
+      resetFormData();
+      queryClient.invalidateQueries({ queryKey: ["/api/price-list-items"] });
+    },
+    onError: () => toast({ title: "Failed to create item", variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: typeof formData }) =>
+      apiRequest("PATCH", `/api/price-list-items/${id}`, data),
+    onSuccess: () => {
+      toast({ title: "Price list item updated" });
+      setDialogOpen(false);
+      setEditingItem(null);
+      resetFormData();
+      queryClient.invalidateQueries({ queryKey: ["/api/price-list-items"] });
+    },
+    onError: () => toast({ title: "Failed to update item", variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/price-list-items/${id}`),
+    onSuccess: () => {
+      toast({ title: "Price list item deleted" });
+      setDeleteConfirmOpen(false);
+      setItemToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/price-list-items"] });
+    },
+    onError: () => toast({ title: "Failed to delete item", variant: "destructive" }),
+  });
+
+  const handleEditItem = (item: PriceListItem) => {
+    setEditingItem(item);
+    setFormData({
+      name: item.name,
+      description: item.description || "",
+      unitPrice: String(item.unitPrice || "0.00"),
+      category: item.category || "General",
+      unit: item.unit || "each",
+      itemType: item.itemType || "service",
+      tradeType: item.tradeType || "",
+      defaultQuantity: String(item.defaultQuantity || "1.00"),
+      gstIncluded: item.gstIncluded !== false,
+      isActive: item.isActive !== false,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingItem(null);
+    resetFormData();
+  };
+
+  const handleSubmit = () => {
+    if (editingItem) {
+      updateMutation.mutate({ id: editingItem.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const filtered = priceListItems.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (item.category?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    const matchesType = typeFilter === "all" || item.itemType === typeFilter;
+    return matchesSearch && matchesType;
+  });
+
+  const ITEM_TYPE_ICONS: Record<string, React.ElementType> = { service: Wrench, material: Package, equipment: Tag };
+  const ITEM_TYPE_BADGE_COLORS: Record<string, string> = {
+    service: "bg-blue-100 text-blue-800",
+    material: "bg-green-100 text-green-800",
+    equipment: "bg-orange-100 text-orange-800",
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <Input
+            placeholder="Search price list..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8"
+            data-testid="input-price-list-search"
+          />
+        </div>
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-36 h-8">
+            <SelectValue placeholder="All types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="service">Services</SelectItem>
+            <SelectItem value="material">Materials</SelectItem>
+            <SelectItem value="equipment">Equipment</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button size="sm" onClick={() => setDialogOpen(true)} data-testid="button-create-price-list-item">
+          <Plus className="h-4 w-4 mr-1" />
+          Add
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        {filtered.length} of {priceListItems.length} item{priceListItems.length !== 1 ? "s" : ""} · Material items get markup applied when added to quotes/invoices
+      </p>
+
+      {filtered.length === 0 ? (
+        <div className="text-center py-8">
+          <Tag className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">
+            {priceListItems.length === 0
+              ? "No items yet. Add services, materials, and equipment you use frequently."
+              : "No items match your filters."}
+          </p>
+        </div>
+      ) : (
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-2 pr-3">
+            {filtered.map(item => {
+              const Icon = ITEM_TYPE_ICONS[item.itemType] || Tag;
+              return (
+                <div
+                  key={item.id}
+                  className={`p-3 rounded-lg border space-y-2 ${item.isActive === false ? "opacity-50 bg-muted/10" : "bg-muted/30"}`}
+                  data-testid={`price-list-item-${item.id}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <Icon className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">{item.name}</p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground truncate">{item.description}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" onClick={() => handleEditItem(item)} data-testid={`button-edit-price-list-item-${item.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => { setItemToDelete(item); setDeleteConfirmOpen(true); }} data-testid={`button-delete-price-list-item-${item.id}`}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="font-semibold">${parseFloat(String(item.unitPrice)).toFixed(2)}/{item.unit || "each"}</Badge>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${ITEM_TYPE_BADGE_COLORS[item.itemType] || ""}`}>
+                      {item.itemType}
+                    </span>
+                    {item.category && item.category !== "General" && (
+                      <Badge variant="secondary" className="text-xs">{item.category}</Badge>
+                    )}
+                    {item.tradeType && (
+                      <Badge variant="outline" className="text-xs capitalize">{item.tradeType}</Badge>
+                    )}
+                    {item.isActive === false && (
+                      <Badge variant="secondary" className="text-xs">Inactive</Badge>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? "Edit Price List Item" : "Add Price List Item"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g. Replace hot water system"
+                data-testid="input-price-list-name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Description (optional)</Label>
+              <Input
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description shown on quote/invoice"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select value={formData.itemType} onValueChange={(v) => setFormData({ ...formData, itemType: v })}>
+                  <SelectTrigger data-testid="select-price-list-item-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="service">Service</SelectItem>
+                    <SelectItem value="material">Material</SelectItem>
+                    <SelectItem value="equipment">Equipment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Input
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="e.g. Hot Water, Drainage"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Unit Price ($)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value })}
+                  data-testid="input-price-list-unit-price"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Unit</Label>
+                <Select value={formData.unit} onValueChange={(v) => setFormData({ ...formData, unit: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRICE_LIST_UNIT_OPTIONS.map(u => (
+                      <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Default Qty</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={formData.defaultQuantity}
+                  onChange={(e) => setFormData({ ...formData, defaultQuantity: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Trade Type (optional)</Label>
+                <Select value={formData.tradeType || "_none"} onValueChange={(v) => setFormData({ ...formData, tradeType: v === "_none" ? "" : v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All trades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">All trades</SelectItem>
+                    {PRICE_LIST_TRADE_TYPES.map(t => (
+                      <SelectItem key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.gstIncluded}
+                  onChange={(e) => setFormData({ ...formData, gstIncluded: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Price includes GST</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="rounded"
+                />
+                <span className="text-sm">Active</span>
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={!formData.name || createMutation.isPending || updateMutation.isPending}
+              data-testid="button-save-price-list-item"
+            >
+              {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {editingItem ? "Save Changes" : "Add Item"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Price List Item</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{itemToDelete?.name}"? This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -3360,7 +3763,7 @@ export default function TemplatesHub() {
   const templateType = ['quote', 'invoice', 'job'].includes(typeParam || '')
     ? (typeParam as 'quote' | 'invoice' | 'job')
     : 'job';
-  const activeTab = ['styles', 'components', 'quick-templates', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
+  const activeTab = ['styles', 'components', 'price-list', 'quick-templates', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
     ? (tabParam as string)
     : 'styles';
   return (
@@ -3386,6 +3789,10 @@ export default function TemplatesHub() {
               <Layers className="h-4 w-4" />
               Components
             </TabsTrigger>
+            <TabsTrigger value="price-list" className="gap-2" data-testid="tab-price-list">
+              <Tag className="h-4 w-4" />
+              Price List
+            </TabsTrigger>
             <TabsTrigger value="quick-templates" className="gap-2">
               <Briefcase className="h-4 w-4" />
               Quick Templates
@@ -3410,6 +3817,18 @@ export default function TemplatesHub() {
           
           <TabsContent value="components">
             <ComponentsTab />
+          </TabsContent>
+
+          <TabsContent value="price-list">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-lg font-semibold">Price List</h2>
+                <p className="text-sm text-muted-foreground">
+                  Save your services, materials, and equipment with fixed prices so you can drop them onto quotes and invoices in seconds. Material items automatically get your markup applied.
+                </p>
+              </div>
+              <PriceListSection />
+            </div>
           </TabsContent>
           
           <TabsContent value="quick-templates">

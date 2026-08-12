@@ -652,6 +652,10 @@ export default function NewQuoteScreen() {
   const [catalogItems, setCatalogItems] = useState<any[]>([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
   const [catalogSearch, setCatalogSearch] = useState('');
+  const [showPriceList, setShowPriceList] = useState(false);
+  const [priceListItems, setPriceListItems] = useState<any[]>([]);
+  const [isLoadingPriceList, setIsLoadingPriceList] = useState(false);
+  const [priceListSearch, setPriceListSearch] = useState('');
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({ name: '', email: '', phone: '' });
   const [isCreatingClient, setIsCreatingClient] = useState(false);
@@ -1143,6 +1147,47 @@ export default function NewQuoteScreen() {
     setShowCatalog(false);
   };
 
+  const handleOpenPriceList = async () => {
+    setShowPriceList(true);
+    setIsLoadingPriceList(true);
+    try {
+      const response = await api.get<any[]>('/api/price-list-items');
+      if (response.data) {
+        const active = response.data.filter((i: any) => i.isActive !== false);
+        const tradeType = (user?.tradeType as string | undefined) ?? ((businessSettings as any)?.tradeType as string | undefined);
+        // Trade-relevant: no trade tag, matches user's trade, or explicitly 'general'
+        const tradeItems = tradeType
+          ? active.filter((i: any) => !i.tradeType || i.tradeType === tradeType || i.tradeType === 'general')
+          : active;
+        // Other-trade items shown at the bottom so they're still accessible
+        const otherItems = tradeType
+          ? active.filter((i: any) => i.tradeType && i.tradeType !== tradeType && i.tradeType !== 'general')
+          : [];
+        setPriceListItems([...tradeItems, ...otherItems]);
+      }
+    } catch (error) {
+      showToast({ type: 'error', message: 'Failed to load price list' });
+    }
+    setIsLoadingPriceList(false);
+  };
+
+  const handleAddPriceListItem = (item: any) => {
+    // If the saved price already includes GST, convert to ex-GST so the document
+    // doesn't double-charge GST when it applies its own 10% calculation.
+    const savedPrice = parseFloat(item.unitPrice || 0);
+    const basePrice = item.gstIncluded ? savedPrice / 1.1 : savedPrice;
+    const markupPct = item.itemType === 'material' ? parseFloat(businessSettings?.defaultMaterialMarkupPct || '0') : 0;
+    const appliedPrice = markupPct > 0 ? basePrice * (1 + markupPct / 100) : basePrice;
+    setLineItems([...lineItems, {
+      id: Date.now().toString(),
+      description: item.name + (item.description ? ` — ${item.description}` : ''),
+      quantity: String(item.defaultQuantity || 1),
+      unitPrice: appliedPrice.toFixed(2),
+    }]);
+    setShowPriceList(false);
+    setPriceListSearch('');
+  };
+
   const handleOpenQuoteTemplates = async () => {
     setShowQuoteTemplates(true);
     setIsLoadingQuoteTemplates(true);
@@ -1493,6 +1538,9 @@ export default function NewQuoteScreen() {
                   </PressableRow>
                   <PressableRow style={styles.catalogButton} onPress={handleOpenCatalog} >
                     <Feather name="book-open" size={16} color={colors.foreground} />
+                  </PressableRow>
+                  <PressableRow style={[styles.catalogButton, { backgroundColor: colors.primaryLight }]} onPress={handleOpenPriceList} >
+                    <Feather name="tag" size={16} color={colors.primary} />
                   </PressableRow>
                   <PressableRow style={[styles.catalogButton, { backgroundColor: colors.primaryLight }]} onPress={() => setShowAIGenerator(true)} >
                     <Feather name="zap" size={16} color={colors.primary} />
@@ -2036,6 +2084,144 @@ export default function NewQuoteScreen() {
                       <Feather name="plus" size={20} color={colors.primary} />
                     </PressableRow>
                   ))}
+                </View>
+              ));
+            })()}
+          </ScrollView>
+        </View>
+      </AppBottomSheet>
+
+      {/* Price List Picker Modal */}
+      <AppBottomSheet
+        visible={showPriceList}
+        onDismiss={() => { setShowPriceList(false); setPriceListSearch(''); }}
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Price List</Text>
+            <PressableRow onPress={() => { setShowPriceList(false); setPriceListSearch(''); }}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </PressableRow>
+          </View>
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: colors.muted,
+              borderRadius: 10,
+              paddingHorizontal: spacing.md,
+              gap: spacing.sm,
+            }}>
+              <Feather name="search" size={16} color={colors.mutedForeground} />
+              <TextInput
+                style={{
+                  flex: 1,
+                  paddingVertical: spacing.md,
+                  fontSize: typography.sizes.md,
+                  color: colors.foreground,
+                }}
+                value={priceListSearch}
+                onChangeText={setPriceListSearch}
+                placeholder="Search price list..."
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {priceListSearch.length > 0 && (
+                <PressableRow onPress={() => setPriceListSearch('')}>
+                  <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+                </PressableRow>
+              )}
+            </View>
+          </View>
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+            {isLoadingPriceList ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : (() => {
+              const searchLower = priceListSearch.toLowerCase().trim();
+              const filtered = searchLower
+                ? priceListItems.filter(item =>
+                    (item.name || '').toLowerCase().includes(searchLower) ||
+                    (item.description || '').toLowerCase().includes(searchLower) ||
+                    (item.category || '').toLowerCase().includes(searchLower)
+                  )
+                : priceListItems;
+
+              if (filtered.length === 0) {
+                return (
+                  <View style={styles.emptyState}>
+                    <Feather name={priceListSearch ? 'search' : 'tag'} size={48} color={colors.mutedForeground} />
+                    <Text style={styles.emptyStateText}>
+                      {priceListSearch ? 'No items match your search' : 'No price list items yet'}
+                    </Text>
+                    {!priceListSearch && (
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
+                        Add items in Settings → Templates → Price List
+                      </Text>
+                    )}
+                  </View>
+                );
+              }
+
+              const grouped: Record<string, any[]> = {};
+              filtered.forEach(item => {
+                const cat = item.category || 'General';
+                if (!grouped[cat]) grouped[cat] = [];
+                grouped[cat].push(item);
+              });
+              const categoryKeys = Object.keys(grouped).sort((a, b) => {
+                if (a === 'General') return -1;
+                if (b === 'General') return 1;
+                return a.localeCompare(b);
+              });
+              const hasCategories = categoryKeys.length > 1 || (categoryKeys.length === 1 && categoryKeys[0] !== 'General');
+
+              return categoryKeys.map(category => (
+                <View key={category}>
+                  {hasCategories && (
+                    <View style={{
+                      paddingVertical: spacing.sm,
+                      paddingHorizontal: spacing.xs,
+                      marginTop: spacing.sm,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border,
+                    }}>
+                      <Text style={{
+                        fontSize: typography.captionSmall.fontSize,
+                        fontWeight: fontWeights.semibold,
+                        color: colors.mutedForeground,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}>
+                        {category}
+                      </Text>
+                    </View>
+                  )}
+                  {grouped[category].map((item: any) => {
+                    const markupPct = item.itemType === 'material' ? parseFloat(businessSettings?.defaultMaterialMarkupPct || '0') : 0;
+                    const basePrice = parseFloat(item.unitPrice || 0);
+                    const displayPrice = markupPct > 0 ? basePrice * (1 + markupPct / 100) : basePrice;
+                    return (
+                      <PressableRow key={item.id} style={styles.clientOption} onPress={() => handleAddPriceListItem(item)} >
+                        <View style={[styles.clientOptionAvatar, { backgroundColor: colors.muted }]}>
+                          <Feather name={item.itemType === 'material' ? 'package' : item.itemType === 'equipment' ? 'tool' : 'briefcase'} size={18} color={colors.foreground} />
+                        </View>
+                        <View style={styles.clientOptionInfo}>
+                          <Text style={styles.clientOptionName}>{item.name}</Text>
+                          <Text style={styles.clientOptionEmail}>
+                            {formatCurrency(displayPrice)}/{item.unit || 'each'}
+                            {item.itemType === 'material' && markupPct > 0 ? ` (+${markupPct}% markup)` : ''}
+                            {item.itemType ? ` · ${item.itemType}` : ''}
+                          </Text>
+                        </View>
+                        <Feather name="plus" size={20} color={colors.primary} />
+                      </PressableRow>
+                    );
+                  })}
                 </View>
               ));
             })()}

@@ -91,6 +91,7 @@ interface BusinessSettings {
   workHoursStart?: string;
   workHoursEnd?: string;
   workDays?: number[];
+  defaultMaterialMarkupPct?: string;
 }
 
 /**

@@ -26,6 +26,7 @@ import LiveDocumentPreview from "./LiveDocumentPreview";
 import type { StylePreset } from "@shared/schema";
 import { TemplateCustomization, DOCUMENT_TEMPLATES, TemplateId } from "@/lib/document-templates";
 import CatalogModal from "@/components/CatalogModal";
+import PriceListModal from "@/components/PriceListModal";
 import {
   Plus,
   Trash2,
@@ -46,7 +47,8 @@ import {
   Sparkles,
   Palette,
   Search,
-  UserPlus
+  UserPlus,
+  Tag,
 } from "lucide-react";
 import AIQuoteGenerator from "@/components/AIQuoteGenerator";
 
@@ -97,6 +99,7 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ itemCode: "", description: "", quantity: "1", unitPrice: "", cost: "" });
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [priceListOpen, setPriceListOpen] = useState(false);
   const [showMarginMode, setShowMarginMode] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(urlJobId || undefined);
@@ -515,6 +518,26 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
       title: "Item added",
       description: `"${itemDescription}" added to quote`,
     });
+  };
+
+  const handlePriceListSelect = (item: any) => {
+    // If the saved price already includes GST, convert to ex-GST before inserting
+    // so the document's own GST calculation doesn't double-charge.
+    const savedPrice = parseFloat(item.unitPrice || 0);
+    const basePrice = item.gstIncluded ? savedPrice / 1.1 : savedPrice;
+    const markupPct = item.itemType === 'material'
+      ? parseFloat((businessSettings as any)?.defaultMaterialMarkupPct || '0')
+      : 0;
+    const appliedPrice = markupPct > 0 ? basePrice * (1 + markupPct / 100) : basePrice;
+    const desc = item.name + (item.description ? ` — ${item.description}` : '');
+    appendLineItem({
+      description: desc,
+      quantity: String(item.defaultQuantity || 1),
+      unitPrice: appliedPrice.toFixed(2),
+      cost: "",
+    });
+    setPriceListOpen(false);
+    toast({ title: "Item added", description: `"${item.name}" added to quote` });
   };
 
   const handleQuickAddClient = async () => {
@@ -1153,6 +1176,16 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
                   >
                     <BookOpen className="h-4 w-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPriceListOpen(true)}
+                    className="h-12 w-12 rounded-xl press-scale"
+                    data-testid="button-from-price-list"
+                    title="Add from price list"
+                  >
+                    <Tag className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 {form.formState.errors.lineItems && (
@@ -1543,6 +1576,15 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
         onOpenChange={setCatalogOpen}
         onSelectItem={handleCatalogSelect}
         tradeType={userCheck?.user?.tradeType}
+      />
+
+      {/* Price List Modal */}
+      <PriceListModal
+        open={priceListOpen}
+        onOpenChange={setPriceListOpen}
+        onSelectItem={handlePriceListSelect}
+        tradeType={userCheck?.user?.tradeType}
+        materialMarkupPct={parseFloat((businessSettings as any)?.defaultMaterialMarkupPct || '0')}
       />
 
       {/* AI Quote Generator Modal */}

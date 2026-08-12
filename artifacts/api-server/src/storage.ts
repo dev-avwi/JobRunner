@@ -436,6 +436,9 @@ import {
   claimLineItems,
   type ClaimLineItem,
   type InsertClaimLineItem,
+  priceListItems,
+  type PriceListItem,
+  type InsertPriceListItem,
 } from "@workspace/db";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -704,6 +707,13 @@ export interface IStorage {
   createLineItemCatalogItem(data: InsertLineItemCatalog & { userId: string }): Promise<LineItemCatalog>;
   updateLineItemCatalogItem(id: string, data: Partial<InsertLineItemCatalog>): Promise<LineItemCatalog>;
   deleteLineItemCatalogItem(id: string): Promise<void>;
+
+  // Price List Items
+  getPriceListItems(userId: string, options?: { tradeType?: string; itemType?: string; isActive?: boolean }): Promise<PriceListItem[]>;
+  getPriceListItem(id: string): Promise<PriceListItem | null>;
+  createPriceListItem(data: InsertPriceListItem & { userId: string }): Promise<PriceListItem>;
+  updatePriceListItem(id: string, data: Partial<InsertPriceListItem>): Promise<PriceListItem>;
+  deletePriceListItem(id: string): Promise<void>;
 
   // Rate Cards
   getRateCards(userId: string, tradeType?: string): Promise<RateCard[]>;
@@ -1636,6 +1646,43 @@ pool
     // Not fatal — claim_line_items may not yet exist on this environment.
     console.warn('[Schema] claim_line_items.variation_id migration skipped:', err.message);
   });
+
+// Task #408: job_type column ('service' | 'project') on jobs table.
+pool
+  .query(`
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_type text DEFAULT 'service';
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure jobs.job_type column:', err.message);
+  });
+
+// Task #409: Price list items — user-owned pricebook of saved services, materials, and equipment.
+// Created idempotently at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS price_list_items (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      description text,
+      unit_price decimal(10,2) NOT NULL DEFAULT '0.00',
+      category text DEFAULT 'General',
+      unit text DEFAULT 'each',
+      item_type text NOT NULL DEFAULT 'service',
+      trade_type text,
+      default_quantity decimal(10,2) DEFAULT '1.00',
+      gst_included boolean DEFAULT true,
+      is_active boolean DEFAULT true,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_price_list_items_user_id ON price_list_items (user_id);
+    CREATE INDEX IF NOT EXISTS idx_price_list_items_item_type ON price_list_items (item_type);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure price_list_items table:', err.message);
+  });
+
 
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
@@ -3865,6 +3912,34 @@ export class PostgresStorage implements IStorage {
     }
 
     return createdTemplates;
+  }
+
+  // Price List Items implementation
+  async getPriceListItems(userId: string, options?: { tradeType?: string; itemType?: string; isActive?: boolean }): Promise<PriceListItem[]> {
+    let condition = eq(priceListItems.userId, userId) as any;
+    if (options?.tradeType) condition = and(condition, eq(priceListItems.tradeType, options.tradeType));
+    if (options?.itemType) condition = and(condition, eq(priceListItems.itemType, options.itemType));
+    if (options?.isActive !== undefined) condition = and(condition, eq(priceListItems.isActive, options.isActive));
+    return await db.select().from(priceListItems).where(condition).orderBy(asc(priceListItems.category), asc(priceListItems.name));
+  }
+
+  async getPriceListItem(id: string): Promise<PriceListItem | null> {
+    const result = await db.select().from(priceListItems).where(eq(priceListItems.id, id)).limit(1);
+    return result[0] || null;
+  }
+
+  async createPriceListItem(data: InsertPriceListItem & { userId: string }): Promise<PriceListItem> {
+    const result = await db.insert(priceListItems).values(data).returning();
+    return result[0];
+  }
+
+  async updatePriceListItem(id: string, data: Partial<InsertPriceListItem>): Promise<PriceListItem> {
+    const result = await db.update(priceListItems).set({ ...data, updatedAt: new Date() }).where(eq(priceListItems.id, id)).returning();
+    return result[0];
+  }
+
+  async deletePriceListItem(id: string): Promise<void> {
+    await db.delete(priceListItems).where(eq(priceListItems.id, id));
   }
 
   // Line Item Catalog implementation
@@ -9306,9 +9381,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // WHS - Incident Reports
-  // ============================================
+  // ---------------------------------------------
   async getIncidentReports(userId: string, jobId?: string): Promise<IncidentReport[]> {
     const conditions = [eq(incidentReports.userId, userId)];
     if (jobId) conditions.push(eq(incidentReports.jobId, jobId));
@@ -9337,9 +9412,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // WHS - Site Emergency Info
-  // ============================================
+  // ---------------------------------------------
   async getSiteEmergencyInfo(userId: string, jobId?: string): Promise<SiteEmergencyInfo[]> {
     const conditions = [eq(siteEmergencyInfo.userId, userId)];
     if (jobId) conditions.push(eq(siteEmergencyInfo.jobId, jobId));
@@ -9368,9 +9443,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // WHS - JSA Documents
-  // ============================================
+  // ---------------------------------------------
   async getJsaDocuments(userId: string, jobId?: string): Promise<JsaDocument[]> {
     const conditions = [eq(jsaDocuments.userId, userId)];
     if (jobId) conditions.push(eq(jsaDocuments.jobId, jobId));
@@ -9423,9 +9498,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // WHS - Site Hazardous Environments
-  // ============================================
+  // ---------------------------------------------
   async getSiteHazardousEnvironments(userId: string, jobId?: string): Promise<SiteHazardousEnvironment[]> {
     const conditions = [eq(siteHazardousEnvironments.userId, userId)];
     if (jobId) conditions.push(eq(siteHazardousEnvironments.jobId, jobId));
@@ -9449,9 +9524,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // WHS - Site Safety Signage
-  // ============================================
+  // ---------------------------------------------
   async getSiteSafetySignage(userId: string, jobId?: string): Promise<SiteSafetySignage[]> {
     const conditions = [eq(siteSafetySignage.userId, userId)];
     if (jobId) conditions.push(eq(siteSafetySignage.jobId, jobId));
@@ -9529,9 +9604,9 @@ Thank you for your prompt attention to this matter.`,
     return result.length > 0;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // Website Addons
-  // ============================================
+  // ---------------------------------------------
   async getWebsiteAddon(businessId: string): Promise<WebsiteAddon | undefined> {
     const [result] = await db.select().from(websiteAddons).where(eq(websiteAddons.businessId, businessId)).limit(1);
     return result;
@@ -9547,9 +9622,9 @@ Thank you for your prompt attention to this matter.`,
     return result;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // Website Change Requests
-  // ============================================
+  // ---------------------------------------------
   async getWebsiteChangeRequests(businessId: string): Promise<WebsiteChangeRequest[]> {
     return await db.select().from(websiteChangeRequests).where(eq(websiteChangeRequests.businessId, businessId)).orderBy(desc(websiteChangeRequests.createdAt));
   }
@@ -9568,9 +9643,9 @@ Thank you for your prompt attention to this matter.`,
     return result;
   }
 
-  // ============================================
+  // ---------------------------------------------
   // Subcontractor Invoices
-  // ============================================
+  // ---------------------------------------------
   async getSubcontractorInvoices(subcontractorUserId: string, businessOwnerId?: string): Promise<SubcontractorInvoice[]> {
     const conditions = [eq(subcontractorInvoices.subcontractorUserId, subcontractorUserId)];
     if (businessOwnerId) {

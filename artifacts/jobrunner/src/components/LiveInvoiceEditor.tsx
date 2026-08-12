@@ -33,6 +33,7 @@ import LiveDocumentPreview from "./LiveDocumentPreview";
 import type { StylePreset } from "@shared/schema";
 import { TemplateCustomization, DOCUMENT_TEMPLATES, TemplateId } from "@/lib/document-templates";
 import CatalogModal from "@/components/CatalogModal";
+import PriceListModal from "@/components/PriceListModal";
 import CompletedJobPicker from "@/components/CompletedJobPicker";
 import {
   Plus,
@@ -48,6 +49,7 @@ import {
   Check,
   Palette,
   ChevronsUpDown,
+  Tag,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -94,6 +96,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ itemCode: "", description: "", quantity: "1", unitPrice: "" });
   const [catalogOpen, setCatalogOpen] = useState(false);
+  const [priceListOpen, setPriceListOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [sourceQuoteId, setSourceQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
@@ -729,6 +732,25 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     }, 0);
   };
 
+  const handlePriceListSelect = (item: any) => {
+    // If the saved price already includes GST, convert to ex-GST before inserting
+    // so the document's own GST calculation doesn't double-charge.
+    const savedPrice = parseFloat(item.unitPrice || 0);
+    const basePrice = item.gstIncluded ? savedPrice / 1.1 : savedPrice;
+    const markupPct = item.itemType === 'material'
+      ? parseFloat((businessSettings as any)?.defaultMaterialMarkupPct || '0')
+      : 0;
+    const appliedPrice = markupPct > 0 ? basePrice * (1 + markupPct / 100) : basePrice;
+    const desc = item.name + (item.description ? ` — ${item.description}` : '');
+    append({
+      description: desc,
+      quantity: String(item.defaultQuantity || 1),
+      unitPrice: appliedPrice.toFixed(2),
+    });
+    setPriceListOpen(false);
+    toast({ title: "Item added", description: `"${item.name}" added to invoice` });
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
       style: 'currency',
@@ -1181,6 +1203,16 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                   >
                     <BookOpen className="h-4 w-4" />
                   </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPriceListOpen(true)}
+                    className="h-12 w-12 rounded-xl press-scale"
+                    data-testid="button-from-price-list"
+                    title="Add from price list"
+                  >
+                    <Tag className="h-4 w-4" />
+                  </Button>
                 </div>
 
                 {(lineItems?.length || 0) === 0 && form.formState.errors.lineItems && (
@@ -1453,6 +1485,15 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
         onOpenChange={setCatalogOpen}
         onSelectItem={handleCatalogSelect}
         tradeType={userCheck?.user?.tradeType}
+      />
+
+      {/* Price List Modal */}
+      <PriceListModal
+        open={priceListOpen}
+        onOpenChange={setPriceListOpen}
+        onSelectItem={handlePriceListSelect}
+        tradeType={userCheck?.user?.tradeType}
+        materialMarkupPct={parseFloat((businessSettings as any)?.defaultMaterialMarkupPct || '0')}
       />
     </div>
   );
