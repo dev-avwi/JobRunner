@@ -752,6 +752,10 @@ export const jobs = pgTable("jobs", {
   subcontractorMarkupPct: decimal("subcontractor_markup_pct", { precision: 5, scale: 2 }),
   // Optional budget for the job (used in budget vs actual tracking)
   budgetedCost: decimal("budgeted_cost", { precision: 10, scale: 2 }),
+  // Job type: 'service' (simple call-out) or 'project' (multi-phase, tracked spend).
+  // Controls which tabs appear in job detail (phases, claims, POs only show for projects).
+  // Null or 'service' = simple service call (default behaviour).
+  jobType: text("job_type").default('service'), // 'service' | 'project'
   // Auto-generated job number (e.g., GEM1001). Set when businessSettings.jobPrefix is configured.
   jobNumber: text("job_number"),
   createdAt: timestamp("created_at").defaultNow(),

@@ -19,7 +19,7 @@ import UpgradePrompt from "@/components/UpgradePrompt";
 import { type DocumentTemplate } from "@/hooks/use-templates";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, getSessionToken } from "@/lib/queryClient";
-import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search } from "lucide-react";
+import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search, Zap, Briefcase, ArrowLeft, Percent, Package, Wrench } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
@@ -28,6 +28,8 @@ import { tradeCatalog } from "@shared/tradeCatalog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
+
+type JobType = 'service' | 'project';
 
 const jobFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -87,6 +89,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const createClientMutation = useCreateClient();
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
+  const [jobType, setJobType] = useState<JobType | null>(null);
+
+  // Project-specific state (only used when jobType === 'project')
+  const [budgetedCost, setBudgetedCost] = useState('');
+  const [materialMarkupPct, setMaterialMarkupPct] = useState('');
+  const [equipmentMarkupPct, setEquipmentMarkupPct] = useState('');
+  const [subcontractorMarkupPct, setSubcontractorMarkupPct] = useState('');
   const [quickClientData, setQuickClientData] = useState<QuickClientData>({
     name: "",
     email: "",
@@ -427,11 +436,19 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
     }
     try {
       const recurrenceBase = data.scheduledAt ? new Date(data.scheduledAt) : new Date();
-      const jobData = {
+      const jobData: any = {
         ...data,
+        jobType: jobType ?? 'service',
         estimatedHours: data.estimatedHours ? parseInt(data.estimatedHours) : undefined,
         scheduledAt: data.scheduledAt ? new Date(data.scheduledAt).toISOString() : undefined,
         customFields: data.customFields,
+        // Project-specific fields (only sent when jobType === 'project')
+        ...(jobType === 'project' && {
+          ...(budgetedCost ? { budgetedCost } : {}),
+          ...(materialMarkupPct ? { materialMarkupPct } : {}),
+          ...(equipmentMarkupPct ? { equipmentMarkupPct } : {}),
+          ...(subcontractorMarkupPct ? { subcontractorMarkupPct } : {}),
+        }),
         ...(data.isRecurring && data.recurrencePattern
           ? {
               isRecurring: true,
@@ -478,12 +495,101 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
     }
   };
 
+  // Show type picker if job type not yet chosen
+  if (jobType === null) {
+    return (
+      <div className="w-full px-6 lg:px-8 py-6 space-y-6" data-testid="page-job-type-picker">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold">Create New Job</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">What kind of job is this?</p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+          {/* Service Call card */}
+          <button
+            type="button"
+            onClick={() => setJobType('service')}
+            data-testid="card-job-type-service"
+            className="group text-left p-6 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
+                <Zap className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-1">Service Call</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Simple single-visit jobs — fault finding, repairs, maintenance, and quick call-outs.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {["Client", "Title", "Schedule", "Notes"].map((f) => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{f}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </button>
+
+          {/* Project card */}
+          <button
+            type="button"
+            onClick={() => setJobType('project')}
+            data-testid="card-job-type-project"
+            className="group text-left p-6 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/50 transition-colors">
+                <Briefcase className="h-7 w-7" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold mb-1">Project</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Multi-phase work with tracked spend — fit-outs, builds, renovations, and long-running contracts.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {["Phases", "Budget", "Markup", "POs", "Claims"].map((f) => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{f}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {onCancel && (
+          <div className="pt-2">
+            <Button type="button" variant="ghost" onClick={onCancel} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Cancel
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="w-full px-6 lg:px-8 py-6 space-y-6" data-testid="page-job-form">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold">Create New Job</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Fill in the details to create a new job</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <button
+              type="button"
+              onClick={() => setJobType(null)}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Change job type"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-2.5 py-0.5 rounded-full ${jobType === 'project' ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300' : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'}`}>
+              {jobType === 'project' ? <Briefcase className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
+              {jobType === 'project' ? 'Project' : 'Service Call'}
+            </span>
+          </div>
+          <h1 className="text-xl sm:text-2xl font-bold">Create New Job</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Fill in the details to create a new job</p>
+        </div>
       </div>
 
       {/* Creating from Quote Banner */}
@@ -875,6 +981,100 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
               </div>
               </div>
               </div>
+
+              {/* Project-only fields */}
+              {jobType === 'project' && (
+                <div className="space-y-4 pt-4" data-testid="project-fields">
+                  <div className="pb-2 border-b">
+                    <h3 className="text-base font-semibold flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-orange-500" />
+                      Project Settings
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      These settings unlock phases, purchase orders, and progress claims for this job.
+                    </p>
+                  </div>
+
+                  {/* Estimated / Contract Value */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium flex items-center gap-2">
+                      <span>Contract / Estimated Value ($)</span>
+                    </label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="e.g. 45000"
+                      value={budgetedCost}
+                      onChange={(e) => setBudgetedCost(e.target.value)}
+                      data-testid="input-budgeted-cost"
+                    />
+                    <p className="text-xs text-muted-foreground">Used on the profitability card and progress claims.</p>
+                  </div>
+
+                  {/* Markup overrides */}
+                  <div className="space-y-3">
+                    <p className="text-sm font-medium flex items-center gap-1.5">
+                      <Percent className="h-3.5 w-3.5 text-muted-foreground" />
+                      Markup overrides (optional — leave blank to use business defaults)
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Package className="h-3 w-3" /> Materials %
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="999"
+                          step="0.1"
+                          placeholder="e.g. 20"
+                          value={materialMarkupPct}
+                          onChange={(e) => setMaterialMarkupPct(e.target.value)}
+                          data-testid="input-material-markup"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Wrench className="h-3 w-3" /> Equipment %
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="999"
+                          step="0.1"
+                          placeholder="e.g. 15"
+                          value={equipmentMarkupPct}
+                          onChange={(e) => setEquipmentMarkupPct(e.target.value)}
+                          data-testid="input-equipment-markup"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <User className="h-3 w-3" /> Subcontractor %
+                        </label>
+                        <Input
+                          type="number"
+                          min="0"
+                          max="999"
+                          step="0.1"
+                          placeholder="e.g. 10"
+                          value={subcontractorMarkupPct}
+                          onChange={(e) => setSubcontractorMarkupPct(e.target.value)}
+                          data-testid="input-subcontractor-markup"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
+                    <Briefcase className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
+                    <p className="text-xs text-orange-700 dark:text-orange-300">
+                      Once created, use the <strong>Phases</strong> tab to build your project timeline, and the <strong>Claims</strong> tab to manage progress invoicing.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 mt-6 border-t border-border">
                 {onCancel && (

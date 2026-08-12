@@ -2752,6 +2752,11 @@ import { logSystemEvent } from "../systemEventService";
 
       const data = insertJobSchema.parse(body);
 
+      // Validate job_type to the two allowed values
+      if (data.jobType !== undefined && data.jobType !== null && !['service', 'project'].includes(data.jobType)) {
+        return res.status(400).json({ error: "jobType must be 'service' or 'project'" });
+      }
+
       // Verify referenced client belongs to this business (cross-business write guard)
       if (data.clientId) {
         const client = await storage.getClient(data.clientId, effectiveUserId);

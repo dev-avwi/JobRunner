@@ -513,6 +513,8 @@ function StatusSelector({
   );
 }
 
+type JobType = 'service' | 'project';
+
 export default function CreateJobScreen() {
   const params = useLocalSearchParams<{ clientId?: string; recurring?: string; enquiryName?: string; enquiryPhone?: string; smsConversationId?: string }>();
   const { clients, fetchClients } = useClientsStore();
@@ -524,6 +526,9 @@ export default function CreateJobScreen() {
   const { isOwner, isManager, isStandaloneSubcontractor, isLoading: isRoleLoading } = useUserRole();
   const canCreateJob = isOwner || isManager || isStandaloneSubcontractor;
 
+  // Job type: null = show picker; 'service' | 'project' = show form
+  const [jobType, setJobType] = useState<JobType | null>(null);
+
   const isFromEnquiry = !!(params.enquiryName || params.enquiryPhone);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState(isFromEnquiry ? `Enquiry from ${params.enquiryName || params.enquiryPhone || 'unknown'}` : '');
@@ -533,6 +538,12 @@ export default function CreateJobScreen() {
   const [scheduledAt, setScheduledAt] = useState<Date | null>(null);
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Project-only fields
+  const [budgetedCost, setBudgetedCost] = useState('');
+  const [materialMarkupPct, setMaterialMarkupPct] = useState('');
+  const [equipmentMarkupPct, setEquipmentMarkupPct] = useState('');
+  const [subcontractorMarkupPct, setSubcontractorMarkupPct] = useState('');
 
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [assignedToId, setAssignedToId] = useState<string | null>(null);
@@ -777,6 +788,14 @@ export default function CreateJobScreen() {
       priority,
       assignedTo: assignedToId || null,
       notes: notes.trim() || null,
+      jobType: jobType ?? 'service',
+      // Project-specific fields (only sent when jobType === 'project')
+      ...(jobType === 'project' && {
+        ...(budgetedCost ? { budgetedCost } : {}),
+        ...(materialMarkupPct ? { materialMarkupPct } : {}),
+        ...(equipmentMarkupPct ? { equipmentMarkupPct } : {}),
+        ...(subcontractorMarkupPct ? { subcontractorMarkupPct } : {}),
+      }),
     };
 
     if (scheduledAt) {
@@ -982,16 +1001,144 @@ export default function CreateJobScreen() {
     );
   }
 
+  // ── Job type picker ────────────────────────────────────────────────────────
+  if (jobType === null) {
+    return (
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <PressableRow style={styles.backButton} onPress={() => router.back()}>
+              <Feather name="chevron-left" size={24} color={colors.foreground} />
+            </PressableRow>
+            <Text style={styles.headerTitle}>Create Job</Text>
+            <View style={styles.headerRight} />
+          </View>
+
+          <ScrollView
+            contentContainerStyle={{ padding: spacing.lg, paddingBottom: bottomNavHeight + 24 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs }}>
+              What kind of job is this?
+            </Text>
+            <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, marginBottom: spacing['2xl'] }}>
+              Choose the type that best fits — only the relevant fields will be shown.
+            </Text>
+
+            {/* Service Call card */}
+            <PressableRow
+              testID="card-job-type-service"
+              onPress={() => setJobType('service')}
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                borderWidth: 2,
+                borderColor: colors.border,
+                padding: spacing.lg,
+                marginBottom: spacing.lg,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+                <View style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: '#EFF6FF',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Feather name="zap" size={26} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xxs }}>
+                    Service Call
+                  </Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 20, marginBottom: spacing.md }}>
+                    Simple single-visit jobs — fault finding, repairs, maintenance, and quick call-outs.
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                    {['Client', 'Title', 'Schedule', 'Team', 'Notes'].map((f) => (
+                      <View key={f} style={{ backgroundColor: colors.muted, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6 }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>{f}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+              </View>
+            </PressableRow>
+
+            {/* Project card */}
+            <PressableRow
+              testID="card-job-type-project"
+              onPress={() => setJobType('project')}
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: 16,
+                borderWidth: 2,
+                borderColor: colors.border,
+                padding: spacing.lg,
+                marginBottom: spacing['2xl'],
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+                <View style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 14,
+                  backgroundColor: '#FFF7ED',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Feather name="briefcase" size={26} color="#EA580C" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xxs }}>
+                    Project
+                  </Text>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 20, marginBottom: spacing.md }}>
+                    Multi-phase work with tracked spend — fit-outs, builds, renovations, and long-running contracts.
+                  </Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                    {['Phases', 'Budget', 'Markup', 'POs', 'Claims'].map((f) => (
+                      <View key={f} style={{ backgroundColor: '#FFF7ED', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6 }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#EA580C' }}>{f}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
+              </View>
+            </PressableRow>
+          </ScrollView>
+        </View>
+      </>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.container}>
         {/* Custom Header */}
         <View style={styles.header}>
-          <PressableRow style={styles.backButton} onPress={() => router.back()}>
+          <PressableRow style={styles.backButton} onPress={() => setJobType(null)}>
             <Feather name="chevron-left" size={24} color={colors.foreground} />
           </PressableRow>
-          <Text style={styles.headerTitle}>Create Job</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Text style={styles.headerTitle}>Create Job</Text>
+            <View style={{
+              paddingHorizontal: spacing.sm,
+              paddingVertical: 3,
+              borderRadius: 8,
+              backgroundColor: jobType === 'project' ? '#FFF7ED' : '#EFF6FF',
+            }}>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: jobType === 'project' ? '#EA580C' : '#2563EB' }}>
+                {jobType === 'project' ? 'Project' : 'Service Call'}
+              </Text>
+            </View>
+          </View>
           <View style={styles.headerRight} />
         </View>
 
@@ -1217,6 +1364,89 @@ export default function CreateJobScreen() {
                 numberOfLines={3}
               />
             </View>
+
+            {/* Project-only fields */}
+            {jobType === 'project' && (
+              <View style={[styles.section, { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 12, borderWidth: 2, borderColor: '#EA580C' + '30' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="briefcase" size={16} color="#EA580C" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                      Project Settings
+                    </Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                      Phases, POs &amp; claims unlock once the job is created
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Contract Value */}
+                <View style={{ marginBottom: spacing.lg }}>
+                  <Text style={[styles.sectionTitle, { marginBottom: spacing.xs }]}>Contract / Estimated Value ($)</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 45000"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={budgetedCost}
+                    onChangeText={setBudgetedCost}
+                    keyboardType="decimal-pad"
+                    testID="input-budgeted-cost"
+                  />
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs }}>
+                    Shown on the profitability card and progress claims
+                  </Text>
+                </View>
+
+                {/* Markup overrides */}
+                <View style={{ marginBottom: spacing.lg }}>
+                  <Text style={[styles.sectionTitle, { marginBottom: spacing.xs }]}>Markup overrides (optional)</Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>
+                    Leave blank to use business defaults
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Materials %</Text>
+                      <TextInput
+                        style={[styles.input, { textAlign: 'center' }]}
+                        placeholder="20"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={materialMarkupPct}
+                        onChangeText={setMaterialMarkupPct}
+                        keyboardType="decimal-pad"
+                        testID="input-material-markup"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Equipment %</Text>
+                      <TextInput
+                        style={[styles.input, { textAlign: 'center' }]}
+                        placeholder="15"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={equipmentMarkupPct}
+                        onChangeText={setEquipmentMarkupPct}
+                        keyboardType="decimal-pad"
+                        testID="input-equipment-markup"
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Subcon %</Text>
+                      <TextInput
+                        style={[styles.input, { textAlign: 'center' }]}
+                        placeholder="10"
+                        placeholderTextColor={colors.mutedForeground}
+                        value={subcontractorMarkupPct}
+                        onChangeText={setSubcontractorMarkupPct}
+                        keyboardType="decimal-pad"
+                        testID="input-subcontractor-markup"
+                      />
+                    </View>
+                  </View>
+                </View>
+
+              </View>
+            )}
 
             {/* Recurring Job Section */}
             <View style={[styles.section, { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 12, borderWidth: 1, borderColor: colors.border }]}>
