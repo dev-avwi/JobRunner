@@ -40860,6 +40860,19 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.json({ received: true, ignored: true });
       }
 
+      // Drop Android WebView "Java object is gone" / postMessage lifecycle errors.
+      // This fires when a user navigates away or backgrounds the app while JS is
+      // still executing and tries to call back into Java via postMessage or a
+      // JavascriptInterface. The Java-side WebView object gets GC'd before the
+      // JS call completes — not a bug in our code, just Android WebView lifecycle.
+      // Non-fatal: the app continues normally. Suppressing to avoid alert noise.
+      if (
+        msgStr.includes('Java object is gone') ||
+        msgStr.includes('Error invoking postMessage')
+      ) {
+        return res.json({ received: true, ignored: true });
+      }
+
       const userId = req.session?.userId || null;
       logger.error('frontend', `Client error: ${String(message).substring(0, 500)}`, {
         userId,

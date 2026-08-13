@@ -1,0 +1,40 @@
+You have one new message. 
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+3 of 2,824
+[JobRunner ERROR] frontend: Client error: Uncaught Error: Error invoking postMessage: Java object is gone
+External
+Inbox
+JobRunner <noreply@jobrunner.com.au>
+22:04 (31 minutes ago)
+to me
+
+Images in this message are hidden. This message appears suspicious. Don't show the images unless you trust the sender and the message.
+Show imagesReport spam
+External image icon
+Images are not displayed. Display images below - Always display images from noreply@jobrunner.com.au
+JobRunner ERROR Alert
+Category: frontend
+
+Message: Client error: Uncaught Error: Error invoking postMessage: Java object is gone
+
+Error: Uncaught Error: Error invoking postMessage: Java object is gone
+
+Error: Uncaught Error: Error invoking postMessage: Java object is gone
+    at  (/home/runner/workspace/artifacts/api-server/src/legacyRoutes.ts:40872:16)
+    at Layer.handle (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/layer.js:95:5)
+    at next (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/route.js:149:13)
+    at Route.dispatch (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/route.js:119:3)
+    at Layer.handle (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/layer.js:95:5)
+    at  (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/index.js:284:15)
+    at router3.process_params (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/index.js:346:12)
+    at next (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/index.js:280:10)
+    at  (/home/runner/workspace/artifacts/api-server/src/routes/middleware.ts:637:14)
+    at Layer.handle (/home/runner/workspace/node_modules/.pnpm/express@4.22.2/node_modules/express/lib/router/layer.js:95:5)
+Time: 2026-08-13T12:04:04.784Z
+
+Alerts are throttled to one every 5 minutes.
+
+
