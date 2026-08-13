@@ -5,7 +5,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * 1. Go to https://api.slack.com/apps → Create New App → From scratch
  * 2. Under "Event Subscriptions": enable, set Request URL to
- *      https://jobrunner.com.au/slack/events
+ *      https://jobrunner.com.au/api/slack/events
  *    Subscribe to bot events: message.channels
  * 3. Under "OAuth & Permissions" → Bot Token Scopes, add:
  *      chat:write, chat:write.public, channels:history
@@ -178,7 +178,7 @@ export function registerSlackCommands(app: Application): void {
   // Must be registered BEFORE express.json() so req.body is a raw Buffer —
   // required for HMAC-SHA256 signature verification.
   app.post(
-    '/slack/events',
+    '/api/slack/events',
     (req: any, res: any, next: any) => {
       require('express').raw({ type: '*/*', limit: '1mb' })(req, res, next);
     },
