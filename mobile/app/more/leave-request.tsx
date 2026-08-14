@@ -244,8 +244,8 @@ function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalen
 const calStyles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
-    padding: spacing.lg,
-    gap: spacing.sm,
+    padding: spacing.md,
+    gap: 4,
   },
   header: {
     flexDirection: 'row',
@@ -259,12 +259,12 @@ const calStyles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   dayLabel: {
     flex: 1,
     textAlign: 'center',
-    fontSize: typography.sizes.xs,
+    fontSize: 11,
     fontWeight: fontWeights.medium,
   },
   grid: {
@@ -273,13 +273,13 @@ const calStyles = StyleSheet.create({
   },
   cell: {
     width: `${100 / 7}%` as any,
-    aspectRatio: 0.82,
+    aspectRatio: 1.1,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,
   },
   dayNum: {
-    fontSize: typography.sizes.sm,
+    fontSize: 13,
   },
   dot: {
     width: 4,
@@ -314,16 +314,23 @@ const calStyles = StyleSheet.create({
 // Main Screen
 // ─────────────────────────────────────────────────────────────────────────────
 
+interface TeamTimeOff extends TimeOff {
+  memberName?: string;
+}
+
 export default function LeaveRequestScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
   const [myRequests, setMyRequests] = useState<TimeOff[]>([]);
+  const [teamRequests, setTeamRequests] = useState<TeamTimeOff[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTeam, setIsLoadingTeam] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<'my' | 'team'>('my');
 
   // Form state
   const [leaveType, setLeaveType] = useState('annual_leave');
@@ -344,15 +351,39 @@ export default function LeaveRequestScreen() {
     }
   }, []);
 
+  const fetchTeamRequests = useCallback(async () => {
+    setIsLoadingTeam(true);
+    try {
+      const [teamRes, membersRes] = await Promise.all([
+        api.get<TimeOff[]>('/api/team/time-off'),
+        api.get<{ id: string; userId: string; name?: string; email?: string }[]>('/api/team-members').catch(() => ({ data: [] as any[] })),
+      ]);
+      const memberMap: Record<string, string> = {};
+      for (const m of (membersRes.data || [])) {
+        if (m.id) memberMap[m.id] = m.name || m.email || 'Team member';
+      }
+      const team: TeamTimeOff[] = (teamRes.data || []).map(r => ({
+        ...r,
+        memberName: memberMap[r.teamMemberId] || undefined,
+      }));
+      setTeamRequests(team);
+    } catch (err) {
+      if (__DEV__) console.log('Error fetching team leave:', err);
+    } finally {
+      setIsLoadingTeam(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchRequests().finally(() => setIsLoading(false));
-  }, [fetchRequests]);
+    fetchTeamRequests();
+  }, [fetchRequests, fetchTeamRequests]);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await fetchRequests();
+    await Promise.all([fetchRequests(), fetchTeamRequests()]);
     setIsRefreshing(false);
-  }, [fetchRequests]);
+  }, [fetchRequests, fetchTeamRequests]);
 
   function validateDates(): boolean {
     if (!startDate || !endDate) {
@@ -406,13 +437,22 @@ export default function LeaveRequestScreen() {
   function handleDayPress(day: string) {
     setSelectedDay(day);
     if (!day) return;
-    // Scroll to first matching request
+    // If there's an existing request on this day, scroll to it
     const match = myRequests.find((r) => requestMatchesDay(r, day));
     if (match) {
       const offset = itemOffsets.current[match.id];
       if (offset !== undefined) {
         scrollRef.current?.scrollTo({ y: offset, animated: true });
       }
+    } else {
+      // No existing leave — pre-fill the form with this date and open it
+      setStartDate(day);
+      setEndDate(day);
+      setDateError('');
+      setShowForm(true);
+      setActiveTab('my');
+      // Scroll to top so the form is visible
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
     }
   }
 
@@ -422,10 +462,10 @@ export default function LeaveRequestScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Leave Requests',
+          title: 'Leave',
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => setShowForm((v) => !v)}
+              onPress={() => { setShowForm((v) => !v); setActiveTab('my'); }}
               style={{ marginRight: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
               <Feather name={showForm ? 'x' : 'plus'} size={18} color={colors.primary} />
@@ -566,85 +606,141 @@ export default function LeaveRequestScreen() {
 
           {/* Month Calendar */}
           <LeaveCalendar
-            requests={myRequests}
+            requests={activeTab === 'my' ? myRequests : teamRequests}
             selectedDay={selectedDay}
             onDayPress={handleDayPress}
             colors={colors}
           />
 
-          {/* My Requests */}
-          <Text style={styles.sectionHeader}>My Leave Requests</Text>
+          {/* Tab switcher */}
+          <View style={{ flexDirection: 'row', backgroundColor: colors.muted, borderRadius: radius.lg, padding: 3, gap: 3 }}>
+            {(['my', 'team'] as const).map(tab => (
+              <TouchableOpacity
+                key={tab}
+                style={[
+                  { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md },
+                  activeTab === tab && { backgroundColor: colors.card, ...shadows.sm },
+                ]}
+                onPress={() => { setActiveTab(tab); setSelectedDay(''); }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: activeTab === tab ? fontWeights.semibold : fontWeights.regular, color: activeTab === tab ? colors.foreground : colors.mutedForeground }}>
+                  {tab === 'my' ? 'My Leave' : 'Team Schedule'}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-          {isLoading ? (
-            <ActivityIndicator color={colors.primary} style={{ marginTop: spacing['3xl'] }} />
-          ) : myRequests.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Feather name="calendar" size={40} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No leave requests yet</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-                Tap the + New button above to submit a leave request
-              </Text>
-            </View>
-          ) : (
-            myRequests.map((req) => {
-              const leaveTypeInfo = LEAVE_TYPES.find((t) => t.value === req.reason);
-              const days = diffDays(req.startDate, req.endDate);
-              const sc = statusColor(req.status, colors);
-              const isHighlighted = selectedDay ? requestMatchesDay(req, selectedDay) : false;
-              return (
-                <View
-                  key={req.id}
-                  onLayout={(e) => {
-                    itemOffsets.current[req.id] = e.nativeEvent.layout.y;
-                  }}
-                  style={[
-                    styles.requestCard,
-                    isHighlighted && {
-                      borderWidth: 2,
-                      borderColor: colors.primary,
-                    },
-                  ]}
-                >
-                  <View style={styles.requestHeader}>
-                    <View style={[styles.leaveTypePill, { backgroundColor: colors.primary + '15' }]}>
-                      <Feather name={leaveTypeInfo?.icon || 'calendar'} size={12} color={colors.primary} />
-                      <Text style={[styles.leaveTypeText, { color: colors.primary }]}>
-                        {leaveTypeInfo?.label || req.reason.replace(/_/g, ' ')}
-                      </Text>
-                    </View>
-                    <View style={[styles.statusPill, { backgroundColor: sc + '20' }]}>
-                      <View style={[styles.statusDot, { backgroundColor: sc }]} />
-                      <Text style={[styles.statusText, { color: sc }]}>{statusLabel(req.status)}</Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.requestDates}>
-                    <Feather name="calendar" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.requestDateText, { color: colors.foreground }]}>
-                      {formatDate(req.startDate)} → {formatDate(req.endDate)}
-                    </Text>
-                    <Text style={[styles.requestDays, { color: colors.mutedForeground }]}>
-                      {days} day{days !== 1 ? 's' : ''}
-                    </Text>
-                  </View>
-
-                  {req.notes ? (
-                    <Text style={[styles.requestNotes, { color: colors.mutedForeground }]}>
-                      "{req.notes}"
-                    </Text>
-                  ) : null}
-
-                  {req.approverComment ? (
-                    <View style={[styles.approverComment, { backgroundColor: colors.muted + '60' }]}>
-                      <Feather name="message-circle" size={12} color={colors.mutedForeground} />
-                      <Text style={[styles.approverCommentText, { color: colors.mutedForeground }]}>
-                        {req.approverComment}
-                      </Text>
-                    </View>
-                  ) : null}
+          {activeTab === 'my' ? (
+            <>
+              {isLoading ? (
+                <ActivityIndicator color={colors.primary} style={{ marginTop: spacing['3xl'] }} />
+              ) : myRequests.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Feather name="calendar" size={40} color={colors.mutedForeground} />
+                  <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No leave requests yet</Text>
+                  <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+                    Tap + New above or tap any date on the calendar to request leave
+                  </Text>
                 </View>
-              );
-            })
+              ) : (
+                myRequests.map((req) => {
+                  const leaveTypeInfo = LEAVE_TYPES.find((t) => t.value === req.reason);
+                  const days = diffDays(req.startDate, req.endDate);
+                  const sc = statusColor(req.status, colors);
+                  const isHighlighted = selectedDay ? requestMatchesDay(req, selectedDay) : false;
+                  return (
+                    <View
+                      key={req.id}
+                      onLayout={(e) => { itemOffsets.current[req.id] = e.nativeEvent.layout.y; }}
+                      style={[styles.requestCard, isHighlighted && { borderWidth: 2, borderColor: colors.primary }]}
+                    >
+                      <View style={styles.requestHeader}>
+                        <View style={[styles.leaveTypePill, { backgroundColor: colors.primary + '15' }]}>
+                          <Feather name={leaveTypeInfo?.icon || 'calendar'} size={12} color={colors.primary} />
+                          <Text style={[styles.leaveTypeText, { color: colors.primary }]}>
+                            {leaveTypeInfo?.label || req.reason.replace(/_/g, ' ')}
+                          </Text>
+                        </View>
+                        <View style={[styles.statusPill, { backgroundColor: sc + '20' }]}>
+                          <View style={[styles.statusDot, { backgroundColor: sc }]} />
+                          <Text style={[styles.statusText, { color: sc }]}>{statusLabel(req.status)}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.requestDates}>
+                        <Feather name="calendar" size={13} color={colors.mutedForeground} />
+                        <Text style={[styles.requestDateText, { color: colors.foreground }]}>
+                          {formatDate(req.startDate)} → {formatDate(req.endDate)}
+                        </Text>
+                        <Text style={[styles.requestDays, { color: colors.mutedForeground }]}>
+                          {days} day{days !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                      {req.notes ? (
+                        <Text style={[styles.requestNotes, { color: colors.mutedForeground }]}>"{req.notes}"</Text>
+                      ) : null}
+                      {req.approverComment ? (
+                        <View style={[styles.approverComment, { backgroundColor: colors.muted + '60' }]}>
+                          <Feather name="message-circle" size={12} color={colors.mutedForeground} />
+                          <Text style={[styles.approverCommentText, { color: colors.mutedForeground }]}>{req.approverComment}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })
+              )}
+            </>
+          ) : (
+            <>
+              {isLoadingTeam ? (
+                <ActivityIndicator color={colors.primary} style={{ marginTop: spacing['3xl'] }} />
+              ) : teamRequests.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Feather name="users" size={40} color={colors.mutedForeground} />
+                  <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No team leave scheduled</Text>
+                  <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>Team leave requests will appear here</Text>
+                </View>
+              ) : (
+                teamRequests.map((req) => {
+                  const leaveTypeInfo = LEAVE_TYPES.find((t) => t.value === req.reason);
+                  const days = diffDays(req.startDate, req.endDate);
+                  const sc = statusColor(req.status, colors);
+                  return (
+                    <View key={req.id} style={styles.requestCard}>
+                      <View style={styles.requestHeader}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 }}>
+                          <Feather name="user" size={13} color={colors.mutedForeground} />
+                          <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>
+                            {req.memberName || 'Team member'}
+                          </Text>
+                        </View>
+                        <View style={[styles.statusPill, { backgroundColor: sc + '20' }]}>
+                          <View style={[styles.statusDot, { backgroundColor: sc }]} />
+                          <Text style={[styles.statusText, { color: sc }]}>{statusLabel(req.status)}</Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        <View style={[styles.leaveTypePill, { backgroundColor: colors.muted }]}>
+                          <Feather name={leaveTypeInfo?.icon || 'calendar'} size={11} color={colors.mutedForeground} />
+                          <Text style={[styles.leaveTypeText, { color: colors.mutedForeground }]}>
+                            {leaveTypeInfo?.label || req.reason.replace(/_/g, ' ')}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.requestDates}>
+                        <Feather name="calendar" size={13} color={colors.mutedForeground} />
+                        <Text style={[styles.requestDateText, { color: colors.foreground }]}>
+                          {formatDate(req.startDate)} → {formatDate(req.endDate)}
+                        </Text>
+                        <Text style={[styles.requestDays, { color: colors.mutedForeground }]}>
+                          {days} day{days !== 1 ? 's' : ''}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </>
           )}
         </ScrollView>
       </KeyboardAvoidingView>

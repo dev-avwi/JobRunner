@@ -3,7 +3,7 @@
  * Renders registered project documents (with revision history) and RFIs.
  * Used inside the Documents tab of the job detail screen.
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -131,6 +131,7 @@ export function DocumentRegisterSection({
   const [isLoadingRfis, setIsLoadingRfis] = useState(false);
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [docRevisions, setDocRevisions] = useState<Record<string, RevisionRecord[]>>({});
+  const docRevisionsRef = useRef<Record<string, RevisionRecord[]>>({});
   const [isLoadingRevisions, setIsLoadingRevisions] = useState<string | null>(null);
   const [expandedRfiId, setExpandedRfiId] = useState<string | null>(null);
 
@@ -196,9 +197,14 @@ export function DocumentRegisterSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Keep ref in sync so loadRevisions closure doesn't need docRevisions in deps
+  useEffect(() => {
+    docRevisionsRef.current = docRevisions;
+  }, [docRevisions]);
+
   const loadRevisions = useCallback(
     async (docId: string) => {
-      if (docRevisions[docId]) return;
+      if (docRevisionsRef.current[docId]) return;
       setIsLoadingRevisions(docId);
       try {
         const res = await api.get<RevisionRecord[]>(
@@ -211,7 +217,7 @@ export function DocumentRegisterSection({
         setIsLoadingRevisions(null);
       }
     },
-    [jobId, docRevisions],
+    [jobId],
   );
 
   const toggleDocExpand = (docId: string) => {
@@ -1111,8 +1117,8 @@ export function DocumentRegisterSection({
   );
 }
 
-const localStyles = (colors: any) =>
-  StyleSheet.create({
+function localStyles(colors: any) {
+  return StyleSheet.create({
     card: {
       backgroundColor: colors.card,
       borderRadius: radius.lg,
@@ -1357,3 +1363,4 @@ const localStyles = (colors: any) =>
       fontWeight: fontWeights.medium,
     },
   });
+}

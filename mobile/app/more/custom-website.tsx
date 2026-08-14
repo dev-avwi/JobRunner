@@ -365,7 +365,7 @@ export default function CustomWebsitePage() {
 
         <AppBottomSheet visible={showForm} onDismiss={() => setShowForm(false)} snapPoints={['92%']} scrollable={false} contentPadding={0}>
           <View style={{ flex: 1 }}>
-            <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { paddingTop: spacing.md }]}>
               <PressableRow onPress={() => setShowForm(false)}>
                 <Feather name="x" size={24} color={colors.foreground} />
               </PressableRow>

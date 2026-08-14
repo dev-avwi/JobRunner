@@ -104,6 +104,9 @@ export function VariationsSection({
   const [addPhotos, setAddPhotos] = useState<string[]>([]); // local URIs
   const [isSaving, setIsSaving] = useState(false);
 
+  // ── detail sheet state ────────────────────────────────────────────────────
+  const [viewingVariation, setViewingVariation] = useState<JobVariation | null>(null);
+
   // ── action state ──────────────────────────────────────────────────────────
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -347,14 +350,8 @@ export function VariationsSection({
           <TouchableOpacity
             key={variation.id}
             style={[styles.variationCard, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}
-            onPress={() => {
-              if (isPending && isOwnerOrManager) {
-                handleVariationAction(variation);
-              } else if (isDraft && isOwnerOrManager) {
-                handleSubmitDraft(variation);
-              }
-            }}
-            activeOpacity={(isPending || isDraft) && isOwnerOrManager ? 0.7 : 1}
+            onPress={() => setViewingVariation(variation)}
+            activeOpacity={0.7}
           >
             <View style={styles.cardRow}>
               {/* Number badge */}
@@ -401,24 +398,136 @@ export function VariationsSection({
               <View style={styles.cardRight}>
                 {isActioning ? (
                   <ActivityIndicator size="small" color={colors.primary} />
-                ) : isPending && isOwnerOrManager ? (
-                  <View style={{ alignItems: 'center', gap: 3 }}>
-                    <Feather name="check-circle" size={16} color="#065F46" />
-                    <Text style={{ fontSize: 9, color: colors.mutedForeground }}>Tap to act</Text>
-                  </View>
-                ) : isDraft && isOwnerOrManager ? (
-                  <View style={{ alignItems: 'center', gap: 3 }}>
-                    <Feather name="send" size={14} color={colors.primary} />
-                    <Text style={{ fontSize: 9, color: colors.mutedForeground }}>Submit</Text>
-                  </View>
                 ) : (
-                  <Feather name="chevron-right" size={14} color={colors.mutedForeground} style={{ opacity: 0.3 }} />
+                  <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                 )}
               </View>
             </View>
           </TouchableOpacity>
         );
       })}
+
+      {/* Variation Detail Sheet */}
+      {viewingVariation && (() => {
+        const v = viewingVariation;
+        const cfg = STATUS_CONFIG[v.status] ?? STATUS_CONFIG.draft;
+        const isPending = v.status === 'sent' || v.status === 'pending';
+        const isDraft = v.status === 'draft';
+        const isActioning = actionLoading === v.id;
+        return (
+          <AppBottomSheet
+            visible={!!viewingVariation}
+            onDismiss={() => setViewingVariation(null)}
+            title={`${v.number}: ${v.title}`}
+            showCloseButton
+            snapPoints={['70%']}
+            footer={
+              isOwnerOrManager && (isPending || isDraft) ? (
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {isPending && (
+                    <>
+                      <SheetButton
+                        variant="outline"
+                        label="Reject"
+                        loading={isActioning}
+                        onPress={async () => {
+                          setActionLoading(v.id);
+                          try {
+                            const res = await api.patch(`/api/jobs/${jobId}/variations/${v.id}`, { status: 'rejected' });
+                            if (res.error) showToast({ type: 'error', message: res.error });
+                            else { showToast({ type: 'success', message: 'Variation rejected' }); onRefresh?.(); setViewingVariation(null); }
+                          } catch (e: any) {
+                            showToast({ type: 'error', message: e?.message || 'Failed' });
+                          } finally { setActionLoading(null); }
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                      <SheetButton
+                        label="Approve"
+                        loading={isActioning}
+                        onPress={async () => {
+                          setActionLoading(v.id);
+                          try {
+                            const res = await api.patch(`/api/jobs/${jobId}/variations/${v.id}`, { status: 'approved' });
+                            if (res.error) showToast({ type: 'error', message: res.error });
+                            else { showToast({ type: 'success', message: 'Variation approved' }); onRefresh?.(); setViewingVariation(null); }
+                          } catch (e: any) {
+                            showToast({ type: 'error', message: e?.message || 'Failed' });
+                          } finally { setActionLoading(null); }
+                        }}
+                        style={{ flex: 1 }}
+                      />
+                    </>
+                  )}
+                  {isDraft && (
+                    <SheetButton
+                      label="Submit for Approval"
+                      loading={isActioning}
+                      onPress={() => { handleSubmitDraft(v); setViewingVariation(null); }}
+                      style={{ flex: 1 }}
+                    />
+                  )}
+                </View>
+              ) : undefined
+            }
+          >
+            <BottomSheetScrollView showsVerticalScrollIndicator={false}>
+              {/* Status + amount */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+                <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
+                  <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
+                </View>
+                <Text style={[styles.amountText, { color: colors.foreground, fontSize: 18 }]}>
+                  {fmt(v.totalAmount)}
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>(incl. GST)</Text>
+              </View>
+              {/* Description */}
+              {v.description ? (
+                <View style={{ marginBottom: spacing.md }}>
+                  <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Description</Text>
+                  <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{v.description}</Text>
+                </View>
+              ) : null}
+              {/* Reason */}
+              {v.reason ? (
+                <View style={{ marginBottom: spacing.md }}>
+                  <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Reason for Change</Text>
+                  <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{v.reason}</Text>
+                </View>
+              ) : null}
+              {/* Amounts breakdown */}
+              <View style={{ backgroundColor: colors.muted, borderRadius: 10, padding: spacing.md, marginBottom: spacing.md, gap: 8 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Subtotal (excl. GST)</Text>
+                  <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: fontWeights.medium }}>{fmt(v.additionalAmount)}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>GST (10%)</Text>
+                  <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: fontWeights.medium }}>{fmt(v.gstAmount)}</Text>
+                </View>
+                <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: fontWeights.semibold }}>Total</Text>
+                  <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: fontWeights.semibold }}>{fmt(v.totalAmount)}</Text>
+                </View>
+              </View>
+              {/* Dates / approver */}
+              {v.createdAt && (
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 4 }}>Created {fmtDate(v.createdAt)}{v.createdByName ? ` by ${v.createdByName}` : ''}</Text>
+              )}
+              {v.status === 'approved' && v.approvedAt && (
+                <Text style={{ fontSize: 12, color: '#065F46', marginBottom: 4 }}>Approved {fmtDate(v.approvedAt)}{v.approvedByName ? ` by ${v.approvedByName}` : ''}</Text>
+              )}
+              {v.status === 'rejected' && v.rejectionReason && (
+                <View style={{ backgroundColor: '#FEE2E220', borderRadius: 8, padding: spacing.sm, marginTop: spacing.sm }}>
+                  <Text style={{ fontSize: 12, color: '#991B1B' }}>Rejection reason: {v.rejectionReason}</Text>
+                </View>
+              )}
+            </BottomSheetScrollView>
+          </AppBottomSheet>
+        );
+      })()}
 
       {/* Add Variation Bottom Sheet */}
       <AppBottomSheet

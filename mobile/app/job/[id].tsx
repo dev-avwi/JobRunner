@@ -2260,7 +2260,8 @@ export default function JobDetailScreen() {
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
   const [suppliersLoadError, setSuppliersLoadError] = useState(false);
   const [selectedPOSupplierId, setSelectedPOSupplierId] = useState<string | null>(null);
-  const [showSupplierPickerSheet, setShowSupplierPickerSheet] = useState(false);
+  const [showInlineSupplierList, setShowInlineSupplierList] = useState(false);
+  const [supplierSearch, setSupplierSearch] = useState('');
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
   const [isSavingMaterial, setIsSavingMaterial] = useState(false);
@@ -2866,6 +2867,8 @@ export default function JobDetailScreen() {
     setAddPOForm({ poNumber: '', notes: '', estimatedTotal: '' });
     setSelectedPOSupplierId(null);
     setSuppliersLoadError(false);
+    setShowInlineSupplierList(false);
+    setSupplierSearch('');
   }, []);
 
   const handleSavePO = async () => {
@@ -2878,13 +2881,16 @@ export default function JobDetailScreen() {
       return;
     }
     setIsSavingPO(true);
+    const isCustom = selectedPOSupplierId.startsWith('custom:');
     const res = await api.post<any>('/api/purchase-orders', {
       jobId: id,
       status: 'pending',
       poNumber: addPOForm.poNumber.trim(),
       notes: addPOForm.notes.trim() || null,
       orderDate: new Date().toISOString(),
-      supplierId: selectedPOSupplierId,
+      ...(isCustom
+        ? { supplierName: selectedPOSupplierId.slice(7) }
+        : { supplierId: selectedPOSupplierId }),
     });
     setIsSavingPO(false);
     if (res.error) {
@@ -10777,7 +10783,7 @@ export default function JobDetailScreen() {
         onDismiss={handleClosePOModal}
         title="New Purchase Order"
         showCloseButton
-        snapPoints={['70%']}
+        snapPoints={['90%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <SheetButton variant="outline" label="Cancel" onPress={handleClosePOModal} style={{ flex: 1 }} />
@@ -10797,17 +10803,21 @@ export default function JobDetailScreen() {
             returnKeyType="next"
           />
 
-          {/* Supplier picker — required */}
+          {/* Supplier picker — inline (avoids nested modal conflict) */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Supplier <Text style={{ color: colors.destructive }}>*</Text></Text>
           <TouchableOpacity
-            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg, height: 48 }]}
-            onPress={() => suppliersLoadError ? loadSuppliers() : setShowSupplierPickerSheet(true)}
+            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showInlineSupplierList ? spacing.xs : spacing.lg }]}
+            onPress={() => {
+              if (suppliersLoadError) { loadSuppliers(); return; }
+              setShowInlineSupplierList(v => !v);
+              setSupplierSearch('');
+            }}
             activeOpacity={0.7}
           >
             {isLoadingSuppliers ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : suppliersLoadError ? (
-              <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load suppliers. Tap to retry.</Text>
+              <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load. Tap to retry.</Text>
             ) : selectedPOSupplierId ? (
               <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
                 {suppliers.find(s => s.id === selectedPOSupplierId)?.name ?? 'Unknown supplier'}
@@ -10815,8 +10825,68 @@ export default function JobDetailScreen() {
             ) : (
               <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, flex: 1 }}>Select supplier</Text>
             )}
-            <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+            <Feather name={showInlineSupplierList ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
+
+          {showInlineSupplierList && (
+            <View style={{ marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card }}>
+              {/* Search */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, paddingHorizontal: spacing.md }}>
+                <Feather name="search" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.xs }} />
+                <TextInput
+                  style={{ flex: 1, height: 40, fontSize: typography.sizes.sm, color: colors.foreground }}
+                  placeholder="Search or type custom name..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={supplierSearch}
+                  onChangeText={setSupplierSearch}
+                  autoFocus={false}
+                />
+                {supplierSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setSupplierSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Feather name="x" size={14} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              {/* Supplier rows */}
+              {(() => {
+                const filtered = suppliers.filter(s => s.name.toLowerCase().includes(supplierSearch.toLowerCase()));
+                if (filtered.length === 0 && !supplierSearch) {
+                  return (
+                    <View style={{ padding: spacing.md, alignItems: 'center' }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No suppliers yet</Text>
+                    </View>
+                  );
+                }
+                return [...filtered.slice(0, 6).map(s => (
+                  <TouchableOpacity
+                    key={s.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                    onPress={() => { setSelectedPOSupplierId(s.id); setShowInlineSupplierList(false); setSupplierSearch(''); }}
+                    activeOpacity={0.6}
+                  >
+                    <Feather name="package" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
+                    <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.foreground }}>{s.name}</Text>
+                    {selectedPOSupplierId === s.id && <Feather name="check" size={14} color={colors.primary} />}
+                  </TouchableOpacity>
+                )), supplierSearch.trim() ? (
+                  <TouchableOpacity
+                    key="custom"
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
+                    onPress={() => {
+                      // Store custom name via a sentinel ID so Save still works via name lookup later
+                      setSelectedPOSupplierId(`custom:${supplierSearch.trim()}`);
+                      setShowInlineSupplierList(false);
+                      setSupplierSearch('');
+                    }}
+                    activeOpacity={0.6}
+                  >
+                    <Feather name="plus-circle" size={14} color={colors.primary} style={{ marginRight: spacing.sm }} />
+                    <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.primary }}>Use "{supplierSearch.trim()}"</Text>
+                  </TouchableOpacity>
+                ) : null];
+              })()}
+            </View>
+          )}
 
           {/* Notes */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Notes / Purpose</Text>
@@ -10832,22 +10902,6 @@ export default function JobDetailScreen() {
         </View>
       </AppBottomSheet>
 
-      {/* Supplier Picker Sheet */}
-      <AppBottomSheet
-        visible={showSupplierPickerSheet}
-        onDismiss={() => setShowSupplierPickerSheet(false)}
-        title="Select Supplier"
-        showCloseButton
-        snapPoints={['85%']}
-        scrollable={false}
-        contentPadding={0}>
-        <SupplierPickerSheetContent
-          suppliers={suppliers}
-          selectedId={selectedPOSupplierId}
-          onSelect={(id) => { setSelectedPOSupplierId(id); setShowSupplierPickerSheet(false); }}
-          colors={colors}
-        />
-      </AppBottomSheet>
 
       {/* FAB Voice Recording Modal */}
       <AppBottomSheet

@@ -493,7 +493,7 @@ export default function LeadsScreen() {
 
       <AppBottomSheet visible={showForm} onDismiss={() => { setShowForm(false); setEditingLead(null); resetForm(); }} snapPoints={['92%']} scrollable={false} contentPadding={0}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+          <View style={[styles.modalHeader, { paddingTop: spacing.md }]}>
             <PressableRow onPress={() => { setShowForm(false); setEditingLead(null); resetForm(); }}>
               <Feather name="x" size={24} color={colors.foreground} />
             </PressableRow>
