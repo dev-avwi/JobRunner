@@ -43,6 +43,7 @@ import {
   Trash2,
   Download,
   Eye,
+  EyeOff,
   ChevronDown,
   ChevronUp,
   History,
@@ -69,6 +70,7 @@ interface ProjectDocument {
   title: string;
   category: string;
   currentRevision: string;
+  isClientVisible: boolean;
   createdAt: string;
   updatedAt: string;
   latestRevision: RevisionRecord | null;
@@ -207,6 +209,24 @@ function DocumentRow({
     onError: (err: any) => toast({ title: 'Upload failed', description: err.message, variant: 'destructive' }),
   });
 
+  const toggleVisibilityMutation = useMutation({
+    mutationFn: async (isClientVisible: boolean) => {
+      const res = await fetch(`/api/jobs/${jobId}/project-documents/${doc.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ isClientVisible }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: (_, isClientVisible) => {
+      toast({ title: isClientVisible ? 'Visible to client' : 'Hidden from client', description: isClientVisible ? `"${doc.title}" is now visible on the client portal.` : `"${doc.title}" is now hidden from the client portal.` });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'project-documents'] });
+    },
+    onError: (err: any) => toast({ title: 'Update failed', description: err.message, variant: 'destructive' }),
+  });
+
   const notifyMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch(`/api/jobs/${jobId}/project-documents/${doc.id}/notify`, {
@@ -269,6 +289,21 @@ function DocumentRow({
           )}
           {canUpload && (
             <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-7 ${doc.isClientVisible ? 'text-green-600 hover:text-green-700' : 'text-muted-foreground'}`}
+                onClick={() => toggleVisibilityMutation.mutate(!doc.isClientVisible)}
+                disabled={toggleVisibilityMutation.isPending}
+                title={doc.isClientVisible ? 'Visible to client — click to hide' : 'Hidden from client — click to share'}
+              >
+                {toggleVisibilityMutation.isPending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : doc.isClientVisible
+                    ? <Eye className="h-3.5 w-3.5" />
+                    : <EyeOff className="h-3.5 w-3.5" />
+                }
+              </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowRevisionDialog(true)} title="Upload new revision">
                 <Upload className="h-3.5 w-3.5" />
               </Button>

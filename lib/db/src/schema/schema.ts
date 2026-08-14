@@ -5641,6 +5641,8 @@ export const projectDocuments = pgTable("project_documents", {
   category: text("category").notNull().default('Other'), // ProjectDocumentCategory
   // Points to the most-recent revision label ("A", "B", "1", "2", …)
   currentRevision: varchar("current_revision", { length: 10 }).notNull().default('A'),
+  // When true, this document is visible to the client on the job portal
+  isClientVisible: boolean("is_client_visible").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

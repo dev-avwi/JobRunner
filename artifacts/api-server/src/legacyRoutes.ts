@@ -18126,6 +18126,64 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Client-portal: read-only list of documents the owner has marked isClientVisible
+  app.get("/api/public/job-portal/:token/project-documents", async (req: any, res) => {
+    try {
+      const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
+      if (!portalToken) return res.status(404).json({ error: 'Portal link not found or expired' });
+      if (portalToken.revokedAt) return res.status(410).json({ error: 'This tracking link has been revoked' });
+      if (portalToken.expiresAt && new Date(portalToken.expiresAt) < new Date()) return res.status(410).json({ error: 'This tracking link has expired' });
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      const docs = await db.select().from(pd)
+        .where(and(eq(pd.jobId, portalToken.jobId), eq(pd.userId, portalToken.userId), eq(pd.isClientVisible, true)))
+        .orderBy(asc(pd.docNumber));
+
+      const result = await Promise.all(docs.map(async (doc: any) => {
+        const revisions = await db.select().from(pdr)
+          .where(eq(pdr.documentId, doc.id))
+          .orderBy(desc(pdr.uploadedAt));
+
+        let latestRevision = null;
+        if (revisions.length > 0) {
+          const rev = revisions[0];
+          let fileUrl = null;
+          try {
+            const { bucketName, objectName } = parseObjectPath(rev.objectStorageKey);
+            fileUrl = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+              action: 'read', expires: Date.now() + 60 * 60 * 1000,
+            }).then((urls: string[]) => urls[0]);
+          } catch { }
+          latestRevision = {
+            id: rev.id,
+            revision: rev.revision,
+            fileName: rev.fileName,
+            fileSize: rev.fileSize,
+            mimeType: rev.mimeType,
+            uploadedAt: rev.uploadedAt,
+            fileUrl,
+          };
+        }
+
+        return {
+          id: doc.id,
+          docNumber: doc.docNumber,
+          title: doc.title,
+          category: doc.category,
+          currentRevision: doc.currentRevision,
+          updatedAt: doc.updatedAt,
+          latestRevision,
+        };
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching portal project documents:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // In-memory rate limiter for portal messages (max 5 per token per hour)
   const portalMessageRateLimit = new Map<string, { count: number; resetAt: number }>();
 

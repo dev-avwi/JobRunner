@@ -1770,6 +1770,15 @@ pool
     console.error('[Schema] Failed to ensure price_list_items table:', err.message);
   });
 
+// Client-portal document visibility flag on project_documents.
+// Added idempotently here (same pattern as all other startup column additions).
+pool
+  .query(`
+    ALTER TABLE project_documents ADD COLUMN IF NOT EXISTS is_client_visible boolean NOT NULL DEFAULT false;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure project_documents.is_client_visible column:', err.message);
+  });
 
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods

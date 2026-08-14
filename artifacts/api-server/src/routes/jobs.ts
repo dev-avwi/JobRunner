@@ -9674,6 +9674,34 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
+  // Toggle the "visible to client" flag on a project document
+  app.patch("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, docId } = req.params;
+
+      const { projectDocuments: pd } = await import("@workspace/db");
+
+      const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      const schema = z.object({ isClientVisible: z.boolean() });
+      const parsed = schema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
+
+      const [updated] = await db.update(pd)
+        .set({ isClientVisible: parsed.data.isClientVisible, updatedAt: new Date() })
+        .where(eq(pd.id, docId))
+        .returning();
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error updating project document:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

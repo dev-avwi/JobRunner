@@ -1,3 +1,3 @@
 - [JobRunner port decisions](jobrunner-port.md) — Express v4 required; cookie v1 for parse(); @opentelemetry/* must NOT be external; zod/v4→zod; bcrypt needs approve-builds
 - [JobRunner web bundle splitting](jobrunner-bundle-splitting.md) — no runtime imports from @shared/schema in eager frontend code (use @shared/permissions); manualChunks function form; preview smoke-test trick
-- [Database URL split](db-url-split.md) — API server uses DATABASE_URL (heliumdb), NOT NEON_DATABASE_URL; always migrate DATABASE_URL or changes have zero effect
+- [Database URL split](db-url-split.md) — index.ts aliases NEON_DATABASE_URL→DATABASE_URL at boot; project_documents lives in NEON; migrate NEON_DATABASE_URL (same connection at runtime)

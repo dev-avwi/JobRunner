@@ -149,6 +149,23 @@ interface JobPortalData {
   };
 }
 
+interface PortalProjectDocument {
+  id: string;
+  docNumber: string;
+  title: string;
+  category: string;
+  currentRevision: string;
+  updatedAt: string;
+  latestRevision: {
+    id: string;
+    revision: string;
+    fileName: string;
+    fileSize: number | null;
+    mimeType: string | null;
+    uploadedAt: string;
+    fileUrl: string | null;
+  } | null;
+}
 interface PortalFinancials {
   originalContractValue: string;
   approvedVariations: Array<{
@@ -1189,6 +1206,18 @@ export default function JobPortal() {
       return res.json();
     },
     enabled: !!token && !!data?.visibility,
+    staleTime: 60000,
+    retry: false,
+  });
+
+  const { data: portalDocs = [] } = useQuery<PortalProjectDocument[]>({
+    queryKey: ['/api/public/job-portal', token, 'project-documents'],
+    queryFn: async () => {
+      const res = await fetch(`/api/public/job-portal/${token}/project-documents`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token,
     staleTime: 60000,
     retry: false,
   });
@@ -2427,6 +2456,55 @@ export default function JobPortal() {
               </div>
             )}
           </div>
+
+          {portalDocs.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+              <div className="bg-brand text-white px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-slate-300" />
+                  <span className="font-semibold text-sm">Project Documents</span>
+                </div>
+              </div>
+              <div className="divide-y divide-slate-100">
+                {portalDocs.map((doc) => (
+                  <div key={doc.id} className="flex items-center gap-3 px-4 py-3">
+                    <FileText className="w-4 h-4 text-slate-400 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs text-slate-400">{doc.docNumber}</span>
+                        <span className="font-medium text-sm text-slate-800 truncate">{doc.title}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                        <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded">
+                          {doc.category}
+                        </span>
+                        <span className="text-xs bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded font-mono">
+                          Rev {doc.currentRevision}
+                        </span>
+                        {doc.latestRevision && (
+                          <span className="text-xs text-slate-400">
+                            {formatDate(doc.latestRevision.uploadedAt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {doc.latestRevision?.fileUrl && (
+                      <a
+                        href={doc.latestRevision.fileUrl}
+                        download={doc.latestRevision.fileName}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-shrink-0 flex items-center gap-1.5 text-brand text-xs font-medium px-2.5 py-1.5 rounded-lg border border-brand/20 hover:bg-brand/5 transition-colors"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
             <div className="bg-brand text-white px-5 py-3">
