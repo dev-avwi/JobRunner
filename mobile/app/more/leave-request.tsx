@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -37,6 +37,8 @@ const LEAVE_TYPES = [
   { value: 'other', label: 'Other', icon: 'more-horizontal' as const },
 ] as const;
 
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
@@ -59,6 +61,259 @@ function statusLabel(status: string): string {
   return 'Pending';
 }
 
+/** Returns YYYY-MM-DD string for a local Date (avoids UTC shift) */
+function toYMD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Normalize any date value from the API to a plain YYYY-MM-DD string.
+ * The API may return full ISO timestamps ("2026-08-14T00:00:00.000Z") or
+ * date-only strings — in either case the first 10 characters are the date.
+ */
+function normDate(dateStr: string): string {
+  return dateStr.substring(0, 10);
+}
+
+/** Add `days` calendar days to a YYYY-MM-DD string, returning a new YYYY-MM-DD. */
+function addDays(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split('-').map(Number);
+  // Use UTC noon to sidestep all DST/timezone edge cases
+  const date = new Date(Date.UTC(y, m - 1, d, 12));
+  date.setUTCDate(date.getUTCDate() + days);
+  return (
+    date.getUTCFullYear() +
+    '-' +
+    String(date.getUTCMonth() + 1).padStart(2, '0') +
+    '-' +
+    String(date.getUTCDate()).padStart(2, '0')
+  );
+}
+
+/** Map from YYYY-MM-DD → best status colour for that day (approved > pending > rejected) */
+function buildDayStatusMap(requests: TimeOff[], colors: ThemeColors): Record<string, string> {
+  const map: Record<string, string> = {};
+  const priority: Record<string, number> = { approved: 2, pending: 1, rejected: 0 };
+
+  for (const req of requests) {
+    const start = normDate(req.startDate);
+    const end = normDate(req.endDate);
+    let current = start;
+    while (current <= end) {
+      const existing = map[current];
+      const existingPriority = existing
+        ? (priority[Object.keys(priority).find((s) => statusColor(s, colors) === existing) ?? 'rejected'] ?? -1)
+        : -1;
+      const newPriority = priority[req.status] ?? 1;
+      if (!existing || newPriority > existingPriority) {
+        map[current] = statusColor(req.status, colors);
+      }
+      current = addDays(current, 1);
+    }
+  }
+  return map;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Month Calendar Component
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface LeaveCalendarProps {
+  requests: TimeOff[];
+  selectedDay: string | null;
+  onDayPress: (day: string) => void;
+  colors: ThemeColors;
+}
+
+function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalendarProps) {
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth()); // 0-indexed
+
+  const dayStatusMap = buildDayStatusMap(requests, colors);
+
+  // First day of month, total days, starting weekday
+  const firstOfMonth = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startWeekday = firstOfMonth.getDay(); // 0=Sun
+
+  const monthLabel = firstOfMonth.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' });
+
+  function prevMonth() {
+    if (month === 0) { setMonth(11); setYear(y => y - 1); }
+    else setMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (month === 11) { setMonth(0); setYear(y => y + 1); }
+    else setMonth(m => m + 1);
+  }
+
+  const todayYMD = toYMD(today);
+
+  // Build grid cells: nulls for padding + day numbers
+  const cells: (number | null)[] = [
+    ...Array(startWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  // Pad to complete last row
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  return (
+    <View style={[calStyles.card, { backgroundColor: colors.card, ...shadows.sm }]}>
+      {/* Header */}
+      <View style={calStyles.header}>
+        <TouchableOpacity onPress={prevMonth} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Feather name="chevron-left" size={20} color={colors.foreground} />
+        </TouchableOpacity>
+        <Text style={[calStyles.monthLabel, { color: colors.foreground }]}>{monthLabel}</Text>
+        <TouchableOpacity onPress={nextMonth} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Feather name="chevron-right" size={20} color={colors.foreground} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Day-of-week labels */}
+      <View style={calStyles.weekRow}>
+        {DAY_LABELS.map((d) => (
+          <Text key={d} style={[calStyles.dayLabel, { color: colors.mutedForeground }]}>{d}</Text>
+        ))}
+      </View>
+
+      {/* Day grid */}
+      <View style={calStyles.grid}>
+        {cells.map((day, idx) => {
+          if (day === null) {
+            return <View key={`pad-${idx}`} style={calStyles.cell} />;
+          }
+          const ymd = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const dotColor = dayStatusMap[ymd];
+          const isToday = ymd === todayYMD;
+          const isSelected = ymd === selectedDay;
+
+          return (
+            <TouchableOpacity
+              key={ymd}
+              style={[
+                calStyles.cell,
+                isSelected && { backgroundColor: colors.primary },
+                isToday && !isSelected && { borderWidth: 1.5, borderColor: colors.primary, borderRadius: radius.full },
+              ]}
+              onPress={() => onDayPress(isSelected ? '' : ymd)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  calStyles.dayNum,
+                  { color: isSelected ? '#fff' : isToday ? colors.primary : colors.foreground },
+                ]}
+              >
+                {day}
+              </Text>
+              {dotColor && !isSelected && (
+                <View style={[calStyles.dot, { backgroundColor: dotColor }]} />
+              )}
+              {dotColor && isSelected && (
+                <View style={[calStyles.dot, { backgroundColor: '#ffffff99' }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Legend */}
+      <View style={calStyles.legend}>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: colors.success }]} />
+          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Approved</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: '#F59E0B' }]} />
+          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Pending</Text>
+        </View>
+        <View style={calStyles.legendItem}>
+          <View style={[calStyles.legendDot, { backgroundColor: colors.destructive }]} />
+          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Declined</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const calStyles = StyleSheet.create({
+  card: {
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
+  monthLabel: {
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
+  },
+  weekRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.xs,
+  },
+  dayLabel: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  cell: {
+    width: `${100 / 7}%` as any,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+  },
+  dayNum: {
+    fontSize: typography.sizes.sm,
+  },
+  dot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.lg,
+    marginTop: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  legendText: {
+    fontSize: typography.sizes.xs,
+  },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function LeaveRequestScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -68,6 +323,7 @@ export default function LeaveRequestScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>('');
 
   // Form state
   const [leaveType, setLeaveType] = useState('annual_leave');
@@ -75,6 +331,9 @@ export default function LeaveRequestScreen() {
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [dateError, setDateError] = useState('');
+
+  const scrollRef = useRef<ScrollView>(null);
+  const itemOffsets = useRef<Record<string, number>>({});
 
   const fetchRequests = useCallback(async () => {
     try {
@@ -138,6 +397,25 @@ export default function LeaveRequestScreen() {
     }
   }
 
+  /** Returns true if a leave request overlaps the selected day (YYYY-MM-DD) */
+  function requestMatchesDay(req: TimeOff, day: string): boolean {
+    if (!day) return false;
+    return normDate(req.startDate) <= day && normDate(req.endDate) >= day;
+  }
+
+  function handleDayPress(day: string) {
+    setSelectedDay(day);
+    if (!day) return;
+    // Scroll to first matching request
+    const match = myRequests.find((r) => requestMatchesDay(r, day));
+    if (match) {
+      const offset = itemOffsets.current[match.id];
+      if (offset !== undefined) {
+        scrollRef.current?.scrollTo({ y: offset, animated: true });
+      }
+    }
+  }
+
   const selectedLeaveType = LEAVE_TYPES.find((t) => t.value === leaveType) || LEAVE_TYPES[0];
 
   return (
@@ -164,6 +442,7 @@ export default function LeaveRequestScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={styles.container}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -285,6 +564,14 @@ export default function LeaveRequestScreen() {
             </View>
           )}
 
+          {/* Month Calendar */}
+          <LeaveCalendar
+            requests={myRequests}
+            selectedDay={selectedDay}
+            onDayPress={handleDayPress}
+            colors={colors}
+          />
+
           {/* My Requests */}
           <Text style={styles.sectionHeader}>My Leave Requests</Text>
 
@@ -295,7 +582,7 @@ export default function LeaveRequestScreen() {
               <Feather name="calendar" size={40} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>No leave requests yet</Text>
               <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
-                Tap "New" to submit a leave request
+                Tap the + New button above to submit a leave request
               </Text>
             </View>
           ) : (
@@ -303,8 +590,21 @@ export default function LeaveRequestScreen() {
               const leaveTypeInfo = LEAVE_TYPES.find((t) => t.value === req.reason);
               const days = diffDays(req.startDate, req.endDate);
               const sc = statusColor(req.status, colors);
+              const isHighlighted = selectedDay ? requestMatchesDay(req, selectedDay) : false;
               return (
-                <View key={req.id} style={styles.requestCard}>
+                <View
+                  key={req.id}
+                  onLayout={(e) => {
+                    itemOffsets.current[req.id] = e.nativeEvent.layout.y;
+                  }}
+                  style={[
+                    styles.requestCard,
+                    isHighlighted && {
+                      borderWidth: 2,
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
                   <View style={styles.requestHeader}>
                     <View style={[styles.leaveTypePill, { backgroundColor: colors.primary + '15' }]}>
                       <Feather name={leaveTypeInfo?.icon || 'calendar'} size={12} color={colors.primary} />
