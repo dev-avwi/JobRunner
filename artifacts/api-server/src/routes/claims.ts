@@ -524,6 +524,26 @@ export function registerClaimsRoutes(app: Express): void {
         xeroResult = { success: false, error: String(xeroErr) };
       }
 
+      // Auto-advance linked phases from "complete" → "invoiced"
+      try {
+        const lineItems = await storage.getClaimLineItems(claimId);
+        const phaseIds = [...new Set(
+          lineItems.map((li: any) => li.phaseId).filter(Boolean) as string[],
+        )];
+        if (phaseIds.length > 0) {
+          const phases = await storage.getJobPhases(jobId, effectiveUserId);
+          for (const phase of phases) {
+            if (phaseIds.includes(phase.id) && (phase as any).status === "complete") {
+              await storage.updateJobPhase(phase.id, jobId, effectiveUserId, {
+                status: "invoiced",
+              } as any);
+            }
+          }
+        }
+      } catch (phaseErr) {
+        console.error("[claims] phase auto-advance error (non-fatal):", phaseErr);
+      }
+
       const fresh = await storage.getClaim(claimId, effectiveUserId);
       res.json({ claim: fresh, xero: xeroResult });
     } catch (err: any) {
