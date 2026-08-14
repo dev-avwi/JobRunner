@@ -9739,6 +9739,81 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
+  // ── Defect Items (punch list) CRUD ────────────────────────────────────────
+  app.get("/api/jobs/:jobId/defect-items", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+      const items = await storage.getDefectItems(jobId, effectiveUserId);
+      res.json(items);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/defect-items", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+      const { description, assignedTo, assignedToName, dueDate, status, notes, photoUrl, photoObjectStorageKey, sortOrder } = req.body;
+      if (!description?.trim()) return res.status(400).json({ error: 'Description is required' });
+
+      // Verify job ownership
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const item = await storage.createDefectItem({
+        jobId,
+        userId: effectiveUserId,
+        description: description.trim(),
+        assignedTo: assignedTo || null,
+        assignedToName: assignedToName || null,
+        dueDate: dueDate || null,
+        status: status || 'open',
+        notes: notes || null,
+        photoUrl: photoUrl || null,
+        photoObjectStorageKey: photoObjectStorageKey || null,
+        sortOrder: sortOrder ?? 0,
+      });
+      res.status(201).json(item);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/jobs/:jobId/defect-items/:itemId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { itemId } = req.params;
+      const allowed = ['description', 'assignedTo', 'assignedToName', 'dueDate', 'status', 'notes', 'photoUrl', 'photoObjectStorageKey', 'sortOrder'];
+      const updates: Record<string, any> = {};
+      for (const key of allowed) {
+        if (key in req.body) updates[key] = req.body[key];
+      }
+      const updated = await storage.updateDefectItem(itemId, effectiveUserId, updates);
+      if (!updated) return res.status(404).json({ error: 'Defect item not found' });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/jobs/:jobId/defect-items/:itemId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { itemId } = req.params;
+      const ok = await storage.deleteDefectItem(itemId, effectiveUserId);
+      if (!ok) return res.status(404).json({ error: 'Defect item not found' });
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.delete("/api/jobs/:jobId/rfis/:rfiId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

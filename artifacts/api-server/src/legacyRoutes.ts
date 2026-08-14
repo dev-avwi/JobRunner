@@ -16581,6 +16581,10 @@ Be specific about materials, colors, and features that would be included.`
           overtimeHours: (Math.round(otHrs * 100) / 100).toFixed(2),
           totalHours: (Math.round((regHrs + otHrs) * 100) / 100).toFixed(2),
           grossPay: computedGross.toFixed(2),
+          // Lock in travel snapshot so regenerated payslips are always consistent.
+          travelAllowance: travelAllowancePay.toFixed(2),
+          totalDistanceKm: (Math.round(totalDistanceKmPay * 100) / 100).toFixed(2),
+          travelRatePerKm: travelRatePerKmPay.toFixed(4),
           method: typeof method === 'string' && method ? method : 'bank_transfer',
           reference: typeof reference === 'string' && reference.trim() ? reference.trim() : null,
           notes: typeof notes === 'string' && notes.trim() ? notes.trim() : null,
@@ -16655,11 +16659,12 @@ Be specific about materials, colors, and features that would be included.`
       }
 
       try {
+        const payslipTotalNotif = Math.round((computedGross + travelAllowancePay) * 100) / 100;
         await storage.createNotification({
           userId: workerUserId,
           type: 'payroll_paid',
           title: 'You have been paid',
-          message: `Pay of $${computedGross.toFixed(2)} has been processed`,
+          message: `Pay of $${payslipTotalNotif.toFixed(2)} has been processed`,
           relatedType: 'payroll_payment',
           relatedId: payment.id,
           priority: 'important',
@@ -16694,27 +16699,11 @@ Be specific about materials, colors, and features that would be included.`
       const regHrs = parseFloat(payment.regularHours);
       const otHrs = parseFloat(payment.overtimeHours);
 
-      // Recompute travel allowance from the original time entries for this period.
-      const pStart = new Date(payment.periodStart);
-      const pEnd = new Date(payment.periodEnd);
-      const travelEntries = await db.select({ timeCategory: timeEntries.timeCategory, distanceKm: timeEntries.distanceKm, isBreak: timeEntries.isBreak })
-        .from(timeEntries)
-        .where(and(
-          eq(timeEntries.userId, payment.workerUserId),
-          gte(timeEntries.startTime, pStart),
-          lte(timeEntries.startTime, pEnd),
-          isNotNull(timeEntries.endTime)
-        ));
-      let totalDistanceKmSlip = 0;
-      for (const e of travelEntries) {
-        if (!e.isBreak && (e.timeCategory || 'work') === 'travel' && e.distanceKm) {
-          totalDistanceKmSlip += parseFloat(String(e.distanceKm)) || 0;
-        }
-      }
-      const [bsRowSlip] = await db.select({ travelRatePerKm: businessSettings.travelRatePerKm })
-        .from(businessSettings).where(eq(businessSettings.userId, payment.businessOwnerId)).limit(1);
-      const travelRatePerKmSlip = parseFloat(bsRowSlip?.travelRatePerKm || '0') || 0;
-      const travelAllowanceSlip = Math.round(totalDistanceKmSlip * travelRatePerKmSlip * 100) / 100;
+      // Use the locked-in travel snapshot from payment time (never recompute from
+      // current entries or business rate — that would produce different amounts).
+      const travelAllowanceSlip = parseFloat(payment.travelAllowance || '0');
+      const totalDistanceKmSlip = parseFloat(payment.totalDistanceKm || '0');
+      const travelRatePerKmSlip = parseFloat(payment.travelRatePerKm || '0');
       const totalDistanceKmSlipRounded = Math.round(totalDistanceKmSlip * 10) / 10;
       const payslipTotalSlip = Math.round((parseFloat(payment.grossPay) + travelAllowanceSlip) * 100) / 100;
 
@@ -17553,6 +17542,36 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error: any) {
       console.error('Error fetching job portal data:', error);
       res.status(500).json({ error: 'Failed to load portal data' });
+    }
+  });
+
+  // Defect items read-only view for the client portal
+  app.get("/api/public/job-portal/:token/defect-items", async (req: any, res) => {
+    try {
+      const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
+      if (!portalToken) return res.status(404).json({ error: 'Portal link not found or expired' });
+      if (portalToken.revokedAt) return res.status(410).json({ error: 'This tracking link has been revoked' });
+      if (portalToken.expiresAt && new Date(portalToken.expiresAt) < new Date()) {
+        return res.status(410).json({ error: 'This tracking link has expired' });
+      }
+      const items = await storage.getDefectItemsByJobPublic(portalToken.jobId);
+      // Strip internal fields before sending to client
+      const safe = items.map((item: any) => ({
+        id: item.id,
+        description: item.description,
+        photoUrl: item.photoUrl,
+        assignedToName: item.assignedToName,
+        dueDate: item.dueDate,
+        status: item.status,
+        notes: item.notes,
+        resolvedAt: item.resolvedAt,
+        clientApprovedAt: item.clientApprovedAt,
+        createdAt: item.createdAt,
+      }));
+      res.json(safe);
+    } catch (error: any) {
+      console.error('Error fetching portal defect items:', error);
+      res.status(500).json({ error: 'Failed to load defect items' });
     }
   });
 

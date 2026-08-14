@@ -88,6 +88,7 @@ import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttM
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
+import { DefectsSection, type DefectItem } from '../../src/components/jobDetail/DefectsSection';
 
 interface JobNoteItem {
   id: string;
@@ -2235,6 +2236,10 @@ export default function JobDetailScreen() {
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
 
+  // Defect Items (punch list)
+  const [defectItems, setDefectItems] = useState<DefectItem[]>([]);
+  const [isLoadingDefects, setIsLoadingDefects] = useState(false);
+
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
@@ -2736,6 +2741,19 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
+  const loadDefectItems = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingDefects(true);
+    try {
+      const res = await api.get<DefectItem[]>(`/api/jobs/${id}/defect-items`);
+      setDefectItems(Array.isArray(res.data) ? res.data : []);
+    } catch (e) {
+      console.error('Error loading defect items:', e);
+    } finally {
+      setIsLoadingDefects(false);
+    }
+  }, [id]);
+
   const handleSavePhase = async () => {
     if (!addPhaseForm.name.trim()) {
       showToast({ type: 'error', message: 'Phase name is required' });
@@ -3003,6 +3021,7 @@ export default function JobDetailScreen() {
       loadMaterials();
       loadPhases();
       loadClaims();
+      loadDefectItems();
       loadTeamMembers();
       loadJobAssignments();
     }
@@ -10518,6 +10537,20 @@ export default function JobDetailScreen() {
                 onRefresh={loadVariations}
               />
             </View>
+
+            {/* Defects & Punch List — shown for project-type jobs */}
+            {job?.jobType === 'project' && (
+              <View style={{ marginBottom: spacing.md }}>
+                <DefectsSection
+                  jobId={id as string}
+                  isTradie={!!(!(isOwnerOrManager || isSoloOwner))}
+                  items={defectItems}
+                  loading={isLoadingDefects}
+                  onRefresh={loadDefectItems}
+                />
+              </View>
+            )}
+
             {renderManageTab()}
           </>
         )}

@@ -1413,6 +1413,35 @@ pool.on('connect', (client) => {
 export { pool };
 export const db = drizzle(pool);
 
+// Defect items (punch list) — created idempotently at startup.
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS defect_items (
+      id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+      job_id VARCHAR NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      description TEXT NOT NULL,
+      photo_url TEXT,
+      photo_object_storage_key TEXT,
+      assigned_to VARCHAR,
+      assigned_to_name TEXT,
+      due_date DATE,
+      status TEXT NOT NULL DEFAULT 'open',
+      notes TEXT,
+      resolved_at TIMESTAMP,
+      client_approved_at TIMESTAMP,
+      sort_order INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT NOW(),
+      updated_at TIMESTAMP DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_defect_items_job_id ON defect_items(job_id);
+    CREATE INDEX IF NOT EXISTS idx_defect_items_user_id ON defect_items(user_id);
+    CREATE INDEX IF NOT EXISTS idx_defect_items_status ON defect_items(status);
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to ensure defect_items table:', err.message);
+  });
+
 // Ensure the terms_acceptance audit table exists. We intentionally do NOT use
 // drizzle-kit push on this database (it proposes destructive drops), so new
 // tables are created idempotently with raw SQL at startup. Fire-and-forget.
@@ -1499,6 +1528,18 @@ pool
   `)
   .catch((err) => {
     console.error('[Schema] Failed to ensure subcontractor/payroll payment tables:', err.message);
+  });
+
+// Lock-in travel allowance columns on payroll_payments so regenerated payslips
+// use the rate/distance snapshot from payment time, not the current business rate.
+pool
+  .query(`
+    ALTER TABLE payroll_payments ADD COLUMN IF NOT EXISTS travel_allowance decimal(10,2) NOT NULL DEFAULT '0';
+    ALTER TABLE payroll_payments ADD COLUMN IF NOT EXISTS total_distance_km decimal(10,2) NOT NULL DEFAULT '0';
+    ALTER TABLE payroll_payments ADD COLUMN IF NOT EXISTS travel_rate_per_km decimal(10,4) NOT NULL DEFAULT '0';
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to add travel columns to payroll_payments:', err.message);
   });
 
 // Bulk safety & compliance document upload: uploaded SWMS PDFs and training
@@ -8062,6 +8103,66 @@ Thank you for your prompt attention to this matter.`,
       status: 'closed',
       closedAt: new Date(),
     });
+  }
+
+  // ── Defect Items (punch list) ──────────────────────────────────────────────
+  async getDefectItems(jobId: string, userId: string): Promise<any[]> {
+    const { defectItems } = await import('@workspace/db');
+    return db
+      .select()
+      .from(defectItems)
+      .where(and(eq(defectItems.jobId, jobId), eq(defectItems.userId, userId)))
+      .orderBy(asc(defectItems.sortOrder), asc(defectItems.createdAt));
+  }
+
+  async createDefectItem(data: {
+    jobId: string; userId: string; description: string;
+    photoUrl?: string | null; photoObjectStorageKey?: string | null;
+    assignedTo?: string | null; assignedToName?: string | null;
+    dueDate?: string | null; status?: string; notes?: string | null; sortOrder?: number;
+  }): Promise<any> {
+    const { defectItems } = await import('@workspace/db');
+    const [created] = await db
+      .insert(defectItems)
+      .values({ id: randomUUID(), ...data, status: data.status || 'open' })
+      .returning();
+    return created;
+  }
+
+  async updateDefectItem(id: string, userId: string, updates: {
+    description?: string; photoUrl?: string | null; photoObjectStorageKey?: string | null;
+    assignedTo?: string | null; assignedToName?: string | null;
+    dueDate?: string | null; status?: string; notes?: string | null; sortOrder?: number;
+  }): Promise<any | undefined> {
+    const { defectItems } = await import('@workspace/db');
+    const now = new Date();
+    const extra: Record<string, any> = {};
+    if (updates.status === 'resolved') extra.resolvedAt = now;
+    if (updates.status === 'client_approved') extra.clientApprovedAt = now;
+    const [updated] = await db
+      .update(defectItems)
+      .set({ ...updates, ...extra, updatedAt: now })
+      .where(and(eq(defectItems.id, id), eq(defectItems.userId, userId)))
+      .returning();
+    return updated;
+  }
+
+  async deleteDefectItem(id: string, userId: string): Promise<boolean> {
+    const { defectItems } = await import('@workspace/db');
+    const result = await db
+      .delete(defectItems)
+      .where(and(eq(defectItems.id, id), eq(defectItems.userId, userId)));
+    return (result as any).rowCount > 0;
+  }
+
+  async getDefectItemsByJobPublic(jobId: string): Promise<any[]> {
+    // For client portal — no userId guard; jobId already validated via portal token
+    const { defectItems } = await import('@workspace/db');
+    return db
+      .select()
+      .from(defectItems)
+      .where(eq(defectItems.jobId, jobId))
+      .orderBy(asc(defectItems.sortOrder), asc(defectItems.createdAt));
   }
 
   // Timesheet Approvals

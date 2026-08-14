@@ -43,6 +43,7 @@ import {
   ClaimsSection,
   ProjectGanttView,
   ProjectDocumentRegister,
+  DefectsSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -342,6 +343,17 @@ export default function JobDetailView({
   const { data: jobProfitabilityData } = useQuery<any>({
     queryKey: ['/api/jobs', jobId, 'profitability'],
     enabled: !isTradie && !!jobId,
+  });
+
+  // Defect items — fetched here (not just in DefectsSection) so the retention
+  // card can reactively reflect the cleared state without reading stale cache.
+  const { data: defectItemsForRetention = [] } = useQuery<any[]>({
+    queryKey: ['/api/jobs', jobId, 'defect-items'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/jobs/${jobId}/defect-items`);
+      return res.json();
+    },
+    enabled: !isTradie && !!(job as any)?.jobType && (job as any)?.jobType === 'project' && !!jobId,
   });
 
   const { data: jobEquipmentList = [] } = useQuery<JobEquipmentAssignment[]>({
@@ -1938,6 +1950,15 @@ export default function JobDetailView({
             </div>
           )}
 
+          {/* All defects cleared — reactive indicator driven by defectItemsForRetention query */}
+          {defectItemsForRetention.length > 0 &&
+            defectItemsForRetention.every((d: any) => d.status === 'resolved' || d.status === 'client_approved') && (
+            <div className="flex items-center gap-2 px-1">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
+              <span className="text-xs text-green-700 dark:text-green-300 font-medium">All defects cleared</span>
+            </div>
+          )}
+
           {/* Release button — only when retention is outstanding and no release pending */}
           {canRelease && (
             <Button size="sm" variant="outline" className="w-full" onClick={handleReleaseRetention} disabled={retentionReleasing}>
@@ -2965,6 +2986,15 @@ export default function JobDetailView({
 
           {/* ── Retention Ledger (project-type jobs only, owners/managers) ── */}
           {retentionCard}
+
+          {/* ── Defects & Punch List (project-type jobs only) ── */}
+          {(job as any)?.jobType === 'project' && (
+            <DefectsSection
+              jobId={jobId}
+              isTradie={isTradie}
+              teamMembers={teamMembers}
+            />
+          )}
 
           {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || jobMaterials.length > 0) && (
             <Card data-testid="card-job-brief">

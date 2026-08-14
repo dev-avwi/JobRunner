@@ -123,3 +123,8 @@ export const ProjectGanttView = lazyWithSuspense(
   () => import("./ProjectGanttView").then((m) => ({ default: m.ProjectGanttView })),
   sectionFallback,
 );
+
+export const DefectsSection = lazyWithSuspense(
+  () => import("./DefectsSection").then((m) => ({ default: m.DefectsSection })),
+  sectionFallback,
+);

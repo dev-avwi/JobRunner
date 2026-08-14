@@ -5415,6 +5415,9 @@ export const payrollPayments = pgTable("payroll_payments", {
   overtimeHours: decimal("overtime_hours", { precision: 10, scale: 2 }).notNull().default('0'),
   totalHours: decimal("total_hours", { precision: 10, scale: 2 }).notNull().default('0'),
   grossPay: decimal("gross_pay", { precision: 10, scale: 2 }).notNull().default('0'),
+  travelAllowance: decimal("travel_allowance", { precision: 10, scale: 2 }).notNull().default('0'),
+  totalDistanceKm: decimal("total_distance_km", { precision: 10, scale: 2 }).notNull().default('0'),
+  travelRatePerKm: decimal("travel_rate_per_km", { precision: 10, scale: 4 }).notNull().default('0'),
   method: text("method").notNull().default('bank_transfer'),
   reference: text("reference"),
   notes: text("notes"),
@@ -5681,7 +5684,7 @@ export const projectRfis = pgTable("project_rfis", {
   index("idx_project_rfis_status").on(table.status),
 ]);
 
-// Insert schemas — evaluated after all three tables are initialized.
+export const DEFECT_ITEM_STATUSES = ['open', 'in_progress', 'resolved', 'client_approved'] as const;
 export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({
   id: true,
   createdAt: true,
@@ -5709,3 +5712,37 @@ export type ProjectRfi = typeof projectRfis.$inferSelect;
 export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
 export type InsertProjectDocumentRevision = z.infer<typeof insertProjectDocumentRevisionSchema>;
 export type InsertProjectRfi = z.infer<typeof insertProjectRfiSchema>;
+
+export type InsertDefectItem = z.infer<typeof insertDefectItemSchema>;
+
+export const defectItems = pgTable("defect_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  description: text("description").notNull(),
+  photoUrl: text("photo_url"),
+  photoObjectStorageKey: text("photo_object_storage_key"),
+  assignedTo: varchar("assigned_to"),        // team member ID
+  assignedToName: text("assigned_to_name"),  // snapshot for display
+  dueDate: date("due_date"),
+  status: text("status").notNull().default('open'), // open | in_progress | resolved | client_approved
+  notes: text("notes"),
+  resolvedAt: timestamp("resolved_at"),
+  clientApprovedAt: timestamp("client_approved_at"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_defect_items_job_id").on(table.jobId),
+  index("idx_defect_items_user_id").on(table.userId),
+  index("idx_defect_items_status").on(table.status),
+]);
+
+export type DefectItem = typeof defectItems.$inferSelect;
+
+export type DefectItemStatus = typeof DEFECT_ITEM_STATUSES[number];
+
+export const insertDefectItemSchema = createInsertSchema(defectItems).omit({
+  id: true, createdAt: true, updatedAt: true,
+  resolvedAt: true, clientApprovedAt: true,
+});

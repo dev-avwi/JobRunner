@@ -10,7 +10,7 @@ import {
   Phone, Mail, MapPin, AlertCircle, CheckCircle2, Clock, Calendar,
   User, Navigation, FileText, Camera, ChevronRight, Timer, Building2,
   MessageCircle, Loader2, Signal, ClipboardCheck, Package, CreditCard, Shield,
-  Activity, Receipt, CircleDot, RefreshCw, Layers
+  Activity, Receipt, CircleDot, RefreshCw, Layers, Wrench, CheckCircle, Circle
 } from "lucide-react";
 import { format, addDays, differenceInDays, startOfDay } from "date-fns";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
@@ -1069,6 +1069,31 @@ function PortalProgramme({ phases }: {
   );
 }
 
+interface PortalDefectItem {
+  id: string;
+  description: string;
+  photoUrl?: string | null;
+  assignedToName?: string | null;
+  dueDate?: string | null;
+  status: string;
+  notes?: string | null;
+  resolvedAt?: string | null;
+  clientApprovedAt?: string | null;
+}
+
+const DEFECT_STATUS_LABELS: Record<string, string> = {
+  open: 'Open',
+  in_progress: 'In Progress',
+  resolved: 'Resolved',
+  client_approved: 'Client Approved',
+};
+const DEFECT_STATUS_COLORS: Record<string, string> = {
+  open: 'bg-amber-100 text-amber-700',
+  in_progress: 'bg-blue-100 text-blue-700',
+  resolved: 'bg-emerald-100 text-emerald-700',
+  client_approved: 'bg-purple-100 text-purple-700',
+};
+
 export default function JobPortal() {
   const { token } = useParams<{ token: string }>();
 
@@ -1133,6 +1158,16 @@ export default function JobPortal() {
       }
       return 60000;
     },
+  });
+
+  const { data: portalDefectItems = [] } = useQuery<PortalDefectItem[]>({
+    queryKey: ['/api/public/job-portal', token, 'defect-items'],
+    queryFn: async () => {
+      const res = await fetch(`/api/public/job-portal/${token}/defect-items`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!token,
   });
 
   const { data: crewLocationData } = useQuery<CrewLocationResponse>({
@@ -1982,6 +2017,47 @@ export default function JobPortal() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {portalDefectItems.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-brand text-white px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <Wrench className="w-4 h-4 text-slate-300" />
+                  <span className="font-semibold text-sm">Defects &amp; Punch List</span>
+                  <span className="ml-auto text-xs text-slate-300">{portalDefectItems.filter(d => d.status === 'resolved' || d.status === 'client_approved').length}/{portalDefectItems.length} resolved</span>
+                </div>
+              </div>
+              <div className="p-5 space-y-3">
+                {portalDefectItems.every(d => d.status === 'resolved' || d.status === 'client_approved') && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200">
+                    <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="text-sm text-emerald-700 font-medium">All defects cleared</span>
+                  </div>
+                )}
+                {portalDefectItems.map(item => (
+                  <div key={item.id} className="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0">
+                    <div className="mt-0.5 shrink-0">
+                      {item.status === 'resolved' || item.status === 'client_approved'
+                        ? <CheckCircle className="w-4 h-4 text-emerald-500" />
+                        : <Circle className="w-4 h-4 text-slate-300" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-slate-800">{item.description}</p>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${DEFECT_STATUS_COLORS[item.status] ?? 'bg-slate-100 text-slate-600'}`}>
+                          {DEFECT_STATUS_LABELS[item.status] ?? item.status}
+                        </span>
+                        {item.dueDate && (
+                          <span className="text-xs text-slate-500">Due {format(new Date(item.dueDate), 'd MMM yyyy')}</span>
+                        )}
+                      </div>
+                      {item.notes && <p className="text-xs text-slate-500 mt-1">{item.notes}</p>}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
