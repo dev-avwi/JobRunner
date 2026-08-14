@@ -566,6 +566,7 @@ const styles = StyleSheet.create({
     fontSize: typography.body.fontSize,
     fontWeight: fontWeights.semibold,
     marginLeft: spacing.xs,
+    flex: 1,
   },
   countBadge: {
     paddingHorizontal: 6,

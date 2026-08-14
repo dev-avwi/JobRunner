@@ -860,6 +860,7 @@ export default function TimeTrackingScreen() {
   const [entryEndTime, setEntryEndTime] = useState(new Date());
   const [entryDescription, setEntryDescription] = useState('');
   const [entryJobId, setEntryJobId] = useState<string | null>(null);
+  const [jobEntrySearch, setJobEntrySearch] = useState('');
   const [showEntryDatePicker, setShowEntryDatePicker] = useState(false);
   const [showEntryStartPicker, setShowEntryStartPicker] = useState(false);
   const [showEntryEndPicker, setShowEntryEndPicker] = useState(false);
@@ -1235,6 +1236,7 @@ export default function TimeTrackingScreen() {
     setEntryEndTime(endOfToday);
     setEntryDescription('');
     setEntryJobId(null);
+    setJobEntrySearch('');
     setEntryIsBillable(true);
     setEntryCategory('work');
     setEntryDistanceKm('');
@@ -2323,7 +2325,7 @@ export default function TimeTrackingScreen() {
       
       <AppBottomSheet
         visible={showAddEntryModal}
-        onDismiss={() => { setShowAddEntryModal(false); setEditingEntry(null); }}
+        onDismiss={() => { setShowAddEntryModal(false); setEditingEntry(null); setJobEntrySearch(''); }}
         snapPoints={['92%']}
         scrollable={false}
         contentPadding={0}>
@@ -2454,7 +2456,7 @@ export default function TimeTrackingScreen() {
 
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Category</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs }}>
                 {TIME_CATEGORIES.map(cat => {
                   const isSelected = entryCategory === cat.value;
                   const chipColor = CATEGORY_COLORS[cat.value] || '#6B7280';
@@ -2464,19 +2466,15 @@ export default function TimeTrackingScreen() {
                       onPress={() => { setEntryCategory(cat.value as TimeCategory); if (cat.value !== 'travel') setEntryDistanceKm(''); }}
                       activeOpacity={0.7}
                       style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: 4,
-                        paddingHorizontal: spacing.sm,
-                        paddingVertical: 6,
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: spacing.sm,
                         borderRadius: radius.md,
                         borderWidth: 1.5,
                         borderColor: isSelected ? chipColor : colors.border,
                         backgroundColor: isSelected ? chipColor + '18' : colors.card,
                       }}
                     >
-                      <Text style={{ fontSize: 13 }}>{cat.emoji}</Text>
-                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.mutedForeground }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.mutedForeground }}>
                         {cat.label}
                       </Text>
                     </TouchableOpacity>
@@ -2513,30 +2511,76 @@ export default function TimeTrackingScreen() {
 
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Job</Text>
-              {inProgressJobs.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateText}>No active jobs available</Text>
-                </View>
-              ) : (
-                inProgressJobs.map(job => (
+              {/* Selected job pill */}
+              {entryJobId ? (() => {
+                const sel = jobs.find(j => j.id === entryJobId);
+                return (
                   <TouchableOpacity
-                    key={job.id}
-                    style={[
-                      styles.jobSelectCard,
-                      entryJobId === job.id && styles.jobSelectCardActive
-                    ]}
-                    onPress={() => setEntryJobId(job.id)}
                     activeOpacity={0.7}
+                    onPress={() => { setEntryJobId(null); setJobEntrySearch(''); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.primaryLight, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1.5, borderColor: colors.primary }}
                   >
-                    <View style={[styles.jobSelectRadio, entryJobId === job.id && { borderColor: colors.primary }]}>
-                      {entryJobId === job.id && <View style={styles.jobSelectRadioInner} />}
-                    </View>
-                    <View style={styles.jobSelectContent}>
-                      <Text style={styles.jobSelectTitle}>{job.title}</Text>
-                      <Text style={styles.jobSelectStatus}>{(job.status || '').replace('_', ' ')}</Text>
-                    </View>
+                    <Feather name="briefcase" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }} numberOfLines={1}>
+                      {sel?.title ?? 'Unknown job'}
+                    </Text>
+                    <Feather name="x" size={16} color={colors.primary} />
                   </TouchableOpacity>
-                ))
+                );
+              })() : (
+                <>
+                  {/* Search input */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.xs }}>
+                    <Feather name="search" size={16} color={colors.mutedForeground} />
+                    <TextInput
+                      style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.foreground }}
+                      placeholder="Search jobs..."
+                      placeholderTextColor={colors.mutedForeground}
+                      value={jobEntrySearch}
+                      onChangeText={setJobEntrySearch}
+                      autoCorrect={false}
+                      autoCapitalize="none"
+                    />
+                    {jobEntrySearch.length > 0 && (
+                      <TouchableOpacity onPress={() => setJobEntrySearch('')}>
+                        <Feather name="x-circle" size={16} color={colors.mutedForeground} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  {/* Filtered job list */}
+                  {(() => {
+                    const q = jobEntrySearch.trim().toLowerCase();
+                    const filtered = (q.length > 0 ? jobs : inProgressJobs).filter(j =>
+                      !q || j.title.toLowerCase().includes(q) || (j.address || '').toLowerCase().includes(q)
+                    ).slice(0, 12);
+                    if (filtered.length === 0) {
+                      return (
+                        <View style={styles.emptyState}>
+                          <Text style={styles.emptyStateText}>{q ? 'No jobs match your search' : 'No active jobs available'}</Text>
+                        </View>
+                      );
+                    }
+                    return (
+                      <View style={{ borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+                        {filtered.map((job, idx) => (
+                          <TouchableOpacity
+                            key={job.id}
+                            onPress={() => { setEntryJobId(job.id); setJobEntrySearch(''); }}
+                            activeOpacity={0.7}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, backgroundColor: colors.card, borderTopWidth: idx > 0 ? 1 : 0, borderTopColor: colors.border }}
+                          >
+                            <Feather name="briefcase" size={14} color={colors.mutedForeground} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>{job.title}</Text>
+                              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textTransform: 'capitalize' }}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                            </View>
+                            <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    );
+                  })()}
+                </>
               )}
             </View>
             
