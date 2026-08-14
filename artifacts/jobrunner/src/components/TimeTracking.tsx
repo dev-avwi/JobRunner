@@ -939,6 +939,15 @@ export function TimesheetList({
   const [entryCategory, setEntryCategory] = useState<string>("work");
   const [entryDistanceKm, setEntryDistanceKm] = useState<string>("");
 
+  // Category filter state (empty = show all)
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const toggleCategory = (value: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(value) ? prev.filter(c => c !== value) : [...prev, value]
+    );
+  };
+
   // Jobs for the entry's job selector (only loaded while the dialog is open)
   const { data: jobsForEntry = [] } = useQuery<any[]>({
     queryKey: ['/api/jobs'],
@@ -1188,7 +1197,31 @@ export function TimesheetList({
     );
   }
 
-  const entriesToShow = Array.isArray(timeEntries) ? timeEntries.slice(0, limit) : [];
+  const allEntries: TimeEntry[] = Array.isArray(timeEntries) ? timeEntries : [];
+  const filteredEntries = selectedCategories.length === 0
+    ? allEntries
+    : allEntries.filter((e: any) => selectedCategories.includes(e.timeCategory || 'work'));
+  const entriesToShow = filteredEntries.slice(0, limit);
+
+  // Category breakdown for the summary strip (computed from filtered entries)
+  const categoryBreakdownStrip = (() => {
+    const catMap: Record<string, number> = {};
+    filteredEntries.forEach((e: any) => {
+      if (e.isBreak || !e.endTime) return;
+      const cat = e.timeCategory || 'work';
+      const hours = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
+      catMap[cat] = (catMap[cat] || 0) + hours;
+    });
+    return Object.entries(catMap)
+      .filter(([, h]) => h > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([cat, hours]) => ({
+        cat,
+        hours,
+        label: TIME_CATEGORY_LABELS[cat]?.label ?? cat,
+        color: TIME_CATEGORY_LABELS[cat]?.color ?? '#6B7280',
+      }));
+  })();
 
   return (
     <Card className="w-full" data-testid="card-timesheet-list">
@@ -1204,11 +1237,67 @@ export function TimesheetList({
         </Button>
       </CardHeader>
       <CardContent>
+        {/* Category filter chips */}
+        <div className="flex flex-wrap gap-2 mb-4" data-testid="category-filter-chips">
+          {TIME_CATEGORY_OPTIONS.map(opt => {
+            const meta = TIME_CATEGORY_LABELS[opt.value];
+            const active = selectedCategories.includes(opt.value);
+            return (
+              <button
+                key={opt.value}
+                onClick={() => toggleCategory(opt.value)}
+                data-testid={`chip-category-${opt.value}`}
+                className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full font-medium border transition-all"
+                style={
+                  active
+                    ? { backgroundColor: meta?.color ?? '#6B7280', color: '#fff', borderColor: meta?.color ?? '#6B7280' }
+                    : { backgroundColor: 'transparent', color: meta?.color ?? '#6B7280', borderColor: (meta?.color ?? '#6B7280') + '60' }
+                }
+              >
+                {meta?.label ?? opt.label}
+              </button>
+            );
+          })}
+          {selectedCategories.length > 0 && (
+            <button
+              onClick={() => setSelectedCategories([])}
+              className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-dashed text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="chip-clear-categories"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Category breakdown summary strip */}
+        {categoryBreakdownStrip.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-4 p-3 rounded-lg bg-muted/40" data-testid="category-breakdown-strip">
+            {categoryBreakdownStrip.map(({ cat, label, hours, color }) => (
+              <span
+                key={cat}
+                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium"
+                style={{ backgroundColor: color + '18', color }}
+              >
+                {label} <span className="font-bold">{hours.toFixed(1)}h</span>
+              </span>
+            ))}
+          </div>
+        )}
+
         {entriesToShow.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground" data-testid="text-no-entries">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No time entries yet</p>
-            <p className="text-sm">Start a timer to begin tracking your work</p>
+            {selectedCategories.length > 0 ? (
+              <>
+                <p>No entries match the selected {selectedCategories.length === 1 ? 'category' : 'categories'}</p>
+                <p className="text-sm">Try clearing the filter or selecting a different category</p>
+              </>
+            ) : (
+              <>
+                <p>No time entries yet</p>
+                <p className="text-sm">Start a timer to begin tracking your work</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
