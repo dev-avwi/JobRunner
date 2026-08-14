@@ -16658,6 +16658,7 @@ Be specific about materials, colors, and features that would be included.`
         }
       }
 
+      const totalPaid = Math.round((computedGross + travelAllowancePay) * 100) / 100;
       try {
         const payslipTotalNotif = Math.round((computedGross + travelAllowancePay) * 100) / 100;
         await storage.createNotification({
@@ -16673,7 +16674,7 @@ Be specific about materials, colors, and features that would be included.`
         console.warn('[Payroll Pay] Notification error:', e);
       }
 
-      res.json({ ...payment, payslipSent });
+      res.json({ ...payment, payslipSent, totalPaid: totalPaid.toFixed(2) });
     } catch (error) {
       console.error('[Payroll Pay] Error:', error);
       res.status(500).json({ error: 'Failed to record payroll payment' });
@@ -16693,19 +16694,19 @@ Be specific about materials, colors, and features that would be included.`
       const worker = await storage.getUser(payment.workerUserId);
       const bizSettings = await storage.getBusinessSettings(payment.businessOwnerId);
       const workerName = worker ? (`${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email || 'Worker') : 'Worker';
-      const rate = parseFloat(payment.regularHours) > 0
-        ? Math.round((parseFloat(payment.grossPay) / ((parseFloat(payment.regularHours)) + (parseFloat(payment.overtimeHours) * 1.5))) * 100) / 100
-        : 0;
       const regHrs = parseFloat(payment.regularHours);
       const otHrs = parseFloat(payment.overtimeHours);
+      const grossWages = parseFloat(payment.grossPay);
+      const rate = (regHrs + otHrs * 1.5) > 0
+        ? Math.round((grossWages / (regHrs + otHrs * 1.5)) * 100) / 100
+        : 0;
 
       // Use the locked-in travel snapshot from payment time (never recompute from
       // current entries or business rate — that would produce different amounts).
       const travelAllowanceSlip = parseFloat(payment.travelAllowance || '0');
-      const totalDistanceKmSlip = parseFloat(payment.totalDistanceKm || '0');
+      const travelDistanceKmSlip = Math.round(parseFloat(payment.totalDistanceKm || '0') * 10) / 10;
       const travelRatePerKmSlip = parseFloat(payment.travelRatePerKm || '0');
-      const totalDistanceKmSlipRounded = Math.round(totalDistanceKmSlip * 10) / 10;
-      const payslipTotalSlip = Math.round((parseFloat(payment.grossPay) + travelAllowanceSlip) * 100) / 100;
+      const payslipTotalSlip = Math.round((grossWages + travelAllowanceSlip) * 100) / 100;
 
       const { generateRemittancePdf } = await import('./pdfService');
       const pdfBuffer = await generateRemittancePdf({
@@ -16727,7 +16728,7 @@ Be specific about materials, colors, and features that would be included.`
         lines: [
           { label: `Regular (${regHrs.toFixed(2)} hrs @ $${rate.toFixed(2)})`, value: (Math.round(regHrs * rate * 100) / 100).toFixed(2), isMoney: true },
           ...(otHrs > 0 ? [{ label: `Overtime (${otHrs.toFixed(2)} hrs @ $${(rate * 1.5).toFixed(2)})`, value: (Math.round(otHrs * rate * 1.5 * 100) / 100).toFixed(2), isMoney: true }] : []),
-          ...(travelAllowanceSlip > 0 ? [{ label: `Travel Allowance (${totalDistanceKmSlipRounded} km @ $${travelRatePerKmSlip.toFixed(2)}/km)`, value: travelAllowanceSlip.toFixed(2), isMoney: true }] : []),
+          ...(travelAllowanceSlip > 0 ? [{ label: `Travel Allowance (${travelDistanceKmSlip} km @ $${travelRatePerKmSlip.toFixed(2)}/km)`, value: travelAllowanceSlip.toFixed(2), isMoney: true }] : []),
         ],
         total: payslipTotalSlip.toFixed(2),
       });
@@ -28346,10 +28347,15 @@ Respond with JSON in this format:
         return res.status(400).json({ error: 'Invalid GPS coordinates for clock-out' });
       }
       
+      const rawDistance = req.body.distanceKm;
+      const parsedDistance = rawDistance != null ? parseFloat(String(rawDistance)) : NaN;
+      const distanceKm = !isNaN(parsedDistance) && parsedDistance > 0 ? String(parsedDistance) : undefined;
+
       const locationData = {
         clockOutLatitude: req.body.clockOutLatitude ? String(req.body.clockOutLatitude) : undefined,
         clockOutLongitude: req.body.clockOutLongitude ? String(req.body.clockOutLongitude) : undefined,
         clockOutAddress: req.body.clockOutAddress || undefined,
+        distanceKm,
       };
       
       const stoppedEntry = await storage.stopTimeEntry(id, userId, locationData);

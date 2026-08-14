@@ -415,7 +415,9 @@ class OfflineStorageService {
           cached_at INTEGER NOT NULL,
           pending_sync INTEGER DEFAULT 0,
           sync_action TEXT,
-          local_id TEXT
+          local_id TEXT,
+          time_category TEXT,
+          distance_km TEXT
         );
         
         -- Sync queue for pending changes with exponential backoff support
@@ -802,15 +804,16 @@ class OfflineStorageService {
         if (__DEV__) console.log('[OfflineStorage] Jobs table "client_name" column added successfully');
       }
 
-      // F5: GPS columns on time_entries (best-effort; ignore if already present)
+      // F5: GPS + category + distance columns on time_entries (best-effort; ignore if already present)
       try {
         const teInfo = await this.db.getAllAsync("PRAGMA table_info(time_entries)");
         const cols = new Set((teInfo as any[]).map((c: any) => c.name));
-        const gpsCols: Array<[string, string]> = [
+        const addCols: Array<[string, string]> = [
           ['start_lat', 'REAL'], ['start_lng', 'REAL'],
           ['end_lat', 'REAL'], ['end_lng', 'REAL'],
+          ['time_category', 'TEXT'], ['distance_km', 'TEXT'],
         ];
-        for (const [name, type] of gpsCols) {
+        for (const [name, type] of addCols) {
           if (!cols.has(name)) {
             try { await this.db.execAsync(`ALTER TABLE time_entries ADD COLUMN ${name} ${type}`); } catch {}
           }
@@ -1773,7 +1776,7 @@ class OfflineStorageService {
    * Stop a time entry offline and queue for sync
    * Updates the end time of an existing time entry
    */
-  async stopTimeEntryOffline(entryId: string): Promise<CachedTimeEntry | null> {
+  async stopTimeEntryOffline(entryId: string, distanceKm?: string): Promise<CachedTimeEntry | null> {
     if (!this.db) throw new Error('Database not initialized');
     
     const now = Date.now();
@@ -1808,13 +1811,14 @@ class OfflineStorageService {
       }
     } catch {}
 
-    // Update the entry with end time + GPS
+    // Update the entry with end time + GPS + optional distance
     await this.db.runAsync(
       `UPDATE time_entries SET 
         end_time = ?, cached_at = ?, pending_sync = 1, sync_action = ?,
-        end_lat = ?, end_lng = ?
+        end_lat = ?, end_lng = ?,
+        distance_km = COALESCE(?, distance_km)
        WHERE id = ?`,
-      [endTime, now, 'update', endLat, endLng, entryId]
+      [endTime, now, 'update', endLat, endLng, distanceKm ?? null, entryId]
     );
     
     const entry: CachedTimeEntry = {
@@ -1836,6 +1840,7 @@ class OfflineStorageService {
       endTime,
       clockOutLatitude: endLat,
       clockOutLongitude: endLng,
+      ...(distanceKm != null ? { distanceKm } : {}),
       _previousValues: {
         endTime: row.end_time
       }

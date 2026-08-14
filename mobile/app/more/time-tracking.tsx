@@ -846,6 +846,10 @@ export default function TimeTrackingScreen() {
   // the old exact 'MANAGER' string check missed real DB role names like "Manager".
   const isOwnerOrManager = user?.isOwner === true || isManager;
 
+  const [showTravelDistanceSheet, setShowTravelDistanceSheet] = useState(false);
+  const [travelDistanceInput, setTravelDistanceInput] = useState('');
+  const [isStoppingWithDistance, setIsStoppingWithDistance] = useState(false);
+
   const [showAddEntryModal, setShowAddEntryModal] = useState(false);
   const [showDisputeModal, setShowDisputeModal] = useState(false);
   const [disputeEntryId, setDisputeEntryId] = useState<string | null>(null);
@@ -1050,6 +1054,23 @@ export default function TimeTrackingScreen() {
     }
   };
 
+  const doStopTimer = async (distanceKm?: string) => {
+    setIsStoppingWithDistance(true);
+    try {
+      const success = await stopTimer({ distanceKm });
+      if (success) {
+        await Promise.all([fetchTimeStats(), fetchWeeklyData()]);
+      } else {
+        Alert.alert('Error', 'Failed to save time entry.');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to save time entry.');
+    } finally {
+      setIsStoppingWithDistance(false);
+      setIsStopping(false);
+    }
+  };
+
   const handleStopTimer = async () => {
     if (!activeTimer) return;
     confirm({
@@ -1058,18 +1079,26 @@ export default function TimeTrackingScreen() {
       confirmText: 'Save',
     }).then(async (ok) => {
       if (!ok) return;
-      setIsStopping(true);
-      try {
-        const success = await stopTimer();
-        if (success) {
-          await Promise.all([fetchTimeStats(), fetchWeeklyData()]);
-        } else {
+      const timerCategory = (activeTimer as any).timeCategory;
+      const timerDistance = (activeTimer as any).distanceKm;
+      if (timerCategory === 'travel' && (timerDistance == null || timerDistance === '')) {
+        // Prompt for distance before stopping
+        setTravelDistanceInput('');
+        setShowTravelDistanceSheet(true);
+      } else {
+        setIsStopping(true);
+        try {
+          const success = await stopTimer();
+          if (success) {
+            await Promise.all([fetchTimeStats(), fetchWeeklyData()]);
+          } else {
+            Alert.alert('Error', 'Failed to save time entry.');
+          }
+        } catch (error) {
           Alert.alert('Error', 'Failed to save time entry.');
+        } finally {
+          setIsStopping(false);
         }
-      } catch (error) {
-        Alert.alert('Error', 'Failed to save time entry.');
-      } finally {
-        setIsStopping(false);
       }
     });
   };
@@ -2524,6 +2553,74 @@ export default function TimeTrackingScreen() {
               />
             </View>
           </ScrollView>
+        </View>
+      </AppBottomSheet>
+
+      <AppBottomSheet
+        visible={showTravelDistanceSheet}
+        onDismiss={() => {
+          if (isStoppingWithDistance) return;
+          setShowTravelDistanceSheet(false);
+        }}
+        snapPoints={['40%']}
+        scrollable={false}
+        contentPadding={spacing.lg}>
+        <View style={{ gap: spacing.lg, paddingBottom: insets.bottom + spacing.md }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: CATEGORY_COLORS.travel + '18', alignItems: 'center', justifyContent: 'center' }}>
+              <Text style={{ fontSize: 20 }}>🚗</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...typography.cardTitle, color: colors.foreground }}>How far did you travel?</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
+                Distance helps calculate your travel allowance.
+              </Text>
+            </View>
+          </View>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: radius.xl, padding: spacing.md }}>
+            <Feather name="navigation" size={18} color={CATEGORY_COLORS.travel} />
+            <TextInput
+              style={{ flex: 1, ...typography.body, color: colors.foreground }}
+              placeholder="0.0"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="decimal-pad"
+              value={travelDistanceInput}
+              onChangeText={setTravelDistanceInput}
+              autoFocus
+            />
+            <Text style={{ ...typography.body, color: colors.mutedForeground }}>km</Text>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              style={{ flex: 1, paddingVertical: spacing.md, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => {
+                setShowTravelDistanceSheet(false);
+                doStopTimer(undefined);
+              }}
+              disabled={isStoppingWithDistance}
+            >
+              <Text style={{ ...typography.button, color: colors.mutedForeground }}>Skip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 2, paddingVertical: spacing.md, borderRadius: radius.xl, backgroundColor: CATEGORY_COLORS.travel, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => {
+                const km = parseFloat(travelDistanceInput.trim());
+                if (travelDistanceInput.trim() && (isNaN(km) || km <= 0)) {
+                  Alert.alert('Invalid Distance', 'Please enter a valid distance greater than 0, or tap Skip.');
+                  return;
+                }
+                setShowTravelDistanceSheet(false);
+                doStopTimer(travelDistanceInput.trim() && !isNaN(km) && km > 0 ? String(km) : undefined);
+              }}
+              disabled={isStoppingWithDistance}
+            >
+              <Text style={{ ...typography.button, color: '#fff', fontWeight: fontWeights.semibold }}>
+                {isStoppingWithDistance ? 'Saving…' : 'Save & Stop'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </AppBottomSheet>
 

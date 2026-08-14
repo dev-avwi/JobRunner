@@ -759,7 +759,7 @@ export interface IStorage {
   createTimeEntry(entry: InsertTimeEntry & { userId: string }): Promise<TimeEntry>;
   updateTimeEntry(id: string, userId: string, entry: Partial<InsertTimeEntry>): Promise<TimeEntry | undefined>;
   deleteTimeEntry(id: string, userId: string): Promise<boolean>;
-  stopTimeEntry(id: string, userId: string, locationData?: { clockOutLatitude?: string; clockOutLongitude?: string; clockOutAddress?: string }): Promise<TimeEntry | undefined>;
+  stopTimeEntry(id: string, userId: string, locationData?: { clockOutLatitude?: string; clockOutLongitude?: string; clockOutAddress?: string; distanceKm?: string }): Promise<TimeEntry | undefined>;
   getActiveTimeEntry(userId: string): Promise<TimeEntry | undefined>;
   
   // Time Entry Edit Audit Trail
@@ -4375,7 +4375,7 @@ export class PostgresStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async stopTimeEntry(id: string, userId: string, locationData?: { clockOutLatitude?: string; clockOutLongitude?: string; clockOutAddress?: string }): Promise<TimeEntry | undefined> {
+  async stopTimeEntry(id: string, userId: string, locationData?: { clockOutLatitude?: string; clockOutLongitude?: string; clockOutAddress?: string; distanceKm?: string }): Promise<TimeEntry | undefined> {
     const now = new Date();
     const entry = await this.getTimeEntry(id, userId);
     if (!entry || entry.endTime) return undefined;
@@ -4389,6 +4389,7 @@ export class PostgresStorage implements IStorage {
       ...(locationData?.clockOutLatitude ? { clockOutLatitude: locationData.clockOutLatitude } : {}),
       ...(locationData?.clockOutLongitude ? { clockOutLongitude: locationData.clockOutLongitude } : {}),
       ...(locationData?.clockOutAddress ? { clockOutAddress: locationData.clockOutAddress } : {}),
+      ...(locationData?.distanceKm != null ? { distanceKm: locationData.distanceKm } : {}),
     });
   }
 

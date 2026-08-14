@@ -2152,7 +2152,7 @@ interface TimeTrackingState {
 
   fetchActiveTimer: () => Promise<void>;
   startTimer: (jobId: string, description?: string, isBreak?: boolean) => Promise<boolean>;
-  stopTimer: (options?: { keepLiveActivity?: boolean }) => Promise<boolean>;
+  stopTimer: (options?: { keepLiveActivity?: boolean; distanceKm?: string }) => Promise<boolean>;
   pauseTimer: () => Promise<boolean>;
   resumeTimer: () => Promise<boolean>;
   getElapsedMinutes: () => number;
@@ -2329,7 +2329,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     }
   },
 
-  stopTimer: async (options?: { keepLiveActivity?: boolean }) => {
+  stopTimer: async (options?: { keepLiveActivity?: boolean; distanceKm?: string }) => {
     const { activeTimer } = get();
     if (!activeTimer) {
       set({ error: 'No active timer to stop' });
@@ -2353,7 +2353,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     const isOnline = useOfflineStore.getState().isOnline;
     if (!isOnline || (typeof timerId === 'string' && timerId.startsWith('local_'))) {
       try {
-        await offlineStorage.stopTimeEntryOffline(timerId);
+        await offlineStorage.stopTimeEntryOffline(timerId, options?.distanceKm);
         set({ activeTimer: null, isLoading: false, error: null });
         void setLocationTrackingOverride(false);
         endLiveActivity();
@@ -2365,7 +2365,9 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     }
 
     try {
-      await api.post(`/api/time-entries/${timerId}/stop`);
+      const body: Record<string, unknown> = {};
+      if (options?.distanceKm != null) body.distanceKm = options.distanceKm;
+      await api.post(`/api/time-entries/${timerId}/stop`, body);
       // Clear active timer immediately on success
       set({ activeTimer: null, isLoading: false, error: null });
       void setLocationTrackingOverride(false);
