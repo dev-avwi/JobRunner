@@ -3,3 +3,4 @@
 - [JobRunner web bundle splitting](jobrunner-bundle-splitting.md) — no runtime imports from @shared/schema in eager frontend code (use @shared/permissions); manualChunks function form; preview smoke-test trick
 - [Database URL split](db-url-split.md) — index.ts aliases NEON_DATABASE_URL→DATABASE_URL at boot; project_documents lives in NEON; migrate NEON_DATABASE_URL (same connection at runtime)
 - [Avoid em dashes in copy](avoid-em-dashes.md) — user preference: never use — in hard-coded UI strings; use commas, colons, or rewrite
+- [Metro hoisting trap](metro-hoisting-trap.md) — Metro/Babel rewrites function declarations to var assignments; never define a helper after the component that calls it during render

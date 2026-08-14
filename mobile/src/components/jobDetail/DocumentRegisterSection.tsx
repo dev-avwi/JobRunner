@@ -120,6 +120,254 @@ function buildFormData(file: PickedFile, fields: Record<string, string>): FormDa
   return fd;
 }
 
+function localStyles(colors: any) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.card,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+      marginBottom: spacing.md,
+      overflow: 'hidden',
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    iconWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerLabel: {
+      fontSize: typography.button.fontSize,
+      fontWeight: fontWeights.semibold,
+    },
+    countBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radius.pill,
+    },
+    countText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.semibold,
+    },
+    addBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.md,
+      borderWidth: 1,
+    },
+    addBtnText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.semibold,
+    },
+    empty: {
+      alignItems: 'center',
+      paddingVertical: spacing.xl,
+      gap: spacing.sm,
+    },
+    emptyText: {
+      fontSize: typography.caption.fontSize,
+    },
+    list: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    docRow: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      overflow: 'hidden',
+    },
+    docHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.sm,
+    },
+    docInfo: {
+      flex: 1,
+      gap: 3,
+    },
+    docTitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    docNumber: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
+      flexShrink: 0,
+    },
+    docTitle: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: fontWeights.semibold,
+      flex: 1,
+    },
+    docMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flexWrap: 'wrap',
+    },
+    catBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: radius.sm,
+    },
+    catText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.bold,
+    },
+    revBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: radius.sm,
+    },
+    revText: {
+      fontSize: typography.captionSmall.fontSize,
+    },
+    revCountText: {
+      fontSize: typography.captionSmall.fontSize,
+    },
+    docActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      flexShrink: 0,
+    },
+    revHistory: {
+      padding: spacing.sm,
+      gap: spacing.xs,
+    },
+    revHistoryLabel: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    revItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    revLabelBadge: {
+      paddingHorizontal: 5,
+      paddingVertical: 1,
+      borderRadius: radius.sm,
+      flexShrink: 0,
+    },
+    revLabelText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.semibold,
+    },
+    revFileName: {
+      fontSize: typography.captionSmall.fontSize,
+      flex: 1,
+    },
+    revMeta: {
+      fontSize: typography.captionSmall.fontSize,
+      flexShrink: 0,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 1,
+    },
+    modalTitle: {
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.bold,
+    },
+    modalSubtitle: {
+      fontSize: typography.caption.fontSize,
+      marginTop: 2,
+    },
+    modalFooter: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+    },
+    submitBtn: {
+      paddingVertical: spacing.md,
+      borderRadius: radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+    },
+    submitBtnText: {
+      color: '#fff',
+      fontWeight: fontWeights.semibold,
+      fontSize: typography.button.fontSize,
+    },
+    field: {
+      gap: spacing.xs,
+    },
+    label: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: fontWeights.semibold,
+    },
+    input: {
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      fontSize: typography.button.fontSize,
+      minHeight: 44,
+    },
+    textArea: {
+      minHeight: 88,
+      paddingTop: spacing.sm,
+    },
+    filePicker: {
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      borderRadius: radius.md,
+      padding: spacing.lg,
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: 80,
+      justifyContent: 'center',
+    },
+    filePickerText: {
+      fontSize: typography.caption.fontSize,
+      fontWeight: fontWeights.medium,
+      textAlign: 'center',
+    },
+    filePickerMeta: {
+      fontSize: typography.captionSmall.fontSize,
+      textAlign: 'center',
+    },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.pill,
+      borderWidth: 1,
+    },
+    chipText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
+    },
+  });
+}
+
 export function DocumentRegisterSection({
   jobId,
   colors,
@@ -1115,252 +1363,4 @@ export function DocumentRegisterSection({
       </Modal>
     </View>
   );
-}
-
-function localStyles(colors: any) {
-  return StyleSheet.create({
-    card: {
-      backgroundColor: colors.card,
-      borderRadius: radius.lg,
-      borderWidth: 1,
-      borderColor: colors.cardBorder,
-      marginBottom: spacing.md,
-      overflow: 'hidden',
-    },
-    cardHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: spacing.md,
-      paddingBottom: spacing.sm,
-    },
-    headerLeft: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    iconWrap: {
-      width: 32,
-      height: 32,
-      borderRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerLabel: {
-      fontSize: typography.button.fontSize,
-      fontWeight: fontWeights.semibold,
-    },
-    countBadge: {
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: radius.pill,
-    },
-    countText: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.semibold,
-    },
-    addBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 4,
-      borderRadius: radius.md,
-      borderWidth: 1,
-    },
-    addBtnText: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.semibold,
-    },
-    empty: {
-      alignItems: 'center',
-      paddingVertical: spacing.xl,
-      gap: spacing.sm,
-    },
-    emptyText: {
-      fontSize: typography.caption.fontSize,
-    },
-    list: {
-      paddingHorizontal: spacing.md,
-      paddingBottom: spacing.md,
-      gap: spacing.sm,
-    },
-    docRow: {
-      borderWidth: 1,
-      borderRadius: radius.md,
-      overflow: 'hidden',
-    },
-    docHeader: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: spacing.sm,
-    },
-    docInfo: {
-      flex: 1,
-      gap: 3,
-    },
-    docTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    docNumber: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.medium,
-      flexShrink: 0,
-    },
-    docTitle: {
-      fontSize: typography.caption.fontSize,
-      fontWeight: fontWeights.semibold,
-      flex: 1,
-    },
-    docMeta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-      flexWrap: 'wrap',
-    },
-    catBadge: {
-      paddingHorizontal: 6,
-      paddingVertical: 1,
-      borderRadius: radius.sm,
-    },
-    catText: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.bold,
-    },
-    revBadge: {
-      paddingHorizontal: 5,
-      paddingVertical: 1,
-      borderRadius: radius.sm,
-    },
-    revText: {
-      fontSize: typography.captionSmall.fontSize,
-    },
-    revCountText: {
-      fontSize: typography.captionSmall.fontSize,
-    },
-    docActions: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      flexShrink: 0,
-    },
-    revHistory: {
-      padding: spacing.sm,
-      gap: spacing.xs,
-    },
-    revHistoryLabel: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.bold,
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
-      marginBottom: 2,
-    },
-    revItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.sm,
-    },
-    revLabelBadge: {
-      paddingHorizontal: 5,
-      paddingVertical: 1,
-      borderRadius: radius.sm,
-      flexShrink: 0,
-    },
-    revLabelText: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.semibold,
-    },
-    revFileName: {
-      fontSize: typography.captionSmall.fontSize,
-      flex: 1,
-    },
-    revMeta: {
-      fontSize: typography.captionSmall.fontSize,
-      flexShrink: 0,
-    },
-    modalHeader: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      justifyContent: 'space-between',
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.lg,
-      paddingBottom: spacing.md,
-      borderBottomWidth: 1,
-    },
-    modalTitle: {
-      fontSize: typography.sizes.lg,
-      fontWeight: fontWeights.bold,
-    },
-    modalSubtitle: {
-      fontSize: typography.caption.fontSize,
-      marginTop: 2,
-    },
-    modalFooter: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      borderTopWidth: 1,
-    },
-    submitBtn: {
-      paddingVertical: spacing.md,
-      borderRadius: radius.md,
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: 44,
-    },
-    submitBtnText: {
-      color: '#fff',
-      fontWeight: fontWeights.semibold,
-      fontSize: typography.button.fontSize,
-    },
-    field: {
-      gap: spacing.xs,
-    },
-    label: {
-      fontSize: typography.caption.fontSize,
-      fontWeight: fontWeights.semibold,
-    },
-    input: {
-      borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      fontSize: typography.button.fontSize,
-      minHeight: 44,
-    },
-    textArea: {
-      minHeight: 88,
-      paddingTop: spacing.sm,
-    },
-    filePicker: {
-      borderWidth: 2,
-      borderStyle: 'dashed',
-      borderRadius: radius.md,
-      padding: spacing.lg,
-      alignItems: 'center',
-      gap: spacing.sm,
-      minHeight: 80,
-      justifyContent: 'center',
-    },
-    filePickerText: {
-      fontSize: typography.caption.fontSize,
-      fontWeight: fontWeights.medium,
-      textAlign: 'center',
-    },
-    filePickerMeta: {
-      fontSize: typography.captionSmall.fontSize,
-      textAlign: 'center',
-    },
-    chip: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
-      borderRadius: radius.pill,
-      borderWidth: 1,
-    },
-    chipText: {
-      fontSize: typography.captionSmall.fontSize,
-      fontWeight: fontWeights.medium,
-    },
-  });
 }

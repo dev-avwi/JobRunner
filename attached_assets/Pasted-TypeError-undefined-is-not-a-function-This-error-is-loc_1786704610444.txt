@@ -1,0 +1,85 @@
+TypeError: undefined is not a function
+
+This error is located at:
+    at DocumentRegisterSection (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:4969166)
+    at RCTScrollContentView (<anonymous>)
+    at RCTScrollView (<anonymous>)
+    at ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:727367)
+    at ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:734098)
+    at CssInterop.ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:577652)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:573025)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:577652)
+    at JobDetailScreen (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:4461112)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1426961)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1434012)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1398613)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1343489)
+    at SceneView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1396397)
+    at RNSScreenContentWrapper (<anonymous>)
+    at ScreenContentWrapper (<anonymous>)
+    at DebugContainer (<anonymous>)
+    at RNSScreen (<anonymous>)
+    at Animated(Anonymous) (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:661116)
+    at Suspender (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505591)
+    at Suspense (<anonymous>)
+    at Freeze (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505651)
+    at DelayedFreeze (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505233)
+    at InnerScreen (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1502893)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1504631)
+    at ScreenStackItem (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1514823)
+    at SceneView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1538426)
+    at RNSScreenStack (<anonymous>)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1513895)
+    at ScreenStack (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1513082)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:573025)
+    at FrameSizeProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1475633)
+    at SafeAreaProviderCompat (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1487561)
+    at NativeStackView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1536973)
+    at PreventRemoveProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1374687)
+    at NavigationStateListenerProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1403951)
+    at NavigationContent (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1393479)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1393382)
+    at NativeStackNavigator (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1533327)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1425880)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1315977)
+    at JobLayout (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:5005730)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1426961)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1434012)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1398613)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1343489)
+    at SceneView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1396397)
+    at RNSScreenContentWrapper (<anonymous>)
+    at ScreenContentWrapper (<anonymous>)
+    at DebugContainer (<anonymous>)
+    at RNSScreen (<anonymous>)
+    at Animated(Anonymous) (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:661116)
+    at Suspender (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505591)
+    at Suspense (<anonymous>)
+    at Freeze (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505651)
+    at DelayedFreeze (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1505233)
+    at InnerScreen (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1502893)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5b1fdaf29298bd443.bundle:1:1504631)
+    at ScreenStackItem (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/3045a27060c869b5
+
+DocumentRegisterSection
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:4970885
+renderWithHooks
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:331248
+updateFunctionComponent
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:350117
+beginWork
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:358005
+performUnitOfWork
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:376742
+workLoopSync
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:375749
+renderRootSync
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:375581
+performWorkOnRoot
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:373222
+performWorkOnRootViaSchedulerTask
+    3045a27060c869b5b1fdaf29298bd443.bundle:1:326692
