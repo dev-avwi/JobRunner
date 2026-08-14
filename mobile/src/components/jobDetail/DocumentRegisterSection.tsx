@@ -418,7 +418,7 @@ export function DocumentRegisterSection({
     setIsLoadingDocs(true);
     try {
       const res = await api.get<ProjectDocument[]>(`/api/jobs/${jobId}/project-documents`);
-      setDocuments(res.data ?? []);
+      setDocuments(Array.isArray(res.data) ? res.data : []);
     } catch {
       // silently ignore; user can pull-to-refresh
     } finally {
@@ -430,7 +430,7 @@ export function DocumentRegisterSection({
     setIsLoadingRfis(true);
     try {
       const res = await api.get<ProjectRfi[]>(`/api/jobs/${jobId}/rfis`);
-      setRfis(res.data ?? []);
+      setRfis(Array.isArray(res.data) ? res.data : []);
     } catch {
       // silently ignore
     } finally {
