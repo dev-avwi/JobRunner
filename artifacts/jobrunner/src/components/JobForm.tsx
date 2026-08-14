@@ -30,6 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import StatusBadge from "@/components/StatusBadge";
 
 type JobType = 'service' | 'project';
+type ProjectFlowStep = 'type-picker' | 'template-picker' | 'form';
 
 const jobFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -90,6 +91,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [jobType, setJobType] = useState<JobType | null>(null);
+  const [projectFlowStep, setProjectFlowStep] = useState<ProjectFlowStep>('type-picker');
+  const [templatePhases, setTemplatePhases] = useState<Array<{
+    phaseCode: string;
+    name: string;
+    description?: string;
+    bookedHours?: string;
+  }>>([]);
 
   // Project-specific state (only used when jobType === 'project')
   const [budgetedCost, setBudgetedCost] = useState('');
@@ -117,6 +125,21 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const urlClientName = urlParams.get('clientName');
   const [urlClientApplied, setUrlClientApplied] = useState(false);
   const [urlPrefillApplied, setUrlPrefillApplied] = useState(false);
+
+  // Fetch project templates (for the template picker step)
+  const { data: projectTemplates = [] } = useQuery<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    templateData: {
+      phases: Array<{ phaseCode: string; name: string; description?: string; bookedHours?: string }>;
+      settings?: { materialMarkupPct?: string; equipmentMarkupPct?: string; subcontractorMarkupPct?: string; budgetedCost?: string; description?: string };
+    };
+    createdAt: string;
+  }>>({
+    queryKey: ["/api/project-templates"],
+    enabled: jobType === 'project',
+  });
 
   // Fetch quote details if creating job from quote
   const { data: sourceQuote } = useQuery({
@@ -461,6 +484,37 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
 
       const result = await createJobMutation.mutateAsync(jobData);
 
+      // After job is created, create template phases if a template was selected
+      if (result.id && templatePhases.length > 0) {
+        const authToken = getSessionToken();
+        let phaseErrors = 0;
+        for (let i = 0; i < templatePhases.length; i++) {
+          const phase = templatePhases[i];
+          try {
+            const phaseRes = await fetch(`/api/jobs/${result.id}/phases`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+              credentials: 'include',
+              body: JSON.stringify({ ...phase, sortOrder: i }),
+            });
+            if (!phaseRes.ok) {
+              phaseErrors++;
+              console.error(`Failed to create phase "${phase.name}" (${phaseRes.status})`);
+            }
+          } catch (e) {
+            phaseErrors++;
+            console.error('Failed to create phase from template:', e);
+          }
+        }
+        if (phaseErrors > 0) {
+          toast({
+            title: `Project created — ${phaseErrors} phase${phaseErrors > 1 ? 's' : ''} couldn't be added`,
+            description: 'You can add them manually from the project detail page.',
+            variant: 'destructive',
+          });
+        }
+      }
+
       // After job is created, update the quote to link to this job
       if (urlQuoteId && result.id) {
         try {
@@ -494,6 +548,113 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
       // Other errors are handled by the hook's onError callback
     }
   };
+
+  // Show template picker for project type
+  if (jobType === 'project' && projectFlowStep === 'template-picker') {
+    return (
+      <div className="w-full px-6 lg:px-8 py-6 space-y-6" data-testid="page-template-picker">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setJobType(null); setProjectFlowStep('type-picker'); setTemplatePhases([]); }}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            title="Back to type picker"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                <Layers className="h-3.5 w-3.5" />
+                Project
+              </span>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-bold">Start from a template?</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">Pick a saved project structure or start blank</p>
+          </div>
+        </div>
+
+        <div className="space-y-3 max-w-2xl">
+          {/* Skip / start blank option */}
+          <button
+            type="button"
+            onClick={() => setProjectFlowStep('form')}
+            data-testid="button-skip-template"
+            className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-muted text-muted-foreground group-hover:bg-muted/80 transition-colors">
+                <Plus className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-semibold">Start blank</p>
+                <p className="text-sm text-muted-foreground">No phases pre-filled — add them manually</p>
+              </div>
+            </div>
+          </button>
+
+          {/* Saved templates */}
+          {projectTemplates.length > 0 && (
+            <>
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground px-2">or choose a saved template</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+
+              {projectTemplates.map((tpl) => (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => {
+                    setTemplatePhases(tpl.templateData.phases);
+                    // Pre-fill description from template settings if present
+                    if (tpl.templateData.settings?.description) {
+                      form.setValue('description', tpl.templateData.settings.description);
+                    }
+                    // Pre-fill markup percentages
+                    if (tpl.templateData.settings?.materialMarkupPct) setMaterialMarkupPct(tpl.templateData.settings.materialMarkupPct);
+                    if (tpl.templateData.settings?.equipmentMarkupPct) setEquipmentMarkupPct(tpl.templateData.settings.equipmentMarkupPct);
+                    if (tpl.templateData.settings?.subcontractorMarkupPct) setSubcontractorMarkupPct(tpl.templateData.settings.subcontractorMarkupPct);
+                    if (tpl.templateData.settings?.budgetedCost) setBudgetedCost(tpl.templateData.settings.budgetedCost);
+                    setProjectFlowStep('form');
+                    toast({ title: `Template applied`, description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} will be created with the project` });
+                  }}
+                  data-testid={`button-use-template-${tpl.id}`}
+                  className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted text-muted-foreground group-hover:bg-muted/80 transition-colors shrink-0">
+                      <Layers className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold">{tpl.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {tpl.templateData.phases.length} phase{tpl.templateData.phases.length !== 1 ? 's' : ''}
+                        {tpl.templateData.phases.length > 0 && (
+                          <span className="ml-1">— {tpl.templateData.phases.slice(0, 3).map(p => p.name).join(', ')}{tpl.templateData.phases.length > 3 ? '…' : ''}</span>
+                        )}
+                      </p>
+                    </div>
+                    <ArrowLeft className="h-4 w-4 rotate-180 text-muted-foreground group-hover:text-foreground transition-colors shrink-0 mt-0.5" />
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+        </div>
+
+        {onCancel && (
+          <div className="pt-2">
+            <Button type="button" variant="ghost" onClick={onCancel} className="gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Cancel
+            </Button>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Show type picker if job type not yet chosen
   if (jobType === null) {
@@ -533,7 +694,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           {/* Project card */}
           <button
             type="button"
-            onClick={() => setJobType('project')}
+            onClick={() => { setJobType('project'); setProjectFlowStep('template-picker'); }}
             data-testid="card-job-type-project"
             className="group text-left p-6 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
@@ -576,9 +737,15 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           <div className="flex items-center gap-2 mb-1">
             <button
               type="button"
-              onClick={() => setJobType(null)}
+              onClick={() => {
+                if (jobType === 'project') {
+                  setProjectFlowStep('template-picker');
+                } else {
+                  setJobType(null);
+                }
+              }}
               className="text-muted-foreground hover:text-foreground transition-colors"
-              title="Change job type"
+              title="Go back"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>

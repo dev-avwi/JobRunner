@@ -9145,5 +9145,71 @@ import { computeRetentionSummary } from "./retentionSummary";
       res.status(500).json({ error: error.message });
     }
   });
+
+  // ─── Project Templates ─────────────────────────────────────────────────────
+
+  app.get("/api/project-templates", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const templates = await storage.getProjectTemplates(effectiveUserId);
+      res.json(templates);
+    } catch (error: any) {
+      console.error("Error fetching project templates:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/project-templates", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const bodySchema = z.object({
+        name: z.string().min(1, "Template name is required").max(200),
+        description: z.string().max(1000).optional(),
+        templateData: z.object({
+          phases: z.array(z.object({
+            phaseCode: z.string().min(1).max(20),
+            name: z.string().min(1),
+            description: z.string().optional(),
+            bookedHours: z.string().optional(),
+          })),
+          settings: z.object({
+            materialMarkupPct: z.string().optional(),
+            equipmentMarkupPct: z.string().optional(),
+            subcontractorMarkupPct: z.string().optional(),
+            budgetedCost: z.string().optional(),
+            description: z.string().optional(),
+          }).optional(),
+        }),
+      });
+      const parsed = bodySchema.parse(req.body);
+      const template = await storage.createProjectTemplate({
+        ...parsed,
+        userId: effectiveUserId,
+      });
+      res.status(201).json(template);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid template data", details: error.errors });
+      }
+      console.error("Error creating project template:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/project-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const { id } = req.params;
+      const deleted = await storage.deleteProjectTemplate(id, effectiveUserId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting project template:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   }
   

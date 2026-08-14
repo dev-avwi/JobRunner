@@ -439,6 +439,9 @@ import {
   priceListItems,
   type PriceListItem,
   type InsertPriceListItem,
+  projectTemplates,
+  type ProjectTemplate,
+  type InsertProjectTemplate,
 } from "@workspace/db";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -538,6 +541,11 @@ export interface IStorage {
   deleteJobPhase(id: string, jobId: string, userId: string): Promise<boolean>;
   reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void>;
   generateJobNumber(userId: string): Promise<string | null>;
+
+  // Project Templates
+  getProjectTemplates(userId: string): Promise<ProjectTemplate[]>;
+  createProjectTemplate(template: InsertProjectTemplate): Promise<ProjectTemplate>;
+  deleteProjectTemplate(id: string, userId: string): Promise<boolean>;
 
   // Progress Claims
   getClaims(jobId: string, userId: string): Promise<Claim[]>;
@@ -1654,6 +1662,25 @@ pool
   `)
   .catch((err) => {
     console.error('[Schema] Failed to ensure jobs.job_type column:', err.message);
+  });
+
+// Task #437: Project templates — per-business reusable project structure (phases + settings).
+// Created idempotently at startup (we do NOT use drizzle-kit push on this database).
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS project_templates (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      name text NOT NULL,
+      description text,
+      template_data jsonb NOT NULL,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_project_templates_user_id ON project_templates (user_id);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure project_templates table:', err.message);
   });
 
 // Task #409: Price list items — user-owned pricebook of saved services, materials, and equipment.
@@ -9958,6 +9985,32 @@ Thank you for your prompt attention to this matter.`,
     } catch {
       return 'PC-001';
     }
+  }
+
+  // ─── Project Templates ─────────────────────────────────────────────────────
+
+  async getProjectTemplates(userId: string): Promise<ProjectTemplate[]> {
+    return await db
+      .select()
+      .from(projectTemplates)
+      .where(eq(projectTemplates.userId, userId))
+      .orderBy(asc(projectTemplates.createdAt));
+  }
+
+  async createProjectTemplate(template: InsertProjectTemplate): Promise<ProjectTemplate> {
+    const [result] = await db
+      .insert(projectTemplates)
+      .values({ ...template, id: randomUUID() })
+      .returning();
+    return result;
+  }
+
+  async deleteProjectTemplate(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(projectTemplates)
+      .where(and(eq(projectTemplates.id, id), eq(projectTemplates.userId, userId)))
+      .returning();
+    return result.length > 0;
   }
 }
 

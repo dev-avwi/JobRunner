@@ -3754,6 +3754,145 @@ function MessagingTemplatesTab() {
   );
 }
 
+function ProjectTemplatesSection() {
+  const { toast } = useToast();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const { data: templates = [], isLoading } = useQuery<Array<{
+    id: string;
+    name: string;
+    description: string | null;
+    templateData: {
+      phases: Array<{ phaseCode: string; name: string; description?: string; bookedHours?: string }>;
+      settings?: { materialMarkupPct?: string; equipmentMarkupPct?: string; subcontractorMarkupPct?: string; budgetedCost?: string; description?: string };
+    };
+    createdAt: string;
+  }>>({
+    queryKey: ["/api/project-templates"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiRequest("DELETE", `/api/project-templates/${id}`),
+    onSuccess: () => {
+      toast({ title: "Template deleted" });
+      setDeleteConfirmOpen(false);
+      setTemplateToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/project-templates"] });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete template", variant: "destructive" });
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-lg font-semibold">Project Templates</h2>
+        <p className="text-sm text-muted-foreground">
+          Saved project structures you can apply when creating a new project. To save a template, open any project job and choose <strong>Save as Project Template</strong> from the overflow menu (⋮).
+        </p>
+      </div>
+
+      {templates.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Layers className="h-10 w-10 mb-3 text-muted-foreground" />
+            <p className="font-medium mb-1">No project templates yet</p>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Open a project job, add the phases you want to reuse, then choose <strong>Save as Project Template</strong> from the ⋮ menu.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((tpl) => (
+            <Card key={tpl.id} className="relative">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="p-2 rounded-lg bg-muted shrink-0">
+                      <Layers className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="text-base truncate">{tpl.name}</CardTitle>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => { setTemplateToDelete({ id: tpl.id, name: tpl.name }); setDeleteConfirmOpen(true); }}
+                    data-testid={`button-delete-template-${tpl.id}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {tpl.templateData.phases.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      {tpl.templateData.phases.length} Phase{tpl.templateData.phases.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="space-y-1">
+                      {tpl.templateData.phases.slice(0, 5).map((p, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <Badge variant="outline" className="text-xs font-mono shrink-0">{p.phaseCode}</Badge>
+                          <span className="truncate">{p.name}</span>
+                          {p.bookedHours && (
+                            <span className="ml-auto text-xs text-muted-foreground shrink-0">{p.bookedHours}h</span>
+                          )}
+                        </div>
+                      ))}
+                      {tpl.templateData.phases.length > 5 && (
+                        <p className="text-xs text-muted-foreground pl-1">+{tpl.templateData.phases.length - 5} more phases</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No phases saved</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Created {format(new Date(tpl.createdAt), 'd MMM yyyy')}
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{templateToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground"
+              onClick={() => templateToDelete && deleteMutation.mutate(templateToDelete.id)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
 export default function TemplatesHub() {
   const search = useSearch();
   const [, setLocation] = useLocation();
@@ -3763,7 +3902,7 @@ export default function TemplatesHub() {
   const templateType = ['quote', 'invoice', 'job'].includes(typeParam || '')
     ? (typeParam as 'quote' | 'invoice' | 'job')
     : 'job';
-  const activeTab = ['styles', 'components', 'price-list', 'quick-templates', 'sms-templates', 'job-cards', 'forms'].includes(tabParam || '')
+  const activeTab = ['styles', 'components', 'price-list', 'quick-templates', 'sms-templates', 'job-cards', 'forms', 'project-templates'].includes(tabParam || '')
     ? (tabParam as string)
     : 'styles';
   return (
@@ -3809,6 +3948,10 @@ export default function TemplatesHub() {
               <FileText className="h-4 w-4" />
               Forms & Safety
             </TabsTrigger>
+            <TabsTrigger value="project-templates" className="gap-2" data-testid="tab-project-templates">
+              <Layers className="h-4 w-4" />
+              Project Templates
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="styles">
@@ -3845,6 +3988,10 @@ export default function TemplatesHub() {
           
           <TabsContent value="forms">
             <FormsTab />
+          </TabsContent>
+
+          <TabsContent value="project-templates">
+            <ProjectTemplatesSection />
           </TabsContent>
         </Tabs>
       </div>

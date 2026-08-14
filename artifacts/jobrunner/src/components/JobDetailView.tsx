@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -103,8 +103,6 @@ import type {
   JobDetailViewProps,
   User as JdvUser,
 } from "./JobDetailView.types";
-
-
 export default function JobDetailView({
   jobId,
   onBack,
@@ -143,6 +141,8 @@ export default function JobDetailView({
   const [pendingTimerStart, setPendingTimerStart] = useState(false);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteRole, setInviteRole] = useState<'subcontractor' | 'viewer'>('subcontractor');
   const [invitePermissions, setInvitePermissions] = useState<string[]>(['view_job', 'add_notes', 'add_photos', 'update_status']);
@@ -1213,6 +1213,50 @@ export default function JobDetailView({
     },
   });
 
+  const saveTemplateMutation = useMutation({
+    mutationFn: async ({ name }: { name: string }) => {
+      // Fetch the current phases for this job — fail loudly if the request fails
+      const token = getSessionToken();
+      const phasesRes = await fetch(`/api/jobs/${jobId}/phases`, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!phasesRes.ok) {
+        throw new Error(`Failed to fetch phases (${phasesRes.status})`);
+      }
+      const phases: any[] = await phasesRes.json();
+      const templatePhases = phases.map((p: any) => ({
+        phaseCode: p.phaseCode,
+        name: p.name,
+        description: p.description || undefined,
+        bookedHours: p.bookedHours ? String(p.bookedHours) : undefined,
+      }));
+      const res = await apiRequest("POST", "/api/project-templates", {
+        name,
+        templateData: {
+          phases: templatePhases,
+          settings: {
+            description: (job as any)?.description || undefined,
+          },
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Failed to save template (${res.status})`);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/project-templates'] });
+      toast({ title: "Template saved", description: `"${saveTemplateName}" is now available when creating a new project` });
+      setShowSaveTemplateDialog(false);
+      setSaveTemplateName('');
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to save template", variant: "destructive" });
+    },
+  });
+
   const handleDeleteJob = () => {
     setShowDeleteConfirm(true);
   };
@@ -1993,6 +2037,18 @@ export default function JobDetailView({
                   )}
                   Duplicate Job
                 </DropdownMenuItem>
+                {job?.jobType === 'project' && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSaveTemplateName(job?.title || '');
+                      setShowSaveTemplateDialog(true);
+                    }}
+                    data-testid="button-save-project-template"
+                  >
+                    <Layers className="h-4 w-4 mr-2" />
+                    Save as Project Template
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={handleDeleteJob}
                   disabled={deleteJobMutation.isPending}
@@ -5153,6 +5209,57 @@ export default function JobDetailView({
           </div>
         </DialogContent>
       </Dialog>
+      {/* Save as Project Template Dialog */}
+      <Dialog open={showSaveTemplateDialog} onOpenChange={(open) => {
+        setShowSaveTemplateDialog(open);
+        if (!open) setSaveTemplateName('');
+      }}>
+        <DialogContent className="max-w-md" data-testid="dialog-save-project-template">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Save as Project Template
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              This will save the current phases and project description as a reusable template. You can apply it when creating new projects.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="template-name">Template name</Label>
+              <Input
+                id="template-name"
+                placeholder="e.g. Commercial Fitout, Residential Renovation"
+                value={saveTemplateName}
+                onChange={(e) => setSaveTemplateName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && saveTemplateName.trim()) {
+                    saveTemplateMutation.mutate({ name: saveTemplateName.trim() });
+                  }
+                }}
+                data-testid="input-template-name"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => saveTemplateMutation.mutate({ name: saveTemplateName.trim() })}
+              disabled={!saveTemplateName.trim() || saveTemplateMutation.isPending}
+              data-testid="button-confirm-save-template"
+            >
+              {saveTemplateMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Saving…</>
+              ) : (
+                'Save Template'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </PageShell>
   );
 }

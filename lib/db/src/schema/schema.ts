@@ -5571,3 +5571,44 @@ export const insertPriceListItemSchema = createInsertSchema(priceListItems).omit
 });
 
 export type InsertPriceListItem = z.infer<typeof insertPriceListItemSchema>;
+
+export const projectTemplates = pgTable("project_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  description: text("description"),
+  // templateData stores:
+  // {
+  //   phases: { phaseCode, name, description, bookedHours }[],
+  //   settings: { materialMarkupPct?, equipmentMarkupPct?, subcontractorMarkupPct?, budgetedCost? }
+  // }
+  templateData: jsonb("template_data").notNull().$type<{
+    phases: Array<{
+      phaseCode: string;
+      name: string;
+      description?: string;
+      bookedHours?: string;
+    }>;
+    settings?: {
+      materialMarkupPct?: string;
+      equipmentMarkupPct?: string;
+      subcontractorMarkupPct?: string;
+      budgetedCost?: string;
+      description?: string;
+    };
+  }>(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_project_templates_user_id").on(table.userId),
+]);
+
+export type ProjectTemplate = typeof projectTemplates.$inferSelect;
+
+export const insertProjectTemplateSchema = createInsertSchema(projectTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertProjectTemplate = z.infer<typeof insertProjectTemplateSchema>;
