@@ -1102,7 +1102,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   data-testid="checkbox-requires-inspection"
                 />
                 <Label htmlFor="requiresInspection" className="flex items-center gap-2 cursor-pointer text-sm">
-                  <Search className="w-4 h-4" />
+                  <Search className="w-4 h-4 pointer-events-none" />
                   Requires site inspection first
                 </Label>
               </div>
