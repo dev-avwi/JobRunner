@@ -7,10 +7,15 @@
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check-schema-imports": "tsx ./src/check-schema-imports.ts",
-    "check-schema-imports:test": "tsx ./src/check-schema-imports.test.ts"
+    "check-schema-imports:test": "tsx ./src/check-schema-imports.test.ts",
+    "seed-demo-projects": "tsx ./src/seed-demo-projects.ts"
+  },
+  "dependencies": {
+    "pg": "^8.22.0"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/pg": "^8.20.0",
     "tsx": "catalog:"
   }
 }
