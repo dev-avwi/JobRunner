@@ -34421,7 +34421,18 @@ Respond with JSON in this format:
         entityId: existing.jobId,
         description: `Sent variation ${existing.number} to client for approval`,
       });
-      
+
+      // Fire-and-forget client notification (SMS → email fallback).
+      // Use `variation` (persisted values) so content is never stale.
+      if (variation) {
+        import('./variationNotificationService').then(({ notifyClientVariationSent }) =>
+          notifyClientVariationSent({
+            variation,
+            effectiveUserId: userContext.effectiveUserId,
+          })
+        ).catch((err) => console.error('[Variation] notify import failed:', err));
+      }
+
       res.json(variation);
     } catch (error: any) {
       console.error('Error sending variation:', error);

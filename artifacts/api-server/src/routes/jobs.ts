@@ -7753,6 +7753,18 @@ import { computeRetentionSummary } from "./retentionSummary";
         });
       }
 
+      // ── Notify client when variation is submitted for their review ─────────
+      if (status === 'sent' && updated) {
+        // Fire-and-forget — notification failure must NOT block the response.
+        // Use `updated` (persisted values) so content is never stale.
+        import('../variationNotificationService').then(({ notifyClientVariationSent }) =>
+          notifyClientVariationSent({
+            variation: updated,
+            effectiveUserId: userContext.effectiveUserId,
+          })
+        ).catch((err) => console.error('[Variation] notify import failed:', err));
+      }
+
       res.json(updated);
     } catch (error: any) {
       console.error('Error updating job variation:', error);
