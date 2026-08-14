@@ -1706,6 +1706,15 @@ pool
     console.error('[Schema] Failed to ensure jobs.job_type column:', err.message);
   });
 
+// Task #442: retentionDueSentAt — prevents duplicate retention-due emails.
+pool
+  .query(`
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS retention_due_sent_at timestamp;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure jobs.retention_due_sent_at column:', err.message);
+  });
+
 // Task #459: Project programme on client portal — show_programme_on_portal toggle on job_portal_tokens.
 pool
   .query(`

@@ -765,6 +765,8 @@ export const jobs = pgTable("jobs", {
   // defectsLiabilityMonths: DLP period in months after PC; retention is due at PC + DLP
   practicalCompletionDate: date("practical_completion_date"),
   defectsLiabilityMonths: integer("defects_liability_months").default(12),
+  // Set when the automated retention-due email has been sent (prevents duplicate sends).
+  retentionDueSentAt: timestamp("retention_due_sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

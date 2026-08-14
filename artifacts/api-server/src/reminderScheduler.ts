@@ -21,6 +21,7 @@ let installmentReminderInterval: NodeJS.Timeout | null = null;
 let complianceExpiryInterval: NodeJS.Timeout | null = null;
 let sheetSyncInterval: NodeJS.Timeout | null = null;
 let staffLicenceExpiryInterval: NodeJS.Timeout | null = null;
+let retentionDueInterval: NodeJS.Timeout | null = null;
 
 const REMINDER_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const RECURRING_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
@@ -33,6 +34,7 @@ const INSTALLMENT_REMINDER_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12 hours (twice
 const COMPLIANCE_EXPIRY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 const SHEET_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes (poll for due one-way spreadsheet syncs)
 const STAFF_LICENCE_EXPIRY_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
+const RETENTION_DUE_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours (daily)
 
 async function processAllUserReminders(): Promise<void> {
   console.log('[Scheduler] Processing automatic reminders...');
@@ -1373,6 +1375,29 @@ export function startStaffLicenceExpiryScheduler(): void {
   console.log(`[Scheduler] Staff licence expiry scheduler running every ${STAFF_LICENCE_EXPIRY_INTERVAL_MS / 3600000}h`);
 }
 
+async function processRetentionDue(): Promise<void> {
+  try {
+    const { processRetentionDueEmails } = await import('./retentionDueEmailService');
+    await processRetentionDueEmails();
+  } catch (error) {
+    console.error('[Scheduler] Error processing retention-due emails:', getErrorMessage(error));
+  }
+}
+
+export function startRetentionDueScheduler(): void {
+  console.log('[Scheduler] Starting retention-due email scheduler...');
+
+  if (retentionDueInterval) {
+    clearInterval(retentionDueInterval);
+  }
+
+  // Run after 45s on startup (let server settle), then daily
+  setTimeout(processRetentionDue, 45000);
+  retentionDueInterval = setInterval(processRetentionDue, RETENTION_DUE_INTERVAL_MS);
+
+  console.log(`[Scheduler] Retention-due scheduler running every ${RETENTION_DUE_INTERVAL_MS / 3600000}h`);
+}
+
 export function startAllSchedulers(): void {
   startReminderScheduler();
   startRecurringScheduler();
@@ -1386,6 +1411,7 @@ export function startAllSchedulers(): void {
   startComplianceExpiryScheduler();
   startSheetSyncScheduler();
   startStaffLicenceExpiryScheduler();
+  startRetentionDueScheduler();
 }
 
 export function stopAllSchedulers(): void {
@@ -1447,6 +1473,11 @@ export function stopAllSchedulers(): void {
   if (staffLicenceExpiryInterval) {
     clearInterval(staffLicenceExpiryInterval);
     staffLicenceExpiryInterval = null;
+  }
+
+  if (retentionDueInterval) {
+    clearInterval(retentionDueInterval);
+    retentionDueInterval = null;
   }
   
   console.log('[Scheduler] All schedulers stopped');
