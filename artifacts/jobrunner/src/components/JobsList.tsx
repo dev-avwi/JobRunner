@@ -13,6 +13,7 @@ import { Plus, Briefcase, User, Clock, MapPin, MoreVertical, Edit, FileText, Che
 import { getJobUrgency } from "@/lib/jobUrgency";
 import PasteJobModal from "./PasteJobModal";
 import XeroRibbon from "./XeroRibbon";
+import ProjectHealthRow from "./ProjectHealthRow";
 import { PageShell, PageHeader, SectionTitle } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
 import { FilterChips, SearchBar } from "@/components/ui/filter-chips";
@@ -218,7 +219,7 @@ export default function JobsList({
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
     const filterParam = params.get('filter');
-    if (filterParam && ['all', 'pending', 'scheduled', 'in_progress', 'done', 'invoiced'].includes(filterParam)) {
+    if (filterParam && ['all', 'projects', 'pending', 'scheduled', 'in_progress', 'done', 'invoiced'].includes(filterParam)) {
       setStatusFilter(filterParam);
     }
   }, [searchParams]);
@@ -312,6 +313,7 @@ export default function JobsList({
 
   const statusCounts = {
     all: jobs.length,
+    projects: jobs.filter(j => j.jobType === 'project').length,
     pending: jobs.filter(j => j.status === 'pending').length,
     scheduled: jobs.filter(j => j.status === 'scheduled').length,
     in_progress: jobs.filter(j => j.status === 'in_progress').length,
@@ -323,7 +325,11 @@ export default function JobsList({
     const matchesSearch = (job.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (job.clientName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (job.address || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "all" || job.status === statusFilter;
+    const matchesStatus = statusFilter === "all"
+      ? true
+      : statusFilter === "projects"
+      ? job.jobType === 'project'
+      : job.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -370,6 +376,7 @@ export default function JobsList({
 
   const filterChips = [
     { id: "all", label: "All", count: statusCounts.all },
+    { id: "projects", label: "Projects", count: statusCounts.projects },
     { id: "pending", label: "New", count: statusCounts.pending },
     { id: "scheduled", label: "Scheduled", count: statusCounts.scheduled },
     { id: "in_progress", label: "In Progress", count: statusCounts.in_progress },
@@ -848,6 +855,10 @@ export default function JobsList({
                             </div>
                           )}
                         </div>
+                        {/* Project Health Indicators */}
+                        {job.jobType === 'project' && (
+                          <ProjectHealthRow jobId={job.id} />
+                        )}
                         {/* Next Action Indicator */}
                         {nextActionsLoading ? (
                           <div className="mt-2 h-6 w-32 bg-muted animate-pulse rounded-lg" />

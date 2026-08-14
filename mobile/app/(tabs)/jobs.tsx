@@ -75,6 +75,7 @@ type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
 const STATUS_FILTERS: { key: string; label: string; icon: string }[] = [
   { key: 'all', label: 'All', icon: 'briefcase' },
+  { key: 'projects', label: 'Projects', icon: 'layers' },
   { key: 'recurring', label: 'Recurring', icon: 'repeat' },
   { key: 'pending', label: 'Pending', icon: 'clock' },
   { key: 'scheduled', label: 'Scheduled', icon: 'calendar' },
@@ -151,6 +152,77 @@ function JobListRow({
         >{null}</Button>
       </View>
     </AnimatedCardPressable>
+  );
+}
+
+/** Compact project health row for mobile cards — fetches lazily per project job. */
+function MobileProjectHealthRow({ jobId, colors }: { jobId: string; colors: any }) {
+  const [phases, setPhases] = useState<any[]>([]);
+  const [claims, setClaims] = useState<any[]>([]);
+  const [trafficLight, setTrafficLight] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const [phasesRes, claimsRes, profitRes] = await Promise.allSettled([
+        api.get<any[]>(`/api/jobs/${jobId}/phases`),
+        api.get<any[]>(`/api/jobs/${jobId}/claims`),
+        api.get<any>(`/api/jobs/${jobId}/profitability`),
+      ]);
+      if (!mounted) return;
+      if (phasesRes.status === 'fulfilled' && phasesRes.value.data) setPhases(phasesRes.value.data);
+      if (claimsRes.status === 'fulfilled' && claimsRes.value.data) setClaims(claimsRes.value.data);
+      if (profitRes.status === 'fulfilled' && profitRes.value.data?.budget?.trafficLight) {
+        setTrafficLight(profitRes.value.data.budget.trafficLight);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [jobId]);
+
+  const totalPhases = phases.length;
+  const donePhases = phases.filter(p => p.status === 'completed' || p.status === 'done').length;
+
+  const allClaimTotal = claims.reduce((s, c) => s + parseFloat(c.total || '0'), 0);
+  const claimedTotal = claims
+    .filter(c => c.status === 'approved' || c.status === 'paid')
+    .reduce((s, c) => s + parseFloat(c.total || '0'), 0);
+  const claimedPct = allClaimTotal > 0 ? Math.round((claimedTotal / allClaimTotal) * 100) : null;
+
+  const hasAny = totalPhases > 0 || claimedPct !== null || trafficLight;
+  if (!hasAny) return null;
+
+  const dotColor: Record<string, string> = { green: '#22c55e', amber: '#f59e0b', red: '#ef4444' };
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, flexWrap: 'wrap' }}>
+      {totalPhases > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Feather name="check-circle" size={11} color="#22c55e" />
+          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+            <Text style={{ fontWeight: '600', color: colors.foreground }}>{donePhases}/{totalPhases}</Text>
+            {' '}phases
+          </Text>
+        </View>
+      )}
+      {claimedPct !== null && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Feather name="dollar-sign" size={11} color="#3b82f6" />
+          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+            <Text style={{ fontWeight: '600', color: colors.foreground }}>{claimedPct}%</Text>
+            {' '}claimed
+          </Text>
+        </View>
+      )}
+      {trafficLight && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor[trafficLight] ?? '#94a3b8' }} />
+          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+            {trafficLight === 'green' ? 'On budget' : trafficLight === 'amber' ? 'Near limit' : 'Over budget'}
+          </Text>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -288,6 +360,11 @@ function JobCard({
             </Text>
           </View>
         </View>
+
+        {/* Project health indicators for project-type jobs */}
+        {job.jobType === 'project' && (
+          <MobileProjectHealthRow jobId={job.id} colors={colors} />
+        )}
 
         {job.status === 'done' && canCreateInvoices && (
           <TouchableOpacity
@@ -654,6 +731,7 @@ export default function JobsScreen() {
   const statusCounts = useMemo(() => {
     const counts = {
       all: jobs.length,
+      projects: 0,
       recurring: 0,
       pending: 0,
       scheduled: 0,
@@ -663,6 +741,7 @@ export default function JobsScreen() {
     };
     
     jobs.forEach(job => {
+      if ((job as any).jobType === 'project') counts.projects++;
       if (job.isRecurring) counts.recurring++;
       if (job.status === 'pending') counts.pending++;
       else if (job.status === 'scheduled') counts.scheduled++;
@@ -683,7 +762,9 @@ export default function JobsScreen() {
     );
 
     let baseJobs = jobs;
-    if (activeFilter === 'recurring') {
+    if (activeFilter === 'projects') {
+      baseJobs = jobs.filter(job => (job as any).jobType === 'project');
+    } else if (activeFilter === 'recurring') {
       baseJobs = jobs.filter(job => job.isRecurring);
     } else if (activeFilter !== 'all') {
       baseJobs = jobs.filter(job => job.status === activeFilter);
