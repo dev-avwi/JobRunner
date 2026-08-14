@@ -2146,6 +2146,10 @@ export default function JobDetailScreen() {
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
   const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '' });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
+  const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
+  const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
+  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '' });
+  const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
@@ -2650,6 +2654,33 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
     } finally {
       setIsSavingPhase(false);
+    }
+  };
+
+  const handleUpdatePhase = async () => {
+    if (!editingPhase || !editPhaseForm.name.trim()) {
+      showToast({ type: 'error', message: 'Phase name is required' });
+      return;
+    }
+    setIsSavingEditPhase(true);
+    try {
+      const payload: Record<string, any> = {
+        phaseCode: editPhaseForm.phaseCode.trim().toUpperCase() || editingPhase.phaseCode,
+        name: editPhaseForm.name.trim(),
+        description: editPhaseForm.description.trim() || null,
+        scheduledStart: editPhaseForm.scheduledStart.trim() || null,
+        scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
+        bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
+      };
+      await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
+      await loadPhases();
+      setShowEditPhaseModal(false);
+      setEditingPhase(null);
+      showToast({ type: 'success', message: 'Phase updated' });
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to update phase' });
+    } finally {
+      setIsSavingEditPhase(false);
     }
   };
 
@@ -10335,6 +10366,18 @@ export default function JobDetailScreen() {
                   await loadPhases();
                 }}
                 onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
+                onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                  setEditingPhase(phase);
+                  setEditPhaseForm({
+                    phaseCode: phase.phaseCode,
+                    name: phase.name,
+                    description: phase.description ?? '',
+                    scheduledStart: phase.scheduledStart ?? '',
+                    scheduledEnd: phase.scheduledEnd ?? '',
+                    bookedHours: phase.bookedHours ?? '',
+                  });
+                  setShowEditPhaseModal(true);
+                } : undefined}
               />
             </View>
             {renderMaterialsTab()}
@@ -10401,6 +10444,83 @@ export default function JobDetailScreen() {
             placeholderTextColor={colors.mutedForeground}
             value={addPhaseForm.description}
             onChangeText={(t) => setAddPhaseForm(f => ({ ...f, description: t }))}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+      </AppBottomSheet>
+
+      {/* Edit Phase Modal */}
+      <AppBottomSheet
+        visible={showEditPhaseModal}
+        onDismiss={() => { setShowEditPhaseModal(false); setEditingPhase(null); }}
+        title="Edit Phase"
+        showCloseButton
+        snapPoints={['80%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowEditPhaseModal(false); setEditingPhase(null); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleUpdatePhase} loading={isSavingEditPhase} disabled={isSavingEditPhase || !editPhaseForm.name.trim()} label="Save Changes" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase Code</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.phaseCode}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, phaseCode: t.toUpperCase() }))}
+            maxLength={20}
+            autoCapitalize="characters"
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Name *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder="e.g. Foundation, Framing, Fit-out"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.name}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, name: t }))}
+          />
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Start Date</Text>
+              <TextInput
+                style={styles.singleLineInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.mutedForeground}
+                value={editPhaseForm.scheduledStart}
+                onChangeText={(t) => setEditPhaseForm(f => ({ ...f, scheduledStart: t }))}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>End Date</Text>
+              <TextInput
+                style={styles.singleLineInput}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.mutedForeground}
+                value={editPhaseForm.scheduledEnd}
+                onChangeText={(t) => setEditPhaseForm(f => ({ ...f, scheduledEnd: t }))}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+          </View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Booked Hours</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder="e.g. 40"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.bookedHours}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, bookedHours: t }))}
+            keyboardType="decimal-pad"
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
+          <TextInput
+            style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
+            placeholder="Optional notes about this phase"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.description}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, description: t }))}
             multiline
             numberOfLines={3}
           />

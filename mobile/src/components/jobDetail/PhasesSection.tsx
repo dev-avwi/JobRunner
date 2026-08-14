@@ -50,6 +50,7 @@ export interface PhasesSectionProps {
   isTradie?: boolean;
   onStatusChange?: (phaseId: string, status: PhaseStatus) => Promise<void>;
   onAddPhase?: () => void;
+  onEditPhase?: (phase: JobPhase) => void;
 }
 
 export function PhasesSection({
@@ -59,6 +60,7 @@ export function PhasesSection({
   isTradie = false,
   onStatusChange,
   onAddPhase,
+  onEditPhase,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -161,7 +163,12 @@ export function PhasesSection({
                 </View>
 
                 {/* Content */}
-                <View style={styles.phaseContent}>
+                <TouchableOpacity
+                  style={styles.phaseContent}
+                  onPress={() => !isTradie && onEditPhase && onEditPhase(phase)}
+                  disabled={isTradie || !onEditPhase}
+                  activeOpacity={onEditPhase && !isTradie ? 0.7 : 1}
+                >
                   <View style={styles.phaseTopRow}>
                     {/* Phase code */}
                     <View style={[styles.phaseCodeBadge, { borderColor: colors.primary + '66' }]}>
@@ -182,6 +189,9 @@ export function PhasesSection({
                         <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                       )}
                     </TouchableOpacity>
+                    {!isTradie && onEditPhase && (
+                      <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                    )}
                   </View>
 
                   {(startStr || endStr || hoursNum > 0) && (
@@ -210,7 +220,7 @@ export function PhasesSection({
                       {phase.description}
                     </Text>
                   ) : null}
-                </View>
+                </TouchableOpacity>
               </View>
             );
           })}
