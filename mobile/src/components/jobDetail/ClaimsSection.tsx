@@ -89,10 +89,11 @@ export interface ClaimsSectionProps {
   jobId: string;
   isOwnerOrManager?: boolean;
   onRefresh?: () => void;
+  onAddClaim?: () => void;
 }
 
 export function ClaimsSection({
-  colors, claims, isLoading, jobId, isOwnerOrManager = false, onRefresh,
+  colors, claims, isLoading, jobId, isOwnerOrManager = false, onRefresh, onAddClaim,
 }: ClaimsSectionProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<{
@@ -147,6 +148,14 @@ export function ClaimsSection({
           <View style={[styles.countBadge, { backgroundColor: colors.muted }]}>
             <Text style={[styles.countText, { color: colors.mutedForeground }]}>{claims.length}</Text>
           </View>
+        )}
+        {isOwnerOrManager && onAddClaim && (
+          <TouchableOpacity onPress={onAddClaim} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ marginLeft: spacing.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}>
+              <Feather name="plus" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.primary }}>Add</Text>
+            </View>
+          </TouchableOpacity>
         )}
       </View>
 

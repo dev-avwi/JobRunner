@@ -44,6 +44,7 @@ export interface PurchaseOrdersSectionProps {
   colors: ThemeColors;
   purchaseOrders: PurchaseOrder[];
   isLoadingPOs: boolean;
+  onAddPO?: () => void;
 }
 
 function formatCurrency(val: string | null | undefined): string {
@@ -60,7 +61,7 @@ function formatDate(val: string | null | undefined): string {
   } catch { return ''; }
 }
 
-export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs }: PurchaseOrdersSectionProps) {
+export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, onAddPO }: PurchaseOrdersSectionProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
@@ -70,9 +71,17 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs }: 
       {/* Section header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
         <Feather name="shopping-cart" size={16} color={colors.mutedForeground} />
-        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold as any, color: colors.foreground }}>
+        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }}>
           Purchase Orders
         </Text>
+        {onAddPO && (
+          <TouchableOpacity onPress={onAddPO} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}>
+              <Feather name="plus" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.primary }}>Add</Text>
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
 
       {isLoadingPOs ? (

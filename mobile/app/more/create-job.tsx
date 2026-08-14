@@ -1044,15 +1044,15 @@ export default function CreateJobScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 14,
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: colors.primaryLight,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <Feather name="zap" size={26} color="#2563EB" />
+                  <Feather name="tool" size={26} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xxs }}>
-                    Service Call
+                    Job
                   </Text>
                   <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 20, marginBottom: spacing.md }}>
                     Simple single-visit jobs — fault finding, repairs, maintenance, and quick call-outs.
@@ -1087,11 +1087,11 @@ export default function CreateJobScreen() {
                   width: 56,
                   height: 56,
                   borderRadius: 14,
-                  backgroundColor: '#FFF7ED',
+                  backgroundColor: colors.muted,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}>
-                  <Feather name="briefcase" size={26} color="#EA580C" />
+                  <Feather name="layers" size={26} color={colors.mutedForeground} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xxs }}>
@@ -1102,8 +1102,8 @@ export default function CreateJobScreen() {
                   </Text>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                     {['Phases', 'Budget', 'Markup', 'POs', 'Claims'].map((f) => (
-                      <View key={f} style={{ backgroundColor: '#FFF7ED', paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6 }}>
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: '#EA580C' }}>{f}</Text>
+                      <View key={f} style={{ backgroundColor: colors.muted, paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: 6 }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>{f}</Text>
                       </View>
                     ))}
                   </View>
@@ -1132,10 +1132,10 @@ export default function CreateJobScreen() {
               paddingHorizontal: spacing.sm,
               paddingVertical: 3,
               borderRadius: 8,
-              backgroundColor: jobType === 'project' ? '#FFF7ED' : '#EFF6FF',
+              backgroundColor: jobType === 'project' ? colors.muted : colors.primaryLight,
             }}>
-              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: jobType === 'project' ? '#EA580C' : '#2563EB' }}>
-                {jobType === 'project' ? 'Project' : 'Service Call'}
+              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: jobType === 'project' ? colors.mutedForeground : colors.primary }}>
+                {jobType === 'project' ? 'Project' : 'Job'}
               </Text>
             </View>
           </View>

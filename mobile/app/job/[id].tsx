@@ -2143,6 +2143,14 @@ export default function JobDetailScreen() {
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
   const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
+  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '' });
+  const [isSavingPhase, setIsSavingPhase] = useState(false);
+  const [showAddClaimModal, setShowAddClaimModal] = useState(false);
+  const [isSavingClaim, setIsSavingClaim] = useState(false);
+  const [showAddPOModal, setShowAddPOModal] = useState(false);
+  const [addPOForm, setAddPOForm] = useState({ notes: '', estimatedTotal: '' });
+  const [isSavingPO, setIsSavingPO] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
   const [isSavingMaterial, setIsSavingMaterial] = useState(false);
@@ -2619,6 +2627,68 @@ export default function JobDetailScreen() {
       setIsLoadingClaims(false);
     }
   }, [id]);
+
+  const handleSavePhase = async () => {
+    if (!addPhaseForm.name.trim()) {
+      showToast({ type: 'error', message: 'Phase name is required' });
+      return;
+    }
+    setIsSavingPhase(true);
+    try {
+      const autoCode = `P${String(phases.length + 1).padStart(2, '0')}`;
+      const phaseCode = addPhaseForm.phaseCode.trim().toUpperCase() || autoCode;
+      await api.post(`/api/jobs/${id}/phases`, {
+        phaseCode,
+        name: addPhaseForm.name.trim(),
+        description: addPhaseForm.description.trim() || null,
+      });
+      await loadPhases();
+      setShowAddPhaseModal(false);
+      setAddPhaseForm({ phaseCode: '', name: '', description: '' });
+      showToast({ type: 'success', message: 'Phase added' });
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
+    } finally {
+      setIsSavingPhase(false);
+    }
+  };
+
+  const handleSaveClaim = async () => {
+    setIsSavingClaim(true);
+    try {
+      await api.post(`/api/jobs/${id}/claims`, {
+        claimDate: new Date().toISOString(),
+        lineItems: [],
+      });
+      await loadClaims();
+      setShowAddClaimModal(false);
+      showToast({ type: 'success', message: 'Draft claim created' });
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to create claim' });
+    } finally {
+      setIsSavingClaim(false);
+    }
+  };
+
+  const handleSavePO = async () => {
+    setIsSavingPO(true);
+    try {
+      const res = await api.post<any>('/api/purchase-orders', {
+        jobId: id,
+        status: 'pending',
+        notes: addPOForm.notes.trim() || null,
+        orderDate: new Date().toISOString(),
+      });
+      if (res.data) setJobPurchaseOrders(prev => [...prev, res.data]);
+      setShowAddPOModal(false);
+      setAddPOForm({ notes: '', estimatedTotal: '' });
+      showToast({ type: 'success', message: 'Purchase order created' });
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to create purchase order' });
+    } finally {
+      setIsSavingPO(false);
+    }
+  };
 
   const loadTeamMembers = useCallback(async () => {
     try {
@@ -10254,6 +10324,7 @@ export default function JobDetailScreen() {
                   await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
                   await loadPhases();
                 }}
+                onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
               />
             </View>
             {renderMaterialsTab()}
@@ -10261,6 +10332,7 @@ export default function JobDetailScreen() {
               colors={colors}
               purchaseOrders={jobPurchaseOrders}
               isLoadingPOs={isLoadingPOs}
+              onAddPO={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPOModal(true) : undefined}
             />
             <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md, paddingVertical: spacing.sm }}>
               <ClaimsSection
@@ -10270,6 +10342,7 @@ export default function JobDetailScreen() {
                 jobId={id as string}
                 isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                 onRefresh={loadClaims}
+                onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
               />
             </View>
             {renderManageTab()}
@@ -10278,6 +10351,98 @@ export default function JobDetailScreen() {
       </ScrollView>
 
       </View>
+
+      {/* Add Phase Modal */}
+      <AppBottomSheet
+        visible={showAddPhaseModal}
+        onDismiss={() => { setShowAddPhaseModal(false); setAddPhaseForm({ phaseCode: '', name: '', description: '' }); }}
+        title="Add Phase"
+        showCloseButton
+        snapPoints={['65%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setAddPhaseForm({ phaseCode: '', name: '', description: '' }); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase Code</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder={`P${String(phases.length + 1).padStart(2, '0')}`}
+            placeholderTextColor={colors.mutedForeground}
+            value={addPhaseForm.phaseCode}
+            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, phaseCode: t.toUpperCase() }))}
+            maxLength={20}
+            autoCapitalize="characters"
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Name *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder="e.g. Foundation, Framing, Fit-out"
+            placeholderTextColor={colors.mutedForeground}
+            value={addPhaseForm.name}
+            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, name: t }))}
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
+          <TextInput
+            style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
+            placeholder="Optional notes about this phase"
+            placeholderTextColor={colors.mutedForeground}
+            value={addPhaseForm.description}
+            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, description: t }))}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+      </AppBottomSheet>
+
+      {/* Add Progress Claim Modal */}
+      <AppBottomSheet
+        visible={showAddClaimModal}
+        onDismiss={() => setShowAddClaimModal(false)}
+        title="New Progress Claim"
+        showCloseButton
+        snapPoints={['45%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => setShowAddClaimModal(false)} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSaveClaim} loading={isSavingClaim} disabled={isSavingClaim} label="Create Draft" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View style={{ paddingVertical: spacing.sm }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 22 }}>
+            This creates a draft progress claim for this job. Once created you can add line items, set the claim period, and submit it for approval.
+          </Text>
+        </View>
+      </AppBottomSheet>
+
+      {/* Add Purchase Order Modal */}
+      <AppBottomSheet
+        visible={showAddPOModal}
+        onDismiss={() => { setShowAddPOModal(false); setAddPOForm({ notes: '', estimatedTotal: '' }); }}
+        title="New Purchase Order"
+        showCloseButton
+        snapPoints={['55%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPOModal(false); setAddPOForm({ notes: '', estimatedTotal: '' }); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSavePO} loading={isSavingPO} disabled={isSavingPO} label="Create PO" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Notes / Purpose</Text>
+          <TextInput
+            style={[styles.singleLineInput, { height: 80, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
+            placeholder="e.g. Timber for framing, Plumbing fixtures"
+            placeholderTextColor={colors.mutedForeground}
+            value={addPOForm.notes}
+            onChangeText={(t) => setAddPOForm(f => ({ ...f, notes: t }))}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+      </AppBottomSheet>
 
       {/* FAB Voice Recording Modal */}
       <AppBottomSheet
