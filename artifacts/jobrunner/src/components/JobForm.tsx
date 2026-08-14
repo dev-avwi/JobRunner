@@ -19,7 +19,7 @@ import UpgradePrompt from "@/components/UpgradePrompt";
 import { type DocumentTemplate } from "@/hooks/use-templates";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, getSessionToken } from "@/lib/queryClient";
-import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search, Zap, Briefcase, ArrowLeft, Percent, Package, Wrench } from "lucide-react";
+import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search, Zap, Briefcase, ArrowLeft, Percent, Package, Wrench, Layers } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
@@ -514,10 +514,10 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           >
             <div className="flex items-start gap-4">
               <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
-                <Zap className="h-7 w-7" />
+                <Wrench className="h-7 w-7" />
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold mb-1">Service Call</h3>
+                <h3 className="text-lg font-semibold mb-1">Job</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   Simple single-visit jobs — fault finding, repairs, maintenance, and quick call-outs.
                 </p>
@@ -538,8 +538,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
             className="group text-left p-6 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
             <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 group-hover:bg-orange-100 dark:group-hover:bg-orange-900/50 transition-colors">
-                <Briefcase className="h-7 w-7" />
+              <div className="p-3 rounded-lg bg-muted text-muted-foreground group-hover:bg-muted/80 transition-colors">
+                <Layers className="h-7 w-7" />
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold mb-1">Project</h3>
@@ -582,9 +582,9 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-2.5 py-0.5 rounded-full ${jobType === 'project' ? 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-300' : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'}`}>
-              {jobType === 'project' ? <Briefcase className="h-3.5 w-3.5" /> : <Zap className="h-3.5 w-3.5" />}
-              {jobType === 'project' ? 'Project' : 'Service Call'}
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-2.5 py-0.5 rounded-full ${jobType === 'project' ? 'bg-muted text-muted-foreground' : 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300'}`}>
+              {jobType === 'project' ? <Layers className="h-3.5 w-3.5" /> : <Wrench className="h-3.5 w-3.5" />}
+              {jobType === 'project' ? 'Project' : 'Job'}
             </span>
           </div>
           <h1 className="text-xl sm:text-2xl font-bold">Create New Job</h1>

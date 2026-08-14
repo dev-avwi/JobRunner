@@ -37,6 +37,8 @@ interface JobCardProps {
   nextAction?: NextAction;
   profitData?: ProfitData;
   isXeroImport?: boolean;
+  jobNumber?: string;
+  jobType?: 'service' | 'project';
   onViewClick?: (id: string) => void;
   onStatusChange?: (id: string, newStatus: JobStatus) => void;
   onGenerateQuote?: (id: string) => void;
@@ -64,6 +66,8 @@ export default function JobCard({
   nextAction,
   profitData,
   isXeroImport,
+  jobNumber,
+  jobType,
   onViewClick, 
   onStatusChange,
   onGenerateQuote,
@@ -162,6 +166,16 @@ export default function JobCard({
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 min-w-0 flex-1">
+            {(jobNumber || jobType === 'project') && (
+              <div className="flex items-center gap-1.5 mb-1">
+                {jobNumber && (
+                  <span className="text-xs font-mono font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{jobNumber}</span>
+                )}
+                {jobType === 'project' && (
+                  <span className="text-xs font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Project</span>
+                )}
+              </div>
+            )}
             <h3 className="font-semibold text-base line-clamp-1">{title}</h3>
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <User className="h-3 w-3" />

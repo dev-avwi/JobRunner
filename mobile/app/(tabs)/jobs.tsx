@@ -131,6 +131,9 @@ function JobListRow({
     >
       <View style={styles.jobListRowContent}>
         <View style={styles.jobListRowLeft}>
+          {job.jobNumber && (
+            <Text style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: '700', color: colors.mutedForeground, marginBottom: 2 }}>{job.jobNumber}</Text>
+          )}
           <Text style={styles.jobListRowTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
           <Text style={styles.jobListRowAddress} numberOfLines={1}>{job.address?.split(',')[0] || 'No address'}</Text>
         </View>
@@ -247,6 +250,16 @@ function JobCard({
           </View>
         </View>
 
+        {(job.jobNumber || job.jobType === 'project') && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            {job.jobNumber && (
+              <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
+            )}
+            {job.jobType === 'project' && (
+              <Text style={{ fontSize: 11, fontWeight: '500', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' as any }}>Project</Text>
+            )}
+          </View>
+        )}
         <Text style={styles.jobTitle} numberOfLines={2}>{job.title || 'Untitled Job'}</Text>
         
         {job.isRecurring && job.nextRecurrenceDate && (

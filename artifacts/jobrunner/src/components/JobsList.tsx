@@ -792,6 +792,16 @@ export default function JobsList({
                   <div className="card-padding">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
+                        {(job.jobNumber || job.jobType === 'project') && (
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {job.jobNumber && (
+                              <span className="text-xs font-mono font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{job.jobNumber}</span>
+                            )}
+                            {job.jobType === 'project' && (
+                              <span className="text-xs font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Project</span>
+                            )}
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="ios-card-title truncate">{job.title || 'Untitled Job'}</h3>
                           {getStatusBadge(job.status)}

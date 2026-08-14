@@ -10158,6 +10158,16 @@ export default function JobDetailScreen() {
             );
           })()}
         </View>
+        {(job.jobNumber || job.jobType === 'project') && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            {job.jobNumber && (
+              <Text style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: colors.primary, backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
+            )}
+            {job.jobType === 'project' && (
+              <Text style={{ fontSize: 12, fontWeight: '500', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' as any }}>Project</Text>
+            )}
+          </View>
+        )}
         <TouchableOpacity 
           style={styles.titleRow}
           onPress={() => {

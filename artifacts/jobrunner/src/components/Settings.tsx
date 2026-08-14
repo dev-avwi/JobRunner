@@ -306,6 +306,7 @@ export default function Settings({
     jobPrefix: "",
     invoiceNextNumber: "",
     quoteNextNumber: "",
+    jobNextNumber: "",
     customThemeEnabled: false
   });
   
@@ -642,6 +643,7 @@ export default function Settings({
           jobPrefix: businessSettings.jobPrefix || "",
           invoiceNextNumber: businessSettings.invoiceNextNumber != null ? String(businessSettings.invoiceNextNumber) : "",
           quoteNextNumber: businessSettings.quoteNextNumber != null ? String(businessSettings.quoteNextNumber) : "",
+          jobNextNumber: (businessSettings as any).jobNextNumber != null ? String((businessSettings as any).jobNextNumber) : "",
           customThemeEnabled: serverCustomEnabled
         });
       }
@@ -756,6 +758,7 @@ export default function Settings({
       jobPrefix: brandingData.jobPrefix?.trim() || null,
       invoiceNextNumber: brandingData.invoiceNextNumber.trim() !== "" && parseInt(brandingData.invoiceNextNumber, 10) > 0 ? parseInt(brandingData.invoiceNextNumber, 10) : null,
       quoteNextNumber: brandingData.quoteNextNumber.trim() !== "" && parseInt(brandingData.quoteNextNumber, 10) > 0 ? parseInt(brandingData.quoteNextNumber, 10) : null,
+      jobNextNumber: brandingData.jobNextNumber.trim() !== "" && parseInt(brandingData.jobNextNumber, 10) > 0 ? parseInt(brandingData.jobNextNumber, 10) : null,
       customThemeEnabled: brandingData.customThemeEnabled,
       defaultHourlyRate: paymentData.defaultHourlyRate.toString(),
       calloutFee: paymentData.calloutFee.toString(),
@@ -2036,6 +2039,9 @@ export default function Settings({
           <Card>
             <CardHeader>
               <CardTitle>Document Prefixes & Numbering</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Set a prefix for your business — e.g. <span className="font-mono font-semibold">DMP</span> — and Jobs and Projects share one unified counter: <span className="font-mono">DMP#001</span> (Job), <span className="font-mono">DMP#002</span> (Project), <span className="font-mono">DMP#003</span> (Job)…
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -2066,20 +2072,21 @@ export default function Settings({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="job-prefix2">Job Prefix</Label>
+                  <Label htmlFor="job-prefix2">Job / Project Prefix</Label>
                   <Input
                     id="job-prefix2"
                     value={brandingData.jobPrefix || ''}
                     onChange={(e) => {
                       setBrandingDirty(true);
-                      setBrandingData(prev => ({ ...prev, jobPrefix: e.target.value }));
+                      setBrandingData(prev => ({ ...prev, jobPrefix: e.target.value.toUpperCase() }));
                     }}
-                    placeholder="JOB-"
+                    placeholder="e.g. DMP or ABC"
                     data-testid="input-job-prefix"
                   />
+                  <p className="text-xs text-muted-foreground">Shared by Jobs &amp; Projects</p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                 <div className="space-y-2">
                   <Label htmlFor="invoice-next-number2">Next Invoice Number</Label>
                   <Input
@@ -2110,9 +2117,24 @@ export default function Settings({
                     data-testid="input-quote-next-number"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="job-next-number2">Next Job / Project Number</Label>
+                  <Input
+                    id="job-next-number2"
+                    type="number"
+                    min="1"
+                    value={brandingData.jobNextNumber}
+                    onChange={(e) => {
+                      setBrandingDirty(true);
+                      setBrandingData(prev => ({ ...prev, jobNextNumber: e.target.value }));
+                    }}
+                    placeholder="e.g. 1"
+                    data-testid="input-job-next-number"
+                  />
+                </div>
               </div>
               <p className="text-xs text-muted-foreground">
-                Set a next number to use simple sequential numbering (e.g. INV-0100). Leave blank to keep automatic year-based numbers.
+                Set a next number to use simple sequential numbering (e.g. INV-0100). Leave blank to keep automatic year-based numbers. Job / Project numbering only activates when a prefix is set.
               </p>
             </CardContent>
           </Card>
