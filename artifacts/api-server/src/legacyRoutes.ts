@@ -17484,6 +17484,128 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Financial schedule-of-values endpoint for the client portal
+  app.get("/api/public/job-portal/:token/financials", async (req: any, res) => {
+    try {
+      const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
+      if (!portalToken) return res.status(404).json({ error: 'Portal link not found or expired' });
+      if (portalToken.revokedAt) return res.status(410).json({ error: 'This tracking link has been revoked' });
+      if (portalToken.expiresAt && new Date(portalToken.expiresAt) < new Date()) {
+        return res.status(410).json({ error: 'This tracking link has expired' });
+      }
+
+      // Only serve financials when the toggle is enabled
+      if (!portalToken.showFinancialsOnPortal) {
+        return res.status(403).json({ error: 'Financial details are not shared on this portal' });
+      }
+
+      const job = await storage.getJob(portalToken.jobId, portalToken.userId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      // Only submitted/approved/paid claims are ever exposed — draft claims are never shown
+      // and must not contribute to any financial figure returned through this public endpoint.
+      const allClaims = await storage.getClaims(portalToken.jobId, portalToken.userId);
+
+      // Sort chronologically (createdAt ASC) — deterministic and robust against
+      // "PC-001" / "PC-010" style claim numbers that don't sort lexically or numerically.
+      const visibleClaims = allClaims
+        .filter((c: any) => ['submitted', 'approved', 'paid'].includes(c.status))
+        .sort((a: any, b: any) =>
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+
+      // Return null when there are no visible claims (avoids showing $0 tables).
+      if (visibleClaims.length === 0) {
+        return res.json(null);
+      }
+
+      // ── Consistent ex-GST basis throughout ─────────────────────────────────
+      // Claim line items store pre-tax amounts; GST is added separately in
+      // buildScheduleOfValues.  We use ex-GST for every figure so contract value,
+      // approved variations, and claim amounts are all directly comparable.
+
+      // Original contract value: sum non-variation line items from the earliest
+      // visible claim. variationId IS NULL excludes approved-variation line items
+      // so they are not double-counted with the approved-variations list below.
+      const earliestVisibleClaim = visibleClaims[0];
+      const baseLineItems = await storage.getClaimLineItems(earliestVisibleClaim.id);
+      let originalContractValue = 0;
+      for (const li of baseLineItems) {
+        if (!li.variationId) {
+          originalContractValue += parseFloat(String(li.contractValue ?? '0')) || 0;
+        }
+      }
+
+      // Approved variations: use additionalAmount (ex-GST) — same basis as line items.
+      const allVariations = await storage.getJobVariations(portalToken.jobId, portalToken.userId);
+      const approvedVariations = allVariations
+        .filter((v: any) => v.status === 'approved')
+        .map((v: any) => ({
+          variationNumber: v.number,
+          description: v.description || v.title,
+          amount: v.additionalAmount ?? '0.00', // ex-GST
+          approvedAt: v.approvedAt ?? null,
+        }));
+
+      const approvedVariationsTotal = approvedVariations.reduce(
+        (sum: number, v: any) => sum + (parseFloat(String(v.amount)) || 0), 0
+      );
+      const revisedContractValue = originalContractValue + approvedVariationsTotal;
+
+      // Running totals — all ex-GST.
+      // "Gross amount claimed" per claim = subtotal + retentionAmount
+      // = (thisClaimTotal − retentionTotal) + retentionTotal = thisClaimTotal (ex-GST).
+      // Using this instead of claims.total (which is inc-GST after retention) keeps the
+      // same ex-GST basis as contract value and variations.
+      let totalClaimed = 0;
+      let totalPaid = 0;
+      let totalRetentionHeld = 0;
+
+      const claimsWithDetails = visibleClaims.map((c: any) => {
+        const subtotal = parseFloat(c.subtotal ?? '0') || 0;
+        const retentionAmount = parseFloat(c.retentionAmount ?? '0') || 0;
+        const grossExGst = subtotal + retentionAmount; // = thisClaimTotal ex-GST
+
+        totalClaimed += grossExGst;
+        if (c.status === 'paid') totalPaid += grossExGst;
+        totalRetentionHeld += retentionAmount;
+
+        return {
+          claimNumber: c.claimNumber,
+          periodStart: c.periodStart ?? null,
+          periodEnd: c.periodEnd ?? null,
+          claimDate: c.claimDate ?? null,
+          amountClaimed: grossExGst.toFixed(2), // ex-GST gross (before retention)
+          status: c.status,
+          paidAt: c.paidAt ?? null,
+          submittedAt: c.submittedAt ?? null,
+          approvedAt: c.approvedAt ?? null,
+          retentionPercent: c.retentionPercent ?? '0.00',
+          retentionAmount: retentionAmount.toFixed(2),
+        };
+      });
+
+      const outstanding = totalClaimed - totalPaid;
+
+      res.json({
+        originalContractValue: originalContractValue.toFixed(2),
+        approvedVariations,
+        approvedVariationsTotal: approvedVariationsTotal.toFixed(2),
+        revisedContractValue: revisedContractValue.toFixed(2),
+        claims: claimsWithDetails,
+        summary: {
+          totalClaimed: totalClaimed.toFixed(2),
+          totalPaid: totalPaid.toFixed(2),
+          outstanding: outstanding.toFixed(2),
+          totalRetentionHeld: totalRetentionHeld.toFixed(2),
+        },
+      });
+    } catch (error: any) {
+      console.error('[portal financials] error:', error);
+      res.status(500).json({ error: 'Failed to load financial data' });
+    }
+  });
+
   // Multi-worker crew locations endpoint
   app.get("/api/public/job-portal/:token/crew-locations", async (req: any, res) => {
     try {

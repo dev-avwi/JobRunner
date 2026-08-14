@@ -4473,6 +4473,7 @@ export const jobPortalTokens = pgTable("job_portal_tokens", {
   showPhotos: boolean("show_photos").default(true),
   showChecklist: boolean("show_checklist").default(true),
   showActivityFeed: boolean("show_activity_feed").default(true),
+  showFinancialsOnPortal: boolean("show_financials_on_portal").default(false),
   clientMessage: text("client_message"),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [

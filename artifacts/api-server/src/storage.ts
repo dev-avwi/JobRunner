@@ -1222,7 +1222,7 @@ export interface IStorage {
   revokeJobPortalToken(tokenId: string): Promise<void>;
   updateJobPortalTokenAccess(tokenId: string): Promise<void>;
   updateJobPortalTokenExpiry(tokenId: string, expiresAt: Date): Promise<void>;
-  updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null>;
+  updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; showFinancialsOnPortal?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null>;
   getActiveJobPortalToken(jobId: string): Promise<JobPortalToken | null>;
 
   // Subcontractor Web View
@@ -8942,12 +8942,13 @@ Thank you for your prompt attention to this matter.`,
       .where(eq(jobPortalTokens.id, tokenId));
   }
 
-  async updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null> {
+  async updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; showFinancialsOnPortal?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null> {
     const updateData: any = {};
     if (settings.showTimeline !== undefined) updateData.showTimeline = settings.showTimeline;
     if (settings.showPhotos !== undefined) updateData.showPhotos = settings.showPhotos;
     if (settings.showChecklist !== undefined) updateData.showChecklist = settings.showChecklist;
     if (settings.showActivityFeed !== undefined) updateData.showActivityFeed = settings.showActivityFeed;
+    if (settings.showFinancialsOnPortal !== undefined) updateData.showFinancialsOnPortal = settings.showFinancialsOnPortal;
     if (settings.clientMessage !== undefined) updateData.clientMessage = settings.clientMessage;
     if (Object.keys(updateData).length === 0) return null;
     const [result] = await db

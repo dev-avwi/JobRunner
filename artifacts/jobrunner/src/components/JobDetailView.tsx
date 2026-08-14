@@ -1507,6 +1507,7 @@ export default function JobDetailView({
     showPhotos: true,
     showChecklist: true,
     showActivityFeed: true,
+    showFinancialsOnPortal: false,
     clientMessage: '' as string,
   });
   const [showPortalControls, setShowPortalControls] = useState(false);
@@ -1553,6 +1554,7 @@ export default function JobDetailView({
               showPhotos: activeToken.showPhotos !== false,
               showChecklist: activeToken.showChecklist !== false,
               showActivityFeed: activeToken.showActivityFeed !== false,
+              showFinancialsOnPortal: activeToken.showFinancialsOnPortal === true,
               clientMessage: activeToken.clientMessage || '',
             });
             setPortalMessageDraft(activeToken.clientMessage || '');
@@ -1594,6 +1596,7 @@ export default function JobDetailView({
           showPhotos: data.showPhotos !== false,
           showChecklist: data.showChecklist !== false,
           showActivityFeed: data.showActivityFeed !== false,
+          showFinancialsOnPortal: data.showFinancialsOnPortal === true,
           clientMessage: data.clientMessage || '',
         }));
       }
@@ -3496,6 +3499,7 @@ export default function JobDetailView({
                             { key: 'showPhotos' as const, label: 'Job Photos', icon: Image },
                             { key: 'showChecklist' as const, label: 'Checklist Progress', icon: ListChecks },
                             { key: 'showActivityFeed' as const, label: 'Activity Feed', icon: Activity },
+                            { key: 'showFinancialsOnPortal' as const, label: 'Schedule of Values & Claims', icon: DollarSign },
                           ].map(({ key, label, icon: Icon }) => (
                             <div key={key} className="flex items-center justify-between gap-2">
                               <label className="text-xs flex items-center gap-1.5 cursor-pointer">

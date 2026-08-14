@@ -138,6 +138,37 @@ interface JobPortalData {
   };
 }
 
+interface PortalFinancials {
+  originalContractValue: string;
+  approvedVariations: Array<{
+    variationNumber: string;
+    description: string;
+    amount: string;
+    approvedAt: string | null;
+  }>;
+  approvedVariationsTotal: string;
+  revisedContractValue: string;
+  claims: Array<{
+    claimNumber: string;
+    periodStart: string | null;
+    periodEnd: string | null;
+    claimDate: string | null;
+    amountClaimed: string;
+    status: string;
+    paidAt: string | null;
+    submittedAt: string | null;
+    approvedAt: string | null;
+    retentionPercent: string;
+    retentionAmount: string;
+  }>;
+  summary: {
+    totalClaimed: string;
+    totalPaid: string;
+    outstanding: string;
+    totalRetentionHeld: string;
+  };
+}
+
 interface PortalAssignment {
   id: string;
   status: string;
@@ -917,6 +948,18 @@ export default function JobPortal() {
     },
     enabled: !!token,
     refetchInterval: 60000,
+  });
+
+  const { data: financialData } = useQuery<PortalFinancials>({
+    queryKey: ['/api/public/job-portal', token, 'financials'],
+    queryFn: async () => {
+      const res = await fetch(`/api/public/job-portal/${token}/financials`);
+      if (!res.ok) return null as any;
+      return res.json();
+    },
+    enabled: !!token && !!data?.visibility,
+    staleTime: 60000,
+    retry: false,
   });
 
   const [portalMessage, setPortalMessage] = useState('');
@@ -1836,6 +1879,115 @@ export default function JobPortal() {
                   <p className="text-xs text-muted-foreground/60">Job photos will be shared here as work progresses</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {financialData && financialData.claims && financialData.claims.length > 0 && (
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-brand text-white px-5 py-3">
+                <div className="flex items-center gap-2">
+                  <Receipt className="w-4 h-4 text-slate-300" />
+                  <span className="font-semibold text-sm">Schedule of Values</span>
+                </div>
+              </div>
+              <div className="p-5 space-y-5">
+
+                {/* Contract value summary */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-slate-500">Original Contract Value</span>
+                    <span className="font-medium text-slate-800">{formatCurrency(financialData.originalContractValue)}</span>
+                  </div>
+                  {financialData.approvedVariations.length > 0 && (
+                    <>
+                      {financialData.approvedVariations.map((v, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-2 text-sm pl-3 border-l-2 border-brand/20">
+                          <span className="text-slate-500 truncate">{v.variationNumber ? `Var #${v.variationNumber}` : 'Variation'}{v.description ? ` — ${v.description}` : ''}</span>
+                          <span className="font-medium text-slate-700 flex-shrink-0">+{formatCurrency(v.amount)}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center justify-between gap-2 text-sm pt-1 border-t border-slate-100">
+                        <span className="font-semibold text-slate-700">Revised Contract Value</span>
+                        <span className="font-bold text-slate-900">{formatCurrency(financialData.revisedContractValue)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Claims table */}
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Claim Schedule</p>
+                  <div className="overflow-x-auto -mx-1">
+                    <table className="w-full text-sm min-w-[340px]">
+                      <thead>
+                        <tr className="border-b border-slate-100">
+                          <th className="text-left text-xs font-medium text-slate-400 py-1.5 pr-2">Claim</th>
+                          <th className="text-left text-xs font-medium text-slate-400 py-1.5 pr-2">Period</th>
+                          <th className="text-right text-xs font-medium text-slate-400 py-1.5 pr-2">Amount</th>
+                          <th className="text-center text-xs font-medium text-slate-400 py-1.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {financialData.claims.map((claim, idx) => {
+                          const statusColors: Record<string, string> = {
+                            submitted: 'bg-blue-100 text-blue-700',
+                            approved: 'bg-emerald-100 text-emerald-700',
+                            paid: 'bg-slate-100 text-slate-600',
+                          };
+                          const statusLabels: Record<string, string> = {
+                            submitted: 'Submitted',
+                            approved: 'Approved',
+                            paid: 'Paid',
+                          };
+                          const period = claim.periodStart && claim.periodEnd
+                            ? `${formatDate(claim.periodStart)} – ${formatDate(claim.periodEnd)}`
+                            : claim.claimDate ? formatDate(claim.claimDate) : '—';
+                          return (
+                            <tr key={idx} className="border-b border-slate-50 last:border-0">
+                              <td className="py-2 pr-2 font-medium text-slate-700">#{claim.claimNumber}</td>
+                              <td className="py-2 pr-2 text-xs text-slate-500">{period}</td>
+                              <td className="py-2 pr-2 text-right font-medium text-slate-800">{formatCurrency(claim.amountClaimed)}</td>
+                              <td className="py-2 text-center">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${statusColors[claim.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                                  {statusLabels[claim.status] ?? claim.status}
+                                </span>
+                                {claim.status === 'paid' && claim.paidAt && (
+                                  <div className="text-[10px] text-slate-400 mt-0.5">{formatDate(claim.paidAt)}</div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Running balance */}
+                <div className="bg-slate-50 rounded-xl p-4 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-slate-500">Total Claimed</span>
+                    <span className="font-medium text-slate-800">{formatCurrency(financialData.summary.totalClaimed)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-slate-500">Total Paid</span>
+                    <span className="font-medium text-emerald-700">{formatCurrency(financialData.summary.totalPaid)}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-sm pt-1 border-t border-slate-200">
+                    <span className="font-semibold text-slate-700">Outstanding</span>
+                    <span className={`font-bold ${parseFloat(financialData.summary.outstanding) > 0 ? 'text-brand' : 'text-emerald-600'}`}>
+                      {formatCurrency(financialData.summary.outstanding)}
+                    </span>
+                  </div>
+                  {parseFloat(financialData.summary.totalRetentionHeld) > 0 && (
+                    <div className="flex items-center justify-between gap-2 text-xs text-slate-400 pt-1 border-t border-slate-100">
+                      <span>Retention held (to date)</span>
+                      <span>{formatCurrency(financialData.summary.totalRetentionHeld)}</span>
+                    </div>
+                  )}
+                </div>
+
+              </div>
             </div>
           )}
 

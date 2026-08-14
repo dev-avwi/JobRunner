@@ -8,6 +8,13 @@
       "when": 1786261023443,
       "tag": "0000_bright_mauler",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786261023450,
+      "tag": "0005_portal_financials",
+      "breakpoints": true
     }
   ]
 }

@@ -5928,6 +5928,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         showPhotos: z.boolean().optional(),
         showChecklist: z.boolean().optional(),
         showActivityFeed: z.boolean().optional(),
+        showFinancialsOnPortal: z.boolean().optional(),
         clientMessage: z.string().max(500).nullable().optional(),
       });
 
