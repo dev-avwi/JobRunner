@@ -19,7 +19,8 @@ import UpgradePrompt from "@/components/UpgradePrompt";
 import { type DocumentTemplate } from "@/hooks/use-templates";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, getSessionToken } from "@/lib/queryClient";
-import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search, Zap, Briefcase, ArrowLeft, Percent, Package, Wrench, Layers } from "lucide-react";
+import { Plus, User, Phone, Mail, MapPin, Loader2, X, History, Copy, ChevronDown, ChevronUp, Calendar, FileText, Search, Zap, Briefcase, ArrowLeft, Percent, Package, Wrench, Layers, Trash2, CheckCircle2, GripVertical } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
@@ -31,6 +32,21 @@ import StatusBadge from "@/components/StatusBadge";
 
 type JobType = 'service' | 'project';
 type ProjectFlowStep = 'type-picker' | 'template-picker' | 'form';
+type ProjectFormStep = 'basic' | 'phases' | 'settings';
+
+interface ProjectPhase {
+  localId: string;
+  phaseCode: string;
+  name: string;
+  description?: string;
+  bookedHours?: string;
+}
+
+const PROJECT_STEPS: { id: ProjectFormStep; label: string }[] = [
+  { id: 'basic', label: 'Basic' },
+  { id: 'phases', label: 'Phases' },
+  { id: 'settings', label: 'Settings' },
+];
 
 const jobFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -92,12 +108,10 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [jobType, setJobType] = useState<JobType | null>(null);
   const [projectFlowStep, setProjectFlowStep] = useState<ProjectFlowStep>('type-picker');
-  const [templatePhases, setTemplatePhases] = useState<Array<{
-    phaseCode: string;
-    name: string;
-    description?: string;
-    bookedHours?: string;
-  }>>([]);
+  const [projectFormStep, setProjectFormStep] = useState<ProjectFormStep>('basic');
+  const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  const [practicalCompletionDate, setPracticalCompletionDate] = useState('');
+  const [defectsLiabilityMonths, setDefectsLiabilityMonths] = useState('12');
 
   // Project-specific state (only used when jobType === 'project')
   const [budgetedCost, setBudgetedCost] = useState('');
@@ -471,6 +485,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           ...(materialMarkupPct ? { materialMarkupPct } : {}),
           ...(equipmentMarkupPct ? { equipmentMarkupPct } : {}),
           ...(subcontractorMarkupPct ? { subcontractorMarkupPct } : {}),
+          ...(practicalCompletionDate ? { practicalCompletionDate } : {}),
+          ...(defectsLiabilityMonths ? { defectsLiabilityMonths: parseInt(defectsLiabilityMonths) } : {}),
         }),
         ...(data.isRecurring && data.recurrencePattern
           ? {
@@ -484,12 +500,12 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
 
       const result = await createJobMutation.mutateAsync(jobData);
 
-      // After job is created, create template phases if a template was selected
-      if (result.id && templatePhases.length > 0) {
+      // After job is created, create phases (inline or from template)
+      if (result.id && phases.length > 0) {
         const authToken = getSessionToken();
         let phaseErrors = 0;
-        for (let i = 0; i < templatePhases.length; i++) {
-          const phase = templatePhases[i];
+        for (let i = 0; i < phases.length; i++) {
+          const { localId, ...phase } = phases[i];
           try {
             const phaseRes = await fetch(`/api/jobs/${result.id}/phases`, {
               method: 'POST',
@@ -556,7 +572,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => { setJobType(null); setProjectFlowStep('type-picker'); setTemplatePhases([]); }}
+            onClick={() => { setJobType(null); setProjectFlowStep('type-picker'); setPhases([]); }}
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="Back to type picker"
           >
@@ -578,7 +594,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           {/* Skip / start blank option */}
           <button
             type="button"
-            onClick={() => setProjectFlowStep('form')}
+            onClick={() => { setPhases([]); setProjectFlowStep('form'); setProjectFormStep('basic'); }}
             data-testid="button-skip-template"
             className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
@@ -607,7 +623,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   key={tpl.id}
                   type="button"
                   onClick={() => {
-                    setTemplatePhases(tpl.templateData.phases);
+                    setPhases(tpl.templateData.phases.map((p, i) => ({ ...p, localId: `tpl-${i}` })));
                     // Pre-fill description from template settings if present
                     if (tpl.templateData.settings?.description) {
                       form.setValue('description', tpl.templateData.settings.description);
@@ -618,7 +634,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                     if (tpl.templateData.settings?.subcontractorMarkupPct) setSubcontractorMarkupPct(tpl.templateData.settings.subcontractorMarkupPct);
                     if (tpl.templateData.settings?.budgetedCost) setBudgetedCost(tpl.templateData.settings.budgetedCost);
                     setProjectFlowStep('form');
-                    toast({ title: `Template applied`, description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} will be created with the project` });
+                    setProjectFormStep('basic');
+                    toast({ title: `Template applied`, description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} loaded — review and adjust below` });
                   }}
                   data-testid={`button-use-template-${tpl.id}`}
                   className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -729,6 +746,463 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
     );
   }
 
+  // ─── Reusable form field blocks ───────────────────────────────────────────
+  const titleField = (
+    <FormField
+      control={form.control}
+      name="title"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>{jobType === 'project' ? 'Project Title' : 'Job Title'}</FormLabel>
+          <FormControl>
+            <Input
+              placeholder={jobType === 'project' ? 'Enter project name' : 'Enter job title'}
+              value={field.value || ""}
+              onChange={(e) => field.onChange(e.target.value)}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+              data-testid="input-job-title"
+            />
+          </FormControl>
+          <FormMessage />
+          {userCheck?.tradeType && tradeCatalog[userCheck.tradeType]?.typicalJobs && !field.value && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {tradeCatalog[userCheck.tradeType].typicalJobs.slice(0, 6).map((job: string) => (
+                <Badge key={job} variant="secondary" className="cursor-pointer text-xs" onClick={() => form.setValue("title", job, { shouldValidate: true })}>
+                  {job}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </FormItem>
+      )}
+    />
+  );
+
+  const descriptionField = (
+    <FormField
+      control={form.control}
+      name="description"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Description</FormLabel>
+          <FormControl>
+            <Textarea
+              placeholder="Enter description"
+              value={field.value || ""}
+              onChange={(e) => field.onChange(e.target.value)}
+              onBlur={field.onBlur}
+              name={field.name}
+              ref={field.ref}
+              data-testid="input-job-description"
+            />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  const clientField = (
+    <FormField
+      control={form.control}
+      name="clientId"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Client</FormLabel>
+          <div className="flex gap-2">
+            <FormControl>
+              <SearchableSelect
+                value={field.value}
+                onValueChange={field.onChange}
+                placeholder="Select a client"
+                searchPlaceholder="Search clients..."
+                emptyMessage="No clients yet. Add your first client!"
+                className="flex-1"
+                options={(clients as any[]).map((client) => ({ value: client.id, label: client.name, description: client.phone || undefined }))}
+                data-testid="select-client"
+              />
+            </FormControl>
+            {field.value && (
+              <Button type="button" variant="outline" size="icon" onClick={() => { field.onChange(""); setLastAutoFilledClientId(null); }} data-testid="button-clear-client" title="Clear selected client">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+            <Button type="button" variant="outline" size="icon" onClick={() => setShowQuickAddClient(true)} data-testid="button-quick-add-client" title="Add new client">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  const addressField = (
+    <FormField
+      control={form.control}
+      name="address"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Address</FormLabel>
+          <FormControl>
+            <AddressAutocomplete value={field.value || ''} onChange={field.onChange} onConfirmedChange={(confirmed) => setAddressConfirmed(confirmed)} placeholder="Start typing an address..." data-testid="input-job-address" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  const previousJobsSection = selectedClientId && previousJobs.length > 0 ? (
+    <Collapsible open={previousJobsOpen} onOpenChange={setPreviousJobsOpen}>
+      <CollapsibleTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-between" data-testid="button-previous-jobs">
+          <div className="flex items-center gap-2"><History className="h-4 w-4" /><span>Previous Jobs ({previousJobs.length})</span></div>
+          {previousJobsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="mt-3 space-y-2">
+        <p className="text-xs text-muted-foreground mb-2">View past jobs and copy notes to this job</p>
+        {previousJobs.map((job: any) => (
+          <div key={job.id} className="border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-between p-3 cursor-pointer hover-elevate" onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2"><span className="font-medium text-sm truncate">{job.title}</span><StatusBadge status={job.status} /></div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1"><Calendar className="h-3 w-3" />{formatJobDate(job.createdAt || job.scheduledAt)}</div>
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${expandedJobId === job.id ? 'rotate-180' : ''}`} />
+            </div>
+            {expandedJobId === job.id && (
+              <div className="border-t bg-muted/30 p-3 space-y-3">
+                {(job.description || job.notes) ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium flex items-center gap-1"><FileText className="h-3 w-3" />Notes</span>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); handleCopyNotes(job); }} data-testid={`button-copy-notes-${job.id}`}>
+                        <Copy className="h-3 w-3 mr-1" />Copy to description
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground bg-background p-2 rounded border max-h-20 overflow-y-auto">{job.description || job.notes}</p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground text-center py-2">No notes for this job</p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </CollapsibleContent>
+    </Collapsible>
+  ) : null;
+
+  // ─── Project step helpers ──────────────────────────────────────────────────
+  const addPhase = () => {
+    const nextNum = phases.length + 1;
+    const code = `P${String(nextNum).padStart(2, '0')}`;
+    setPhases(prev => [...prev, { localId: `new-${Date.now()}`, phaseCode: code, name: '' }]);
+  };
+
+  const updatePhase = (localId: string, updates: Partial<ProjectPhase>) => {
+    setPhases(prev => prev.map(p => p.localId === localId ? { ...p, ...updates } : p));
+  };
+
+  const removePhase = (localId: string) => {
+    setPhases(prev => {
+      const filtered = prev.filter(p => p.localId !== localId);
+      // Re-number phase codes
+      return filtered.map((p, i) => ({ ...p, phaseCode: `P${String(i + 1).padStart(2, '0')}` }));
+    });
+  };
+
+  // ─── Project stepper UI ───────────────────────────────────────────────────
+  const renderProjectStepIndicator = () => (
+    <div className="flex items-center gap-0 mb-6" role="progressbar" aria-label="Form progress">
+      {PROJECT_STEPS.map((step, idx) => {
+        const stepIndex = PROJECT_STEPS.findIndex(s => s.id === projectFormStep);
+        const isComplete = idx < stepIndex;
+        const isActive = step.id === projectFormStep;
+        return (
+          <div key={step.id} className="flex items-center flex-1">
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div className={cn('w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors',
+                isComplete ? 'bg-primary text-primary-foreground' :
+                isActive ? 'bg-primary text-primary-foreground ring-4 ring-primary/20' :
+                'bg-muted text-muted-foreground'
+              )}>
+                {isComplete ? <CheckCircle2 className="h-4 w-4" /> : idx + 1}
+              </div>
+              <span className={cn('text-xs font-medium', isActive ? 'text-primary' : isComplete ? 'text-foreground' : 'text-muted-foreground')}>
+                {step.label}
+              </span>
+            </div>
+            {idx < PROJECT_STEPS.length - 1 && (
+              <div className={cn('flex-1 h-0.5 mx-2 mb-4 transition-colors', idx < stepIndex ? 'bg-primary' : 'bg-muted')} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ─── Project step content ─────────────────────────────────────────────────
+  const renderProjectStep = () => {
+    if (projectFormStep === 'basic') {
+      return (
+        <div className="space-y-5" data-testid="project-step-basic">
+          {titleField}
+          {descriptionField}
+          {clientField}
+          {previousJobsSection}
+          {addressField}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="scheduledAt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Start Date</FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} data-testid="input-scheduled-at" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Contract Value ($)</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="e.g. 45000"
+                value={budgetedCost}
+                onChange={(e) => setBudgetedCost(e.target.value)}
+                data-testid="input-budgeted-cost"
+              />
+              <p className="text-xs text-muted-foreground">Used on the profitability card and progress claims.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (projectFormStep === 'phases') {
+      return (
+        <div className="space-y-5" data-testid="project-step-phases">
+          <div>
+            <h3 className="text-sm font-semibold mb-1">Project Phases</h3>
+            <p className="text-sm text-muted-foreground">Add the phases that make up this project. You can edit them further after creation.</p>
+          </div>
+
+          {phases.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-muted p-8 text-center">
+              <Layers className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm font-medium mb-1">No phases yet</p>
+              <p className="text-xs text-muted-foreground mb-4">Add phases below, or load from a saved template.</p>
+              <Button type="button" variant="outline" size="sm" onClick={addPhase} data-testid="button-add-first-phase">
+                <Plus className="h-4 w-4 mr-1" />Add a Phase
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {phases.map((phase, idx) => (
+                <div key={phase.localId} className="rounded-lg border bg-card p-4 space-y-3" data-testid={`phase-row-${idx}`}>
+                  <div className="flex items-center gap-2">
+                    <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="w-16 shrink-0">
+                      <Input
+                        value={phase.phaseCode}
+                        onChange={(e) => updatePhase(phase.localId, { phaseCode: e.target.value.toUpperCase().slice(0, 10) })}
+                        placeholder="P01"
+                        className="text-xs font-mono text-center"
+                        data-testid={`phase-code-${idx}`}
+                      />
+                    </div>
+                    <Input
+                      value={phase.name}
+                      onChange={(e) => updatePhase(phase.localId, { name: e.target.value })}
+                      placeholder="Phase name (e.g. Site Preparation)"
+                      className="flex-1"
+                      data-testid={`phase-name-${idx}`}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="shrink-0 text-muted-foreground hover:text-destructive" onClick={() => removePhase(phase.localId)} data-testid={`button-remove-phase-${idx}`}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 pl-6">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Description (optional)</label>
+                      <Input
+                        value={phase.description || ''}
+                        onChange={(e) => updatePhase(phase.localId, { description: e.target.value })}
+                        placeholder="Brief description..."
+                        className="text-sm"
+                        data-testid={`phase-description-${idx}`}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Booked Hours (optional)</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={phase.bookedHours || ''}
+                        onChange={(e) => updatePhase(phase.localId, { bookedHours: e.target.value })}
+                        placeholder="e.g. 40"
+                        className="text-sm"
+                        data-testid={`phase-hours-${idx}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {phases.length > 0 && (
+            <Button type="button" variant="outline" size="sm" onClick={addPhase} className="gap-1.5" data-testid="button-add-phase">
+              <Plus className="h-4 w-4" />Add Phase
+            </Button>
+          )}
+
+          {/* Load from template */}
+          {projectTemplates.length > 0 && (
+            <div className="pt-2">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground px-2">or load from a saved template</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              <div className="space-y-2">
+                {projectTemplates.map((tpl) => (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    onClick={() => {
+                      setPhases(tpl.templateData.phases.map((p, i) => ({ ...p, localId: `tpl-${tpl.id}-${i}` })));
+                      if (tpl.templateData.settings?.materialMarkupPct) setMaterialMarkupPct(tpl.templateData.settings.materialMarkupPct);
+                      if (tpl.templateData.settings?.equipmentMarkupPct) setEquipmentMarkupPct(tpl.templateData.settings.equipmentMarkupPct);
+                      if (tpl.templateData.settings?.subcontractorMarkupPct) setSubcontractorMarkupPct(tpl.templateData.settings.subcontractorMarkupPct);
+                      if (tpl.templateData.settings?.budgetedCost) setBudgetedCost(tpl.templateData.settings.budgetedCost);
+                      toast({ title: 'Template loaded', description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} added from "${tpl.name}"` });
+                    }}
+                    data-testid={`button-load-template-${tpl.id}`}
+                    className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-muted/30 transition-colors flex items-center gap-3"
+                  >
+                    <div className="p-1.5 rounded-md bg-muted shrink-0"><Layers className="h-4 w-4 text-muted-foreground" /></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{tpl.name}</p>
+                      <p className="text-xs text-muted-foreground">{tpl.templateData.phases.length} phase{tpl.templateData.phases.length !== 1 ? 's' : ''}{tpl.templateData.phases.length > 0 ? ` — ${tpl.templateData.phases.slice(0, 3).map(p => p.name).join(', ')}${tpl.templateData.phases.length > 3 ? '…' : ''}` : ''}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // settings step
+    return (
+      <div className="space-y-5" data-testid="project-step-settings">
+        <div>
+          <h3 className="text-sm font-semibold mb-1">Project Settings</h3>
+          <p className="text-sm text-muted-foreground">Configure retention, defects liability, and markup overrides for this project.</p>
+        </div>
+
+        {/* Practical completion date + DLP */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              Practical Completion Date
+            </label>
+            <Input
+              type="date"
+              value={practicalCompletionDate}
+              onChange={(e) => setPracticalCompletionDate(e.target.value)}
+              data-testid="input-practical-completion-date"
+            />
+            <p className="text-xs text-muted-foreground">The date the project reached (or is expected to reach) practical completion.</p>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+              Defects Liability Period (months)
+            </label>
+            <Input
+              type="number"
+              min="0"
+              max="120"
+              step="1"
+              value={defectsLiabilityMonths}
+              onChange={(e) => setDefectsLiabilityMonths(e.target.value)}
+              data-testid="input-defects-liability-months"
+            />
+            <p className="text-xs text-muted-foreground">Months after practical completion before retention is due.</p>
+          </div>
+        </div>
+
+        {/* Markup overrides */}
+        <div className="space-y-3 pt-2">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Percent className="h-3.5 w-3.5 text-muted-foreground" />
+            Markup overrides (optional — leave blank to use business defaults)
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground flex items-center gap-1"><Package className="h-3 w-3" /> Materials %</label>
+              <Input type="number" min="0" max="999" step="0.1" placeholder="e.g. 20" value={materialMarkupPct} onChange={(e) => setMaterialMarkupPct(e.target.value)} data-testid="input-material-markup" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground flex items-center gap-1"><Wrench className="h-3 w-3" /> Equipment %</label>
+              <Input type="number" min="0" max="999" step="0.1" placeholder="e.g. 15" value={equipmentMarkupPct} onChange={(e) => setEquipmentMarkupPct(e.target.value)} data-testid="input-equipment-markup" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground flex items-center gap-1"><User className="h-3 w-3" /> Subcontractor %</label>
+              <Input type="number" min="0" max="999" step="0.1" placeholder="e.g. 10" value={subcontractorMarkupPct} onChange={(e) => setSubcontractorMarkupPct(e.target.value)} data-testid="input-subcontractor-markup" />
+            </div>
+          </div>
+        </div>
+
+        {/* Priority */}
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priority</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger data-testid="select-priority">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Options */}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-3">
+            <Checkbox id="requiresInspection" checked={!!form.getValues("requiresInspection")} onCheckedChange={(checked) => form.setValue("requiresInspection", !!checked)} data-testid="checkbox-requires-inspection" />
+            <Label htmlFor="requiresInspection" className="flex items-center gap-2 cursor-pointer text-sm"><Search className="w-4 h-4 pointer-events-none" />Requires site inspection first</Label>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="w-full px-6 lg:px-8 py-6 space-y-6" data-testid="page-job-form">
       {/* Header */}
@@ -739,7 +1213,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
               type="button"
               onClick={() => {
                 if (jobType === 'project') {
-                  setProjectFlowStep('template-picker');
+                  if (projectFormStep !== 'basic') {
+                    const steps = PROJECT_STEPS.map(s => s.id);
+                    const cur = steps.indexOf(projectFormStep);
+                    setProjectFormStep(steps[cur - 1] as ProjectFormStep);
+                  } else {
+                    setProjectFlowStep('template-picker');
+                  }
                 } else {
                   setJobType(null);
                 }
@@ -754,8 +1234,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
               {jobType === 'project' ? 'Project' : 'Job'}
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold">Create New Job</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Fill in the details to create a new job</p>
+          <h1 className="text-xl sm:text-2xl font-bold">{jobType === 'project' ? 'Create New Project' : 'Create New Job'}</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Fill in the details to create a new {jobType === 'project' ? 'project' : 'job'}</p>
         </div>
       </div>
 
@@ -769,496 +1249,198 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           </div>
         </div>
       )}
-      
-      <div className="flex flex-col lg:flex-row-reverse gap-6 items-start">
-        {/* Template Selector */}
-        <div className="w-full lg:w-[340px] xl:w-96 shrink-0 lg:sticky lg:top-6">
-          <TemplateSelector 
-            type="job" 
-            onApplyTemplate={handleApplyTemplate}
-            userTradeType={userCheck?.tradeType}
-            data-testid="template-selector-job"
-          />
-        </div>
-        
-        {/* Job Form */}
-        <div className="flex-1 w-full">
-        <Card className="border-muted shadow-sm">
-          <CardContent className="p-4 sm:p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
-              <div className="space-y-6">
-                <div className="space-y-4">
-                  <div className="pb-2 border-b">
-                    <h3 className="text-base font-semibold">Basic Details</h3>
-                  </div>
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Job Title</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter job title"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                        data-testid="input-job-title" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                    {userCheck?.tradeType && tradeCatalog[userCheck.tradeType]?.typicalJobs && !field.value && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {tradeCatalog[userCheck.tradeType].typicalJobs.slice(0, 6).map((job: string) => (
-                          <Badge
-                            key={job}
-                            variant="secondary"
-                            className="cursor-pointer text-xs"
-                            onClick={() => form.setValue("title", job, { shouldValidate: true })}
-                          >
-                            {job}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                  </FormItem>
-                )}
-              />
 
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Enter job description"
-                        value={field.value || ""}
-                        onChange={(e) => field.onChange(e.target.value)}
-                        onBlur={field.onBlur}
-                        name={field.name}
-                        ref={field.ref}
-                        data-testid="input-job-description" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              </div>
+      {jobType === 'project' ? (
+        /* ── PROJECT: multi-step form ── */
+        <div className="max-w-2xl">
+          <Card className="border-muted shadow-sm">
+            <CardContent className="p-5 sm:p-7">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                  {renderProjectStepIndicator()}
+                  {renderProjectStep()}
 
-              <div className="space-y-4 pt-2">
-                <div className="pb-2 border-b">
-                  <h3 className="text-base font-semibold">Client & Location</h3>
-                </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="clientId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Client</FormLabel>
-                      <div className="flex gap-2">
-                        <FormControl>
-                          <SearchableSelect
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            placeholder="Select a client"
-                            searchPlaceholder="Search clients..."
-                            emptyMessage="No clients yet. Add your first client!"
-                            className="flex-1"
-                            options={(clients as any[]).map((client) => ({
-                              value: client.id,
-                              label: client.name,
-                              description: client.phone || undefined,
-                            }))}
-                            data-testid="select-client"
-                          />
-                        </FormControl>
-                        {field.value && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => {
-                              field.onChange("");
-                              setLastAutoFilledClientId(null);
-                            }}
-                            data-testid="button-clear-client"
-                            title="Clear selected client"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        )}
+                  {/* Navigation */}
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3 pt-4 mt-4 border-t border-border">
+                    <div className="flex gap-2">
+                      {onCancel && projectFormStep === 'basic' && (
+                        <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-job">Cancel</Button>
+                      )}
+                      {projectFormStep !== 'basic' && (
                         <Button
                           type="button"
                           variant="outline"
-                          size="icon"
-                          onClick={() => setShowQuickAddClient(true)}
-                          data-testid="button-quick-add-client"
-                          title="Add new client"
+                          onClick={() => {
+                            const steps = PROJECT_STEPS.map(s => s.id);
+                            const cur = steps.indexOf(projectFormStep);
+                            setProjectFormStep(steps[cur - 1] as ProjectFormStep);
+                          }}
+                          data-testid="button-project-back"
                         >
-                          <Plus className="h-4 w-4" />
+                          <ArrowLeft className="h-4 w-4 mr-1" />Back
                         </Button>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Priority</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger data-testid="select-priority">
-                            <SelectValue placeholder="Select priority" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">Low</SelectItem>
-                          <SelectItem value="medium">Medium</SelectItem>
-                          <SelectItem value="high">High</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Previous Jobs Section - Shows when client is selected */}
-              {selectedClientId && previousJobs.length > 0 && (
-                <Collapsible open={previousJobsOpen} onOpenChange={setPreviousJobsOpen}>
-                  <CollapsibleTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full justify-between"
-                      data-testid="button-previous-jobs"
-                    >
-                      <div className="flex items-center gap-2">
-                        <History className="h-4 w-4" />
-                        <span>Previous Jobs ({previousJobs.length})</span>
-                      </div>
-                      {previousJobsOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
                       )}
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 space-y-2">
-                    <p className="text-xs text-muted-foreground mb-2">
-                      View past jobs and copy notes to this job
-                    </p>
-                    {previousJobs.map((job: any) => (
-                      <div
-                        key={job.id}
-                        className="border rounded-lg overflow-hidden"
+                    </div>
+                    {projectFormStep !== 'settings' ? (
+                      <Button
+                        type="button"
+                        onClick={async () => {
+                          if (projectFormStep === 'basic') {
+                            const valid = await form.trigger(['title', 'clientId', 'address']);
+                            if (!valid) return;
+                            if (!addressConfirmed && form.getValues('address')) {
+                              toast({ title: 'Please select an address', description: 'Tap an address from the suggestions to confirm it', variant: 'destructive' });
+                              return;
+                            }
+                          }
+                          const steps = PROJECT_STEPS.map(s => s.id);
+                          const cur = steps.indexOf(projectFormStep);
+                          setProjectFormStep(steps[cur + 1] as ProjectFormStep);
+                        }}
+                        data-testid="button-project-next"
                       >
-                        <div
-                          className="flex items-center justify-between p-3 cursor-pointer hover-elevate"
-                          onClick={() => setExpandedJobId(expandedJobId === job.id ? null : job.id)}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-sm truncate">{job.title}</span>
-                              <StatusBadge status={job.status} />
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatJobDate(job.createdAt || job.scheduledAt)}
-                            </div>
-                          </div>
-                          <ChevronDown className={`h-4 w-4 transition-transform ${expandedJobId === job.id ? 'rotate-180' : ''}`} />
-                        </div>
-                        
-                        {expandedJobId === job.id && (
-                          <div className="border-t bg-muted/30 p-3 space-y-3">
-                            {/* Job Notes/Description */}
-                            {(job.description || job.notes) && (
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="text-xs font-medium flex items-center gap-1">
-                                    <FileText className="h-3 w-3" />
-                                    Notes
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 text-xs"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCopyNotes(job);
-                                    }}
-                                    data-testid={`button-copy-notes-${job.id}`}
-                                  >
-                                    <Copy className="h-3 w-3 mr-1" />
-                                    Copy to description
-                                  </Button>
-                                </div>
-                                <p className="text-xs text-muted-foreground bg-background p-2 rounded border max-h-20 overflow-y-auto">
-                                  {job.description || job.notes}
-                                </p>
-                              </div>
-                            )}
-                            
-                            {!job.description && !job.notes && (
-                              <p className="text-xs text-muted-foreground text-center py-2">
-                                No notes for this job
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <AddressAutocomplete 
-                        value={field.value || ''} 
-                        onChange={field.onChange}
-                        onConfirmedChange={(confirmed) => setAddressConfirmed(confirmed)}
-                        placeholder="Start typing an address..." 
-                        data-testid="input-job-address" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              </div>
-
-              <div className="space-y-4 pt-4">
-                <div className="pb-2 border-b">
-                  <h3 className="text-base font-semibold">Schedule & Priority</h3>
-                </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="scheduledAt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Scheduled Date & Time</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="datetime-local" 
-                          {...field} 
-                          data-testid="input-scheduled-at" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="estimatedHours"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estimated Hours</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          placeholder="0" 
-                          {...field} 
-                          data-testid="input-estimated-hours" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              </div>
-
-              <div className="space-y-4 pt-4">
-                <div className="pb-2 border-b">
-                  <h3 className="text-base font-semibold">Job Options</h3>
-                </div>
-              <div className="flex items-center space-x-3 pt-2">
-                <Checkbox
-                  id="requiresInspection"
-                  checked={!!form.getValues("requiresInspection")}
-                  onCheckedChange={(checked) => form.setValue("requiresInspection", !!checked)}
-                  data-testid="checkbox-requires-inspection"
-                />
-                <Label htmlFor="requiresInspection" className="flex items-center gap-2 cursor-pointer text-sm">
-                  <Search className="w-4 h-4 pointer-events-none" />
-                  Requires site inspection first
-                </Label>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center space-x-3">
-                  <Checkbox
-                    id="isRecurring"
-                    checked={!!form.watch("isRecurring")}
-                    onCheckedChange={(checked) => form.setValue("isRecurring", !!checked)}
-                    data-testid="checkbox-is-recurring"
-                  />
-                  <Label htmlFor="isRecurring" className="cursor-pointer text-sm">
-                    Recurring job (repeats automatically)
-                  </Label>
-                </div>
-                {form.watch("isRecurring") && (
-                  <FormField
-                    control={form.control}
-                    name="recurrencePattern"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Repeats</FormLabel>
-                        <Select value={field.value || "monthly"} onValueChange={field.onChange}>
-                          <FormControl>
-                            <SelectTrigger data-testid="select-recurrence-pattern">
-                              <SelectValue placeholder="Select frequency" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {RECURRENCE_OPTIONS.map((o) => (
-                              <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground">
-                          A new copy of this job is created automatically each period.
-                        </p>
-                      </FormItem>
+                        Next
+                        <ArrowLeft className="h-4 w-4 ml-1 rotate-180" />
+                      </Button>
+                    ) : (
+                      <Button type="submit" disabled={createJobMutation.isPending} data-testid="button-submit-job">
+                        {createJobMutation.isPending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Creating...</> : 'Create Project'}
+                      </Button>
                     )}
-                  />
-                )}
-              </div>
-              </div>
-              </div>
-
-              {/* Project-only fields */}
-              {jobType === 'project' && (
-                <div className="space-y-4 pt-4" data-testid="project-fields">
-                  <div className="pb-2 border-b">
-                    <h3 className="text-base font-semibold flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-orange-500" />
-                      Project Settings
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      These settings unlock phases, purchase orders, and progress claims for this job.
-                    </p>
                   </div>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* ── SERVICE: flat form (unchanged) ── */
+        <div className="flex flex-col lg:flex-row-reverse gap-6 items-start">
+          {/* Template Selector */}
+          <div className="w-full lg:w-[340px] xl:w-96 shrink-0 lg:sticky lg:top-6">
+            <TemplateSelector type="job" onApplyTemplate={handleApplyTemplate} userTradeType={userCheck?.tradeType} data-testid="template-selector-job" />
+          </div>
 
-                  {/* Estimated / Contract Value */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <span>Contract / Estimated Value ($)</span>
-                    </label>
-                    <Input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="e.g. 45000"
-                      value={budgetedCost}
-                      onChange={(e) => setBudgetedCost(e.target.value)}
-                      data-testid="input-budgeted-cost"
-                    />
-                    <p className="text-xs text-muted-foreground">Used on the profitability card and progress claims.</p>
-                  </div>
+          {/* Job Form */}
+          <div className="flex-1 w-full">
+            <Card className="border-muted shadow-sm">
+              <CardContent className="p-4 sm:p-6">
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="pb-2 border-b"><h3 className="text-base font-semibold">Basic Details</h3></div>
+                        {titleField}
+                        {descriptionField}
+                      </div>
 
-                  {/* Markup overrides */}
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium flex items-center gap-1.5">
-                      <Percent className="h-3.5 w-3.5 text-muted-foreground" />
-                      Markup overrides (optional — leave blank to use business defaults)
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div className="space-y-1.5">
-                        <label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Package className="h-3 w-3" /> Materials %
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="999"
-                          step="0.1"
-                          placeholder="e.g. 20"
-                          value={materialMarkupPct}
-                          onChange={(e) => setMaterialMarkupPct(e.target.value)}
-                          data-testid="input-material-markup"
-                        />
+                      <div className="space-y-4 pt-2">
+                        <div className="pb-2 border-b"><h3 className="text-base font-semibold">Client & Location</h3></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {clientField}
+                          <FormField
+                            control={form.control}
+                            name="priority"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Priority</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger data-testid="select-priority"><SelectValue placeholder="Select priority" /></SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                        {previousJobsSection}
+                        {addressField}
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Wrench className="h-3 w-3" /> Equipment %
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="999"
-                          step="0.1"
-                          placeholder="e.g. 15"
-                          value={equipmentMarkupPct}
-                          onChange={(e) => setEquipmentMarkupPct(e.target.value)}
-                          data-testid="input-equipment-markup"
-                        />
+
+                      <div className="space-y-4 pt-4">
+                        <div className="pb-2 border-b"><h3 className="text-base font-semibold">Schedule & Priority</h3></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="scheduledAt"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Scheduled Date & Time</FormLabel>
+                                <FormControl><Input type="datetime-local" {...field} data-testid="input-scheduled-at" /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="estimatedHours"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Estimated Hours</FormLabel>
+                                <FormControl><Input type="number" placeholder="0" {...field} data-testid="input-estimated-hours" /></FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs text-muted-foreground flex items-center gap-1">
-                          <User className="h-3 w-3" /> Subcontractor %
-                        </label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="999"
-                          step="0.1"
-                          placeholder="e.g. 10"
-                          value={subcontractorMarkupPct}
-                          onChange={(e) => setSubcontractorMarkupPct(e.target.value)}
-                          data-testid="input-subcontractor-markup"
-                        />
+
+                      <div className="space-y-4 pt-4">
+                        <div className="pb-2 border-b"><h3 className="text-base font-semibold">Job Options</h3></div>
+                        <div className="flex items-center space-x-3 pt-2">
+                          <Checkbox id="requiresInspection" checked={!!form.getValues("requiresInspection")} onCheckedChange={(checked) => form.setValue("requiresInspection", !!checked)} data-testid="checkbox-requires-inspection" />
+                          <Label htmlFor="requiresInspection" className="flex items-center gap-2 cursor-pointer text-sm"><Search className="w-4 h-4 pointer-events-none" />Requires site inspection first</Label>
+                        </div>
+                        <div className="space-y-3 pt-2">
+                          <div className="flex items-center space-x-3">
+                            <Checkbox id="isRecurring" checked={!!form.watch("isRecurring")} onCheckedChange={(checked) => form.setValue("isRecurring", !!checked)} data-testid="checkbox-is-recurring" />
+                            <Label htmlFor="isRecurring" className="cursor-pointer text-sm">Recurring job (repeats automatically)</Label>
+                          </div>
+                          {form.watch("isRecurring") && (
+                            <FormField
+                              control={form.control}
+                              name="recurrencePattern"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Repeats</FormLabel>
+                                  <Select value={field.value || "monthly"} onValueChange={field.onChange}>
+                                    <FormControl>
+                                      <SelectTrigger data-testid="select-recurrence-pattern"><SelectValue placeholder="Select frequency" /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {RECURRENCE_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
+                                    </SelectContent>
+                                  </Select>
+                                  <p className="text-xs text-muted-foreground">A new copy of this job is created automatically each period.</p>
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-start gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800">
-                    <Briefcase className="h-4 w-4 text-orange-600 mt-0.5 shrink-0" />
-                    <p className="text-xs text-orange-700 dark:text-orange-300">
-                      Once created, use the <strong>Phases</strong> tab to build your project timeline, and the <strong>Claims</strong> tab to manage progress invoicing.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 mt-6 border-t border-border">
-                {onCancel && (
-                  <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-job" className="w-full sm:w-auto">
-                    Cancel
-                  </Button>
-                )}
-                <Button type="submit" disabled={createJobMutation.isPending} data-testid="button-submit-job" className="w-full sm:w-auto">
-                  {createJobMutation.isPending ? "Creating..." : "Create Job"}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-        </Card>
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 mt-6 border-t border-border">
+                      {onCancel && (
+                        <Button type="button" variant="outline" onClick={onCancel} data-testid="button-cancel-job" className="w-full sm:w-auto">Cancel</Button>
+                      )}
+                      <Button type="submit" disabled={createJobMutation.isPending} data-testid="button-submit-job" className="w-full sm:w-auto">
+                        {createJobMutation.isPending ? "Creating..." : "Create Job"}
+                      </Button>
+                    </div>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Subscription Usage Info */}
       {usage && usage.subscriptionTier === 'free' && (
