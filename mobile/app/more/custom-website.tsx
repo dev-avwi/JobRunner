@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Platform,
   KeyboardAvoidingView,
-  Modal,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet, BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -363,9 +363,9 @@ export default function CustomWebsitePage() {
           )}
         </ScrollView>
 
-        <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowForm(false)}>
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, spacing.md) }]}>
+        <AppBottomSheet visible={showForm} onDismiss={() => setShowForm(false)} snapPoints={['92%']} scrollable={false} contentPadding={0}>
+          <View style={{ flex: 1 }}>
+            <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
               <PressableRow onPress={() => setShowForm(false)}>
                 <Feather name="x" size={24} color={colors.foreground} />
               </PressableRow>
@@ -373,12 +373,12 @@ export default function CustomWebsitePage() {
               <View style={{ width: 24 }} />
             </View>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-              <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
+              <BottomSheetScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
                 {selectedTier !== null && (
                   <View style={styles.selectedTierPill}>
                     <Feather name={PRICING_TIERS[selectedTier].icon} size={14} color={colors.primary} />
                     <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
-                      {PRICING_TIERS[selectedTier].name} — {PRICING_TIERS[selectedTier].price}
+                      {PRICING_TIERS[selectedTier].name}: {PRICING_TIERS[selectedTier].price}
                     </Text>
                   </View>
                 )}
@@ -440,10 +440,10 @@ export default function CustomWebsitePage() {
                 </PressableRow>
 
                 <View style={{ height: 60 }} />
-              </ScrollView>
+              </BottomSheetScrollView>
             </KeyboardAvoidingView>
           </View>
-        </Modal>
+        </AppBottomSheet>
       </View>
     </>
   );

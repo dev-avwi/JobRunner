@@ -273,7 +273,7 @@ const calStyles = StyleSheet.create({
   },
   cell: {
     width: `${100 / 7}%` as any,
-    aspectRatio: 1,
+    aspectRatio: 0.82,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.full,

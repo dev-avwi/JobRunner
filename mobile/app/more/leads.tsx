@@ -7,7 +7,6 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
-  Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
@@ -15,7 +14,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
-import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { AppBottomSheet, BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -492,19 +491,18 @@ export default function LeadsScreen() {
         </View>
       </ScrollView>
 
-      <Modal
-      onRequestClose={() => setShowForm(false)} visible={showForm} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView style={[styles.container, { backgroundColor: colors.background }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.modalHeader}>
+      <AppBottomSheet visible={showForm} onDismiss={() => { setShowForm(false); setEditingLead(null); resetForm(); }} snapPoints={['92%']} scrollable={false} contentPadding={0}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
             <PressableRow onPress={() => { setShowForm(false); setEditingLead(null); resetForm(); }}>
-              <Text style={styles.modalCancel}>Cancel</Text>
+              <Feather name="x" size={24} color={colors.foreground} />
             </PressableRow>
             <Text style={styles.modalTitle}>{editingLead ? 'Edit Lead' : 'New Lead'}</Text>
             <PressableRow onPress={handleSave} disabled={saving}>
               {saving ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.modalSave}>Save</Text>}
             </PressableRow>
           </View>
-          <ScrollView style={styles.formScroll} contentContainerStyle={styles.formContent}>
+          <BottomSheetScrollView style={styles.formScroll} contentContainerStyle={styles.formContent} keyboardShouldPersistTaps="handled">
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Name *</Text>
               <TextInput style={styles.formInput} value={formData.name} onChangeText={v => setFormData(p => ({ ...p, name: v }))} placeholder="Lead name" placeholderTextColor={colors.mutedForeground} />
@@ -553,9 +551,9 @@ export default function LeadsScreen() {
               <Text style={styles.formLabel}>Notes</Text>
               <TextInput style={[styles.formInput, styles.formTextarea]} value={formData.notes} onChangeText={v => setFormData(p => ({ ...p, notes: v }))} placeholder="Internal notes" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} textAlignVertical="top" />
             </View>
-          </ScrollView>
+          </BottomSheetScrollView>
         </KeyboardAvoidingView>
-      </Modal>
+      </AppBottomSheet>
 
       <AppBottomSheet
         visible={showConvertModal}
@@ -656,7 +654,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   formScroll: { flex: 1 },
   formContent: { padding: spacing.md, gap: spacing.md },
   formGroup: { gap: spacing.xs },
-  formLabel: { ...typography.label, color: colors.foreground },
+  formLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground },
   formInput: { backgroundColor: colors.card, borderRadius: radius.md, paddingHorizontal: spacing.sm, height: sizes.inputHeight, borderWidth: 1, borderColor: colors.border, ...typography.body, color: colors.foreground },
   formTextarea: { height: 80, paddingVertical: spacing.sm },
   optionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },

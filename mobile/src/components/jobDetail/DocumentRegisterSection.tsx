@@ -19,7 +19,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
-import api from '../../lib/api';
+import { api } from '../../lib/api';
 import { showToast } from '../../lib/toast';
 import { spacing, radius, typography, fontWeights, iconSizes } from '../../lib/design-tokens';
 
