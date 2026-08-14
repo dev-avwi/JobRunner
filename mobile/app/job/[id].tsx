@@ -84,6 +84,7 @@ import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSectio
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 
 interface JobNoteItem {
@@ -124,6 +125,8 @@ interface Job {
   geofenceAutoClockIn?: boolean;
   geofenceAutoClockOut?: boolean;
   portalEnabled?: boolean;
+  jobType?: 'service' | 'project';
+  jobNumber?: string | null;
 }
 
 interface Invoice {
@@ -10509,6 +10512,26 @@ export default function JobDetailScreen() {
                 } : undefined}
               />
             </View>
+            {/* Project Timeline (Gantt) — only for project type, owners/managers */}
+            {job?.jobType === 'project' && (isOwnerOrManager || isSoloOwner) && phases.length > 0 && (
+              <ProjectGanttMobile
+                colors={colors}
+                phases={phases}
+                isTradie={false}
+                onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                  setEditingPhase(phase);
+                  setEditPhaseForm({
+                    phaseCode: phase.phaseCode,
+                    name: phase.name,
+                    description: phase.description ?? '',
+                    scheduledStart: phase.scheduledStart ?? '',
+                    scheduledEnd: phase.scheduledEnd ?? '',
+                    bookedHours: phase.bookedHours ?? '',
+                  });
+                  setShowEditPhaseModal(true);
+                } : undefined}
+              />
+            )}
             {renderMaterialsTab()}
             <PurchaseOrdersSection
               colors={colors}

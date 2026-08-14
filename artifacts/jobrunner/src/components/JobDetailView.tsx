@@ -41,6 +41,7 @@ import {
   ManualSmsComposer,
   JobPhasesSection,
   ClaimsSection,
+  ProjectGanttView,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -3414,6 +3415,11 @@ export default function JobDetailView({
 
           {/* Job Phases */}
           <JobPhasesSection jobId={jobId} isTradie={isTradie} />
+
+          {/* Project Timeline (Gantt) — only for project type */}
+          {job?.jobType === 'project' && (
+            <ProjectGanttView jobId={jobId} isTradie={isTradie} />
+          )}
 
           {/* Progress Claims */}
           <ClaimsSection jobId={jobId} isTradie={isTradie} />

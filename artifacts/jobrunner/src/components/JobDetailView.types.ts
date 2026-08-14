@@ -35,6 +35,8 @@ export interface Job {
   requiresInspection?: boolean;
   inspectionCompletedAt?: string;
   inspectionNotes?: string;
+  jobType?: 'service' | 'project';
+  jobNumber?: string | null;
 }
 
 export interface Client {
