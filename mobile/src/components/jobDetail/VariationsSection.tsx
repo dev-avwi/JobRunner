@@ -258,11 +258,14 @@ export function VariationsSection({
     if (!isOwnerOrManager) return;
     setActionLoading(variation.id);
     try {
-      const res = await api.patch(`/api/jobs/${jobId}/variations/${variation.id}`, { status: 'sent' });
+      const res = await api.patch<{ notificationWarning?: string }>(`/api/jobs/${jobId}/variations/${variation.id}`, { status: 'sent' });
       if (res.error) {
         showToast({ type: 'error', message: res.error });
       } else {
         showToast({ type: 'success', message: 'Variation submitted for approval' });
+        if (res.data?.notificationWarning) {
+          showToast({ type: 'info', message: res.data.notificationWarning });
+        }
         onRefresh?.();
       }
     } catch (e: any) {

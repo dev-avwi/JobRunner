@@ -7756,7 +7756,23 @@ import { computeRetentionSummary } from "./retentionSummary";
       }
 
       // ── Notify client when variation is submitted for their review ─────────
+      let notificationWarning: string | undefined;
       if (status === 'sent' && updated) {
+        // Pre-check: does the client have any contactable details?
+        // This is a lightweight lookup that runs synchronously so we can
+        // surface a warning in the response without waiting for SMS/email.
+        try {
+          const jobForCheck = await storage.getJob(jobId, userContext.effectiveUserId);
+          if (jobForCheck?.clientId) {
+            const clientForCheck = await storage.getClient(jobForCheck.clientId, userContext.effectiveUserId);
+            if (clientForCheck && !clientForCheck.phone && !clientForCheck.email) {
+              notificationWarning = 'Client has no phone or email on file — they could not be notified. Add contact details so they receive future notifications.';
+            }
+          }
+        } catch (checkErr) {
+          console.warn('[Variation] client contact pre-check failed:', checkErr);
+        }
+
         // Fire-and-forget — notification failure must NOT block the response.
         // Use `updated` (persisted values) so content is never stale.
         import('../variationNotificationService').then(({ notifyClientVariationSent }) =>
@@ -7767,7 +7783,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         ).catch((err) => console.error('[Variation] notify import failed:', err));
       }
 
-      res.json(updated);
+      res.json(notificationWarning ? { ...updated, notificationWarning } : updated);
     } catch (error: any) {
       console.error('Error updating job variation:', error);
       res.status(500).json({ error: error.message });
