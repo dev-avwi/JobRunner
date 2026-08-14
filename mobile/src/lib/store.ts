@@ -2612,6 +2612,8 @@ interface PayrollReport {
     payrollPaymentId: string | null;
     paidMethod: string | null;
     paidReference: string | null;
+    travelAllowance?: number;
+    totalDistanceKm?: number;
   }[];
   totals: {
     totalHours: number;

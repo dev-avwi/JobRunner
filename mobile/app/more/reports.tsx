@@ -58,6 +58,8 @@ interface PayrollWorker {
   payrollPaymentId: string | null;
   paidMethod: string | null;
   paidReference: string | null;
+  travelAllowance?: number;
+  totalDistanceKm?: number;
 }
 
 const PAYROLL_PAY_METHODS: { value: string; label: string }[] = [
@@ -1929,6 +1931,20 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                         <View style={[styles.progressBarContainer, { marginTop: spacing.sm }]}>
                           <View style={[styles.progressBar, { width: `${Math.min(billablePct, 100)}%`, backgroundColor: billablePct >= 70 ? colors.success : billablePct >= 40 ? colors.warning : colors.destructive }]} />
                         </View>
+                        {!!worker.travelAllowance && worker.travelAllowance > 0 && (
+                          <View style={{
+                            flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+                            marginTop: spacing.sm, paddingTop: spacing.sm,
+                            borderTopWidth: 1, borderTopColor: colors.border,
+                          }}>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
+                              Travel Allowance{worker.totalDistanceKm ? ` (${(Math.round((worker.totalDistanceKm) * 10) / 10).toFixed(1)} km)` : ''}
+                            </Text>
+                            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                              {formatCurrency(worker.travelAllowance)}
+                            </Text>
+                          </View>
+                        )}
                         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
                           {worker.paid ? (
                             <TouchableOpacity
