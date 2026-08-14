@@ -87,6 +87,7 @@ import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/compon
 import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
+import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
 
 interface JobNoteItem {
   id: string;
@@ -9599,6 +9600,14 @@ export default function JobDetailScreen() {
       <View style={styles.photosCard}>
         {renderSafetyTab()}
       </View>
+
+      {/* Project Document Register — drawings, specs, RFIs */}
+      <DocumentRegisterSection
+        jobId={job.id}
+        colors={colors}
+        styles={styles}
+        canUpload={!!(isOwnerOrManager || isSoloOwner)}
+      />
 
       {/* Uploaded Documents Section - owners/managers only */}
       {(isOwnerOrManager || isSoloOwner) && (

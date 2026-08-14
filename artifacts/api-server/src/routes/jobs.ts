@@ -528,6 +528,44 @@ import { computeRetentionSummary } from "./retentionSummary";
       chatUpload,
     } = deps;
 
+    // Dedicated Multer instance for document-register uploads.
+    // Accepts the full set of formats the document register UI supports:
+    // images, PDFs, Office documents (Word/Excel/PowerPoint), and CAD files (DWG/DXF).
+    const DOCUMENT_REGISTER_ALLOWED_MIMES = new Set([
+      'application/pdf',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/tiff',
+      // Word
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      // Excel
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      // PowerPoint
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      // CAD — DWG / DXF (no official IANA type; accept common variants)
+      'application/acad',
+      'application/x-acad',
+      'application/autocad_dwg',
+      'image/x-dwg',
+      'application/dwg',
+      'application/dxf',
+      'application/x-dxf',
+      // Generic binary/octet — allow as a fallback for obscure CAD formats
+      'application/octet-stream',
+    ]);
+    const docUpload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+      fileFilter: (_req, file, cb) => {
+        if (DOCUMENT_REGISTER_ALLOWED_MIMES.has(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new Error(`Unsupported file type: ${file.mimetype}. Supported: PDF, images, Word, Excel, PowerPoint, DWG/DXF.`));
+        }
+      },
+    });
+
     app.post("/api/jobs/:jobId/subcontractor-token", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
@@ -6448,7 +6486,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         retentionSummary: await (async () => {
           try {
             const allClaims = await storage.getClaims(jobId, userId);
-            return computeRetentionSummary(allClaims, {
+            return computeRetentionSummary(allClaims as any, {
               practicalCompletionDate: (job as any).practicalCompletionDate || null,
               defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
             });
@@ -9259,6 +9297,401 @@ import { computeRetentionSummary } from "./retentionSummary";
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting project template:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ── Project Document Register ─────────────────────────────────────────────
+
+  app.get("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      const docs = await db.select().from(pd)
+        .where(and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)))
+        .orderBy(asc(pd.docNumber));
+
+      const result = await Promise.all(docs.map(async (doc: any) => {
+        const revisions = await db.select().from(pdr)
+          .where(eq(pdr.documentId, doc.id))
+          .orderBy(desc(pdr.uploadedAt));
+
+        let latestRevision = null;
+        if (revisions.length > 0) {
+          const rev = revisions[0];
+          let fileUrl = null;
+          try {
+            const { bucketName, objectName } = parseObjectPath(rev.objectStorageKey);
+            fileUrl = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+              action: 'read', expires: Date.now() + 60 * 60 * 1000,
+            }).then((urls: string[]) => urls[0]);
+          } catch { }
+          latestRevision = { ...rev, fileUrl };
+        }
+
+        return { ...doc, latestRevision, revisionCount: revisions.length };
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching project documents:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('file'), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      if (!req.file) return res.status(400).json({ error: 'File is required' });
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      const existing = await db.select({ count: sql<number>`count(*)` }).from(pd)
+        .where(and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      const seq = (Number(existing[0]?.count) || 0) + 1;
+      const docNumber = `DOC-${String(seq).padStart(3, '0')}`;
+
+      const { title, category = 'Other', revision = 'A', notes } = req.body;
+      if (!title) return res.status(400).json({ error: 'Title is required' });
+
+      const ext = req.file.originalname.split('.').pop() ?? 'bin';
+      const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+      const { randomBytes } = await import('crypto');
+      const objectKey = `${privateDir}/project-documents/${effectiveUserId}/${jobId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+
+      await objectStorageClient.bucket(bucketId).file(objectKey).save(req.file.buffer, {
+        metadata: { contentType: req.file.mimetype },
+      });
+
+      const [doc] = await db.insert(pd).values({
+        jobId, userId: effectiveUserId, docNumber, title, category, currentRevision: revision,
+      }).returning();
+
+      await db.insert(pdr).values({
+        documentId: doc.id, revision, fileName: req.file.originalname,
+        objectStorageKey: `${bucketId}/${objectKey}`,
+        fileSize: req.file.size, mimeType: req.file.mimetype,
+        uploadedBy: req.userId, notes: notes || null,
+      });
+
+      res.status(201).json(doc);
+    } catch (error: any) {
+      console.error('Error creating project document:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('file'), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, docId } = req.params;
+
+      if (!req.file) return res.status(400).json({ error: 'File is required' });
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      // Verify doc belongs to this job AND this business — prevents cross-job access.
+      const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      const { revision, notes } = req.body;
+      if (!revision) return res.status(400).json({ error: 'Revision label is required' });
+
+      const ext = req.file.originalname.split('.').pop() ?? 'bin';
+      const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+      const { randomBytes } = await import('crypto');
+      const objectKey = `${privateDir}/project-documents/${effectiveUserId}/${jobId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+      const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+
+      await objectStorageClient.bucket(bucketId).file(objectKey).save(req.file.buffer, {
+        metadata: { contentType: req.file.mimetype },
+      });
+
+      const [rev] = await db.insert(pdr).values({
+        documentId: docId, revision, fileName: req.file.originalname,
+        objectStorageKey: `${bucketId}/${objectKey}`,
+        fileSize: req.file.size, mimeType: req.file.mimetype,
+        uploadedBy: req.userId, notes: notes || null,
+      }).returning();
+
+      await db.update(pd).set({ currentRevision: revision, updatedAt: new Date() }).where(eq(pd.id, docId));
+
+      res.status(201).json(rev);
+    } catch (error: any) {
+      console.error('Error adding document revision:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, docId } = req.params;
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      // Verify doc belongs to this job AND this business — prevents cross-job access.
+      const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      const revisions = await db.select().from(pdr)
+        .where(eq(pdr.documentId, docId))
+        .orderBy(desc(pdr.uploadedAt));
+
+      const result = await Promise.all(revisions.map(async (rev: any) => {
+        let fileUrl = null;
+        try {
+          const { bucketName, objectName } = parseObjectPath(rev.objectStorageKey);
+          fileUrl = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+            action: 'read', expires: Date.now() + 60 * 60 * 1000,
+          }).then((urls: string[]) => urls[0]);
+        } catch { }
+        return { ...rev, fileUrl };
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching document revisions:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, docId } = req.params;
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+
+      // Verify the document belongs to this job AND this business to prevent cross-job access.
+      const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      const revisions = await db.select().from(pdr).where(eq(pdr.documentId, docId));
+      for (const rev of revisions) {
+        try {
+          const { bucketName, objectName } = parseObjectPath(rev.objectStorageKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete();
+        } catch { }
+      }
+
+      await db.delete(pd).where(eq(pd.id, docId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting project document:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/project-documents/:docId/notify", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, docId } = req.params;
+      const { userIds, message } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const { projectDocuments: pd } = await import("@workspace/db");
+      // Verify doc belongs to this job AND this business — prevents cross-job access.
+      const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
+      if (!doc) return res.status(404).json({ error: 'Document not found' });
+
+      // Security: only notify users who are actual team members of this business.
+      const teamMembers = await storage.getTeamMembers(effectiveUserId);
+      const teamMemberIds = new Set(teamMembers.map((m: any) => m.memberId));
+      const safeUserIds = (userIds as string[]).filter(id => teamMemberIds.has(id));
+
+      if (safeUserIds.length === 0) {
+        return res.json({ success: true, notified: 0 });
+      }
+
+      const { sendPushNotificationToUsers } = await import("../pushNotifications");
+      await sendPushNotificationToUsers(safeUserIds, {
+        type: 'job_update',
+        title: `Document Updated: ${doc.title}`,
+        body: message || `${doc.docNumber} has been updated to revision ${doc.currentRevision}`,
+        data: { jobId, documentId: docId },
+      });
+
+      res.json({ success: true, notified: safeUserIds.length });
+    } catch (error: any) {
+      console.error('Error notifying team about document:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ── RFIs ──────────────────────────────────────────────────────────────────
+
+  app.get("/api/jobs/:jobId/rfis", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const { projectRfis } = await import("@workspace/db");
+      const rfis = await db.select().from(projectRfis)
+        .where(and(eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)))
+        .orderBy(asc(projectRfis.rfiNumber));
+
+      // Generate fresh signed URLs for answer attachments — never return stored URLs
+      // since they expire after 1 hour and would silently break.
+      const result = await Promise.all(rfis.map(async (rfi: any) => {
+        if (!rfi.answerObjectStorageKey) return { ...rfi, answerFileUrl: null };
+        let answerFileUrl: string | null = null;
+        try {
+          const { bucketName, objectName } = parseObjectPath(rfi.answerObjectStorageKey);
+          const signedUrls = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000,
+          });
+          answerFileUrl = signedUrls[0];
+        } catch { }
+        return { ...rfi, answerFileUrl };
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching RFIs:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/jobs/:jobId/rfis", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const { question, description, assignedTo, assignedToName } = req.body;
+      if (!question) return res.status(400).json({ error: 'Question is required' });
+
+      const { projectRfis } = await import("@workspace/db");
+      const existing = await db.select({ count: sql<number>`count(*)` }).from(projectRfis)
+        .where(and(eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)));
+      const seq = (Number(existing[0]?.count) || 0) + 1;
+      const rfiNumber = `RFI-${String(seq).padStart(3, '0')}`;
+
+      const [rfi] = await db.insert(projectRfis).values({
+        jobId, userId: effectiveUserId, rfiNumber, question,
+        description: description || null,
+        assignedTo: assignedTo || null,
+        assignedToName: assignedToName || null,
+        status: 'open',
+      }).returning();
+
+      res.status(201).json(rfi);
+    } catch (error: any) {
+      console.error('Error creating RFI:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/jobs/:jobId/rfis/:rfiId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('answerFile'), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, rfiId } = req.params;
+
+      const { projectRfis } = await import("@workspace/db");
+      // Verify the RFI belongs to this job AND this business to prevent cross-job access.
+      const [rfi] = await db.select().from(projectRfis)
+        .where(and(eq(projectRfis.id, rfiId), eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)));
+      if (!rfi) return res.status(404).json({ error: 'RFI not found' });
+
+      const { status, answerText } = req.body;
+      const updates: Record<string, any> = { updatedAt: new Date() };
+
+      if (status) updates.status = status;
+      if (answerText !== undefined) updates.answerText = answerText;
+      if (status === 'answered' || status === 'closed') updates.answeredAt = new Date();
+
+      if (req.file) {
+        const ext = req.file.originalname.split('.').pop() ?? 'bin';
+        const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+        const { randomBytes } = await import('crypto');
+        const objectKey = `${privateDir}/project-rfis/${effectiveUserId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+        const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+        await objectStorageClient.bucket(bucketId).file(objectKey).save(req.file.buffer, {
+          metadata: { contentType: req.file.mimetype },
+        });
+        // Only persist the storage key — signed URLs are derived at read time, never stored.
+        updates.answerObjectStorageKey = `${bucketId}/${objectKey}`;
+      }
+
+      const [updated] = await db.update(projectRfis).set(updates as any).where(eq(projectRfis.id, rfiId)).returning();
+
+      // Always derive a fresh signed URL at response time — never read or store answerFileUrl in DB.
+      let answerFileUrl: string | null = null;
+      if (updated.answerObjectStorageKey) {
+        try {
+          const { bucketName, objectName } = parseObjectPath(updated.answerObjectStorageKey);
+          const signedUrls = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000,
+          });
+          answerFileUrl = signedUrls[0];
+        } catch { }
+      }
+
+      res.json({ ...updated, answerFileUrl });
+    } catch (error: any) {
+      console.error('Error updating RFI:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.delete("/api/jobs/:jobId/rfis/:rfiId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, rfiId } = req.params;
+
+      const { projectRfis } = await import("@workspace/db");
+      // Verify the RFI belongs to this job AND this business to prevent cross-job access.
+      const [rfi] = await db.select().from(projectRfis)
+        .where(and(eq(projectRfis.id, rfiId), eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)));
+      if (!rfi) return res.status(404).json({ error: 'RFI not found' });
+
+      if (rfi.answerObjectStorageKey) {
+        try {
+          const { bucketName, objectName } = parseObjectPath(rfi.answerObjectStorageKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete();
+        } catch { }
+      }
+
+      await db.delete(projectRfis).where(eq(projectRfis.id, rfiId));
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting RFI:', error);
       res.status(500).json({ error: error.message });
     }
   });

@@ -42,6 +42,7 @@ import {
   JobPhasesSection,
   ClaimsSection,
   ProjectGanttView,
+  ProjectDocumentRegister,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -4302,6 +4303,9 @@ export default function JobDetailView({
           <JobTasksSection jobId={jobId} />
 
           <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
+
+          {/* Project Document Register — drawings, specs, RFIs, revision tracking */}
+          <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />
 
           {/* Uploaded Documents - external quotes, invoices, PDFs */}
           <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} />

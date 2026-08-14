@@ -5573,6 +5573,8 @@ export const insertPriceListItemSchema = createInsertSchema(priceListItems).omit
 
 export type InsertPriceListItem = z.infer<typeof insertPriceListItemSchema>;
 
+// ── Project Templates ─────────────────────────────────────────────────────────
+
 export const projectTemplates = pgTable("project_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
@@ -5613,3 +5615,93 @@ export const insertProjectTemplateSchema = createInsertSchema(projectTemplates).
 });
 
 export type InsertProjectTemplate = z.infer<typeof insertProjectTemplateSchema>;
+
+// ── Project Document Register ─────────────────────────────────────────────────
+// Tables must be declared before any createInsertSchema / $inferSelect that evaluates them.
+
+export const PROJECT_DOCUMENT_CATEGORIES = ['Drawings', 'Specifications', 'RFIs', 'SWMS', 'Certificates', 'Other'] as const;
+export const PROJECT_RFI_STATUSES = ['open', 'answered', 'closed'] as const;
+
+export const projectDocuments = pgTable("project_documents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Auto-generated sequential number within the job, e.g. "DOC-001"
+  docNumber: varchar("doc_number", { length: 20 }).notNull(),
+  title: text("title").notNull(),
+  category: text("category").notNull().default('Other'), // ProjectDocumentCategory
+  // Points to the most-recent revision label ("A", "B", "1", "2", …)
+  currentRevision: varchar("current_revision", { length: 10 }).notNull().default('A'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_project_documents_job_id").on(table.jobId),
+  index("idx_project_documents_user_id").on(table.userId),
+]);
+
+export const projectDocumentRevisions = pgTable("project_document_revisions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").notNull().references(() => projectDocuments.id, { onDelete: 'cascade' }),
+  revision: varchar("revision", { length: 10 }).notNull(), // "A", "B", "1", "2", …
+  fileName: text("file_name").notNull(),
+  objectStorageKey: text("object_storage_key").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  notes: text("notes"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  uploadedAt: timestamp("uploaded_at").defaultNow(),
+}, (table) => [
+  index("idx_project_document_revisions_document_id").on(table.documentId),
+]);
+
+export const projectRfis = pgTable("project_rfis", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Auto-generated sequential number within the job, e.g. "RFI-001"
+  rfiNumber: varchar("rfi_number", { length: 20 }).notNull(),
+  question: text("question").notNull(),
+  description: text("description"),
+  assignedTo: varchar("assigned_to"), // user id or free-text contact name
+  assignedToName: text("assigned_to_name"),
+  status: text("status").notNull().default('open'), // ProjectRfiStatus
+  answeredAt: timestamp("answered_at"),
+  answerText: text("answer_text"),
+  answerFileUrl: text("answer_file_url"),
+  answerObjectStorageKey: text("answer_object_storage_key"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_project_rfis_job_id").on(table.jobId),
+  index("idx_project_rfis_user_id").on(table.userId),
+  index("idx_project_rfis_status").on(table.status),
+]);
+
+// Insert schemas — evaluated after all three tables are initialized.
+export const insertProjectDocumentSchema = createInsertSchema(projectDocuments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectDocumentRevisionSchema = createInsertSchema(projectDocumentRevisions).omit({
+  id: true,
+  uploadedAt: true,
+});
+
+export const insertProjectRfiSchema = createInsertSchema(projectRfis).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  answeredAt: true,
+});
+
+// Types
+export type ProjectDocumentCategory = typeof PROJECT_DOCUMENT_CATEGORIES[number];
+export type ProjectRfiStatus = typeof PROJECT_RFI_STATUSES[number];
+export type ProjectDocument = typeof projectDocuments.$inferSelect;
+export type ProjectDocumentRevision = typeof projectDocumentRevisions.$inferSelect;
+export type ProjectRfi = typeof projectRfis.$inferSelect;
+export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
+export type InsertProjectDocumentRevision = z.infer<typeof insertProjectDocumentRevisionSchema>;
+export type InsertProjectRfi = z.infer<typeof insertProjectRfiSchema>;

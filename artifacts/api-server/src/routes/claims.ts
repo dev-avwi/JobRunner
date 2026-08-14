@@ -177,7 +177,7 @@ export function registerClaimsRoutes(app: Express): void {
 
         // 2. DLP eligibility — retention may only be released after the defects
         //    liability period has expired.
-        const summary = computeRetentionSummary(existingClaims, {
+        const summary = computeRetentionSummary(existingClaims as any, {
           practicalCompletionDate: (job as any).practicalCompletionDate || null,
           defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
         });
