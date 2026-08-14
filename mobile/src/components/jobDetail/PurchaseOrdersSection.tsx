@@ -67,9 +67,9 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
   const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
 
   return (
-    <View style={{ marginTop: spacing.lg }}>
+    <View>
       {/* Section header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
         <Feather name="shopping-cart" size={16} color={colors.mutedForeground} />
         <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }}>
           Purchase Orders
@@ -91,7 +91,10 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
           backgroundColor: colors.card,
           borderRadius: radius.lg,
           padding: spacing.lg,
+          marginHorizontal: spacing.md,
           alignItems: 'center',
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
           ...shadows.sm,
         }}>
           <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
@@ -99,7 +102,7 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
           </Text>
         </View>
       ) : (
-        <View style={{ gap: spacing.sm }}>
+        <View style={{ gap: spacing.sm, paddingHorizontal: spacing.md }}>
           {purchaseOrders.map((po) => {
             const statusCfg = PO_STATUS_CONFIG[po.status || 'pending'] || PO_STATUS_CONFIG.pending;
             const isExpanded = expandedId === po.id;
@@ -108,6 +111,8 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
                 backgroundColor: colors.card,
                 borderRadius: radius.lg,
                 overflow: 'hidden',
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
                 ...shadows.sm,
               }}>
                 {/* PO header */}

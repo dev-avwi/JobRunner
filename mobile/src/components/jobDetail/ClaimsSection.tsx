@@ -622,7 +622,7 @@ export function ClaimsSection({
 
             {!loadingEditItems && editLineItems.length === 0 && (
               <Text style={[styles.emptyText, { color: colors.mutedForeground, textAlign: 'left', paddingHorizontal: 0, paddingVertical: spacing.xs }]}>
-                No line items yet — add one below.
+                No line items yet. Add one below.
               </Text>
             )}
 

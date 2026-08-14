@@ -201,7 +201,7 @@ export function VariationsSection({
     if (!isPendingStatus) return;
 
     showActionSheet({
-      title: `${variation.number} — ${variation.title}`,
+      title: `${variation.number}: ${variation.title}`,
       message: `${fmt(variation.totalAmount)} (incl. GST)`,
       actions: [
         {

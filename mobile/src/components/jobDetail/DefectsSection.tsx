@@ -234,7 +234,7 @@ export function DefectsSection({ jobId, isTradie = false, items, loading = false
                 <View style={s.clearedBanner}>
                   <Feather name="check-circle" size={14} color={colors.success} />
                   <Text style={[s.clearedText, { color: colors.success }]}>
-                    All defects cleared — retention can be released
+                    All defects cleared. Retention can be released.
                   </Text>
                 </View>
               )}

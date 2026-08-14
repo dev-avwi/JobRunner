@@ -67,7 +67,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
   return (
     <>
       {/* Materials Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, paddingHorizontal: spacing.md }}>
         <View>
           <Text style={styles.tabSectionTitle}>JOB MATERIALS</Text>
           {materials.length > 0 && (() => {

@@ -2001,7 +2001,7 @@ function SupplierPickerSheetContent({
           <View style={{ alignItems: 'center', paddingVertical: spacing['3xl'] }}>
             <Feather name="truck" size={32} color={colors.mutedForeground} style={{ marginBottom: spacing.sm }} />
             <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, textAlign: 'center' }}>
-              No suppliers — add one first
+              No suppliers yet. Add one first.
             </Text>
           </View>
         ) : filtered.length === 0 ? (
@@ -6178,7 +6178,7 @@ export default function JobDetailScreen() {
       try {
         await offlineStorage.queueOnMyWayNotification(job.id);
         setJob((prev: any) => prev ? { ...prev, workerStatus: 'on_my_way' } : prev);
-        showToast({ type: 'info', message: 'Queued', description: 'You\'re offline — the "On My Way" SMS will be sent automatically as soon as you reconnect.' });
+        showToast({ type: 'info', message: 'Queued', description: 'You\'re offline. The "On My Way" SMS will be sent automatically as soon as you reconnect.' });
       } catch (queueErr) {
         showToast({ type: 'info', message: 'Could not queue', description: 'Failed to save "On My Way" for later. Please try again when online.' });
       }
@@ -6423,7 +6423,7 @@ export default function JobDetailScreen() {
         setEditingNote(null);
         await loadJobNotes();
       } else {
-        showToast({ type: 'error', message: 'Failed to save note', description: response.isOffline ? 'You are offline — try again when connected' : response.error });
+        showToast({ type: 'error', message: 'Failed to save note', description: response.isOffline ? 'You are offline, try again when connected' : response.error });
       }
     } catch (error: any) {
       showToast({ type: 'error', message: 'Failed to save note. Please try again.' });
@@ -6441,7 +6441,7 @@ export default function JobDetailScreen() {
       if (!ok || !job) return;
       const res = await api.delete(`/api/jobs/${job.id}/notes/${note.id}`);
       if (res.error) {
-        showToast({ type: 'error', message: 'Failed to delete note', description: res.isOffline ? 'You are offline — try again when connected' : res.error });
+        showToast({ type: 'error', message: 'Failed to delete note', description: res.isOffline ? 'You are offline, try again when connected' : res.error });
       } else {
         showToast({ type: 'success', message: 'Note deleted' });
         await loadJobNotes();
@@ -7323,7 +7323,7 @@ export default function JobDetailScreen() {
             <Text style={[styles.cardValue, !job.scheduledAt && { color: colors.mutedForeground }]}>
               {job.scheduledAt
                 ? `${formatDate(job.scheduledAt)} at ${formatTime(job.scheduledAt)}`
-                : 'No time set — tap to schedule'}
+                : 'No time set, tap to schedule'}
             </Text>
           </View>
           {!isSubcontractorUser && (
@@ -8983,7 +8983,7 @@ export default function JobDetailScreen() {
         const statusLabels: Record<string, string> = {
           pre_pc: 'Pre-completion',
           in_dlp: 'In DLP',
-          dlp_ended: 'DLP ended — due now',
+          dlp_ended: 'DLP ended, due now',
           released: 'Released',
         };
         const statusColors: Record<string, string> = {
@@ -10528,13 +10528,15 @@ export default function JobDetailScreen() {
               />
             )}
             {renderMaterialsTab()}
-            <PurchaseOrdersSection
-              colors={colors}
-              purchaseOrders={jobPurchaseOrders}
-              isLoadingPOs={isLoadingPOs}
-              onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
-            />
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md, paddingVertical: spacing.sm }}>
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+              <PurchaseOrdersSection
+                colors={colors}
+                purchaseOrders={jobPurchaseOrders}
+                isLoadingPOs={isLoadingPOs}
+                onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
+              />
+            </View>
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
               <ClaimsSection
                 colors={colors}
                 claims={progressClaims}
@@ -10743,7 +10745,7 @@ export default function JobDetailScreen() {
       <AppBottomSheet
         visible={showAddClaimModal}
         onDismiss={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); }}
-        title={claimPrefillPhase ? `New Claim — ${claimPrefillPhase.name}` : 'New Progress Claim'}
+        title={claimPrefillPhase ? `New Claim: ${claimPrefillPhase.name}` : 'New Progress Claim'}
         showCloseButton
         snapPoints={['45%']}
         footer={(
@@ -10805,7 +10807,7 @@ export default function JobDetailScreen() {
             {isLoadingSuppliers ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : suppliersLoadError ? (
-              <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load suppliers — tap to retry</Text>
+              <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load suppliers. Tap to retry.</Text>
             ) : selectedPOSupplierId ? (
               <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
                 {suppliers.find(s => s.id === selectedPOSupplierId)?.name ?? 'Unknown supplier'}
