@@ -622,6 +622,9 @@ export default function PayrollReports() {
                         <th className="text-right font-medium text-muted-foreground px-3 py-2">Hours</th>
                         <th className="text-right font-medium text-muted-foreground px-3 py-2 hidden md:table-cell">Rate</th>
                         <th className="text-right font-medium text-muted-foreground px-3 py-2">Gross Pay</th>
+                        {(payrollData?.travelRatePerKm > 0 || (payrollData?.totals?.totalTravelAllowance || 0) > 0) && (
+                          <th className="text-right font-medium text-muted-foreground px-3 py-2 hidden md:table-cell">Travel ($)</th>
+                        )}
                         <th className="text-right font-medium text-muted-foreground px-3 py-2 hidden lg:table-cell">Billable</th>
                         <th className="text-right font-medium text-muted-foreground px-4 py-2 hidden md:table-cell">Status</th>
                         <th className="text-right font-medium text-muted-foreground px-3 py-2">Pay run</th>
@@ -674,6 +677,11 @@ export default function PayrollReports() {
                               <td className="px-3 py-2.5 text-right font-medium tabular-nums">
                                 {fmtAud(w.grossPay || 0)}
                               </td>
+                              {(payrollData?.travelRatePerKm > 0 || (payrollData?.totals?.totalTravelAllowance || 0) > 0) && (
+                                <td className="px-3 py-2.5 text-right tabular-nums hidden md:table-cell text-blue-600 dark:text-blue-400">
+                                  {fmtAud(w.travelAllowance ?? ((payrollData?.travelRatePerKm > 0) ? Math.round((w.totalDistanceKm || 0) * payrollData.travelRatePerKm * 100) / 100 : 0))}
+                                </td>
+                              )}
                               <td className="px-3 py-2.5 text-right hidden lg:table-cell">
                                 <div className="flex items-center justify-end gap-1.5">
                                   <span className={`w-2 h-2 rounded-full ${getBillableDot(billablePct)}`} />
@@ -748,7 +756,7 @@ export default function PayrollReports() {
                         })}
                       {(!payrollData?.workers || payrollData.workers.length === 0) && (
                         <tr>
-                          <td colSpan={9} className="text-center py-8 text-muted-foreground">
+                          <td colSpan={(payrollData?.travelRatePerKm > 0 || (payrollData?.totals?.totalTravelAllowance || 0) > 0) ? 10 : 9} className="text-center py-8 text-muted-foreground">
                             <Users className="h-8 w-8 mx-auto mb-2 opacity-25" />
                             <p className="text-sm">No worker data for this period</p>
                           </td>
