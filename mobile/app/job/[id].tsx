@@ -5232,6 +5232,27 @@ export default function JobDetailScreen() {
 
   const STATUS_ORDER: Job['status'][] = ['pending', 'scheduled', 'in_progress', 'done', 'invoiced'];
 
+  const handleUpgradeToProject = () => {
+    if (!job) return;
+    confirm({
+      title: 'Upgrade to Project',
+      message: 'This will convert the job to a Project, unlocking phases, progress claims, and variations. Existing data is kept. This cannot be undone.',
+      confirmText: 'Upgrade',
+    }).then(async (ok) => {
+      if (!ok) return;
+      const response = await api.patch(`/api/jobs/${job.id}`, { jobType: 'project' });
+      if (response.data) {
+        setJob(prev => prev ? { ...prev, ...(response.data as Job) } : prev);
+        const { fetchJobs, fetchTodaysJobs } = useJobsStore.getState();
+        fetchJobs();
+        fetchTodaysJobs();
+        showToast({ type: 'success', message: 'Upgraded to Project', description: 'Phases, claims, and variations are now available.' });
+      } else {
+        showToast({ type: 'error', message: 'Error', description: response.error || 'Failed to upgrade job type.' });
+      }
+    });
+  };
+
   const handleStatusRollback = () => {
     if (!job) return;
     const currentIndex = STATUS_ORDER.indexOf(job.status);
@@ -8932,6 +8953,40 @@ export default function JobDetailScreen() {
               </Text>
             </View>
           )}
+        </View>
+      )}
+
+      {/* Upgrade to Project — only shown for service call jobs */}
+      {(isOwnerOrManager || isSoloOwner) && isServiceCall && (
+        <View style={[styles.costingCard, { borderColor: `${colors.primary}30` }]}>
+          <View style={styles.costingHeader}>
+            <View style={[styles.costingIconContainer, { backgroundColor: `${colors.primary}15` }]}>
+              <Feather name="layers" size={iconSizes.lg} color={colors.primary} />
+            </View>
+            <Text style={styles.costingTitle}>Upgrade to Project</Text>
+          </View>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md, lineHeight: 19 }}>
+            This job has grown beyond a single service call. Upgrading unlocks phases, progress claims, and variations while keeping all existing history.
+          </Text>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              backgroundColor: colors.primary,
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              minHeight: 44,
+            }}
+            onPress={handleUpgradeToProject}
+            activeOpacity={0.8}
+          >
+            <Feather name="arrow-up-circle" size={16} color={colors.primaryForeground} />
+            <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
+              Upgrade to Project
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 

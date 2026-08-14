@@ -3142,6 +3142,30 @@ import { computeRetentionSummary } from "./retentionSummary";
       
       const existingJob = await storage.getJob(req.params.id, effectiveUserId);
 
+      // Restrict jobType changes (service ↔ project conversion) to owner/manager only.
+      // WRITE_JOBS alone is insufficient — a worker with that permission could call
+      // this endpoint directly and bypass the UI gate.
+      if (data.jobType !== undefined && data.jobType !== null && data.jobType !== existingJob?.jobType) {
+        const jobTypeBiz = await storage.getBusinessSettings(effectiveUserId);
+        const isJobTypeOwner = !!jobTypeBiz && jobTypeBiz.userId === req.userId;
+        let isJobTypeManager = false;
+        if (!isJobTypeOwner) {
+          const jtMemberInfo = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
+          if (jtMemberInfo && jtMemberInfo.roleId) {
+            const jtRole = await storage.getUserRole(jtMemberInfo.roleId);
+            isJobTypeManager =
+              jtRole?.name?.toLowerCase().includes('manager') ||
+              jtRole?.name?.toLowerCase().includes('admin') || false;
+          }
+        }
+        if (!isJobTypeOwner && !isJobTypeManager) {
+          return res.status(403).json({
+            error: 'Only owners and managers can change the job type.',
+            code: 'OWNER_OR_MANAGER_REQUIRED',
+          });
+        }
+      }
+
       // WHS gating: enforce pre-start safety + licence compliance when starting a job
       if (data.status === 'in_progress' && existingJob && existingJob.status !== 'in_progress') {
         const businessSettings = await storage.getBusinessSettings(effectiveUserId);
