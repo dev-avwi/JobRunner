@@ -2248,6 +2248,8 @@ export default function JobDetailScreen() {
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
+  const [claimPrefillPhase, setClaimPrefillPhase] = useState<JobPhase | null>(null);
+  const [showPhaseClaimPrompt, setShowPhaseClaimPrompt] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
   const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '' });
   const [isSavingPO, setIsSavingPO] = useState(false);
@@ -2788,12 +2790,23 @@ export default function JobDetailScreen() {
   const handleSaveClaim = async () => {
     setIsSavingClaim(true);
     try {
+      const lineItems = claimPrefillPhase
+        ? [{
+            phaseId: claimPrefillPhase.id,
+            description: `${claimPrefillPhase.phaseCode} – ${claimPrefillPhase.name}`,
+            contractValue: '0.00',
+            previouslyClaimed: '0.00',
+            thisClaim: '0.00',
+            sortOrder: 0,
+          }]
+        : [];
       await api.post(`/api/jobs/${id}/claims`, {
         claimDate: new Date().toISOString(),
-        lineItems: [],
+        lineItems,
       });
       await loadClaims();
       setShowAddClaimModal(false);
+      setClaimPrefillPhase(null);
       showToast({ type: 'success', message: 'Draft claim created' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to create claim' });
@@ -10426,6 +10439,10 @@ export default function JobDetailScreen() {
                   await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
                   await loadPhases();
                 }}
+                onPhaseCompleted={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                  setClaimPrefillPhase(phase);
+                  setShowPhaseClaimPrompt(true);
+                } : undefined}
                 onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
                 onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
                   setEditingPhase(phase);
@@ -10618,23 +10635,63 @@ export default function JobDetailScreen() {
         </View>
       </AppBottomSheet>
 
-      {/* Add Progress Claim Modal */}
+      {/* Phase-complete → create claim prompt */}
       <AppBottomSheet
-        visible={showAddClaimModal}
-        onDismiss={() => setShowAddClaimModal(false)}
-        title="New Progress Claim"
+        visible={showPhaseClaimPrompt}
+        onDismiss={() => { setShowPhaseClaimPrompt(false); setClaimPrefillPhase(null); }}
+        title="Phase complete"
         showCloseButton
-        snapPoints={['45%']}
+        snapPoints={['40%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => setShowAddClaimModal(false)} style={{ flex: 1 }} />
-            <SheetButton onPress={handleSaveClaim} loading={isSavingClaim} disabled={isSavingClaim} label="Create Draft" style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Skip" onPress={() => { setShowPhaseClaimPrompt(false); setClaimPrefillPhase(null); }} style={{ flex: 1 }} />
+            <SheetButton
+              label={`Draft Claim for ${claimPrefillPhase?.name ?? 'Phase'}`}
+              onPress={() => {
+                setShowPhaseClaimPrompt(false);
+                setShowAddClaimModal(true);
+              }}
+              style={{ flex: 1 }}
+            />
           </View>
         )}>
         <View style={{ paddingVertical: spacing.sm }}>
           <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 22 }}>
-            This creates a draft progress claim for this job. Once created you can add line items, set the claim period, and submit it for approval.
+            <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>
+              {claimPrefillPhase?.phaseCode} {claimPrefillPhase?.name}
+            </Text>
+            {' '}is now complete. Would you like to raise a progress claim for this phase?
           </Text>
+        </View>
+      </AppBottomSheet>
+
+      {/* Add Progress Claim Modal */}
+      <AppBottomSheet
+        visible={showAddClaimModal}
+        onDismiss={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); }}
+        title={claimPrefillPhase ? `New Claim — ${claimPrefillPhase.name}` : 'New Progress Claim'}
+        showCloseButton
+        snapPoints={['45%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); }} style={{ flex: 1 }} />
+            <SheetButton onPress={handleSaveClaim} loading={isSavingClaim} disabled={isSavingClaim} label="Create Draft" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View style={{ paddingVertical: spacing.sm }}>
+          {claimPrefillPhase ? (
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 22 }}>
+              This creates a draft claim pre-loaded with a line item for{' '}
+              <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                {claimPrefillPhase.phaseCode} {claimPrefillPhase.name}
+              </Text>
+              . You can edit amounts and add more line items before submitting.
+            </Text>
+          ) : (
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 22 }}>
+              This creates a draft progress claim for this job. Once created you can add line items, set the claim period, and submit it for approval.
+            </Text>
+          )}
         </View>
       </AppBottomSheet>
 

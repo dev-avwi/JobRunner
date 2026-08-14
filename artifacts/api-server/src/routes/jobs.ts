@@ -7722,6 +7722,57 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
+  // GET /api/jobs/:jobId/variations/approved-for-claim
+  // Returns approved variations that have NOT already been included in a claim line item.
+  // Used by the claims wizard to offer one-click "add variation" buttons.
+  app.get("/api/jobs/:jobId/variations/approved-for-claim", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+      const { effectiveUserId } = await getUserContext(userId);
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const allVariations = await storage.getJobVariations(jobId, effectiveUserId);
+      const approvedVariations = allVariations.filter((v: any) => v.status === 'approved');
+
+      // Collect variationIds already used in any claim line item for this job
+      const existingClaims = await storage.getClaims(jobId, effectiveUserId);
+      const claimedVariationIds = new Set<string>();
+      for (const claim of existingClaims) {
+        const lineItems = await storage.getClaimLineItems(claim.id);
+        for (const li of lineItems) {
+          if ((li as any).variationId) claimedVariationIds.add((li as any).variationId);
+        }
+      }
+
+      const unclaimed = approvedVariations.filter((v: any) => !claimedVariationIds.has(v.id));
+
+      // Seed suggested line-item amounts from additionalAmount (ex-GST).
+      // The claims creation route treats all line-item amounts as ex-GST and
+      // applies GST on top when gstEnabled — using totalAmount here would cause
+      // a ~10% overcharge for GST-registered businesses.
+      const result = unclaimed.map((v: any) => ({
+        id: v.id,
+        number: v.number,
+        title: v.title,
+        totalAmount: v.totalAmount || "0.00",
+        suggestedLineItem: {
+          description: `Variation ${v.number}: ${v.title}`,
+          contractValue: v.additionalAmount || "0.00",
+          previouslyClaimed: "0.00",
+          thisClaim: v.additionalAmount || "0.00",
+        },
+      }));
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Error getting approved-for-claim variations:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/jobs/:jobId/variations/summary", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;

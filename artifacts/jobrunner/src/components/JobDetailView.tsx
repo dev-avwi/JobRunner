@@ -139,6 +139,8 @@ export default function JobDetailView({
   const [unifiedSendDefaultTab, setUnifiedSendDefaultTab] = useState<'email' | 'sms'>('email');
   const [showManualSms, setShowManualSms] = useState(false);
   const [pendingTimerStart, setPendingTimerStart] = useState(false);
+  // Phase-complete → claim wizard trigger
+  const [pendingClaimPhase, setPendingClaimPhase] = useState<{ id: string; phaseCode: string; name: string; bookedHours: string | null } | null>(null);
   const [showRenameDialog, setShowRenameDialog] = useState(false);
   const [newJobTitle, setNewJobTitle] = useState('');
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
@@ -3675,7 +3677,11 @@ export default function JobDetailView({
 
 
           {/* Job Phases */}
-          <JobPhasesSection jobId={jobId} isTradie={isTradie} />
+          <JobPhasesSection
+            jobId={jobId}
+            isTradie={isTradie}
+            onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
+          />
 
           {/* Project Timeline (Gantt) — only for project type */}
           {job?.jobType === 'project' && (
@@ -3683,7 +3689,12 @@ export default function JobDetailView({
           )}
 
           {/* Progress Claims */}
-          <ClaimsSection jobId={jobId} isTradie={isTradie} />
+          <ClaimsSection
+            jobId={jobId}
+            isTradie={isTradie}
+            openNewClaimForPhase={pendingClaimPhase}
+            onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
+          />
 
           {/* Materials Tracking */}
           <Card data-testid="card-materials">

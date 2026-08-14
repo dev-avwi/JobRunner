@@ -8,6 +8,16 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,14 +69,18 @@ const EMPTY_FORM = {
 interface Props {
   jobId: string;
   isTradie?: boolean;
+  /** Called when user accepts the "create claim" prompt after marking a phase complete */
+  onCreateClaimForPhase?: (phase: JobPhase) => void;
 }
 
-export function JobPhasesSection({ jobId, isTradie = false }: Props) {
+export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhase }: Props) {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
+  // Phase-complete → claim prompt state
+  const [claimPromptPhase, setClaimPromptPhase] = useState<JobPhase | null>(null);
 
   const { data: phases = [], isLoading } = useQuery<JobPhase[]>({
     queryKey: [`/api/jobs/${jobId}/phases`],
@@ -117,7 +131,13 @@ export function JobPhasesSection({ jobId, isTradie = false }: Props) {
   const statusChangeMutation = useMutation({
     mutationFn: ({ phaseId, status }: { phaseId: string; status: PhaseStatus }) =>
       apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, { status }),
-    onSuccess: invalidate,
+    onSuccess: (_data, variables) => {
+      invalidate();
+      if (variables.status === "complete" && onCreateClaimForPhase) {
+        const phase = sorted.find((p) => p.id === variables.phaseId) ?? null;
+        if (phase) setClaimPromptPhase(phase);
+      }
+    },
     onError: (e: any) => toast({ title: "Status update failed", description: e.message, variant: "destructive" }),
   });
 
@@ -332,6 +352,32 @@ export function JobPhasesSection({ jobId, isTradie = false }: Props) {
           })}
         </div>
       </CardContent>
+
+      {/* Phase complete → create claim prompt */}
+      <AlertDialog open={!!claimPromptPhase} onOpenChange={(o) => !o && setClaimPromptPhase(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Phase complete — create a progress claim?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <strong>{claimPromptPhase?.phaseCode} {claimPromptPhase?.name}</strong> is now complete.
+              Would you like to raise a progress claim for this phase now?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setClaimPromptPhase(null)}>Not now</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (claimPromptPhase && onCreateClaimForPhase) {
+                  onCreateClaimForPhase(claimPromptPhase);
+                }
+                setClaimPromptPhase(null);
+              }}
+            >
+              Create Claim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

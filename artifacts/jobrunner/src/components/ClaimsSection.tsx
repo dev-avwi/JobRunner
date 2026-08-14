@@ -5,7 +5,7 @@
  * schedule-of-values wizard, and lets the user submit / approve / mark-paid
  * each claim. Approved claims are pushed to Xero automatically.
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Plus, FileText, ChevronDown, ChevronUp, Download, Check, X,
@@ -121,13 +121,33 @@ function fmtDate(d: string | null | undefined): string {
 interface Props {
   jobId: string;
   isTradie?: boolean;
+  /** When set, immediately opens the wizard with this phase pre-populated as the first line item */
+  openNewClaimForPhase?: JobPhaseOption | null;
+  /** Called after the wizard has consumed the openNewClaimForPhase trigger */
+  onNewClaimForPhaseConsumed?: () => void;
 }
 
-export function ClaimsSection({ jobId, isTradie = false }: Props) {
+export function ClaimsSection({ jobId, isTradie = false, openNewClaimForPhase, onNewClaimForPhaseConsumed }: Props) {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showNewWizard, setShowNewWizard] = useState(false);
+  const [wizardPrefillPhase, setWizardPrefillPhase] = useState<JobPhaseOption | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Claim | null>(null);
+
+  // When the parent passes a phase-complete trigger, open the wizard pre-filled with that phase.
+  // We use a ref to track the last-consumed phase identity so rapid re-renders don't double-open.
+  const lastConsumedPhaseId = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      openNewClaimForPhase &&
+      openNewClaimForPhase.id !== lastConsumedPhaseId.current
+    ) {
+      lastConsumedPhaseId.current = openNewClaimForPhase.id;
+      setWizardPrefillPhase(openNewClaimForPhase);
+      setShowNewWizard(true);
+      onNewClaimForPhaseConsumed?.();
+    }
+  }, [openNewClaimForPhase, onNewClaimForPhaseConsumed]);
 
   const { data: claims = [], isLoading } = useQuery<Claim[]>({
     queryKey: [`/api/jobs/${jobId}/claims`],
@@ -193,7 +213,7 @@ export function ClaimsSection({ jobId, isTradie = false }: Props) {
             )}
           </div>
           {!isTradie && (
-            <Button size="sm" variant="ghost" onClick={() => setShowNewWizard(true)}>
+            <Button size="sm" variant="ghost" onClick={() => { setWizardPrefillPhase(null); setShowNewWizard(true); }}>
               <Plus className="h-4 w-4 mr-1" />
               New Claim
             </Button>
@@ -240,8 +260,9 @@ export function ClaimsSection({ jobId, isTradie = false }: Props) {
         <NewClaimWizard
           jobId={jobId}
           phases={phases}
-          onClose={() => setShowNewWizard(false)}
-          onCreated={() => { invalidate(); setShowNewWizard(false); }}
+          prefillPhase={wizardPrefillPhase}
+          onClose={() => { setShowNewWizard(false); setWizardPrefillPhase(null); }}
+          onCreated={() => { invalidate(); setShowNewWizard(false); setWizardPrefillPhase(null); }}
         />
       )}
 
@@ -459,6 +480,8 @@ interface WizardProps {
   phases: JobPhaseOption[];
   onClose: () => void;
   onCreated: () => void;
+  /** When set, seed the wizard with just this phase as the first (and only) line item */
+  prefillPhase?: JobPhaseOption | null;
 }
 
 interface WizardLineItem {
@@ -488,7 +511,33 @@ interface ApprovedVariationSuggestion {
   };
 }
 
-function NewClaimWizard({ jobId, phases, onClose, onCreated }: WizardProps) {
+function buildInitialLineItems(phases: JobPhaseOption[], prefillPhase?: JobPhaseOption | null): WizardLineItem[] {
+  // If triggered from a specific phase completion, start with just that phase pre-populated
+  if (prefillPhase) {
+    return [{
+      phaseId: prefillPhase.id,
+      description: `${prefillPhase.phaseCode} – ${prefillPhase.name}`,
+      contractValue: "0.00",
+      previouslyClaimed: "0.00",
+      thisClaim: "0.00",
+      retentionPercent: "",
+    }];
+  }
+  // Otherwise seed all phases as rows (existing behaviour)
+  if (phases.length > 0) {
+    return phases.map((p) => ({
+      phaseId: p.id,
+      description: `${p.phaseCode} – ${p.name}`,
+      contractValue: "0.00",
+      previouslyClaimed: "0.00",
+      thisClaim: "0.00",
+      retentionPercent: "",
+    }));
+  }
+  return [{ ...EMPTY_LINE }];
+}
+
+function NewClaimWizard({ jobId, phases, onClose, onCreated, prefillPhase }: WizardProps) {
   const { toast } = useToast();
   const [form, setForm] = useState({
     claimDate: format(new Date(), "yyyy-MM-dd"),
@@ -498,16 +547,7 @@ function NewClaimWizard({ jobId, phases, onClose, onCreated }: WizardProps) {
     notes: "",
   });
   const [lineItems, setLineItems] = useState<WizardLineItem[]>(
-    phases.length > 0
-      ? phases.map((p) => ({
-          phaseId: p.id,
-          description: `${p.phaseCode} – ${p.name}`,
-          contractValue: "0.00",
-          previouslyClaimed: "0.00",
-          thisClaim: "0.00",
-          retentionPercent: "",
-        }))
-      : [{ ...EMPTY_LINE }],
+    () => buildInitialLineItems(phases, prefillPhase),
   );
   // Track which variation IDs have already been added as line items
   const [addedVariationIds, setAddedVariationIds] = useState<Set<string>>(new Set());

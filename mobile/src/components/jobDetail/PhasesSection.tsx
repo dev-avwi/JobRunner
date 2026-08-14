@@ -51,6 +51,8 @@ export interface PhasesSectionProps {
   onStatusChange?: (phaseId: string, status: PhaseStatus) => Promise<void>;
   onAddPhase?: () => void;
   onEditPhase?: (phase: JobPhase) => void;
+  /** Called when a phase is cycled to "complete" status — used to prompt for a progress claim */
+  onPhaseCompleted?: (phase: JobPhase) => void;
 }
 
 export function PhasesSection({
@@ -61,6 +63,7 @@ export function PhasesSection({
   onStatusChange,
   onAddPhase,
   onEditPhase,
+  onPhaseCompleted,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -73,6 +76,9 @@ export function PhasesSection({
     setUpdatingId(phase.id);
     try {
       await onStatusChange(phase.id, nextStatus);
+      if (nextStatus === 'complete' && onPhaseCompleted) {
+        onPhaseCompleted(phase);
+      }
     } finally {
       setUpdatingId(null);
     }
