@@ -7632,6 +7632,95 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
+  app.patch("/api/jobs/:jobId/variations/:variationId", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, variationId } = req.params;
+
+      const userContext = await getUserContext(userId);
+
+      // Only owners/managers can update variations
+      if (!userContext.isOwner && !hasPermission(userContext, PERMISSIONS.WRITE_JOBS)) {
+        return res.status(403).json({ error: 'Only owners and managers can update variations' });
+      }
+
+      const existing = await storage.getJobVariation(variationId, userContext.effectiveUserId);
+      if (!existing || existing.jobId !== jobId) {
+        return res.status(404).json({ error: 'Variation not found' });
+      }
+
+      const { status, rejectionReason } = req.body;
+      const updates: Record<string, any> = {};
+
+      if (status) {
+        const validTransitions: Record<string, string[]> = {
+          draft: ['sent'],
+          sent: ['approved', 'rejected'],
+          approved: [],
+          rejected: ['sent'], // allow re-sending if needed
+        };
+        const allowed = validTransitions[existing.status] ?? [];
+        if (!allowed.includes(status)) {
+          return res.status(422).json({
+            error: `Cannot transition variation from '${existing.status}' to '${status}'`,
+          });
+        }
+        updates.status = status;
+        if (status === 'approved') {
+          const user = await storage.getUser(userId);
+          updates.approvedAt = new Date();
+          updates.approvedByName = user
+            ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email
+            : 'Unknown';
+        }
+        if (status === 'rejected') {
+          updates.rejectedAt = new Date();
+          if (rejectionReason) updates.rejectionReason = rejectionReason;
+        }
+        if (status === 'sent') {
+          updates.sentAt = new Date();
+        }
+      }
+
+      // Allow updating other fields when in draft
+      if (existing.status === 'draft') {
+        const editable = ['title', 'description', 'reason', 'photos', 'notes'];
+        for (const field of editable) {
+          if (req.body[field] !== undefined) updates[field] = req.body[field];
+        }
+        if (req.body.additionalAmount !== undefined) {
+          const additionalAmount = parseFloat(req.body.additionalAmount || '0');
+          const gstAmount = additionalAmount * 0.10;
+          updates.additionalAmount = String(additionalAmount);
+          updates.gstAmount = String(gstAmount.toFixed(2));
+          updates.totalAmount = String((additionalAmount + gstAmount).toFixed(2));
+        }
+      }
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(422).json({ error: 'No valid fields to update' });
+      }
+
+      const updated = await storage.updateJobVariation(variationId, userContext.effectiveUserId, updates);
+
+      if (status) {
+        await storage.createActivityLog({
+          userId: userContext.effectiveUserId,
+          type: 'variation_updated',
+          title: 'Variation Updated',
+          entityType: 'job',
+          entityId: jobId,
+          description: `Variation ${existing.number} status changed to ${status}`,
+        });
+      }
+
+      res.json(updated);
+    } catch (error: any) {
+      console.error('Error updating job variation:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   app.get("/api/jobs/:jobId/variations/summary", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;

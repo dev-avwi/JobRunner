@@ -86,6 +86,7 @@ import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
 import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
+import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 
 interface JobNoteItem {
   id: string;
@@ -3576,6 +3577,7 @@ export default function JobDetailScreen() {
       loadPhases();
       loadPurchaseOrders();
       loadClaims();
+      loadVariations();
     }
     if (activeTab === 'documents' && id) {
       loadSwmsDocuments();
@@ -9204,130 +9206,6 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Job Variations Section */}
-      {(isOwnerOrManager || isSoloOwner) && (
-        <View style={styles.costingCard}>
-          <View style={styles.costingHeader}>
-            <View style={[styles.costingIconContainer, { backgroundColor: `${colors.warning}15` }]}>
-              <Feather name="git-branch" size={iconSizes.lg} color={colors.warning} />
-            </View>
-            <Text style={styles.costingTitle}>Variations</Text>
-          </View>
-
-          {isLoadingVariations ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.md }} />
-          ) : (
-            <>
-              {variations.length > 0 ? (
-                <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-                  {variations.map((v) => (
-                    <View
-                      key={v.id}
-                      style={{
-                        backgroundColor: colors.muted,
-                        borderRadius: radius.lg,
-                        padding: spacing.md,
-                      }}
-                    >
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{v.title}</Text>
-                          {v.description && (
-                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xxs }}>{v.description}</Text>
-                          )}
-                        </View>
-                        <View style={{
-                          backgroundColor: v.status === 'approved' ? `${colors.success}15` : v.status === 'rejected' ? `${colors.destructive}15` : `${colors.warning}15`,
-                          paddingHorizontal: spacing.sm,
-                          paddingVertical: spacing.xxs,
-                          borderRadius: radius.md,
-                          marginLeft: spacing.sm,
-                        }}>
-                          <Text style={{
-                            fontSize: typography.sizes.xs,
-                            fontWeight: fontWeights.bold,
-                            color: v.status === 'approved' ? colors.success : v.status === 'rejected' ? colors.destructive : colors.warning,
-                            textTransform: 'capitalize',
-                          }}>
-                            {v.status}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm }}>
-                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                          {formatCurrency(parseFloat(String(v.amount ?? '0')) || 0)}
-                        </Text>
-                        {v.status === 'pending' && (
-                          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setApproveVariationName('');
-                                setApproveVariationSignature(null);
-                                setShowApproveVariationModal(v.id);
-                              }}
-                              style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.md, backgroundColor: `${colors.success}15`, borderRadius: radius.md }}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Approve</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setRejectVariationReason('');
-                                setShowRejectVariationModal(v.id);
-                              }}
-                              style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.md, backgroundColor: `${colors.destructive}15`, borderRadius: radius.md }}
-                              activeOpacity={0.7}
-                            >
-                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.destructive }}>Reject</Text>
-                            </TouchableOpacity>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.warning}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
-                    <Feather name="git-branch" size={24} color={colors.mutedForeground} />
-                  </View>
-                  <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
-                    No variations yet
-                  </Text>
-                  <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
-                    Track scope changes and price adjustments
-                  </Text>
-                </View>
-              )}
-
-              <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: spacing.xs,
-                  backgroundColor: colors.muted,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  paddingVertical: spacing.md,
-                  borderRadius: radius.lg,
-                }}
-                onPress={() => {
-                  setVariationForm({ title: '', description: '', reason: '', amount: '' });
-                  setShowAddVariationModal(true);
-                }}
-                activeOpacity={0.8}
-              >
-                <Feather name="plus" size={16} color={colors.foreground} />
-                <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
-                  Add Variation
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      )}
-
       {/* Subcontractor Invites Section */}
       {(isOwnerOrManager || isSoloOwner) && (
         <View style={styles.costingCard}>
@@ -10599,6 +10477,16 @@ export default function JobDetailScreen() {
                 isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                 onRefresh={loadClaims}
                 onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
+              />
+            </View>
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+              <VariationsSection
+                colors={colors}
+                variations={variations}
+                isLoading={isLoadingVariations}
+                jobId={id as string}
+                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                onRefresh={loadVariations}
               />
             </View>
             {renderManageTab()}
