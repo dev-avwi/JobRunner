@@ -211,6 +211,13 @@ interface Client {
   address?: string;
 }
 
+interface Supplier {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+
 interface JobPhoto {
   id: string;
   url?: string;
@@ -1947,6 +1954,91 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
 });
 
+function SupplierPickerSheetContent({
+  suppliers,
+  selectedId,
+  onSelect,
+  colors,
+}: {
+  suppliers: Supplier[];
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  colors: ThemeColors;
+}) {
+  const [search, setSearch] = useState('');
+  const filtered = suppliers.filter(s =>
+    s.name?.toLowerCase().includes(search.toLowerCase()) ||
+    s.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <View style={{ flex: 1 }}>
+      <TextInput
+        style={{
+          backgroundColor: colors.background,
+          borderRadius: 10,
+          margin: spacing.lg,
+          padding: spacing.md,
+          fontSize: typography.sizes.md,
+          color: colors.foreground,
+          borderWidth: 1,
+          borderColor: colors.border,
+        }}
+        placeholder="Search suppliers..."
+        placeholderTextColor={colors.mutedForeground}
+        value={search}
+        onChangeText={setSearch}
+        autoFocus={false}
+      />
+      <ScrollView style={{ paddingHorizontal: spacing.lg }}>
+        {suppliers.length === 0 && !search ? (
+          <View style={{ alignItems: 'center', paddingVertical: spacing['3xl'] }}>
+            <Feather name="truck" size={32} color={colors.mutedForeground} style={{ marginBottom: spacing.sm }} />
+            <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, textAlign: 'center' }}>
+              No suppliers — add one first
+            </Text>
+          </View>
+        ) : filtered.length === 0 ? (
+          <View style={{ alignItems: 'center', paddingVertical: spacing['3xl'] }}>
+            <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground }}>No suppliers found</Text>
+          </View>
+        ) : (
+          filtered.map(s => (
+            <TouchableOpacity
+              key={s.id}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: 14,
+                borderRadius: 12,
+                marginBottom: spacing.sm,
+                backgroundColor: selectedId === s.id ? colors.primaryLight : colors.background,
+                borderWidth: selectedId === s.id ? 1 : 0,
+                borderColor: colors.primary + '30',
+              }}
+              onPress={() => onSelect(s.id)}
+              activeOpacity={0.7}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
+                  {s.name}
+                </Text>
+                {s.email ? (
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginTop: 2 }}>
+                    {s.email}
+                  </Text>
+                ) : null}
+              </View>
+              {selectedId === s.id && <Feather name="check" size={20} color={colors.primary} />}
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+}
+
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function JobDetailScreen() {
   console.log('[LA-DEBUG] LiveActivity module:', typeof LiveActivity, LiveActivity && Object.keys(LiveActivity));
@@ -2153,8 +2245,13 @@ export default function JobDetailScreen() {
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
-  const [addPOForm, setAddPOForm] = useState({ notes: '', estimatedTotal: '' });
+  const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '' });
   const [isSavingPO, setIsSavingPO] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+  const [suppliersLoadError, setSuppliersLoadError] = useState(false);
+  const [selectedPOSupplierId, setSelectedPOSupplierId] = useState<string | null>(null);
+  const [showSupplierPickerSheet, setShowSupplierPickerSheet] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
   const [isSavingMaterial, setIsSavingMaterial] = useState(false);
@@ -2701,24 +2798,56 @@ export default function JobDetailScreen() {
     }
   };
 
-  const handleSavePO = async () => {
-    setIsSavingPO(true);
-    try {
-      const res = await api.post<any>('/api/purchase-orders', {
-        jobId: id,
-        status: 'pending',
-        notes: addPOForm.notes.trim() || null,
-        orderDate: new Date().toISOString(),
-      });
-      if (res.data) setJobPurchaseOrders(prev => [...prev, res.data]);
-      setShowAddPOModal(false);
-      setAddPOForm({ notes: '', estimatedTotal: '' });
-      showToast({ type: 'success', message: 'Purchase order created' });
-    } catch (e: any) {
-      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to create purchase order' });
-    } finally {
-      setIsSavingPO(false);
+  const loadSuppliers = useCallback(async () => {
+    setIsLoadingSuppliers(true);
+    setSuppliersLoadError(false);
+    const res = await api.get<Supplier[]>('/api/suppliers');
+    setIsLoadingSuppliers(false);
+    if (res.error) {
+      setSuppliersLoadError(true);
+    } else if (Array.isArray(res.data)) {
+      setSuppliers(res.data);
     }
+  }, []);
+
+  const handleOpenAddPOModal = useCallback(() => {
+    setShowAddPOModal(true);
+    loadSuppliers();
+  }, [loadSuppliers]);
+
+  const handleClosePOModal = useCallback(() => {
+    setShowAddPOModal(false);
+    setAddPOForm({ poNumber: '', notes: '', estimatedTotal: '' });
+    setSelectedPOSupplierId(null);
+    setSuppliersLoadError(false);
+  }, []);
+
+  const handleSavePO = async () => {
+    if (!addPOForm.poNumber.trim()) {
+      showToast({ type: 'error', message: 'Please enter a PO number' });
+      return;
+    }
+    if (!selectedPOSupplierId) {
+      showToast({ type: 'error', message: 'Please select a supplier before creating a PO' });
+      return;
+    }
+    setIsSavingPO(true);
+    const res = await api.post<any>('/api/purchase-orders', {
+      jobId: id,
+      status: 'pending',
+      poNumber: addPOForm.poNumber.trim(),
+      notes: addPOForm.notes.trim() || null,
+      orderDate: new Date().toISOString(),
+      supplierId: selectedPOSupplierId,
+    });
+    setIsSavingPO(false);
+    if (res.error) {
+      showToast({ type: 'error', message: typeof res.error === 'string' ? res.error : 'Failed to create purchase order' });
+      return;
+    }
+    if (res.data) setJobPurchaseOrders(prev => [...prev, res.data]);
+    handleClosePOModal();
+    showToast({ type: 'success', message: 'Purchase order created' });
   };
 
   const loadTeamMembers = useCallback(async () => {
@@ -10385,7 +10514,7 @@ export default function JobDetailScreen() {
               colors={colors}
               purchaseOrders={jobPurchaseOrders}
               isLoadingPOs={isLoadingPOs}
-              onAddPO={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPOModal(true) : undefined}
+              onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
             />
             <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md, paddingVertical: spacing.sm }}>
               <ClaimsSection
@@ -10550,17 +10679,51 @@ export default function JobDetailScreen() {
       {/* Add Purchase Order Modal */}
       <AppBottomSheet
         visible={showAddPOModal}
-        onDismiss={() => { setShowAddPOModal(false); setAddPOForm({ notes: '', estimatedTotal: '' }); }}
+        onDismiss={handleClosePOModal}
         title="New Purchase Order"
         showCloseButton
-        snapPoints={['55%']}
+        snapPoints={['70%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPOModal(false); setAddPOForm({ notes: '', estimatedTotal: '' }); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={handleClosePOModal} style={{ flex: 1 }} />
             <SheetButton onPress={handleSavePO} loading={isSavingPO} disabled={isSavingPO} label="Create PO" style={{ flex: 1 }} />
           </View>
         )}>
         <View>
+          {/* PO Number — required */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>PO Number <Text style={{ color: colors.destructive }}>*</Text></Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder="e.g. PO-001"
+            placeholderTextColor={colors.mutedForeground}
+            value={addPOForm.poNumber}
+            onChangeText={(t) => setAddPOForm(f => ({ ...f, poNumber: t }))}
+            autoCapitalize="characters"
+            returnKeyType="next"
+          />
+
+          {/* Supplier picker — required */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Supplier <Text style={{ color: colors.destructive }}>*</Text></Text>
+          <TouchableOpacity
+            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.lg, height: 48 }]}
+            onPress={() => suppliersLoadError ? loadSuppliers() : setShowSupplierPickerSheet(true)}
+            activeOpacity={0.7}
+          >
+            {isLoadingSuppliers ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : suppliersLoadError ? (
+              <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load suppliers — tap to retry</Text>
+            ) : selectedPOSupplierId ? (
+              <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                {suppliers.find(s => s.id === selectedPOSupplierId)?.name ?? 'Unknown supplier'}
+              </Text>
+            ) : (
+              <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, flex: 1 }}>Select supplier</Text>
+            )}
+            <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+
+          {/* Notes */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Notes / Purpose</Text>
           <TextInput
             style={[styles.singleLineInput, { height: 80, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
@@ -10572,6 +10735,23 @@ export default function JobDetailScreen() {
             numberOfLines={3}
           />
         </View>
+      </AppBottomSheet>
+
+      {/* Supplier Picker Sheet */}
+      <AppBottomSheet
+        visible={showSupplierPickerSheet}
+        onDismiss={() => setShowSupplierPickerSheet(false)}
+        title="Select Supplier"
+        showCloseButton
+        snapPoints={['85%']}
+        scrollable={false}
+        contentPadding={0}>
+        <SupplierPickerSheetContent
+          suppliers={suppliers}
+          selectedId={selectedPOSupplierId}
+          onSelect={(id) => { setSelectedPOSupplierId(id); setShowSupplierPickerSheet(false); }}
+          colors={colors}
+        />
       </AppBottomSheet>
 
       {/* FAB Voice Recording Modal */}
