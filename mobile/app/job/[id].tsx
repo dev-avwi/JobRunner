@@ -7106,6 +7106,10 @@ export default function JobDetailScreen() {
   const statusColor = getStatusColor(job.status);
   const clientInitials = client?.name ? client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
 
+  // Job type flags — drive feature gating throughout the screen
+  const isProject = job.jobType === 'project';
+  const isServiceCall = !isProject; // service_call or unset
+
   const TAB_CONFIG = [
     { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
     { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
@@ -7139,8 +7143,81 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Job Progress Bar - Visual workflow indicator */}
-      <JobProgressBar status={job.status} />
+      {/* Project Health Card — replaces the generic progress bar for project jobs */}
+      {isProject ? (() => {
+        const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
+        const totalPhases = phases.length;
+        const claimedTotal = progressClaims
+          .filter(c => c.status !== 'draft')
+          .reduce((sum, c) => sum + parseFloat((c as any).total || '0'), 0);
+        const pd = profitabilityData;
+        const budgetStatus = pd?.status ?? null;
+        const budgetColor = budgetStatus === 'profitable' ? colors.success : budgetStatus === 'tight' ? colors.warning : budgetStatus === 'loss' ? colors.destructive : colors.mutedForeground;
+        return (
+          <View style={{
+            backgroundColor: colors.card,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: `${colors.primary}30`,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            gap: spacing.sm,
+          }}>
+            {/* Header row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Feather name="activity" size={14} color={colors.primary} />
+              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, flex: 1 }}>Project Health</Text>
+              {budgetStatus && (
+                <View style={{ backgroundColor: `${budgetColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: budgetColor, textTransform: 'capitalize' }}>{budgetStatus}</Text>
+                </View>
+              )}
+            </View>
+
+            {/* Stat row */}
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {/* Phases */}
+              <View style={{ flex: 1, backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
+                {isLoadingPhases ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <Text style={{ fontSize: 18, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                      {totalPhases > 0 ? `${completedPhases}/${totalPhases}` : '-'}
+                    </Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>Phases done</Text>
+                  </>
+                )}
+              </View>
+
+              {/* Phase progress bar */}
+              {totalPhases > 0 && (
+                <View style={{ flex: 2, justifyContent: 'center', gap: 4 }}>
+                  <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
+                    <View style={{ width: `${Math.round((completedPhases / totalPhases) * 100)}%` as any, height: '100%', backgroundColor: colors.primary, borderRadius: 3 }} />
+                  </View>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                    {Math.round((completedPhases / totalPhases) * 100)}% complete
+                  </Text>
+                </View>
+              )}
+
+              {/* Claimed total */}
+              {(isOwnerOrManager || isSoloOwner) && claimedTotal > 0 && (
+                <View style={{ flex: 1, backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }} numberOfLines={1} adjustsFontSizeToFit>
+                    {formatCurrency(claimedTotal)}
+                  </Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>Claimed</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        );
+      })() : (
+        /* Service Call: standard job progress bar */
+        <JobProgressBar status={job.status} />
+      )}
 
       {/* Job Card Section - primary view, leads the Job Card tab.
           The card container only shows when a job card form actually exists,
@@ -9657,13 +9734,15 @@ export default function JobDetailScreen() {
         currentUserId={user?.id}
       />
 
-      {/* Project Document Register — drawings, specs, RFIs */}
-      <DocumentRegisterSection
-        jobId={job.id}
-        colors={colors}
-        styles={styles}
-        canUpload={!!(isOwnerOrManager || isSoloOwner)}
-      />
+      {/* Project Document Register — drawings, specs, RFIs (project jobs only) */}
+      {isProject && (
+        <DocumentRegisterSection
+          jobId={job.id}
+          colors={colors}
+          styles={styles}
+          canUpload={!!(isOwnerOrManager || isSoloOwner)}
+        />
+      )}
 
       {/* Uploaded Documents Section - owners/managers only */}
       {(isOwnerOrManager || isSoloOwner) && (
@@ -10328,16 +10407,23 @@ export default function JobDetailScreen() {
             );
           })()}
         </View>
-        {(job.jobNumber || job.jobType === 'project') && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             {job.jobNumber && (
               <Text style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: colors.primary, backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
             )}
-            {job.jobType === 'project' && (
-              <Text style={{ fontSize: 12, fontWeight: '500', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' as any }}>Project</Text>
+            {/* Job type accent — always shown, visually distinct */}
+            {isProject ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.primary}18`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${colors.primary}35` }}>
+                <Feather name="layers" size={11} color={colors.primary} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, letterSpacing: 0.2 }}>Project</Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.invoiced}12`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${colors.invoiced}30` }}>
+                <Feather name="tool" size={11} color={colors.invoiced} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.invoiced, letterSpacing: 0.2 }}>Service Call</Text>
+              </View>
             )}
           </View>
-        )}
         <TouchableOpacity 
           style={styles.titleRow}
           onPress={() => {
@@ -10494,88 +10580,93 @@ export default function JobDetailScreen() {
         {activeTab === 'chat' && renderChatTab()}
         {activeTab === 'manage' && (
           <>
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
-              <PhasesSection
-                colors={colors}
-                phases={phases}
-                isLoading={isLoadingPhases}
-                isTradie={!(isOwnerOrManager || isSoloOwner)}
-                claimedPhaseIds={claimedPhaseIds}
-                onStatusChange={async (phaseId, status) => {
-                  await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
-                  await loadPhases();
-                }}
-                onPhaseCompleted={(isOwnerOrManager || isSoloOwner) ? (phase) => {
-                  setClaimPrefillPhase(phase);
-                  setShowPhaseClaimPrompt(true);
-                } : undefined}
-                onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
-                onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
-                  setEditingPhase(phase);
-                  setEditPhaseForm({
-                    phaseCode: phase.phaseCode,
-                    name: phase.name,
-                    description: phase.description ?? '',
-                    scheduledStart: phase.scheduledStart ?? '',
-                    scheduledEnd: phase.scheduledEnd ?? '',
-                    bookedHours: phase.bookedHours ?? '',
-                    status: phase.status,
-                  });
-                  setShowEditPhaseModal(true);
-                } : undefined}
-              />
-            </View>
-            {/* Project Timeline (Gantt) — only for project type, owners/managers */}
-            {job?.jobType === 'project' && (isOwnerOrManager || isSoloOwner) && phases.length > 0 && (
-              <ProjectGanttMobile
-                colors={colors}
-                phases={phases}
-                isTradie={false}
-                onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
-                  setEditingPhase(phase);
-                  setEditPhaseForm({
-                    phaseCode: phase.phaseCode,
-                    name: phase.name,
-                    description: phase.description ?? '',
-                    scheduledStart: phase.scheduledStart ?? '',
-                    scheduledEnd: phase.scheduledEnd ?? '',
-                    bookedHours: phase.bookedHours ?? '',
-                    status: phase.status,
-                  });
-                  setShowEditPhaseModal(true);
-                } : undefined}
-              />
+            {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
+            {isProject && (
+              <>
+                <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+                  <PhasesSection
+                    colors={colors}
+                    phases={phases}
+                    isLoading={isLoadingPhases}
+                    isTradie={!(isOwnerOrManager || isSoloOwner)}
+                    claimedPhaseIds={claimedPhaseIds}
+                    onStatusChange={async (phaseId, status) => {
+                      await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
+                      await loadPhases();
+                    }}
+                    onPhaseCompleted={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                      setClaimPrefillPhase(phase);
+                      setShowPhaseClaimPrompt(true);
+                    } : undefined}
+                    onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
+                    onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                      setEditingPhase(phase);
+                      setEditPhaseForm({
+                        phaseCode: phase.phaseCode,
+                        name: phase.name,
+                        description: phase.description ?? '',
+                        scheduledStart: phase.scheduledStart ?? '',
+                        scheduledEnd: phase.scheduledEnd ?? '',
+                        bookedHours: phase.bookedHours ?? '',
+                        status: phase.status,
+                      });
+                      setShowEditPhaseModal(true);
+                    } : undefined}
+                  />
+                </View>
+                {/* Project Timeline (Gantt) — owners/managers only, when phases have dates */}
+                {(isOwnerOrManager || isSoloOwner) && phases.length > 0 && (
+                  <ProjectGanttMobile
+                    colors={colors}
+                    phases={phases}
+                    isTradie={false}
+                    onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
+                      setEditingPhase(phase);
+                      setEditPhaseForm({
+                        phaseCode: phase.phaseCode,
+                        name: phase.name,
+                        description: phase.description ?? '',
+                        scheduledStart: phase.scheduledStart ?? '',
+                        scheduledEnd: phase.scheduledEnd ?? '',
+                        bookedHours: phase.bookedHours ?? '',
+                        status: phase.status,
+                      });
+                      setShowEditPhaseModal(true);
+                    } : undefined}
+                  />
+                )}
+                {renderMaterialsTab()}
+                <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+                  <PurchaseOrdersSection
+                    colors={colors}
+                    purchaseOrders={jobPurchaseOrders}
+                    isLoadingPOs={isLoadingPOs}
+                    onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
+                  />
+                </View>
+                <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+                  <ClaimsSection
+                    colors={colors}
+                    claims={progressClaims}
+                    isLoading={isLoadingClaims}
+                    jobId={id as string}
+                    isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                    onRefresh={loadClaims}
+                    onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
+                  />
+                </View>
+                <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
+                  <VariationsSection
+                    colors={colors}
+                    variations={variations}
+                    isLoading={isLoadingVariations}
+                    jobId={id as string}
+                    isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                    onRefresh={loadVariations}
+                  />
+                </View>
+              </>
             )}
-            {renderMaterialsTab()}
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
-              <PurchaseOrdersSection
-                colors={colors}
-                purchaseOrders={jobPurchaseOrders}
-                isLoadingPOs={isLoadingPOs}
-                onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
-              />
-            </View>
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
-              <ClaimsSection
-                colors={colors}
-                claims={progressClaims}
-                isLoading={isLoadingClaims}
-                jobId={id as string}
-                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                onRefresh={loadClaims}
-                onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
-              />
-            </View>
-            <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
-              <VariationsSection
-                colors={colors}
-                variations={variations}
-                isLoading={isLoadingVariations}
-                jobId={id as string}
-                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                onRefresh={loadVariations}
-              />
-            </View>
             {renderManageTab()}
           </>
         )}

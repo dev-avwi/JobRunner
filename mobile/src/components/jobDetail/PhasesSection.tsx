@@ -131,7 +131,7 @@ export function PhasesSection({
         </View>
       ) : sorted.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-          No phases yet. Add phases to break this job into billable milestones.
+          No project phases yet. Add phases to break this project into billable milestones.
         </Text>
       ) : (
         <>

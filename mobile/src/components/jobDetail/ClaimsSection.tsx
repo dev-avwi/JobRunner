@@ -342,7 +342,7 @@ export function ClaimsSection({
 
       {!isLoading && claims.length === 0 && (
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-          No progress claims yet.
+          No progress claims yet. Add a claim to bill for completed project work.
         </Text>
       )}
 
