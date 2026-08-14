@@ -16546,14 +16546,23 @@ Be specific about materials, colors, and features that would be included.`
           isNotNull(timeEntries.endTime)
         ));
       let regMins = 0, otMins = 0;
+      let totalDistanceKmPay = 0;
       for (const e of entries) {
         if (e.isBreak) continue;
         if (e.isOvertime) otMins += (e.duration || 0);
         else regMins += (e.duration || 0);
+        if ((e.timeCategory || 'work') === 'travel' && e.distanceKm) {
+          totalDistanceKmPay += parseFloat(String(e.distanceKm)) || 0;
+        }
       }
       const regHrs = regMins / 60;
       const otHrs = otMins / 60;
       const computedGross = Math.round(((regHrs * rate) + (otHrs * rate * 1.5)) * 100) / 100;
+      const [bsRowPay] = await db.select({ travelRatePerKm: businessSettings.travelRatePerKm })
+        .from(businessSettings).where(eq(businessSettings.userId, ownerId)).limit(1);
+      const travelRatePerKmPay = parseFloat(bsRowPay?.travelRatePerKm || '0') || 0;
+      const travelAllowancePay = Math.round(totalDistanceKmPay * travelRatePerKmPay * 100) / 100;
+      const totalDistanceKmPayRounded = Math.round(totalDistanceKmPay * 10) / 10;
 
       // Prevent double-paying the same worker for the same period.
       const existing = await storage.getPayrollPayments(ownerId, { start: pStart, end: pEnd, workerUserId });
@@ -16595,6 +16604,7 @@ Be specific about materials, colors, and features that would be included.`
             const { generateRemittancePdf } = await import('./pdfService');
             const bizSettings = await storage.getBusinessSettings(ownerId);
             const workerName = `${worker.firstName || ''} ${worker.lastName || ''}`.trim() || worker.email;
+            const payslipTotal = Math.round((computedGross + travelAllowancePay) * 100) / 100;
             const pdfBuffer = await generateRemittancePdf({
               type: 'payslip',
               business: {
@@ -16614,8 +16624,9 @@ Be specific about materials, colors, and features that would be included.`
               lines: [
                 { label: `Regular (${(Math.round(regHrs * 100) / 100).toFixed(2)} hrs @ $${rate.toFixed(2)})`, value: (Math.round(regHrs * rate * 100) / 100).toFixed(2), isMoney: true },
                 ...(otHrs > 0 ? [{ label: `Overtime (${(Math.round(otHrs * 100) / 100).toFixed(2)} hrs @ $${(rate * 1.5).toFixed(2)})`, value: (Math.round(otHrs * rate * 1.5 * 100) / 100).toFixed(2), isMoney: true }] : []),
+                ...(travelAllowancePay > 0 ? [{ label: `Travel Allowance (${totalDistanceKmPayRounded} km @ $${travelRatePerKmPay.toFixed(2)}/km)`, value: travelAllowancePay.toFixed(2), isMoney: true }] : []),
               ],
-              total: computedGross.toFixed(2),
+              total: payslipTotal.toFixed(2),
             });
             await sendSystemEmail({
               to: worker.email,
@@ -16623,7 +16634,8 @@ Be specific about materials, colors, and features that would be included.`
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2>You've been paid</h2>
-                  <p>Your pay of <strong>$${computedGross.toFixed(2)}</strong> for the period ${pStart.toLocaleDateString('en-AU')} – ${pEnd.toLocaleDateString('en-AU')} has been processed.</p>
+                  <p>Your pay of <strong>$${payslipTotal.toFixed(2)}</strong> for the period ${pStart.toLocaleDateString('en-AU')} – ${pEnd.toLocaleDateString('en-AU')} has been processed.</p>
+                  ${travelAllowancePay > 0 ? `<p>This includes a travel allowance of <strong>$${travelAllowancePay.toFixed(2)}</strong> for ${totalDistanceKmPayRounded} km travelled.</p>` : ''}
                   <p>Your payslip is attached.</p>
                 </div>
               `,
@@ -16682,6 +16694,30 @@ Be specific about materials, colors, and features that would be included.`
       const regHrs = parseFloat(payment.regularHours);
       const otHrs = parseFloat(payment.overtimeHours);
 
+      // Recompute travel allowance from the original time entries for this period.
+      const pStart = new Date(payment.periodStart);
+      const pEnd = new Date(payment.periodEnd);
+      const travelEntries = await db.select({ timeCategory: timeEntries.timeCategory, distanceKm: timeEntries.distanceKm, isBreak: timeEntries.isBreak })
+        .from(timeEntries)
+        .where(and(
+          eq(timeEntries.userId, payment.workerUserId),
+          gte(timeEntries.startTime, pStart),
+          lte(timeEntries.startTime, pEnd),
+          isNotNull(timeEntries.endTime)
+        ));
+      let totalDistanceKmSlip = 0;
+      for (const e of travelEntries) {
+        if (!e.isBreak && (e.timeCategory || 'work') === 'travel' && e.distanceKm) {
+          totalDistanceKmSlip += parseFloat(String(e.distanceKm)) || 0;
+        }
+      }
+      const [bsRowSlip] = await db.select({ travelRatePerKm: businessSettings.travelRatePerKm })
+        .from(businessSettings).where(eq(businessSettings.userId, payment.businessOwnerId)).limit(1);
+      const travelRatePerKmSlip = parseFloat(bsRowSlip?.travelRatePerKm || '0') || 0;
+      const travelAllowanceSlip = Math.round(totalDistanceKmSlip * travelRatePerKmSlip * 100) / 100;
+      const totalDistanceKmSlipRounded = Math.round(totalDistanceKmSlip * 10) / 10;
+      const payslipTotalSlip = Math.round((parseFloat(payment.grossPay) + travelAllowanceSlip) * 100) / 100;
+
       const { generateRemittancePdf } = await import('./pdfService');
       const pdfBuffer = await generateRemittancePdf({
         type: 'payslip',
@@ -16702,8 +16738,9 @@ Be specific about materials, colors, and features that would be included.`
         lines: [
           { label: `Regular (${regHrs.toFixed(2)} hrs @ $${rate.toFixed(2)})`, value: (Math.round(regHrs * rate * 100) / 100).toFixed(2), isMoney: true },
           ...(otHrs > 0 ? [{ label: `Overtime (${otHrs.toFixed(2)} hrs @ $${(rate * 1.5).toFixed(2)})`, value: (Math.round(otHrs * rate * 1.5 * 100) / 100).toFixed(2), isMoney: true }] : []),
+          ...(travelAllowanceSlip > 0 ? [{ label: `Travel Allowance (${totalDistanceKmSlipRounded} km @ $${travelRatePerKmSlip.toFixed(2)}/km)`, value: travelAllowanceSlip.toFixed(2), isMoney: true }] : []),
         ],
-        total: payment.grossPay,
+        total: payslipTotalSlip.toFixed(2),
       });
 
       res.setHeader('Content-Type', 'application/pdf');
