@@ -36,7 +36,8 @@ import {
   Car,
   Clipboard,
   GraduationCap,
-  Plus
+  Plus,
+  Download
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -1160,6 +1161,50 @@ export function TimesheetList({
     </Dialog>
   );
 
+  const exportFilteredCSV = () => {
+    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    const categorySlug = selectedCategories
+      .map(c => TIME_CATEGORY_LABELS[c]?.label ?? c)
+      .map(l => l.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
+      .join('-');
+    const filename = `timesheet-${categorySlug}-${dateStr}.csv`;
+
+    const header = ['Date', 'Staff', 'Category', 'Duration (h)', 'Job', 'Description'];
+    const rows = filteredEntries
+      .filter((e: TimeEntry) => e.endTime && !e.isBreak)
+      .map((e: TimeEntry) => {
+        const durationH = e.endTime
+          ? ((new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000).toFixed(2)
+          : '';
+        const category = TIME_CATEGORY_LABELS[e.timeCategory ?? 'work']?.label ?? (e.timeCategory ?? 'work');
+        const date = format(new Date(e.startTime), 'yyyy-MM-dd');
+        // Neutralise spreadsheet formula injection: prefix an apostrophe when
+        // the first character is one of the formula trigger chars = + - @
+        const sanitize = (v: string) => {
+          const s = v ?? '';
+          return /^[=+\-@]/.test(s) ? `'${s}` : s;
+        };
+        const escape = (v: string) => `"${sanitize(v).replace(/"/g, '""')}"`;
+        return [
+          escape(date),
+          escape(e.userName ?? ''),
+          escape(category),
+          durationH,
+          escape(e.jobTitle ?? ''),
+          escape(e.description ?? ''),
+        ].join(',');
+      });
+
+    const csv = [header.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const formatDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);
     const end = endTime ? new Date(endTime) : new Date();
@@ -1238,10 +1283,23 @@ export function TimesheetList({
           <Calendar className="h-5 w-5 text-primary" />
           Recent Time Entries
         </CardTitle>
-        <Button size="sm" variant="outline" onClick={() => setShowAddEntry(true)} data-testid="button-add-entry">
-          <Plus className="h-4 w-4 mr-1" />
-          Add Entry
-        </Button>
+        <div className="flex items-center gap-2">
+          {selectedCategories.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={exportFilteredCSV}
+              data-testid="button-export-csv"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setShowAddEntry(true)} data-testid="button-add-entry">
+            <Plus className="h-4 w-4 mr-1" />
+            Add Entry
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Category filter chips */}
