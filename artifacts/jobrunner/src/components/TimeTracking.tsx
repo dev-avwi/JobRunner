@@ -37,7 +37,8 @@ import {
   Clipboard,
   GraduationCap,
   Plus,
-  Download
+  Download,
+  X
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { format } from "date-fns";
@@ -941,6 +942,10 @@ export function TimesheetList({
   const [entryCategory, setEntryCategory] = useState<string>("work");
   const [entryDistanceKm, setEntryDistanceKm] = useState<string>("");
 
+  // Travel-distance export warning dialog state
+  const [travelWarningEntries, setTravelWarningEntries] = useState<TimeEntry[]>([]);
+  const [showExportWarningDialog, setShowExportWarningDialog] = useState(false);
+
   // Category filter state — persisted to localStorage so returning to the page
   // restores the last-used selection.
   const CATEGORY_FILTER_KEY = 'timesheet-category-filters';
@@ -1242,7 +1247,8 @@ export function TimesheetList({
     </Dialog>
   );
 
-  const exportFilteredCSV = () => {
+  // Build filename from active filters
+  const buildExportFilename = () => {
     const todayExport = format(new Date(), 'yyyy-MM-dd');
     const rangeSlug = dateFrom && dateTo
       ? `${dateFrom}-to-${dateTo}`
@@ -1255,8 +1261,12 @@ export function TimesheetList({
       .map(c => TIME_CATEGORY_LABELS[c]?.label ?? c)
       .map(l => l.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
       .join('-');
-    const filename = `timesheet-${categorySlug ? `${categorySlug}-` : ''}${rangeSlug}.csv`;
+    return `timesheet-${categorySlug ? `${categorySlug}-` : ''}${rangeSlug}.csv`;
+  };
 
+  // Actually build and trigger the CSV download
+  const doDownloadCSV = () => {
+    const filename = buildExportFilename();
     const header = ['Date', 'Staff', 'Category', 'Duration (h)', 'Job', 'Description'];
     const rows = filteredEntries
       .filter((e: TimeEntry) => e.endTime && !e.isBreak)
@@ -1266,8 +1276,7 @@ export function TimesheetList({
           : '';
         const category = TIME_CATEGORY_LABELS[e.timeCategory ?? 'work']?.label ?? (e.timeCategory ?? 'work');
         const date = format(new Date(e.startTime), 'yyyy-MM-dd');
-        // Neutralise spreadsheet formula injection: prefix an apostrophe when
-        // the first character is one of the formula trigger chars = + - @
+        // Neutralise spreadsheet formula injection
         const sanitize = (v: string) => {
           const s = v ?? '';
           return /^[=+\-@]/.test(s) ? `'${s}` : s;
@@ -1282,7 +1291,6 @@ export function TimesheetList({
           escape(e.description ?? ''),
         ].join(',');
       });
-
     const csv = [header.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -1291,6 +1299,22 @@ export function TimesheetList({
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    setShowExportWarningDialog(false);
+    setTravelWarningEntries([]);
+  };
+
+  // Check for missing-distance travel entries; if any exist show a warning dialog
+  // before the download so the manager can choose to fix them first.
+  const exportFilteredCSV = () => {
+    const missingDist = filteredEntries.filter(
+      (e: TimeEntry) => !e.isBreak && e.timeCategory === 'travel' && (e.distanceKm == null || e.distanceKm === '') && e.endTime
+    );
+    if (missingDist.length > 0) {
+      setTravelWarningEntries(missingDist as TimeEntry[]);
+      setShowExportWarningDialog(true);
+    } else {
+      doDownloadCSV();
+    }
   };
 
   const formatDuration = (startTime: string, endTime?: string) => {
@@ -1380,9 +1404,50 @@ export function TimesheetList({
       }));
   })();
 
+  const exportWarningDialog = (
+    <Dialog open={showExportWarningDialog} onOpenChange={(open) => { if (!open) { setShowExportWarningDialog(false); setTravelWarningEntries([]); } }}>
+      <DialogContent data-testid="dialog-export-travel-warning">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            Travel entries missing distance
+          </DialogTitle>
+        </DialogHeader>
+        <div className="py-1">
+          <p className="text-sm text-muted-foreground mb-3">
+            {travelWarningEntries.length} travel {travelWarningEntries.length === 1 ? 'entry' : 'entries'} {travelWarningEntries.length === 1 ? 'has' : 'have'} no distance set — travel allowance will be $0 in the export. Fix {travelWarningEntries.length === 1 ? 'it' : 'them'} first, or export anyway.
+          </p>
+          <ul className="text-xs space-y-1 text-amber-700 dark:text-amber-400 list-none border border-amber-200 dark:border-amber-800 rounded-md p-3 bg-amber-50/60 dark:bg-amber-950/20" data-testid="list-travel-warning-entries">
+            {travelWarningEntries.map(e => (
+              <li key={e.id}>
+                {format(new Date(e.startTime), 'MMM d')}
+                {e.userName ? ` · ${e.userName}` : ''}
+                {e.jobTitle ? ` · ${e.jobTitle}` : ''}
+                {e.description ? ` — ${e.description}` : ''}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowExportWarningDialog(false); setTravelWarningEntries([]); }} data-testid="button-cancel-export">
+            Cancel
+          </Button>
+          <Button
+            className="bg-amber-500 hover:bg-amber-600 text-white"
+            onClick={doDownloadCSV}
+            data-testid="button-export-anyway"
+          >
+            Export Anyway
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <Card className="w-full" data-testid="card-timesheet-list">
       {addEntryDialog}
+      {exportWarningDialog}
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0">
         <CardTitle className="flex items-center gap-2">
           <Calendar className="h-5 w-5 text-primary" />

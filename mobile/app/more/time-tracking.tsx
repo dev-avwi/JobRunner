@@ -1283,9 +1283,32 @@ export default function TimeTrackingScreen() {
     const dateStr = sheetDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     const { csv, totalEarnings, totalMinutes } = buildCsvExport(timeEntries, dateStr);
     const summary = `Timesheet - ${dateStr}\nTotal: ${formatDurationHM(totalMinutes)} | Earnings: ${formatCurrency(totalEarnings)}\n\n${csv}`;
-    try {
-      await Share.share({ message: summary, title: `Timesheet ${dateStr}` });
-    } catch {}
+
+    const missingDist = timeEntries.filter(
+      e => !e.isBreak && e.timeCategory === 'travel' && (e.distanceKm == null || e.distanceKm === '')
+    );
+
+    const doShare = async () => {
+      try {
+        await Share.share({ message: summary, title: `Timesheet ${dateStr}` });
+      } catch {}
+    };
+
+    if (missingDist.length > 0) {
+      const lines = missingDist
+        .map(e => `• ${new Date(e.startTime).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}${e.description ? ` — ${e.description}` : ''}`)
+        .join('\n');
+      Alert.alert(
+        'Travel entries missing distance',
+        `${missingDist.length} travel ${missingDist.length === 1 ? 'entry' : 'entries'} have no distance set — travel allowance will be $0 in the export:\n\n${lines}`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Export Anyway', onPress: doShare },
+        ]
+      );
+    } else {
+      await doShare();
+    }
   };
 
   const handleExportWeekly = async () => {
@@ -1301,7 +1324,33 @@ export default function TimeTrackingScreen() {
       const weekLabel = `${start.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`;
       const { csv, totalEarnings, totalMinutes } = buildCsvExport(response.data, weekLabel);
       const summary = `Weekly Timesheet - ${weekLabel}\nTotal: ${formatDurationHM(totalMinutes)} | Earnings: ${formatCurrency(totalEarnings)}\n\n${csv}`;
-      await Share.share({ message: summary, title: `Weekly Timesheet ${weekLabel}` });
+
+      const missingDist = (response.data as TimeEntry[]).filter(
+        e => !e.isBreak && e.timeCategory === 'travel' && (e.distanceKm == null || e.distanceKm === '')
+      );
+
+      const doShare = async () => {
+        await Share.share({ message: summary, title: `Weekly Timesheet ${weekLabel}` });
+      };
+
+      if (missingDist.length > 0) {
+        const lines = missingDist
+          .map(e => {
+            const datePart = new Date(e.startTime).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
+            return `• ${datePart}${e.description ? ` — ${e.description}` : ''}`;
+          })
+          .join('\n');
+        Alert.alert(
+          'Travel entries missing distance',
+          `${missingDist.length} travel ${missingDist.length === 1 ? 'entry' : 'entries'} have no distance set — travel allowance will be $0 in the export:\n\n${lines}`,
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Export Anyway', onPress: doShare },
+          ]
+        );
+      } else {
+        await doShare();
+      }
     } catch {
       Alert.alert('Error', 'Failed to export weekly timesheet.');
     }
