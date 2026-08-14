@@ -618,7 +618,8 @@ export function DocumentRegisterSection({
   const openAnswerModal = (rfi: ProjectRfi) => {
     setAnsweringRfiId(rfi.id);
     setAnsweringRfiNumber(rfi.rfiNumber);
-    setAnswerStatus(rfi.status === 'open' ? 'answered' : rfi.status);
+    const safeStatus: RfiStatus = (rfi.status === 'open' || rfi.status === 'answered' || rfi.status === 'closed') ? rfi.status : 'open';
+    setAnswerStatus(safeStatus === 'open' ? 'answered' : safeStatus);
     setAnswerText(rfi.answerText ?? '');
     setShowAnswerModal(true);
   };
@@ -825,7 +826,8 @@ export function DocumentRegisterSection({
         ) : (
           <View style={s.list}>
             {rfis.map(rfi => {
-              const statusColor = getRfiStatusColor(rfi.status);
+              const rfiStatus: RfiStatus = (rfi.status === 'open' || rfi.status === 'answered' || rfi.status === 'closed') ? rfi.status : 'open';
+              const statusColor = getRfiStatusColor(rfiStatus);
               const isExpanded = expandedRfiId === rfi.id;
               return (
                 <View key={rfi.id} style={[s.docRow, { borderColor: colors.border }]}>
@@ -846,7 +848,7 @@ export function DocumentRegisterSection({
                       <View style={s.docMeta}>
                         <View style={[s.catBadge, { backgroundColor: `${statusColor}20` }]}>
                           <Text style={[s.catText, { color: statusColor }]}>
-                            {rfi.status.charAt(0).toUpperCase() + rfi.status.slice(1)}
+                            {rfiStatus.charAt(0).toUpperCase() + rfiStatus.slice(1)}
                           </Text>
                         </View>
                         {rfi.assignedToName ? (
