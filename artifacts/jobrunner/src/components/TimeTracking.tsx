@@ -944,6 +944,10 @@ export function TimesheetList({
   // Category filter state — persisted to localStorage so returning to the page
   // restores the last-used selection.
   const CATEGORY_FILTER_KEY = 'timesheet-category-filters';
+  const DATE_FROM_KEY = 'timesheet-date-from';
+  const DATE_TO_KEY = 'timesheet-date-to';
+  const SEARCH_KEY = 'timesheet-search';
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(CATEGORY_FILTER_KEY);
@@ -957,7 +961,19 @@ export function TimesheetList({
     return [];
   });
 
-  // Sync filter selection to localStorage whenever it changes
+  const [dateFrom, setDateFrom] = useState<string>(() => {
+    try { return localStorage.getItem(DATE_FROM_KEY) ?? ''; } catch { return ''; }
+  });
+
+  const [dateTo, setDateTo] = useState<string>(() => {
+    try { return localStorage.getItem(DATE_TO_KEY) ?? ''; } catch { return ''; }
+  });
+
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    try { return localStorage.getItem(SEARCH_KEY) ?? ''; } catch { return ''; }
+  });
+
+  // Sync filter selections to localStorage whenever they change
   useEffect(() => {
     try {
       if (selectedCategories.length === 0) {
@@ -969,6 +985,45 @@ export function TimesheetList({
       // localStorage may be unavailable (private browsing, quota exceeded)
     }
   }, [selectedCategories]);
+
+  useEffect(() => {
+    try {
+      if (dateFrom) {
+        localStorage.setItem(DATE_FROM_KEY, dateFrom);
+      } else {
+        localStorage.removeItem(DATE_FROM_KEY);
+      }
+    } catch { /* ignore */ }
+  }, [dateFrom]);
+
+  useEffect(() => {
+    try {
+      if (dateTo) {
+        localStorage.setItem(DATE_TO_KEY, dateTo);
+      } else {
+        localStorage.removeItem(DATE_TO_KEY);
+      }
+    } catch { /* ignore */ }
+  }, [dateTo]);
+
+  useEffect(() => {
+    try {
+      if (searchQuery) {
+        localStorage.setItem(SEARCH_KEY, searchQuery);
+      } else {
+        localStorage.removeItem(SEARCH_KEY);
+      }
+    } catch { /* ignore */ }
+  }, [searchQuery]);
+
+  const clearAllFilters = () => {
+    setSelectedCategories([]);
+    setDateFrom('');
+    setDateTo('');
+    setSearchQuery('');
+  };
+
+  const hasActiveFilters = selectedCategories.length > 0 || dateFrom || dateTo || searchQuery;
 
   const toggleCategory = (value: string) => {
     setSelectedCategories(prev =>
@@ -1188,12 +1243,19 @@ export function TimesheetList({
   );
 
   const exportFilteredCSV = () => {
-    const dateStr = format(new Date(), 'yyyy-MM-dd');
+    const todayExport = format(new Date(), 'yyyy-MM-dd');
+    const rangeSlug = dateFrom && dateTo
+      ? `${dateFrom}-to-${dateTo}`
+      : dateFrom
+        ? `from-${dateFrom}`
+        : dateTo
+          ? `to-${dateTo}`
+          : todayExport;
     const categorySlug = selectedCategories
       .map(c => TIME_CATEGORY_LABELS[c]?.label ?? c)
       .map(l => l.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''))
       .join('-');
-    const filename = `timesheet-${categorySlug}-${dateStr}.csv`;
+    const filename = `timesheet-${categorySlug ? `${categorySlug}-` : ''}${rangeSlug}.csv`;
 
     const header = ['Date', 'Staff', 'Category', 'Duration (h)', 'Job', 'Description'];
     const rows = filteredEntries
@@ -1276,9 +1338,26 @@ export function TimesheetList({
   }
 
   const allEntries: TimeEntry[] = Array.isArray(timeEntries) ? timeEntries : [];
-  const filteredEntries = selectedCategories.length === 0
-    ? allEntries
-    : allEntries.filter((e: any) => selectedCategories.includes(e.timeCategory || 'work'));
+  const filteredEntries = allEntries.filter((e: any) => {
+    if (selectedCategories.length > 0 && !selectedCategories.includes(e.timeCategory || 'work')) return false;
+    if (dateFrom) {
+      const entryDate = format(new Date(e.startTime), 'yyyy-MM-dd');
+      if (entryDate < dateFrom) return false;
+    }
+    if (dateTo) {
+      const entryDate = format(new Date(e.startTime), 'yyyy-MM-dd');
+      if (entryDate > dateTo) return false;
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchesDescription = (e.description ?? '').toLowerCase().includes(q);
+      const matchesJob = (e.jobTitle ?? '').toLowerCase().includes(q);
+      const matchesClient = (e.clientName ?? '').toLowerCase().includes(q);
+      const matchesUser = (e.userName ?? '').toLowerCase().includes(q);
+      if (!matchesDescription && !matchesJob && !matchesClient && !matchesUser) return false;
+    }
+    return true;
+  });
   const entriesToShow = filteredEntries.slice(0, limit);
 
   // Category breakdown for the summary strip (computed from filtered entries)
@@ -1310,7 +1389,7 @@ export function TimesheetList({
           Recent Time Entries
         </CardTitle>
         <div className="flex items-center gap-2">
-          {selectedCategories.length > 0 && (
+          {hasActiveFilters && (
             <Button
               size="sm"
               variant="outline"
@@ -1328,6 +1407,39 @@ export function TimesheetList({
         </div>
       </CardHeader>
       <CardContent>
+        {/* Date range + search filters */}
+        <div className="flex flex-wrap gap-2 mb-3" data-testid="timesheet-date-search-filters">
+          <Input
+            type="date"
+            value={dateFrom}
+            max={dateTo || todayStr}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-auto flex-1 min-w-[130px] max-w-[160px] text-sm h-8"
+            aria-label="From date"
+            data-testid="input-date-from"
+          />
+          <span className="self-center text-muted-foreground text-sm">–</span>
+          <Input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            max={todayStr}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-auto flex-1 min-w-[130px] max-w-[160px] text-sm h-8"
+            aria-label="To date"
+            data-testid="input-date-to"
+          />
+          <Input
+            type="search"
+            placeholder="Search entries…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 min-w-[160px] text-sm h-8"
+            aria-label="Search time entries"
+            data-testid="input-search"
+          />
+        </div>
+
         {/* Category filter chips */}
         <div className="flex flex-wrap gap-2 mb-4" data-testid="category-filter-chips">
           {TIME_CATEGORY_OPTIONS.map(opt => {
@@ -1349,13 +1461,13 @@ export function TimesheetList({
               </button>
             );
           })}
-          {selectedCategories.length > 0 && (
+          {hasActiveFilters && (
             <button
-              onClick={() => setSelectedCategories([])}
+              onClick={clearAllFilters}
               className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-dashed text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="chip-clear-categories"
+              data-testid="chip-clear-filters"
             >
-              Clear
+              Clear all
             </button>
           )}
         </div>
@@ -1378,10 +1490,10 @@ export function TimesheetList({
         {entriesToShow.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground" data-testid="text-no-entries">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            {selectedCategories.length > 0 ? (
+            {hasActiveFilters ? (
               <>
-                <p>No entries match the selected {selectedCategories.length === 1 ? 'category' : 'categories'}</p>
-                <p className="text-sm">Try clearing the filter or selecting a different category</p>
+                <p>No entries match the current filters</p>
+                <p className="text-sm">Try adjusting the date range, search, or category filters</p>
               </>
             ) : (
               <>
