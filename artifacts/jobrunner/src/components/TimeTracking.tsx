@@ -74,6 +74,7 @@ interface TimeEntry {
   isBreak?: boolean;
   isBillable?: boolean;
   timeCategory?: string;
+  distanceKm?: string | number | null;
   userId: string;
   jobTitle?: string;
   clientName?: string;
@@ -1138,6 +1139,12 @@ export function TimesheetList({
                 onChange={(e) => setEntryDistanceKm(e.target.value)}
                 data-testid="input-entry-distance"
               />
+              {!entryDistanceKm.trim() && (
+                <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400" data-testid="hint-distance-missing">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                  Distance not set — travel allowance will be $0
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -1330,6 +1337,12 @@ export function TimesheetList({
                         style={{ borderColor: TIME_CATEGORY_LABELS[entry.timeCategory].color + '60', color: TIME_CATEGORY_LABELS[entry.timeCategory].color }}
                       >
                         {TIME_CATEGORY_LABELS[entry.timeCategory].label}
+                      </Badge>
+                    )}
+                    {!entry.isBreak && entry.timeCategory === 'travel' && !entry.distanceKm && (
+                      <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400 border-amber-400/60 gap-1" title="Distance not set — travel allowance will be $0">
+                        <AlertCircle className="h-2.5 w-2.5" />
+                        No km
                       </Badge>
                     )}
                   </div>

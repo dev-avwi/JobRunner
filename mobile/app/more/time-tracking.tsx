@@ -1906,6 +1906,12 @@ export default function TimeTrackingScreen() {
                                   </View>
                                 );
                               })()}
+                              {entry.timeCategory === 'travel' && !entry.distanceKm && !isBreakEntry && (
+                                <View style={{ backgroundColor: '#D9770618', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                  <Feather name="alert-circle" size={8} color="#D97706" />
+                                  <Text style={{ fontSize: typography.sizes.xs, color: '#D97706', fontWeight: fontWeights.semibold }}>No km</Text>
+                                </View>
+                              )}
                               {entry.isDisputed && (
                                 <View style={{ backgroundColor: ttConfig.disputeBadgeBg, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                                   <Feather name="alert-triangle" size={8} color={ttConfig.statusColors.late} />
@@ -2416,6 +2422,14 @@ export default function TimeTrackingScreen() {
                   />
                   <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginLeft: 2 }}>km</Text>
                 </View>
+                {!entryDistanceKm.trim() && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
+                    <Feather name="alert-circle" size={13} color={colors.warning} />
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.warning }}>
+                      Distance not set — travel allowance will be $0
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 
