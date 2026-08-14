@@ -88,7 +88,6 @@ import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttM
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
-import { DefectsSection, type DefectItem } from '../../src/components/jobDetail/DefectsSection';
 
 interface JobNoteItem {
   id: string;
@@ -2236,10 +2235,6 @@ export default function JobDetailScreen() {
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
 
-  // Defect Items (punch list)
-  const [defectItems, setDefectItems] = useState<DefectItem[]>([]);
-  const [isLoadingDefects, setIsLoadingDefects] = useState(false);
-
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
@@ -2250,7 +2245,7 @@ export default function JobDetailScreen() {
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
-  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', assignedUserId: '' });
+  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus });
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
@@ -2741,19 +2736,6 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
-  const loadDefectItems = useCallback(async () => {
-    if (!id) return;
-    setIsLoadingDefects(true);
-    try {
-      const res = await api.get<DefectItem[]>(`/api/jobs/${id}/defect-items`);
-      setDefectItems(Array.isArray(res.data) ? res.data : []);
-    } catch (e) {
-      console.error('Error loading defect items:', e);
-    } finally {
-      setIsLoadingDefects(false);
-    }
-  }, [id]);
-
   const handleSavePhase = async () => {
     if (!addPhaseForm.name.trim()) {
       showToast({ type: 'error', message: 'Phase name is required' });
@@ -2793,13 +2775,19 @@ export default function JobDetailScreen() {
         scheduledStart: editPhaseForm.scheduledStart.trim() || null,
         scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
         bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
-        assignedUserId: editPhaseForm.assignedUserId || null,
+        status: editPhaseForm.status,
       };
       await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
       await loadPhases();
+      const savedStatus = editPhaseForm.status;
+      const savedPhase = editingPhase;
       setShowEditPhaseModal(false);
       setEditingPhase(null);
       showToast({ type: 'success', message: 'Phase updated' });
+      if (savedStatus === 'complete' && (isOwnerOrManager || isSoloOwner)) {
+        setClaimPrefillPhase(savedPhase);
+        setShowPhaseClaimPrompt(true);
+      }
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to update phase' });
     } finally {
@@ -3021,7 +3009,6 @@ export default function JobDetailScreen() {
       loadMaterials();
       loadPhases();
       loadClaims();
-      loadDefectItems();
       loadTeamMembers();
       loadJobAssignments();
     }
@@ -10482,7 +10469,7 @@ export default function JobDetailScreen() {
                     scheduledStart: phase.scheduledStart ?? '',
                     scheduledEnd: phase.scheduledEnd ?? '',
                     bookedHours: phase.bookedHours ?? '',
-                    assignedUserId: (phase as any).assignedUserId ?? '',
+                    status: phase.status,
                   });
                   setShowEditPhaseModal(true);
                 } : undefined}
@@ -10503,7 +10490,7 @@ export default function JobDetailScreen() {
                     scheduledStart: phase.scheduledStart ?? '',
                     scheduledEnd: phase.scheduledEnd ?? '',
                     bookedHours: phase.bookedHours ?? '',
-                    assignedUserId: (phase as any).assignedUserId ?? '',
+                    status: phase.status,
                   });
                   setShowEditPhaseModal(true);
                 } : undefined}
@@ -10537,20 +10524,6 @@ export default function JobDetailScreen() {
                 onRefresh={loadVariations}
               />
             </View>
-
-            {/* Defects & Punch List — shown for project-type jobs */}
-            {job?.jobType === 'project' && (
-              <View style={{ marginBottom: spacing.md }}>
-                <DefectsSection
-                  jobId={id as string}
-                  isTradie={!!(!(isOwnerOrManager || isSoloOwner))}
-                  items={defectItems}
-                  loading={isLoadingDefects}
-                  onRefresh={loadDefectItems}
-                />
-              </View>
-            )}
-
             {renderManageTab()}
           </>
         )}
@@ -10667,47 +10640,31 @@ export default function JobDetailScreen() {
             onChangeText={(t) => setEditPhaseForm(f => ({ ...f, bookedHours: t }))}
             keyboardType="decimal-pad"
           />
-          {/* Assigned to — picker from job's assigned workers */}
-          {jobAssignments.length > 0 && (
-            <View style={{ marginBottom: spacing.lg }}>
-              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assigned to</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Status</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+            {(['not_started', 'in_progress', 'complete', 'invoiced'] as PhaseStatus[]).map((s) => {
+              const labels: Record<PhaseStatus, string> = { not_started: 'Not Started', in_progress: 'In Progress', complete: 'Complete', invoiced: 'Invoiced' };
+              const isSelected = editPhaseForm.status === s;
+              return (
                 <TouchableOpacity
-                  onPress={() => setEditPhaseForm(f => ({ ...f, assignedUserId: '' }))}
+                  key={s}
+                  onPress={() => setEditPhaseForm(f => ({ ...f, status: s }))}
                   style={{
-                    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
-                    borderWidth: 1,
-                    borderColor: !editPhaseForm.assignedUserId ? colors.primary : colors.border,
-                    backgroundColor: !editPhaseForm.assignedUserId ? colors.primary + '18' : 'transparent',
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: radius.pill,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? colors.primary : colors.cardBorder,
+                    backgroundColor: isSelected ? colors.primary : colors.card,
                   }}
                 >
-                  <Text style={{ fontSize: 12, color: !editPhaseForm.assignedUserId ? colors.primary : colors.mutedForeground }}>
-                    No assignee
+                  <Text style={{ fontSize: 13, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? colors.primaryForeground : colors.foreground }}>
+                    {labels[s]}
                   </Text>
                 </TouchableOpacity>
-                {jobAssignments.map((a: any) => {
-                  const workerName = a.displayName || a.workerDisplayNameSnapshot || 'Worker';
-                  const isSelected = editPhaseForm.assignedUserId === a.userId;
-                  return (
-                    <TouchableOpacity
-                      key={a.userId}
-                      onPress={() => setEditPhaseForm(f => ({ ...f, assignedUserId: a.userId }))}
-                      style={{
-                        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                        backgroundColor: isSelected ? colors.primary + '18' : 'transparent',
-                      }}
-                    >
-                      <Text style={{ fontSize: 12, color: isSelected ? colors.primary : colors.foreground }}>
-                        {workerName}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          )}
+              );
+            })}
+          </View>
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
           <TextInput
             style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}

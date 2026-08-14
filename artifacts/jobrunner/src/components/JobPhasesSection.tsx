@@ -130,10 +130,14 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
   const updateMutation = useMutation({
     mutationFn: ({ phaseId, data }: { phaseId: string; data: Partial<typeof EMPTY_FORM> }) =>
       apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       invalidate();
       setEditingId(null);
       toast({ title: "Phase updated" });
+      if (variables.data.status === "complete" && onCreateClaimForPhase) {
+        const phase = sorted.find((p) => p.id === variables.phaseId) ?? null;
+        if (phase) setClaimPromptPhase(phase);
+      }
     },
     onError: (e: any) => toast({ title: "Failed to update phase", description: e.message, variant: "destructive" }),
   });
