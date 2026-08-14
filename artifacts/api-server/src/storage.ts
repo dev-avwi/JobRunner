@@ -1664,6 +1664,15 @@ pool
     console.error('[Schema] Failed to ensure jobs.job_type column:', err.message);
   });
 
+// Task #459: Project programme on client portal — show_programme_on_portal toggle on job_portal_tokens.
+pool
+  .query(`
+    ALTER TABLE job_portal_tokens ADD COLUMN IF NOT EXISTS show_programme_on_portal boolean DEFAULT false;
+  `)
+  .catch((err) => {
+    console.warn('[Schema] Failed to ensure job_portal_tokens.show_programme_on_portal column:', err.message);
+  });
+
 // Task #437: Project templates — per-business reusable project structure (phases + settings).
 // Created idempotently at startup (we do NOT use drizzle-kit push on this database).
 pool
@@ -8942,13 +8951,14 @@ Thank you for your prompt attention to this matter.`,
       .where(eq(jobPortalTokens.id, tokenId));
   }
 
-  async updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; showFinancialsOnPortal?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null> {
+  async updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; showFinancialsOnPortal?: boolean; showProgrammeOnPortal?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null> {
     const updateData: any = {};
     if (settings.showTimeline !== undefined) updateData.showTimeline = settings.showTimeline;
     if (settings.showPhotos !== undefined) updateData.showPhotos = settings.showPhotos;
     if (settings.showChecklist !== undefined) updateData.showChecklist = settings.showChecklist;
     if (settings.showActivityFeed !== undefined) updateData.showActivityFeed = settings.showActivityFeed;
     if (settings.showFinancialsOnPortal !== undefined) updateData.showFinancialsOnPortal = settings.showFinancialsOnPortal;
+    if (settings.showProgrammeOnPortal !== undefined) updateData.showProgrammeOnPortal = settings.showProgrammeOnPortal;
     if (settings.clientMessage !== undefined) updateData.clientMessage = settings.clientMessage;
     if (Object.keys(updateData).length === 0) return null;
     const [result] = await db

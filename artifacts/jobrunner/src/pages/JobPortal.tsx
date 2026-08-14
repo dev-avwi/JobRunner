@@ -10,8 +10,9 @@ import {
   Phone, Mail, MapPin, AlertCircle, CheckCircle2, Clock, Calendar,
   User, Navigation, FileText, Camera, ChevronRight, Timer, Building2,
   MessageCircle, Loader2, Signal, ClipboardCheck, Package, CreditCard, Shield,
-  Activity, Receipt, CircleDot, RefreshCw
+  Activity, Receipt, CircleDot, RefreshCw, Layers
 } from "lucide-react";
+import { format, addDays, differenceInDays, startOfDay } from "date-fns";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";
 import { useEffect, useLayoutEffect, useState, useRef, useCallback } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
@@ -130,11 +131,21 @@ interface JobPortalData {
   timeline?: TimelineEvent[] | null;
   activityFeed?: ActivityFeedItem[];
   clientMessage?: string | null;
+  phases?: Array<{
+    id: string;
+    phaseCode: string;
+    name: string;
+    status: 'not_started' | 'in_progress' | 'complete' | 'invoiced';
+    sortOrder: number;
+    scheduledStart: string | null;
+    scheduledEnd: string | null;
+  }> | null;
   visibility?: {
     showTimeline: boolean;
     showPhotos: boolean;
     showChecklist: boolean;
     showActivityFeed: boolean;
+    showProgrammeOnPortal?: boolean;
   };
 }
 
@@ -873,6 +884,191 @@ function HeroMap({
   );
 }
 
+// ── Portal Programme (read-only phase Gantt) ─────────────────────────────────
+
+const PORTAL_STATUS_COLORS: Record<string, { bar: string; border: string; chip: string; chipText: string }> = {
+  not_started: { bar: '#E5E7EB', border: '#D1D5DB', chip: 'bg-gray-100', chipText: 'text-gray-600' },
+  in_progress:  { bar: '#3B82F6', border: '#2563EB', chip: 'bg-blue-100',  chipText: 'text-blue-700'  },
+  complete:     { bar: '#10B981', border: '#059669', chip: 'bg-emerald-100', chipText: 'text-emerald-700' },
+  invoiced:     { bar: '#8B5CF6', border: '#7C3AED', chip: 'bg-purple-100', chipText: 'text-purple-700' },
+};
+const PORTAL_STATUS_LABELS: Record<string, string> = {
+  not_started: 'Not started', in_progress: 'In progress', complete: 'Complete', invoiced: 'Invoiced',
+};
+
+const DAY_W = 40; // px per day (week-ish view)
+const ROW_H  = 36;
+const LABEL_W = 140;
+const HEADER_H = 26;
+
+function parsePortalDate(s: string): Date {
+  const [y, m, d] = s.substring(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function PortalProgramme({ phases }: {
+  phases: Array<{ id: string; phaseCode: string; name: string; status: string; sortOrder: number; scheduledStart: string | null; scheduledEnd: string | null }>;
+}) {
+  const withDates  = phases.filter(p => p.scheduledStart || p.scheduledEnd);
+  const noDates    = phases.filter(p => !p.scheduledStart && !p.scheduledEnd);
+
+  const today = startOfDay(new Date());
+
+  const rangeInfo = (() => {
+    if (withDates.length === 0) return { start: addDays(today, -7), days: 60 };
+    const allD: Date[] = [];
+    for (const p of withDates) {
+      if (p.scheduledStart) allD.push(parsePortalDate(p.scheduledStart));
+      if (p.scheduledEnd)   allD.push(parsePortalDate(p.scheduledEnd));
+    }
+    const earliest = new Date(Math.min(...allD.map(d => d.getTime())));
+    const latest   = new Date(Math.max(...allD.map(d => d.getTime())));
+    const s = addDays(earliest, -7);
+    const e = addDays(latest, 14);
+    const effectiveStart = s > today ? addDays(today, -7) : s;
+    const effectiveEnd   = e < today ? addDays(today, 14) : e;
+    return {
+      start: startOfDay(effectiveStart),
+      days: Math.max(differenceInDays(effectiveEnd, effectiveStart) + 1, 30),
+    };
+  })();
+
+  const { start: rangeStart, days: totalDays } = rangeInfo;
+  const gridWidth = totalDays * DAY_W;
+  const todayOff  = differenceInDays(today, rangeStart);
+
+  // Tick every 7 days
+  const ticks: { label: string; offset: number }[] = [];
+  for (let i = 0; i < totalDays; i += 7) {
+    ticks.push({ label: format(addDays(rangeStart, i), 'd MMM'), offset: i });
+  }
+
+  function getBar(p: typeof phases[0]) {
+    const hasS = !!p.scheduledStart, hasE = !!p.scheduledEnd;
+    if (!hasS && !hasE) return null;
+    const s = hasS ? Math.max(0, differenceInDays(parsePortalDate(p.scheduledStart!), rangeStart)) : 0;
+    const e = hasE ? Math.min(totalDays, differenceInDays(parsePortalDate(p.scheduledEnd!), rangeStart) + 1) : s + 3;
+    return { left: s * DAY_W, width: Math.max((e - Math.max(0, s)) * DAY_W, DAY_W) };
+  }
+
+  return (
+    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      {/* Header */}
+      <div className="bg-brand text-white px-5 py-3">
+        <div className="flex items-center gap-2">
+          <Layers className="w-4 h-4 text-slate-300" />
+          <span className="font-semibold text-sm">Project Programme</span>
+          <span className="text-xs text-white/60 ml-1">{phases.length} phase{phases.length !== 1 ? 's' : ''}</span>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-4">
+        {withDates.length > 0 && (
+          <div className="overflow-x-auto rounded-lg border border-slate-100">
+            <div className="flex" style={{ minWidth: LABEL_W + gridWidth }}>
+              {/* Fixed label column */}
+              <div className="shrink-0 border-r border-slate-100 bg-slate-50/60" style={{ width: LABEL_W }}>
+                <div style={{ height: HEADER_H }} className="border-b border-slate-100" />
+                {withDates.map(p => {
+                  const cfg = PORTAL_STATUS_COLORS[p.status] ?? PORTAL_STATUS_COLORS.not_started;
+                  return (
+                    <div key={p.id} className="flex items-center gap-1.5 px-2 border-b border-slate-50 last:border-0 overflow-hidden" style={{ height: ROW_H }}>
+                      <span className="shrink-0 text-[9px] font-mono font-bold px-1 py-0.5 rounded border border-slate-200 text-slate-500">{p.phaseCode}</span>
+                      <span className="text-[11px] font-medium truncate text-slate-700 leading-tight">{p.name}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Scrollable grid */}
+              <div className="flex-1 relative" style={{ width: gridWidth, minWidth: 0 }}>
+                {/* Tick header */}
+                <div className="relative border-b border-slate-100 bg-slate-50/60 overflow-hidden" style={{ height: HEADER_H }}>
+                  {ticks.map(t => (
+                    <div key={t.offset} className="absolute top-0 h-full flex items-center pl-1 border-r border-slate-100" style={{ left: t.offset * DAY_W, width: 7 * DAY_W }}>
+                      <span className="text-[9px] text-slate-400 whitespace-nowrap">{t.label}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Today line */}
+                {todayOff >= 0 && todayOff < totalDays && (
+                  <div className="absolute pointer-events-none z-10" style={{ top: HEADER_H, bottom: 0, left: todayOff * DAY_W + DAY_W / 2 - 1, width: 2, background: 'rgba(59,130,246,0.45)' }} />
+                )}
+
+                {/* Phase rows */}
+                {withDates.map(p => {
+                  const bar = getBar(p);
+                  const cfg = PORTAL_STATUS_COLORS[p.status] ?? PORTAL_STATUS_COLORS.not_started;
+                  return (
+                    <div key={p.id} className="relative border-b border-slate-50 last:border-0" style={{ height: ROW_H }}>
+                      {ticks.map(t => (
+                        <div key={t.offset} className="absolute top-0 bottom-0 border-r border-slate-50" style={{ left: t.offset * DAY_W }} />
+                      ))}
+                      {bar && (
+                        <div className="absolute rounded" style={{ top: 6, bottom: 6, left: bar.left + 2, width: Math.max(bar.width - 4, 4), backgroundColor: cfg.bar, border: `1px solid ${cfg.border}` }}>
+                          {bar.width > 50 && (
+                            <span className="absolute inset-0 flex items-center px-1.5 text-[9px] font-semibold leading-none overflow-hidden whitespace-nowrap text-white">
+                              {bar.width > 90 ? `${p.phaseCode} ${p.name}` : p.phaseCode}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Legend */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {Object.entries(PORTAL_STATUS_COLORS).map(([status, cfg]) => (
+            <div key={status} className="flex items-center gap-1 text-[10px] text-slate-500">
+              <div className="w-3 h-2 rounded-sm border" style={{ backgroundColor: cfg.bar, borderColor: cfg.border }} />
+              <span className="capitalize">{PORTAL_STATUS_LABELS[status] ?? status.replace(/_/g, ' ')}</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1 text-[10px] text-slate-500">
+            <div className="w-0.5 h-3 rounded" style={{ background: 'rgba(59,130,246,0.45)' }} />
+            <span>today</span>
+          </div>
+        </div>
+
+        {/* Phase status list */}
+        <div className="space-y-1.5">
+          {phases.map(p => {
+            const cfg = PORTAL_STATUS_COLORS[p.status] ?? PORTAL_STATUS_COLORS.not_started;
+            const dateRange = p.scheduledStart || p.scheduledEnd
+              ? [
+                  p.scheduledStart ? format(parsePortalDate(p.scheduledStart), 'd MMM yyyy') : null,
+                  p.scheduledEnd   ? format(parsePortalDate(p.scheduledEnd),   'd MMM yyyy') : null,
+                ].filter(Boolean).join(' – ')
+              : null;
+            return (
+              <div key={p.id} className="flex items-center gap-2 py-1 border-b border-slate-50 last:border-0">
+                <span className="text-[9px] font-mono font-bold px-1 py-0.5 rounded border border-slate-200 text-slate-500 shrink-0">{p.phaseCode}</span>
+                <span className="text-xs text-slate-700 flex-1 truncate">{p.name}</span>
+                {dateRange && <span className="text-[10px] text-slate-400 shrink-0 hidden sm:block">{dateRange}</span>}
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${cfg.chip} ${cfg.chipText}`}>
+                  {PORTAL_STATUS_LABELS[p.status] ?? p.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {noDates.length > 0 && withDates.length > 0 && (
+          <p className="text-[10px] text-slate-400 italic">
+            {noDates.length} phase{noDates.length !== 1 ? 's' : ''} not yet scheduled
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function JobPortal() {
   const { token } = useParams<{ token: string }>();
 
@@ -1091,6 +1287,7 @@ export default function JobPortal() {
   const showChecklist = data.visibility?.showChecklist !== false;
   const showActivityFeed = data.visibility?.showActivityFeed !== false && data.activityFeed && data.activityFeed.length > 0;
   const showPhotos = data.visibility?.showPhotos !== false;
+  const showProgramme = data.visibility?.showProgrammeOnPortal === true && data.phases != null;
 
   const mapsUrl = job.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`
@@ -1648,6 +1845,10 @@ export default function JobPortal() {
                 </div>
               </div>
             </div>
+          )}
+
+          {showProgramme && data.phases && (
+            <PortalProgramme phases={data.phases} />
           )}
 
           {showChecklist && data.checklistSummary && data.checklistSummary.total > 0 && (

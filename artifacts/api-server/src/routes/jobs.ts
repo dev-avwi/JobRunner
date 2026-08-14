@@ -5967,6 +5967,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         showChecklist: z.boolean().optional(),
         showActivityFeed: z.boolean().optional(),
         showFinancialsOnPortal: z.boolean().optional(),
+        showProgrammeOnPortal: z.boolean().optional(),
         clientMessage: z.string().max(500).nullable().optional(),
       });
 

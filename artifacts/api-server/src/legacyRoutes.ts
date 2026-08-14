@@ -17383,6 +17383,7 @@ Be specific about materials, colors, and features that would be included.`
       const showPhotos = portalToken.showPhotos !== false;
       const showChecklist = portalToken.showChecklist !== false;
       const showActivityFeed = portalToken.showActivityFeed !== false;
+      const showProgrammeOnPortal = portalToken.showProgrammeOnPortal === true;
 
       const timelineEvents: Array<{ stage: string; label: string; date: string | null; completed: boolean }> = [];
       timelineEvents.push({ stage: 'quoted', label: 'Quoted', date: job.createdAt ? new Date(job.createdAt).toISOString() : null, completed: true });
@@ -17486,11 +17487,28 @@ Be specific about materials, colors, and features that would be included.`
         timeline: showTimeline ? timelineEvents : null,
         activityFeed: showActivityFeed ? clientActivityFeed : [],
         clientMessage: portalToken.clientMessage || null,
+        phases: showProgrammeOnPortal ? await (async () => {
+          try {
+            const allPhases = await storage.getJobPhases(portalToken.jobId, portalToken.userId);
+            return allPhases
+              .sort((a: any, b: any) => a.sortOrder - b.sortOrder)
+              .map((p: any) => ({
+                id: p.id,
+                phaseCode: p.phaseCode,
+                name: p.name,
+                status: p.status,
+                sortOrder: p.sortOrder,
+                scheduledStart: p.scheduledStart || null,
+                scheduledEnd: p.scheduledEnd || null,
+              }));
+          } catch { return []; }
+        })() : null,
         visibility: {
           showTimeline,
           showPhotos,
           showChecklist,
           showActivityFeed,
+          showProgrammeOnPortal,
         },
       };
       

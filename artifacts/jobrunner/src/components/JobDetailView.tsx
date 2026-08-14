@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers, BarChart2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -1511,6 +1511,7 @@ export default function JobDetailView({
     showChecklist: true,
     showActivityFeed: true,
     showFinancialsOnPortal: false,
+    showProgrammeOnPortal: false,
     clientMessage: '' as string,
   });
   const [showPortalControls, setShowPortalControls] = useState(false);
@@ -1558,6 +1559,7 @@ export default function JobDetailView({
               showChecklist: activeToken.showChecklist !== false,
               showActivityFeed: activeToken.showActivityFeed !== false,
               showFinancialsOnPortal: activeToken.showFinancialsOnPortal === true,
+              showProgrammeOnPortal: activeToken.showProgrammeOnPortal === true,
               clientMessage: activeToken.clientMessage || '',
             });
             setPortalMessageDraft(activeToken.clientMessage || '');
@@ -1600,6 +1602,7 @@ export default function JobDetailView({
           showChecklist: data.showChecklist !== false,
           showActivityFeed: data.showActivityFeed !== false,
           showFinancialsOnPortal: data.showFinancialsOnPortal === true,
+          showProgrammeOnPortal: data.showProgrammeOnPortal === true,
           clientMessage: data.clientMessage || '',
         }));
       }
@@ -3503,6 +3506,7 @@ export default function JobDetailView({
                             { key: 'showChecklist' as const, label: 'Checklist Progress', icon: ListChecks },
                             { key: 'showActivityFeed' as const, label: 'Activity Feed', icon: Activity },
                             { key: 'showFinancialsOnPortal' as const, label: 'Schedule of Values & Claims', icon: DollarSign },
+                            { key: 'showProgrammeOnPortal' as const, label: 'Project Programme (Phase Timeline)', icon: BarChart2 },
                           ].map(({ key, label, icon: Icon }) => (
                             <div key={key} className="flex items-center justify-between gap-2">
                               <label className="text-xs flex items-center gap-1.5 cursor-pointer">
