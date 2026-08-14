@@ -2917,3 +2917,109 @@ export async function sendDailySummaryEmail(summaryData: DailySummaryData): Prom
     throw new Error('Email sending failed. Please try again.');
   }
 }
+
+// ── Progress Claim Submitted — client portal notification ─────────────────────
+
+/**
+ * Notify the client that a progress claim has been submitted and is ready to
+ * review in the client portal.  Only called when the portal is active for the
+ * job AND showFinancialsOnPortal is true.
+ */
+export async function sendProgressClaimSubmittedEmail(opts: {
+  clientEmail: string;
+  clientName: string | null;
+  businessName: string | null;
+  claimNumber: string | null;
+  periodStart: string | null;
+  periodEnd: string | null;
+  totalAmount: number;
+  portalUrl: string;
+  jobTitle: string | null;
+}): Promise<{ success: boolean; error?: string }> {
+  const {
+    clientEmail,
+    clientName,
+    businessName,
+    claimNumber,
+    periodStart,
+    periodEnd,
+    totalAmount,
+    portalUrl,
+    jobTitle,
+  } = opts;
+
+  const displayName = clientName ? clientName.split(' ')[0] : 'there';
+  const bizName = businessName || 'Your contractor';
+  const claimRef = claimNumber ? `#${claimNumber}` : '';
+
+  const formatD = (ds: string | null): string => {
+    if (!ds) return '';
+    const d = new Date(ds);
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+  };
+  const periodStr =
+    periodStart && periodEnd
+      ? `${formatD(periodStart)} – ${formatD(periodEnd)}`
+      : periodStart
+      ? `From ${formatD(periodStart)}`
+      : '';
+
+  const formattedTotal = new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: 'AUD',
+    minimumFractionDigits: 2,
+  }).format(totalAmount);
+
+  const emailData = {
+    to: clientEmail,
+    from: { email: PLATFORM_FROM_EMAIL, name: PLATFORM_FROM_NAME },
+    replyTo: PLATFORM_REPLY_TO_EMAIL,
+    subject: `Progress Claim ${claimRef} ready for review${jobTitle ? ` — ${jobTitle}` : ''}`,
+    html: renderEmailShell(
+      `Progress Claim ${claimRef}`,
+      `
+      ${jobRunnerHeader({ accentColor: '#2563EB' })}
+      <tr>
+        <td class="content" style="padding: 28px 32px 0 32px;">
+          <h1 style="margin: 0; color: #0f172a; font-size: 22px; font-weight: 700; line-height: 1.3;">Progress Claim ${claimRef} submitted</h1>
+          <p style="margin: 14px 0 0 0; color: #475569; font-size: 15px; line-height: 1.6;">Hi ${displayName}, <strong style="color: #0f172a;">${bizName}</strong> has submitted a progress claim for your review.</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="content" style="padding: 24px 32px 0 32px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <tr>
+              <td style="padding: 18px 22px;">
+                ${jobTitle ? `<p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 700;">${jobTitle}</p>` : ''}
+                ${periodStr ? `<p style="margin: ${jobTitle ? '10px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Period:</span> ${periodStr}</p>` : ''}
+                <p style="margin: ${periodStr || jobTitle ? '6px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Amount claimed:</span> <strong style="color: #0f172a;">${formattedTotal}</strong></p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td class="content" style="padding: 24px 32px 0 32px;">
+          <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;">You can review the full schedule of values and claim details in your client portal.</p>
+        </td>
+      </tr>
+      <tr>
+        <td class="content" style="padding: 24px 32px 32px 32px;">
+          ${emailCtaButton('View claim in portal', portalUrl, '#2563EB')}
+        </td>
+      </tr>
+      `,
+      'This is a transactional notification regarding your project progress claim.',
+    ),
+    _meta: { type: 'progress_claim_submitted' },
+  };
+
+  try {
+    await sendSystemEmail(emailData);
+    console.log(`✅ Progress claim submitted email sent to: ${clientEmail}`);
+    return { success: true };
+  } catch (error: unknown) {
+    console.error('❌ Failed to send progress claim submitted email:', error);
+    return { success: false, error: getErrorMessage(error) || 'Failed to send email' };
+  }
+}

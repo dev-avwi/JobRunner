@@ -13,6 +13,8 @@ import { storage } from "../storage";
 import * as xeroService from "../xeroService";
 import { generateProgressClaimPDF, generatePDFBuffer } from "../pdfService";
 import { computeRetentionSummary } from "./retentionSummary";
+import { sendProgressClaimSubmittedEmail } from "../emailService";
+import { getProductionBaseUrl } from "../urlHelper";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -489,6 +491,59 @@ export function registerClaimsRoutes(app: Express): void {
         submittedAt: new Date(),
       } as any);
       res.json(updated);
+
+      // ── Fire-and-forget: notify the client via email ─────────────────────────
+      // Run after the response is sent so email latency never blocks the caller.
+      (async () => {
+        try {
+          // 1. Portal must be active for this job
+          const portalToken = await storage.getActiveJobPortalToken(jobId);
+          if (!portalToken) return;
+
+          // 2. Financial details must be visible on the portal
+          if (!portalToken.showFinancialsOnPortal) return;
+
+          // 3. Fetch the job to get the client id and title
+          const job = await storage.getJob(jobId, effectiveUserId);
+          if (!job || !(job as any).clientId) return;
+
+          // 4. Fetch client — need their email
+          const client = await storage.getClient((job as any).clientId, effectiveUserId);
+          if (!client || !(client as any).email) return;
+
+          // 5. Fetch business name so the email reads "XYZ Constructions has submitted…"
+          const bizSettings = await storage.getBusinessSettings(effectiveUserId);
+          const businessName = bizSettings?.businessName || null;
+
+          // 6. Build portal URL and send
+          const baseUrl = getProductionBaseUrl();
+          const portalUrl = `${baseUrl}/p/${portalToken.token}`;
+
+          await sendProgressClaimSubmittedEmail({
+            clientEmail: (client as any).email,
+            clientName: (client as any).name || null,
+            businessName,
+            claimNumber: (updated as any)?.claimNumber || claim.claimNumber || null,
+            periodStart: (updated as any)?.periodStart
+              ? String((updated as any).periodStart)
+              : claim.periodStart
+              ? String(claim.periodStart)
+              : null,
+            periodEnd: (updated as any)?.periodEnd
+              ? String((updated as any).periodEnd)
+              : claim.periodEnd
+              ? String(claim.periodEnd)
+              : null,
+            totalAmount: parseFloat((updated as any)?.total ?? claim.total ?? '0') || 0,
+            portalUrl,
+            jobTitle: (job as any).title || null,
+          });
+        } catch (emailErr: any) {
+          // Non-fatal — log but never surface to the caller
+          console.error("[claims] submit email error:", emailErr?.message || emailErr);
+        }
+      })();
+      // ────────────────────────────────────────────────────────────────────────
     } catch (err: any) {
       console.error("[claims] submit error:", err);
       res.status(500).json({ error: err.message });
