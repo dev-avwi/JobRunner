@@ -2596,6 +2596,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   total: decimal("total", { precision: 10, scale: 2 }).default('0.00'),
   terms: text("terms"),
   notes: text("notes"),
+  receiptUrl: text("receipt_url"),
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),

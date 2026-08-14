@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, shadows, typography, fontWeights } from '../../lib/design-tokens';
@@ -18,10 +18,12 @@ interface PurchaseOrder {
   id: string;
   poNumber: string;
   supplierId?: string | null;
+  supplierName?: string | null;
   status?: string | null;
   orderDate?: string | null;
   total?: string | null;
   sentAt?: string | null;
+  receiptUrl?: string | null;
   items?: POItem[];
 }
 
@@ -144,7 +146,12 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
                           </View>
                         )}
                       </View>
-                      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: 3 }}>
+                      <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: 3, flexWrap: 'wrap' }}>
+                        {po.supplierName && (
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
+                            {po.supplierName}
+                          </Text>
+                        )}
                         {po.orderDate && (
                           <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
                             {formatDate(po.orderDate)}
@@ -213,6 +220,19 @@ export function PurchaseOrdersSection({ colors, purchaseOrders, isLoadingPOs, on
                   <View style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.md }}>
                     <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>No line items.</Text>
                   </View>
+                )}
+                {isExpanded && po.receiptUrl && (
+                  <TouchableOpacity
+                    style={{ borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+                    onPress={() => Linking.openURL(po.receiptUrl!)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="file-text" size={14} color={colors.primary} />
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.primary, flex: 1 }} numberOfLines={1}>
+                      View receipt / proof of purchase
+                    </Text>
+                    <Feather name="external-link" size={12} color={colors.primary} />
+                  </TouchableOpacity>
                 )}
               </View>
             );

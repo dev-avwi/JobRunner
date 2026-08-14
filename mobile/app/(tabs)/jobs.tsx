@@ -194,33 +194,17 @@ function MobileProjectHealthRow({ jobId, colors }: { jobId: string; colors: any 
 
   const dotColor: Record<string, string> = { green: '#22c55e', amber: '#f59e0b', red: '#ef4444' };
 
+  const parts: string[] = [];
+  if (totalPhases > 0) parts.push(`${donePhases}/${totalPhases} phases`);
+  if (claimedPct !== null) parts.push(`${claimedPct}% claimed`);
+
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: colors.border, flexWrap: 'wrap' }}>
-      {totalPhases > 0 && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Feather name="check-circle" size={11} color="#22c55e" />
-          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-            <Text style={{ fontWeight: '600', color: colors.foreground }}>{donePhases}/{totalPhases}</Text>
-            {' '}phases
-          </Text>
-        </View>
-      )}
-      {claimedPct !== null && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Feather name="dollar-sign" size={11} color="#3b82f6" />
-          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-            <Text style={{ fontWeight: '600', color: colors.foreground }}>{claimedPct}%</Text>
-            {' '}claimed
-          </Text>
-        </View>
-      )}
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
       {trafficLight && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor[trafficLight] ?? '#94a3b8' }} />
-          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-            {trafficLight === 'green' ? 'On budget' : trafficLight === 'amber' ? 'Near limit' : 'Over budget'}
-          </Text>
-        </View>
+        <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: dotColor[trafficLight] ?? '#94a3b8' }} />
+      )}
+      {parts.length > 0 && (
+        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{parts.join(' · ')}</Text>
       )}
     </View>
   );
@@ -296,6 +280,12 @@ function JobCard({
       <View style={styles.jobCardContent}>
         <View style={styles.jobCardStatusRow}>
           <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
+          {job.jobType === 'project' && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
+              <Feather name="layers" size={9} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 10, fontWeight: '500', color: colors.mutedForeground }}>Project</Text>
+            </View>
+          )}
           {job.isRecurring && (
             <View style={styles.recurringBadge}>
               <Feather name="repeat" size={10} color={colors.primary} />
@@ -322,14 +312,9 @@ function JobCard({
           </View>
         </View>
 
-        {(job.jobNumber || job.jobType === 'project') && (
+        {job.jobNumber && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-            {job.jobNumber && (
-              <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
-            )}
-            {job.jobType === 'project' && (
-              <Text style={{ fontSize: 11, fontWeight: '500', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' as any }}>Project</Text>
-            )}
+            <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: '600', color: colors.mutedForeground, backgroundColor: colors.muted, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
           </View>
         )}
         <Text style={styles.jobTitle} numberOfLines={2}>{job.title || 'Untitled Job'}</Text>
@@ -1386,7 +1371,7 @@ export default function JobsScreen() {
 
     if (viewMode === 'grid') {
       return (
-        <View style={{ position: 'relative' }}>
+        <View style={{ flex: 1, position: 'relative' }}>
           {batchMode && isCompleted && (
             <TouchableOpacity
               style={[
@@ -2088,6 +2073,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     flexDirection: 'row',
     gap: spacing.sm,
     marginBottom: spacing.sm,
+    alignItems: 'stretch',
   },
   jobsList: {
     gap: spacing.sm,
@@ -2184,7 +2170,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     padding: spacing.xs,
   },
   jobCard: {
-    width: (contentWidth - horizontalPadding * 2 - spacing.sm) / 2,
+    flex: 1,
     backgroundColor: colors.card,
     borderRadius: radius.xl,
     borderWidth: 1,

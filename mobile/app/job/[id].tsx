@@ -2254,7 +2254,7 @@ export default function JobDetailScreen() {
   const [claimPrefillPhase, setClaimPrefillPhase] = useState<JobPhase | null>(null);
   const [showPhaseClaimPrompt, setShowPhaseClaimPrompt] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
-  const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '' });
+  const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '', receiptUrl: '' });
   const [isSavingPO, setIsSavingPO] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
@@ -2864,7 +2864,7 @@ export default function JobDetailScreen() {
 
   const handleClosePOModal = useCallback(() => {
     setShowAddPOModal(false);
-    setAddPOForm({ poNumber: '', notes: '', estimatedTotal: '' });
+    setAddPOForm({ poNumber: '', notes: '', estimatedTotal: '', receiptUrl: '' });
     setSelectedPOSupplierId(null);
     setSuppliersLoadError(false);
     setShowInlineSupplierList(false);
@@ -2881,16 +2881,29 @@ export default function JobDetailScreen() {
       return;
     }
     setIsSavingPO(true);
-    const isCustom = selectedPOSupplierId.startsWith('custom:');
+    // If the user typed a custom supplier name, create the supplier first so we
+    // always have a real supplierId (the DB column is NOT NULL).
+    let resolvedSupplierId = selectedPOSupplierId;
+    if (selectedPOSupplierId.startsWith('custom:')) {
+      const customName = selectedPOSupplierId.slice(7);
+      const supplierRes = await api.post<Supplier>('/api/suppliers', { name: customName });
+      if (supplierRes.error || !supplierRes.data?.id) {
+        setIsSavingPO(false);
+        showToast({ type: 'error', message: 'Failed to create supplier. Please try again.' });
+        return;
+      }
+      resolvedSupplierId = supplierRes.data.id;
+      // Add to local list so it appears in future searches this session
+      setSuppliers(prev => [...prev, supplierRes.data as Supplier]);
+    }
     const res = await api.post<any>('/api/purchase-orders', {
       jobId: id,
       status: 'pending',
       poNumber: addPOForm.poNumber.trim(),
       notes: addPOForm.notes.trim() || null,
+      receiptUrl: addPOForm.receiptUrl.trim() || null,
       orderDate: new Date().toISOString(),
-      ...(isCustom
-        ? { supplierName: selectedPOSupplierId.slice(7) }
-        : { supplierId: selectedPOSupplierId }),
+      supplierId: resolvedSupplierId,
     });
     setIsSavingPO(false);
     if (res.error) {
@@ -10820,7 +10833,9 @@ export default function JobDetailScreen() {
               <Text style={{ fontSize: typography.sizes.md, color: colors.destructive, flex: 1 }}>Failed to load. Tap to retry.</Text>
             ) : selectedPOSupplierId ? (
               <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
-                {suppliers.find(s => s.id === selectedPOSupplierId)?.name ?? 'Unknown supplier'}
+                {selectedPOSupplierId.startsWith('custom:')
+                  ? selectedPOSupplierId.slice(7)
+                  : suppliers.find(s => s.id === selectedPOSupplierId)?.name ?? 'Select supplier'}
               </Text>
             ) : (
               <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground, flex: 1 }}>Select supplier</Text>
@@ -10899,6 +10914,25 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
+
+          {/* Receipt / Proof of Purchase */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>
+            Receipt / Proof of Purchase
+            <Text style={{ fontWeight: '400', color: colors.mutedForeground }}> (optional)</Text>
+          </Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.xs }]}
+            placeholder="Paste a link — Google Drive, Dropbox, email, etc."
+            placeholderTextColor={colors.mutedForeground}
+            value={addPOForm.receiptUrl}
+            onChangeText={(t) => setAddPOForm(f => ({ ...f, receiptUrl: t }))}
+            autoCapitalize="none"
+            keyboardType="url"
+            returnKeyType="done"
+          />
+          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.lg }}>
+            Link to a photo of the receipt, delivery docket, or any proof of purchase.
+          </Text>
         </View>
       </AppBottomSheet>
 

@@ -444,29 +444,23 @@ export function SiteDiarySection({
       )}
 
       {/* Add / Edit Modal */}
-      <Modal visible={showForm} animationType="slide" presentationStyle="pageSheet">
+      <Modal
+        visible={showForm}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeForm}
+      >
         <KeyboardAvoidingView
           style={{ flex: 1, backgroundColor: colors.background }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           {/* Modal header */}
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={closeForm} disabled={saving}>
-              <Text style={[s.modalCancel, { color: colors.primary }]}>Cancel</Text>
-            </TouchableOpacity>
             <Text style={[s.modalTitle, { color: colors.foreground }]}>
-              {editingEntry ? 'Edit Entry' : 'New Diary Entry'}
+              {editingEntry ? 'Edit Diary Entry' : 'New Diary Entry'}
             </Text>
-            <TouchableOpacity
-              onPress={handleSave}
-              disabled={saving || !form.entryDate}
-              style={[s.modalSave, { backgroundColor: colors.primary }]}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={s.modalSaveText}>Save</Text>
-              )}
+            <TouchableOpacity onPress={closeForm} disabled={saving}>
+              <Feather name="x" size={22} color={colors.foreground} />
             </TouchableOpacity>
           </View>
 
@@ -476,8 +470,8 @@ export function SiteDiarySection({
             keyboardShouldPersistTaps="handled"
           >
             {/* Date */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Date</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Date</Text>
               <TextInput
                 style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
                 value={form.entryDate}
@@ -489,8 +483,8 @@ export function SiteDiarySection({
             </View>
 
             {/* Weather */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Weather</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Weather (optional)</Text>
               <TouchableOpacity
                 style={[s.textInput, { borderColor: colors.border, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
                 onPress={() => setShowWeatherPicker(true)}
@@ -503,8 +497,8 @@ export function SiteDiarySection({
             </View>
 
             {/* Workers */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Workers on site</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Workers on site (optional)</Text>
               <TextInput
                 style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
                 value={form.workersOnSite}
@@ -516,8 +510,8 @@ export function SiteDiarySection({
             </View>
 
             {/* Work done */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Summary of work done</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Summary of work done (optional)</Text>
               <TextInput
                 style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
                 value={form.workDone}
@@ -531,8 +525,8 @@ export function SiteDiarySection({
             </View>
 
             {/* Issues */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Issues / delays</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Issues / delays (optional)</Text>
               <TextInput
                 style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
                 value={form.issuesDelays}
@@ -546,14 +540,14 @@ export function SiteDiarySection({
             </View>
 
             {/* Photos */}
-            <View>
-              <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Photos</Text>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Photos (optional)</Text>
               <TouchableOpacity
-                style={[s.photoPickBtn, { borderColor: colors.border }]}
+                style={[s.photoPickBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
                 onPress={pickPhoto}
               >
-                <Feather name="camera" size={16} color={colors.primary} />
-                <Text style={{ color: colors.primary, fontSize: typography.button.fontSize }}>Attach photos</Text>
+                <Feather name="camera" size={20} color={colors.mutedForeground} />
+                <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize }}>Attach photos</Text>
               </TouchableOpacity>
               {newPhotos.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }}>
@@ -574,6 +568,26 @@ export function SiteDiarySection({
               )}
             </View>
           </ScrollView>
+
+          {/* Footer submit button */}
+          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
+            <TouchableOpacity
+              style={[
+                s.submitBtn,
+                { backgroundColor: colors.primary, opacity: saving || !form.entryDate ? 0.5 : 1 },
+              ]}
+              onPress={handleSave}
+              disabled={saving || !form.entryDate}
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={s.submitBtnText}>
+                  {editingEntry ? 'Save Changes' : 'Save Entry'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Weather picker modal */}
           <Modal visible={showWeatherPicker} transparent animationType="slide">
@@ -734,10 +748,6 @@ function localStyles(colors: any) {
       backgroundColor: `${colors.muted}40`,
       gap: spacing.sm,
     },
-    field: {
-      gap: spacing.xxs ?? 3,
-      marginTop: spacing.sm,
-    },
     fieldLabel: {
       fontSize: typography.captionSmall.fontSize,
       fontWeight: fontWeights.semibold,
@@ -781,37 +791,40 @@ function localStyles(colors: any) {
     },
     modalHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
       justifyContent: 'space-between',
-      padding: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.md,
       borderBottomWidth: 1,
     },
-    modalCancel: {
-      fontSize: typography.sizes.sm,
-    },
     modalTitle: {
-      fontSize: typography.subtitle.fontSize,
-      fontWeight: fontWeights.semibold,
+      fontSize: typography.sizes.lg,
+      fontWeight: fontWeights.bold,
     },
-    modalSave: {
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
+    modalFooter: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      borderTopWidth: 1,
+    },
+    submitBtn: {
+      paddingVertical: spacing.md,
       borderRadius: radius.md,
-      minWidth: 60,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 44,
     },
-    modalSaveText: {
+    submitBtnText: {
       color: '#fff',
+      fontWeight: fontWeights.semibold,
       fontSize: typography.button.fontSize,
-      fontWeight: fontWeights.semibold,
     },
-    inputLabel: {
-      fontSize: typography.captionSmall.fontSize,
+    field: {
+      gap: spacing.xs,
+    },
+    label: {
+      fontSize: typography.caption.fontSize,
       fontWeight: fontWeights.semibold,
-      textTransform: 'uppercase',
-      letterSpacing: 0.3,
-      marginBottom: spacing.xs,
     },
     textInput: {
       borderWidth: 1,
