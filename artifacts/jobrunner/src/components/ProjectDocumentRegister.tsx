@@ -52,6 +52,7 @@ import {
   Clock,
   X,
   AlertCircle,
+  FileDown,
 } from 'lucide-react';
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -568,6 +569,37 @@ function RfiRow({
 export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocumentRegisterProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}/project-documents/export`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const msg = await res.text().catch(() => 'Unknown error');
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = res.headers.get('content-disposition') || '';
+      const match = disposition.match(/filename="([^"]+)"/);
+      a.download = match ? match[1] : `document-register-${jobId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: 'Export ready', description: 'Document register PDF downloaded.' });
+    } catch (err: any) {
+      toast({ title: 'Export failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setExportingPdf(false);
+    }
+  };
 
   // Upload document dialog state
   const [showUploadDialog, setShowUploadDialog] = useState(false);
@@ -727,12 +759,29 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
               Document Register
               {documents.length > 0 && <Badge variant="secondary" className="text-xs">{documents.length}</Badge>}
             </CardTitle>
-            {canUpload && (
-              <Button size="sm" variant="outline" onClick={() => setShowUploadDialog(true)} className="h-7 text-xs gap-1">
-                <Plus className="h-3 w-3" />
-                Register Document
-              </Button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {documents.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExportPdf}
+                  disabled={exportingPdf}
+                  className="h-7 text-xs gap-1"
+                  title="Export document register as PDF"
+                >
+                  {exportingPdf
+                    ? <Loader2 className="h-3 w-3 animate-spin" />
+                    : <FileDown className="h-3 w-3" />}
+                  Export register
+                </Button>
+              )}
+              {canUpload && (
+                <Button size="sm" variant="outline" onClick={() => setShowUploadDialog(true)} className="h-7 text-xs gap-1">
+                  <Plus className="h-3 w-3" />
+                  Register Document
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

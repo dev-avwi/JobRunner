@@ -22,6 +22,242 @@ function releasePdfSlot(): void {
 
 export { pdfQueue, BackpressureError };
 
+// ── Document Register PDF ─────────────────────────────────────────────────────
+
+export interface DocRegisterDocument {
+  docNumber: string;
+  title: string;
+  category: string;
+  currentRevision: string;
+  revisions: Array<{
+    revision: string;
+    fileName: string;
+    uploadedAt: string;
+    uploadedByName?: string | null;
+    notes?: string | null;
+  }>;
+}
+
+export interface DocRegisterRfi {
+  rfiNumber: string;
+  question: string;
+  description?: string | null;
+  assignedToName?: string | null;
+  status: string;
+  answerText?: string | null;
+  answeredAt?: string | null;
+  createdAt: string;
+}
+
+export function generateDocumentRegisterPDF(data: {
+  job: { number?: string | null; title?: string | null; address?: string | null; scheduledAt?: string | null; completedAt?: string | null };
+  business: { businessName?: string | null; logoUrl?: string | null; phone?: string | null; email?: string | null };
+  documents: DocRegisterDocument[];
+  rfis: DocRegisterRfi[];
+  exportedAt: string;
+}): string {
+  const { job, business, documents, rfis, exportedAt } = data;
+
+  const esc = (v: string | null | undefined) =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const fmtDate = (d: string | null | undefined) => {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const logoHtml = business.logoUrl
+    ? `<img src="${business.logoUrl}" class="logo" alt="${esc(business.businessName)}" />`
+    : '';
+
+  const DOC_CATEGORIES = ['Drawings', 'Specifications', 'RFIs', 'SWMS', 'Certificates', 'Other'];
+
+  const groupedDocs: Record<string, DocRegisterDocument[]> = {};
+  for (const cat of DOC_CATEGORIES) groupedDocs[cat] = [];
+  for (const doc of documents) {
+    const cat = DOC_CATEGORIES.includes(doc.category) ? doc.category : 'Other';
+    groupedDocs[cat].push(doc);
+  }
+
+  const rfiStatusLabel = (s: string) =>
+    s === 'open' ? 'Open' : s === 'answered' ? 'Answered' : 'Closed';
+  const rfiStatusColor = (s: string) =>
+    s === 'open' ? '#f59e0b' : s === 'answered' ? '#3b82f6' : '#6b7280';
+
+  const docSectionsHtml = DOC_CATEGORIES.filter(cat => groupedDocs[cat].length > 0).map(cat => {
+    const rows = groupedDocs[cat].map(doc => {
+      const revRows = doc.revisions.length === 0
+        ? `<tr><td colspan="4" style="color:#9ca3af;font-style:italic;padding:4px 8px">No revisions</td></tr>`
+        : doc.revisions.map((rev, i) => `
+          <tr class="${i % 2 === 0 ? 'even' : ''}">
+            <td style="font-family:monospace;white-space:nowrap">Rev ${esc(rev.revision)}</td>
+            <td>${esc(rev.fileName)}</td>
+            <td style="white-space:nowrap">${fmtDate(rev.uploadedAt)}</td>
+            <td>${esc(rev.uploadedByName || '')}</td>
+          </tr>`).join('');
+
+      return `
+        <tr class="doc-header-row">
+          <td style="width:100px;font-family:monospace;font-size:11px">${esc(doc.docNumber)}</td>
+          <td><strong>${esc(doc.title)}</strong></td>
+          <td style="width:80px;text-align:center;font-family:monospace">Rev ${esc(doc.currentRevision)}</td>
+          <td style="width:80px;text-align:center;color:#6b7280;font-size:11px">${doc.revisions.length} rev${doc.revisions.length !== 1 ? 's' : ''}</td>
+        </tr>
+        <tr class="rev-rows-wrapper">
+          <td colspan="4" style="padding:0">
+            <table class="rev-table">
+              <thead>
+                <tr>
+                  <th style="width:80px">Revision</th>
+                  <th>File</th>
+                  <th style="width:100px">Uploaded</th>
+                  <th style="width:120px">By</th>
+                </tr>
+              </thead>
+              <tbody>${revRows}</tbody>
+            </table>
+          </td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="category-section">
+        <h3 class="category-heading">${esc(cat)}</h3>
+        <table class="doc-table">
+          <thead>
+            <tr>
+              <th style="width:100px">Doc #</th>
+              <th>Title</th>
+              <th style="width:80px">Current Rev</th>
+              <th style="width:80px">History</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }).join('');
+
+  const rfisHtml = rfis.length === 0 ? '<p class="empty-note">No RFIs raised for this project.</p>' : `
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th style="width:90px">RFI #</th>
+          <th>Question</th>
+          <th style="width:70px">Status</th>
+          <th style="width:90px">Raised</th>
+          <th style="width:90px">Answered</th>
+          <th style="width:110px">Assigned To</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rfis.map((rfi, i) => `
+        <tr class="${i % 2 === 0 ? 'even' : ''}">
+          <td style="font-family:monospace;font-size:11px">${esc(rfi.rfiNumber)}</td>
+          <td>
+            <div>${esc(rfi.question)}</div>
+            ${rfi.answerText ? `<div style="color:#4b5563;font-size:11px;margin-top:3px"><em>Answer:</em> ${esc(rfi.answerText)}</div>` : ''}
+          </td>
+          <td><span style="display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:600;color:#fff;background:${rfiStatusColor(rfi.status)}">${rfiStatusLabel(rfi.status)}</span></td>
+          <td style="white-space:nowrap;font-size:11px">${fmtDate(rfi.createdAt)}</td>
+          <td style="white-space:nowrap;font-size:11px">${fmtDate(rfi.answeredAt)}</td>
+          <td style="font-size:11px">${esc(rfi.assignedToName || '—')}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+
+  const dateRange = (() => {
+    if (job.scheduledAt && job.completedAt)
+      return `${fmtDate(job.scheduledAt)} → ${fmtDate(job.completedAt)}`;
+    if (job.scheduledAt) return `From ${fmtDate(job.scheduledAt)}`;
+    return '—';
+  })();
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Document Register — ${esc(job.number || '')} ${esc(job.title || '')}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #1e3a5f; }
+  .header-left { flex: 1; }
+  .logo { max-height: 60px; max-width: 200px; object-fit: contain; }
+  .business-name { font-size: 18px; font-weight: 700; color: #1e3a5f; }
+  .business-contact { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .header-right { text-align: right; }
+  .report-title { font-size: 20px; font-weight: 700; color: #1e3a5f; }
+  .report-meta { font-size: 11px; color: #6b7280; margin-top: 4px; }
+  .job-info { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px 16px; margin-bottom: 24px; display: flex; gap: 32px; flex-wrap: wrap; }
+  .job-info-item { }
+  .job-info-label { font-size: 10px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.05em; }
+  .job-info-value { font-size: 13px; font-weight: 600; color: #1f2937; margin-top: 2px; }
+  .summary-bar { display: flex; gap: 20px; margin-bottom: 24px; }
+  .summary-pill { background: #1e3a5f; color: #fff; border-radius: 6px; padding: 10px 18px; text-align: center; min-width: 90px; }
+  .summary-pill .num { font-size: 22px; font-weight: 700; }
+  .summary-pill .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; margin-top: 2px; }
+  .section-heading { font-size: 15px; font-weight: 700; color: #1e3a5f; margin-bottom: 14px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+  .category-section { margin-bottom: 24px; }
+  .category-heading { font-size: 13px; font-weight: 700; color: #374151; background: #f1f5f9; padding: 6px 10px; border-radius: 4px; margin-bottom: 8px; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 4px; }
+  .doc-table th { background: #1e3a5f; color: #fff; text-align: left; padding: 6px 10px; font-weight: 600; font-size: 11px; }
+  .doc-table td { padding: 6px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  .doc-header-row td { background: #f8fafc; font-weight: 500; }
+  .rev-rows-wrapper td { background: #fff; }
+  .rev-table { width: 100%; border-collapse: collapse; font-size: 11px; border-top: 1px solid #e9edf2; }
+  .rev-table th { background: #eef2f7; color: #4b5563; text-align: left; padding: 4px 10px 4px 20px; font-weight: 600; font-size: 10px; letter-spacing: 0.04em; }
+  .rev-table td { padding: 4px 10px 4px 20px; color: #6b7280; border-bottom: 1px solid #f5f5f5; }
+  .rev-table tr.even td { background: #fafafa; }
+  .even td { background: #fafbfc; }
+  .empty-note { color: #9ca3af; font-style: italic; font-size: 12px; padding: 8px 0; }
+  .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #9ca3af; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    ${logoHtml}
+    ${!logoHtml ? `<div class="business-name">${esc(business.businessName || 'Business')}</div>` : `<div class="business-name" style="margin-top:6px">${esc(business.businessName || '')}</div>`}
+    ${(business.phone || business.email) ? `<div class="business-contact">${[business.phone, business.email].filter(Boolean).map(esc).join(' · ')}</div>` : ''}
+  </div>
+  <div class="header-right">
+    <div class="report-title">Document Register</div>
+    <div class="report-meta">Handover Pack</div>
+    <div class="report-meta" style="margin-top:4px">Exported ${fmtDate(exportedAt)}</div>
+  </div>
+</div>
+
+<div class="job-info">
+  ${job.number ? `<div class="job-info-item"><div class="job-info-label">Job #</div><div class="job-info-value">${esc(job.number)}</div></div>` : ''}
+  ${job.title ? `<div class="job-info-item"><div class="job-info-label">Project</div><div class="job-info-value">${esc(job.title)}</div></div>` : ''}
+  ${job.address ? `<div class="job-info-item"><div class="job-info-label">Address</div><div class="job-info-value">${esc(job.address)}</div></div>` : ''}
+  <div class="job-info-item"><div class="job-info-label">Period</div><div class="job-info-value">${dateRange}</div></div>
+</div>
+
+<div class="summary-bar">
+  <div class="summary-pill"><div class="num">${documents.length}</div><div class="lbl">Document${documents.length !== 1 ? 's' : ''}</div></div>
+  <div class="summary-pill"><div class="num">${documents.reduce((s, d) => s + d.revisions.length, 0)}</div><div class="lbl">Revisions</div></div>
+  <div class="summary-pill"><div class="num">${rfis.length}</div><div class="lbl">RFI${rfis.length !== 1 ? 's' : ''}</div></div>
+  <div class="summary-pill" style="background:#f59e0b"><div class="num">${rfis.filter(r => r.status === 'open').length}</div><div class="lbl">Open RFIs</div></div>
+</div>
+
+${documents.length > 0 ? `<h2 class="section-heading">Documents</h2>${docSectionsHtml}` : '<p class="empty-note" style="margin-bottom:24px">No documents registered for this project.</p>'}
+
+<h2 class="section-heading" style="margin-top:12px">Requests for Information (RFIs)</h2>
+${rfisHtml}
+
+<div class="footer">
+  <span>${esc(business.businessName || '')} · Document Register · ${esc(job.number || '')} ${esc(job.title || '')}</span>
+  <span>Generated ${fmtDate(exportedAt)}</span>
+</div>
+
+</body>
+</html>`;
+}
+
 /**
  * Resolves a logo URL from object storage path to a base64 data URL.
  * This is necessary because Puppeteer can't access /objects/* paths directly.

@@ -9389,6 +9389,122 @@ import { computeRetentionSummary } from "./retentionSummary";
 
   // ── Project Document Register ─────────────────────────────────────────────
 
+  // ── Document Register Export (PDF) ────────────────────────────────────────
+  // Must be registered BEFORE /:docId routes so Express doesn't capture "export".
+  app.get("/api/jobs/:jobId/project-documents/export", requireAuth, pdfPerUserLimiter, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      const business = await storage.getBusinessSettings(effectiveUserId);
+
+      const { projectDocuments: pd, projectDocumentRevisions: pdr, projectRfis } = await import("@workspace/db");
+
+      // Load all documents for this job
+      const docs = await db.select().from(pd)
+        .where(and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)))
+        .orderBy(asc(pd.docNumber));
+
+      // Load all revisions for every document (one query, filtered in JS)
+      const allRevisions = docs.length > 0
+        ? await db.select().from(pdr)
+            .where(inArray(pdr.documentId, docs.map((d: any) => d.id)))
+            .orderBy(desc(pdr.uploadedAt))
+        : [];
+
+      // Group revisions by documentId
+      const revsByDocId: Record<string, typeof allRevisions> = {};
+      for (const rev of allRevisions) {
+        if (!revsByDocId[rev.documentId]) revsByDocId[rev.documentId] = [];
+        revsByDocId[rev.documentId].push(rev);
+      }
+
+      // Load RFIs
+      const rfis = await db.select().from(projectRfis)
+        .where(and(eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)))
+        .orderBy(asc(projectRfis.rfiNumber));
+
+      // Resolve uploader names for revisions via team members
+      const teamMembers = await storage.getTeamMembers(effectiveUserId);
+      const memberById = new Map<string, string>();
+      for (const m of teamMembers) {
+        if (m.memberId) {
+          const displayName = [m.firstName, m.lastName].filter(Boolean).join(' ').trim() || m.email || m.memberId;
+          memberById.set(m.memberId, displayName);
+        }
+      }
+      // Also include the business owner
+      const ownerUser = await storage.getUserById(effectiveUserId);
+      if (ownerUser) {
+        const ownerName = [ownerUser.firstName, ownerUser.lastName].filter(Boolean).join(' ').trim() || ownerUser.email || effectiveUserId;
+        memberById.set(effectiveUserId, ownerName);
+      }
+
+      const { generateDocumentRegisterPDF, generatePDFBuffer, resolveBusinessLogoForPdf } = await import('../pdfService');
+
+      const resolvedBusiness = await resolveBusinessLogoForPdf({
+        businessName: (business as any)?.businessName ?? null,
+        logoUrl: (business as any)?.logoUrl ?? null,
+        phone: (business as any)?.phone ?? null,
+        email: (business as any)?.email ?? null,
+      });
+
+      const docData = docs.map((doc: any) => ({
+        docNumber: doc.docNumber,
+        title: doc.title,
+        category: doc.category,
+        currentRevision: doc.currentRevision,
+        revisions: (revsByDocId[doc.id] || []).map((rev: any) => ({
+          revision: rev.revision,
+          fileName: rev.fileName,
+          uploadedAt: rev.uploadedAt instanceof Date ? rev.uploadedAt.toISOString() : String(rev.uploadedAt ?? ''),
+          uploadedByName: rev.uploadedBy ? (memberById.get(rev.uploadedBy) ?? null) : null,
+          notes: rev.notes ?? null,
+        })),
+      }));
+
+      const rfiData = rfis.map((rfi: any) => ({
+        rfiNumber: rfi.rfiNumber,
+        question: rfi.question,
+        description: rfi.description ?? null,
+        assignedToName: rfi.assignedToName ?? null,
+        status: rfi.status,
+        answerText: rfi.answerText ?? null,
+        answeredAt: rfi.answeredAt instanceof Date ? rfi.answeredAt.toISOString() : (rfi.answeredAt ?? null),
+        createdAt: rfi.createdAt instanceof Date ? rfi.createdAt.toISOString() : String(rfi.createdAt ?? ''),
+      }));
+
+      const html = generateDocumentRegisterPDF({
+        job: {
+          number: (job as any).jobNumber ?? null,
+          title: job.title ?? null,
+          address: job.address ?? null,
+          scheduledAt: job.scheduledAt instanceof Date ? job.scheduledAt.toISOString() : (job.scheduledAt ?? null),
+          completedAt: (job as any).completedAt instanceof Date ? (job as any).completedAt.toISOString() : ((job as any).completedAt ?? null),
+        },
+        business: resolvedBusiness,
+        documents: docData,
+        rfis: rfiData,
+        exportedAt: new Date().toISOString(),
+      });
+
+      const pdfBuffer = await generatePDFBuffer(html);
+      const safeNum = ((job as any).jobNumber || jobId).replace(/[^a-z0-9-]/gi, '-');
+      const fileName = `document-register-${safeNum}.pdf`;
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('Error generating document register PDF:', error);
+      res.status(500).json({ error: 'Failed to generate document register PDF' });
+    }
+  });
+
   app.get("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
