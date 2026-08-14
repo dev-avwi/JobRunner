@@ -941,8 +941,34 @@ export function TimesheetList({
   const [entryCategory, setEntryCategory] = useState<string>("work");
   const [entryDistanceKm, setEntryDistanceKm] = useState<string>("");
 
-  // Category filter state (empty = show all)
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Category filter state — persisted to localStorage so returning to the page
+  // restores the last-used selection.
+  const CATEGORY_FILTER_KEY = 'timesheet-category-filters';
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(CATEGORY_FILTER_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) return parsed as string[];
+      }
+    } catch {
+      // Ignore parse errors and fall back to empty selection
+    }
+    return [];
+  });
+
+  // Sync filter selection to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (selectedCategories.length === 0) {
+        localStorage.removeItem(CATEGORY_FILTER_KEY);
+      } else {
+        localStorage.setItem(CATEGORY_FILTER_KEY, JSON.stringify(selectedCategories));
+      }
+    } catch {
+      // localStorage may be unavailable (private browsing, quota exceeded)
+    }
+  }, [selectedCategories]);
 
   const toggleCategory = (value: string) => {
     setSelectedCategories(prev =>
