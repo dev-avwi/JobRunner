@@ -250,6 +250,7 @@ import { generateQuoteEmailTemplate, generateInvoiceEmailTemplate } from "../ema
 import { notifyOwnerViaSms, notifyOwnerViaEmail } from "../notificationService";
 
 import { logSystemEvent } from "../systemEventService";
+import { computeRetentionSummary } from "./retentionSummary";
 
 
   // Escape user-provided values before embedding them in HTML emails/templates.
@@ -6443,6 +6444,17 @@ import { logSystemEvent } from "../systemEventService";
           supplier: m.supplier,
           status: m.status,
         })),
+        retentionSummary: await (async () => {
+          try {
+            const allClaims = await storage.getClaims(jobId, userId);
+            return computeRetentionSummary(allClaims, {
+              practicalCompletionDate: (job as any).practicalCompletionDate || null,
+              defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
+            });
+          } catch (_) {
+            return null;
+          }
+        })(),
       });
     } catch (error) {
       console.error("Get job profitability error:", error);

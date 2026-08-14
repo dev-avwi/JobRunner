@@ -760,6 +760,11 @@ export const jobs = pgTable("jobs", {
   jobType: text("job_type").default('service'), // 'service' | 'project'
   // Auto-generated job number (e.g., GEM1001). Set when businessSettings.jobPrefix is configured.
   jobNumber: text("job_number"),
+  // Retention / holdback ledger fields (for project-type jobs with progress claims)
+  // practicalCompletionDate: the date the project reached practical completion (PC)
+  // defectsLiabilityMonths: DLP period in months after PC; retention is due at PC + DLP
+  practicalCompletionDate: date("practical_completion_date"),
+  defectsLiabilityMonths: integer("defects_liability_months").default(12),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

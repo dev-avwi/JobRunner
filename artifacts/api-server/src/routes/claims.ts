@@ -12,6 +12,7 @@ import { getUserContext, ownerOrManagerOnly } from "../permissions";
 import { storage } from "../storage";
 import * as xeroService from "../xeroService";
 import { generateProgressClaimPDF, generatePDFBuffer } from "../pdfService";
+import { computeRetentionSummary } from "./retentionSummary";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -145,6 +146,51 @@ export function registerClaimsRoutes(app: Express): void {
       const gstEnabled = bizSettings?.gstEnabled ?? false;
       const retentionPercent = claimData.retentionPercent ?? "0.00";
 
+      // ── Retention-release: eligibility + duplicate guard ─────────────────────
+      // All reads happen before any write so no orphan claim is created on rejection.
+      if ((claimData.notes ?? "").trim().toLowerCase() === "retention release") {
+        // 0. Project-type guard — retention release is only meaningful on project
+        //    jobs. Service jobs may accrue retentionAmount if a non-zero retention %
+        //    was set, but the full release flow is project-scoped only.
+        if ((job as any).jobType !== "project") {
+          return res.status(403).json({
+            error: "Retention Release claims can only be created for project-type jobs",
+          });
+        }
+
+        const existingClaims = await storage.getClaims(jobId, effectiveUserId);
+
+        // 1. Duplicate check — application-level fast path (DB unique index is
+        //    the true atomic backstop for concurrent requests).
+        const conflicting = existingClaims.find(
+          (c: any) =>
+            (c.notes ?? "").trim().toLowerCase() === "retention release" &&
+            (c.status === "draft" || c.status === "submitted" || c.status === "approved" || c.status === "paid"),
+        );
+        if (conflicting) {
+          return res.status(409).json({
+            error: "A Retention Release claim already exists for this job",
+            existingClaimId: conflicting.id,
+            existingStatus: conflicting.status,
+          });
+        }
+
+        // 2. DLP eligibility — retention may only be released after the defects
+        //    liability period has expired.
+        const summary = computeRetentionSummary(existingClaims, {
+          practicalCompletionDate: (job as any).practicalCompletionDate || null,
+          defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
+        });
+        if (summary.retentionStatus !== "dlp_ended") {
+          return res.status(403).json({
+            error: "Retention cannot be released before the defects liability period has ended",
+            retentionStatus: summary.retentionStatus,
+            releaseDate: summary.releaseDate,
+          });
+        }
+      }
+      // ────────────────────────────────────────────────────────────────────────
+
       // ── Variation pre-flight validation (all reads, no writes yet) ──────────
       // Validate BEFORE creating anything so no orphan claim is left on rejection.
       const variationLineItems = lineItems.filter((li) => (li as any).variationId);
@@ -180,7 +226,9 @@ export function registerClaimsRoutes(app: Express): void {
       }
       // ────────────────────────────────────────────────────────────────────────
 
-      // Create the claim header
+      // Create the claim header. The outer try/catch below converts postgres
+      // error 23505 (unique-index violation from the DB-level duplicate guard)
+      // to a 409 so concurrent requests can't both create a Retention Release.
       const claim = await storage.createClaim({
         jobId,
         userId: effectiveUserId,
@@ -238,6 +286,20 @@ export function registerClaimsRoutes(app: Express): void {
       res.status(201).json({ claim: fresh, lineItems: savedItems });
     } catch (err: any) {
       console.error("[claims] create error:", err);
+      // DB unique-index violation (23505) — concurrent request won the race to
+      // create a Retention Release claim; return 409 instead of 500.
+      // DB unique-index violation on the retention-release guard index.
+      // PostgreSQL exposes the violated constraint name in err.constraint (not
+      // err.detail), so we match on that to avoid false-positives from other
+      // 23505 violations in the same handler (e.g. variation uniqueness).
+      if (
+        err?.code === "23505" &&
+        err?.constraint === "idx_claims_one_retention_release_active"
+      ) {
+        return res.status(409).json({
+          error: "A Retention Release claim already exists for this job (concurrent request)",
+        });
+      }
       res.status(500).json({ error: err.message });
     }
   });

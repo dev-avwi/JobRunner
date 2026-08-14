@@ -8932,6 +8932,57 @@ export default function JobDetailScreen() {
         );
       })()}
 
+      {/* Retention held summary — project jobs with retention only */}
+      {(isOwnerOrManager || isSoloOwner) && job.jobType === 'project' && (() => {
+        const rs = profitabilityData ? (profitabilityData as any).retentionSummary : null;
+        if (!rs || (rs.outstandingRetention ?? rs.sumRetentionHeld) <= 0) return null;
+        const statusLabels: Record<string, string> = {
+          pre_pc: 'Pre-completion',
+          in_dlp: 'In DLP',
+          dlp_ended: 'DLP ended — due now',
+          released: 'Released',
+        };
+        const statusColors: Record<string, string> = {
+          pre_pc: colors.warning,
+          in_dlp: colors.primary,
+          dlp_ended: colors.success,
+          released: colors.mutedForeground,
+        };
+        const st = rs.retentionStatus as string;
+        const stColor = statusColors[st] ?? colors.mutedForeground;
+        const stLabel = statusLabels[st] ?? st;
+        return (
+          <View style={[styles.costingCard, { marginBottom: spacing.md }]}>
+            <View style={styles.costingHeader}>
+              <View style={[styles.costingIconContainer, { backgroundColor: `${stColor}15` }]}>
+                <Feather name="lock" size={iconSizes.lg} color={stColor} />
+              </View>
+              <Text style={styles.costingTitle}>Retention Held</Text>
+              <View style={{ marginLeft: 'auto', backgroundColor: `${stColor}15`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs, borderRadius: radius.md }}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: stColor }}>{stLabel}</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.sm }}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Total withheld</Text>
+              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                {formatCurrency(rs.outstandingRetention ?? rs.sumRetentionHeld)}
+              </Text>
+            </View>
+            {rs.releaseDate && (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.xs }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Due date</Text>
+                <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground }}>
+                  {new Date(rs.releaseDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </Text>
+              </View>
+            )}
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.sm }}>
+              View full retention details on the web dashboard.
+            </Text>
+          </View>
+        );
+      })()}
+
       {/* Job Costing Section - hidden for subcontractors */}
       {!isSubcontractorUser && (estimatedHours > 0 || estimatedCost > 0 || actualHours > 0) && (
         <View style={styles.costingCard}>

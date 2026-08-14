@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -200,6 +200,12 @@ export default function JobDetailView({
   });
   const [inspectionNotesInput, setInspectionNotesInput] = useState("");
   const [workerPopoverOpen, setWorkerPopoverOpen] = useState(false);
+  // Retention ledger state
+  const [retentionEditMode, setRetentionEditMode] = useState(false);
+  const [retentionPcDate, setRetentionPcDate] = useState('');
+  const [retentionDlpMonths, setRetentionDlpMonths] = useState('12');
+  const [retentionSaving, setRetentionSaving] = useState(false);
+  const [retentionReleasing, setRetentionReleasing] = useState(false);
   
   // Update current time every second for live timer display
   useEffect(() => {
@@ -327,6 +333,12 @@ export default function JobDetailView({
   const { data: jobVariations = [] } = useQuery<any[]>({
     queryKey: ['/api/jobs', jobId, 'variations'],
     enabled: !!jobId,
+  });
+
+  // Profitability data — also carries retentionSummary for the retention ledger card
+  const { data: jobProfitabilityData } = useQuery<any>({
+    queryKey: ['/api/jobs', jobId, 'profitability'],
+    enabled: !isTradie && !!jobId,
   });
 
   const { data: jobEquipmentList = [] } = useQuery<JobEquipmentAssignment[]>({
@@ -1706,6 +1718,194 @@ export default function JobDetailView({
     return groups;
   };
 
+  // ── Retention ledger card (computed before return; uses top-level state/hooks) ──
+  const retentionStatusConfig = {
+    no_retention:     { label: 'No retention held',                color: 'text-muted-foreground',                            bg: 'bg-muted' },
+    pre_pc:           { label: 'Pre-completion — retention held',  color: 'text-amber-700 dark:text-amber-400',               bg: 'bg-amber-50 dark:bg-amber-950/30' },
+    in_dlp:           { label: 'In DLP — retention held',         color: 'text-blue-700 dark:text-blue-400',                 bg: 'bg-blue-50 dark:bg-blue-950/30' },
+    dlp_ended:        { label: 'DLP ended — retention due',       color: 'text-green-700 dark:text-green-400',               bg: 'bg-green-50 dark:bg-green-950/30' },
+    release_pending:  { label: 'Release claim in progress',       color: 'text-orange-700 dark:text-orange-400',             bg: 'bg-orange-50 dark:bg-orange-950/30' },
+    released:         { label: 'Released',                        color: 'text-muted-foreground',                            bg: 'bg-muted' },
+  } as const;
+
+  const handleSaveRetention = async () => {
+    setRetentionSaving(true);
+    try {
+      await apiRequest('PATCH', `/api/jobs/${jobId}`, {
+        practicalCompletionDate: retentionPcDate || null,
+        defectsLiabilityMonths: parseInt(retentionDlpMonths) || 12,
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'profitability'] });
+      setRetentionEditMode(false);
+    } catch (err: any) {
+      toast({ title: 'Failed to save', description: err.message, variant: 'destructive' });
+    } finally {
+      setRetentionSaving(false);
+    }
+  };
+
+  const handleReleaseRetention = async () => {
+    const rs = jobProfitabilityData?.retentionSummary;
+    if (!rs?.outstandingRetention || rs.outstandingRetention <= 0) return;
+    if (retentionReleasing) return; // in-flight guard (double-click / concurrent tab)
+    // Client-side hint: server will enforce the real 409 guard atomically
+    if (rs.hasReleasePending) {
+      toast({ title: 'Release already in progress', description: 'A Retention Release claim already exists. Review and approve it first.', variant: 'destructive' });
+      return;
+    }
+    setRetentionReleasing(true);
+    try {
+      const amountStr = rs.outstandingRetention.toFixed(2);
+      const response = await apiRequest('POST', `/api/jobs/${jobId}/claims`, {
+        claimDate: new Date().toISOString().split('T')[0],
+        retentionPercent: '0.00',
+        notes: 'Retention Release',
+        lineItems: [{
+          description: 'Retention Release',
+          contractValue: amountStr,
+          previouslyClaimed: '0.00',
+          thisClaim: amountStr,
+          retentionPercent: '0.00',
+          sortOrder: 0,
+        }],
+      });
+      const data = await response.json();
+      toast({ title: 'Retention Release claim created', description: 'Draft claim created — review and submit.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'claims'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'profitability'] });
+      if (data?.claim?.id) {
+        navigate(`/jobs/${jobId}?tab=claims`);
+      }
+    } catch (err: any) {
+      // 409 means a concurrent release got in first — refresh the summary so the UI reflects it
+      if (err?.message?.includes('409') || err?.status === 409) {
+        toast({ title: 'Release already exists', description: 'A Retention Release claim was created by another session. Refreshing…', variant: 'destructive' });
+        queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'profitability'] });
+      } else {
+        toast({ title: 'Failed to create release claim', description: err.message, variant: 'destructive' });
+      }
+    } finally {
+      setRetentionReleasing(false);
+    }
+  };
+
+  const retentionCard = (!isTradie && (job as any)?.jobType === 'project') ? (() => {
+    const rs = jobProfitabilityData?.retentionSummary;
+    const rsStatus = (rs?.retentionStatus ?? 'no_retention') as keyof typeof retentionStatusConfig;
+    const rsCfg = retentionStatusConfig[rsStatus] ?? retentionStatusConfig.no_retention;
+    const outstanding = rs?.outstandingRetention ?? rs?.sumRetentionHeld ?? 0;
+    // Only allow release once DLP has ended — not pre_pc or in_dlp
+    const canRelease = outstanding > 0 && rsStatus === 'dlp_ended' && !retentionEditMode;
+
+    return (
+      <Card data-testid="card-retention-ledger">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Banknote className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+              <CardTitle className="text-sm font-medium">Retention</CardTitle>
+            </div>
+            {!retentionEditMode && (
+              <Button size="sm" variant="ghost" onClick={() => {
+                setRetentionPcDate((job as any)?.practicalCompletionDate ?? '');
+                setRetentionDlpMonths(String((job as any)?.defectsLiabilityMonths ?? 12));
+                setRetentionEditMode(true);
+              }}>
+                <Edit className="h-3.5 w-3.5 mr-1" />
+                Edit dates
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          {/* Primary figure: outstanding (held − released) */}
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Outstanding retention</span>
+            <span className="text-sm font-semibold">
+              {rs ? `$${outstanding.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
+            </span>
+          </div>
+          {/* Show total withheld separately when some has been released */}
+          {rs && rs.sumRetentionHeld > outstanding && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-muted-foreground">Total withheld</span>
+              <span className="text-sm text-muted-foreground">
+                ${rs.sumRetentionHeld.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
+
+          {retentionEditMode ? (
+            <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+              <div className="space-y-1">
+                <Label className="text-xs">Practical Completion Date</Label>
+                <Input type="date" value={retentionPcDate} onChange={e => setRetentionPcDate(e.target.value)} className="h-8 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Defects Liability Period (months)</Label>
+                <Input type="number" min={0} max={60} value={retentionDlpMonths} onChange={e => setRetentionDlpMonths(e.target.value)} className="h-8 text-sm" />
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveRetention} disabled={retentionSaving}>
+                  {retentionSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
+                  Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setRetentionEditMode(false)} disabled={retentionSaving}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Practical completion</span>
+                <span className="text-sm">
+                  {(job as any)?.practicalCompletionDate
+                    ? format(new Date((job as any).practicalCompletionDate), 'dd MMM yyyy')
+                    : <span className="text-muted-foreground italic">Not set</span>}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">DLP period</span>
+                <span className="text-sm">{(job as any)?.defectsLiabilityMonths ?? 12} months</span>
+              </div>
+              {rs?.releaseDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Retention due date</span>
+                  <span className="text-sm">{format(new Date(rs.releaseDate), 'dd MMM yyyy')}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {rs !== undefined && (
+            <div className={`rounded-md px-3 py-1.5 ${rsCfg.bg}`}>
+              <span className={`text-xs font-medium ${rsCfg.color}`}>{rsCfg.label}</span>
+            </div>
+          )}
+
+          {/* Release button — only when retention is outstanding and no release pending */}
+          {canRelease && (
+            <Button size="sm" variant="outline" className="w-full" onClick={handleReleaseRetention} disabled={retentionReleasing}>
+              {retentionReleasing
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+                : <Banknote className="h-3.5 w-3.5 mr-1.5" />}
+              {retentionReleasing ? 'Creating claim…' : `Release Retention ($${outstanding.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`}
+            </Button>
+          )}
+          {/* Pending release — show link to claim instead of button */}
+          {rs?.hasReleasePending && rs.releasePendingClaimId && !retentionEditMode && (
+            <Button size="sm" variant="ghost" className="w-full text-muted-foreground" onClick={() => navigate(`/jobs/${jobId}?tab=claims`)}>
+              <AlertTriangle className="h-3.5 w-3.5 mr-1.5" />
+              Release claim pending review — view claim
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    );
+  })() : null;
+
   if (jobError || !job) {
     return (
       <PageShell data-testid="job-detail-error">
@@ -2698,7 +2898,8 @@ export default function JobDetailView({
             <JobProfitabilityCard jobId={jobId} />
           )}
 
-
+          {/* ── Retention Ledger (project-type jobs only, owners/managers) ── */}
+          {retentionCard}
 
           {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || jobMaterials.length > 0) && (
             <Card data-testid="card-job-brief">
