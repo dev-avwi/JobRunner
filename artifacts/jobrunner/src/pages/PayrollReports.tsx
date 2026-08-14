@@ -349,7 +349,8 @@ export default function PayrollReports() {
       work: 'Site Work', travel: 'Driving/Travel', materials: 'Supplies Run',
       admin: 'Admin/Office', meeting: 'Meeting', training: 'Training', other: 'Other',
     };
-    const headers = ['Name', 'Type', 'Regular Hours', 'Overtime Hours', 'Break Hours', 'Total Hours', 'Billable Hours', 'Rate ($/hr)', 'Overtime Pay', 'Gross Pay', 'Jobs', 'Approved', 'Unapproved', 'Category Breakdown'];
+    const travelRatePerKm: number = payrollData.travelRatePerKm || 0;
+    const headers = ['Name', 'Type', 'Regular Hours', 'Overtime Hours', 'Break Hours', 'Total Hours', 'Billable Hours', 'Rate ($/hr)', 'Overtime Pay', 'Gross Pay', 'Travel Distance (km)', 'Travel Allowance ($)', 'Jobs', 'Approved', 'Unapproved', 'Category Breakdown'];
     const rows = payrollData.workers.map((w: any) => {
       const catBreakdown = w.timeCategories
         ? Object.entries(w.timeCategories as Record<string, number>)
@@ -357,11 +358,13 @@ export default function PayrollReports() {
             .map(([k, h]) => `${categoryLabels[k] ?? k}: ${(h as number).toFixed(1)}h`)
             .join('; ')
         : '';
+      const travelAllowance: number = w.travelAllowance ?? (travelRatePerKm > 0 ? Math.round((w.totalDistanceKm || 0) * travelRatePerKm * 100) / 100 : 0);
       return [
         `${w.firstName || ''} ${w.lastName || ''}`.trim(),
         w.isSubcontractor ? 'Subcontractor' : 'Employee',
         w.regularHours, w.overtimeHours, w.breakHours, w.totalHours, w.billableHours,
         w.hourlyRate.toFixed(2), w.overtimePay.toFixed(2), w.grossPay.toFixed(2),
+        (w.totalDistanceKm || 0).toFixed(1), travelAllowance.toFixed(2),
         w.jobCount, w.approved, w.unapproved,
         catBreakdown,
       ];
@@ -539,11 +542,25 @@ export default function PayrollReports() {
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-1">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground font-medium">Total Pay</span>
+                    <span className="text-xs text-muted-foreground font-medium">Gross Pay</span>
                   </div>
                   <p className="text-2xl font-bold">{fmtAud(payrollData?.totals?.totalPay || 0)}</p>
                 </CardContent>
               </Card>
+              {(payrollData?.travelRatePerKm > 0 || (payrollData?.totals?.totalTravelAllowance || 0) > 0) && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-xs text-muted-foreground font-medium">Travel Allowance</span>
+                    </div>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{fmtAud(payrollData?.totals?.totalTravelAllowance || 0)}</p>
+                    {payrollData?.travelRatePerKm > 0 && (
+                      <p className="text-xs text-muted-foreground mt-0.5">${Number(payrollData.travelRatePerKm).toFixed(4)}/km</p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-1">

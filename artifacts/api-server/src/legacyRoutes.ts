@@ -16385,11 +16385,17 @@ Be specific about materials, colors, and features that would be included.`
         if (p.workerUserId) paymentByWorker.set(p.workerUserId, p);
       }
 
+      // Fetch travel rate for allowance calculation
+      const [bsRow] = await db.select({ travelRatePerKm: businessSettings.travelRatePerKm })
+        .from(businessSettings).where(eq(businessSettings.userId, ownerId)).limit(1);
+      const travelRatePerKm = parseFloat(bsRow?.travelRatePerKm || '0') || 0;
+
       const workerSummaries = [];
       let totalPayAll = 0;
       let totalHoursAll = 0;
       let totalPaidAll = 0;
       let totalOutstandingAll = 0;
+      let totalTravelAllowanceAll = 0;
 
       for (const member of filteredMembers) {
         if (!member.memberId) continue;
@@ -16405,6 +16411,7 @@ Be specific about materials, colors, and features that would be included.`
         const rate = parseFloat(member.hourlyRate || '0') || 0;
 
         let regularMins = 0, overtimeMins = 0, breakMins = 0, billableMins = 0, nonBillableMins = 0;
+        let totalDistanceKm = 0;
         const jobIdSet = new Set<string>();
         const categories: Record<string, number> = {};
 
@@ -16424,6 +16431,10 @@ Be specific about materials, colors, and features that would be included.`
           if (e.jobId) jobIdSet.add(e.jobId);
           const cat = e.timeCategory || 'work';
           categories[cat] = (categories[cat] || 0) + dur;
+          // Accumulate driving distance for travel allowance
+          if (cat === 'travel' && e.distanceKm) {
+            totalDistanceKm += parseFloat(String(e.distanceKm)) || 0;
+          }
         }
 
         const regularHrs = regularMins / 60;
@@ -16431,12 +16442,14 @@ Be specific about materials, colors, and features that would be included.`
         const breakHrs = breakMins / 60;
         const totalHrs = regularHrs + overtimeHrs;
         const grossPay = (regularHrs * rate) + (overtimeHrs * rate * 1.5);
+        const travelAllowance = Math.round(totalDistanceKm * travelRatePerKm * 100) / 100;
 
         const role = await db.select().from(userRoles).where(eq(userRoles.id, member.roleId)).limit(1);
         const isSubcontractor = role[0]?.name?.toLowerCase().includes('subcontractor') || false;
 
         totalPayAll += grossPay;
         totalHoursAll += totalHrs;
+        totalTravelAllowanceAll += travelAllowance;
 
         const roundedGross = Math.round(grossPay * 100) / 100;
         const payment = paymentByWorker.get(member.memberId);
@@ -16459,6 +16472,8 @@ Be specific about materials, colors, and features that would be included.`
           nonBillableHours: Math.round(nonBillableMins / 60 * 100) / 100,
           grossPay: roundedGross,
           overtimePay: Math.round(overtimeHrs * rate * 1.5 * 100) / 100,
+          travelAllowance,
+          totalDistanceKm: Math.round(totalDistanceKm * 10) / 10,
           jobCount: jobIdSet.size,
           timeCategories: Object.fromEntries(Object.entries(categories).map(([k, v]) => [k, Math.round(v / 60 * 100) / 100])),
           entryCount: entries.filter(e => !e.isBreak).length,
@@ -16475,11 +16490,13 @@ Be specific about materials, colors, and features that would be included.`
       res.json({
         period: { start: periodStart.toISOString(), end: periodEnd.toISOString() },
         workers: workerSummaries,
+        travelRatePerKm,
         totals: {
           totalHours: Math.round(totalHoursAll * 100) / 100,
           totalPay: Math.round(totalPayAll * 100) / 100,
           totalPaid: Math.round(totalPaidAll * 100) / 100,
           totalOutstanding: Math.round(totalOutstandingAll * 100) / 100,
+          totalTravelAllowance: Math.round(totalTravelAllowanceAll * 100) / 100,
           paidCount: workerSummaries.filter(w => w.paid).length,
           outstandingCount: workerSummaries.filter(w => !w.paid).length,
           workerCount: workerSummaries.length,
