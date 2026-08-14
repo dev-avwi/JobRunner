@@ -328,6 +328,8 @@ export default function Settings({
     defaultMaterialMarkupPct: 20,
     defaultEquipmentMarkupPct: 15,
     defaultSubcontractorMarkupPct: 10,
+    // Travel allowance rate ($/km) for driving/travel time entries
+    travelRatePerKm: 0.85,
   });
 
   // Signature settings
@@ -604,6 +606,7 @@ export default function Settings({
         defaultMaterialMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultMaterialMarkupPct); return isNaN(v) ? 20 : v; })(),
         defaultEquipmentMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultEquipmentMarkupPct); return isNaN(v) ? 15 : v; })(),
         defaultSubcontractorMarkupPct: (() => { const v = parseFloat((businessSettings as any).defaultSubcontractorMarkupPct); return isNaN(v) ? 10 : v; })(),
+        travelRatePerKm: (() => { const v = parseFloat((businessSettings as any).travelRatePerKm); return isNaN(v) ? 0.85 : v; })(),
       });
       
       // Load signature settings
@@ -774,6 +777,7 @@ export default function Settings({
       defaultMaterialMarkupPct: paymentData.defaultMaterialMarkupPct.toString(),
       defaultEquipmentMarkupPct: paymentData.defaultEquipmentMarkupPct.toString(),
       defaultSubcontractorMarkupPct: paymentData.defaultSubcontractorMarkupPct.toString(),
+      travelRatePerKm: paymentData.travelRatePerKm.toString(),
       // Signature settings
       defaultSignature: signatureData.defaultSignature,
       signatureName: signatureData.signatureName,
@@ -2758,6 +2762,23 @@ export default function Settings({
                     onChange={(e) => setPaymentData(prev => ({ ...prev, quoteValidityDays: Number(e.target.value) }))}
                     data-testid="input-quote-validity"
                   />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="travel-rate-per-km">Travel Allowance ($/km)</Label>
+                  <Input
+                    id="travel-rate-per-km"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={paymentData.travelRatePerKm}
+                    onChange={(e) => setPaymentData(prev => ({ ...prev, travelRatePerKm: Number(e.target.value) }))}
+                    placeholder="0.85"
+                    data-testid="input-travel-rate-per-km"
+                  />
+                  <p className="text-xs text-muted-foreground">Rate per km for Driving / Travel entries. Shown on payroll export.</p>
                 </div>
               </div>
 

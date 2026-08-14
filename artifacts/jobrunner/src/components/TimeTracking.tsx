@@ -42,14 +42,25 @@ import { useLocation } from "wouter";
 import { format } from "date-fns";
 
 // Time entry categories for billable/non-billable tracking
-const TIME_CATEGORY_LABELS: Record<string, { label: string; icon: typeof Clock }> = {
-  work: { label: 'Work', icon: Briefcase },
-  travel: { label: 'Travel', icon: Car },
-  admin: { label: 'Admin', icon: Clipboard },
-  training: { label: 'Training', icon: GraduationCap },
-  meeting: { label: 'Meeting', icon: Users },
-  materials: { label: 'Materials', icon: Clock },
+const TIME_CATEGORY_LABELS: Record<string, { label: string; icon: typeof Clock; color: string }> = {
+  work:      { label: 'Site Work',       icon: Briefcase,    color: '#2563EB' },
+  travel:    { label: 'Driving / Travel', icon: Car,         color: '#7C3AED' },
+  materials: { label: 'Supplies Run',    icon: Clipboard,    color: '#D97706' },
+  admin:     { label: 'Admin / Office',  icon: Clipboard,    color: '#0891B2' },
+  training:  { label: 'Training',        icon: GraduationCap, color: '#DB2777' },
+  meeting:   { label: 'Meeting',         icon: Users,        color: '#059669' },
+  other:     { label: 'Other',           icon: Clock,        color: '#6B7280' },
 };
+
+const TIME_CATEGORY_OPTIONS = [
+  { value: 'work',      label: '🔨 Site Work' },
+  { value: 'travel',    label: '🚗 Driving / Travel' },
+  { value: 'materials', label: '🛒 Supplies Run' },
+  { value: 'admin',     label: '🖥️ Admin / Office' },
+  { value: 'meeting',   label: '📋 Meeting' },
+  { value: 'training',  label: '🎓 Training' },
+  { value: 'other',     label: '⚙️ Other' },
+];
 
 // Types for time tracking
 interface TimeEntry {
@@ -925,6 +936,8 @@ export function TimesheetList({
   const [entryEnd, setEntryEnd] = useState<string>("17:00");
   const [entryDescription, setEntryDescription] = useState<string>("");
   const [entryBillable, setEntryBillable] = useState<boolean>(true);
+  const [entryCategory, setEntryCategory] = useState<string>("work");
+  const [entryDistanceKm, setEntryDistanceKm] = useState<string>("");
 
   // Jobs for the entry's job selector (only loaded while the dialog is open)
   const { data: jobsForEntry = [] } = useQuery<any[]>({
@@ -939,6 +952,8 @@ export function TimesheetList({
     setEntryEnd("17:00");
     setEntryDescription("");
     setEntryBillable(true);
+    setEntryCategory("work");
+    setEntryDistanceKm("");
   };
 
   // Create a manual (completed) time entry
@@ -947,6 +962,7 @@ export function TimesheetList({
       const start = new Date(`${entryDate}T${entryStart}`);
       const end = new Date(`${entryDate}T${entryEnd}`);
       const durationMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
+      const distanceKmVal = entryCategory === 'travel' && entryDistanceKm.trim() ? entryDistanceKm.trim() : undefined;
       return apiRequest('POST', '/api/time-entries', {
         jobId: entryJobId || undefined,
         startTime: start.toISOString(),
@@ -954,6 +970,8 @@ export function TimesheetList({
         duration: durationMinutes,
         description: entryDescription || undefined,
         isBillable: entryBillable,
+        timeCategory: entryCategory,
+        distanceKm: distanceKmVal,
       });
     },
     onSuccess: () => {
@@ -1085,6 +1103,34 @@ export function TimesheetList({
               data-testid="switch-entry-billable"
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="entry-category">Category</Label>
+            <Select value={entryCategory} onValueChange={(v) => { setEntryCategory(v); if (v !== 'travel') setEntryDistanceKm(''); }}>
+              <SelectTrigger id="entry-category" data-testid="select-entry-category">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TIME_CATEGORY_OPTIONS.map(opt => (
+                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {entryCategory === 'travel' && (
+            <div className="space-y-2">
+              <Label htmlFor="entry-distance">Distance (km)</Label>
+              <Input
+                id="entry-distance"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="0.0"
+                value={entryDistanceKm}
+                onChange={(e) => setEntryDistanceKm(e.target.value)}
+                data-testid="input-entry-distance"
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => { setShowAddEntry(false); resetEntryForm(); }} data-testid="button-cancel-entry">
@@ -1173,7 +1219,7 @@ export function TimesheetList({
                 data-testid={`row-time-entry-${entry.id}`}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <h4 className="font-medium truncate" data-testid={`text-entry-description-${entry.id}`}>
                       {entry.description}
                     </h4>
@@ -1186,6 +1232,15 @@ export function TimesheetList({
                       <Badge variant="secondary" className="text-xs">
                         <Users className="h-3 w-3 mr-1" />
                         {entry.userName}
+                      </Badge>
+                    )}
+                    {!entry.isBreak && entry.timeCategory && entry.timeCategory !== 'work' && TIME_CATEGORY_LABELS[entry.timeCategory] && (
+                      <Badge
+                        variant="outline"
+                        className="text-xs"
+                        style={{ borderColor: TIME_CATEGORY_LABELS[entry.timeCategory].color + '60', color: TIME_CATEGORY_LABELS[entry.timeCategory].color }}
+                      >
+                        {TIME_CATEGORY_LABELS[entry.timeCategory].label}
                       </Badge>
                     )}
                   </div>

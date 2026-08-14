@@ -345,14 +345,27 @@ export default function PayrollReports() {
 
   const exportPayrollCSV = () => {
     if (!payrollData?.workers) return;
-    const headers = ['Name', 'Type', 'Regular Hours', 'Overtime Hours', 'Break Hours', 'Total Hours', 'Billable Hours', 'Rate ($/hr)', 'Overtime Pay', 'Gross Pay', 'Jobs', 'Approved', 'Unapproved'];
-    const rows = payrollData.workers.map((w: any) => [
-      `${w.firstName || ''} ${w.lastName || ''}`.trim(),
-      w.isSubcontractor ? 'Subcontractor' : 'Employee',
-      w.regularHours, w.overtimeHours, w.breakHours, w.totalHours, w.billableHours,
-      w.hourlyRate.toFixed(2), w.overtimePay.toFixed(2), w.grossPay.toFixed(2),
-      w.jobCount, w.approved, w.unapproved
-    ]);
+    const categoryLabels: Record<string, string> = {
+      work: 'Site Work', travel: 'Driving/Travel', materials: 'Supplies Run',
+      admin: 'Admin/Office', meeting: 'Meeting', training: 'Training', other: 'Other',
+    };
+    const headers = ['Name', 'Type', 'Regular Hours', 'Overtime Hours', 'Break Hours', 'Total Hours', 'Billable Hours', 'Rate ($/hr)', 'Overtime Pay', 'Gross Pay', 'Jobs', 'Approved', 'Unapproved', 'Category Breakdown'];
+    const rows = payrollData.workers.map((w: any) => {
+      const catBreakdown = w.timeCategories
+        ? Object.entries(w.timeCategories as Record<string, number>)
+            .filter(([, h]) => (h as number) > 0)
+            .map(([k, h]) => `${categoryLabels[k] ?? k}: ${(h as number).toFixed(1)}h`)
+            .join('; ')
+        : '';
+      return [
+        `${w.firstName || ''} ${w.lastName || ''}`.trim(),
+        w.isSubcontractor ? 'Subcontractor' : 'Employee',
+        w.regularHours, w.overtimeHours, w.breakHours, w.totalHours, w.billableHours,
+        w.hourlyRate.toFixed(2), w.overtimePay.toFixed(2), w.grossPay.toFixed(2),
+        w.jobCount, w.approved, w.unapproved,
+        catBreakdown,
+      ];
+    });
     const csv = [headers.join(','), ...rows.map((r: any[]) => r.map(csvEscape).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);

@@ -473,6 +473,8 @@ export const businessSettings = pgTable("business_settings", {
   defaultMaterialMarkupPct: decimal("default_material_markup_pct", { precision: 5, scale: 2 }).default('20.00'),
   defaultEquipmentMarkupPct: decimal("default_equipment_markup_pct", { precision: 5, scale: 2 }).default('15.00'),
   defaultSubcontractorMarkupPct: decimal("default_subcontractor_markup_pct", { precision: 5, scale: 2 }).default('10.00'),
+  // Travel allowance rate (per km) applied to Driving/Travel time entries for payroll export
+  travelRatePerKm: decimal("travel_rate_per_km", { precision: 10, scale: 4 }).default('0.0000'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1658,6 +1660,8 @@ export const timeEntries = pgTable("time_entries", {
   disputedAt: timestamp("disputed_at"),
   disputeResolvedAt: timestamp("dispute_resolved_at"),
   disputeResolution: text("dispute_resolution"),
+  // Driving/travel distance tracking — populated when timeCategory = 'travel'
+  distanceKm: decimal("distance_km", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

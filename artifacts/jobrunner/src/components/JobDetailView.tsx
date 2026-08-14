@@ -3923,6 +3923,41 @@ export default function JobDetailView({
                     </div>
                   ))}
                 </div>
+                {(() => {
+                  // Category breakdown across all work entries for this job
+                  const catMap: Record<string, number> = {};
+                  const CAT_LABELS: Record<string, string> = {
+                    work: '🔨 Site Work', travel: '🚗 Driving', materials: '🛒 Supplies',
+                    admin: '🖥️ Admin', meeting: '📋 Meeting', training: '🎓 Training', other: '⚙️ Other',
+                  };
+                  const CAT_COLORS: Record<string, string> = {
+                    work: '#2563EB', travel: '#7C3AED', materials: '#D97706',
+                    admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280',
+                  };
+                  timeEntries.filter(e => !e.isBreak && e.endTime).forEach(e => {
+                    const cat = (e as any).timeCategory || 'work';
+                    const mins = (e as any).duration || Math.floor((new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / 60000);
+                    catMap[cat] = (catMap[cat] || 0) + mins;
+                  });
+                  const cats = Object.entries(catMap).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a);
+                  if (cats.length <= 1) return null;
+                  return (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs font-medium text-muted-foreground mb-2">Hours by Category</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {cats.map(([cat, mins]) => (
+                          <span
+                            key={cat}
+                            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: (CAT_COLORS[cat] ?? '#6B7280') + '18', color: CAT_COLORS[cat] ?? '#6B7280' }}
+                          >
+                            {CAT_LABELS[cat] ?? cat} {Math.round(mins / 6) / 10}h
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {actualHoursData.laborCost > 0 && (
                   <div className="mt-3 pt-3 border-t">
                     <div className="flex items-center justify-between mb-2">

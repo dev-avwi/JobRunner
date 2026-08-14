@@ -8506,6 +8506,7 @@ Be specific about materials, colors, and features that would be included.`
     'geofenceSmsAlerts', 'smsMode', 'smartRunningLateEnabled', 'pushNotificationsEnabled',
     'googleReviewUrl', 'bookingSlug', 'bookingPageEnabled',
     'bookingPageServices', 'bookingPageDescription',
+    'travelRatePerKm',
   ];
 
   app.get("/api/business-settings", requireAuth, async (req: any, res) => {
@@ -8709,6 +8710,9 @@ Be specific about materials, colors, and features that would be included.`
       if (typeof businessSettingsData.calloutFee === 'number') {
         businessSettingsData.calloutFee = String(businessSettingsData.calloutFee);
       }
+      if (typeof businessSettingsData.travelRatePerKm === 'number') {
+        businessSettingsData.travelRatePerKm = String(businessSettingsData.travelRatePerKm);
+      }
       
       const data = businessSettingsWriteSchema.parse(businessSettingsData);
       const settings = await storage.createBusinessSettings({ ...data, userId: req.userId });
@@ -8739,6 +8743,9 @@ Be specific about materials, colors, and features that would be included.`
       }
       if (typeof businessSettingsData.calloutFee === 'number') {
         businessSettingsData.calloutFee = String(businessSettingsData.calloutFee);
+      }
+      if (typeof businessSettingsData.travelRatePerKm === 'number') {
+        businessSettingsData.travelRatePerKm = String(businessSettingsData.travelRatePerKm);
       }
       
       const data = businessSettingsWriteSchema.partial().parse(businessSettingsData);
@@ -28323,7 +28330,7 @@ Respond with JSON in this format:
       }
       
       const editSource = isEditingSelf ? 'manual' : 'supervisor';
-      const fieldsToTrack = ['startTime', 'endTime', 'duration', 'hourlyRate', 'description', 'isBillable', 'timeCategory', 'isBreak', 'isOvertime', 'jobId'];
+      const fieldsToTrack = ['startTime', 'endTime', 'duration', 'hourlyRate', 'description', 'isBillable', 'timeCategory', 'isBreak', 'isOvertime', 'jobId', 'distanceKm'];
       
       for (const field of fieldsToTrack) {
         if ((data as any)[field] !== undefined) {

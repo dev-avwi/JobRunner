@@ -48,6 +48,8 @@ interface TimeEntry {
   isBreak?: boolean;
   isBillable?: boolean;
   hourlyRate?: string | number | null;
+  timeCategory?: string;
+  distanceKm?: string | number | null;
   category?: string;
   createdAt?: string;
   isDisputed?: boolean;
@@ -58,6 +60,34 @@ interface TimeEntry {
   userName?: string;
   userEmail?: string;
 }
+
+// Category definitions
+const TIME_CATEGORIES = [
+  { value: 'work',      label: 'Site Work',       emoji: '🔨' },
+  { value: 'travel',    label: 'Driving / Travel', emoji: '🚗' },
+  { value: 'materials', label: 'Supplies Run',     emoji: '🛒' },
+  { value: 'admin',     label: 'Admin / Office',   emoji: '🖥️' },
+  { value: 'meeting',   label: 'Meeting',          emoji: '📋' },
+  { value: 'training',  label: 'Training',         emoji: '🎓' },
+  { value: 'other',     label: 'Other',            emoji: '⚙️' },
+] as const;
+
+type TimeCategory = typeof TIME_CATEGORIES[number]['value'];
+
+function getCategoryMeta(value?: string | null) {
+  return TIME_CATEGORIES.find(c => c.value === value) ?? TIME_CATEGORIES[0];
+}
+
+// Category chip colors (background and text, both light/dark agnostic via opacity)
+const CATEGORY_COLORS: Record<string, string> = {
+  work:      '#2563EB',
+  travel:    '#7C3AED',
+  materials: '#D97706',
+  admin:     '#0891B2',
+  meeting:   '#059669',
+  training:  '#DB2777',
+  other:     '#6B7280',
+};
 
 interface WeeklyStats {
   day: string;
@@ -831,6 +861,8 @@ export default function TimeTrackingScreen() {
   const [showEntryEndPicker, setShowEntryEndPicker] = useState(false);
   const [isAddingEntry, setIsAddingEntry] = useState(false);
   const [entryIsBillable, setEntryIsBillable] = useState(true);
+  const [entryCategory, setEntryCategory] = useState<TimeCategory>('work');
+  const [entryDistanceKm, setEntryDistanceKm] = useState('');
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
@@ -1097,6 +1129,8 @@ export default function TimeTrackingScreen() {
     setEntryDescription(entry.description || '');
     setEntryJobId(entry.jobId);
     setEntryIsBillable(entry.isBillable !== false);
+    setEntryCategory((entry.timeCategory as TimeCategory) || 'work');
+    setEntryDistanceKm(entry.distanceKm != null ? String(entry.distanceKm) : '');
     setShowAddEntryModal(true);
   };
 
@@ -1111,6 +1145,7 @@ export default function TimeTrackingScreen() {
       return;
     }
     const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000);
+    const distanceKmVal = entryCategory === 'travel' && entryDistanceKm.trim() ? parseFloat(entryDistanceKm) : null;
     setIsSavingEdit(true);
     try {
       await api.patch(`/api/time-entries/${editingEntry.id}`, {
@@ -1120,6 +1155,8 @@ export default function TimeTrackingScreen() {
         description: entryDescription || undefined,
         isBillable: entryIsBillable,
         jobId: entryJobId,
+        timeCategory: entryCategory,
+        distanceKm: distanceKmVal != null ? String(distanceKmVal) : null,
       });
       setShowAddEntryModal(false);
       setEditingEntry(null);
@@ -1170,6 +1207,8 @@ export default function TimeTrackingScreen() {
     setEntryDescription('');
     setEntryJobId(null);
     setEntryIsBillable(true);
+    setEntryCategory('work');
+    setEntryDistanceKm('');
     setShowAddEntryModal(true);
   };
 
@@ -1187,6 +1226,7 @@ export default function TimeTrackingScreen() {
       return;
     }
     const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000);
+    const distanceKmVal = entryCategory === 'travel' && entryDistanceKm.trim() ? parseFloat(entryDistanceKm) : null;
     setIsAddingEntry(true);
     try {
       await api.post('/api/time-entries', {
@@ -1196,6 +1236,8 @@ export default function TimeTrackingScreen() {
         duration: durationMinutes,
         description: entryDescription || undefined,
         isBillable: entryIsBillable,
+        timeCategory: entryCategory,
+        distanceKm: distanceKmVal != null ? String(distanceKmVal) : null,
       });
       setShowAddEntryModal(false);
       await Promise.all([fetchTimeStats(), fetchTimeEntries(), fetchWeeklyData()]);
@@ -1209,7 +1251,7 @@ export default function TimeTrackingScreen() {
 
   const buildCsvExport = (entries: TimeEntry[], label: string) => {
     const rows: string[] = [];
-    rows.push('Date,Start,End,Duration,Job,Type,Billable,Rate ($/hr),Amount ($),Notes');
+    rows.push('Date,Start,End,Duration,Job,Category,Distance (km),Type,Billable,Rate ($/hr),Amount ($),Notes');
     let totalEarnings = 0;
     entries.forEach(entry => {
       const jobData = jobs.find(j => j.id === entry.jobId);
@@ -1217,6 +1259,9 @@ export default function TimeTrackingScreen() {
       const start = formatTimeShort(entry.startTime);
       const end = entry.endTime ? formatTimeShort(entry.endTime) : 'Running';
       const dur = entry.duration ? formatDurationHM(entry.duration) : '--';
+      const catMeta = getCategoryMeta(entry.timeCategory);
+      const catLabel = entry.isBreak ? 'Break' : catMeta.label;
+      const distanceKm = entry.timeCategory === 'travel' && entry.distanceKm ? String(entry.distanceKm) : '';
       const type = entry.isBreak ? 'Break' : 'Work';
       const billable = entry.isBillable !== false && !entry.isBreak ? 'Yes' : 'No';
       const rate = getEffectiveRate(entry, jobs, userDefaultRate);
@@ -1226,11 +1271,11 @@ export default function TimeTrackingScreen() {
       totalEarnings += amount;
       const notes = (entry.description || '').replace(/"/g, '""');
       const jobTitle = (jobData?.title || 'Unknown').replace(/"/g, '""');
-      rows.push(`${dateVal},${start},${end},${dur},"${jobTitle}",${type},${billable},${rate.toFixed(2)},${amount.toFixed(2)},"${notes}"`);
+      rows.push(`${dateVal},${start},${end},${dur},"${jobTitle}","${catLabel}",${distanceKm},${type},${billable},${rate.toFixed(2)},${amount.toFixed(2)},"${notes}"`);
     });
     const totalMinutes = entries.reduce((sum, e) => sum + (e.duration || 0), 0);
     rows.push('');
-    rows.push(`,,,"${formatDurationHM(totalMinutes)}",,,,,${totalEarnings.toFixed(2)},`);
+    rows.push(`,,,"${formatDurationHM(totalMinutes)}",,,,,,${totalEarnings.toFixed(2)},`);
     return { csv: rows.join('\n'), totalEarnings, totalMinutes };
   };
 
@@ -1569,6 +1614,32 @@ export default function TimeTrackingScreen() {
           );
         })()}
 
+        {dayTotalMinutes > 0 && !teamViewEnabled && (() => {
+          const catTotals: Record<string, number> = {};
+          timeEntries.filter(e => !e.isBreak && e.duration).forEach(e => {
+            const cat = e.timeCategory || 'work';
+            catTotals[cat] = (catTotals[cat] || 0) + (e.duration || 0);
+          });
+          const cats = Object.entries(catTotals).filter(([, m]) => m > 0);
+          if (cats.length <= 1) return null;
+          return (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: spacing.md, paddingHorizontal: spacing.xs }}>
+              {cats.map(([cat, mins]) => {
+                const meta = getCategoryMeta(cat);
+                const chipColor = CATEGORY_COLORS[cat] || '#6B7280';
+                return (
+                  <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: chipColor + '14', paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.md }}>
+                    <Text style={{ fontSize: 11 }}>{meta.emoji}</Text>
+                    <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>
+                      {meta.label} {formatDurationHM(mins)}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
+
         {isLoadingEntries ? (
           <View style={[styles.emptyState, { paddingVertical: spacing['2xl'] }]}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -1825,6 +1896,16 @@ export default function TimeTrackingScreen() {
                                   <Text style={{ fontSize: typography.sizes.xs, color: ttConfig.statusColors.active, fontWeight: fontWeights.semibold }}>$</Text>
                                 </View>
                               ) : null}
+                              {!isBreakEntry && entry.timeCategory && entry.timeCategory !== 'work' && (() => {
+                                const catMeta = getCategoryMeta(entry.timeCategory);
+                                const chipColor = CATEGORY_COLORS[entry.timeCategory] || '#6B7280';
+                                return (
+                                  <View style={{ backgroundColor: chipColor + '18', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                    <Text style={{ fontSize: 9 }}>{catMeta.emoji}</Text>
+                                    <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>{catMeta.label}</Text>
+                                  </View>
+                                );
+                              })()}
                               {entry.isDisputed && (
                                 <View style={{ backgroundColor: ttConfig.disputeBadgeBg, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
                                   <Feather name="alert-triangle" size={8} color={ttConfig.statusColors.late} />
@@ -1857,6 +1938,11 @@ export default function TimeTrackingScreen() {
                             </TouchableOpacity>
                           </View>
                         </View>
+                        {entry.timeCategory === 'travel' && entry.distanceKm && !isBreakEntry && (
+                          <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs }}>
+                            <Text style={{ fontSize: typography.sizes.xs, color: CATEGORY_COLORS.travel }}>🚗 {entry.distanceKm} km</Text>
+                          </View>
+                        )}
                         {entry.isDisputed && entry.disputeReason && !entry.disputeResolvedAt && (
                           <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs }}>
                             <Text style={{ fontSize: typography.sizes.xs, color: ttConfig.statusColors.late }} numberOfLines={2}>
@@ -1984,6 +2070,41 @@ export default function TimeTrackingScreen() {
             </View>
           )}
         </View>
+
+        {(() => {
+          const catTotals: Record<string, number> = {};
+          timeEntries.filter(e => !e.isBreak && e.duration).forEach(e => {
+            const cat = e.timeCategory || 'work';
+            catTotals[cat] = (catTotals[cat] || 0) + (e.duration || 0);
+          });
+          const cats = Object.entries(catTotals).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a);
+          if (cats.length <= 1) return null;
+          return (
+            <View style={styles.statsCard}>
+              <Text style={styles.statsCardTitle}>This Week by Category</Text>
+              {cats.map(([cat, mins]) => {
+                const meta = getCategoryMeta(cat);
+                const chipColor = CATEGORY_COLORS[cat] || '#6B7280';
+                const totalMins = cats.reduce((s, [, m]) => s + m, 0);
+                const pct = totalMins > 0 ? (mins / totalMins) * 100 : 0;
+                return (
+                  <View key={cat} style={{ marginBottom: spacing.sm }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        <Text style={{ fontSize: 13 }}>{meta.emoji}</Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground }}>{meta.label}</Text>
+                      </View>
+                      <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>{formatDurationHM(mins)}</Text>
+                    </View>
+                    <View style={{ height: 4, backgroundColor: colors.border + '40', borderRadius: 2 }}>
+                      <View style={{ height: 4, width: `${pct}%` as any, backgroundColor: chipColor, borderRadius: 2 }} />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
 
         <View style={styles.statsCard}>
           <Text style={styles.statsCardTitle}>Billable Rate</Text>
@@ -2246,7 +2367,58 @@ export default function TimeTrackingScreen() {
                 />
               </TouchableOpacity>
             </View>
-            
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Category</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, marginTop: spacing.xs }}>
+                {TIME_CATEGORIES.map(cat => {
+                  const isSelected = entryCategory === cat.value;
+                  const chipColor = CATEGORY_COLORS[cat.value] || '#6B7280';
+                  return (
+                    <TouchableOpacity
+                      key={cat.value}
+                      onPress={() => { setEntryCategory(cat.value as TimeCategory); if (cat.value !== 'travel') setEntryDistanceKm(''); }}
+                      activeOpacity={0.7}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 4,
+                        paddingHorizontal: spacing.sm,
+                        paddingVertical: 6,
+                        borderRadius: radius.md,
+                        borderWidth: 1.5,
+                        borderColor: isSelected ? chipColor : colors.border,
+                        backgroundColor: isSelected ? chipColor + '18' : colors.card,
+                      }}
+                    >
+                      <Text style={{ fontSize: 13 }}>{cat.emoji}</Text>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.mutedForeground }}>
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {entryCategory === 'travel' && (
+              <View style={styles.formGroup}>
+                <Text style={styles.formLabel}>Distance (km)</Text>
+                <View style={[styles.formInput, { paddingVertical: 0 }]}>
+                  <Feather name="map-pin" size={18} color={colors.mutedForeground} />
+                  <TextInput
+                    style={[styles.formInputText, { flex: 1 }]}
+                    placeholder="0.0"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={entryDistanceKm}
+                    onChangeText={setEntryDistanceKm}
+                    keyboardType="decimal-pad"
+                  />
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginLeft: 2 }}>km</Text>
+                </View>
+              </View>
+            )}
+
             <View style={styles.formGroup}>
               <Text style={styles.formLabel}>Job</Text>
               {inProgressJobs.length === 0 ? (

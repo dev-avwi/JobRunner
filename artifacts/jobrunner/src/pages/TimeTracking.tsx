@@ -314,6 +314,35 @@ function TimeTrackingAnalytics() {
     return sum + (sheet.aggregations?.totalEarnings || 0);
   }, 0) || 0;
 
+  // Category breakdown from time entries
+  const getCategoryBreakdown = () => {
+    if (!timeEntries || timeEntries.length === 0) return [];
+    const catHours: Record<string, number> = {};
+    const CATEGORY_COLORS_MAP: Record<string, string> = {
+      work: '#2563EB', travel: '#7C3AED', materials: '#D97706',
+      admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280',
+    };
+    const CATEGORY_LABELS: Record<string, string> = {
+      work: 'Site Work', travel: 'Driving / Travel', materials: 'Supplies Run',
+      admin: 'Admin / Office', meeting: 'Meeting', training: 'Training', other: 'Other',
+    };
+    timeEntries.forEach((e: any) => {
+      if (e.isBreak) return;
+      const cat = e.timeCategory || 'work';
+      catHours[cat] = (catHours[cat] || 0) + (e.duration || 0) / 60;
+    });
+    return Object.entries(catHours)
+      .filter(([, h]) => h > 0)
+      .sort(([, a], [, b]) => b - a)
+      .map(([cat, hours]) => ({
+        name: CATEGORY_LABELS[cat] ?? cat,
+        hours: Math.round(hours * 10) / 10,
+        color: CATEGORY_COLORS_MAP[cat] ?? '#6B7280',
+      }));
+  };
+
+  const categoryBreakdown = getCategoryBreakdown();
+
   if (isLoading) {
     return (
       <div className="grid gap-6 md:grid-cols-2">
@@ -422,6 +451,47 @@ function TimeTrackingAnalytics() {
           </CardContent>
         </Card>
         
+        {categoryBreakdown.length > 1 && (
+          <Card data-testid="card-category-breakdown" className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+                Hours by Category
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {categoryBreakdown.map(cat => (
+                  <span
+                    key={cat.name}
+                    className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full font-medium"
+                    style={{ backgroundColor: cat.color + '18', color: cat.color }}
+                  >
+                    {cat.name} <span className="font-bold">{cat.hours}h</span>
+                  </span>
+                ))}
+              </div>
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryBreakdown} layout="vertical" margin={{ left: 80 }}>
+                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}h`} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={80} stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                      formatter={(v: number) => [`${v} hours`, 'Hours']}
+                    />
+                    <Bar dataKey="hours" radius={[0, 4, 4, 0]}>
+                      {categoryBreakdown.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card data-testid="card-job-distribution">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
