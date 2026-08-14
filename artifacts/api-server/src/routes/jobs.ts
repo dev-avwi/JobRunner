@@ -59,7 +59,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "../emailService";
 import { FreemiumService } from "../freemiumService";
 import { DEMO_USER, VISITOR_USER } from "../demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit } from "../permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, canAccessJobMedia } from "../permissions";
 import { logTeamActivity, type TeamActivityType } from "../activityService";
 import {
   insertBusinessSettingsSchema,
@@ -2216,6 +2216,42 @@ import { computeRetentionSummary } from "./retentionSummary";
     } catch (error) {
       console.error("Error fetching contextual jobs:", error);
       res.status(500).json({ error: "Failed to fetch contextual jobs" });
+    }
+  });
+
+  // Static route — MUST be registered before app.get("/api/jobs/:id") so Express
+  // does not capture the literal string "my-phases" as a job ID parameter.
+  app.get("/api/jobs/my-phases", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const now = new Date();
+      // Monday of the current week (ISO week)
+      const dow = now.getDay(); // 0=Sun
+      const mondayOffset = dow === 0 ? -6 : 1 - dow;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() + mondayOffset);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+
+      const rows = await storage.getMyAssignedPhasesThisWeek(userId, weekStart, weekEnd);
+
+      // Enrich with job title/address for display context
+      const jobIds = [...new Set(rows.map((r: any) => r.jobId))] as string[];
+      const jobMap = new Map<string, { title: string; address?: string | null }>();
+      await Promise.all(jobIds.map(async (jid) => {
+        const j = await storage.getJobPublic(jid);
+        if (j) jobMap.set(jid, { title: j.title, address: (j as any).address });
+      }));
+
+      res.json(rows.map((r: any) => ({
+        ...r,
+        jobTitle: jobMap.get(r.jobId)?.title || 'Untitled Job',
+        jobAddress: jobMap.get(r.jobId)?.address || null,
+      })));
+    } catch (err: any) {
+      console.error('Error fetching my assigned phases:', err);
+      res.status(500).json({ error: err.message });
     }
   });
 
@@ -7872,40 +7908,6 @@ import { computeRetentionSummary } from "./retentionSummary";
 
   // Phases assigned to the current user with scheduledStart in the current week.
   // Used by the mobile dashboard "My Phases This Week" card for staff workers.
-  app.get("/api/jobs/my-phases", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const now = new Date();
-      // Monday of the current week (ISO week)
-      const dow = now.getDay(); // 0=Sun
-      const mondayOffset = dow === 0 ? -6 : 1 - dow;
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() + mondayOffset);
-      weekStart.setHours(0, 0, 0, 0);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 7);
-
-      const rows = await storage.getMyAssignedPhasesThisWeek(userId, weekStart, weekEnd);
-
-      // Enrich with job title/address for display context
-      const jobIds = [...new Set(rows.map((r: any) => r.jobId))] as string[];
-      const jobMap = new Map<string, { title: string; address?: string | null }>();
-      await Promise.all(jobIds.map(async (jid) => {
-        const j = await storage.getJobPublic(jid);
-        if (j) jobMap.set(jid, { title: j.title, address: (j as any).address });
-      }));
-
-      res.json(rows.map((r: any) => ({
-        ...r,
-        jobTitle: jobMap.get(r.jobId)?.title || 'Untitled Job',
-        jobAddress: jobMap.get(r.jobId)?.address || null,
-      })));
-    } catch (err: any) {
-      console.error('Error fetching my assigned phases:', err);
-      res.status(500).json({ error: err.message });
-    }
-  });
-
   app.get("/api/jobs/:jobId/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
@@ -9997,6 +9999,327 @@ import { computeRetentionSummary } from "./retentionSummary";
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting RFI:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ── Site Diary ──────────────────────────────────────────────────────────────
+
+  const diaryPhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB per photo
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Only image files are accepted for diary photos (got: ${file.mimetype})`));
+      }
+    },
+  });
+
+  // Helper: derive signed URLs for an array of object-storage keys.
+  async function signDiaryPhotoKeys(keys: string[]): Promise<string[]> {
+    const urls: string[] = [];
+    for (const key of keys) {
+      try {
+        const { bucketName, objectName } = parseObjectPath(key);
+        const [url] = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+          action: 'read',
+          expires: Date.now() + 60 * 60 * 1000, // 1 h
+        });
+        urls.push(url);
+      } catch {
+        // photo key unreadable — skip rather than blowing up the whole list
+      }
+    }
+    return urls;
+  }
+
+  // Helper: resolve author name for a diary entry's userId.
+  // teamMembers.memberId is the FK to users.id; firstName/lastName/email are
+  // stored directly on the team_members row for display before account creation.
+  async function resolveAuthorName(userId: string, effectiveUserId: string): Promise<string | undefined> {
+    try {
+      // Try team members of the business first (covers staff & subcontractors).
+      const members = await storage.getTeamMembers(effectiveUserId);
+      const member = members.find((m: any) => m.memberId === userId);
+      if (member) {
+        const m = member as any;
+        const full = [m.firstName, m.lastName].filter(Boolean).join(' ').trim();
+        return full || m.email || undefined;
+      }
+      // Fall back to the user record directly (covers owner and any other user).
+      const user = await storage.getUser(userId);
+      if (user) {
+        const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+        return full || user.email || undefined;
+      }
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // GET /api/jobs/:jobId/diary — list entries, newest-first, with signed photo URLs
+  app.get("/api/jobs/:jobId/diary", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId } = req.params;
+
+      // Owners and true-managers have full access; staff must be assigned to this job.
+      if (!await canAccessJobMedia(userContext, jobId)) {
+        return res.status(403).json({ error: 'You are not assigned to this job.' });
+      }
+
+      const entries = await storage.getSiteDiaryEntries(jobId, effectiveUserId);
+
+      // Attach signed photo URLs and author name for each entry
+      const enriched = await Promise.all(
+        entries.map(async (entry) => {
+          const photoUrls = entry.photoKeys?.length
+            ? await signDiaryPhotoKeys(entry.photoKeys)
+            : [];
+          const authorName = await resolveAuthorName(entry.userId, effectiveUserId);
+          return { ...entry, photoUrls, authorName };
+        }),
+      );
+
+      res.json(enriched);
+    } catch (error: any) {
+      console.error('Error fetching site diary:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // POST /api/jobs/:jobId/diary — create a new entry (with optional photo uploads)
+  // Uses WRITE_JOB_NOTES so ordinary Staff and Subcontractor roles can create diary entries.
+  app.post(
+    "/api/jobs/:jobId/diary",
+    requireAuth,
+    createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES),
+    diaryPhotoUpload.array('photos', 10),
+    async (req: any, res) => {
+      try {
+        const userContext = await getUserContext(req.userId);
+        const effectiveUserId = userContext.effectiveUserId;
+        const { jobId } = req.params;
+
+        const job = await storage.getJob(jobId, effectiveUserId);
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+
+        // Owners and true-managers have full access; staff must be assigned to this job.
+        if (!await canAccessJobMedia(userContext, jobId)) {
+          return res.status(403).json({ error: 'You are not assigned to this job.' });
+        }
+
+        const { entryDate, weather, workersOnSite, workDone, issuesDelays } = req.body;
+        if (!entryDate) return res.status(400).json({ error: 'entryDate is required' });
+
+        let workers: string[] = [];
+        try {
+          workers = workersOnSite ? JSON.parse(workersOnSite) : [];
+        } catch {
+          workers = [];
+        }
+
+        // Upload any attached photos to object storage
+        const photoKeys: string[] = [];
+        const files = (req.files as Express.Multer.File[]) ?? [];
+        for (const file of files) {
+          const ext = (file.originalname.split('.').pop() ?? 'jpg').toLowerCase();
+          const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+          const key = `${privateDir}/site-diary/${effectiveUserId}/${jobId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+          const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+          await objectStorageClient.bucket(bucketId).file(key).save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          });
+          photoKeys.push(`${bucketId}/${key}`);
+        }
+
+        // Enforce one entry per job per date at the DB level (unique constraint).
+        // Return a clear error if the date is already taken.
+        // userId = req.userId (the actual author), NOT effectiveUserId (the business owner).
+        // Business/job access is already gated above via storage.getJob(jobId, effectiveUserId).
+        const entry = await storage.createSiteDiaryEntry({
+          jobId,
+          userId: req.userId,
+          entryDate,
+          weather: weather || null,
+          workersOnSite: workers,
+          workDone: workDone || null,
+          issuesDelays: issuesDelays || null,
+          photoKeys,
+        });
+
+        const photoUrls = photoKeys.length ? await signDiaryPhotoKeys(photoKeys) : [];
+        const authorName = await resolveAuthorName(req.userId, effectiveUserId);
+        res.status(201).json({ ...entry, photoUrls, authorName });
+      } catch (error: any) {
+        if (error.code === '23505') {
+          // unique_violation — duplicate date for this job
+          return res.status(409).json({ error: 'A diary entry for this date already exists. Edit the existing entry instead.' });
+        }
+        console.error('Error creating diary entry:', error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // PATCH /api/jobs/:jobId/diary/:entryId — update an existing entry
+  // - Author can edit within 24 h of creation
+  // - Owner/manager can edit any time
+  app.patch(
+    "/api/jobs/:jobId/diary/:entryId",
+    requireAuth,
+    createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES),
+    diaryPhotoUpload.array('photos', 10),
+    async (req: any, res) => {
+      try {
+        const userContext = await getUserContext(req.userId);
+        const effectiveUserId = userContext.effectiveUserId;
+        const { jobId, entryId } = req.params;
+
+        const job = await storage.getJob(jobId, effectiveUserId);
+        if (!job) return res.status(404).json({ error: 'Job not found' });
+
+        // Owners and true-managers have full access; staff must be assigned to this job.
+        if (!await canAccessJobMedia(userContext, jobId)) {
+          return res.status(403).json({ error: 'You are not assigned to this job.' });
+        }
+
+        // Determine if the requester is an owner/manager so storage can allow edits past 24 h.
+        // getUserContext(req.userId) returns the actual caller's context — isOwner is true only for
+        // the business owner; MANAGE_TEAM permission is granted to managers by ownerOrManagerOnly().
+        const isOwnerOrManager =
+          userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+
+        // Always fetch the entry scoped to BOTH entryId AND jobId so a manager cannot
+        // touch an entry from a different job or tenant by guessing its UUID.
+        const { siteDiaryEntries: siteDiaryTable } = await import("@workspace/db");
+        const [existing] = await db
+          .select()
+          .from(siteDiaryTable)
+          .where(and(eq(siteDiaryTable.id, entryId), eq(siteDiaryTable.jobId, jobId)))
+          .limit(1);
+        if (!existing) return res.status(404).json({ error: 'Entry not found' });
+
+        // 24-hour edit window for non-managers.
+        if (!isOwnerOrManager) {
+          // Only the entry's author can edit; other staff are always blocked.
+          if (existing.userId !== req.userId) {
+            return res.status(403).json({ error: 'You can only edit your own diary entries.' });
+          }
+          const ageHours =
+            (Date.now() - new Date(existing.createdAt!).getTime()) / (1000 * 60 * 60);
+          if (ageHours > 24) {
+            return res.status(403).json({ error: 'Entries can only be edited within 24 hours of creation.' });
+          }
+        }
+
+        const { weather, workersOnSite, workDone, issuesDelays } = req.body;
+
+        let workers: string[] | undefined;
+        if (workersOnSite !== undefined) {
+          try { workers = JSON.parse(workersOnSite); } catch { workers = []; }
+        }
+
+        // Upload any new photos and append keys to the existing list
+        const newKeys: string[] = [];
+        const files = (req.files as Express.Multer.File[]) ?? [];
+        for (const file of files) {
+          const ext = (file.originalname.split('.').pop() ?? 'jpg').toLowerCase();
+          const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+          const key = `${privateDir}/site-diary/${effectiveUserId}/${jobId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+          const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+          await objectStorageClient.bucket(bucketId).file(key).save(file.buffer, {
+            metadata: { contentType: file.mimetype },
+          });
+          newKeys.push(`${bucketId}/${key}`);
+        }
+
+        // Build updates — only include fields that were sent
+        const updates: Record<string, any> = {};
+        if (weather !== undefined) updates.weather = weather || null;
+        if (workers !== undefined) updates.workersOnSite = workers;
+        if (workDone !== undefined) updates.workDone = workDone || null;
+        if (issuesDelays !== undefined) updates.issuesDelays = issuesDelays || null;
+
+        // Merge new photo keys with existing list (re-use the already-fetched entry)
+        if (newKeys.length > 0) {
+          updates.photoKeys = [...((existing.photoKeys as string[]) ?? []), ...newKeys];
+        }
+
+        const updated = await storage.updateSiteDiaryEntry(entryId, jobId, req.userId, updates, isOwnerOrManager);
+        if (!updated) return res.status(404).json({ error: 'Entry not found or not editable' });
+
+        const photoUrls = updated.photoKeys?.length ? await signDiaryPhotoKeys(updated.photoKeys as string[]) : [];
+        const authorName = await resolveAuthorName(updated.userId, effectiveUserId);
+        res.json({ ...updated, photoUrls, authorName });
+      } catch (error: any) {
+        console.error('Error updating diary entry:', error);
+        res.status(500).json({ error: error.message });
+      }
+    },
+  );
+
+  // DELETE /api/jobs/:jobId/diary/:entryId
+  // - Owner/manager: can delete any entry at any time
+  // - Author (staff): can delete their own entry within 24 h of creation only
+  app.delete("/api/jobs/:jobId/diary/:entryId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { jobId, entryId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      // Owners and true-managers have full access; staff must be assigned to this job.
+      if (!await canAccessJobMedia(userContext, jobId)) {
+        return res.status(403).json({ error: 'You are not assigned to this job.' });
+      }
+
+      // Determine caller's role before touching the entry.
+      // userContext is for req.userId (the actual caller), so isOwner is only true for the business owner.
+      const isOwnerOrManager =
+        userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+
+      // Fetch the entry to check authorship and age
+      const { siteDiaryEntries: siteDiaryTable } = await import("@workspace/db");
+      const [existing] = await db
+        .select()
+        .from(siteDiaryTable)
+        .where(and(eq(siteDiaryTable.id, entryId), eq(siteDiaryTable.jobId, jobId)))
+        .limit(1);
+      if (!existing) return res.status(404).json({ error: 'Entry not found' });
+
+      if (!isOwnerOrManager) {
+        // Non-managers: must be the author AND within 24 h
+        if (existing.userId !== req.userId) {
+          return res.status(403).json({ error: 'You can only delete your own diary entries.' });
+        }
+        const ageHours = (Date.now() - new Date(existing.createdAt!).getTime()) / (1000 * 60 * 60);
+        if (ageHours > 24) {
+          return res.status(403).json({ error: 'Entries can only be deleted within 24 hours of creation.' });
+        }
+      }
+
+      // Clean up any stored photos best-effort
+      if (existing.photoKeys?.length) {
+        for (const key of existing.photoKeys as string[]) {
+          try {
+            const { bucketName, objectName } = parseObjectPath(key);
+            await objectStorageClient.bucket(bucketName).file(objectName).delete();
+          } catch { /* best-effort */ }
+        }
+      }
+
+      const deleted = await storage.deleteSiteDiaryEntry(entryId, req.userId, isOwnerOrManager);
+      if (!deleted) return res.status(404).json({ error: 'Entry not found' });
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error deleting diary entry:', error);
       res.status(500).json({ error: error.message });
     }
   });

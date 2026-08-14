@@ -44,6 +44,7 @@ import {
   ProjectGanttView,
   ProjectDocumentRegister,
   DefectsSection,
+  SiteDiarySection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -4337,6 +4338,13 @@ export default function JobDetailView({
           <JobTasksSection jobId={jobId} />
 
           <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
+
+          {/* Site Diary — daily record of who was on site, work done, and issues */}
+          <SiteDiarySection
+            jobId={jobId}
+            canEdit={!isTradie || job.status !== 'invoiced'}
+            currentUserId={currentUser?.id}
+          />
 
           {/* Project Document Register — drawings, specs, RFIs, revision tracking */}
           <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />

@@ -119,6 +119,10 @@ export const ProjectDocumentRegister = lazyWithSuspense(
   () => import("./ProjectDocumentRegister").then((m) => ({ default: m.ProjectDocumentRegister })),
   sectionFallback,
 );
+
+export const SiteDiarySection = lazyWithSuspense(
+  () => import("./SiteDiarySection").then((m) => ({ default: m.SiteDiarySection })),
+);
 export const ProjectGanttView = lazyWithSuspense(
   () => import("./ProjectGanttView").then((m) => ({ default: m.ProjectGanttView })),
   sectionFallback,

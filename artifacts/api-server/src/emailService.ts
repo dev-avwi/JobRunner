@@ -3,6 +3,17 @@ import { sendViaGmailAPI, isGmailConnected } from './gmailClient';
 import { logger } from './logger';
 import { getErrorMessage } from "./lib/errors";
 
+/** HTML-escape user-controlled strings before interpolating into email templates. */
+function esc(s: string | null | undefined): string {
+  if (!s) return '';
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 let connectorFromEmail: string | null = null;
 
 export async function getSendGridCredentials(): Promise<{ apiKey: string; email: string }> {
@@ -2948,9 +2959,10 @@ export async function sendProgressClaimSubmittedEmail(opts: {
     jobTitle,
   } = opts;
 
-  const displayName = clientName ? clientName.split(' ')[0] : 'there';
-  const bizName = businessName || 'Your contractor';
-  const claimRef = claimNumber ? `#${claimNumber}` : '';
+  const displayName = esc(clientName ? clientName.split(' ')[0] : 'there');
+  const bizName = esc(businessName || 'Your contractor');
+  const claimRef = claimNumber ? `#${esc(claimNumber)}` : '';
+  const safeJobTitle = esc(jobTitle || '');
 
   const formatD = (ds: string | null): string => {
     if (!ds) return '';
@@ -2974,7 +2986,7 @@ export async function sendProgressClaimSubmittedEmail(opts: {
     to: clientEmail,
     from: { email: PLATFORM_FROM_EMAIL, name: PLATFORM_FROM_NAME },
     replyTo: PLATFORM_REPLY_TO_EMAIL,
-    subject: `Progress Claim ${claimRef} ready for review${jobTitle ? ` — ${jobTitle}` : ''}`,
+    subject: `Progress Claim ${claimRef} ready for review${safeJobTitle ? ` — ${safeJobTitle}` : ''}`,
     html: renderEmailShell(
       `Progress Claim ${claimRef}`,
       `
@@ -2990,9 +3002,9 @@ export async function sendProgressClaimSubmittedEmail(opts: {
           <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
             <tr>
               <td style="padding: 18px 22px;">
-                ${jobTitle ? `<p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 700;">${jobTitle}</p>` : ''}
-                ${periodStr ? `<p style="margin: ${jobTitle ? '10px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Period:</span> ${periodStr}</p>` : ''}
-                <p style="margin: ${periodStr || jobTitle ? '6px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Amount claimed:</span> <strong style="color: #0f172a;">${formattedTotal}</strong></p>
+                ${safeJobTitle ? `<p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 700;">${safeJobTitle}</p>` : ''}
+                ${periodStr ? `<p style="margin: ${safeJobTitle ? '10px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Period:</span> ${periodStr}</p>` : ''}
+                <p style="margin: ${periodStr || safeJobTitle ? '6px' : '0'} 0 0 0; color: #64748b; font-size: 14px; line-height: 1.6;"><span style="color: #94a3b8;">Amount claimed:</span> <strong style="color: #0f172a;">${formattedTotal}</strong></p>
               </td>
             </tr>
           </table>

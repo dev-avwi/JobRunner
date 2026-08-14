@@ -10,7 +10,7 @@ import {
   Phone, Mail, MapPin, AlertCircle, CheckCircle2, Clock, Calendar,
   User, Navigation, FileText, Camera, ChevronRight, Timer, Building2,
   MessageCircle, Loader2, Signal, ClipboardCheck, Package, CreditCard, Shield,
-  Activity, Receipt, CircleDot, RefreshCw, Layers, Wrench, CheckCircle, Circle
+  Activity, Receipt, CircleDot, RefreshCw, Layers, Wrench, CheckCircle, Circle, Download
 } from "lucide-react";
 import { format, addDays, differenceInDays, startOfDay } from "date-fns";
 import jobrunnerLogo from "@assets/jobrunner-logo-cropped.png";

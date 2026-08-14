@@ -442,6 +442,9 @@ import {
   projectTemplates,
   type ProjectTemplate,
   type InsertProjectTemplate,
+  siteDiaryEntries,
+  type SiteDiaryEntry,
+  type InsertSiteDiaryEntry,
 } from "@workspace/db";
 import { randomUUID } from "crypto";
 import { tradieQuoteTemplates } from "./tradieTemplates";
@@ -547,6 +550,12 @@ export interface IStorage {
   getProjectTemplates(userId: string): Promise<ProjectTemplate[]>;
   createProjectTemplate(template: InsertProjectTemplate): Promise<ProjectTemplate>;
   deleteProjectTemplate(id: string, userId: string): Promise<boolean>;
+
+  // Site Diary
+  getSiteDiaryEntries(jobId: string, userId: string): Promise<SiteDiaryEntry[]>;
+  createSiteDiaryEntry(entry: InsertSiteDiaryEntry): Promise<SiteDiaryEntry>;
+  updateSiteDiaryEntry(id: string, jobId: string, userId: string, updates: Partial<InsertSiteDiaryEntry>, isOwnerOrManager: boolean): Promise<SiteDiaryEntry | undefined>;
+  deleteSiteDiaryEntry(id: string, userId: string, isOwnerOrManager: boolean): Promise<boolean>;
 
   // Progress Claims
   getClaims(jobId: string, userId: string): Promise<Claim[]>;
@@ -1629,6 +1638,16 @@ pool
     console.error('[Schema] Failed to ensure job phases / job number columns:', err.message);
   });
 
+// Task #486: Phase assignee — link each project phase to a specific team member.
+pool
+  .query(`
+    ALTER TABLE job_phases ADD COLUMN IF NOT EXISTS assigned_user_id varchar REFERENCES users(id) ON DELETE SET NULL;
+    CREATE INDEX IF NOT EXISTS idx_job_phases_assigned_user_id ON job_phases (assigned_user_id);
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure job_phases.assigned_user_id column:', err.message);
+  });
+
 // Ensure staff HR tables: emergency contacts, leave balances, and approver comment on time-off
 pool
   .query(`
@@ -1779,6 +1798,43 @@ pool
   .catch((err) => {
     console.error('[Schema] Failed to ensure project_documents.is_client_visible column:', err.message);
   });
+
+
+// Task #484: Site Diary — daily log of who was on site, what was done, and issues.
+// userId stores the actual author (req.userId), NOT the business effectiveUserId.
+// Unique constraint uq_site_diary_job_date prevents duplicate entries per job per day.
+pool
+  .query(`
+    CREATE TABLE IF NOT EXISTS site_diary_entries (
+      id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+      job_id varchar NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      entry_date date NOT NULL,
+      weather text,
+      workers_on_site jsonb DEFAULT '[]'::jsonb,
+      work_done text,
+      issues_delays text,
+      photo_keys jsonb DEFAULT '[]'::jsonb,
+      created_at timestamp DEFAULT now(),
+      updated_at timestamp DEFAULT now()
+    );
+    CREATE INDEX IF NOT EXISTS idx_site_diary_job_id ON site_diary_entries (job_id);
+    CREATE INDEX IF NOT EXISTS idx_site_diary_user_id ON site_diary_entries (user_id);
+    CREATE INDEX IF NOT EXISTS idx_site_diary_entry_date ON site_diary_entries (entry_date);
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'uq_site_diary_job_date'
+      ) THEN
+        ALTER TABLE site_diary_entries
+          ADD CONSTRAINT uq_site_diary_job_date UNIQUE (job_id, entry_date);
+      END IF;
+    END $$;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to ensure site_diary_entries table:', err.message);
+  });
+
 
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
@@ -10167,6 +10223,74 @@ Thank you for your prompt attention to this matter.`,
       .where(and(eq(projectTemplates.id, id), eq(projectTemplates.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  // ─── Site Diary ───────────────────────────────────────────────────────────
+
+  async getSiteDiaryEntries(jobId: string, userId: string): Promise<SiteDiaryEntry[]> {
+    const job = await this.getJob(jobId, userId);
+    if (!job) return [];
+    try {
+      return await db
+        .select()
+        .from(siteDiaryEntries)
+        .where(eq(siteDiaryEntries.jobId, jobId))
+        .orderBy(desc(siteDiaryEntries.entryDate));
+    } catch (err: unknown) {
+      if (getErrorMessage(err)?.includes('does not exist')) return [];
+      throw err;
+    }
+  }
+
+  async createSiteDiaryEntry(entry: InsertSiteDiaryEntry): Promise<SiteDiaryEntry> {
+    const [result] = await db
+      .insert(siteDiaryEntries)
+      .values({ ...entry, id: randomUUID() })
+      .returning();
+    return result;
+  }
+
+  async updateSiteDiaryEntry(
+    id: string,
+    jobId: string,
+    userId: string,
+    updates: Partial<InsertSiteDiaryEntry>,
+    isOwnerOrManager: boolean,
+  ): Promise<SiteDiaryEntry | undefined> {
+    const [existing] = await db
+      .select()
+      .from(siteDiaryEntries)
+      // Scope to both id AND jobId so cross-job updates are impossible even at storage level
+      .where(and(eq(siteDiaryEntries.id, id), eq(siteDiaryEntries.jobId, jobId)))
+      .limit(1);
+    if (!existing) return undefined;
+    // Must be the author, OR an owner/manager, to edit
+    if (existing.userId !== userId && !isOwnerOrManager) return undefined;
+    const [result] = await db
+      .update(siteDiaryEntries)
+      .set({ ...updates, updatedAt: new Date() })
+      // Defense in depth: predicate includes jobId so even a UUID collision can't bleed across jobs
+      .where(and(eq(siteDiaryEntries.id, id), eq(siteDiaryEntries.jobId, jobId)))
+      .returning();
+    return result;
+  }
+
+  async deleteSiteDiaryEntry(
+    id: string,
+    userId: string,
+    isOwnerOrManager: boolean,
+  ): Promise<boolean> {
+    const [existing] = await db
+      .select()
+      .from(siteDiaryEntries)
+      .where(eq(siteDiaryEntries.id, id))
+      .limit(1);
+    if (!existing) return false;
+    if (existing.userId !== userId && !isOwnerOrManager) return false;
+    const result = await db
+      .delete(siteDiaryEntries)
+      .where(eq(siteDiaryEntries.id, id));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 

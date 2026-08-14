@@ -88,6 +88,7 @@ import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttM
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
+import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
 
 interface JobNoteItem {
   id: string;
@@ -9627,6 +9628,15 @@ export default function JobDetailScreen() {
       <View style={styles.photosCard}>
         {renderSafetyTab()}
       </View>
+
+      {/* Site Diary — daily record of who was on site, work done, and issues */}
+      <SiteDiarySection
+        jobId={job.id}
+        colors={colors}
+        styles={styles}
+        isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+        currentUserId={user?.id}
+      />
 
       {/* Project Document Register — drawings, specs, RFIs */}
       <DocumentRegisterSection

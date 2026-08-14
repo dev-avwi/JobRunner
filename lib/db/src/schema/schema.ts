@@ -5717,6 +5717,10 @@ export type InsertProjectDocument = z.infer<typeof insertProjectDocumentSchema>;
 export type InsertProjectDocumentRevision = z.infer<typeof insertProjectDocumentRevisionSchema>;
 export type InsertProjectRfi = z.infer<typeof insertProjectRfiSchema>;
 
+export const WEATHER_CONDITIONS = [
+  'sunny', 'partly_cloudy', 'overcast', 'light_rain', 'heavy_rain',
+  'windy', 'storm', 'hot', 'cold', 'foggy',
+] as const;
 export type InsertDefectItem = z.infer<typeof insertDefectItemSchema>;
 
 export const defectItems = pgTable("defect_items", {
@@ -5750,3 +5754,39 @@ export const insertDefectItemSchema = createInsertSchema(defectItems).omit({
   id: true, createdAt: true, updatedAt: true,
   resolvedAt: true, clientApprovedAt: true,
 });
+
+export const siteDiaryEntries = pgTable("site_diary_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  // userId is the actual author (req.userId), NOT the business owner effectiveUserId.
+  // Business-level access is scoped separately via jobId → jobs.userId.
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Calendar date of the diary entry (stored as date, not timestamp)
+  entryDate: date("entry_date").notNull(),
+  weather: text("weather"), // WeatherCondition or null
+  // Worker names (snapshot at time of entry; not FK so subcontractors can be listed freely)
+  workersOnSite: jsonb("workers_on_site").$type<string[]>().default([]),
+  workDone: text("work_done"),
+  issuesDelays: text("issues_delays"),
+  // Object-storage keys for attached photos (bucket/path format, same as jobPhotos)
+  photoKeys: jsonb("photo_keys").$type<string[]>().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_site_diary_job_id").on(table.jobId),
+  index("idx_site_diary_user_id").on(table.userId),
+  index("idx_site_diary_entry_date").on(table.entryDate),
+  unique("uq_site_diary_job_date").on(table.jobId, table.entryDate),
+]);
+
+export type WeatherCondition = typeof WEATHER_CONDITIONS[number];
+
+export type InsertSiteDiaryEntry = z.infer<typeof insertSiteDiaryEntrySchema>;
+
+export const insertSiteDiaryEntrySchema = createInsertSchema(siteDiaryEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type SiteDiaryEntry = typeof siteDiaryEntries.$inferSelect;
