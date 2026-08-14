@@ -785,11 +785,14 @@ export const jobPhases = pgTable("job_phases", {
   status: text("status").notNull().default('not_started'), // not_started | in_progress | complete | invoiced
   sortOrder: integer("sort_order").default(0),
   notes: text("notes"),
+  // Worker assigned to own this phase (single-select from the job's assigned workers)
+  assignedUserId: varchar("assigned_user_id").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_job_phases_job_id").on(table.jobId),
   index("idx_job_phases_user_id").on(table.userId),
+  index("idx_job_phases_assigned_user_id").on(table.assignedUserId),
 ]);
 export const serviceReminders = pgTable("service_reminders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

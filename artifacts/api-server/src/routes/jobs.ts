@@ -217,6 +217,7 @@ import {
   numberPortRequests,
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
+  jobPhases,
 } from "@workspace/db";
 import { db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
@@ -7853,6 +7854,42 @@ import { computeRetentionSummary } from "./retentionSummary";
 
   // ─── Job Phases CRUD ─────────────────────────────────────────────────────────
 
+  // Phases assigned to the current user with scheduledStart in the current week.
+  // Used by the mobile dashboard "My Phases This Week" card for staff workers.
+  app.get("/api/jobs/my-phases", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const now = new Date();
+      // Monday of the current week (ISO week)
+      const dow = now.getDay(); // 0=Sun
+      const mondayOffset = dow === 0 ? -6 : 1 - dow;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() + mondayOffset);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 7);
+
+      const rows = await storage.getMyAssignedPhasesThisWeek(userId, weekStart, weekEnd);
+
+      // Enrich with job title/address for display context
+      const jobIds = [...new Set(rows.map((r: any) => r.jobId))] as string[];
+      const jobMap = new Map<string, { title: string; address?: string | null }>();
+      await Promise.all(jobIds.map(async (jid) => {
+        const j = await storage.getJobPublic(jid);
+        if (j) jobMap.set(jid, { title: j.title, address: (j as any).address });
+      }));
+
+      res.json(rows.map((r: any) => ({
+        ...r,
+        jobTitle: jobMap.get(r.jobId)?.title || 'Untitled Job',
+        jobAddress: jobMap.get(r.jobId)?.address || null,
+      })));
+    } catch (err: any) {
+      console.error('Error fetching my assigned phases:', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/jobs/:jobId/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
@@ -7890,7 +7927,23 @@ import { computeRetentionSummary } from "./retentionSummary";
       // so cross-business workers see the correct phases rather than an empty list from their own tenant.
       const phaseOwnerId = job.userId;
       const phases = await storage.getJobPhases(jobId, phaseOwnerId);
-      res.json(phases);
+      // Enrich each phase with the assignee's display name so UIs don't need a
+      // separate lookup. Batch-fetch unique assignee users to avoid N+1 queries.
+      const assigneeIds = [...new Set(phases.map((p: any) => p.assignedUserId).filter(Boolean))] as string[];
+      const assigneeMap = new Map<string, string>();
+      if (assigneeIds.length > 0) {
+        await Promise.all(assigneeIds.map(async (uid) => {
+          const u = await storage.getUser(uid);
+          if (u) {
+            assigneeMap.set(uid, [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || '');
+          }
+        }));
+      }
+      const enriched = phases.map((p: any) => ({
+        ...p,
+        assignedUserName: p.assignedUserId ? (assigneeMap.get(p.assignedUserId) || null) : null,
+      }));
+      res.json(enriched);
     } catch (err: any) {
       console.error("Error fetching job phases:", err);
       res.status(500).json({ error: err.message });
@@ -7906,6 +7959,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       if (out[key] === '') out[key] = null;  // blank string → null; explicit null stays null
     }
     if (out['bookedHours'] === '') out['bookedHours'] = null;
+    if (out['assignedUserId'] === '') out['assignedUserId'] = null;
     return out;
   }
 
@@ -7927,6 +7981,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).default("not_started"),
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
+        assignedUserId: z.string().optional().nullable(),
       });
       const parsed = bodySchema.parse(normalizePhaseBody(req.body));
 
@@ -7946,6 +8001,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         status: parsed.status,
         sortOrder,
         notes: parsed.notes ?? null,
+        assignedUserId: parsed.assignedUserId ?? null,
       });
       res.status(201).json(phase);
     } catch (err: any) {
@@ -7991,6 +8047,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).optional(),
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
+        assignedUserId: z.string().optional().nullable(),
       });
       const updates = updateSchema.parse(normalizePhaseBody(req.body));
       if (updates.phaseCode) updates.phaseCode = updates.phaseCode.trim().toUpperCase() as any;

@@ -39,6 +39,14 @@ const ROW_H       = 44;    // px per phase row
 const HEADER_H    = 32;    // px for date tick header
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+/** Build 1–2 character initials from a full name */
+function initials(name?: string | null): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "";
+  return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
+}
+
 /**
  * Parse a schedule date string as a LOCAL calendar date.
  * Phase dates arrive as "YYYY-MM-DD" or ISO timestamps (UTC midnight).
@@ -446,9 +454,19 @@ export function ProjectGanttView({ jobId, isTradie = false }: Props) {
                           {bar.width > 56 && (
                             <span
                               className="absolute inset-0 flex items-center px-1.5 text-[9px] font-semibold leading-none overflow-hidden whitespace-nowrap"
-                              style={{ color: cfg.text }}
+                              style={{ color: cfg.text, paddingRight: phase.assignedUserName ? "22px" : undefined }}
                             >
                               {bar.width > 96 ? `${phase.phaseCode} ${phase.name}` : phase.phaseCode}
+                            </span>
+                          )}
+                          {/* Assignee initials badge — right end of bar */}
+                          {phase.assignedUserName && bar.width > 20 && (
+                            <span
+                              className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold leading-none"
+                              style={{ backgroundColor: "rgba(255,255,255,0.30)", color: cfg.text }}
+                              title={phase.assignedUserName}
+                            >
+                              {initials(phase.assignedUserName)}
                             </span>
                           )}
                         </button>

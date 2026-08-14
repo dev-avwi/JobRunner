@@ -2463,6 +2463,7 @@ function OwnerDashboardScreen() {
   const [isAssigning, setIsAssigning] = useState(false);
   const [allJobs, setAllJobs] = useState<any[]>([]);
   const [myAllJobs, setMyAllJobs] = useState<any[]>([]);
+  const [myPhasesThisWeek, setMyPhasesThisWeek] = useState<any[]>([]);
   const [schedulerY, setSchedulerY] = useState(0);
   const [schedulerSearch, setSchedulerSearch] = useState('');
   const [schedulerExpanded, setSchedulerExpanded] = useState(false);
@@ -2926,6 +2927,20 @@ function OwnerDashboardScreen() {
     }
   }, [isStaffUser]);
 
+  // Fetch phases assigned to this worker that start this week
+  const fetchMyPhasesThisWeek = useCallback(async () => {
+    if (!isStaffUser) return;
+    try {
+      const { default: api } = await import('../../src/lib/api');
+      const response = await api.get<any[]>('/api/jobs/my-phases');
+      if (Array.isArray(response.data)) {
+        setMyPhasesThisWeek(response.data);
+      }
+    } catch (error) {
+      if (__DEV__) console.log('Error fetching my phases:', error);
+    }
+  }, [isStaffUser]);
+
   // Use refs to maintain stable function references and prevent re-render loops
   const fetchTodaysJobsRef = useRef(fetchTodaysJobs);
   const fetchStatsRef = useRef(fetchStats);
@@ -2933,6 +2948,7 @@ function OwnerDashboardScreen() {
   const fetchActivitiesRef = useRef(fetchActivities);
   const fetchTeamStateRef = useRef(fetchTeamState);
   const fetchMyAllJobsRef = useRef(fetchMyAllJobs);
+  const fetchMyPhasesThisWeekRef = useRef(fetchMyPhasesThisWeek);
   const fetchToInvoiceCountRef = useRef(fetchToInvoiceCount);
   const fetchDailySummaryRef = useRef(fetchDailySummary);
   const fetchWorkerStateRef = useRef(fetchWorkerState);
@@ -2945,6 +2961,7 @@ function OwnerDashboardScreen() {
   fetchActivitiesRef.current = fetchActivities;
   fetchTeamStateRef.current = fetchTeamState;
   fetchMyAllJobsRef.current = fetchMyAllJobs;
+  fetchMyPhasesThisWeekRef.current = fetchMyPhasesThisWeek;
   fetchToInvoiceCountRef.current = fetchToInvoiceCount;
   fetchDailySummaryRef.current = fetchDailySummary;
   fetchWorkerStateRef.current = fetchWorkerState;
@@ -2958,6 +2975,7 @@ function OwnerDashboardScreen() {
         fetchClientsRef.current(),
         fetchActivitiesRef.current(),
         fetchMyAllJobsRef.current(),
+        fetchMyPhasesThisWeekRef.current(),
         fetchToInvoiceCountRef.current(),
         fetchDailySummaryRef.current(),
         fetchWorkerStateRef.current(),
@@ -3837,6 +3855,64 @@ function OwnerDashboardScreen() {
           jobs={thisWeeksJobs} 
           onViewJob={(id) => router.push(`/job/${id}`)} 
         />
+      )}
+
+      {/* My Phases This Week — phases where this worker is the assignee */}
+      {isStaffUser && myPhasesThisWeek.length > 0 && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <View style={styles.sectionTitleRow}>
+              <View style={styles.sectionTitleIcon}>
+                <Feather name="layers" size={iconSizes.md} color={colors.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>My Phases This Week</Text>
+            </View>
+          </View>
+          {myPhasesThisWeek.map((phase: any) => {
+            const statusColors: Record<string, { bg: string; text: string }> = {
+              not_started: { bg: '#F3F4F6', text: '#374151' },
+              in_progress:  { bg: '#DBEAFE', text: '#1E40AF' },
+              complete:     { bg: '#D1FAE5', text: '#065F46' },
+              invoiced:     { bg: '#EDE9FE', text: '#6D28D9' },
+            };
+            const sc = statusColors[phase.status] ?? statusColors.not_started;
+            return (
+              <TouchableOpacity
+                key={phase.id}
+                style={{
+                  backgroundColor: colors.card,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  padding: spacing.sm,
+                  marginBottom: spacing.xs,
+                }}
+                onPress={() => router.push(`/job/${phase.jobId}`)}
+                activeOpacity={0.75}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                  <Text style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: '700', color: colors.primary }}>
+                    {phase.phaseCode}
+                  </Text>
+                  <Text style={{ fontSize: 13, fontWeight: '500', color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                    {phase.name}
+                  </Text>
+                  <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10, backgroundColor: sc.bg }}>
+                    <Text style={{ fontSize: 10, color: sc.text, fontWeight: '500' }}>
+                      {phase.status.replace(/_/g, ' ')}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={1}>
+                  {phase.jobTitle}
+                  {phase.scheduledStart
+                    ? ` · ${new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`
+                    : ''}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       )}
 
       {/* Day Summary Card - shows after 4pm or when all jobs done */}

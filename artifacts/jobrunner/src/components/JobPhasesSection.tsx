@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
-  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers,
+  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, User,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -45,6 +45,8 @@ export interface JobPhase {
   status: PhaseStatus;
   sortOrder: number;
   notes?: string | null;
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
   createdAt: string;
 }
 
@@ -64,7 +66,16 @@ const EMPTY_FORM = {
   bookedHours: "",
   status: "not_started" as PhaseStatus,
   notes: "",
+  assignedUserId: "",
 };
+
+/** Build 1–2 character initials from a full name */
+function initials(name?: string | null): string {
+  if (!name) return "";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "";
+  return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
+}
 
 interface Props {
   jobId: string;
@@ -86,6 +97,19 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
     queryKey: [`/api/jobs/${jobId}/phases`],
     enabled: !!jobId,
   });
+
+  // Fetch job's assigned workers so the phase form can offer an assignee picker.
+  // Only needed for owners/managers; skip for tradies.
+  const { data: assignments = [] } = useQuery<any[]>({
+    queryKey: [`/api/jobs/${jobId}/assignments`],
+    enabled: !!jobId && !isTradie,
+  });
+  const workers = assignments
+    .filter((a: any) => a.isActive !== false)
+    .map((a: any) => ({
+      id: a.userId as string,
+      name: (a.displayName || a.workerDisplayNameSnapshot || a.userId) as string,
+    }));
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -160,6 +184,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       bookedHours: phase.bookedHours ?? "",
       status: phase.status,
       notes: phase.notes ?? "",
+      assignedUserId: phase.assignedUserId ?? "",
     });
   };
 
@@ -203,6 +228,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
             onCancel={() => { setShowAddForm(false); setForm({ ...EMPTY_FORM }); }}
             isPending={createMutation.isPending}
             submitLabel="Add Phase"
+            workers={workers}
           />
         )}
 
@@ -235,6 +261,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                     onCancel={() => setEditingId(null)}
                     isPending={updateMutation.isPending}
                     submitLabel="Save"
+                    workers={workers}
                   />
                 </div>
               );
@@ -299,6 +326,21 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                     ) : (
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.className}`}>
                         {cfg.label}
+                      </span>
+                    )}
+                    {/* Assignee initials badge */}
+                    {phase.assignedUserName && (
+                      <span
+                        className="flex items-center gap-1 text-[10px] text-muted-foreground"
+                        title={phase.assignedUserName}
+                      >
+                        <span
+                          className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold text-white"
+                          style={{ backgroundColor: "hsl(var(--trade))" }}
+                        >
+                          {initials(phase.assignedUserName)}
+                        </span>
+                        <span className="hidden sm:inline">{phase.assignedUserName}</span>
                       </span>
                     )}
                   </div>
@@ -389,9 +431,10 @@ interface PhaseFormProps {
   onCancel: () => void;
   isPending: boolean;
   submitLabel: string;
+  workers?: { id: string; name: string }[];
 }
 
-function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel }: PhaseFormProps) {
+function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, workers = [] }: PhaseFormProps) {
   const set = (field: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [field]: e.target.value });
   const setVal = (field: keyof typeof EMPTY_FORM) => (v: string) =>
@@ -467,6 +510,24 @@ function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel }
           />
         </div>
       </div>
+
+      {/* Assignee picker — only shown when the job has assigned workers */}
+      {workers.length > 0 && (
+        <div className="space-y-1">
+          <Label className="text-xs">Assigned to</Label>
+          <Select value={form.assignedUserId || "__none__"} onValueChange={(v) => setVal("assignedUserId")(v === "__none__" ? "" : v)}>
+            <SelectTrigger className="h-8 text-sm">
+              <SelectValue placeholder="No assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No assignee</SelectItem>
+              {workers.map((w) => (
+                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <Textarea
         placeholder="Notes (optional)"

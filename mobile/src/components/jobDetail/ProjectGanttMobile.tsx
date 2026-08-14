@@ -50,6 +50,13 @@ function fmtShort(d: Date): string {
   return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 }
 
+function getInitials(name?: string | null): string {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return (parts[0][0] ?? '').toUpperCase();
+  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 export interface ProjectGanttMobileProps {
   colors: ThemeColors;
@@ -262,11 +269,24 @@ export function ProjectGanttMobile({
                     >
                       {bar.width > 44 && (
                         <Text
-                          style={[styles.barLabel, { color: colorCfg.text }]}
+                          style={[styles.barLabel, { color: colorCfg.text, paddingRight: phase.assignedUserName ? 18 : 0 }]}
                           numberOfLines={1}
                         >
                           {bar.width > 80 ? phase.name : phase.phaseCode}
                         </Text>
+                      )}
+                      {/* Assignee initials badge — right end of bar */}
+                      {phase.assignedUserName && bar.width > 20 && (
+                        <View
+                          style={[
+                            styles.ganttAssigneeBadge,
+                            { backgroundColor: 'rgba(255,255,255,0.30)' },
+                          ]}
+                        >
+                          <Text style={[styles.ganttAssigneeBadgeText, { color: colorCfg.text }]}>
+                            {getInitials(phase.assignedUserName)}
+                          </Text>
+                        </View>
                       )}
                     </View>
                   ) : (
@@ -443,6 +463,22 @@ const styles = StyleSheet.create({
   },
   legendLabel: {
     fontSize: 10,
+  },
+  ganttAssigneeBadge: {
+    position: 'absolute',
+    right: 3,
+    top: '50%' as any,
+    marginTop: -8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ganttAssigneeBadgeText: {
+    fontSize: 7,
+    fontWeight: '700' as any,
+    lineHeight: 8,
   },
 });
 

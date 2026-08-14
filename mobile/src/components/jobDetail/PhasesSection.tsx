@@ -22,6 +22,15 @@ export interface JobPhase {
   status: PhaseStatus;
   sortOrder: number;
   notes?: string | null;
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
+}
+
+function getInitials(name?: string | null): string {
+  if (!name) return '';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return (parts[0][0] ?? '').toUpperCase();
+  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
 }
 
 const STATUS_CONFIG: Record<PhaseStatus, { label: string; bg: string; text: string }> = {
@@ -195,6 +204,14 @@ export function PhasesSection({
                         <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                       )}
                     </TouchableOpacity>
+                    {/* Assignee initials badge */}
+                    {phase.assignedUserName ? (
+                      <View style={[styles.assigneeBadge, { backgroundColor: colors.primary }]}>
+                        <Text style={styles.assigneeBadgeText}>
+                          {getInitials(phase.assignedUserName)}
+                        </Text>
+                      </View>
+                    ) : null}
                     {!isTradie && onEditPhase && (
                       <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                     )}
@@ -371,5 +388,18 @@ const styles = StyleSheet.create({
   phaseDesc: {
     fontSize: 11,
     lineHeight: 15,
+  },
+  assigneeBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  assigneeBadgeText: {
+    fontSize: 8,
+    fontWeight: '700' as any,
+    color: '#fff',
+    lineHeight: 10,
   },
 });

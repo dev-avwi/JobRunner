@@ -2245,7 +2245,7 @@ export default function JobDetailScreen() {
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
-  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '' });
+  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', assignedUserId: '' });
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
@@ -2775,6 +2775,7 @@ export default function JobDetailScreen() {
         scheduledStart: editPhaseForm.scheduledStart.trim() || null,
         scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
         bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
+        assignedUserId: editPhaseForm.assignedUserId || null,
       };
       await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
       await loadPhases();
@@ -10462,6 +10463,7 @@ export default function JobDetailScreen() {
                     scheduledStart: phase.scheduledStart ?? '',
                     scheduledEnd: phase.scheduledEnd ?? '',
                     bookedHours: phase.bookedHours ?? '',
+                    assignedUserId: (phase as any).assignedUserId ?? '',
                   });
                   setShowEditPhaseModal(true);
                 } : undefined}
@@ -10482,6 +10484,7 @@ export default function JobDetailScreen() {
                     scheduledStart: phase.scheduledStart ?? '',
                     scheduledEnd: phase.scheduledEnd ?? '',
                     bookedHours: phase.bookedHours ?? '',
+                    assignedUserId: (phase as any).assignedUserId ?? '',
                   });
                   setShowEditPhaseModal(true);
                 } : undefined}
@@ -10631,6 +10634,47 @@ export default function JobDetailScreen() {
             onChangeText={(t) => setEditPhaseForm(f => ({ ...f, bookedHours: t }))}
             keyboardType="decimal-pad"
           />
+          {/* Assigned to — picker from job's assigned workers */}
+          {jobAssignments.length > 0 && (
+            <View style={{ marginBottom: spacing.lg }}>
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assigned to</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                <TouchableOpacity
+                  onPress={() => setEditPhaseForm(f => ({ ...f, assignedUserId: '' }))}
+                  style={{
+                    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
+                    borderWidth: 1,
+                    borderColor: !editPhaseForm.assignedUserId ? colors.primary : colors.border,
+                    backgroundColor: !editPhaseForm.assignedUserId ? colors.primary + '18' : 'transparent',
+                  }}
+                >
+                  <Text style={{ fontSize: 12, color: !editPhaseForm.assignedUserId ? colors.primary : colors.mutedForeground }}>
+                    No assignee
+                  </Text>
+                </TouchableOpacity>
+                {jobAssignments.map((a: any) => {
+                  const workerName = a.displayName || a.workerDisplayNameSnapshot || 'Worker';
+                  const isSelected = editPhaseForm.assignedUserId === a.userId;
+                  return (
+                    <TouchableOpacity
+                      key={a.userId}
+                      onPress={() => setEditPhaseForm(f => ({ ...f, assignedUserId: a.userId }))}
+                      style={{
+                        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                        backgroundColor: isSelected ? colors.primary + '18' : 'transparent',
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, color: isSelected ? colors.primary : colors.foreground }}>
+                        {workerName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
           <TextInput
             style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}

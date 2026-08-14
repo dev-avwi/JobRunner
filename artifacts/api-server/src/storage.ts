@@ -540,6 +540,7 @@ export interface IStorage {
   updateJobPhase(id: string, jobId: string, userId: string, updates: Partial<InsertJobPhase>): Promise<JobPhase | undefined>;
   deleteJobPhase(id: string, jobId: string, userId: string): Promise<boolean>;
   reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void>;
+  getMyAssignedPhasesThisWeek(userId: string, weekStart: Date, weekEnd: Date): Promise<any[]>;
   generateJobNumber(userId: string): Promise<string | null>;
 
   // Project Templates
@@ -2479,6 +2480,30 @@ export class PostgresStorage implements IStorage {
       .where(and(eq(jobPhases.id, id), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, userId)))
       .returning();
     return result.length > 0;
+  }
+
+  async getMyAssignedPhasesThisWeek(userId: string, weekStart: Date, weekEnd: Date): Promise<any[]> {
+    return await db
+      .select({
+        id: jobPhases.id,
+        jobId: jobPhases.jobId,
+        phaseCode: jobPhases.phaseCode,
+        name: jobPhases.name,
+        status: jobPhases.status,
+        scheduledStart: jobPhases.scheduledStart,
+        scheduledEnd: jobPhases.scheduledEnd,
+        sortOrder: jobPhases.sortOrder,
+      })
+      .from(jobPhases)
+      .where(
+        and(
+          eq(jobPhases.assignedUserId, userId),
+          isNotNull(jobPhases.scheduledStart),
+          gte(jobPhases.scheduledStart, weekStart),
+          lt(jobPhases.scheduledStart, weekEnd),
+        )
+      )
+      .orderBy(asc(jobPhases.scheduledStart));
   }
 
   async reorderJobPhases(jobId: string, userId: string, orderedIds: string[]): Promise<void> {
