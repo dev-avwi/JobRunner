@@ -2234,6 +2234,7 @@ export default function JobDetailScreen() {
   // Progress Claims
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
+  const [claimedPhaseIds, setClaimedPhaseIds] = useState<Set<string>>(new Set());
 
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
@@ -2728,7 +2729,26 @@ export default function JobDetailScreen() {
     setIsLoadingClaims(true);
     try {
       const res = await api.get<ProgressClaim[]>(`/api/jobs/${id}/claims`);
-      setProgressClaims(Array.isArray(res.data) ? res.data : []);
+      const claims = Array.isArray(res.data) ? res.data : [];
+      setProgressClaims(claims);
+      // Fetch line items for all claims in parallel to build the claimed-phase set
+      if (claims.length > 0) {
+        const detailResults = await Promise.all(
+          claims.map((c) =>
+            api.get<{ lineItems: Array<{ phaseId: string | null }> }>(`/api/jobs/${id}/claims/${c.id}`)
+              .catch(() => null),
+          ),
+        );
+        const phaseIds = new Set<string>();
+        for (const r of detailResults) {
+          for (const li of r?.data?.lineItems ?? []) {
+            if (li.phaseId) phaseIds.add(li.phaseId);
+          }
+        }
+        setClaimedPhaseIds(phaseIds);
+      } else {
+        setClaimedPhaseIds(new Set());
+      }
     } catch (e) {
       console.error('Error loading progress claims:', e);
     } finally {
@@ -10451,6 +10471,7 @@ export default function JobDetailScreen() {
                 phases={phases}
                 isLoading={isLoadingPhases}
                 isTradie={!(isOwnerOrManager || isSoloOwner)}
+                claimedPhaseIds={claimedPhaseIds}
                 onStatusChange={async (phaseId, status) => {
                   await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
                   await loadPhases();

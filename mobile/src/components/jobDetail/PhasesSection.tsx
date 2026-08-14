@@ -62,6 +62,8 @@ export interface PhasesSectionProps {
   onEditPhase?: (phase: JobPhase) => void;
   /** Called when a phase is cycled to "complete" status — used to prompt for a progress claim */
   onPhaseCompleted?: (phase: JobPhase) => void;
+  /** Set of phase IDs that already have a progress claim line item */
+  claimedPhaseIds?: Set<string>;
 }
 
 export function PhasesSection({
@@ -73,6 +75,7 @@ export function PhasesSection({
   onAddPhase,
   onEditPhase,
   onPhaseCompleted,
+  claimedPhaseIds,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
@@ -204,6 +207,12 @@ export function PhasesSection({
                         <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                       )}
                     </TouchableOpacity>
+                    {/* Claimed badge */}
+                    {claimedPhaseIds?.has(phase.id) && (
+                      <View style={styles.claimedBadge}>
+                        <Text style={styles.claimedBadgeText}>Claimed</Text>
+                      </View>
+                    )}
                     {/* Assignee initials badge */}
                     {phase.assignedUserName ? (
                       <View style={[styles.assigneeBadge, { backgroundColor: colors.primary }]}>
@@ -388,6 +397,17 @@ const styles = StyleSheet.create({
   phaseDesc: {
     fontSize: 11,
     lineHeight: 15,
+  },
+  claimedBadge: {
+    backgroundColor: '#DBEAFE',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  claimedBadgeText: {
+    fontSize: 10,
+    fontWeight: fontWeights.medium,
+    color: '#1E40AF',
   },
   assigneeBadge: {
     width: 18,

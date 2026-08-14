@@ -3,8 +3,8 @@
  * Phases give large jobs (construction, engineering) a way to break work
  * into coded billable milestones (e.g., P01 Site Prep, P02 Footings).
  */
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useMemo } from "react";
+import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import {
   Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, User,
 } from "lucide-react";
@@ -32,6 +32,31 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
 export type PhaseStatus = "not_started" | "in_progress" | "complete" | "invoiced";
+
+// ─── Claim types (minimal, for cross-referencing) ─────────────────────────────
+type ClaimStatus = "draft" | "submitted" | "approved" | "paid";
+
+interface ClaimHeader {
+  id: string;
+  status: ClaimStatus;
+  claimNumber: string;
+}
+
+interface ClaimLineItem {
+  phaseId: string | null;
+}
+
+interface ClaimDetail {
+  claim: ClaimHeader;
+  lineItems: ClaimLineItem[];
+}
+
+const CLAIM_BADGE: Record<ClaimStatus, { label: string; className: string }> = {
+  draft:     { label: "Draft Claim",     className: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" },
+  submitted: { label: "Claim Submitted", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+  approved:  { label: "Claim Approved",  className: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  paid:      { label: "Paid",            className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+};
 
 export interface JobPhase {
   id: string;
@@ -110,6 +135,33 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       id: a.userId as string,
       name: (a.displayName || a.workerDisplayNameSnapshot || a.userId) as string,
     }));
+
+  // Fetch claims list then detail for each, to build phaseId → claimStatus map
+  const { data: claims = [] } = useQuery<ClaimHeader[]>({
+    queryKey: [`/api/jobs/${jobId}/claims`],
+    enabled: !!jobId,
+  });
+
+  const claimDetailQueries = useQueries({
+    queries: claims.map((claim) => ({
+      queryKey: [`/api/jobs/${jobId}/claims/${claim.id}`],
+      enabled: !!jobId,
+    })),
+  });
+
+  const claimedPhaseMap = useMemo(() => {
+    const map = new Map<string, ClaimStatus>();
+    for (const q of claimDetailQueries) {
+      const detail = q.data as ClaimDetail | undefined;
+      if (!detail?.lineItems) continue;
+      for (const li of detail.lineItems) {
+        if (li.phaseId && !map.has(li.phaseId)) {
+          map.set(li.phaseId, detail.claim.status);
+        }
+      }
+    }
+    return map;
+  }, [claimDetailQueries]);
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -309,6 +361,16 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">{phase.name}</span>
+                    {/* Claimed badge */}
+                    {claimedPhaseMap.has(phase.id) && (() => {
+                      const claimStatus = claimedPhaseMap.get(phase.id)!;
+                      const badge = CLAIM_BADGE[claimStatus];
+                      return (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      );
+                    })()}
                     {/* Status selector or badge */}
                     {!isTradie ? (
                       <Select
