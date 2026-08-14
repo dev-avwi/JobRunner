@@ -3,7 +3,7 @@
  * Renders registered project documents (with revision history) and RFIs.
  * Used inside the Documents tab of the job detail screen.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -165,8 +165,6 @@ export function DocumentRegisterSection({
   const [answerStatus, setAnswerStatus] = useState<RfiStatus>('answered');
   const [answerText, setAnswerText] = useState('');
 
-  const [initialLoaded, setInitialLoaded] = useState(false);
-
   const loadDocuments = useCallback(async () => {
     setIsLoadingDocs(true);
     try {
@@ -191,12 +189,12 @@ export function DocumentRegisterSection({
     }
   }, [jobId]);
 
-  // Lazy-load on first render via state init (avoids useEffect dependency issues)
-  if (!initialLoaded) {
-    setInitialLoaded(true);
+  // Load documents and RFIs on mount
+  useEffect(() => {
     loadDocuments();
     loadRfis();
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const loadRevisions = useCallback(
     async (docId: string) => {
