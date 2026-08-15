@@ -68,7 +68,8 @@ interface ProfitabilityData {
   markup?: MarkupData;
   budget?: BudgetData | null;
   profit: { amount: number; margin: number; vsQuote: number | null; isNegative?: boolean };
-  hours: { total: number; billable: number; nonBillable: number };
+  hours: { total: number; billable: number; nonBillable: number; estimated?: number };
+  labourOverrun?: boolean;
   status: "profitable" | "tight" | "loss";
   historicalComparison?: HistoricalComparison | null;
   materials: Array<{
@@ -389,11 +390,13 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
         <div className="pt-2 border-t">
           <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">Costs</div>
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
+            <div className={`flex items-center justify-between rounded-md px-1.5 -mx-1.5 ${data.labourOverrun ? "bg-amber-50 dark:bg-amber-950/30 py-1" : ""}`}>
+              <span className={`text-sm flex items-center gap-1 ${data.labourOverrun ? "text-amber-700 dark:text-amber-300 font-medium" : "text-muted-foreground"}`}>
+                {data.labourOverrun && <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
                 Labour{data.hours.total > 0 ? ` (${Number(data.hours.total).toFixed(1)}hrs)` : ""}
+                {data.labourOverrun && data.hours.estimated ? ` / ${data.hours.estimated.toFixed(1)} est` : ""}
               </span>
-              <span className="text-sm">{formatCurrency(data.costs.labour)}</span>
+              <span className={`text-sm ${data.labourOverrun ? "text-amber-700 dark:text-amber-300 font-medium" : ""}`}>{formatCurrency(data.costs.labour)}</span>
             </div>
             {data.costs.subcontractor > 0 && (
               <div className="flex items-center justify-between">

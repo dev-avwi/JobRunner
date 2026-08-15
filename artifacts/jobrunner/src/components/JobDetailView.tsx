@@ -2136,6 +2136,23 @@ export default function JobDetailView({
           </div>
         )}
 
+        {/* Labour overrun warning — amber, shown while job is in progress and hours exceed estimate by >20% */}
+        {!isTradie && jobProfitabilityData?.labourOverrun && (
+          <div className="rounded-xl p-4 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-amber-700 dark:text-amber-300">Labour hours are tracking over estimate</p>
+                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">
+                  {jobProfitabilityData.hours.total.toFixed(1)} hrs logged vs {jobProfitabilityData.hours.estimated?.toFixed(1) ?? '—'} hrs estimated — check the Job Costing section.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Urgency Banner for scheduled jobs */}
         {job.status === 'scheduled' && jobUrgency && !activeTimerForThisJob && (
           <div 

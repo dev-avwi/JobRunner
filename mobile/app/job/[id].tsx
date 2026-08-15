@@ -2399,7 +2399,8 @@ export default function JobDetailScreen() {
     variations: { approvedTotal: number; approvedCount: number; pendingTotal: number; pendingCount: number };
     purchaseOrders: { total: number; count: number };
     profit: { amount: number; margin: number; vsQuote: number | null; isNegative?: boolean };
-    hours: { total: number; billable: number; nonBillable: number };
+    hours: { total: number; billable: number; nonBillable: number; estimated?: number };
+    labourOverrun?: boolean;
     status: 'profitable' | 'tight' | 'loss';
     materials: Array<{ id: string; name: string; quantity: number; unitCost: number; totalCost: number; totalPrice?: number; markupPercent?: string; supplier: string; status: string }>;
     phases?: Array<{
@@ -4956,7 +4957,8 @@ export default function JobDetailScreen() {
             count: n(raw.purchaseOrders?.count),
           },
           profit: { amount: n(raw.profit.amount), margin: n(raw.profit.margin), vsQuote: raw.profit.vsQuote ?? null, isNegative: raw.profit.isNegative === true },
-          hours: { total: n(raw.hours.total), billable: n(raw.hours.billable), nonBillable: n(raw.hours.nonBillable) },
+          hours: { total: n(raw.hours.total), billable: n(raw.hours.billable), nonBillable: n(raw.hours.nonBillable), estimated: n(raw.hours.estimated) },
+          labourOverrun: raw.labourOverrun === true,
           status: raw.status === 'profitable' || raw.status === 'tight' || raw.status === 'loss' ? raw.status : 'loss',
           materials: Array.isArray(raw.materials) ? raw.materials : [],
         });
@@ -7251,6 +7253,36 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       )}
 
+      {/* Labour overrun banner — amber, while in_progress and hours exceed estimate by >20% */}
+      {(isOwnerOrManager || isSoloOwner) && profitabilityData?.labourOverrun && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: `${colors.warning}18`,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: colors.warning,
+            gap: spacing.sm,
+          }}
+        >
+          <Feather name="alert-triangle" size={18} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.warning }}>
+              Labour hours are tracking over estimate
+            </Text>
+            <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginTop: spacing.xxs }}>
+              {profitabilityData.hours.total.toFixed(1)} hrs logged{profitabilityData.hours.estimated ? ` / ${profitabilityData.hours.estimated.toFixed(1)} hrs estimated` : ''} — tap to view breakdown
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.warning} />
+        </TouchableOpacity>
+      )}
+
       {/* What's Next card — project jobs only */}
       {isProject ? (() => {
         const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
@@ -9283,11 +9315,19 @@ export default function JobDetailScreen() {
             <View style={{ paddingTop: spacing.sm }}>
               <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.sm }}>Costs</Text>
               <View style={{ gap: spacing.xs }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>
-                    Labour{pd.hours.total > 0 ? ` (${Number(pd.hours.total).toFixed(1)}hrs)` : ''}
-                  </Text>
-                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.labour)}</Text>
+                <View style={[
+                  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: radius.sm },
+                  pd.labourOverrun ? { backgroundColor: `${colors.warning}18`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs } : {},
+                ]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 }}>
+                    {pd.labourOverrun && (
+                      <Feather name="alert-triangle" size={13} color={colors.warning} />
+                    )}
+                    <Text style={{ fontSize: typography.button.fontSize, color: pd.labourOverrun ? colors.warning : colors.mutedForeground, fontWeight: pd.labourOverrun ? fontWeights.semibold : fontWeights.regular }}>
+                      Labour{pd.hours.total > 0 ? ` (${Number(pd.hours.total).toFixed(1)}hrs)` : ''}{pd.labourOverrun && pd.hours.estimated ? ` / ${pd.hours.estimated.toFixed(1)} est` : ''}
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: pd.labourOverrun ? fontWeights.semibold : fontWeights.medium, color: pd.labourOverrun ? colors.warning : colors.foreground }}>{formatCurrency(pd.costs.labour)}</Text>
                 </View>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Materials</Text>

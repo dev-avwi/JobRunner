@@ -6417,6 +6417,12 @@ import { computeRetentionSummary } from "./retentionSummary";
       }, 0);
       const nonBillableHours = totalHours - billableHours;
 
+      // Labour overrun flag: actual hours > 120% of estimated, only while job is in progress.
+      // The schema stores estimatedDuration in minutes; convert to hours for comparison.
+      const estimatedDurationMin = typeof (job as any).estimatedDuration === 'number' ? (job as any).estimatedDuration : 0;
+      const estimatedHoursForJob = estimatedDurationMin > 0 ? estimatedDurationMin / 60 : 0;
+      const labourOverrun = job.status === 'in_progress' && estimatedHoursForJob > 0 && totalHours > estimatedHoursForJob * 1.2;
+
       const totalCosts = nonSubNonMaterialExpenses + totalMaterialsCost + totalLaborCost + totalSubcontractorCost;
       const profit = totalRevenue - totalCosts;
       const profitMargin = totalRevenue > 0 ? Math.round((profit / totalRevenue) * 1000) / 10 : 0;
@@ -6664,7 +6670,9 @@ import { computeRetentionSummary } from "./retentionSummary";
           total: Math.round(totalHours * 10) / 10,
           billable: Math.round(billableHours * 10) / 10,
           nonBillable: Math.round(nonBillableHours * 10) / 10,
+          estimated: estimatedHoursForJob,
         },
+        labourOverrun,
         status: profitMargin > 15 ? 'profitable' : profitMargin > 5 ? 'tight' : 'loss',
         phases: phaseBreakdown,
         historicalComparison,
