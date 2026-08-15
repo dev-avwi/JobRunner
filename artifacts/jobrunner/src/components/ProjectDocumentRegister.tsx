@@ -54,10 +54,13 @@ import {
   X,
   AlertCircle,
   FileDown,
+  Flag,
+  CalendarDays,
+  User,
 } from 'lucide-react';
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isPast, parseISO } from 'date-fns';
 
 const DOC_CATEGORIES = ['Drawings', 'Specifications', 'RFIs', 'SWMS', 'Certificates', 'Other'] as const;
 type DocCategory = typeof DOC_CATEGORIES[number];
@@ -86,6 +89,7 @@ interface RevisionRecord {
   mimeType: string | null;
   notes: string | null;
   uploadedBy: string | null;
+  uploadedByName: string | null;
   uploadedAt: string;
   fileUrl: string | null;
 }
@@ -99,6 +103,8 @@ interface ProjectRfi {
   assignedTo: string | null;
   assignedToName: string | null;
   status: 'open' | 'answered' | 'closed';
+  priority: 'low' | 'medium' | 'high' | null;
+  dueDate: string | null;
   answeredAt: string | null;
   answerText: string | null;
   answerFileUrl: string | null;
@@ -141,6 +147,13 @@ function getRfiStatusConfig(status: string) {
   if (status === 'open') return { label: 'Open', icon: AlertCircle, className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' };
   if (status === 'answered') return { label: 'Answered', icon: CheckCircle2, className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' };
   return { label: 'Closed', icon: X, className: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400' };
+}
+
+function getRfiPriorityConfig(priority: string | null) {
+  if (priority === 'high') return { label: 'High', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
+  if (priority === 'medium') return { label: 'Medium', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' };
+  if (priority === 'low') return { label: 'Low', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
+  return null;
 }
 
 // ── Document Row ─────────────────────────────────────────────────────────────
@@ -336,15 +349,26 @@ function DocumentRow({
           ) : (
             <div className="space-y-1.5">
               {revisions.map((rev, i) => (
-                <div key={rev.id} className="flex items-center gap-2 text-xs">
-                  <span className={`font-mono px-1.5 py-0.5 rounded ${i === 0 ? 'bg-primary/10 text-primary font-semibold' : 'bg-muted text-muted-foreground'}`}>
+                <div key={rev.id} className="flex items-start gap-2 text-xs">
+                  <span className={`font-mono px-1.5 py-0.5 rounded flex-shrink-0 ${i === 0 ? 'bg-primary/10 text-primary font-semibold' : 'bg-muted text-muted-foreground'}`}>
                     Rev {rev.revision}
                   </span>
-                  <span className="truncate flex-1 text-muted-foreground">{rev.fileName}</span>
-                  {rev.fileSize && <span className="text-muted-foreground/60">{formatFileSize(rev.fileSize)}</span>}
-                  <span className="text-muted-foreground/60 flex-shrink-0">{format(new Date(rev.uploadedAt), 'dd MMM yy')}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="truncate block text-muted-foreground">{rev.fileName}</span>
+                    <span className="text-muted-foreground/60 flex items-center gap-1 mt-0.5">
+                      {rev.uploadedByName && (
+                        <>
+                          <User className="h-2.5 w-2.5" />
+                          {rev.uploadedByName}
+                          <span className="mx-0.5">·</span>
+                        </>
+                      )}
+                      {format(new Date(rev.uploadedAt), 'dd MMM yy')}
+                      {rev.fileSize && <><span className="mx-0.5">·</span>{formatFileSize(rev.fileSize)}</>}
+                    </span>
+                  </div>
                   {rev.fileUrl && (
-                    <a href={rev.fileUrl} download={rev.fileName} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary">
+                    <a href={rev.fileUrl} download={rev.fileName} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary flex-shrink-0">
                       <Download className="h-3 w-3" />
                     </a>
                   )}
@@ -456,6 +480,8 @@ function RfiRow({
   const answerFileRef = useRef<HTMLInputElement>(null);
   const statusCfg = getRfiStatusConfig(rfi.status);
   const StatusIcon = statusCfg.icon;
+  const priorityCfg = getRfiPriorityConfig(rfi.priority ?? null);
+  const isOverdue = rfi.status === 'open' && rfi.dueDate && isPast(parseISO(rfi.dueDate));
 
   const updateMutation = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
@@ -496,6 +522,18 @@ function RfiRow({
             <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${statusCfg.className}`}>
               <StatusIcon className="h-3 w-3" />{statusCfg.label}
             </span>
+            {priorityCfg && (
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium flex items-center gap-1 ${priorityCfg.className}`}>
+                <Flag className="h-3 w-3" />{priorityCfg.label}
+              </span>
+            )}
+            {rfi.dueDate && (
+              <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
+                <CalendarDays className="h-3 w-3" />
+                {isOverdue ? 'Overdue · ' : 'Due '}
+                {format(parseISO(rfi.dueDate), 'dd MMM yyyy')}
+              </span>
+            )}
             {rfi.assignedToName && (
               <span className="text-xs text-muted-foreground">→ {rfi.assignedToName}</span>
             )}
@@ -649,6 +687,8 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
   const [rfiQuestion, setRfiQuestion] = useState('');
   const [rfiDescription, setRfiDescription] = useState('');
   const [rfiAssignedToName, setRfiAssignedToName] = useState('');
+  const [rfiPriority, setRfiPriority] = useState<'low' | 'medium' | 'high' | ''>('');
+  const [rfiDueDate, setRfiDueDate] = useState('');
 
   // Delete confirm
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
@@ -723,7 +763,13 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-        body: JSON.stringify({ question: rfiQuestion, description: rfiDescription || undefined, assignedToName: rfiAssignedToName || undefined }),
+        body: JSON.stringify({
+          question: rfiQuestion,
+          description: rfiDescription || undefined,
+          assignedToName: rfiAssignedToName || undefined,
+          priority: rfiPriority || undefined,
+          dueDate: rfiDueDate || undefined,
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
@@ -735,6 +781,8 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
       setRfiQuestion('');
       setRfiDescription('');
       setRfiAssignedToName('');
+      setRfiPriority('');
+      setRfiDueDate('');
     },
     onError: (err: any) => toast({ title: 'Failed to create RFI', description: err.message, variant: 'destructive' }),
   });
@@ -999,6 +1047,23 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
             <div className="space-y-1">
               <Label>Description (optional)</Label>
               <Textarea placeholder="Provide more context…" value={rfiDescription} onChange={e => setRfiDescription(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Priority</Label>
+                <Select value={rfiPriority} onValueChange={v => setRfiPriority(v as 'low' | 'medium' | 'high' | '')}>
+                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Due Date</Label>
+                <Input type="date" value={rfiDueDate} onChange={e => setRfiDueDate(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-1">
               <Label>Assign to (optional)</Label>

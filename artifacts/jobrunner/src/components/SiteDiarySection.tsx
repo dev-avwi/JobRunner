@@ -397,6 +397,33 @@ export function SiteDiarySection({ jobId, canEdit = true, currentUserId }: SiteD
                       )}
                     </button>
 
+                    {/* Inline photo thumbnail strip — visible even when collapsed */}
+                    {entry.photoUrls && entry.photoUrls.length > 0 && (
+                      <div className="px-3 pt-0 pb-2 flex gap-1.5 overflow-hidden">
+                        {entry.photoUrls.slice(0, 4).map((url, i) => (
+                          <a
+                            key={i}
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-shrink-0 w-14 h-14 rounded overflow-hidden border hover:opacity-80 transition-opacity"
+                          >
+                            <img
+                              src={url}
+                              alt={`Photo ${i + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </a>
+                        ))}
+                        {entry.photoUrls.length > 4 && (
+                          <div className="flex-shrink-0 w-14 h-14 rounded border bg-muted flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground font-medium">+{entry.photoUrls.length - 4}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* Body */}
                     {expanded && (
                       <div className="px-3 pb-3 border-t bg-muted/20">
