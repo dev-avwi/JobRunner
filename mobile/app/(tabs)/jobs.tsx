@@ -277,7 +277,17 @@ function JobCard({
       style={job.isXeroImport ? { ...styles.jobCard, overflow: 'visible' as const } : styles.jobCard}
     >
       {job.isXeroImport && <XeroBadge size="sm" />}
-      <View style={styles.jobCardContent}>
+      <View style={[styles.jobCardContent, { position: 'relative' }]}>
+        {/* … button floats top-right so it never pushes badges onto a second line */}
+        <View style={{ position: 'absolute', top: 2, right: 2, zIndex: 1 }}>
+          <Button
+            size="icon"
+            variant="ghost"
+            onPress={handleMorePress}
+            icon={<Feather name="more-horizontal" size={16} color={colors.mutedForeground} />}
+          >{null}</Button>
+        </View>
+
         <View style={styles.jobCardStatusRow}>
           <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
           {job.jobType === 'project' && (
@@ -302,14 +312,6 @@ function JobCard({
               </Text>
             </View>
           )}
-          <View style={{ marginLeft: 'auto' }}>
-            <Button
-              size="icon"
-              variant="ghost"
-              onPress={handleMorePress}
-              icon={<Feather name="more-horizontal" size={16} color={colors.mutedForeground} />}
-            >{null}</Button>
-          </View>
         </View>
 
         {job.jobNumber && (
@@ -2187,8 +2189,10 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     marginBottom: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     gap: spacing.xs,
+    // leave room for the absolutely-positioned … button (≈28px)
+    paddingRight: 28,
   },
   recurringBadge: {
     flexDirection: 'row',
