@@ -477,6 +477,8 @@ function RfiRow({
   const [answerText, setAnswerText] = useState(rfi.answerText || '');
   const [answerFile, setAnswerFile] = useState<File | null>(null);
   const [newStatus, setNewStatus] = useState<string>(rfi.status);
+  const [newPriority, setNewPriority] = useState<string>(rfi.priority ?? '');
+  const [newDueDate, setNewDueDate] = useState<string>(rfi.dueDate ? rfi.dueDate.slice(0, 10) : '');
   const answerFileRef = useRef<HTMLInputElement>(null);
   const statusCfg = getRfiStatusConfig(rfi.status);
   const StatusIcon = statusCfg.icon;
@@ -606,6 +608,24 @@ function RfiRow({
                 </SelectContent>
               </Select>
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Priority</Label>
+                <Select value={newPriority || 'none'} onValueChange={v => setNewPriority(v === 'none' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Due Date</Label>
+                <Input type="date" value={newDueDate} onChange={e => setNewDueDate(e.target.value)} />
+              </div>
+            </div>
             <div className="space-y-1">
               <Label>Answer</Label>
               <Textarea placeholder="Provide the answer here…" value={answerText} onChange={e => setAnswerText(e.target.value)} rows={4} />
@@ -627,7 +647,7 @@ function RfiRow({
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAnswerDialog(false)}>Cancel</Button>
-            <Button onClick={() => updateMutation.mutate({ status: newStatus, answerText })} disabled={updateMutation.isPending}>
+            <Button onClick={() => updateMutation.mutate({ status: newStatus, answerText, priority: newPriority, dueDate: newDueDate })} disabled={updateMutation.isPending}>
               {updateMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Save
             </Button>
