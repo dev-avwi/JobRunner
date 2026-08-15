@@ -773,6 +773,12 @@ export default function NewInvoiceScreen() {
   const [jobExpenses, setJobExpenses] = useState<any[]>([]);
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [isLoadingJob, setIsLoadingJob] = useState(false);
+  const [costCheckData, setCostCheckData] = useState<{
+    purchaseOrders: { reconciledCount: number; reconciledTotal: number; outstandingCount: number; outstandingTotal: number };
+    variations: Array<{ id: string; title: string; amount: number; variationNumber: number | null }>;
+    materials: { markupCaptured: number; sellPriceTotal: number };
+  } | null>(null);
+  const [costCheckExpanded, setCostCheckExpanded] = useState(false);
 
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
 
@@ -802,13 +808,25 @@ export default function NewInvoiceScreen() {
     setLineItems([]);
     setJobExpenses([]);
     setIsRecurring(false);
+    setCostCheckData(null);
+    setCostCheckExpanded(false);
     fetchJobExpenses(params.jobId);
+    fetchCostCheck(params.jobId);
     if (params.claimId) {
       fetchClaimAndPrefill(params.jobId, params.claimId);
     } else {
       fetchJobAndPrefill(params.jobId);
     }
   }, [params.jobId, params.claimId]);
+
+  const fetchCostCheck = async (jId: string) => {
+    try {
+      const res = await api.get(`/api/jobs/${jId}/invoice-cost-check`);
+      if (res.data) setCostCheckData(res.data as any);
+    } catch (_) {
+      // non-fatal: cost check is advisory only
+    }
+  };
 
   const loadInvoiceForEditing = async (invoiceId: string) => {
     setIsLoading(true);
@@ -840,6 +858,14 @@ export default function NewInvoiceScreen() {
             quantity: String(item.quantity ?? 1),
             unitPrice: String(item.unitPrice ?? 0),
           })));
+        }
+        // Load cost check when the invoice is linked to a job so the panel
+        // shows on the edit/send path, not just on new-invoice creation.
+        if (invoiceData.jobId) {
+          setJobId(invoiceData.jobId);
+          setCostCheckData(null);
+          setCostCheckExpanded(false);
+          fetchCostCheck(invoiceData.jobId);
         }
       }
     } catch (error) {
@@ -1751,6 +1777,143 @@ export default function NewInvoiceScreen() {
                   )}
                 </View>
               )}
+
+              {/* Cost Check Panel — shown when invoice is linked to a job */}
+              {jobId && costCheckData && (() => {
+                const po = costCheckData.purchaseOrders;
+                // Match each approved variation against current line item descriptions
+                // (case-insensitive substring). Only unmatched ones get a warning.
+                const lineDescriptions = lineItems.map(li => li.description.toLowerCase());
+                const unmatchedVariations = costCheckData.variations.filter(v => {
+                  const needle = v.title.toLowerCase();
+                  return !lineDescriptions.some(d => d.includes(needle));
+                });
+                const unmatchedTotal = unmatchedVariations.reduce((s, v) => s + v.amount, 0);
+                const hasOutstandingPOs = po.outstandingCount > 0;
+                const hasUnmatchedVariations = unmatchedVariations.length > 0;
+                const hasWarnings = hasOutstandingPOs || hasUnmatchedVariations;
+                const warningCount = (hasOutstandingPOs ? 1 : 0) + (hasUnmatchedVariations ? 1 : 0);
+                const fmt = (n: number) => formatCurrency(n);
+                return (
+                  <View style={[styles.card, { borderColor: hasWarnings ? colors.warning : colors.border }]}>
+                    <Pressable
+                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                      onPress={() => setCostCheckExpanded(!costCheckExpanded)}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        <Feather
+                          name={hasWarnings ? 'alert-triangle' : 'check-circle'}
+                          size={16}
+                          color={hasWarnings ? colors.warning : colors.success}
+                        />
+                        <Text style={styles.cardHeaderText}>Cost check</Text>
+                        {hasWarnings && (
+                          <View style={{ backgroundColor: colors.warningLight, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.warningDark }}>
+                              {warningCount === 1 ? '1 item to review' : `${warningCount} items to review`}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      <Feather name={costCheckExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.mutedForeground} />
+                    </Pressable>
+
+                    {costCheckExpanded && (
+                      <View style={{ marginTop: spacing.lg, gap: spacing.md }}>
+                        {/* Purchase Orders */}
+                        <View style={{ backgroundColor: hasOutstandingPOs ? colors.warningLight : colors.muted, borderRadius: 10, padding: spacing.md }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                            <Feather name="shopping-cart" size={14} color={hasOutstandingPOs ? colors.warningDark : colors.mutedForeground} />
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: hasOutstandingPOs ? colors.warningDark : colors.foreground }}>
+                              Purchase Orders
+                            </Text>
+                          </View>
+                          {po.reconciledCount === 0 && po.outstandingCount === 0 ? (
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No purchase orders for this job</Text>
+                          ) : (
+                            <>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                                <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Reconciled</Text>
+                                <Text style={{ fontSize: typography.sizes.sm, color: colors.success }}>
+                                  {po.reconciledCount} ({fmt(po.reconciledTotal)})
+                                </Text>
+                              </View>
+                              {hasOutstandingPOs && (
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                                  <Text style={{ fontSize: typography.sizes.sm, color: colors.warningDark, fontWeight: fontWeights.medium }}>Outstanding</Text>
+                                  <Text style={{ fontSize: typography.sizes.sm, color: colors.warningDark, fontWeight: fontWeights.semibold }}>
+                                    {po.outstandingCount} ({fmt(po.outstandingTotal)})
+                                  </Text>
+                                </View>
+                              )}
+                              {hasOutstandingPOs && (
+                                <Pressable onPress={() => router.push(`/job/${jobId}` as any)} style={{ marginTop: spacing.xs }}>
+                                  <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>
+                                    Review POs on job
+                                  </Text>
+                                </Pressable>
+                              )}
+                            </>
+                          )}
+                        </View>
+
+                        {/* Approved Variations — only warn for ones not yet in line items */}
+                        <View style={{ backgroundColor: hasUnmatchedVariations ? colors.warningLight : colors.muted, borderRadius: 10, padding: spacing.md }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                            <Feather name="git-merge" size={14} color={hasUnmatchedVariations ? colors.warningDark : colors.mutedForeground} />
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: hasUnmatchedVariations ? colors.warningDark : colors.foreground }}>
+                              Approved Variations
+                            </Text>
+                          </View>
+                          {costCheckData.variations.length === 0 ? (
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No approved variations</Text>
+                          ) : hasUnmatchedVariations ? (
+                            <>
+                              {unmatchedVariations.map(v => (
+                                <View key={v.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                                  <Text style={{ fontSize: typography.sizes.sm, color: colors.warningDark, flex: 1, marginRight: spacing.sm }} numberOfLines={1}>{v.title}</Text>
+                                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.warningDark }}>{fmt(v.amount)}</Text>
+                                </View>
+                              ))}
+                              <Text style={{ fontSize: typography.sizes.sm, color: colors.warningDark, marginTop: spacing.xs }}>
+                                Not yet found in line items — add them before sending
+                              </Text>
+                            </>
+                          ) : (
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.success }}>
+                              All {costCheckData.variations.length} variation{costCheckData.variations.length !== 1 ? 's' : ''} ({fmt(costCheckData.variations.reduce((s, v) => s + v.amount, 0))}) accounted for
+                            </Text>
+                          )}
+                        </View>
+
+                        {/* Material Markup */}
+                        <View style={{ backgroundColor: colors.muted, borderRadius: 10, padding: spacing.md }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                            <Feather name="tag" size={14} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                              Material Markup
+                            </Text>
+                          </View>
+                          {costCheckData.materials.sellPriceTotal === 0 ? (
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No materials recorded</Text>
+                          ) : (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Markup captured</Text>
+                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.success }}>
+                                {fmt(costCheckData.materials.markupCaptured)}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
+                          Advisory only. You can still save and send this invoice.
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })()}
 
               {/* Payment Terms Card */}
               <View style={styles.card}>

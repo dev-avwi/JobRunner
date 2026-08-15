@@ -50,7 +50,13 @@ import {
   Palette,
   ChevronsUpDown,
   Tag,
+  AlertTriangle,
+  CheckCircle2,
+  ChevronDown,
+  ShoppingCart,
+  GitMerge,
 } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
@@ -143,6 +149,28 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     queryKey: ['/api/jobs', effectiveJobId, 'signatures'],
     enabled: !!effectiveJobId,
   });
+
+  // Lightweight cost check: PO reconciliation, approved variations, material markup
+  const { data: costCheckData } = useQuery<{
+    purchaseOrders: { reconciledCount: number; reconciledTotal: number; outstandingCount: number; outstandingTotal: number };
+    variations: Array<{ id: string; title: string; amount: number; variationNumber: number | null }>;
+    materials: { markupCaptured: number; sellPriceTotal: number };
+  }>({
+    queryKey: ['/api/jobs', effectiveJobId, 'invoice-cost-check'],
+    enabled: !!effectiveJobId,
+    queryFn: async () => {
+      const token = getSessionToken();
+      const res = await fetch(`/api/jobs/${effectiveJobId}/invoice-cost-check`, {
+        credentials: 'include',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error('Failed to fetch cost check');
+      return res.json();
+    },
+    staleTime: 30_000,
+  });
+
+  const [costCheckOpen, setCostCheckOpen] = useState(false);
 
   // Fetch style presets to get the default style for the preview
   const { data: stylePresets = [] } = useQuery<StylePreset[]>({
@@ -1238,6 +1266,145 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                 )}
               </CardContent>
             </Card>
+
+            {/* Cost Check Panel — advisory, shown when a job is linked */}
+            {effectiveJobId && costCheckData && (() => {
+              const { purchaseOrders: po, variations, materials } = costCheckData;
+              // Match each approved variation against current line item descriptions
+              // (case-insensitive substring). Only warn for ones not yet in line items.
+              const lineDescs = (lineItems || []).map((li: any) => (li.description || '').toLowerCase());
+              const unmatchedVariations = variations.filter(v => {
+                const needle = v.title.toLowerCase();
+                return !lineDescs.some((d: string) => d.includes(needle));
+              });
+              const unmatchedTotal = unmatchedVariations.reduce((s, v) => s + v.amount, 0);
+              const hasOutstandingPOs = po.outstandingCount > 0;
+              const hasUnmatchedVariations = unmatchedVariations.length > 0;
+              const hasWarnings = hasOutstandingPOs || hasUnmatchedVariations;
+              const warningCount = (hasOutstandingPOs ? 1 : 0) + (hasUnmatchedVariations ? 1 : 0);
+              return (
+                <Collapsible open={costCheckOpen} onOpenChange={setCostCheckOpen}>
+                  <Card className={`rounded-2xl overflow-hidden ${hasWarnings ? 'border-amber-400' : ''}`}>
+                    <CardContent className="p-4">
+                      <CollapsibleTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex items-center justify-between w-full text-left"
+                        >
+                          <div className="flex items-center gap-2 text-sm font-medium">
+                            {hasWarnings ? (
+                              <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            ) : (
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                            )}
+                            Cost check
+                            {hasWarnings && (
+                              <span className="ml-1 px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-700 text-xs font-semibold">
+                                {warningCount} item{warningCount > 1 ? 's' : ''} to review
+                              </span>
+                            )}
+                          </div>
+                          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${costCheckOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                      </CollapsibleTrigger>
+
+                      <CollapsibleContent>
+                        <div className="mt-4 space-y-3">
+                          {/* Purchase Orders */}
+                          <div className={`rounded-xl p-3 ${hasOutstandingPOs ? 'bg-amber-50 border border-amber-200' : 'bg-muted/50'}`}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <ShoppingCart className={`h-3.5 w-3.5 ${hasOutstandingPOs ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                              <span className={`text-xs font-semibold ${hasOutstandingPOs ? 'text-amber-700' : 'text-foreground'}`}>
+                                Purchase Orders
+                              </span>
+                            </div>
+                            {po.reconciledCount === 0 && po.outstandingCount === 0 ? (
+                              <p className="text-xs text-muted-foreground">No purchase orders for this job</p>
+                            ) : (
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground">Reconciled</span>
+                                  <span className="text-green-600 font-medium">
+                                    {po.reconciledCount} ({formatCurrency(po.reconciledTotal)})
+                                  </span>
+                                </div>
+                                {hasOutstandingPOs && (
+                                  <>
+                                    <div className="flex justify-between text-xs">
+                                      <span className="text-amber-700 font-medium">Outstanding</span>
+                                      <span className="text-amber-700 font-semibold">
+                                        {po.outstandingCount} ({formatCurrency(po.outstandingTotal)})
+                                      </span>
+                                    </div>
+                                    <a
+                                      href={`/jobs/${effectiveJobId}`}
+                                      className="text-xs text-primary font-medium hover:underline mt-1 inline-block"
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Review POs on job
+                                    </a>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Approved Variations — only warn for ones not matched in line items */}
+                          <div className={`rounded-xl p-3 ${hasUnmatchedVariations ? 'bg-amber-50 border border-amber-200' : 'bg-muted/50'}`}>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <GitMerge className={`h-3.5 w-3.5 ${hasUnmatchedVariations ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                              <span className={`text-xs font-semibold ${hasUnmatchedVariations ? 'text-amber-700' : 'text-foreground'}`}>
+                                Approved Variations
+                              </span>
+                            </div>
+                            {variations.length === 0 ? (
+                              <p className="text-xs text-muted-foreground">No approved variations</p>
+                            ) : hasUnmatchedVariations ? (
+                              <div className="space-y-1">
+                                {unmatchedVariations.map(v => (
+                                  <div key={v.id} className="flex justify-between text-xs">
+                                    <span className="text-amber-700 truncate mr-2 flex-1">{v.title}</span>
+                                    <span className="text-amber-700 font-semibold flex-shrink-0">{formatCurrency(v.amount)}</span>
+                                  </div>
+                                ))}
+                                <p className="text-xs text-amber-700 mt-1">Not yet found in line items — add them before sending</p>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-green-600">
+                                All {variations.length} variation{variations.length !== 1 ? 's' : ''} ({formatCurrency(variations.reduce((s, v) => s + v.amount, 0))}) accounted for
+                              </p>
+                            )}
+                          </div>
+
+                          {/* Material Markup */}
+                          <div className="rounded-xl p-3 bg-muted/50">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                              <span className="text-xs font-semibold text-foreground">Material Markup</span>
+                            </div>
+                            {materials.sellPriceTotal === 0 ? (
+                              <p className="text-xs text-muted-foreground">No materials recorded</p>
+                            ) : (
+                              <div className="flex justify-between text-xs">
+                                <span className="text-muted-foreground">Markup captured</span>
+                                <span className="text-green-600 font-semibold">
+                                  {formatCurrency(materials.markupCaptured)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <p className="text-xs text-muted-foreground text-center">
+                            Advisory only. You can still create and send this invoice.
+                          </p>
+                        </div>
+                      </CollapsibleContent>
+                    </CardContent>
+                  </Card>
+                </Collapsible>
+              );
+            })()}
 
             {/* Notes */}
             <Card className="rounded-2xl overflow-hidden">

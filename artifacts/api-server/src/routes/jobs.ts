@@ -6733,6 +6733,93 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
+  // Lightweight cost check for invoice creation — returns PO reconciliation status,
+  // approved variation totals, and material markup captured.
+  // Intentionally keeps only the data needed for the invoice cost-check panel so the
+  // call stays fast (no heavy profitability aggregation).
+  app.get("/api/jobs/:id/invoice-cost-check", requireAuth, async (req: any, res) => {
+    try {
+      // Use effectiveUserId so team members working under a business owner's
+      // account can access the same job/PO/variation records as the owner.
+      const userContext = await getUserContext(req.userId!);
+      const effectiveUserId = userContext.effectiveUserId;
+      const { id: jobId } = req.params;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Purchase-order reconciliation summary.
+      // Cancelled POs are excluded from both buckets — they represent no cost
+      // and no obligation. Only 'received' POs count as reconciled; everything
+      // else (pending, partial) is outstanding.
+      let poReconciledCount = 0, poReconciledTotal = 0;
+      let poOutstandingCount = 0, poOutstandingTotal = 0;
+      try {
+        const pos = await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId);
+        for (const po of pos) {
+          const status = (po as any).status as string | null;
+          if (status === 'cancelled') continue; // exclude cancelled entirely
+          const poTotal = parseFloat((po as any).total?.toString() || '0');
+          if (status === 'received') {
+            poReconciledCount++;
+            poReconciledTotal += poTotal;
+          } else {
+            poOutstandingCount++;
+            poOutstandingTotal += poTotal;
+          }
+        }
+      } catch (_) { /* no POs or storage missing */ }
+
+      // Approved variations — returned individually so clients can match them
+      // against their current invoice line items and warn only for unmatched ones.
+      const approvedVariations: Array<{ id: string; title: string; amount: number; variationNumber: number | null }> = [];
+      try {
+        const vars = await storage.getJobVariations(jobId, effectiveUserId);
+        for (const v of vars) {
+          if (v.status === 'approved') {
+            approvedVariations.push({
+              id: v.id,
+              title: v.title || `Variation ${v.variationNumber ?? ''}`.trim(),
+              amount: Math.round(parseFloat(v.totalAmount || '0') * 100) / 100,
+              variationNumber: (v as any).variationNumber ?? null,
+            });
+          }
+        }
+      } catch (_) {}
+
+      // Material markup captured (sell price − cost)
+      let markupCaptured = 0, materialsSellTotal = 0;
+      try {
+        const mats = await storage.getJobMaterials(jobId, effectiveUserId);
+        const costTotal = mats.reduce((s: number, m: any) => s + parseFloat(m.totalCost?.toString() || '0'), 0);
+        materialsSellTotal = mats.reduce((s: number, m: any) => {
+          const price = parseFloat(m.totalPrice?.toString() || '0');
+          const cost = parseFloat(m.totalCost?.toString() || '0');
+          return s + (price > 0 ? price : cost);
+        }, 0);
+        markupCaptured = Math.max(0, materialsSellTotal - costTotal);
+      } catch (_) {}
+
+      res.json({
+        purchaseOrders: {
+          reconciledCount: poReconciledCount,
+          reconciledTotal: Math.round(poReconciledTotal * 100) / 100,
+          outstandingCount: poOutstandingCount,
+          outstandingTotal: Math.round(poOutstandingTotal * 100) / 100,
+        },
+        // Individual approved variations — clients match against line item descriptions.
+        variations: approvedVariations,
+        materials: {
+          markupCaptured: Math.round(markupCaptured * 100) / 100,
+          sellPriceTotal: Math.round(materialsSellTotal * 100) / 100,
+        },
+      });
+    } catch (error) {
+      console.error("Invoice cost check error:", error);
+      res.status(500).json({ error: "Failed to fetch cost check data" });
+    }
+  });
+
   // Cost report PDF — generates a clean cost breakdown PDF for internal review or client disputes
   app.get("/api/jobs/:id/cost-report", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
