@@ -730,7 +730,7 @@ export default function ExpensesScreen() {
         scrollable={false}
         contentPadding={0}>
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <PressableRow onPress={() => setShowCategoryPicker(false)}>
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Done</Text>
               </PressableRow>
@@ -773,7 +773,7 @@ export default function ExpensesScreen() {
         scrollable={false}
         contentPadding={0}>
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <PressableRow onPress={() => { setShowJobPicker(false); setJobPickerSearch(''); }}>
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Done</Text>
               </PressableRow>
@@ -834,7 +834,7 @@ export default function ExpensesScreen() {
         contentPadding={0}
       >
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <PressableRow onPress={() => setShowCategoryModal(false)}>
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
               </PressableRow>
@@ -881,7 +881,7 @@ export default function ExpensesScreen() {
         contentPadding={0}
       >
           <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: colors.border, paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
               <PressableRow onPress={() => setShowCategoryModal(false)}>
                 <Text style={[styles.modalCancel, { color: colors.primary }]}>Cancel</Text>
               </PressableRow>

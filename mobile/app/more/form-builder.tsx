@@ -1298,7 +1298,7 @@ export default function FormBuilderScreen() {
         style={styles.modalContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+        <View style={[styles.modalHeader]}>
           <TouchableOpacity onPress={() => { setShowFormModal(false); resetFormState(); }} activeOpacity={0.7} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>

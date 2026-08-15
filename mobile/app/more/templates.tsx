@@ -2750,7 +2750,7 @@ export default function TemplatesScreen() {
             keyboardVerticalOffset={0}
           >
           <View style={styles.modalContainer}>
-            <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.sm }]}>
+            <View style={[styles.modalHeader]}>
               <TouchableOpacity
                 onPress={() => {
                   setShowCreateModal(false);
@@ -2812,7 +2812,7 @@ export default function TemplatesScreen() {
           onRequestClose={() => setShowPresetsModal(false)}
         >
           <View style={styles.stylePresetListModal}>
-            <View style={[styles.modalHeader, Platform.OS === 'android' && { paddingTop: insets.top + spacing.md }]}>
+            <View style={[styles.modalHeader]}>
               <TouchableOpacity
                 onPress={() => setShowPresetsModal(false)}
                 activeOpacity={0.7}

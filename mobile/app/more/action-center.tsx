@@ -780,7 +780,7 @@ export default function ActionCenterScreen() {
         onRequestClose={() => setShowBatchModal(false)}
       >
         <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }, Platform.OS === 'android' ? { paddingTop: insets.top + spacing.md } : null]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
             <PressableRow onPress={() => setShowBatchModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Feather name="x" size={22} color={colors.foreground} />
             </PressableRow>
