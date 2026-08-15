@@ -1858,6 +1858,8 @@ export default function JobDetailView({
 
   const retentionCard = (!isTradie && (job as any)?.jobType === 'project') ? (() => {
     const rs = jobProfitabilityData?.retentionSummary;
+    // Only show the panel when retention has actually been withheld
+    if (rs !== undefined && rs !== null && rs.sumRetentionHeld <= 0) return null;
     const rsStatus = (rs?.retentionStatus ?? 'no_retention') as keyof typeof retentionStatusConfig;
     const rsCfg = retentionStatusConfig[rsStatus] ?? retentionStatusConfig.no_retention;
     const outstanding = rs?.outstandingRetention ?? rs?.sumRetentionHeld ?? 0;
