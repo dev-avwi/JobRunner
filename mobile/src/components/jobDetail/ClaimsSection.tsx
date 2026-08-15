@@ -15,7 +15,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet,
-  ScrollView, TextInput, Platform, KeyboardAvoidingView, Modal,
+  ScrollView, TextInput, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -626,7 +626,7 @@ export function ClaimsSection({
             {/* Claim Date */}
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Claim Date</Text>
             <TouchableOpacity
-              style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.card }]}
+              style={[styles.dateField, { borderColor: colors.border, backgroundColor: colors.muted }]}
               onPress={() => openDatePicker('claimDate')}
               activeOpacity={0.7}
             >
@@ -651,7 +651,7 @@ export function ClaimsSection({
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: spacing.md }]}>Claim Period</Text>
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <TouchableOpacity
-                style={[styles.dateField, { flex: 1, borderColor: colors.border, backgroundColor: colors.card }]}
+                style={[styles.dateField, { flex: 1, borderColor: colors.border, backgroundColor: colors.muted }]}
                 onPress={() => openDatePicker('periodStart')}
                 activeOpacity={0.7}
               >
@@ -661,7 +661,7 @@ export function ClaimsSection({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.dateField, { flex: 1, borderColor: colors.border, backgroundColor: colors.card }]}
+                style={[styles.dateField, { flex: 1, borderColor: colors.border, backgroundColor: colors.muted }]}
                 onPress={() => openDatePicker('periodEnd')}
                 activeOpacity={0.7}
               >
@@ -719,7 +719,7 @@ export function ClaimsSection({
             {/* Add Line Item */}
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: spacing.md }]}>Add Line Item</Text>
             <TextInput
-              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+              style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.muted, color: colors.foreground }]}
               placeholder="Description"
               placeholderTextColor={colors.mutedForeground}
               value={newLineDesc}
@@ -728,7 +728,7 @@ export function ClaimsSection({
             />
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm }}>
               <TextInput
-                style={[styles.textInput, { flex: 1, borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]}
+                style={[styles.textInput, { flex: 1, borderColor: colors.border, backgroundColor: colors.muted, color: colors.foreground }]}
                 placeholder="Amount ($)"
                 placeholderTextColor={colors.mutedForeground}
                 value={newLineAmount}
@@ -753,78 +753,69 @@ export function ClaimsSection({
         </BottomSheetScrollView>
       </AppBottomSheet>
 
-      {/* Pre-submit Confirmation Modal */}
-      <Modal
+      {/* Pre-submit Confirmation Sheet */}
+      <AppBottomSheet
         visible={showConfirmModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowConfirmModal(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg }}>
-          <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.lg, width: '100%', maxWidth: 360, gap: spacing.md }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
-                <Feather name="send" size={18} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: fontWeights.bold, color: colors.foreground }}>
-                  Submit {confirmDetail?.claimNumber}?
-                </Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
-                  Review before sending
-                </Text>
-              </View>
-            </View>
-
-            {confirmDetail && (
-              <View style={{ backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.md, gap: 6 }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>This Claim</Text>
-                  <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                    {fmt(confirmDetail.thisClaimTotal)}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Retention Held</Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
-                    -{fmt(confirmDetail.retentionHeld)}
-                  </Text>
-                </View>
-                <View style={{ height: 1, backgroundColor: colors.border }} />
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }}>Amount Due</Text>
-                  <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.primary }}>
-                    {fmt(confirmDetail.amountDue)}
-                  </Text>
-                </View>
-              </View>
-            )}
-
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: 'center' }}>
-              Once submitted, the claim cannot be edited.
-            </Text>
-
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <TouchableOpacity
-                style={{ flex: 1, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}
-                onPress={() => setShowConfirmModal(false)}
-              >
-                <Text style={{ fontWeight: fontWeights.medium, color: colors.foreground }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, paddingVertical: 12, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', opacity: isSubmittingClaim ? 0.6 : 1 }}
-                onPress={async () => {
-                  setShowConfirmModal(false);
-                  await doSubmit();
-                }}
-                disabled={isSubmittingClaim}
-              >
-                <Text style={{ fontWeight: fontWeights.semibold, color: '#fff' }}>Submit Claim</Text>
-              </TouchableOpacity>
-            </View>
+        onDismiss={() => setShowConfirmModal(false)}
+        title={`Submit ${confirmDetail?.claimNumber ?? 'Claim'}?`}
+        showCloseButton
+        autoHeight
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton
+              variant="outline"
+              label="Cancel"
+              onPress={() => setShowConfirmModal(false)}
+              style={{ flex: 1 }}
+            />
+            <SheetButton
+              label="Submit Claim"
+              onPress={async () => {
+                setShowConfirmModal(false);
+                await doSubmit();
+              }}
+              loading={isSubmittingClaim}
+              disabled={isSubmittingClaim}
+              style={{ flex: 1 }}
+            />
           </View>
+        )}
+      >
+        <View style={{ gap: spacing.md, paddingVertical: spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+              <Feather name="send" size={18} color={colors.primary} />
+            </View>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+              Review totals before sending. Once submitted, the claim cannot be edited.
+            </Text>
+          </View>
+
+          {confirmDetail && (
+            <View style={{ backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.md, gap: 6 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>This Claim</Text>
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                  {fmt(confirmDetail.thisClaimTotal)}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Retention Held</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                  -{fmt(confirmDetail.retentionHeld)}
+                </Text>
+              </View>
+              <View style={{ height: 1, backgroundColor: colors.border }} />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }}>Amount Due</Text>
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.primary }}>
+                  {fmt(confirmDetail.amountDue)}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
-      </Modal>
+      </AppBottomSheet>
     </View>
   );
 }

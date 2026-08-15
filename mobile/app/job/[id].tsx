@@ -1431,7 +1431,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     borderTopColor: colors.border,
   },
   notesInput: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.muted,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1442,7 +1442,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     textAlignVertical: 'top',
   },
   singleLineInput: {
-    backgroundColor: colors.card,
+    backgroundColor: colors.muted,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -7851,7 +7851,7 @@ export default function JobDetailScreen() {
         businessName={businessSettings?.businessName}
         tradieName={user?.firstName || user?.name?.split(' ')[0]}
         workerStatus={job.workerStatus}
-        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any) : undefined}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
         onSendQuote={async () => {
           if (quote?.id && client?.email) {
@@ -8534,7 +8534,7 @@ export default function JobDetailScreen() {
         onViewInvoice={handleViewInvoice}
         onViewReceipt={(receiptId) => router.push(`/more/receipt/${receiptId}`)}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
-        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any) : undefined}
       />
       )}
 
@@ -9896,7 +9896,7 @@ export default function JobDetailScreen() {
         onViewInvoice={handleViewInvoice}
         onViewReceipt={(receiptId) => router.push(`/more/receipt/${receiptId}`)}
         onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
-        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any) : undefined}
       />
       )}
 
