@@ -2402,6 +2402,15 @@ export default function JobDetailScreen() {
     hours: { total: number; billable: number; nonBillable: number };
     status: 'profitable' | 'tight' | 'loss';
     materials: Array<{ id: string; name: string; quantity: number; unitCost: number; totalCost: number; totalPrice?: number; markupPercent?: string; supplier: string; status: string }>;
+    phases?: Array<{
+      id: string | null;
+      phaseCode: string | null;
+      name: string;
+      status: string | null;
+      costs: { labour: number; subcontractor: number; materials: number; purchaseOrders: number; total: number };
+      hours: number;
+      variations: { approvedTotal: number; pendingTotal: number };
+    }>;
   }
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
@@ -14058,6 +14067,59 @@ export default function JobDetailScreen() {
                   <>
                     <SectionHeader label="Other Expenses" />
                     <Row label="Other costs" value={formatCurrency(pd.costs.otherExpenses)} />
+                  </>
+                )}
+
+                {/* Phase-level breakdown (project jobs with phases) */}
+                {pd.phases && pd.phases.length > 0 && (
+                  <>
+                    <SectionHeader label="Costs by Phase" />
+                    {pd.phases.map((ph) => (
+                      <View key={ph.id ?? 'unallocated'} style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.sm }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold, flex: 1, marginRight: spacing.sm }} numberOfLines={1}>
+                            {ph.phaseCode ? `${ph.phaseCode} — ${ph.name}` : ph.name}
+                          </Text>
+                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                            {formatCurrency(ph.costs.total)}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xs }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                            Labour{ph.hours > 0 ? ` (${ph.hours.toFixed(1)} hrs)` : ''}
+                          </Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.labour)}</Text>
+                        </View>
+                        {ph.costs.subcontractor > 0 && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Subcontractors</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.subcontractor)}</Text>
+                          </View>
+                        )}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Materials</Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.materials)}</Text>
+                        </View>
+                        {ph.costs.purchaseOrders > 0 && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Purchase orders</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.purchaseOrders)}</Text>
+                          </View>
+                        )}
+                        {ph.variations.approvedTotal > 0 && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Approved variations</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.success }}>+{formatCurrency(ph.variations.approvedTotal)}</Text>
+                          </View>
+                        )}
+                        {ph.variations.pendingTotal > 0 && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Pending variations</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.warning }}>{formatCurrency(ph.variations.pendingTotal)}</Text>
+                          </View>
+                        )}
+                      </View>
+                    ))}
                   </>
                 )}
 

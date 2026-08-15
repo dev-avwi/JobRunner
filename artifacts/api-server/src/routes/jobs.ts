@@ -6309,15 +6309,23 @@ import { computeRetentionSummary } from "./retentionSummary";
       let pendingVariationsTotal = 0;
       let approvedVariationsCount = 0;
       let pendingVariationsCount = 0;
+      // Per-phase variation amounts (variations carry an optional phaseId link)
+      const variationsByPhase = new Map<string, { approvedTotal: number; pendingTotal: number }>();
       try {
         const jobVariationsData = await storage.getJobVariations(jobId, userId);
         for (const v of jobVariationsData) {
+          const bucket = (v as any).phaseId
+            ? (variationsByPhase.get((v as any).phaseId) ||
+               variationsByPhase.set((v as any).phaseId, { approvedTotal: 0, pendingTotal: 0 }).get((v as any).phaseId)!)
+            : null;
           if (v.status === 'approved') {
             approvedVariationsTotal += parseFloat(v.totalAmount || '0');
             approvedVariationsCount++;
+            if (bucket) bucket.approvedTotal += parseFloat(v.totalAmount || '0');
           } else if (v.status === 'sent') {
             pendingVariationsTotal += parseFloat(v.totalAmount || '0');
             pendingVariationsCount++;
+            if (bucket) bucket.pendingTotal += parseFloat(v.totalAmount || '0');
           }
         }
       } catch (_) {}
@@ -6474,6 +6482,120 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       } catch (_) { /* historical comparison is best-effort */ }
 
+      // Phase-level cost breakdown for project jobs. Labour, materials and POs
+      // don't carry a phaseId, so they are attributed to a phase when their
+      // date falls inside the phase's scheduled window (first matching phase by
+      // sort order; end date inclusive to end-of-day). Anything that doesn't
+      // match a window lands in an "Unallocated" bucket. Variations attribute
+      // directly via their phaseId link.
+      let phaseBreakdown: any[] = [];
+      try {
+        if ((job as any).jobType === 'project') {
+          const phaseOwnerId = (job as any).userId || userId;
+          const phases = await storage.getJobPhases(jobId, phaseOwnerId);
+          if (phases.length > 0) {
+            const sortedPhases = [...phases].sort(
+              (a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0),
+            );
+            const windows = sortedPhases.map((p: any) => {
+              const start = p.scheduledStart ? new Date(p.scheduledStart).getTime() : null;
+              let end = p.scheduledEnd ? new Date(p.scheduledEnd).getTime() : null;
+              if (end !== null && !Number.isNaN(end)) end += 24 * 60 * 60 * 1000 - 1;
+              return { phaseId: p.id, start, end };
+            });
+            const findPhaseId = (dateVal: any): string | null => {
+              if (!dateVal) return null;
+              const t = new Date(dateVal).getTime();
+              if (Number.isNaN(t)) return null;
+              for (const w of windows) {
+                if (w.start === null && w.end === null) continue;
+                if (w.start !== null && t < w.start) continue;
+                if (w.end !== null && t > w.end) continue;
+                return w.phaseId;
+              }
+              return null;
+            };
+
+            type PhaseBucket = {
+              labour: number;
+              subcontractor: number;
+              materials: number;
+              purchaseOrders: number;
+              hours: number;
+            };
+            const emptyBucket = (): PhaseBucket => ({
+              labour: 0, subcontractor: 0, materials: 0, purchaseOrders: 0, hours: 0,
+            });
+            const buckets = new Map<string, PhaseBucket>();
+            const unallocated = emptyBucket();
+            for (const p of sortedPhases) buckets.set(p.id, emptyBucket());
+            const bucketFor = (dateVal: any): PhaseBucket => {
+              const pid = findPhaseId(dateVal);
+              return pid ? buckets.get(pid)! : unallocated;
+            };
+
+            for (const entry of employeeEntries) {
+              const b = bucketFor(entry.startTime);
+              b.labour += calcEntryCost(entry);
+              b.hours += (new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime()) / 3600000;
+            }
+            for (const entry of subcontractorEntries) {
+              const b = bucketFor(entry.startTime);
+              b.subcontractor += calcEntryCost(entry);
+              b.hours += (new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime()) / 3600000;
+            }
+            for (const m of jobMaterials) {
+              bucketFor((m as any).createdAt).materials += parseFloat(m.totalCost?.toString() || '0');
+            }
+            for (const e of materialExpenses) {
+              bucketFor((e as any).expenseDate || (e as any).createdAt).materials += parseFloat(e.amount || '0');
+            }
+            for (const po of purchaseOrdersList) {
+              bucketFor((po as any).orderDate || (po as any).createdAt).purchaseOrders +=
+                parseFloat(po.total?.toString() || '0');
+            }
+
+            const r2 = (n: number) => Math.round(n * 100) / 100;
+            const toPhaseRow = (id: string | null, phaseCode: string | null, name: string, status: string | null, b: PhaseBucket) => {
+              const v = id ? variationsByPhase.get(id) : null;
+              return {
+                id,
+                phaseCode,
+                name,
+                status,
+                costs: {
+                  labour: r2(b.labour),
+                  subcontractor: r2(b.subcontractor),
+                  materials: r2(b.materials),
+                  purchaseOrders: r2(b.purchaseOrders),
+                  // Consistent with the job-level total: POs are informational
+                  // and excluded to avoid double-counting with materials/expenses.
+                  total: r2(b.labour + b.subcontractor + b.materials),
+                },
+                hours: Math.round(b.hours * 10) / 10,
+                variations: {
+                  approvedTotal: r2(v?.approvedTotal || 0),
+                  pendingTotal: r2(v?.pendingTotal || 0),
+                },
+              };
+            };
+
+            phaseBreakdown = sortedPhases.map((p: any) =>
+              toPhaseRow(p.id, p.phaseCode, p.name, p.status, buckets.get(p.id)!),
+            );
+            const hasUnallocated =
+              unallocated.labour > 0 || unallocated.subcontractor > 0 ||
+              unallocated.materials > 0 || unallocated.purchaseOrders > 0;
+            if (hasUnallocated) {
+              phaseBreakdown.push(toPhaseRow(null, null, 'Unallocated', null, unallocated));
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[profitability] phase breakdown failed (non-fatal):', err);
+        phaseBreakdown = [];
+      }
+
       // Effective markup settings for this job
       let businessMarkupSettings: any = {};
       try {
@@ -6544,6 +6666,7 @@ import { computeRetentionSummary } from "./retentionSummary";
           nonBillable: Math.round(nonBillableHours * 10) / 10,
         },
         status: profitMargin > 15 ? 'profitable' : profitMargin > 5 ? 'tight' : 'loss',
+        phases: phaseBreakdown,
         historicalComparison,
         expenses: expenses.map(expense => ({
           id: expense.id,

@@ -2,5 +2,7 @@
 - [JobRunner port decisions](jobrunner-port.md) — Express v4 required; cookie v1 for parse(); @opentelemetry/* must NOT be external; zod/v4→zod; bcrypt needs approve-builds
 - [JobRunner web bundle splitting](jobrunner-bundle-splitting.md) — no runtime imports from @shared/schema in eager frontend code (use @shared/permissions); manualChunks function form; preview smoke-test trick
 - [Database URL split](db-url-split.md) — index.ts aliases NEON_DATABASE_URL→DATABASE_URL at boot; project_documents lives in NEON; migrate NEON_DATABASE_URL (same connection at runtime)
+- [Phase cost attribution](phase-cost-attribution.md) — only variations carry phaseId; labour/materials/POs attribute to phases by scheduled date window with an Unallocated bucket; phase totals exclude POs
+- [Two dev databases](two-dev-databases.md) — workspace env sets BOTH DATABASE_URL and NEON_DATABASE_URL (different DBs); api-server + sessions + demo data use DATABASE_URL; raw ALTERs must run on both
 - [Avoid em dashes in copy](avoid-em-dashes.md) — user preference: never use — in hard-coded UI strings; use commas, colons, or rewrite
 - [Metro hoisting trap](metro-hoisting-trap.md) — Metro/Babel rewrites function declarations to var assignments; never define a helper after the component that calls it during render

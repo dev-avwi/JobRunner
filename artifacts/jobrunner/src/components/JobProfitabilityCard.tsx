@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSessionToken } from "@/lib/queryClient";
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Target, FileDown, Loader2 } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Target, FileDown, Loader2, ChevronDown, ChevronRight, Layers } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,22 @@ interface HistoricalComparison {
   avgMargin: number;
   jobCount: number;
   jobType: string;
+}
+
+interface PhaseCostData {
+  id: string | null;
+  phaseCode: string | null;
+  name: string;
+  status: string | null;
+  costs: {
+    labour: number;
+    subcontractor: number;
+    materials: number;
+    purchaseOrders: number;
+    total: number;
+  };
+  hours: number;
+  variations: { approvedTotal: number; pendingTotal: number };
 }
 
 interface ProfitabilityData {
@@ -67,6 +83,7 @@ interface ProfitabilityData {
     supplier: string;
     status: string;
   }>;
+  phases?: PhaseCostData[];
 }
 
 function getStatusColor(status: string) {
@@ -114,6 +131,102 @@ function TrafficLight({ color }: { color: "green" | "amber" | "red" }) {
       <span className={`inline-block h-2.5 w-2.5 rounded-full ${colorMap[color]}`} />
       <span className="text-xs text-muted-foreground">{labelMap[color]}</span>
     </span>
+  );
+}
+
+function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  return (
+    <div className="pt-2 border-t">
+      <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
+        <Layers className="h-3 w-3" />
+        Costs by phase
+      </div>
+      <div className="space-y-1">
+        {phases.map((phase) => {
+          const key = phase.id ?? "unallocated";
+          const isOpen = expanded.has(key);
+          return (
+            <div key={key} className="rounded-md border">
+              <button
+                type="button"
+                className="w-full flex items-center justify-between px-2 py-1.5 text-left hover:bg-muted/50 rounded-md"
+                onClick={() => toggle(key)}
+              >
+                <span className="flex items-center gap-1.5 min-w-0">
+                  {isOpen ? (
+                    <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  )}
+                  {phase.phaseCode && (
+                    <Badge variant="outline" className="text-[10px] px-1 py-0 shrink-0">
+                      {phase.phaseCode}
+                    </Badge>
+                  )}
+                  <span className="text-sm truncate">{phase.name}</span>
+                </span>
+                <span className="text-sm font-medium shrink-0 ml-2">
+                  {formatCurrency(phase.costs.total)}
+                </span>
+              </button>
+              {isOpen && (
+                <div className="px-3 pb-2 pt-0.5 space-y-1 pl-8">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Labour{phase.hours > 0 ? ` (${phase.hours.toFixed(1)}hrs)` : ""}
+                    </span>
+                    <span className="text-xs">{formatCurrency(phase.costs.labour)}</span>
+                  </div>
+                  {phase.costs.subcontractor > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Subcontractors</span>
+                      <span className="text-xs">{formatCurrency(phase.costs.subcontractor)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Materials</span>
+                    <span className="text-xs">{formatCurrency(phase.costs.materials)}</span>
+                  </div>
+                  {phase.costs.purchaseOrders > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Purchase orders</span>
+                      <span className="text-xs">{formatCurrency(phase.costs.purchaseOrders)}</span>
+                    </div>
+                  )}
+                  {phase.variations.approvedTotal > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Approved variations</span>
+                      <span className="text-xs text-green-600 dark:text-green-400">
+                        +{formatCurrency(phase.variations.approvedTotal)}
+                      </span>
+                    </div>
+                  )}
+                  {phase.variations.pendingTotal > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Pending variations</span>
+                      <span className="text-xs text-amber-600 dark:text-amber-400">
+                        {formatCurrency(phase.variations.pendingTotal)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -315,6 +428,11 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
             </div>
           </div>
         </div>
+
+        {/* Phase-level cost breakdown (project jobs with phases) */}
+        {data.phases && data.phases.length > 0 && (
+          <PhaseBreakdownSection phases={data.phases} />
+        )}
 
         {/* Budget vs Actual */}
         {data.budget && (
