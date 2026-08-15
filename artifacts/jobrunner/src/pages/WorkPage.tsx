@@ -721,7 +721,7 @@ export default function WorkPage({
                     Project
                   </Badge>
                 )}
-                {job.jobType === 'service_call' && (
+                {job.jobType === 'service' && (
                   <Badge variant="outline" className="text-xs gap-1 border-sky-300 text-sky-700 bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:bg-sky-950">
                     <Wrench className="w-3 h-3" />
                     Service Call
