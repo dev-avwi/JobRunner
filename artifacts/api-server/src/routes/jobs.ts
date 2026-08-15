@@ -6820,7 +6820,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  // Cost report PDF — generates a clean cost breakdown PDF for internal review or client disputes
+  // Cost report PDF — comprehensive government/head-contractor-grade document
   app.get("/api/jobs/:id/cost-report", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId!);
@@ -6836,30 +6836,52 @@ import { computeRetentionSummary } from "./retentionSummary";
       const job = await storage.getJob(jobId, effectiveUserId);
       if (!job) return res.status(404).json({ error: "Job not found" });
 
-      // Re-use the profitability data we already compute
-      const allQuotes = await storage.getQuotes(effectiveUserId);
+      // Gather all data in parallel
+      const [
+        allQuotes,
+        invoices,
+        allTimeEntries,
+        expenses,
+        allTeamMembers,
+        biz,
+      ] = await Promise.all([
+        storage.getQuotes(effectiveUserId),
+        storage.getInvoices(effectiveUserId),
+        storage.getTimeEntries(effectiveUserId, jobId),
+        storage.getExpenses(effectiveUserId, { jobId }),
+        storage.getTeamMembers(effectiveUserId),
+        storage.getBusinessSettings(effectiveUserId),
+      ]);
+
       const jobQuote = allQuotes.find((q: any) => q.jobId === jobId && (q.status === 'accepted' || q.status === 'sent'));
       const quotedAmount = jobQuote ? parseFloat(jobQuote.total || '0') : null;
 
-      const invoices = await storage.getInvoices(effectiveUserId);
       const jobInvoices = invoices.filter((inv: any) => inv.jobId === jobId);
-      const totalRevenue = jobInvoices.reduce((s: number, inv: any) => s + (inv.status === 'paid' ? parseFloat(inv.total || '0') : 0), 0);
+      // Issued invoice states only — draft invoices are unsent and must not appear in
+      // a government/head-contractor submission as claimed revenue.
+      const ISSUED_STATUSES = new Set(['sent', 'overdue', 'paid', 'partial', 'viewed']);
+      const totalRevenue = jobInvoices.reduce((s: number, inv: any) =>
+        s + (inv.status === 'paid' ? parseFloat(inv.total || '0') : 0), 0);
+      const totalInvoiced = jobInvoices.reduce((s: number, inv: any) =>
+        s + (ISSUED_STATUSES.has(inv.status) ? parseFloat(inv.total || '0') : 0), 0);
 
+      // Gather variations (all statuses for the variation register)
+      let variationsList: any[] = [];
       let approvedVariationsTotal = 0;
       let pendingVariationsTotal = 0;
-      let variationsList: any[] = [];
+      let rejectedVariationsTotal = 0;
       try {
         const vars = await storage.getJobVariations(jobId, effectiveUserId);
         variationsList = vars;
         for (const v of vars) {
-          if (v.status === 'approved') approvedVariationsTotal += parseFloat(v.totalAmount || '0');
-          else if (v.status === 'sent') pendingVariationsTotal += parseFloat(v.totalAmount || '0');
+          const amt = parseFloat(v.totalAmount || '0');
+          if (v.status === 'approved') approvedVariationsTotal += amt;
+          else if (v.status === 'sent' || v.status === 'pending') pendingVariationsTotal += amt;
+          else if (v.status === 'rejected') rejectedVariationsTotal += amt;
         }
       } catch (_) {}
 
-      const expenses = await storage.getExpenses(effectiveUserId, { jobId });
-      const totalExpenses = expenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
-
+      // Materials
       let jobMaterials: any[] = [];
       let materialsCost = 0;
       let materialsPrice = 0;
@@ -6873,107 +6895,396 @@ import { computeRetentionSummary } from "./retentionSummary";
         }, 0);
       } catch (_) {}
 
-      const allTimeEntries = await storage.getTimeEntries(effectiveUserId, jobId);
-      const completedEntries = allTimeEntries.filter((e: any) => e.endTime);
-      const labourCost = completedEntries.reduce((s: number, e: any) => {
-        const hrs = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
-        return s + hrs * parseFloat(e.hourlyRate?.toString() || '0');
-      }, 0);
-      const totalHours = completedEntries.reduce((s: number, e: any) =>
-        s + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000, 0);
-
-      let poTotal = 0;
+      // Purchase orders
       let poItems: any[] = [];
+      let poTotal = 0;
       try {
         const pos = await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId);
         poItems = pos.filter((po: any) => po.status !== 'cancelled');
         poTotal = poItems.reduce((s: number, po: any) => s + parseFloat(po.total?.toString() || '0'), 0);
       } catch (_) {}
 
-      const totalCosts = labourCost + materialsCost + totalExpenses;
-      const grossProfit = totalRevenue - totalCosts;
-      const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+      // Build subcontractor user ID set from team roles
+      const userRolesList = await storage.getUserRoles(effectiveUserId).catch(() => []);
+      const subcontractorRoleIds = new Set(
+        userRolesList
+          .filter((r: any) => /subcontractor/i.test(r.name || ''))
+          .map((r: any) => r.id)
+      );
+      const subcontractorUserIds = new Set<string>();
+      for (const member of allTeamMembers) {
+        if (subcontractorRoleIds.has(member.roleId)) {
+          if (member.memberId) subcontractorUserIds.add(member.memberId);
+          subcontractorUserIds.add(member.id);
+        }
+      }
+
+      // Classify expenses using `categoryName` (the joined field from expenseCategories.name)
+      // with description as a fallback only if category is absent.
+      const catOf = (e: any): string =>
+        ((e.categoryName || e.description || '') as string).toLowerCase();
+      const materialExpenses = expenses.filter((e: any) =>
+        /material|supply|supplies|hardware/i.test(catOf(e))
+      );
+      const subcontractorExpenses = expenses.filter((e: any) =>
+        /subcontractor|contractor|labour hire|labor hire/i.test(catOf(e))
+      );
+      const otherExpenses = expenses.filter((e: any) =>
+        !materialExpenses.includes(e) && !subcontractorExpenses.includes(e)
+      );
+
+      const subcontractorExpenseCost = subcontractorExpenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+      const otherExpensesCost = otherExpenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+      const materialExpensesCost = materialExpenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+      const totalMaterialsCost = materialsCost + materialExpensesCost;
+
+      // Build worker name map from team members (firstName/lastName columns)
+      const workerNameMap = new Map<string, string>();
+      for (const member of allTeamMembers) {
+        const displayName = [
+          (member as any).firstName,
+          (member as any).lastName,
+        ].filter(Boolean).join(' ').trim() || (member as any).email || null;
+        if (displayName) {
+          workerNameMap.set(member.id, displayName);
+          if (member.memberId) workerNameMap.set(member.memberId, displayName);
+        }
+      }
+
+      // Batch-look up any user IDs from time entries not resolved through team members
+      const completedEntries = allTimeEntries.filter((e: any) => e.endTime);
+      const unmappedUserIds = [...new Set(
+        completedEntries
+          .filter((e: any) => !workerNameMap.has(e.userId))
+          .map((e: any) => e.userId as string)
+      )];
+      for (const uid of unmappedUserIds) {
+        try {
+          const u = await storage.getUser(uid);
+          if (u) {
+            const uName = [u.firstName, u.lastName].filter(Boolean).join(' ').trim()
+              || u.email || u.username || null;
+            if (uName) workerNameMap.set(uid, uName);
+          }
+        } catch (_) {}
+      }
+
+      const calcHrs = (e: any) =>
+        (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
+      const calcCost = (e: any) =>
+        calcHrs(e) * parseFloat(e.hourlyRate?.toString() || '0');
+
+      const labourEntriesForPdf = completedEntries.map((e: any) => ({
+        workerName: workerNameMap.get(e.userId) || `Worker (${e.userId.slice(0, 6)})`,
+        isSubcontractor: subcontractorUserIds.has(e.userId),
+        hours: calcHrs(e),
+        cost: calcCost(e),
+        date: e.startTime,
+      }));
+
+      const totalHours = labourEntriesForPdf.reduce((s: number, e: any) => s + e.hours, 0);
+      const labourCostEmployee = labourEntriesForPdf
+        .filter((e: any) => !e.isSubcontractor)
+        .reduce((s: number, e: any) => s + e.cost, 0);
+      const labourCostSub = labourEntriesForPdf
+        .filter((e: any) => e.isSubcontractor)
+        .reduce((s: number, e: any) => s + e.cost, 0);
+      const totalSubcontractorCost = labourCostSub + subcontractorExpenseCost;
+      const totalCosts = labourCostEmployee + totalSubcontractorCost + totalMaterialsCost + otherExpensesCost;
       const markupEarned = Math.max(0, materialsPrice - materialsCost);
 
-      const biz = await storage.getBusinessSettings(effectiveUserId);
+      // Phase breakdown — attribute costs by scheduled date window
+      let phaseBreakdown: any[] = [];
+      try {
+        const phases = await storage.getJobPhases(jobId, effectiveUserId);
+        if (phases && phases.length > 0) {
+          const windows = phases.map((p: any) => {
+            let start = p.scheduledStart ? new Date(p.scheduledStart).getTime() : null;
+            let end = p.scheduledEnd ? new Date(p.scheduledEnd).getTime() : null;
+            if (start !== null && isNaN(start)) start = null;
+            if (end !== null && isNaN(end)) end = null;
+            if (end !== null) end += 24 * 60 * 60 * 1000 - 1;
+            return { phaseId: p.id, start, end };
+          });
+          const variationsByPhase = new Map<string, { approvedTotal: number; pendingTotal: number }>();
+          for (const v of variationsList) {
+            if ((v as any).phaseId && v.status === 'approved') {
+              const bucket = variationsByPhase.get((v as any).phaseId) || { approvedTotal: 0, pendingTotal: 0 };
+              bucket.approvedTotal += parseFloat(v.totalAmount || '0');
+              variationsByPhase.set((v as any).phaseId, bucket);
+            } else if ((v as any).phaseId && (v.status === 'sent' || v.status === 'pending')) {
+              const bucket = variationsByPhase.get((v as any).phaseId) || { approvedTotal: 0, pendingTotal: 0 };
+              bucket.pendingTotal += parseFloat(v.totalAmount || '0');
+              variationsByPhase.set((v as any).phaseId, bucket);
+            }
+          }
+          const findPhaseId = (dateVal: any): string | null => {
+            if (!dateVal) return null;
+            const t = new Date(dateVal).getTime();
+            if (isNaN(t)) return null;
+            for (const w of windows) {
+              // Skip phases with no dates entirely — they cannot be attributed by window
+              if (w.start === null && w.end === null) continue;
+              if (w.start !== null && t < w.start) continue;
+              if (w.end !== null && t > w.end) continue;
+              return w.phaseId;
+            }
+            return null;
+          };
+          type PB = { labour: number; subcontractor: number; materials: number; purchaseOrders: number; hours: number };
+          const emptyPB = (): PB => ({ labour: 0, subcontractor: 0, materials: 0, purchaseOrders: 0, hours: 0 });
+          const buckets = new Map<string, PB>();
+          for (const p of phases) buckets.set(p.id, emptyPB());
+          // Track costs outside all phase windows separately
+          const unallocatedBucket: PB = emptyPB();
+          const bucketFor = (dateVal: any): PB => {
+            const pid = findPhaseId(dateVal);
+            return pid ? buckets.get(pid)! : unallocatedBucket;
+          };
+          for (const e of labourEntriesForPdf) {
+            const b = bucketFor(e.date);
+            b.hours += e.hours;
+            if (e.isSubcontractor) b.subcontractor += e.cost; else b.labour += e.cost;
+          }
+          for (const m of jobMaterials) {
+            bucketFor((m as any).createdAt).materials += parseFloat(m.totalCost?.toString() || '0');
+          }
+          for (const e of materialExpenses) {
+            bucketFor((e as any).expenseDate || (e as any).createdAt).materials += parseFloat(e.amount || '0');
+          }
+          for (const po of poItems) {
+            bucketFor((po as any).orderDate || (po as any).createdAt).purchaseOrders += parseFloat(po.total?.toString() || '0');
+          }
+          const r2 = (n: number) => Math.round(n * 100) / 100;
+          const toPhaseRow = (id: string | null, phaseCode: string | null, name: string, status: string | null, b: PB, p?: any) => {
+            const v = id ? variationsByPhase.get(id) : null;
+            return {
+              id,
+              phaseCode,
+              name,
+              status,
+              scheduledStart: p?.scheduledStart || null,
+              scheduledEnd: p?.scheduledEnd || null,
+              bookedHours: p?.bookedHours ? parseFloat(p.bookedHours.toString()) : null,
+              costs: {
+                labour: r2(b.labour),
+                subcontractor: r2(b.subcontractor),
+                materials: r2(b.materials),
+                purchaseOrders: r2(b.purchaseOrders),
+                total: r2(b.labour + b.subcontractor + b.materials),
+              },
+              hours: Math.round(b.hours * 10) / 10,
+              variations: { approvedTotal: r2(v?.approvedTotal || 0), pendingTotal: r2(v?.pendingTotal || 0) },
+            };
+          };
+          // Only include phases that have at least one scheduled date — phases with neither
+          // date are skipped during attribution and would only appear as zero-cost rows.
+          phaseBreakdown = phases
+            .filter((p: any) => p.scheduledStart != null || p.scheduledEnd != null)
+            .map((p: any) =>
+              toPhaseRow(p.id, p.phaseCode || null, p.name, p.status || null, buckets.get(p.id)!, p)
+            );
+          // Append unallocated row if there are any costs outside phase windows
+          const hasUnallocated = unallocatedBucket.labour > 0 || unallocatedBucket.subcontractor > 0
+            || unallocatedBucket.materials > 0 || unallocatedBucket.purchaseOrders > 0;
+          if (hasUnallocated) {
+            phaseBreakdown.push(toPhaseRow(null, null, 'Unallocated (outside phase windows)', null, unallocatedBucket));
+          }
+        }
+      } catch (_) {}
+
+      // Budget data
+      const rawBudget = (job as any).budgetedCost;
+      const budgetedCost = rawBudget ? parseFloat(rawBudget.toString()) : null;
+
+      // Business info for report header
       const bizName = (biz as any)?.businessName || 'Business';
-      const accentColor = margin < 0 ? '#dc2626' : margin < 15 ? '#d97706' : '#16a34a';
+      const bizABN = (biz as any)?.abn || null;
+      const bizPhone = (biz as any)?.phone || null;
+      const bizEmail = (biz as any)?.email || null;
+      const bizAddress = (biz as any)?.address || null;
 
-      const fmt = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(n);
-      const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+      // Client info
+      let clientName: string | null = null;
+      let clientPhone: string | null = null;
+      let clientEmail: string | null = null;
+      try {
+        if ((job as any).clientId) {
+          const client = await storage.getClient((job as any).clientId, effectiveUserId);
+          if (client) {
+            clientName = (client as any).name || (client as any).companyName || null;
+            clientPhone = (client as any).phone || null;
+            clientEmail = (client as any).email || null;
+          }
+        }
+      } catch (_) {}
 
-      // Escape all user-controlled strings before interpolation into the PDF HTML.
-      // accentColor, margin, fmt(), fmtDate() are computed from numbers/dates — safe.
-      const safeTitle = escapeHtml(job.title);
-      const safeBizName = escapeHtml(bizName);
-      const safeStatusLabel = margin < 0 ? 'Loss' : margin < 15 ? 'Tight' : 'Profitable';
-      const safeProfitLabel = grossProfit < 0 ? 'Gross Loss' : 'Gross Profit';
+      // Business logo
+      let businessLogoUrl: string | undefined;
+      try {
+        const { resolveBusinessLogoForPdf } = await import('../pdfService');
+        businessLogoUrl = await resolveBusinessLogoForPdf(biz);
+      } catch (_) {}
 
-      const row = (label: string, value: string, bold = false, color = '#374151') =>
-        `<tr><td style="padding:8px 12px;color:#6b7280;font-size:13px;${bold ? 'font-weight:600;color:#111827;' : ''}">${escapeHtml(label)}</td><td style="padding:8px 12px;text-align:right;font-size:13px;font-weight:${bold ? '700' : '500'};color:${color}">${value}</td></tr>`;
+      // Build worker-grouped map for PDF section 4
+      const workerGrouped = new Map<string, { hours: number; cost: number; isSubcontractor: boolean }>();
+      for (const e of labourEntriesForPdf) {
+        const existing = workerGrouped.get(e.workerName) || { hours: 0, cost: 0, isSubcontractor: e.isSubcontractor };
+        existing.hours += e.hours;
+        existing.cost += e.cost;
+        workerGrouped.set(e.workerName, existing);
+      }
 
-      const section = (title: string, rows: string) =>
-        `<div style="margin-bottom:24px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:8px;padding:0 12px">${escapeHtml(title)}</div><table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden">${rows}</table></div>`;
+      const { generateCostReportPDF, generatePDFBuffer } = await import('../pdfService');
 
-      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cost Report</title></head><body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111827">
-<div style="max-width:680px;margin:0 auto;padding:40px 24px">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb">
-    <div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;margin-bottom:4px">Cost Report</div>
-      <div style="font-size:22px;font-weight:800;color:#111827">${safeTitle}</div>
-      <div style="font-size:13px;color:#6b7280;margin-top:4px">${safeBizName} &bull; Generated ${fmtDate(new Date())}</div>
-    </div>
-    <div style="text-align:right">
-      <div style="display:inline-block;background:${accentColor};color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px">${safeStatusLabel}</div>
-      <div style="font-size:24px;font-weight:800;color:${accentColor};margin-top:4px">${margin.toFixed(1)}%</div>
-      <div style="font-size:11px;color:#9ca3af">gross margin</div>
-    </div>
-  </div>
+      const revisedContractValue = quotedAmount !== null
+        ? quotedAmount + approvedVariationsTotal
+        : null;
+      // Use totalInvoiced (all invoices, not just paid) as the consistent revenue basis
+      // for profit and margin so that the Financial Summary reconciles correctly.
+      const grossProfit = totalInvoiced - totalCosts;
+      const grossMargin = totalInvoiced > 0 ? (grossProfit / totalInvoiced) * 100 : 0;
 
-  ${section('Revenue', [
-    quotedAmount ? row('Quoted / Contract Value', fmt(quotedAmount)) : '',
-    approvedVariationsTotal > 0 ? row('Approved Variations', fmt(approvedVariationsTotal)) : '',
-    quotedAmount && approvedVariationsTotal > 0 ? row('Revised Contract Value', fmt(quotedAmount + approvedVariationsTotal), true) : '',
-    row('Invoiced (paid)', fmt(totalRevenue)),
-    pendingVariationsTotal > 0 ? row('Pending Variations', fmt(pendingVariationsTotal)) : '',
-  ].filter(Boolean).join(''))}
+      // Build the data object that matches the CostReportData interface exactly
+      const reportData = {
+        // --- job ---
+        job: {
+          id: jobId,
+          title: job.title,
+          number: (job as any).jobNumber || (job as any).prefix || null,
+          status: (job as any).status || 'active',
+          address: (job as any).address || (job as any).siteAddress || null,
+          scheduledAt: (job as any).scheduledAt || null,
+          startedAt: (job as any).startedAt || null,
+          completedAt: (job as any).completedAt || null,
+          jobType: (job as any).jobType || null,
+          budgetedCost: budgetedCost,
+          description: (job as any).description || null,
+        },
+        // --- business ---
+        business: {
+          businessName: bizName,
+          abn: bizABN,
+          phone: bizPhone,
+          email: bizEmail,
+          address: bizAddress,
+          logoUrl: businessLogoUrl,
+        },
+        // --- client (null-safe: interface says optional) ---
+        client: clientName
+          ? { name: clientName, phone: clientPhone, email: clientEmail }
+          : null,
+        // --- quote / contract overview ---
+        quote: quotedAmount !== null
+          ? {
+              number: jobQuote?.number || null,
+              total: quotedAmount,
+              revisedContractValue: revisedContractValue ?? quotedAmount,
+            }
+          : null,
+        // --- phase schedule of values ---
+        phases: phaseBreakdown,
+        // --- variation register ---
+        variations: variationsList.map((v: any) => ({
+          number: v.number || v.id?.slice(0, 8) || '',
+          title: v.title || 'Untitled Variation',
+          status: v.status || 'draft',
+          reason: v.reason || null,
+          sentAt: v.sentAt || null,
+          approvedAt: v.approvedAt || null,
+          rejectedAt: v.rejectedAt || null,
+          rejectionReason: v.rejectionReason || null,
+          approvedByName: v.approvedByName || null,
+          phaseId: (v as any).phaseId || null,
+          totalAmount: parseFloat(v.totalAmount || '0'),
+        })),
+        // --- labour entries for detail section ---
+        // Include subcontractor expense records as subcontractor labour rows (hours=0)
+        // so the section footer reconciles with total subcontractor cost shown there.
+        labourEntries: [
+          ...labourEntriesForPdf,
+          ...subcontractorExpenses.map((e: any) => ({
+            workerName: e.vendor || e.description || e.categoryName || 'Subcontractor',
+            isSubcontractor: true,
+            hours: 0,
+            cost: parseFloat(e.amount || '0'),
+            date: e.expenseDate || e.createdAt || null,
+          })),
+        ],
+        // --- materials with unitCost as required by interface ---
+        // Include material expense records as material rows so the section footer
+        // reconciles with financial.materialsCost (which sums both sources).
+        materials: [
+          ...jobMaterials.map((m: any) => {
+            const qty = parseFloat(String(m.quantity ?? 1)) || 1;
+            const tc = parseFloat(m.totalCost?.toString() || '0');
+            return {
+              name: m.name || 'Unnamed',
+              quantity: qty,
+              unitCost: qty > 0 ? tc / qty : 0,
+              totalCost: tc,
+              totalPrice: parseFloat(m.totalPrice?.toString() || '0'),
+              markupPercent: m.markupPercent ?? null,
+              supplier: m.supplier || null,
+            };
+          }),
+          ...materialExpenses.map((e: any) => ({
+            name: e.description || e.categoryName || 'Material Expense',
+            quantity: 1,
+            unitCost: parseFloat(e.amount || '0'),
+            totalCost: parseFloat(e.amount || '0'),
+            // No markup on expenses — sell price equals cost
+            totalPrice: parseFloat(e.amount || '0'),
+            markupPercent: null,
+            supplier: e.vendor || null,
+          })),
+        ],
+        // --- purchase orders ---
+        purchaseOrders: poItems.map((po: any) => ({
+          poNumber: po.poNumber || po.id?.slice(0, 8) || '',
+          supplierName: po.supplierName || 'Unknown Supplier',
+          orderDate: po.orderDate || po.createdAt || null,
+          status: po.status || 'draft',
+          total: parseFloat(po.total?.toString() || '0'),
+        })),
+        // --- financial summary — must match CostReportData.financial exactly ---
+        financial: {
+          contractValue: quotedAmount,
+          approvedVariationsTotal,
+          pendingVariationsTotal,
+          rejectedVariationsTotal,
+          revisedContractValue,
+          invoicedRevenue: totalInvoiced,
+          labourCost: labourCostEmployee,
+          subcontractorCost: totalSubcontractorCost,
+          materialsCost: totalMaterialsCost,
+          // Material expenses have no markup, so sell price = cost for them
+          materialsSellPrice: materialsPrice + materialExpensesCost,
+          markupEarned,
+          otherExpenses: otherExpensesCost,
+          purchaseOrdersTotal: poTotal,
+          totalCosts,
+          grossProfit,
+          grossMargin,
+          budgetedCost,
+          budgetVariance: budgetedCost !== null ? totalCosts - budgetedCost : null,
+        },
+        // --- hours — must match CostReportData.hours exactly ---
+        hours: {
+          total: totalHours,
+          estimated: phaseBreakdown.reduce((s: number, p: any) => s + (p.bookedHours || 0), 0),
+          billable: labourEntriesForPdf
+            .filter((e: any) => !e.isSubcontractor)
+            .reduce((s: number, e: any) => s + e.hours, 0),
+        },
+        exportedAt: new Date().toISOString(),
+      };
 
-  ${section('Costs', [
-    row(`Labour (${totalHours.toFixed(1)} hrs)`, fmt(labourCost)),
-    row('Materials (purchase cost)', fmt(materialsCost)),
-    markupEarned > 0 ? row('Markup captured', `+${fmt(markupEarned)}`, false, '#16a34a') : '',
-    totalExpenses > 0 ? row('Expenses (other)', fmt(totalExpenses)) : '',
-    poTotal > 0 ? row(`Purchase Orders (${poItems.length})`, fmt(poTotal)) : '',
-    row('Total Costs', fmt(totalCosts), true),
-  ].filter(Boolean).join(''))}
-
-  <div style="background:${margin < 0 ? '#fef2f2' : margin < 15 ? '#fffbeb' : '#f0fdf4'};border:2px solid ${accentColor};border-radius:10px;padding:20px;margin-bottom:24px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:13px;color:#6b7280;margin-bottom:2px">${safeProfitLabel}</div>
-        <div style="font-size:28px;font-weight:800;color:${accentColor}">${fmt(grossProfit)}</div>
-        <div style="font-size:12px;color:${accentColor};font-weight:600">${margin.toFixed(1)}% margin = Revenue ${fmt(totalRevenue)} &minus; Costs ${fmt(totalCosts)}</div>
-      </div>
-    </div>
-    ${margin < 0 ? `<div style="margin-top:12px;padding:10px;background:rgba(220,38,38,0.08);border-radius:6px;font-size:12px;color:#dc2626;font-weight:600">This job is currently running at a loss. Review labour hours and material costs.</div>` : ''}
-  </div>
-
-  ${jobMaterials.length > 0 ? `<div style="margin-bottom:24px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:8px;padding:0 12px">Materials Breakdown</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;text-align:left;color:#6b7280;font-weight:600">Item</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Qty</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Cost</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Sell</th></tr></thead><tbody>${jobMaterials.map((m: any, i: number) => `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9fafb'}"><td style="padding:7px 12px">${escapeHtml(m.name || 'Unnamed')}</td><td style="padding:7px 12px;text-align:right">${escapeHtml(String(m.quantity ?? ''))}</td><td style="padding:7px 12px;text-align:right">${fmt(parseFloat(m.totalCost?.toString() || '0'))}</td><td style="padding:7px 12px;text-align:right">${fmt(parseFloat(m.totalPrice?.toString() || m.totalCost?.toString() || '0'))}</td></tr>`).join('')}</tbody></table></div>` : ''}
-
-  ${variationsList.length > 0 ? section('Variations', variationsList.map((v: any) => {
-    const vLabel = escapeHtml(v.title || v.number || 'Variation');
-    const vStatusSuffix = v.status === 'approved' ? ' (Approved)' : v.status === 'sent' ? ' (Pending)' : ` (${escapeHtml(v.status || '')})`;
-    return row(vLabel + vStatusSuffix, fmt(parseFloat(v.totalAmount || '0')));
-  }).join('')) : ''}
-
-  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center">
-    Generated by ${safeBizName} &bull; ${fmtDate(new Date())} &bull; For internal use only
-  </div>
-</div></body></html>`;
-
-      const { generatePDFBuffer } = await import('../pdfService');
+      const html = generateCostReportPDF(reportData);
       const pdfBuffer = await generatePDFBuffer(html);
-      const fileName = `cost-report-${job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${jobId.slice(0, 8)}.pdf`;
+
+      const safeName = job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const fileName = `cost-report-${safeName}-${jobId.slice(0, 8)}.pdf`;
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       res.send(pdfBuffer);

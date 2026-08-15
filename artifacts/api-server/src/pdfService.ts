@@ -1,5 +1,621 @@
 // @ts-nocheck
 import type { Quote, Invoice, QuoteLineItem, InvoiceLineItem, Client, BusinessSettings, DigitalSignature, Job, TimeEntry } from "@workspace/db";
+
+// ── Cost Report PDF ───────────────────────────────────────────────────────────
+
+export interface CostReportData {
+  job: {
+    id: string;
+    title: string;
+    number?: string | null;
+    jobNumber?: string | null;
+    address?: string | null;
+    status: string;
+    scheduledAt?: string | null;
+    completedAt?: string | null;
+    startedAt?: string | null;
+    jobType?: string | null;
+    budgetedCost?: number | null;
+    description?: string | null;
+  };
+  client?: {
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  } | null;
+  business: {
+    businessName: string;
+    abn?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    logoUrl?: string | null;
+  };
+  quote?: {
+    number?: string | null;
+    total: number;
+    revisedContractValue: number;
+  } | null;
+  phases: Array<{
+    id: string | null;
+    phaseCode?: string | null;
+    name: string;
+    status?: string | null;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
+    bookedHours?: number | null;
+    costs: {
+      labour: number;
+      subcontractor: number;
+      materials: number;
+      purchaseOrders: number;
+      total: number;
+    };
+    hours: number;
+    variations: { approvedTotal: number; pendingTotal: number };
+  }>;
+  variations: Array<{
+    number: string;
+    title: string;
+    description?: string | null;
+    reason?: string | null;
+    status: string;
+    totalAmount: number;
+    approvedAt?: string | null;
+    rejectedAt?: string | null;
+    sentAt?: string | null;
+    approvedByName?: string | null;
+    rejectionReason?: string | null;
+    phaseId?: string | null;
+  }>;
+  labourEntries: Array<{
+    workerName: string;
+    isSubcontractor: boolean;
+    hours: number;
+    cost: number;
+    date: string;
+  }>;
+  materials: Array<{
+    name: string;
+    quantity: number | string;
+    unitCost: number;
+    totalCost: number;
+    totalPrice: number;
+    markupPercent?: number | null;
+    supplier?: string | null;
+  }>;
+  purchaseOrders: Array<{
+    poNumber: string;
+    supplierName: string;
+    total: number;
+    status: string;
+    orderDate?: string | null;
+  }>;
+  financial: {
+    contractValue: number | null;
+    approvedVariationsTotal: number;
+    pendingVariationsTotal: number;
+    rejectedVariationsTotal: number;
+    revisedContractValue: number | null;
+    invoicedRevenue: number;
+    labourCost: number;
+    subcontractorCost: number;
+    materialsCost: number;
+    materialsSellPrice: number;
+    markupEarned: number;
+    otherExpenses: number;
+    purchaseOrdersTotal: number;
+    totalCosts: number;
+    grossProfit: number;
+    grossMargin: number;
+    budgetedCost: number | null;
+    budgetVariance: number | null;
+  };
+  hours: {
+    total: number;
+    estimated: number;
+    billable: number;
+  };
+  exportedAt: string;
+}
+
+export function generateCostReportPDF(data: CostReportData): string {
+  const { job, client, business, quote, phases, variations, labourEntries, materials, purchaseOrders, financial, hours, exportedAt } = data;
+
+  const esc = (v: string | null | undefined): string =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(n);
+
+  const fmtDate = (d: string | null | undefined): string => {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    catch { return '—'; }
+  };
+
+  const fmtHours = (h: number) => {
+    if (h === 0) return '0.0';
+    return h.toFixed(1);
+  };
+
+  const NAVY = '#1e3a5f';
+  const LIGHT = '#f8fafc';
+  const BORDER = '#e2e8f0';
+  const MUTED = '#6b7280';
+  const GREEN = '#16a34a';
+  const AMBER = '#d97706';
+  const RED = '#dc2626';
+
+  const marginColor = financial.grossMargin < 0 ? RED : financial.grossMargin < 10 ? AMBER : GREEN;
+
+  const logoHtml = business.logoUrl
+    ? `<img src="${esc(business.logoUrl)}" alt="${esc(business.businessName)}" style="max-height:56px;max-width:160px;object-fit:contain;margin-bottom:6px"/>`
+    : '';
+
+  const jobNum = job.jobNumber || job.number || '';
+  const jobDisplayNum = jobNum ? `#${esc(jobNum)}` : '';
+
+  // Variation status labels and colors
+  const varStatusLabel = (s: string) => {
+    if (s === 'approved') return 'Approved';
+    if (s === 'sent') return 'Pending';
+    if (s === 'rejected') return 'Rejected';
+    if (s === 'draft') return 'Draft';
+    return esc(s);
+  };
+  const varStatusColor = (s: string) => {
+    if (s === 'approved') return GREEN;
+    if (s === 'sent') return AMBER;
+    if (s === 'rejected') return RED;
+    return '#9ca3af';
+  };
+
+  const phaseStatusLabel = (s: string | null) => {
+    if (!s) return '—';
+    if (s === 'not_started') return 'Not Started';
+    if (s === 'in_progress') return 'In Progress';
+    if (s === 'completed') return 'Completed';
+    if (s === 'on_hold') return 'On Hold';
+    return esc(s);
+  };
+
+  // Group labour by worker
+  const workerMap = new Map<string, { isSubcontractor: boolean; hours: number; cost: number }>();
+  for (const e of labourEntries) {
+    const existing = workerMap.get(e.workerName) || { isSubcontractor: e.isSubcontractor, hours: 0, cost: 0 };
+    existing.hours += e.hours;
+    existing.cost += e.cost;
+    workerMap.set(e.workerName, existing);
+  }
+  const workerRows = Array.from(workerMap.entries()).map(([name, d], i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : LIGHT}">
+      <td style="padding:7px 10px">${esc(name)}</td>
+      <td style="padding:7px 10px;text-align:center">${d.isSubcontractor ? 'Subcontractor' : 'Employee'}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmtHours(d.hours)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(d.cost)}</td>
+    </tr>`).join('');
+
+  // PO summary by supplier — aggregate first, then keep individual PO detail rows
+  const supplierMap = new Map<string, { total: number; count: number; statuses: Set<string> }>();
+  for (const po of purchaseOrders) {
+    const key = po.supplierName || 'Unknown Supplier';
+    const existing = supplierMap.get(key) || { total: 0, count: 0, statuses: new Set<string>() };
+    existing.total += po.total;
+    existing.count++;
+    existing.statuses.add(po.status);
+    supplierMap.set(key, existing);
+  }
+
+  const poStatusLabel = (s: string) => {
+    if (s === 'draft') return 'Draft';
+    if (s === 'sent') return 'Sent';
+    if (s === 'received') return 'Received';
+    if (s === 'partially_received') return 'Partial';
+    if (s === 'cancelled') return 'Cancelled';
+    return esc(s);
+  };
+
+  const supplierRows = Array.from(supplierMap.entries()).map(([name, d], i) => {
+    const statusBadges = Array.from(d.statuses).map(s =>
+      `<span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600;color:#fff;background:${s === 'received' ? GREEN : s === 'cancelled' ? '#9ca3af' : AMBER};margin-right:3px">${poStatusLabel(s)}</span>`
+    ).join('');
+    return `
+    <tr style="background:${i % 2 === 0 ? '#fff' : LIGHT}">
+      <td style="padding:7px 10px;font-weight:500">${esc(name)}</td>
+      <td style="padding:7px 10px;text-align:center">${d.count}</td>
+      <td style="padding:7px 10px">${statusBadges}</td>
+      <td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${fmt(d.total)}</td>
+    </tr>`;
+  }).join('');
+
+  const poDetailRows = purchaseOrders.map((po, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : LIGHT}">
+      <td style="padding:6px 10px;font-family:monospace;font-size:11px">${esc(po.poNumber)}</td>
+      <td style="padding:6px 10px;font-size:11px">${esc(po.supplierName || '—')}</td>
+      <td style="padding:6px 10px;white-space:nowrap;font-size:11px">${fmtDate(po.orderDate)}</td>
+      <td style="padding:6px 10px;text-align:center"><span style="display:inline-block;padding:2px 6px;border-radius:3px;font-size:9px;font-weight:600;color:#fff;background:${po.status === 'received' ? GREEN : po.status === 'cancelled' ? '#9ca3af' : AMBER}">${poStatusLabel(po.status)}</span></td>
+      <td style="padding:6px 10px;text-align:right;font-variant-numeric:tabular-nums;font-size:11px">${fmt(po.total)}</td>
+    </tr>`).join('');
+
+  const variationRows = variations.map((v, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : LIGHT}">
+      <td style="padding:7px 10px;font-family:monospace;font-size:11px;white-space:nowrap">${esc(v.number)}</td>
+      <td style="padding:7px 10px">
+        <div style="font-weight:500">${esc(v.title)}</div>
+        ${v.reason ? `<div style="font-size:11px;color:${MUTED};margin-top:2px">${esc(v.reason)}</div>` : ''}
+        ${v.status === 'rejected' && v.rejectionReason ? `<div style="font-size:11px;color:${RED};margin-top:2px"><strong>Rejected:</strong> ${esc(v.rejectionReason)}</div>` : ''}
+      </td>
+      <td style="padding:7px 10px;text-align:center">
+        <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;color:#fff;background:${varStatusColor(v.status)}">${varStatusLabel(v.status)}</span>
+      </td>
+      <td style="padding:7px 10px;white-space:nowrap;font-size:11px">${v.sentAt ? fmtDate(v.sentAt) : v.status === 'draft' ? 'Draft' : '—'}</td>
+      <td style="padding:7px 10px;white-space:nowrap;font-size:11px">${v.status === 'approved' ? fmtDate(v.approvedAt) : v.status === 'rejected' ? fmtDate(v.rejectedAt) : '—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500">${fmt(v.totalAmount)}</td>
+    </tr>`).join('');
+
+  const materialRows = materials.map((m, i) => {
+    const markup = m.totalCost > 0 && m.totalPrice > m.totalCost
+      ? ((m.totalPrice - m.totalCost) / m.totalCost * 100).toFixed(0) + '%'
+      : m.markupPercent != null ? m.markupPercent + '%' : '—';
+    return `
+    <tr style="background:${i % 2 === 0 ? '#fff' : LIGHT}">
+      <td style="padding:7px 10px">${esc(m.name)}</td>
+      <td style="padding:7px 10px;text-align:center">${String(m.quantity)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(m.totalCost)}</td>
+      <td style="padding:7px 10px;text-align:center;color:${MUTED}">${markup}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(m.totalPrice > 0 ? m.totalPrice : m.totalCost)}</td>
+    </tr>`;
+  }).join('');
+
+  const phaseRows = phases.map((p, i) => {
+    const isUnallocated = p.id === null;
+    const rowBg = isUnallocated ? '#fffbeb' : (i % 2 === 0 ? '#fff' : LIGHT);
+    return `
+    <tr style="background:${rowBg}${isUnallocated ? ';font-style:italic' : ''}">
+      <td style="padding:7px 10px;font-family:monospace;font-size:11px">${isUnallocated ? '' : esc(p.phaseCode || '—')}</td>
+      <td style="padding:7px 10px;font-weight:${isUnallocated ? '400' : '500'};color:${isUnallocated ? MUTED : '#111827'}">${esc(p.name)}</td>
+      <td style="padding:7px 10px;text-align:center;font-size:11px">${isUnallocated ? '—' : phaseStatusLabel(p.status || null)}</td>
+      <td style="padding:7px 10px;text-align:right;font-size:11px">${isUnallocated ? '—' : fmtHours(p.bookedHours || 0)}</td>
+      <td style="padding:7px 10px;text-align:right;font-size:11px">${fmtHours(p.hours)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(p.costs.labour)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(p.costs.subcontractor)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(p.costs.materials)}</td>
+      <td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600">${fmt(p.costs.total)}</td>
+    </tr>`;
+  }).join('');
+
+  const hasPhases = phases.filter(p => p.id !== null).length > 0;
+  const hasMaterials = materials.length > 0;
+  const hasPOs = purchaseOrders.length > 0;
+  const hasLabour = workerMap.size > 0;
+  const hasVariations = variations.length > 0;
+
+  // Footer sums derived from actual phase rows so the table always self-reconciles.
+  // These may be less than financial.totalCosts because financial includes expense-based
+  // subcontractor and other costs not yet separately tracked at phase level.
+  const phaseTableSums = phases.reduce(
+    (acc, p) => ({
+      labour: acc.labour + p.costs.labour,
+      subcontractor: acc.subcontractor + p.costs.subcontractor,
+      materials: acc.materials + p.costs.materials,
+      total: acc.total + p.costs.total,
+    }),
+    { labour: 0, subcontractor: 0, materials: 0, total: 0 }
+  );
+
+  const summaryRow = (label: string, value: string, bold = false, color = '#111827', indent = false) =>
+    `<tr><td style="padding:7px 14px;${indent ? 'padding-left:28px;' : ''}color:${bold ? '#111827' : MUTED};${bold ? 'font-weight:700;' : ''}">${esc(label)}</td><td style="padding:7px 14px;text-align:right;font-weight:${bold ? '700' : '500'};color:${color};font-variant-numeric:tabular-nums">${value}</td></tr>`;
+
+  const thStyle = `padding:8px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#fff;background:${NAVY}`;
+  const thRight = `${thStyle};text-align:right`;
+  const thCenter = `${thStyle};text-align:center`;
+
+  const sectionHeading = (title: string) =>
+    `<h2 style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${NAVY};border-bottom:2px solid ${NAVY};padding-bottom:6px;margin:28px 0 14px">${esc(title)}</h2>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Cost Report — ${esc(job.title)}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 6px; }
+  th { text-align: left; }
+  td { vertical-align: top; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; border: 1px solid ${BORDER}; border-radius: 6px; overflow: hidden; margin-bottom: 24px; }
+  .info-cell { padding: 12px 14px; border-right: 1px solid ${BORDER}; }
+  .info-cell:last-child { border-right: none; }
+  .info-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: ${MUTED}; margin-bottom: 4px; }
+  .info-value { font-size: 13px; font-weight: 600; color: #111827; line-height: 1.4; }
+  .summary-pills { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .pill { background: ${NAVY}; color: #fff; border-radius: 6px; padding: 10px 16px; text-align: center; min-width: 100px; }
+  .pill.green { background: ${GREEN}; }
+  .pill.amber { background: ${AMBER}; }
+  .pill.red { background: ${RED}; }
+  .pill-num { font-size: 20px; font-weight: 800; }
+  .pill-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; opacity: 0.9; margin-top: 2px; }
+  .footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid ${BORDER}; font-size: 10px; color: ${MUTED}; display: flex; justify-content: space-between; }
+  .profit-box { border: 2px solid ${marginColor}; border-radius: 8px; padding: 16px 20px; background: ${financial.grossMargin < 0 ? '#fef2f2' : financial.grossMargin < 10 ? '#fffbeb' : '#f0fdf4'}; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; }
+  .empty-row td { padding: 10px 14px; color: ${MUTED}; font-style: italic; }
+  @media print { body { padding: 20px 24px; } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;padding-bottom:18px;border-bottom:2px solid ${NAVY}">
+  <div>
+    ${logoHtml}
+    <div style="font-size:17px;font-weight:800;color:${NAVY}">${esc(business.businessName)}</div>
+    ${business.abn ? `<div style="font-size:11px;color:${MUTED}">ABN ${esc(business.abn)}</div>` : ''}
+    ${[business.phone, business.email].filter(Boolean).map(esc).join(' &bull; ') ? `<div style="font-size:11px;color:${MUTED};margin-top:2px">${[business.phone, business.email].filter(Boolean).map(esc).join(' &bull; ')}</div>` : ''}
+  </div>
+  <div style="text-align:right">
+    <div style="font-size:22px;font-weight:800;color:${NAVY}">Cost Report</div>
+    <div style="font-size:11px;color:${MUTED};margin-top:3px">For government and head-contractor submission</div>
+    <div style="font-size:11px;color:${MUTED};margin-top:2px">Generated ${fmtDate(exportedAt)}</div>
+    ${jobDisplayNum ? `<div style="font-size:14px;font-weight:700;color:${NAVY};margin-top:6px">Job ${jobDisplayNum}</div>` : ''}
+  </div>
+</div>
+
+<!-- SECTION 1: CONTRACT OVERVIEW -->
+${sectionHeading('1. Contract Overview')}
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="info-label">Project</div>
+    <div class="info-value">${esc(job.title)}</div>
+    ${job.description ? `<div style="font-size:11px;color:${MUTED};margin-top:3px">${esc(job.description)}</div>` : ''}
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Job Number</div>
+    <div class="info-value">${jobDisplayNum || '—'}</div>
+    <div class="info-label" style="margin-top:8px">Status</div>
+    <div class="info-value" style="font-size:12px">${esc(job.status.replace(/_/g, ' '))}</div>
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Site Address</div>
+    <div class="info-value" style="font-size:12px">${esc(job.address || '—')}</div>
+  </div>
+</div>
+<div class="info-grid">
+  <div class="info-cell">
+    <div class="info-label">Client</div>
+    <div class="info-value">${esc(client?.name || '—')}</div>
+    ${client?.email ? `<div style="font-size:11px;color:${MUTED}">${esc(client.email)}</div>` : ''}
+    ${client?.phone ? `<div style="font-size:11px;color:${MUTED}">${esc(client.phone)}</div>` : ''}
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Original Contract Value</div>
+    <div class="info-value">${financial.contractValue != null ? fmt(financial.contractValue) : '—'}</div>
+    ${financial.approvedVariationsTotal > 0 ? `<div class="info-label" style="margin-top:8px">Revised Contract Value</div><div class="info-value">${financial.revisedContractValue != null ? fmt(financial.revisedContractValue) : '—'}</div>` : ''}
+  </div>
+  <div class="info-cell">
+    <div class="info-label">Commenced</div>
+    <div class="info-value" style="font-size:12px">${fmtDate(job.startedAt || job.scheduledAt)}</div>
+    ${job.completedAt ? `<div class="info-label" style="margin-top:8px">Completed</div><div class="info-value" style="font-size:12px">${fmtDate(job.completedAt)}</div>` : ''}
+  </div>
+</div>
+
+<div class="summary-pills">
+  ${financial.contractValue != null ? `<div class="pill"><div class="pill-num">${fmt(financial.contractValue)}</div><div class="pill-lbl">Contract</div></div>` : ''}
+  ${financial.approvedVariationsTotal > 0 ? `<div class="pill" style="background:#2563eb"><div class="pill-num">${fmt(financial.approvedVariationsTotal)}</div><div class="pill-lbl">Approved Variations</div></div>` : ''}
+  <div class="pill ${financial.grossMargin >= 10 ? 'green' : financial.grossMargin >= 0 ? 'amber' : 'red'}"><div class="pill-num">${financial.grossMargin.toFixed(1)}%</div><div class="pill-lbl">Gross Margin</div></div>
+  <div class="pill"><div class="pill-num">${fmtHours(hours.total)}</div><div class="pill-lbl">Total Hours</div></div>
+</div>
+
+<!-- SECTION 2: SCHEDULE OF VALUES -->
+${hasPhases ? `
+${sectionHeading('2. Schedule of Values')}
+<table>
+  <thead>
+    <tr>
+      <th style="${thStyle};width:80px">Phase Code</th>
+      <th style="${thStyle}">Phase Name</th>
+      <th style="${thCenter};width:80px">Status</th>
+      <th style="${thRight};width:70px">Est. Hrs</th>
+      <th style="${thRight};width:70px">Act. Hrs</th>
+      <th style="${thRight};width:90px">Labour</th>
+      <th style="${thRight};width:90px">Subs</th>
+      <th style="${thRight};width:90px">Materials</th>
+      <th style="${thRight};width:90px">Total Cost</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${phaseRows || `<tr class="empty-row"><td colspan="9">No phases defined for this project.</td></tr>`}
+  </tbody>
+  <tfoot>
+    <tr style="background:${LIGHT};font-weight:700">
+      <td colspan="5" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">TOTALS (attributed)</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(phaseTableSums.labour)}</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(phaseTableSums.subcontractor)}</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(phaseTableSums.materials)}</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(phaseTableSums.total)}</td>
+    </tr>
+  </tfoot>
+</table>
+<p style="font-size:10px;color:${MUTED};margin-top:4px">* Labour (time entries) and materials are attributed to phases by scheduled date window. Costs outside any phase window appear in the "Unallocated" row. Other expenses (subcontractor invoices, general expenses) are shown in full in the Financial Summary. Variations link to phases directly.</p>` : ''}
+
+<!-- SECTION 3: VARIATION LOG -->
+${sectionHeading('3. Variation Register')}
+${hasVariations ? `
+<table>
+  <thead>
+    <tr>
+      <th style="${thStyle};width:70px">Var #</th>
+      <th style="${thStyle}">Title / Reason</th>
+      <th style="${thCenter};width:80px">Status</th>
+      <th style="${thCenter};width:90px">Submitted</th>
+      <th style="${thCenter};width:90px">Determined</th>
+      <th style="${thRight};width:100px">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${variationRows}
+  </tbody>
+  <tfoot>
+    <tr style="background:${LIGHT}">
+      <td colspan="5" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">Approved Variations Total</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:700;color:${GREEN};font-variant-numeric:tabular-nums">${fmt(financial.approvedVariationsTotal)}</td>
+    </tr>
+    ${financial.pendingVariationsTotal > 0 ? `<tr style="background:${LIGHT}">
+      <td colspan="5" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">Pending / Unresolved</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${AMBER};font-variant-numeric:tabular-nums">${fmt(financial.pendingVariationsTotal)}</td>
+    </tr>` : ''}
+    ${financial.rejectedVariationsTotal > 0 ? `<tr style="background:${LIGHT}">
+      <td colspan="5" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">Rejected</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${RED};font-variant-numeric:tabular-nums">${fmt(financial.rejectedVariationsTotal)}</td>
+    </tr>` : ''}
+  </tfoot>
+</table>` : `<p style="color:${MUTED};font-style:italic;padding:8px 0">No variations recorded for this job.</p>`}
+
+<!-- SECTION 4: SUBCONTRACTOR COSTS -->
+${sectionHeading('4. Labour and Subcontractor Costs')}
+${hasLabour ? `
+<table>
+  <thead>
+    <tr>
+      <th style="${thStyle}">Worker</th>
+      <th style="${thCenter};width:120px">Type</th>
+      <th style="${thRight};width:90px">Hours</th>
+      <th style="${thRight};width:100px">Cost</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${workerRows}
+  </tbody>
+  <tfoot>
+    <tr style="background:${LIGHT};font-weight:700">
+      <td colspan="2" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">TOTALS</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmtHours(hours.total)}</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(financial.labourCost + financial.subcontractorCost)}</td>
+    </tr>
+  </tfoot>
+</table>` : `<p style="color:${MUTED};font-style:italic;padding:8px 0">No labour records for this job.</p>`}
+
+<!-- SECTION 5: MATERIAL COSTS -->
+${sectionHeading('5. Material Costs')}
+${hasMaterials ? `
+<table>
+  <thead>
+    <tr>
+      <th style="${thStyle}">Item</th>
+      <th style="${thCenter};width:60px">Qty</th>
+      <th style="${thRight};width:100px">Cost</th>
+      <th style="${thCenter};width:70px">Markup</th>
+      <th style="${thRight};width:100px">Sell Price</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${materialRows}
+  </tbody>
+  <tfoot>
+    <tr style="background:${LIGHT};font-weight:700">
+      <td colspan="2" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">TOTALS</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(financial.materialsCost)}</td>
+      <td></td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(financial.materialsSellPrice)}</td>
+    </tr>
+    ${financial.markupEarned > 0 ? `<tr style="background:${LIGHT}">
+      <td colspan="4" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">Markup Captured</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${GREEN};font-variant-numeric:tabular-nums">+${fmt(financial.markupEarned)}</td>
+    </tr>` : ''}
+  </tfoot>
+</table>` : `<p style="color:${MUTED};font-style:italic;padding:8px 0">No materials recorded for this job.</p>`}
+
+<!-- SECTION 6: PURCHASE ORDERS -->
+${hasPOs ? `
+${sectionHeading('6. Purchase Order Summary')}
+<p style="font-size:11px;color:${MUTED};margin:0 0 8px">By supplier — individual PO detail follows.</p>
+<table style="margin-bottom:14px">
+  <thead>
+    <tr>
+      <th style="${thStyle}">Supplier</th>
+      <th style="${thCenter};width:60px">POs</th>
+      <th style="${thStyle};width:120px">Status(es)</th>
+      <th style="${thRight};width:110px">Total Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${supplierRows}
+  </tbody>
+  <tfoot>
+    <tr style="background:${LIGHT};font-weight:700">
+      <td colspan="3" style="padding:8px 10px;text-align:right;font-size:11px;color:${MUTED}">TOTAL (excl. cancelled)</td>
+      <td style="padding:8px 10px;text-align:right;font-variant-numeric:tabular-nums">${fmt(financial.purchaseOrdersTotal)}</td>
+    </tr>
+  </tfoot>
+</table>
+<p style="font-size:11px;color:${MUTED};margin:0 0 6px;font-weight:600">Individual Purchase Orders</p>
+<table>
+  <thead>
+    <tr>
+      <th style="${thStyle};width:90px">PO Number</th>
+      <th style="${thStyle}">Supplier</th>
+      <th style="${thCenter};width:90px">Date</th>
+      <th style="${thCenter};width:80px">Status</th>
+      <th style="${thRight};width:100px">Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${poDetailRows}
+  </tbody>
+</table>
+<p style="font-size:10px;color:${MUTED};margin-top:4px">* Purchase order amounts are informational and may overlap with material costs above.</p>` : ''}
+
+<!-- SECTION 7: FINANCIAL SUMMARY -->
+${sectionHeading('7. Financial Summary')}
+<div style="display:flex;gap:24px;align-items:flex-start">
+  <div style="flex:1">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${MUTED};margin-bottom:6px">Revenue</div>
+    <table style="border:1px solid ${BORDER};border-radius:6px;overflow:hidden">
+      ${financial.contractValue != null ? summaryRow('Original Contract Value', fmt(financial.contractValue)) : ''}
+      ${financial.approvedVariationsTotal > 0 ? summaryRow('Approved Variations', '+' + fmt(financial.approvedVariationsTotal), false, GREEN, true) : ''}
+      ${financial.revisedContractValue != null && financial.approvedVariationsTotal > 0 ? summaryRow('Revised Contract Value', fmt(financial.revisedContractValue), true) : ''}
+      ${summaryRow('Invoiced to Date', fmt(financial.invoicedRevenue))}
+      ${financial.pendingVariationsTotal > 0 ? summaryRow('Pending Variations (not yet approved)', fmt(financial.pendingVariationsTotal), false, AMBER) : ''}
+    </table>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${MUTED};margin:16px 0 6px">Costs</div>
+    <table style="border:1px solid ${BORDER};border-radius:6px;overflow:hidden">
+      ${summaryRow('Labour (' + fmtHours(hours.total) + ' hrs)', fmt(financial.labourCost), false, '#111', true)}
+      ${financial.subcontractorCost > 0 ? summaryRow('Subcontractor Labour', fmt(financial.subcontractorCost), false, '#111', true) : ''}
+      ${summaryRow('Materials (purchase cost)', fmt(financial.materialsCost), false, '#111', true)}
+      ${financial.otherExpenses > 0 ? summaryRow('Other Expenses', fmt(financial.otherExpenses), false, '#111', true) : ''}
+      ${summaryRow('Total Costs', fmt(financial.totalCosts), true)}
+      ${financial.budgetedCost != null ? summaryRow('Budgeted Cost', fmt(financial.budgetedCost)) : ''}
+      ${financial.budgetVariance != null ? summaryRow('Budget Variance', (financial.budgetVariance > 0 ? '+' : '') + fmt(financial.budgetVariance), false, financial.budgetVariance > 0 ? RED : GREEN) : ''}
+    </table>
+  </div>
+  <div style="flex:0 0 240px">
+    <div class="profit-box">
+      <div>
+        <div style="font-size:11px;color:${MUTED};margin-bottom:4px">${financial.grossProfit < 0 ? 'Gross Loss' : 'Gross Profit'}</div>
+        <div style="font-size:26px;font-weight:800;color:${marginColor}">${fmt(Math.abs(financial.grossProfit))}</div>
+        <div style="font-size:12px;font-weight:600;color:${marginColor};margin-top:2px">${financial.grossMargin.toFixed(1)}% margin</div>
+      </div>
+    </div>
+    <table style="border:1px solid ${BORDER};border-radius:6px;overflow:hidden">
+      ${summaryRow('Total Revenue (invoiced)', fmt(financial.invoicedRevenue), true)}
+      ${summaryRow('Total Costs', fmt(financial.totalCosts), true)}
+      ${summaryRow(financial.grossProfit < 0 ? 'Net Loss' : 'Net Profit', fmt(Math.abs(financial.grossProfit)), true, marginColor)}
+    </table>
+    ${financial.markupEarned > 0 ? `<div style="margin-top:10px;padding:10px 12px;background:${LIGHT};border:1px solid ${BORDER};border-radius:6px;font-size:11px;color:${MUTED}">Materials markup captured: <strong style="color:${GREEN}">${fmt(financial.markupEarned)}</strong></div>` : ''}
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <span>${esc(business.businessName)}${business.abn ? ` · ABN ${esc(business.abn)}` : ''} · Cost Report · ${jobDisplayNum || esc(job.title)}</span>
+  <span>Generated ${fmtDate(exportedAt)} · For government and head-contractor submission</span>
+</div>
+
+</body>
+</html>`;
+}
 import { getClientDisplayName, getWorkerDisplayName, ensureDisplayName } from './shared-displayName';
 import { ObjectStorageService, parseObjectPath, objectStorageClient } from './objectStorage';
 import { pdfQueue, BackpressureError } from './concurrency';
