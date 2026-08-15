@@ -2416,6 +2416,7 @@ export default function JobDetailScreen() {
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
   const [showJobCostingSheet, setShowJobCostingSheet] = useState(false);
+  const [isGeneratingCostReport, setIsGeneratingCostReport] = useState(false);
 
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
   const [rollbackTargetStatus, setRollbackTargetStatus] = useState<string | null>(null);
@@ -5021,6 +5022,41 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: error.message || 'Failed to generate Proof Pack' });
     } finally {
       setIsGeneratingProofPack(false);
+    }
+  };
+
+  const handleShareCostReport = async () => {
+    if (!job) return;
+    setIsGeneratingCostReport(true);
+    try {
+      const token = await api.getToken();
+      const filename = `cost-report-${job.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+      const localUri = `${FileSystem.cacheDirectory}${filename}`;
+
+      const downloadResult = await FileSystem.downloadAsync(
+        `${API_URL}/api/jobs/${job.id}/cost-report`,
+        localUri,
+        { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+      );
+
+      if (downloadResult.status === 200) {
+        const isSharingAvailable = await Sharing.isAvailableAsync();
+        if (isSharingAvailable) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: 'Share Cost Report',
+          });
+        } else {
+          showToast({ type: 'success', message: 'Cost report PDF downloaded' });
+        }
+      } else {
+        showToast({ type: 'error', message: 'Failed to generate cost report' });
+      }
+    } catch (error: any) {
+      console.error('Cost report error:', error);
+      showToast({ type: 'error', message: error.message || 'Failed to generate cost report' });
+    } finally {
+      setIsGeneratingCostReport(false);
     }
   };
 
@@ -14206,12 +14242,41 @@ export default function JobDetailScreen() {
                   {pd.profit.margin.toFixed(1)}% gross margin
                 </Text>
 
+                {/* Share Cost Report (owners/managers only) */}
+                {(isOwnerOrManager || isSoloOwner) && (
+                  <TouchableOpacity
+                    onPress={handleShareCostReport}
+                    activeOpacity={0.7}
+                    disabled={isGeneratingCostReport}
+                    style={{
+                      marginTop: spacing.lg,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: spacing.sm,
+                      paddingVertical: spacing.md,
+                      borderRadius: radius.lg,
+                      backgroundColor: colors.primary,
+                      opacity: isGeneratingCostReport ? 0.6 : 1,
+                    }}
+                  >
+                    {isGeneratingCostReport ? (
+                      <ActivityIndicator size="small" color={colors.primaryForeground} />
+                    ) : (
+                      <Feather name="share-2" size={14} color={colors.primaryForeground} />
+                    )}
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>
+                      {isGeneratingCostReport ? 'Generating...' : 'Share Cost Report'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Tap to see full breakdown in More tab */}
                 <TouchableOpacity
                   onPress={() => { setShowJobCostingSheet(false); setActiveTab('manage'); }}
                   activeOpacity={0.7}
                   style={{
-                    marginTop: spacing.lg,
+                    marginTop: spacing.sm,
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',

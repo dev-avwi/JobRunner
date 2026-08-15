@@ -6736,18 +6736,25 @@ import { computeRetentionSummary } from "./retentionSummary";
   // Cost report PDF — generates a clean cost breakdown PDF for internal review or client disputes
   app.get("/api/jobs/:id/cost-report", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const userContext = await getUserContext(req.userId!);
+      const effectiveUserId = userContext.effectiveUserId;
       const { id: jobId } = req.params;
 
-      const job = await storage.getJob(jobId, userId);
+      // Only owners and managers may access cost reports
+      const isOwnerOrManager = userContext.isOwner || userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
+        return res.status(403).json({ error: "Only owners and managers can access cost reports" });
+      }
+
+      const job = await storage.getJob(jobId, effectiveUserId);
       if (!job) return res.status(404).json({ error: "Job not found" });
 
       // Re-use the profitability data we already compute
-      const allQuotes = await storage.getQuotes(userId);
+      const allQuotes = await storage.getQuotes(effectiveUserId);
       const jobQuote = allQuotes.find((q: any) => q.jobId === jobId && (q.status === 'accepted' || q.status === 'sent'));
       const quotedAmount = jobQuote ? parseFloat(jobQuote.total || '0') : null;
 
-      const invoices = await storage.getInvoices(userId);
+      const invoices = await storage.getInvoices(effectiveUserId);
       const jobInvoices = invoices.filter((inv: any) => inv.jobId === jobId);
       const totalRevenue = jobInvoices.reduce((s: number, inv: any) => s + (inv.status === 'paid' ? parseFloat(inv.total || '0') : 0), 0);
 
@@ -6755,7 +6762,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       let pendingVariationsTotal = 0;
       let variationsList: any[] = [];
       try {
-        const vars = await storage.getJobVariations(jobId, userId);
+        const vars = await storage.getJobVariations(jobId, effectiveUserId);
         variationsList = vars;
         for (const v of vars) {
           if (v.status === 'approved') approvedVariationsTotal += parseFloat(v.totalAmount || '0');
@@ -6763,14 +6770,14 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       } catch (_) {}
 
-      const expenses = await storage.getExpenses(userId, { jobId });
+      const expenses = await storage.getExpenses(effectiveUserId, { jobId });
       const totalExpenses = expenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
 
       let jobMaterials: any[] = [];
       let materialsCost = 0;
       let materialsPrice = 0;
       try {
-        jobMaterials = await storage.getJobMaterials(jobId, userId);
+        jobMaterials = await storage.getJobMaterials(jobId, effectiveUserId);
         materialsCost = jobMaterials.reduce((s: number, m: any) => s + parseFloat(m.totalCost?.toString() || '0'), 0);
         materialsPrice = jobMaterials.reduce((s: number, m: any) => {
           const p = parseFloat(m.totalPrice?.toString() || '0');
@@ -6779,7 +6786,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         }, 0);
       } catch (_) {}
 
-      const allTimeEntries = await storage.getTimeEntries(userId, jobId);
+      const allTimeEntries = await storage.getTimeEntries(effectiveUserId, jobId);
       const completedEntries = allTimeEntries.filter((e: any) => e.endTime);
       const labourCost = completedEntries.reduce((s: number, e: any) => {
         const hrs = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
@@ -6791,7 +6798,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       let poTotal = 0;
       let poItems: any[] = [];
       try {
-        const pos = await storage.getPurchaseOrdersByJobId(jobId, userId);
+        const pos = await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId);
         poItems = pos.filter((po: any) => po.status !== 'cancelled');
         poTotal = poItems.reduce((s: number, po: any) => s + parseFloat(po.total?.toString() || '0'), 0);
       } catch (_) {}
@@ -6801,7 +6808,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
       const markupEarned = Math.max(0, materialsPrice - materialsCost);
 
-      const biz = await storage.getBusinessSettings(userId);
+      const biz = await storage.getBusinessSettings(effectiveUserId);
       const bizName = (biz as any)?.businessName || 'Business';
       const accentColor = margin < 0 ? '#dc2626' : margin < 15 ? '#d97706' : '#16a34a';
 
