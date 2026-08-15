@@ -60,7 +60,7 @@ import {
 } from 'lucide-react';
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { format, isPast, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 
 const DOC_CATEGORIES = ['Drawings', 'Specifications', 'RFIs', 'SWMS', 'Certificates', 'Other'] as const;
 type DocCategory = typeof DOC_CATEGORIES[number];
@@ -103,7 +103,7 @@ interface ProjectRfi {
   assignedTo: string | null;
   assignedToName: string | null;
   status: 'open' | 'answered' | 'closed';
-  priority: 'low' | 'medium' | 'high' | null;
+  priority: 'low' | 'medium' | 'high' | 'urgent' | null;
   dueDate: string | null;
   answeredAt: string | null;
   answerText: string | null;
@@ -150,9 +150,10 @@ function getRfiStatusConfig(status: string) {
 }
 
 function getRfiPriorityConfig(priority: string | null) {
-  if (priority === 'high') return { label: 'High', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
-  if (priority === 'medium') return { label: 'Medium', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' };
-  if (priority === 'low') return { label: 'Low', className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
+  if (priority === 'urgent') return { label: 'Urgent', className: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300' };
+  if (priority === 'high')   return { label: 'High',   className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300' };
+  if (priority === 'medium') return { label: 'Medium', className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300' };
+  if (priority === 'low')    return { label: 'Low',    className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' };
   return null;
 }
 
@@ -483,7 +484,10 @@ function RfiRow({
   const statusCfg = getRfiStatusConfig(rfi.status);
   const StatusIcon = statusCfg.icon;
   const priorityCfg = getRfiPriorityConfig(rfi.priority ?? null);
-  const isOverdue = rfi.status === 'open' && rfi.dueDate && isPast(parseISO(rfi.dueDate));
+  // Compare calendar dates only (YYYY-MM-DD strings) so "today" is never overdue
+  // and the displayed date never drifts for users ahead of UTC (e.g. AEST/AEDT).
+  const dueDateStr = rfi.dueDate ? rfi.dueDate.slice(0, 10) : null;
+  const isOverdue = rfi.status !== 'closed' && dueDateStr !== null && dueDateStr < format(new Date(), 'yyyy-MM-dd');
 
   const updateMutation = useMutation({
     mutationFn: async (updates: Record<string, any>) => {
@@ -529,13 +533,18 @@ function RfiRow({
                 <Flag className="h-3 w-3" />{priorityCfg.label}
               </span>
             )}
-            {rfi.dueDate && (
-              <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
-                <CalendarDays className="h-3 w-3" />
-                {isOverdue ? 'Overdue · ' : 'Due '}
-                {format(parseISO(rfi.dueDate), 'dd MMM yyyy')}
-              </span>
-            )}
+            {dueDateStr && (() => {
+              // Parse as local midnight to avoid UTC-to-local date shift
+              const [y, m, d] = dueDateStr.split('-').map(Number);
+              const dueDateLocal = new Date(y, m - 1, d);
+              return (
+                <span className={`text-xs flex items-center gap-1 ${isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : 'text-muted-foreground'}`}>
+                  <CalendarDays className="h-3 w-3" />
+                  {isOverdue ? 'Overdue · ' : 'Due '}
+                  {format(dueDateLocal, 'dd MMM yyyy')}
+                </span>
+              );
+            })()}
             {rfi.assignedToName && (
               <span className="text-xs text-muted-foreground">→ {rfi.assignedToName}</span>
             )}
