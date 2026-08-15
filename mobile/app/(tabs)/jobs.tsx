@@ -745,7 +745,8 @@ export default function JobsScreen() {
     const filterBySearch = (jobList: typeof jobs) => jobList.filter(job => 
       job.title.toLowerCase().includes(searchLower) ||
       (job.address?.toLowerCase().includes(searchLower)) ||
-      (getClientName(job.clientId)?.toLowerCase().includes(searchLower))
+      (getClientName(job.clientId)?.toLowerCase().includes(searchLower)) ||
+      (job.jobNumber?.toLowerCase().includes(searchLower))
     );
 
     let baseJobs = jobs;

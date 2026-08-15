@@ -324,7 +324,8 @@ export default function JobsList({
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = (job.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (job.clientName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (job.address || '').toLowerCase().includes(searchTerm.toLowerCase());
+                         (job.address || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (job.jobNumber || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all"
       ? true
       : statusFilter === "projects"

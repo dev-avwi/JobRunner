@@ -156,6 +156,8 @@ export default function BusinessSettingsScreen() {
     phone: businessSettings?.phone || '',
     email: businessSettings?.email || '',
     address: businessSettings?.address || '',
+    jobPrefix: (businessSettings as any)?.jobPrefix || '',
+    jobNextNumber: (businessSettings as any)?.jobNextNumber != null ? String((businessSettings as any).jobNextNumber) : '',
     defaultSignature: (businessSettings as any)?.defaultSignature || '',
     signatureName: (businessSettings as any)?.signatureName || '',
     includeSignatureOnQuotes: (businessSettings as any)?.includeSignatureOnQuotes || false,
@@ -210,6 +212,8 @@ export default function BusinessSettingsScreen() {
         phone: businessSettings.phone || '',
         email: businessSettings.email || '',
         address: businessSettings.address || '',
+        jobPrefix: (businessSettings as any)?.jobPrefix || '',
+        jobNextNumber: (businessSettings as any)?.jobNextNumber != null ? String((businessSettings as any).jobNextNumber) : '',
         defaultSignature: (businessSettings as any)?.defaultSignature || '',
         signatureName: (businessSettings as any)?.signatureName || '',
         includeSignatureOnQuotes: (businessSettings as any)?.includeSignatureOnQuotes || false,
@@ -233,7 +237,13 @@ export default function BusinessSettingsScreen() {
     }
 
     setIsLoading(true);
-    const success = await updateBusinessSettings(form);
+    const saveData: Record<string, any> = { ...form };
+    // Convert jobNextNumber to integer or null
+    saveData.jobPrefix = form.jobPrefix.trim() || null;
+    saveData.jobNextNumber = form.jobNextNumber.trim() !== '' && parseInt(form.jobNextNumber, 10) > 0
+      ? parseInt(form.jobNextNumber, 10)
+      : null;
+    const success = await updateBusinessSettings(saveData);
     setIsLoading(false);
 
     if (success) {
@@ -319,6 +329,48 @@ export default function BusinessSettingsScreen() {
                 Australian Business Number (optional)
               </Text>
             )}
+          </View>
+
+          <Text style={styles.sectionTitle}>Job Numbering</Text>
+          <Text style={styles.sectionDescription}>
+            Set a prefix so new jobs get numbers like GEM1004. Leave blank to use plain sequential numbers.
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="tag" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>Job Number Prefix</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={form.jobPrefix}
+              onChangeText={(text) => setForm({ ...form, jobPrefix: text.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6) })}
+              placeholder="e.g. GEM"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="characters"
+              maxLength={6}
+            />
+            <Text style={styles.inputHint}>Up to 6 characters, uppercase letters and numbers only</Text>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="hash" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>Starting Number</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={form.jobNextNumber}
+              onChangeText={(text) => setForm({ ...form, jobNextNumber: text.replace(/[^0-9]/g, '') })}
+              placeholder="e.g. 1000"
+              placeholderTextColor={colors.mutedForeground}
+              keyboardType="number-pad"
+            />
+            <Text style={styles.inputHint}>
+              {form.jobPrefix && form.jobNextNumber
+                ? `Next job will be: ${form.jobPrefix}${parseInt(form.jobNextNumber, 10) + 1}`
+                : 'The next job number to assign (the counter starts here)'}
+            </Text>
           </View>
 
           <Text style={styles.sectionTitle}>Contact Information</Text>

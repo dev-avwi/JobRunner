@@ -657,6 +657,27 @@ export async function syncContactsFromXero(userId: string): Promise<{ synced: nu
   }
 }
 
+/**
+ * Build the Xero invoice reference string for an invoice.
+ * When the invoice is linked to a job with a job number, appends it so the
+ * reference reads e.g. "INV-0042 | Job GEM1004". Falls back gracefully to
+ * the invoice number alone (or undefined) when no job number is available.
+ */
+async function buildXeroReference(invoice: any): Promise<string | undefined> {
+  const base: string | undefined = invoice.number || (invoice as any).invoiceNumber || undefined;
+  if ((invoice as any).jobId) {
+    try {
+      const linkedJob = await storage.getJobPublic((invoice as any).jobId);
+      if (linkedJob?.jobNumber) {
+        return base ? `${base} | Job ${linkedJob.jobNumber}` : `Job ${linkedJob.jobNumber}`;
+      }
+    } catch {
+      // non-fatal — fall back to base reference
+    }
+  }
+  return base;
+}
+
 export async function syncInvoicesToXero(userId: string): Promise<{ synced: number; skipped: number; errors: string[] }> {
   const startTime = Date.now();
   const { xero, connection } = await getRefreshedClientAndConnection(userId);
@@ -709,7 +730,7 @@ export async function syncInvoicesToXero(userId: string): Promise<{ synced: numb
           })),
           date: invoiceDate ? new Date(invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : undefined,
-          reference: invoice.number || (invoice as any).invoiceNumber || undefined,
+          reference: await buildXeroReference(invoice),
           status: invoice.status === 'sent' ? "AUTHORISED" as any : "DRAFT" as any,
         };
 
@@ -790,6 +811,7 @@ export async function syncSingleInvoiceToXero(userId: string, invoiceId: string)
     const itemCode = businessSettings?.xeroDefaultItemCode;
     
     const invoiceDate = (invoice as any).issueDate || invoice.createdAt;
+
     const xeroInvoice = {
       type: "ACCREC" as any,
       contact: {
@@ -806,7 +828,7 @@ export async function syncSingleInvoiceToXero(userId: string, invoiceId: string)
       })),
       date: invoiceDate ? new Date(invoiceDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       dueDate: invoice.dueDate ? new Date(invoice.dueDate).toISOString().split('T')[0] : undefined,
-      reference: invoice.number || (invoice as any).invoiceNumber || undefined,
+      reference: await buildXeroReference(invoice),
       status: "AUTHORISED" as any,
     };
 

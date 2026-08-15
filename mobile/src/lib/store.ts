@@ -137,6 +137,8 @@ export interface Job {
   isXeroImport?: boolean;
   completedAt?: string;
   createdAt?: string;
+  jobNumber?: string | null;
+  jobType?: string | null;
 }
 
 interface Client {
