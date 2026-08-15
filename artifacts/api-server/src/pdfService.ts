@@ -118,10 +118,18 @@ export interface CostReportData {
     billable: number;
   };
   exportedAt: string;
+  retention?: {
+    sumRetentionHeld: number;
+    outstandingRetention: number;
+    practicalCompletionDate: string | null;
+    defectsLiabilityMonths: number;
+    releaseDate: string | null;
+    retentionStatus: string;
+  } | null;
 }
 
 export function generateCostReportPDF(data: CostReportData): string {
-  const { job, client, business, quote, phases, variations, labourEntries, materials, purchaseOrders, financial, hours, exportedAt } = data;
+  const { job, client, business, quote, phases, variations, labourEntries, materials, purchaseOrders, financial, hours, exportedAt, retention } = data;
 
   const esc = (v: string | null | undefined): string =>
     String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -606,6 +614,28 @@ ${sectionHeading('7. Financial Summary')}
     ${financial.markupEarned > 0 ? `<div style="margin-top:10px;padding:10px 12px;background:${LIGHT};border:1px solid ${BORDER};border-radius:6px;font-size:11px;color:${MUTED}">Materials markup captured: <strong style="color:${GREEN}">${fmt(financial.markupEarned)}</strong></div>` : ''}
   </div>
 </div>
+
+${retention && retention.sumRetentionHeld > 0 ? `
+<!-- SECTION 8: RETENTION SCHEDULE -->
+${sectionHeading('8. Retention Schedule')}
+<div style="display:flex;gap:24px;align-items:flex-start;margin-bottom:12px">
+  <div style="flex:1">
+    <table style="border:1px solid ${BORDER};border-radius:6px;overflow:hidden">
+      ${summaryRow('Total Retention Held', fmt(retention.sumRetentionHeld), true)}
+      ${summaryRow('Outstanding (unreleased)', fmt(retention.outstandingRetention), false, retention.outstandingRetention > 0 ? AMBER : GREEN)}
+      ${retention.outstandingRetention === 0 && retention.sumRetentionHeld > 0 ? summaryRow('Released in Full', fmt(retention.sumRetentionHeld), false, GREEN) : ''}
+    </table>
+  </div>
+  <div style="flex:1">
+    <table style="border:1px solid ${BORDER};border-radius:6px;overflow:hidden">
+      ${summaryRow('Practical Completion', fmtDate(retention.practicalCompletionDate))}
+      ${summaryRow('DLP Period', retention.defectsLiabilityMonths + ' months')}
+      ${summaryRow('DLP End / Release Date', fmtDate(retention.releaseDate))}
+    </table>
+  </div>
+</div>
+<p style="font-size:10px;color:${MUTED};margin-top:4px">* Retention held is the total withheld across all approved and paid progress claims. Outstanding retention is the amount not yet returned via an approved retention release claim.</p>
+` : ''}
 
 <!-- FOOTER -->
 <div class="footer">

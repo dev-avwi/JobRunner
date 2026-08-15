@@ -7278,6 +7278,19 @@ import { computeRetentionSummary } from "./retentionSummary";
             .reduce((s: number, e: any) => s + e.hours, 0),
         },
         exportedAt: new Date().toISOString(),
+        // --- retention schedule (only included when retention exists) ---
+        retention: await (async () => {
+          try {
+            const allClaims = await storage.getClaims(jobId, effectiveUserId);
+            const rs = computeRetentionSummary(allClaims as any, {
+              practicalCompletionDate: (job as any).practicalCompletionDate || null,
+              defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
+            });
+            return rs.sumRetentionHeld > 0 ? rs : null;
+          } catch (_) {
+            return null;
+          }
+        })(),
       };
 
       const html = generateCostReportPDF(reportData);
