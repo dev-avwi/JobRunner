@@ -279,7 +279,7 @@ function JobCard({
       {job.isXeroImport && <XeroBadge size="sm" />}
       <View style={[styles.jobCardContent, { position: 'relative' }]}>
         {/* … button floats top-right so it never pushes badges onto a second line */}
-        <View style={{ position: 'absolute', top: 2, right: 2, zIndex: 1 }}>
+        <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, zIndex: 1 }}>
           <Button
             size="icon"
             variant="ghost"

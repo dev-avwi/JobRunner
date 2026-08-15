@@ -118,17 +118,18 @@ function buildDayStatusMap(requests: TimeOff[], colors: ThemeColors): Record<str
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Month Calendar Component
+// Month Calendar Component — two-tap range picker
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface LeaveCalendarProps {
   requests: TimeOff[];
-  selectedDay: string | null;
+  rangeStart: string;
+  rangeEnd: string;
   onDayPress: (day: string) => void;
   colors: ThemeColors;
 }
 
-function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalendarProps) {
+function LeaveCalendar({ requests, rangeStart, rangeEnd, onDayPress, colors }: LeaveCalendarProps) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0-indexed
@@ -161,6 +162,8 @@ function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalen
   // Pad to complete last row
   while (cells.length % 7 !== 0) cells.push(null);
 
+  const pickingEnd = rangeStart && !rangeEnd;
+
   return (
     <View style={[calStyles.card, { backgroundColor: colors.card, ...shadows.sm }]}>
       {/* Header */}
@@ -190,52 +193,108 @@ function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalen
           const ymd = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const dotColor = dayStatusMap[ymd];
           const isToday = ymd === todayYMD;
-          const isSelected = ymd === selectedDay;
+          const isStart = ymd === rangeStart;
+          const isEnd = ymd === rangeEnd;
+          const isEndpoint = isStart || isEnd;
+          const isInRange =
+            rangeStart && rangeEnd && ymd > rangeStart && ymd < rangeEnd;
+
+          // Background strip for in-range days
+          const rangeStripColor = colors.primary + '22';
 
           return (
             <TouchableOpacity
               key={ymd}
-              style={[
-                calStyles.cell,
-                isSelected && { backgroundColor: colors.primary },
-                isToday && !isSelected && { borderWidth: 1.5, borderColor: colors.primary, borderRadius: radius.full },
-              ]}
-              onPress={() => onDayPress(isSelected ? '' : ymd)}
+              onPress={() => onDayPress(ymd)}
               activeOpacity={0.7}
+              style={calStyles.cell}
             >
-              <Text
+              {/* Range band — full-width behind the circle */}
+              {(isInRange || isStart || isEnd) && (
+                <View
+                  style={[
+                    calStyles.rangeBand,
+                    {
+                      backgroundColor: isEndpoint ? colors.primary + '22' : rangeStripColor,
+                      // Square off the band on the start side for start cell, end side for end cell
+                      borderTopLeftRadius: isStart ? 99 : 0,
+                      borderBottomLeftRadius: isStart ? 99 : 0,
+                      borderTopRightRadius: isEnd ? 99 : 0,
+                      borderBottomRightRadius: isEnd ? 99 : 0,
+                    },
+                  ]}
+                />
+              )}
+
+              {/* Circle for today / selected endpoints */}
+              <View
                 style={[
-                  calStyles.dayNum,
-                  { color: isSelected ? '#fff' : isToday ? colors.primary : colors.foreground },
+                  calStyles.circle,
+                  isEndpoint && { backgroundColor: colors.primary },
+                  isToday && !isEndpoint && {
+                    borderWidth: 1.5,
+                    borderColor: colors.primary,
+                  },
                 ]}
               >
-                {day}
-              </Text>
-              {dotColor && !isSelected && (
-                <View style={[calStyles.dot, { backgroundColor: dotColor }]} />
-              )}
-              {dotColor && isSelected && (
-                <View style={[calStyles.dot, { backgroundColor: '#ffffff99' }]} />
-              )}
+                <Text
+                  style={[
+                    calStyles.dayNum,
+                    {
+                      color: isEndpoint
+                        ? '#fff'
+                        : isToday
+                        ? colors.primary
+                        : colors.foreground,
+                    },
+                  ]}
+                >
+                  {day}
+                </Text>
+                {dotColor && !isEndpoint && (
+                  <View style={[calStyles.dot, { backgroundColor: dotColor }]} />
+                )}
+                {dotColor && isEndpoint && (
+                  <View style={[calStyles.dot, { backgroundColor: '#ffffff99' }]} />
+                )}
+              </View>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* Legend */}
-      <View style={calStyles.legend}>
-        <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: colors.success }]} />
-          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Approved</Text>
-        </View>
-        <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: '#F59E0B' }]} />
-          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Pending</Text>
-        </View>
-        <View style={calStyles.legendItem}>
-          <View style={[calStyles.legendDot, { backgroundColor: colors.destructive }]} />
-          <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Declined</Text>
-        </View>
+      {/* Hint / status row */}
+      <View style={[calStyles.hintRow, { borderTopColor: colors.border }]}>
+        {pickingEnd ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 }}>
+            <View style={{ width: 7, height: 7, borderRadius: 99, backgroundColor: colors.primary }} />
+            <Text style={[calStyles.hintText, { color: colors.primary }]}>
+              Now tap your last day of leave
+            </Text>
+            <TouchableOpacity
+              onPress={() => onDayPress('')}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={{ marginLeft: 'auto' as any }}
+            >
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Clear</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, flex: 1 }}>
+            <View style={calStyles.legendItem}>
+              <View style={[calStyles.legendDot, { backgroundColor: colors.success }]} />
+              <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Approved</Text>
+            </View>
+            <View style={calStyles.legendItem}>
+              <View style={[calStyles.legendDot, { backgroundColor: '#F59E0B' }]} />
+              <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Pending</Text>
+            </View>
+            <View style={calStyles.legendItem}>
+              <View style={[calStyles.legendDot, { backgroundColor: colors.destructive }]} />
+              <Text style={[calStyles.legendText, { color: colors.mutedForeground }]}>Declined</Text>
+            </View>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -244,14 +303,14 @@ function LeaveCalendar({ requests, selectedDay, onDayPress, colors }: LeaveCalen
 const calStyles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
-    padding: spacing.md,
-    gap: 4,
+    padding: spacing.lg,
+    gap: spacing.xs,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   monthLabel: {
     fontSize: typography.sizes.md,
@@ -259,7 +318,7 @@ const calStyles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: 2,
+    marginBottom: spacing.xs,
   },
   dayLabel: {
     flex: 1,
@@ -273,10 +332,23 @@ const calStyles = StyleSheet.create({
   },
   cell: {
     width: `${100 / 7}%` as any,
-    aspectRatio: 1.1,
+    aspectRatio: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.full,
+  },
+  rangeBand: {
+    position: 'absolute',
+    top: '15%',
+    bottom: '15%',
+    left: 0,
+    right: 0,
+  },
+  circle: {
+    width: '72%',
+    aspectRatio: 1,
+    borderRadius: 99,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dayNum: {
     fontSize: 13,
@@ -285,15 +357,19 @@ const calStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    marginTop: 2,
+    marginTop: 1,
   },
-  legend: {
+  hintRow: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
+    alignItems: 'center',
     marginTop: spacing.xs,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
+    minHeight: 28,
+  },
+  hintText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
   },
   legendItem: {
     flexDirection: 'row',
@@ -329,7 +405,8 @@ export default function LeaveRequestScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [selectedDay, setSelectedDay] = useState<string>('');
+  const [rangeStart, setRangeStart] = useState<string>('');
+  const [rangeEnd, setRangeEnd] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'my' | 'team'>('my');
 
   // Form state
@@ -435,25 +512,49 @@ export default function LeaveRequestScreen() {
   }
 
   function handleDayPress(day: string) {
-    setSelectedDay(day);
-    if (!day) return;
-    // If there's an existing request on this day, scroll to it
-    const match = myRequests.find((r) => requestMatchesDay(r, day));
+    // Empty string = clear selection (tap "Clear" in hint row)
+    if (!day) {
+      setRangeStart('');
+      setRangeEnd('');
+      return;
+    }
+
+    // Phase 1: no start yet — set start
+    if (!rangeStart) {
+      setRangeStart(day);
+      setRangeEnd('');
+      return;
+    }
+
+    // Tapping the start again — cancel selection
+    if (day === rangeStart && !rangeEnd) {
+      setRangeStart('');
+      setRangeEnd('');
+      return;
+    }
+
+    // Phase 2: start is set, now pick end — swap if needed
+    const start = day < rangeStart ? day : rangeStart;
+    const end = day < rangeStart ? rangeStart : day;
+    setRangeStart(start);
+    setRangeEnd(end);
+
+    // If there's an existing approved/pending request in this range, scroll to it
+    const match = myRequests.find((r) => requestMatchesDay(r, start));
     if (match) {
       const offset = itemOffsets.current[match.id];
       if (offset !== undefined) {
         scrollRef.current?.scrollTo({ y: offset, animated: true });
       }
-    } else {
-      // No existing leave — pre-fill the form with this date and open it
-      setStartDate(day);
-      setEndDate(day);
-      setDateError('');
-      setShowForm(true);
-      setActiveTab('my');
-      // Scroll to top so the form is visible
-      scrollRef.current?.scrollTo({ y: 0, animated: true });
     }
+
+    // Pre-fill the form with the selected range and open it
+    setStartDate(start);
+    setEndDate(end);
+    setDateError('');
+    setShowForm(true);
+    setActiveTab('my');
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
   }
 
   const selectedLeaveType = LEAVE_TYPES.find((t) => t.value === leaveType) || LEAVE_TYPES[0];
@@ -465,7 +566,11 @@ export default function LeaveRequestScreen() {
           title: 'Leave',
           headerRight: () => (
             <TouchableOpacity
-              onPress={() => { setShowForm((v) => !v); setActiveTab('my'); }}
+              onPress={() => {
+                setShowForm((v) => !v);
+                setActiveTab('my');
+                if (showForm) { setRangeStart(''); setRangeEnd(''); }
+              }}
               style={{ marginRight: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 4 }}
             >
               <Feather name={showForm ? 'x' : 'plus'} size={18} color={colors.primary} />
@@ -607,7 +712,8 @@ export default function LeaveRequestScreen() {
           {/* Month Calendar */}
           <LeaveCalendar
             requests={activeTab === 'my' ? myRequests : teamRequests}
-            selectedDay={selectedDay}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
             onDayPress={handleDayPress}
             colors={colors}
           />
@@ -621,7 +727,7 @@ export default function LeaveRequestScreen() {
                   { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md },
                   activeTab === tab && { backgroundColor: colors.card, ...shadows.sm },
                 ]}
-                onPress={() => { setActiveTab(tab); setSelectedDay(''); }}
+                onPress={() => { setActiveTab(tab); setRangeStart(''); setRangeEnd(''); }}
                 activeOpacity={0.7}
               >
                 <Text style={{ fontSize: 13, fontWeight: activeTab === tab ? fontWeights.semibold : fontWeights.regular, color: activeTab === tab ? colors.foreground : colors.mutedForeground }}>
@@ -648,7 +754,7 @@ export default function LeaveRequestScreen() {
                   const leaveTypeInfo = LEAVE_TYPES.find((t) => t.value === req.reason);
                   const days = diffDays(req.startDate, req.endDate);
                   const sc = statusColor(req.status, colors);
-                  const isHighlighted = selectedDay ? requestMatchesDay(req, selectedDay) : false;
+                  const isHighlighted = rangeStart ? requestMatchesDay(req, rangeStart) : false;
                   return (
                     <View
                       key={req.id}

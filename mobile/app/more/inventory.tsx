@@ -914,7 +914,7 @@ export default function InventoryScreen() {
         scrollable={false}
         contentPadding={0}>
         <View style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+          <View style={[styles.modalHeader, {}]}>
             <TouchableOpacity onPress={() => setShowDetailModal(false)} activeOpacity={0.7}>
               <Feather name="x" size={24} color={colors.foreground} />
             </TouchableOpacity>
@@ -1081,7 +1081,7 @@ export default function InventoryScreen() {
         style={styles.modalContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+        <View style={[styles.modalHeader, {}]}>
           <TouchableOpacity onPress={() => setShowItemModal(false)} activeOpacity={0.7}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>
@@ -1233,7 +1233,7 @@ export default function InventoryScreen() {
         style={styles.modalContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+        <View style={[styles.modalHeader, {}]}>
           <TouchableOpacity onPress={() => setShowAdjustmentModal(false)} activeOpacity={0.7}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>
@@ -1341,7 +1341,7 @@ export default function InventoryScreen() {
         style={styles.modalContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={[styles.modalHeader, { paddingTop: insets.top + spacing.md }]}>
+        <View style={[styles.modalHeader, {}]}>
           <TouchableOpacity onPress={() => setShowPOModal(false)} activeOpacity={0.7}>
             <Feather name="x" size={24} color={colors.foreground} />
           </TouchableOpacity>

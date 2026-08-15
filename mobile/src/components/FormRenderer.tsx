@@ -752,7 +752,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
           No job card form set up yet
         </Text>
         <PressableRow style={styles.addFormButton} onPress={() => router.push('/more/form-builder?createJobCard=1' as any)}>
-          <Feather name="plus" size={18} color={colors.primaryForeground} />
+          <Feather name="plus" size={18} color={colors.foreground} />
           <Text style={styles.addFormButtonText}>Create Job Card</Text>
         </PressableRow>
       </View>
@@ -837,7 +837,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
         </View>
       ) : displayForms.length > 0 ? (
         <PressableRow style={styles.addFormButton} onPress={() => setShowFormSelector(true)} >
-          <Feather name="plus" size={18} color={colors.primaryForeground} />
+          <Feather name="plus" size={18} color={colors.foreground} />
           <Text style={styles.addFormButtonText}>{jobCardMode ? 'Fill Job Card' : 'Add Checklist'}</Text>
         </PressableRow>
       ) : (
@@ -1332,7 +1332,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.muted,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.sm,
@@ -1340,7 +1340,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   addFormButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primaryForeground,
+    color: colors.foreground,
   },
   emptyContainer: {
     padding: spacing.md,

@@ -550,12 +550,13 @@ export function SiteDiarySection({
             />
           </View>
 
-          {/* Weather */}
+          {/* Weather — inline picker (no nested Modal) */}
           <View style={s.field}>
             <Text style={[s.label, { color: colors.foreground }]}>Weather (optional)</Text>
             <TouchableOpacity
-              style={[s.textInput, { borderColor: colors.border, backgroundColor: colors.muted, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-              onPress={() => setShowWeatherPicker(true)}
+              style={[s.textInput, { borderColor: showWeatherPicker ? colors.primary : colors.border, backgroundColor: colors.muted, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => setShowWeatherPicker((v) => !v)}
+              activeOpacity={0.7}
             >
               {form.weather ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -565,8 +566,36 @@ export function SiteDiarySection({
               ) : (
                 <Text style={{ color: colors.mutedForeground }}>Select weather…</Text>
               )}
-              <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
+              <Feather
+                name={showWeatherPicker ? 'chevron-up' : 'chevron-down'}
+                size={14}
+                color={colors.mutedForeground}
+              />
             </TouchableOpacity>
+            {showWeatherPicker && (
+              <View style={{ marginTop: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+                {WEATHER_OPTIONS.map((opt, idx) => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, backgroundColor: form.weather === opt.value ? `${colors.primary}15` : colors.muted },
+                      idx < WEATHER_OPTIONS.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                    ]}
+                    onPress={() => {
+                      setForm((f) => ({ ...f, weather: opt.value }));
+                      setShowWeatherPicker(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name={opt.icon as any} size={16} color={form.weather === opt.value ? colors.primary : colors.foreground} />
+                    <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: form.weather === opt.value ? colors.primary : colors.foreground, fontWeight: form.weather === opt.value ? '600' : '400' }}>{opt.label}</Text>
+                    {form.weather === opt.value && (
+                      <Feather name="check" size={14} color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Workers */}
@@ -643,33 +672,6 @@ export function SiteDiarySection({
         </View>
       </AppBottomSheet>
 
-      {/* Weather picker sheet */}
-      <AppBottomSheet
-        visible={showWeatherPicker}
-        title="Select Weather"
-        showCloseButton
-        onDismiss={() => setShowWeatherPicker(false)}
-        autoHeight
-      >
-        <View style={{ gap: spacing.xs }}>
-          {WEATHER_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.value}
-              style={[s.weatherOption, { borderRadius: 10 }, form.weather === opt.value && { backgroundColor: `${colors.primary}15` }]}
-              onPress={() => {
-                setForm((f) => ({ ...f, weather: opt.value }));
-                setShowWeatherPicker(false);
-              }}
-            >
-              <Feather name={opt.icon as any} size={16} color={colors.foreground} />
-              <Text style={{ color: colors.foreground, fontSize: typography.sizes.sm }}>{opt.label}</Text>
-              {form.weather === opt.value && (
-                <Feather name="check" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-      </AppBottomSheet>
 
       {/* Full-screen photo viewer */}
       <Modal
