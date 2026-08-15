@@ -1551,6 +1551,17 @@ pool
     console.error('[Schema] Failed to add travel columns to payroll_payments:', err.message);
   });
 
+// RFI priority + due date fields (Task #549 job-detail polish).
+// Added idempotently at startup — safe to run against any existing DB.
+pool
+  .query(`
+    ALTER TABLE project_rfis ADD COLUMN IF NOT EXISTS priority text;
+    ALTER TABLE project_rfis ADD COLUMN IF NOT EXISTS due_date timestamptz;
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to add priority/due_date to project_rfis:', err.message);
+  });
+
 // Bulk safety & compliance document upload: uploaded SWMS PDFs and training
 // certificates attach to their existing records. Added idempotently with raw
 // SQL at startup (we do NOT use drizzle-kit push on this database).

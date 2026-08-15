@@ -3051,8 +3051,19 @@ export default function JobDetailScreen() {
       loadClaims();
       loadTeamMembers();
       loadJobAssignments();
+      // Initial availability fetch — uses today as fallback until job loads.
+      loadTeamAvailability();
     }
   }, [id]);
+
+  // Re-fetch availability once the job's scheduledAt is known so leave is
+  // checked against the actual scheduled date, not just today.
+  useEffect(() => {
+    if (job?.scheduledAt) {
+      loadTeamAvailability();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job?.scheduledAt]);
 
   const loadSwmsDocuments = useCallback(async () => {
     if (!id) return;
@@ -3790,7 +3801,12 @@ export default function JobDetailScreen() {
 
   const loadTeamAvailability = async () => {
     try {
-      const response = await api.get('/api/team/members/availability');
+      // Pass the job's scheduled date so the endpoint checks leave for that day,
+      // not just today. Falls back to today if scheduledAt is not set.
+      const scheduledDate = job?.scheduledAt
+        ? new Date(job.scheduledAt).toISOString().slice(0, 10)
+        : new Date().toISOString().slice(0, 10);
+      const response = await api.get(`/api/team/members/availability?date=${scheduledDate}`);
       const avail = new Map<string, any>();
       if (Array.isArray(response.data)) {
         response.data.forEach((item: any) => avail.set(item.memberId, item));
@@ -8110,6 +8126,80 @@ export default function JobDetailScreen() {
         </View>
       )}
 
+      {/* Team Availability — read-only, shows leave status per team member for the job's scheduled date */}
+      {(isOwnerOrManager || isSoloOwner) && jobAssignments.length > 0 && job.scheduledAt && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
+              <Feather name="calendar" size={iconSizes.lg} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardLabel}>Team Availability</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                {new Date(job.scheduledAt).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+              </Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {jobAssignments.map((assignment: any) => {
+              const member = teamMembers.find((m: any) =>
+                m.userId === assignment.userId || m.memberId === assignment.userId || m.id === assignment.userId
+              );
+              const displayName = assignment.workerDisplayNameSnapshot || member?.name || 'Worker';
+              const memberId = assignment.userId;
+              const avail = teamAvailability.get(memberId);
+              // green = available, amber = has leave but still assigned, red = approved leave
+              // onLeave=true already means the leave is approved (the API only sets it for approved records).
+              // Amber = has leave overlap but was still assigned; red = on approved leave.
+              const hasLeave = avail?.onLeave === true;
+              const isApprovedLeave = hasLeave; // API only sets onLeave for approved leave
+              const dotColor = !avail ? '#9CA3AF' : !hasLeave ? '#10B981' : '#EF4444';
+              const leaveStart = avail?.leaveStartDate
+                ? new Date(avail.leaveStartDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                : null;
+              const leaveEnd = avail?.leaveEndDate
+                ? new Date(avail.leaveEndDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                : null;
+              const tooltipText = hasLeave
+                ? `${avail?.leaveType ?? 'Leave'}${leaveStart ? `: ${leaveStart}${leaveEnd && leaveEnd !== leaveStart ? ` – ${leaveEnd}` : ''}` : ''}`
+                : 'Available';
+              return (
+                <TouchableOpacity
+                  key={assignment.id}
+                  onPress={() => hasLeave ? showToast({ type: 'info', message: tooltipText }) : undefined}
+                  activeOpacity={hasLeave ? 0.7 : 1}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 5 }}
+                >
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor }} />
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, fontWeight: fontWeights.medium }}>{displayName.split(' ')[0]}</Text>
+                  {hasLeave && <Feather name={isApprovedLeave ? 'alert-circle' : 'alert-triangle'} size={11} color={dotColor} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
+            {[
+              { color: '#10B981', label: 'Available' },
+              { color: '#F59E0B', label: 'Leave (check)' },
+              { color: '#EF4444', label: 'Approved leave' },
+            ].map(({ color, label }) => (
+              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color }} />
+                <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{label}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Description & Notes Card */}
       {(job.description || job.notes || jobNotes.length > 0) && (
         <View style={{
@@ -10697,6 +10787,9 @@ export default function JobDetailScreen() {
                     purchaseOrders={jobPurchaseOrders}
                     isLoadingPOs={isLoadingPOs}
                     onAddPO={(isOwnerOrManager || isSoloOwner) ? handleOpenAddPOModal : undefined}
+                    jobId={id as string}
+                    onRefresh={loadPurchaseOrders}
+                    isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                   />
                 </View>
                 <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
@@ -10708,6 +10801,8 @@ export default function JobDetailScreen() {
                     isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                     onRefresh={loadClaims}
                     onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
+                    contractValue={quote?.total ?? undefined}
+                    onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job!.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
                   />
                 </View>
                 <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
@@ -10718,6 +10813,7 @@ export default function JobDetailScreen() {
                     jobId={id as string}
                     isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                     onRefresh={loadVariations}
+                    contractValue={quote?.total ?? undefined}
                   />
                 </View>
               </>

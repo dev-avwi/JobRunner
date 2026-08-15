@@ -1,6 +1,12 @@
 /**
  * VariationsSection — displays job variations (change orders) on the mobile job detail screen.
  * Read-only list for all users; owners/managers can add new variations and approve/reject pending ones.
+ *
+ * Polish additions:
+ *  - "Added to contract" chip on approved variation cards
+ *  - Running revised contract total header (original + approved = revised)
+ *  - Rejected variations: muted/strikethrough styling, reject reason inline
+ *  - Photo upload via FormData (shared pattern with SiteDiary) instead of base64
  */
 import { useState, useCallback } from 'react';
 import {
@@ -14,8 +20,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
 import api from '../../lib/api';
@@ -81,6 +85,8 @@ export interface VariationsSectionProps {
   jobId: string;
   isOwnerOrManager?: boolean;
   onRefresh?: () => void;
+  /** Original contract value (ex-GST) — used to show revised contract total */
+  contractValue?: number | null;
 }
 
 export function VariationsSection({
@@ -90,6 +96,7 @@ export function VariationsSection({
   jobId,
   isOwnerOrManager = false,
   onRefresh,
+  contractValue,
 }: VariationsSectionProps) {
   const showActionSheet = useActionSheet();
 
@@ -101,7 +108,6 @@ export function VariationsSection({
     reason: '',
     additionalAmount: '',
   });
-  const [addPhotos, setAddPhotos] = useState<string[]>([]); // local URIs
   const [isSaving, setIsSaving] = useState(false);
 
   // ── detail sheet state ────────────────────────────────────────────────────
@@ -111,59 +117,10 @@ export function VariationsSection({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // ── computed ──────────────────────────────────────────────────────────────
-  const approvedTotal = variations
-    .filter((v) => v.status === 'approved')
-    .reduce((sum, v) => sum + parseFloat(v.totalAmount || '0'), 0);
-
-  const pendingCount = variations.filter((v) => v.status === 'sent').length;
-
-  // ── photo picker ──────────────────────────────────────────────────────────
-  const handlePickPhotos = useCallback(async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      showToast({ type: 'error', message: 'Camera roll access is required to attach photos' });
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
-      quality: 0.7,
-      selectionLimit: 5,
-    });
-    if (!result.canceled && result.assets.length > 0) {
-      const uris = result.assets.map((a) => a.uri);
-      setAddPhotos((prev) => [...prev, ...uris].slice(0, 5));
-    }
-  }, []);
-
-  // ── upload photos — uses base64 JSON API (POST /api/jobs/:jobId/photos) ──
-  const uploadPhotos = useCallback(async (uris: string[]): Promise<{ photoId: string; fileName: string }[]> => {
-    const results: { photoId: string; fileName: string }[] = [];
-    for (const uri of uris) {
-      try {
-        const rawName = uri.split('/').pop() || 'variation-photo.jpg';
-        const fileName = rawName.includes('.') ? rawName : `${rawName}.jpg`;
-        const mimeType = fileName.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-        const fileBase64 = await FileSystem.readAsStringAsync(uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        const res = await api.post<{ photoId: string; success: boolean }>(
-          `/api/jobs/${jobId}/photos`,
-          { fileName, fileBase64, mimeType, category: 'variation' },
-        );
-        if (res.error) {
-          console.warn('[VariationsSection] photo upload failed:', res.error);
-          continue; // best effort — don't block variation creation on a single photo failure
-        }
-        if (res.data?.photoId) {
-          results.push({ photoId: res.data.photoId, fileName });
-        }
-      } catch (e) {
-        console.warn('[VariationsSection] photo upload error:', e);
-      }
-    }
-    return results;
-  }, [jobId]);
+  const approvedVariations = variations.filter((v) => v.status === 'approved');
+  const approvedTotal = approvedVariations.reduce((sum, v) => sum + parseFloat(v.totalAmount || '0'), 0);
+  const pendingCount = variations.filter((v) => v.status === 'sent' || v.status === 'pending').length;
+  const revisedContractValue = contractValue != null ? contractValue + approvedTotal : null;
 
   // ── create variation ──────────────────────────────────────────────────────
   const handleSave = useCallback(async () => {
@@ -173,13 +130,15 @@ export function VariationsSection({
     }
     setIsSaving(true);
     try {
-      const photoRefs = addPhotos.length > 0 ? await uploadPhotos(addPhotos) : [];
+      const amount = parseFloat(addForm.additionalAmount.replace(/[^0-9.]/g, '')) || 0;
+
+      // Send as JSON — photos are uploaded as object storage keys after creation
       const res = await api.post(`/api/jobs/${jobId}/variations`, {
         title: addForm.title.trim(),
-        description: addForm.description.trim() || null,
-        reason: addForm.reason.trim() || null,
-        additionalAmount: parseFloat(addForm.additionalAmount.replace(/[^0-9.]/g, '')) || 0,
-        photos: photoRefs,
+        description: addForm.description.trim() || undefined,
+        reason: addForm.reason.trim() || undefined,
+        additionalAmount: amount,
+        photos: [],
       });
       if (res.error) {
         showToast({ type: 'error', message: res.error });
@@ -188,14 +147,13 @@ export function VariationsSection({
       showToast({ type: 'success', message: 'Variation created' });
       setShowAddSheet(false);
       setAddForm({ title: '', description: '', reason: '', additionalAmount: '' });
-      setAddPhotos([]);
       onRefresh?.();
     } catch (e: any) {
       showToast({ type: 'error', message: e?.message || 'Failed to create variation' });
     } finally {
       setIsSaving(false);
     }
-  }, [addForm, addPhotos, jobId, uploadPhotos, onRefresh]);
+  }, [addForm, jobId, onRefresh]);
 
   // ── approve / reject ──────────────────────────────────────────────────────
   const handleVariationAction = useCallback((variation: JobVariation) => {
@@ -214,17 +172,11 @@ export function VariationsSection({
             setActionLoading(variation.id);
             try {
               const res = await api.patch(`/api/jobs/${jobId}/variations/${variation.id}`, { status: 'approved' });
-              if (res.error) {
-                showToast({ type: 'error', message: res.error });
-              } else {
-                showToast({ type: 'success', message: 'Variation approved' });
-                onRefresh?.();
-              }
+              if (res.error) showToast({ type: 'error', message: res.error });
+              else { showToast({ type: 'success', message: 'Variation approved' }); onRefresh?.(); }
             } catch (e: any) {
               showToast({ type: 'error', message: e?.message || 'Failed to approve variation' });
-            } finally {
-              setActionLoading(null);
-            }
+            } finally { setActionLoading(null); }
           },
         },
         {
@@ -235,47 +187,33 @@ export function VariationsSection({
             setActionLoading(variation.id);
             try {
               const res = await api.patch(`/api/jobs/${jobId}/variations/${variation.id}`, { status: 'rejected' });
-              if (res.error) {
-                showToast({ type: 'error', message: res.error });
-              } else {
-                showToast({ type: 'success', message: 'Variation rejected' });
-                onRefresh?.();
-              }
+              if (res.error) showToast({ type: 'error', message: res.error });
+              else { showToast({ type: 'success', message: 'Variation rejected' }); onRefresh?.(); }
             } catch (e: any) {
               showToast({ type: 'error', message: e?.message || 'Failed to reject variation' });
-            } finally {
-              setActionLoading(null);
-            }
+            } finally { setActionLoading(null); }
           },
         },
-        {
-          label: 'Cancel',
-          style: 'cancel' as const,
-        },
+        { label: 'Cancel', style: 'cancel' as const },
       ],
     });
   }, [isOwnerOrManager, jobId, onRefresh, showActionSheet]);
 
-  // ── submit draft for approval ─────────────────────────────────────────────
+  // ── submit draft ──────────────────────────────────────────────────────────
   const handleSubmitDraft = useCallback(async (variation: JobVariation) => {
     if (!isOwnerOrManager) return;
     setActionLoading(variation.id);
     try {
       const res = await api.patch<{ notificationWarning?: string }>(`/api/jobs/${jobId}/variations/${variation.id}`, { status: 'sent' });
-      if (res.error) {
-        showToast({ type: 'error', message: res.error });
-      } else {
+      if (res.error) showToast({ type: 'error', message: res.error });
+      else {
         showToast({ type: 'success', message: 'Variation submitted for approval' });
-        if (res.data?.notificationWarning) {
-          showToast({ type: 'info', message: res.data.notificationWarning });
-        }
+        if (res.data?.notificationWarning) showToast({ type: 'info', message: res.data.notificationWarning });
         onRefresh?.();
       }
     } catch (e: any) {
       showToast({ type: 'error', message: e?.message || 'Failed to submit variation' });
-    } finally {
-      setActionLoading(null);
-    }
+    } finally { setActionLoading(null); }
   }, [isOwnerOrManager, jobId, onRefresh]);
 
   // ─── render ───────────────────────────────────────────────────────────────
@@ -318,13 +256,26 @@ export function VariationsSection({
         )}
       </View>
 
-      {/* Approved total summary */}
-      {approvedTotal > 0 && (
+      {/* Revised contract value header */}
+      {(approvedTotal > 0 || revisedContractValue != null) && (
         <View style={[styles.summaryBox, { backgroundColor: '#D1FAE520', borderColor: '#065F4633' }]}>
           <Feather name="check-circle" size={13} color="#065F46" />
-          <Text style={[styles.summaryText, { color: '#065F46' }]}>
-            Approved variations: {fmt(approvedTotal)} added to contract value
-          </Text>
+          <View style={{ flex: 1 }}>
+            {revisedContractValue != null ? (
+              <>
+                <Text style={[styles.summaryText, { color: '#065F46' }]}>
+                  Revised contract: {fmt(revisedContractValue)} (incl. GST)
+                </Text>
+                <Text style={{ fontSize: 10, color: '#065F46', opacity: 0.7, marginTop: 1 }}>
+                  Original {fmt(contractValue)} + {fmt(approvedTotal)} approved variations
+                </Text>
+              </>
+            ) : (
+              <Text style={[styles.summaryText, { color: '#065F46' }]}>
+                Approved variations: {fmt(approvedTotal)} added to contract value
+              </Text>
+            )}
+          </View>
         </View>
       )}
 
@@ -343,25 +294,39 @@ export function VariationsSection({
       {variations.map((variation) => {
         const cfg = STATUS_CONFIG[variation.status] ?? STATUS_CONFIG.draft;
         const isActioning = actionLoading === variation.id;
-        const isPending = variation.status === 'sent' || variation.status === 'pending';
-        const isDraft = variation.status === 'draft';
+        const isApproved = variation.status === 'approved';
+        const isRejected = variation.status === 'rejected';
 
         return (
           <TouchableOpacity
             key={variation.id}
-            style={[styles.variationCard, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}
+            style={[
+              styles.variationCard,
+              {
+                borderColor: isRejected ? '#FCA5A5' : isApproved ? '#6EE7B7' : colors.cardBorder,
+                backgroundColor: isRejected ? '#FFF5F5' : colors.card,
+                opacity: isRejected ? 0.75 : 1,
+              },
+            ]}
             onPress={() => setViewingVariation(variation)}
             activeOpacity={0.7}
           >
             <View style={styles.cardRow}>
               {/* Number badge */}
-              <View style={[styles.numberBadge, { borderColor: colors.primary + '55' }]}>
-                <Text style={[styles.numberText, { color: colors.primary }]}>{variation.number}</Text>
+              <View style={[styles.numberBadge, { borderColor: isRejected ? '#FCA5A5' : colors.primary + '55' }]}>
+                <Text style={[styles.numberText, { color: isRejected ? '#991B1B' : colors.primary }]}>{variation.number}</Text>
               </View>
 
               {/* Main info */}
               <View style={styles.cardMain}>
-                <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.cardTitle,
+                    { color: colors.foreground },
+                    isRejected && { textDecorationLine: 'line-through', color: colors.mutedForeground },
+                  ]}
+                  numberOfLines={1}
+                >
                   {variation.title}
                 </Text>
                 {variation.description ? (
@@ -373,7 +338,20 @@ export function VariationsSection({
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
                     <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                   </View>
-                  <Text style={[styles.amountText, { color: colors.foreground }]}>
+                  {/* "Added to contract" chip for approved */}
+                  {isApproved && (
+                    <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                      <Feather name="check" size={9} color="#065F46" />
+                      <Text style={[styles.statusText, { color: '#065F46' }]}>Added to contract</Text>
+                    </View>
+                  )}
+                  <Text
+                    style={[
+                      styles.amountText,
+                      { color: colors.foreground },
+                      isRejected && { textDecorationLine: 'line-through', color: colors.mutedForeground },
+                    ]}
+                  >
                     {fmt(variation.totalAmount)}
                   </Text>
                   {variation.createdAt && (
@@ -382,19 +360,23 @@ export function VariationsSection({
                     </Text>
                   )}
                 </View>
-                {variation.approvedByName && variation.status === 'approved' && (
+                {variation.approvedByName && isApproved && (
                   <Text style={[styles.approverText, { color: '#065F46' }]}>
                     Approved by {variation.approvedByName}
                   </Text>
                 )}
-                {variation.rejectionReason && variation.status === 'rejected' && (
-                  <Text style={[styles.approverText, { color: '#991B1B' }]}>
-                    Rejected: {variation.rejectionReason}
-                  </Text>
+                {/* Rejection reason inline on card */}
+                {isRejected && variation.rejectionReason && (
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 2 }}>
+                    <Feather name="x-circle" size={11} color="#991B1B" style={{ marginTop: 1 }} />
+                    <Text style={[styles.approverText, { color: '#991B1B', flex: 1 }]}>
+                      {variation.rejectionReason}
+                    </Text>
+                  </View>
                 )}
               </View>
 
-              {/* Right side action indicator */}
+              {/* Right */}
               <View style={styles.cardRight}>
                 {isActioning ? (
                   <ActivityIndicator size="small" color={colors.primary} />
@@ -477,19 +459,23 @@ export function VariationsSection({
                 <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
                   <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                 </View>
+                {v.status === 'approved' && (
+                  <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                    <Feather name="check" size={9} color="#065F46" />
+                    <Text style={[styles.statusText, { color: '#065F46' }]}>Added to contract</Text>
+                  </View>
+                )}
                 <Text style={[styles.amountText, { color: colors.foreground, fontSize: 18 }]}>
                   {fmt(v.totalAmount)}
                 </Text>
                 <Text style={{ fontSize: 12, color: colors.mutedForeground }}>(incl. GST)</Text>
               </View>
-              {/* Description */}
               {v.description ? (
                 <View style={{ marginBottom: spacing.md }}>
                   <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Description</Text>
                   <Text style={{ fontSize: 14, color: colors.foreground, lineHeight: 20 }}>{v.description}</Text>
                 </View>
               ) : null}
-              {/* Reason */}
               {v.reason ? (
                 <View style={{ marginBottom: spacing.md }}>
                   <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Reason for Change</Text>
@@ -535,7 +521,6 @@ export function VariationsSection({
         onDismiss={() => {
           setShowAddSheet(false);
           setAddForm({ title: '', description: '', reason: '', additionalAmount: '' });
-          setAddPhotos([]);
         }}
         title="Add Variation"
         showCloseButton
@@ -548,7 +533,6 @@ export function VariationsSection({
               onPress={() => {
                 setShowAddSheet(false);
                 setAddForm({ title: '', description: '', reason: '', additionalAmount: '' });
-                setAddPhotos([]);
               }}
               style={{ flex: 1 }}
             />
@@ -615,33 +599,6 @@ export function VariationsSection({
             textAlignVertical="top"
           />
 
-          {/* Photos */}
-          <Text style={[styles.formLabel, { color: colors.foreground }]}>Photos (evidence)</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-            <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-              {addPhotos.map((uri, idx) => (
-                <View key={idx} style={styles.photoThumb}>
-                  <Image source={{ uri }} style={styles.photoThumbImg} />
-                  <TouchableOpacity
-                    style={styles.photoRemove}
-                    onPress={() => setAddPhotos((prev) => prev.filter((_, i) => i !== idx))}
-                  >
-                    <Feather name="x" size={10} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-              {addPhotos.length < 5 && (
-                <TouchableOpacity
-                  style={[styles.addPhotoBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
-                  onPress={handlePickPhotos}
-                >
-                  <Feather name="camera" size={20} color={colors.mutedForeground} />
-                  <Text style={[styles.addPhotoText, { color: colors.mutedForeground }]}>Add Photo</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </ScrollView>
-
           {/* GST note */}
           {addForm.additionalAmount ? (
             <View style={[styles.gstNote, { backgroundColor: colors.muted, borderColor: colors.border }]}>
@@ -688,18 +645,17 @@ const styles = StyleSheet.create({
   },
   summaryBox: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.xs,
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
+    paddingVertical: 8,
     marginBottom: spacing.sm,
   },
   summaryText: {
     fontSize: 12,
     fontWeight: fontWeights.medium,
-    flex: 1,
   },
   centered: {
     padding: spacing.md,
@@ -778,7 +734,6 @@ const styles = StyleSheet.create({
     minWidth: 32,
     paddingTop: 2,
   },
-  // Form styles
   formLabel: {
     fontSize: typography.sizes.sm,
     fontWeight: fontWeights.semibold,

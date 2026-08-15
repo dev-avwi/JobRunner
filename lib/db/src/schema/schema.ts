@@ -5677,6 +5677,8 @@ export const projectRfis = pgTable("project_rfis", {
   assignedTo: varchar("assigned_to"), // user id or free-text contact name
   assignedToName: text("assigned_to_name"),
   status: text("status").notNull().default('open'), // ProjectRfiStatus
+  priority: text("priority"), // 'low' | 'medium' | 'high' | 'urgent'
+  dueDate: timestamp("due_date"),
   answeredAt: timestamp("answered_at"),
   answerText: text("answer_text"),
   answerFileUrl: text("answer_file_url"),

@@ -584,15 +584,22 @@ export function registerInventoryRoutes(app: Express): void {
       const pos = await storage.getPurchaseOrdersByJobId(req.params.jobId, userContext.effectiveUserId);
       // Batch-load supplier names in one pass
       const supplierIds = [...new Set((pos as any[]).map((p: any) => p.supplierId).filter(Boolean))];
-      const supplierMap: Record<string, string> = {};
+      const supplierMap: Record<string, { name: string; phone?: string | null; email?: string | null }> = {};
       await Promise.all(supplierIds.map(async (sid: any) => {
         const s = await storage.getSupplier(sid, userContext.effectiveUserId);
-        if (s) supplierMap[sid] = s.name;
+        if (s) supplierMap[sid] = { name: (s as any).name, phone: (s as any).phone ?? null, email: (s as any).email ?? null };
       }));
-      // Include items and resolved supplier name for each PO
+      // Include items and resolved supplier info for each PO
       const posWithItems = await Promise.all((pos as any[]).map(async (po: any) => {
         const items = await storage.getPurchaseOrderItems(po.id);
-        return { ...po, items, supplierName: po.supplierId ? (supplierMap[po.supplierId] ?? null) : null };
+        const sup = po.supplierId ? (supplierMap[po.supplierId] ?? null) : null;
+        return {
+          ...po,
+          items,
+          supplierName: sup?.name ?? null,
+          supplierPhone: sup?.phone ?? null,
+          supplierEmail: sup?.email ?? null,
+        };
       }));
       res.json(posWithItems);
     } catch (error) {

@@ -50,7 +50,11 @@ interface RevisionRecord {
   notes: string | null;
   uploadedAt: string;
   fileUrl: string | null;
+  uploadedByName?: string | null;
+  uploadedByUserId?: string | null;
 }
+
+type RfiPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 interface ProjectRfi {
   id: string;
@@ -64,6 +68,8 @@ interface ProjectRfi {
   answerText: string | null;
   answerFileUrl: string | null;
   createdAt: string;
+  dueDate?: string | null;
+  priority?: RfiPriority | null;
 }
 
 interface DocumentRegisterSectionProps {
@@ -85,6 +91,32 @@ function formatFileSize(bytes: number | null): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Map a filename extension to a Feather icon name for quick recognition. */
+function getFileTypeIcon(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  if (['pdf'].includes(ext)) return 'file-text';
+  if (['doc', 'docx'].includes(ext)) return 'file-text';
+  if (['xls', 'xlsx', 'csv'].includes(ext)) return 'grid';
+  if (['ppt', 'pptx'].includes(ext)) return 'monitor';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic'].includes(ext)) return 'image';
+  if (['dwg', 'dxf'].includes(ext)) return 'pen-tool';
+  if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return 'archive';
+  if (['mp4', 'mov', 'avi', 'mkv'].includes(ext)) return 'film';
+  return 'file';
+}
+
+const RFI_PRIORITY_CONFIG: Record<RfiPriority, { label: string; bg: string; text: string }> = {
+  low:    { label: 'Low',    bg: '#F3F4F6', text: '#374151' },
+  medium: { label: 'Medium', bg: '#DBEAFE', text: '#1E40AF' },
+  high:   { label: 'High',   bg: '#FEF3C7', text: '#92400E' },
+  urgent: { label: 'Urgent', bg: '#FEE2E2', text: '#991B1B' },
+};
+
+function isOverdue(rfi: ProjectRfi): boolean {
+  if (!rfi.dueDate || rfi.status !== 'open') return false;
+  return new Date(rfi.dueDate) < new Date();
 }
 
 function getCategoryColor(category: string): string {
@@ -406,6 +438,8 @@ export function DocumentRegisterSection({
   const [rfiQuestion, setRfiQuestion] = useState('');
   const [rfiDescription, setRfiDescription] = useState('');
   const [rfiAssignedToName, setRfiAssignedToName] = useState('');
+  const [rfiDueDate, setRfiDueDate] = useState('');
+  const [rfiPriority, setRfiPriority] = useState<RfiPriority>('medium');
 
   // RFI answer modal
   const [showAnswerModal, setShowAnswerModal] = useState(false);
@@ -413,6 +447,8 @@ export function DocumentRegisterSection({
   const [answeringRfiNumber, setAnsweringRfiNumber] = useState('');
   const [answerStatus, setAnswerStatus] = useState<RfiStatus>('answered');
   const [answerText, setAnswerText] = useState('');
+  const [editPriority, setEditPriority] = useState<RfiPriority>('medium');
+  const [editDueDate, setEditDueDate] = useState('');
 
   const loadDocuments = useCallback(async () => {
     setIsLoadingDocs(true);
@@ -573,11 +609,14 @@ export function DocumentRegisterSection({
     }
     setIsCreatingRfi(true);
     try {
-      const res = await api.post<ProjectRfi>(`/api/jobs/${jobId}/rfis`, {
+      const body: Record<string, string | undefined> = {
         question: rfiQuestion.trim(),
         description: rfiDescription.trim() || undefined,
         assignedToName: rfiAssignedToName.trim() || undefined,
-      });
+        priority: rfiPriority,
+      };
+      if (rfiDueDate.trim()) body.dueDate = new Date(rfiDueDate.trim()).toISOString();
+      const res = await api.post<ProjectRfi>(`/api/jobs/${jobId}/rfis`, body);
       if (res.error) {
         showToast({ type: 'error', message: res.error });
         return;
@@ -587,6 +626,8 @@ export function DocumentRegisterSection({
       setRfiQuestion('');
       setRfiDescription('');
       setRfiAssignedToName('');
+      setRfiDueDate('');
+      setRfiPriority('medium');
       loadRfis();
     } finally {
       setIsCreatingRfi(false);
@@ -596,10 +637,13 @@ export function DocumentRegisterSection({
   const handleAnswerRfi = async () => {
     if (!answeringRfiId) return;
     try {
-      const res = await api.patch<ProjectRfi>(`/api/jobs/${jobId}/rfis/${answeringRfiId}`, {
+      const body: Record<string, any> = {
         status: answerStatus,
         answerText: answerText.trim() || undefined,
-      });
+        priority: editPriority,
+        dueDate: editDueDate.trim() ? new Date(editDueDate.trim()).toISOString() : null,
+      };
+      const res = await api.patch<ProjectRfi>(`/api/jobs/${jobId}/rfis/${answeringRfiId}`, body);
       if (res.error) {
         showToast({ type: 'error', message: res.error });
         return;
@@ -609,6 +653,8 @@ export function DocumentRegisterSection({
       setAnsweringRfiId(null);
       setAnswerText('');
       setAnswerStatus('answered');
+      setEditPriority('medium');
+      setEditDueDate('');
       loadRfis();
     } catch {
       showToast({ type: 'error', message: 'Update failed' });
@@ -621,6 +667,9 @@ export function DocumentRegisterSection({
     const safeStatus: RfiStatus = (rfi.status === 'open' || rfi.status === 'answered' || rfi.status === 'closed') ? rfi.status : 'open';
     setAnswerStatus(safeStatus === 'open' ? 'answered' : safeStatus);
     setAnswerText(rfi.answerText ?? '');
+    // Pre-populate priority and due date from the RFI record
+    setEditPriority((rfi.priority as RfiPriority | null | undefined) ?? 'medium');
+    setEditDueDate(rfi.dueDate ? new Date(rfi.dueDate).toISOString().slice(0, 10) : '');
     setShowAnswerModal(true);
   };
 
@@ -677,6 +726,12 @@ export function DocumentRegisterSection({
                   >
                     <View style={s.docInfo}>
                       <View style={s.docTitleRow}>
+                        <Feather
+                          name={doc.latestRevision ? getFileTypeIcon(doc.latestRevision.fileName) as any : 'file'}
+                          size={14}
+                          color={getCategoryColor(doc.category)}
+                          style={{ flexShrink: 0 }}
+                        />
                         <Text style={[s.docNumber, { color: colors.mutedForeground }]}>{doc.docNumber}</Text>
                         <Text style={[s.docTitle, { color: colors.foreground }]} numberOfLines={1}>
                           {doc.title}
@@ -730,49 +785,73 @@ export function DocumentRegisterSection({
                           style={{ marginTop: spacing.sm }}
                         />
                       ) : (docRevisions[doc.id] ?? []).length === 0 ? (
-                        <Text style={[s.emptyText, { color: colors.mutedForeground, fontSize: typography.captionSmall.fontSize }]}>
-                          No revisions yet
-                        </Text>
-                      ) : (
-                        (docRevisions[doc.id] ?? []).map((rev, i) => (
-                          <View key={rev.id} style={s.revItem}>
-                            <View
-                              style={[
-                                s.revLabelBadge,
-                                { backgroundColor: i === 0 ? `${colors.primary}20` : colors.card },
-                              ]}
-                            >
-                              <Text
-                                style={[
-                                  s.revLabelText,
-                                  { color: i === 0 ? colors.primary : colors.mutedForeground },
-                                ]}
-                              >
-                                Rev {rev.revision}
+                        <TouchableOpacity
+                          onPress={canUpload ? () => {
+                            setRevisionDocId(doc.id);
+                            setRevisionDocTitle(doc.title);
+                            setShowRevisionModal(true);
+                          } : undefined}
+                          activeOpacity={canUpload ? 0.7 : 1}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs }}
+                        >
+                          <Text style={[s.emptyText, { color: colors.mutedForeground, fontSize: typography.captionSmall.fontSize }]}>
+                            No revisions yet
+                          </Text>
+                          {canUpload && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: spacing.xs }}>
+                              <Feather name="upload" size={11} color={colors.primary} />
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>
+                                Upload first revision
                               </Text>
                             </View>
-                            <Text
-                              style={[s.revFileName, { color: colors.foreground }]}
-                              numberOfLines={1}
-                            >
-                              {rev.fileName}
-                            </Text>
-                            {rev.fileSize ? (
-                              <Text style={[s.revMeta, { color: colors.mutedForeground }]}>
-                                {formatFileSize(rev.fileSize)}
-                              </Text>
-                            ) : null}
-                            <Text style={[s.revMeta, { color: colors.mutedForeground }]}>
-                              {new Date(rev.uploadedAt).toLocaleDateString()}
-                            </Text>
-                            {rev.fileUrl ? (
-                              <TouchableOpacity
-                                onPress={() => Linking.openURL(rev.fileUrl!)}
-                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          )}
+                        </TouchableOpacity>
+                      ) : (
+                        (docRevisions[doc.id] ?? []).map((rev, i) => (
+                          <View key={rev.id} style={[s.revItem, { alignItems: 'flex-start', flexDirection: 'column', gap: 2 }]}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, width: '100%' }}>
+                              <Feather name={getFileTypeIcon(rev.fileName) as any} size={12} color={i === 0 ? colors.primary : colors.mutedForeground} />
+                              <View
+                                style={[
+                                  s.revLabelBadge,
+                                  { backgroundColor: i === 0 ? `${colors.primary}20` : colors.card },
+                                ]}
                               >
-                                <Feather name="external-link" size={14} color={colors.primary} />
-                              </TouchableOpacity>
-                            ) : null}
+                                <Text
+                                  style={[
+                                    s.revLabelText,
+                                    { color: i === 0 ? colors.primary : colors.mutedForeground },
+                                  ]}
+                                >
+                                  Rev {rev.revision}
+                                </Text>
+                              </View>
+                              <Text
+                                style={[s.revFileName, { color: colors.foreground }]}
+                                numberOfLines={1}
+                              >
+                                {rev.fileName}
+                              </Text>
+                              {rev.fileSize ? (
+                                <Text style={[s.revMeta, { color: colors.mutedForeground }]}>
+                                  {formatFileSize(rev.fileSize)}
+                                </Text>
+                              ) : null}
+                              {rev.fileUrl ? (
+                                <TouchableOpacity
+                                  onPress={() => Linking.openURL(rev.fileUrl!)}
+                                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                  style={{ marginLeft: 'auto' }}
+                                >
+                                  <Feather name="external-link" size={14} color={colors.primary} />
+                                </TouchableOpacity>
+                              ) : null}
+                            </View>
+                            <Text style={[s.revMeta, { color: colors.mutedForeground, paddingLeft: 20 }]}>
+                              {rev.uploadedByName ? `${rev.uploadedByName} · ` : ''}
+                              {new Date(rev.uploadedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {i === 0 ? ' (current)' : ''}
+                            </Text>
                           </View>
                         ))
                       )}
@@ -820,8 +899,11 @@ export function DocumentRegisterSection({
           <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
         ) : rfis.length === 0 ? (
           <View style={s.empty}>
-            <Feather name="help-circle" size={28} color={colors.mutedForeground} />
+            <Feather name="help-circle" size={28} color={colors.mutedForeground} style={{ opacity: 0.4 }} />
             <Text style={[s.emptyText, { color: colors.mutedForeground }]}>No RFIs raised yet</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center', paddingHorizontal: spacing.xl, opacity: 0.7 }}>
+              An RFI (Request for Information) is a formal question raised to the client or designer when something is unclear or missing from the drawings.
+            </Text>
           </View>
         ) : (
           <View style={s.list}>
@@ -846,11 +928,23 @@ export function DocumentRegisterSection({
                         </Text>
                       </View>
                       <View style={s.docMeta}>
-                        <View style={[s.catBadge, { backgroundColor: `${statusColor}20` }]}>
-                          <Text style={[s.catText, { color: statusColor }]}>
-                            {rfiStatus.charAt(0).toUpperCase() + rfiStatus.slice(1)}
+                        <View style={[s.catBadge, { backgroundColor: isOverdue(rfi) ? '#FEE2E2' : `${statusColor}20` }]}>
+                          <Text style={[s.catText, { color: isOverdue(rfi) ? '#991B1B' : statusColor }]}>
+                            {isOverdue(rfi) ? 'Overdue' : rfiStatus.charAt(0).toUpperCase() + rfiStatus.slice(1)}
                           </Text>
                         </View>
+                        {rfi.priority && RFI_PRIORITY_CONFIG[rfi.priority] && (
+                          <View style={[s.catBadge, { backgroundColor: RFI_PRIORITY_CONFIG[rfi.priority].bg }]}>
+                            <Text style={[s.catText, { color: RFI_PRIORITY_CONFIG[rfi.priority].text }]}>
+                              {RFI_PRIORITY_CONFIG[rfi.priority].label}
+                            </Text>
+                          </View>
+                        )}
+                        {rfi.dueDate && rfi.status === 'open' && (
+                          <Text style={[s.revCountText, { color: isOverdue(rfi) ? '#991B1B' : colors.mutedForeground }]}>
+                            Due {new Date(rfi.dueDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                          </Text>
+                        )}
                         {rfi.assignedToName ? (
                           <Text style={[s.revCountText, { color: colors.mutedForeground }]}>
                             → {rfi.assignedToName}
@@ -1253,6 +1347,40 @@ export function DocumentRegisterSection({
                 onChangeText={setRfiAssignedToName}
               />
             </View>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
+                    const cfg = RFI_PRIORITY_CONFIG[p];
+                    const isSelected = rfiPriority === p;
+                    return (
+                      <TouchableOpacity
+                        key={p}
+                        style={[s.chip, { borderColor: isSelected ? cfg.text : colors.border, backgroundColor: isSelected ? cfg.bg : undefined }]}
+                        onPress={() => setRfiPriority(p)}
+                      >
+                        <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>{cfg.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </View>
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
+              <TextInput
+                style={[
+                  s.input,
+                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
+                ]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.mutedForeground}
+                value={rfiDueDate}
+                onChangeText={setRfiDueDate}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
           </ScrollView>
           <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
             <TouchableOpacity
@@ -1335,6 +1463,45 @@ export function DocumentRegisterSection({
                 ))}
               </View>
             </View>
+            {/* Priority (editable in Update modal) */}
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
+              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
+                  const cfg = RFI_PRIORITY_CONFIG[p];
+                  const isSelected = editPriority === p;
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      style={[
+                        s.chip,
+                        { borderColor: isSelected ? cfg.bg : colors.border },
+                        isSelected && { backgroundColor: cfg.bg },
+                      ]}
+                      onPress={() => setEditPriority(p)}
+                    >
+                      <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>
+                        {cfg.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Due Date (editable in Update modal) */}
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
+              <TextInput
+                style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.mutedForeground}
+                value={editDueDate}
+                onChangeText={setEditDueDate}
+                keyboardType="numbers-and-punctuation"
+              />
+            </View>
+
             <View style={s.field}>
               <Text style={[s.label, { color: colors.foreground }]}>Answer</Text>
               <TextInput

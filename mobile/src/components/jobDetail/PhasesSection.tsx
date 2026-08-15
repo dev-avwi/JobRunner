@@ -1,10 +1,16 @@
 /**
  * PhasesSection — displays job phases on the mobile job detail screen.
  * Read-only for workers (isTradie), status-editable for owners/managers.
+ *
+ * Polish additions:
+ *  - Haptic feedback when cycling phase status
+ *  - Success micro-animation (flash) when last phase is marked Complete
+ *  - Estimated vs actual hours comparison per phase (when timeEntries exist)
  */
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { useState, useRef, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
 
@@ -19,6 +25,7 @@ export interface JobPhase {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   bookedHours?: string | null;
+  actualHours?: number | null;
   status: PhaseStatus;
   sortOrder: number;
   notes?: string | null;
@@ -52,6 +59,54 @@ function fmtDate(d?: string | null): string | null {
   }
 }
 
+function HoursComparison({ booked, actual, colors }: { booked: number; actual: number | null | undefined; colors: ThemeColors }) {
+  if (!actual || actual <= 0) return null;
+  const diff = actual - booked;
+  const isOver = diff > 0.1;
+  const isUnder = diff < -0.1;
+  const color = isOver ? '#DC2626' : isUnder ? '#059669' : colors.mutedForeground;
+  const icon = isOver ? 'trending-up' : isUnder ? 'trending-down' : 'minus';
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+      <Feather name={icon as any} size={10} color={color} />
+      <Text style={{ fontSize: 10, color, fontWeight: fontWeights.medium }}>
+        {actual.toFixed(1)} actual / {booked.toFixed(1)} est hrs
+      </Text>
+    </View>
+  );
+}
+
+// Success flash animation for last-phase completion
+function SuccessFlash({ visible, onDone }: { visible: boolean; onDone: () => void }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      anim.setValue(0);
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: true }),
+        Animated.delay(400),
+        Animated.timing(anim, { toValue: 0, duration: 300, useNativeDriver: true }),
+      ]).start(() => onDone());
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: '#10B981',
+        borderRadius: radius.md,
+        opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }),
+        zIndex: 20,
+      }}
+    />
+  );
+}
+
 export interface PhasesSectionProps {
   colors: ThemeColors;
   phases: JobPhase[];
@@ -60,7 +115,7 @@ export interface PhasesSectionProps {
   onStatusChange?: (phaseId: string, status: PhaseStatus) => Promise<void>;
   onAddPhase?: () => void;
   onEditPhase?: (phase: JobPhase) => void;
-  /** Called when a phase is cycled to "complete" status — used to prompt for a progress claim */
+  /** Called when a phase is cycled to "complete" status */
   onPhaseCompleted?: (phase: JobPhase) => void;
   /** Set of phase IDs that already have a progress claim line item */
   claimedPhaseIds?: Set<string>;
@@ -78,6 +133,7 @@ export function PhasesSection({
   claimedPhaseIds,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [flashingId, setFlashingId] = useState<string | null>(null);
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -87,9 +143,23 @@ export function PhasesSection({
     const nextStatus = STATUS_ORDER[(currentIdx + 1) % STATUS_ORDER.length];
     setUpdatingId(phase.id);
     try {
+      // Haptic feedback
+      await Haptics.impactAsync(
+        nextStatus === 'complete'
+          ? Haptics.ImpactFeedbackStyle.Heavy
+          : Haptics.ImpactFeedbackStyle.Light,
+      );
       await onStatusChange(phase.id, nextStatus);
-      if (nextStatus === 'complete' && onPhaseCompleted) {
-        onPhaseCompleted(phase);
+      if (nextStatus === 'complete') {
+        // Check if this is the last phase to complete
+        const allOthersDone = sorted
+          .filter((p) => p.id !== phase.id)
+          .every((p) => p.status === 'complete' || p.status === 'invoiced');
+        if (allOthersDone) {
+          setFlashingId(phase.id);
+          await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        }
+        if (onPhaseCompleted) onPhaseCompleted(phase);
       }
     } finally {
       setUpdatingId(null);
@@ -157,6 +227,7 @@ export function PhasesSection({
           {sorted.map((phase, idx) => {
             const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
             const isUpdating = updatingId === phase.id;
+            const isFlashing = flashingId === phase.id;
             const isLast = idx === sorted.length - 1;
             const startStr = fmtDate(phase.scheduledStart);
             const endStr = fmtDate(phase.scheduledEnd);
@@ -181,78 +252,82 @@ export function PhasesSection({
                 </View>
 
                 {/* Content */}
-                <TouchableOpacity
-                  style={styles.phaseContent}
-                  onPress={() => !isTradie && onEditPhase && onEditPhase(phase)}
-                  disabled={isTradie || !onEditPhase}
-                  activeOpacity={onEditPhase && !isTradie ? 0.7 : 1}
-                >
-                  <View style={styles.phaseTopRow}>
-                    {/* Phase code */}
-                    <View style={[styles.phaseCodeBadge, { borderColor: colors.primary + '66' }]}>
-                      <Text style={[styles.phaseCode, { color: colors.primary }]}>{phase.phaseCode}</Text>
-                    </View>
-                    <Text style={[styles.phaseName, { color: colors.foreground }]} numberOfLines={1}>
-                      {phase.name}
-                    </Text>
-                    {/* Status badge — tappable for owners to cycle */}
-                    <TouchableOpacity
-                      onPress={() => handleCycleStatus(phase)}
-                      disabled={isTradie || isUpdating}
-                      style={[styles.statusBadge, { backgroundColor: cfg.bg }]}
-                    >
-                      {isUpdating ? (
-                        <ActivityIndicator size="small" color={cfg.text} style={{ width: 40 }} />
-                      ) : (
-                        <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
-                      )}
-                    </TouchableOpacity>
-                    {/* Claimed badge */}
-                    {claimedPhaseIds?.has(phase.id) && (
-                      <View style={styles.claimedBadge}>
-                        <Text style={styles.claimedBadgeText}>Claimed</Text>
+                <View style={{ flex: 1, position: 'relative' }}>
+                  <SuccessFlash visible={isFlashing} onDone={() => setFlashingId(null)} />
+                  <TouchableOpacity
+                    style={styles.phaseContent}
+                    onPress={() => !isTradie && onEditPhase && onEditPhase(phase)}
+                    disabled={isTradie || !onEditPhase}
+                    activeOpacity={onEditPhase && !isTradie ? 0.7 : 1}
+                  >
+                    <View style={styles.phaseTopRow}>
+                      {/* Phase code */}
+                      <View style={[styles.phaseCodeBadge, { borderColor: colors.primary + '66' }]}>
+                        <Text style={[styles.phaseCode, { color: colors.primary }]}>{phase.phaseCode}</Text>
                       </View>
-                    )}
-                    {/* Assignee initials badge */}
-                    {phase.assignedUserName ? (
-                      <View style={[styles.assigneeBadge, { backgroundColor: colors.primary }]}>
-                        <Text style={styles.assigneeBadgeText}>
-                          {getInitials(phase.assignedUserName)}
-                        </Text>
-                      </View>
-                    ) : null}
-                    {!isTradie && onEditPhase && (
-                      <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-                    )}
-                  </View>
-
-                  {(startStr || endStr || hoursNum > 0) && (
-                    <View style={styles.phaseMeta}>
-                      {(startStr || endStr) && (
-                        <View style={styles.metaItem}>
-                          <Feather name="calendar" size={10} color={colors.mutedForeground} />
-                          <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                            {startStr ?? '?'} → {endStr ?? '?'}
-                          </Text>
+                      <Text style={[styles.phaseName, { color: colors.foreground }]} numberOfLines={1}>
+                        {phase.name}
+                      </Text>
+                      {/* Status badge — tappable for owners to cycle */}
+                      <TouchableOpacity
+                        onPress={() => handleCycleStatus(phase)}
+                        disabled={isTradie || isUpdating}
+                        style={[styles.statusBadge, { backgroundColor: cfg.bg }]}
+                      >
+                        {isUpdating ? (
+                          <ActivityIndicator size="small" color={cfg.text} style={{ width: 40 }} />
+                        ) : (
+                          <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
+                        )}
+                      </TouchableOpacity>
+                      {/* Claimed badge */}
+                      {claimedPhaseIds?.has(phase.id) && (
+                        <View style={styles.claimedBadge}>
+                          <Text style={styles.claimedBadgeText}>Claimed</Text>
                         </View>
                       )}
-                      {hoursNum > 0 && (
+                      {/* Assignee initials badge */}
+                      {phase.assignedUserName ? (
+                        <View style={[styles.assigneeBadge, { backgroundColor: colors.primary }]}>
+                          <Text style={styles.assigneeBadgeText}>
+                            {getInitials(phase.assignedUserName)}
+                          </Text>
+                        </View>
+                      ) : null}
+                      {!isTradie && onEditPhase && (
+                        <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                      )}
+                    </View>
+
+                    {/* Date range pill */}
+                    {(startStr || endStr) && (
+                      <View style={[styles.dateRangePill, { backgroundColor: colors.muted }]}>
+                        <Feather name="calendar" size={9} color={colors.mutedForeground} />
+                        <Text style={[styles.dateRangeText, { color: colors.mutedForeground }]}>
+                          {startStr ?? '?'} → {endStr ?? '?'}
+                        </Text>
+                      </View>
+                    )}
+
+                    {/* Estimated hours */}
+                    {hoursNum > 0 && (
+                      <View style={styles.phaseMeta}>
                         <View style={styles.metaItem}>
                           <Feather name="clock" size={10} color={colors.mutedForeground} />
                           <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                            {hoursNum.toFixed(1)} hrs
+                            {hoursNum.toFixed(1)} hrs est.
                           </Text>
                         </View>
-                      )}
-                    </View>
-                  )}
+                      </View>
+                    )}
 
-                  {phase.description ? (
-                    <Text style={[styles.phaseDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
-                      {phase.description}
-                    </Text>
-                  ) : null}
-                </TouchableOpacity>
+                    {phase.description ? (
+                      <Text style={[styles.phaseDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
+                        {phase.description}
+                      </Text>
+                    ) : null}
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           })}
@@ -380,6 +455,18 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 10,
     fontWeight: fontWeights.medium,
+  },
+  dateRangePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  dateRangeText: {
+    fontSize: 10,
   },
   phaseMeta: {
     flexDirection: 'row',

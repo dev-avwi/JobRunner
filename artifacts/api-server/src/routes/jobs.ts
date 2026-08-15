@@ -9698,6 +9698,19 @@ import { computeRetentionSummary } from "./retentionSummary";
         .where(eq(pdr.documentId, docId))
         .orderBy(desc(pdr.uploadedAt));
 
+      // Resolve uploader display names — batch-load team members and owner once.
+      const teamMembers = await storage.getTeamMembers(effectiveUserId);
+      const memberById = new Map<string, string>();
+      for (const m of teamMembers) {
+        if (m.memberId) {
+          memberById.set(m.memberId, [m.firstName, m.lastName].filter(Boolean).join(' ').trim() || m.email || m.memberId);
+        }
+      }
+      const ownerUser = await storage.getUserById(effectiveUserId);
+      if (ownerUser) {
+        memberById.set(effectiveUserId, [ownerUser.firstName, ownerUser.lastName].filter(Boolean).join(' ').trim() || ownerUser.email || effectiveUserId);
+      }
+
       const result = await Promise.all(revisions.map(async (rev: any) => {
         let fileUrl = null;
         try {
@@ -9706,7 +9719,8 @@ import { computeRetentionSummary } from "./retentionSummary";
             action: 'read', expires: Date.now() + 60 * 60 * 1000,
           }).then((urls: string[]) => urls[0]);
         } catch { }
-        return { ...rev, fileUrl };
+        const uploadedByName = rev.uploadedBy ? (memberById.get(rev.uploadedBy) ?? null) : null;
+        return { ...rev, fileUrl, uploadedByName };
       }));
 
       res.json(result);
@@ -9863,7 +9877,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       const job = await storage.getJob(jobId, effectiveUserId);
       if (!job) return res.status(404).json({ error: 'Job not found' });
 
-      const { question, description, assignedTo, assignedToName } = req.body;
+      const { question, description, assignedTo, assignedToName, priority, dueDate } = req.body;
       if (!question) return res.status(400).json({ error: 'Question is required' });
 
       const { projectRfis } = await import("@workspace/db");
@@ -9878,7 +9892,9 @@ import { computeRetentionSummary } from "./retentionSummary";
         assignedTo: assignedTo || null,
         assignedToName: assignedToName || null,
         status: 'open',
-      }).returning();
+        priority: priority || null,
+        dueDate: dueDate ? new Date(dueDate) : null,
+      } as any).returning();
 
       res.status(201).json(rfi);
     } catch (error: any) {
@@ -9899,12 +9915,30 @@ import { computeRetentionSummary } from "./retentionSummary";
         .where(and(eq(projectRfis.id, rfiId), eq(projectRfis.jobId, jobId), eq(projectRfis.userId, effectiveUserId)));
       if (!rfi) return res.status(404).json({ error: 'RFI not found' });
 
-      const { status, answerText } = req.body;
+      const { status, answerText, priority, dueDate } = req.body;
       const updates: Record<string, any> = { updatedAt: new Date() };
 
       if (status) updates.status = status;
       if (answerText !== undefined) updates.answerText = answerText;
       if (status === 'answered' || status === 'closed') updates.answeredAt = new Date();
+      // Priority and due date can be updated at any time on any RFI.
+      const validPriorities = ['low', 'medium', 'high', 'urgent'];
+      if (priority !== undefined) {
+        if (priority === null || priority === '') {
+          updates.priority = null;
+        } else if (validPriorities.includes(priority)) {
+          updates.priority = priority;
+        }
+        // Invalid priority values are silently ignored.
+      }
+      if (dueDate !== undefined) {
+        if (dueDate === null || dueDate === '') {
+          updates.dueDate = null;
+        } else {
+          const d = new Date(dueDate);
+          if (!isNaN(d.getTime())) updates.dueDate = d;
+        }
+      }
 
       if (req.file) {
         const ext = req.file.originalname.split('.').pop() ?? 'bin';

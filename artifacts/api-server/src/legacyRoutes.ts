@@ -15819,6 +15819,9 @@ Be specific about materials, colors, and features that would be included.`
       const teamMembers = await storage.getTeamMembers(userContext.effectiveUserId);
       const now = new Date();
       const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      // Allow the caller to specify a date for leave-overlap checking (e.g. the job's scheduledAt).
+      // Falls back to today when omitted so the existing behaviour is preserved.
+      const targetDateStr: string = (req.query.date as string) || now.toISOString().slice(0, 10);
 
       const availability: any[] = [];
 
@@ -15874,24 +15877,27 @@ Be specific about materials, colors, and features that would be included.`
         if (activeTimer) status = 'on_job';
         else if (nextScheduledJob) status = 'upcoming';
 
-        // Check for approved leave covering today
+        // Check for approved leave covering the target date (defaults to today)
         let onLeave = false;
         let leaveType: string | null = null;
+        let leaveStartDate: string | null = null;
+        let leaveEndDate: string | null = null;
         try {
-          const todayStr = now.toISOString().slice(0, 10);
           const [leaveRecord] = await db.select().from(teamMemberTimeOff)
             .where(
               and(
                 eq(teamMemberTimeOff.teamMemberId, member.id),
                 eq(teamMemberTimeOff.status, 'approved'),
-                lte(teamMemberTimeOff.startDate, todayStr),
-                gte(teamMemberTimeOff.endDate, todayStr),
+                lte(teamMemberTimeOff.startDate, targetDateStr),
+                gte(teamMemberTimeOff.endDate, targetDateStr),
               )
             )
             .limit(1);
           if (leaveRecord) {
             onLeave = true;
             leaveType = leaveRecord.reason || null;
+            leaveStartDate = leaveRecord.startDate || null;
+            leaveEndDate = leaveRecord.endDate || null;
             if (status === 'available') status = 'on_leave';
           }
         } catch (e) {}
@@ -15906,6 +15912,8 @@ Be specific about materials, colors, and features that would be included.`
           status,
           onLeave,
           leaveType,
+          leaveStartDate,
+          leaveEndDate,
           workerState: workerState?.state || 'available',
           workerStateNote: workerState?.note || null,
           workerStateJobId: workerState?.jobId || null,

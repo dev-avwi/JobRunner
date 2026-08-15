@@ -2,8 +2,13 @@
  * ProjectGanttMobile — horizontally scrollable Gantt timeline for project phases.
  * Receives already-loaded phases from the parent (shares state, no extra API call).
  * Tapping a bar opens the phase edit bottom sheet via onEditPhase.
+ *
+ * Polish additions:
+ *  - "Today" jump button in header that appears when the view has scrolled away from today
+ *  - Dashed placeholder bar for undated phases instead of plain text
+ *  - Auto-scroll to today on first render (preserved)
  */
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
@@ -19,18 +24,12 @@ const STATUS_COLORS: Record<string, { bar: string; text: string }> = {
 };
 
 // ── Layout constants ────────────────────────────────────────────────────────
-const DAY_W      = 26;  // px per day
-const ROW_H      = 42;  // px per phase row
-const HEADER_H   = 28;  // px for tick header
-const LABEL_W    = 104; // px for fixed label column
+const DAY_W      = 26;
+const ROW_H      = 42;
+const HEADER_H   = 28;
+const LABEL_W    = 104;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-/**
- * Parse a schedule date string as a LOCAL calendar date.
- * Phase dates arrive as "YYYY-MM-DD" or ISO timestamps (UTC midnight).
- * `new Date("2024-04-10T00:00:00Z")` becomes Apr 9 in UTC-offset zones.
- * We extract the first 10 chars and build a local Date(y, m, d) instead.
- */
 function parseScheduleDate(s: string): Date {
   const parts = s.substring(0, 10).split('-').map(Number);
   return new Date(parts[0], parts[1] - 1, parts[2]);
@@ -72,6 +71,8 @@ export function ProjectGanttMobile({
   onEditPhase,
 }: ProjectGanttMobileProps) {
   const scrollRef = useRef<ScrollView>(null);
+  const [showTodayButton, setShowTodayButton] = useState(false);
+  const scrollXRef = useRef(0);
 
   const sorted = useMemo(
     () => [...phases].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -103,14 +104,26 @@ export function ProjectGanttMobile({
 
   const gridWidth = totalDays * DAY_W;
   const todayOff  = diffDays(today, rangeStart);
+  const todayScrollX = Math.max(0, todayOff * DAY_W - 80);
 
   // Scroll to show today on mount
   useEffect(() => {
     if (scrollRef.current && todayOff > 0) {
-      const scrollX = Math.max(0, todayOff * DAY_W - 80);
-      setTimeout(() => scrollRef.current?.scrollTo({ x: scrollX, animated: false }), 150);
+      setTimeout(() => scrollRef.current?.scrollTo({ x: todayScrollX, animated: false }), 150);
     }
   }, [todayOff]);
+
+  const handleScroll = useCallback((e: any) => {
+    const x = e.nativeEvent.contentOffset.x;
+    scrollXRef.current = x;
+    // Show "Today" button if scrolled more than 60px away from today's position
+    const delta = Math.abs(x - todayScrollX);
+    setShowTodayButton(delta > 60);
+  }, [todayScrollX]);
+
+  const jumpToToday = () => {
+    scrollRef.current?.scrollTo({ x: todayScrollX, animated: true });
+  };
 
   // Generate weekly ticks
   const ticks = useMemo(() => {
@@ -145,15 +158,24 @@ export function ProjectGanttMobile({
             {sorted.length} phases
           </Text>
         </View>
+        {/* Today jump button — appears when scrolled away */}
+        {showTodayButton && todayOff >= 0 && todayOff < totalDays && (
+          <TouchableOpacity
+            onPress={jumpToToday}
+            style={[styles.todayBtn, { backgroundColor: colors.primary }]}
+            activeOpacity={0.8}
+          >
+            <Feather name="target" size={11} color="#fff" />
+            <Text style={styles.todayBtnText}>Today</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Gantt body */}
       <View style={styles.ganttBody}>
         {/* Fixed label column */}
         <View style={[styles.labelCol, { width: LABEL_W, borderRightColor: colors.border }]}>
-          {/* Header spacer */}
           <View style={[styles.labelHeader, { height: HEADER_H, backgroundColor: colors.muted + '40', borderBottomColor: colors.border }]} />
-
           {sorted.map((phase, idx) => (
             <View
               key={phase.id}
@@ -183,6 +205,8 @@ export function ProjectGanttMobile({
           showsHorizontalScrollIndicator={false}
           bounces={false}
           style={styles.gridScroll}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         >
           <View style={{ width: gridWidth }}>
             {/* Tick header */}
@@ -199,7 +223,6 @@ export function ProjectGanttMobile({
                   </Text>
                 </View>
               ))}
-              {/* Today indicator in header */}
               {todayOff >= 0 && todayOff < totalDays && (
                 <View
                   style={[
@@ -275,7 +298,6 @@ export function ProjectGanttMobile({
                           {bar.width > 80 ? phase.name : phase.phaseCode}
                         </Text>
                       )}
-                      {/* Assignee initials badge — right end of bar */}
                       {phase.assignedUserName && bar.width > 20 && (
                         <View
                           style={[
@@ -290,11 +312,17 @@ export function ProjectGanttMobile({
                       )}
                     </View>
                   ) : (
-                    <Text
-                      style={[styles.noDateLabel, { color: colors.mutedForeground }]}
+                    /* Dashed placeholder bar for undated phases */
+                    <View
+                      style={[
+                        styles.dashedBar,
+                        { borderColor: colors.border, left: 4, right: 4 },
+                      ]}
                     >
-                      {canEdit ? 'Tap to set dates' : 'No dates'}
-                    </Text>
+                      <Text style={[styles.dashedBarLabel, { color: colors.mutedForeground }]}>
+                        {canEdit ? 'Tap to set dates' : 'No dates'}
+                      </Text>
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -351,6 +379,20 @@ const styles = StyleSheet.create({
   phaseCountText: {
     fontSize: 10,
     fontWeight: fontWeights.medium,
+  },
+  todayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: spacing.xs,
+  },
+  todayBtnText: {
+    fontSize: 11,
+    fontWeight: fontWeights.semibold,
+    color: '#fff',
   },
   ganttBody: {
     flexDirection: 'row',
@@ -432,6 +474,21 @@ const styles = StyleSheet.create({
   barLabel: {
     fontSize: 9,
     fontWeight: fontWeights.semibold,
+  },
+  dashedBar: {
+    position: 'absolute',
+    top: 9,
+    bottom: 9,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  dashedBarLabel: {
+    fontSize: 9,
+    fontStyle: 'italic',
   },
   noDateLabel: {
     fontSize: 10,

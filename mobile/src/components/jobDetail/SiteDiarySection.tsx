@@ -2,6 +2,12 @@
  * SiteDiarySection — mobile component for the daily site diary.
  * Card stack sorted newest-first. A FAB-style button adds today's entry.
  * Entries older than 24 h are read-only unless the user is owner/manager.
+ *
+ * Polish additions:
+ *  - Date filter input at section header to jump to a specific entry
+ *  - Inline photo thumbnail grid (up to 4) on each diary card header
+ *  - Full-screen photo viewer on thumbnail tap
+ *  - Weather icon glyph shown inline alongside the text label
  */
 import { useState, useCallback } from 'react';
 import {
@@ -16,6 +22,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  Dimensions,
+  StatusBar,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -98,6 +106,8 @@ const EMPTY_FORM: FormState = {
   issuesDelays: '',
 };
 
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
+
 export function SiteDiarySection({
   jobId,
   colors,
@@ -117,6 +127,20 @@ export function SiteDiarySection({
   const [newPhotos, setNewPhotos] = useState<{ uri: string; name: string; mimeType: string }[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
 
+  // Date filter
+  const [dateFilter, setDateFilter] = useState('');
+
+  // Full-screen photo viewer
+  const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const [showViewer, setShowViewer] = useState(false);
+
+  const openViewer = useCallback((photos: string[], index: number) => {
+    setViewerPhotos(photos);
+    setViewerIndex(index);
+    setShowViewer(true);
+  }, []);
+
   const loadEntries = useCallback(async () => {
     if (loading) return;
     setLoading(true);
@@ -127,14 +151,12 @@ export function SiteDiarySection({
       }
       setLoaded(true);
     } catch {
-      // silently ignore – section is optional
       setLoaded(true);
     } finally {
       setLoading(false);
     }
   }, [jobId, loading]);
 
-  // Lazy-load on first expand
   const handleToggle = useCallback(
     (id: string) => {
       if (!loaded && !loading) loadEntries();
@@ -211,21 +233,13 @@ export function SiteDiarySection({
       }
 
       if (editingEntry) {
-        // FormData is detected automatically by the API client (removes Content-Type so the
-        // browser sets the correct multipart boundary).
         const res = await api.patch<SiteDiaryEntry>(`/api/jobs/${jobId}/diary/${editingEntry.id}`, formData);
-        if (res.error) {
-          showToast({ type: 'error', message: res.error });
-          return;
-        }
+        if (res.error) { showToast({ type: 'error', message: res.error }); return; }
         setEntries((prev) => prev.map((e) => (e.id === editingEntry.id ? (res.data as SiteDiaryEntry) : e)));
         showToast({ type: 'success', message: 'Diary entry updated' });
       } else {
         const res = await api.post<SiteDiaryEntry>(`/api/jobs/${jobId}/diary`, formData);
-        if (res.error) {
-          showToast({ type: 'error', message: res.error });
-          return;
-        }
+        if (res.error) { showToast({ type: 'error', message: res.error }); return; }
         setEntries((prev) => [res.data as SiteDiaryEntry, ...prev]);
         showToast({ type: 'success', message: 'Diary entry saved' });
       }
@@ -241,10 +255,7 @@ export function SiteDiarySection({
     setDeleting(id);
     try {
       const res = await api.delete(`/api/jobs/${jobId}/diary/${id}`);
-      if (res.error) {
-        showToast({ type: 'error', message: res.error });
-        return;
-      }
+      if (res.error) { showToast({ type: 'error', message: res.error }); return; }
       setEntries((prev) => prev.filter((e) => e.id !== id));
       if (expanded === id) setExpanded(null);
       showToast({ type: 'success', message: 'Entry deleted' });
@@ -254,6 +265,11 @@ export function SiteDiarySection({
       setDeleting(null);
     }
   }
+
+  // Filter entries by date input
+  const filteredEntries = dateFilter.trim()
+    ? entries.filter((e) => e.entryDate.includes(dateFilter.trim()))
+    : entries;
 
   const s = localStyles(colors);
 
@@ -278,6 +294,26 @@ export function SiteDiarySection({
         </TouchableOpacity>
       </View>
 
+      {/* Date filter bar — only shown once entries are loaded */}
+      {loaded && entries.length > 0 && (
+        <View style={[s.filterRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
+          <Feather name="search" size={14} color={colors.mutedForeground} />
+          <TextInput
+            style={[s.filterInput, { color: colors.foreground }]}
+            value={dateFilter}
+            onChangeText={setDateFilter}
+            placeholder="Filter by date (e.g. 2025-06)"
+            placeholderTextColor={colors.mutedForeground}
+            clearButtonMode="while-editing"
+          />
+          {dateFilter.length > 0 && (
+            <TouchableOpacity onPress={() => setDateFilter('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Feather name="x" size={14} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
+
       {/* Body */}
       {!loaded && !loading && (
         <TouchableOpacity onPress={handleSectionOpen} style={s.loadPrompt}>
@@ -287,11 +323,7 @@ export function SiteDiarySection({
       )}
 
       {loading && (
-        <ActivityIndicator
-          size="small"
-          color={colors.primary}
-          style={{ paddingVertical: spacing.lg }}
-        />
+        <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
       )}
 
       {loaded && entries.length === 0 && (
@@ -308,15 +340,21 @@ export function SiteDiarySection({
         </View>
       )}
 
-      {loaded && entries.length > 0 && (
+      {loaded && filteredEntries.length === 0 && entries.length > 0 && (
+        <View style={s.emptyState}>
+          <Text style={s.emptySubtitle}>No entries match "{dateFilter}"</Text>
+        </View>
+      )}
+
+      {loaded && filteredEntries.length > 0 && (
         <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
-          {entries.map((entry) => {
+          {filteredEntries.map((entry) => {
             const isExpanded = expanded === entry.id;
-            // Owner/manager can edit any entry; staff can only edit their own within 24 h.
             const canEdit = isOwnerOrManager || (entry.userId === currentUserId && isWithin24Hours(entry.createdAt));
-            // Same logic for delete (staff author within 24 h, or owner/manager).
             const canDelete = isOwnerOrManager || (entry.userId === currentUserId && isWithin24Hours(entry.createdAt));
             const isLocked = !canEdit;
+            const previewPhotos = (entry.photoUrls ?? []).slice(0, 4);
+            const extraPhotoCount = (entry.photoUrls?.length ?? 0) - 4;
 
             return (
               <View key={entry.id} style={s.entryCard}>
@@ -327,19 +365,22 @@ export function SiteDiarySection({
                   activeOpacity={0.7}
                 >
                   <View style={s.entryHeaderLeft}>
-                    <Feather
-                      name={weatherIcon(entry.weather) as any}
-                      size={14}
-                      color={colors.mutedForeground}
-                    />
+                    {/* Weather icon + label */}
+                    {entry.weather ? (
+                      <View style={s.weatherInline}>
+                        <Feather
+                          name={weatherIcon(entry.weather) as any}
+                          size={13}
+                          color={colors.mutedForeground}
+                        />
+                        <Text style={s.weatherInlineText}>{weatherLabel(entry.weather)}</Text>
+                      </View>
+                    ) : (
+                      <Feather name="cloud" size={13} color={colors.mutedForeground} style={{ opacity: 0.3 }} />
+                    )}
                     <Text style={s.entryDate}>
                       {format(parseISO(entry.entryDate), 'EEE d MMM yyyy')}
                     </Text>
-                    {entry.weather && (
-                      <View style={s.weatherBadge}>
-                        <Text style={s.weatherBadgeText}>{weatherLabel(entry.weather)}</Text>
-                      </View>
-                    )}
                     {isLocked && (
                       <Feather name="lock" size={11} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
                     )}
@@ -351,6 +392,12 @@ export function SiteDiarySection({
                         <Text style={s.workerCount}>{entry.workersOnSite.length}</Text>
                       </View>
                     )}
+                    {previewPhotos.length > 0 && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                        <Feather name="image" size={11} color={colors.mutedForeground} />
+                        <Text style={s.workerCount}>{entry.photoUrls?.length}</Text>
+                      </View>
+                    )}
                     <Feather
                       name={isExpanded ? 'chevron-up' : 'chevron-down'}
                       size={14}
@@ -358,6 +405,27 @@ export function SiteDiarySection({
                     />
                   </View>
                 </TouchableOpacity>
+
+                {/* Inline photo thumbnail strip — shown on collapsed card when photos exist */}
+                {!isExpanded && previewPhotos.length > 0 && (
+                  <View style={s.thumbStrip}>
+                    {previewPhotos.map((url, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => openViewer(entry.photoUrls ?? [], i)}
+                        activeOpacity={0.85}
+                      >
+                        <Image source={{ uri: url }} style={s.thumbImg} />
+                        {/* Overlay showing extra count on last visible thumb */}
+                        {i === 3 && extraPhotoCount > 0 && (
+                          <View style={s.thumbOverlay}>
+                            <Text style={s.thumbOverlayText}>+{extraPhotoCount}</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
                 {/* Expanded body */}
                 {isExpanded && (
@@ -389,17 +457,22 @@ export function SiteDiarySection({
                     {entry.photoUrls && entry.photoUrls.length > 0 && (
                       <View style={s.field}>
                         <Text style={s.fieldLabel}>Photos ({entry.photoUrls.length})</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                            {entry.photoUrls.map((url, i) => (
-                              <Image
-                                key={i}
-                                source={{ uri: url }}
-                                style={s.photo}
-                              />
-                            ))}
-                          </View>
-                        </ScrollView>
+                        <View style={s.photoGrid}>
+                          {entry.photoUrls.map((url, i) => (
+                            <TouchableOpacity
+                              key={i}
+                              onPress={() => openViewer(entry.photoUrls ?? [], i)}
+                              activeOpacity={0.85}
+                            >
+                              <Image source={{ uri: url }} style={s.photoGridImg} />
+                              {i === 3 && entry.photoUrls!.length > 4 && (
+                                <View style={s.thumbOverlay}>
+                                  <Text style={s.thumbOverlayText}>+{entry.photoUrls!.length - 4}</Text>
+                                </View>
+                              )}
+                            </TouchableOpacity>
+                          ))}
+                        </View>
                       </View>
                     )}
                     <Text style={s.authorLine}>
@@ -454,7 +527,6 @@ export function SiteDiarySection({
           style={{ flex: 1, backgroundColor: colors.background }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* Modal header */}
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
             <Text style={[s.modalTitle, { color: colors.foreground }]}>
               {editingEntry ? 'Edit Diary Entry' : 'New Diary Entry'}
@@ -489,9 +561,14 @@ export function SiteDiarySection({
                 style={[s.textInput, { borderColor: colors.border, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
                 onPress={() => setShowWeatherPicker(true)}
               >
-                <Text style={{ color: form.weather ? colors.foreground : colors.mutedForeground }}>
-                  {form.weather ? weatherLabel(form.weather) : 'Select weather…'}
-                </Text>
+                {form.weather ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <Feather name={weatherIcon(form.weather) as any} size={15} color={colors.foreground} />
+                    <Text style={{ color: colors.foreground }}>{weatherLabel(form.weather)}</Text>
+                  </View>
+                ) : (
+                  <Text style={{ color: colors.mutedForeground }}>Select weather…</Text>
+                )}
                 <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
               </TouchableOpacity>
             </View>
@@ -617,6 +694,48 @@ export function SiteDiarySection({
           </Modal>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Full-screen photo viewer */}
+      <Modal
+        visible={showViewer}
+        animationType="fade"
+        presentationStyle="overFullScreen"
+        statusBarTranslucent
+        onRequestClose={() => setShowViewer(false)}
+      >
+        <View style={s.viewerContainer}>
+          <TouchableOpacity
+            style={s.viewerClose}
+            onPress={() => setShowViewer(false)}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <Feather name="x" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={s.viewerCounter}>
+            {viewerIndex + 1} / {viewerPhotos.length}
+          </Text>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_W);
+              setViewerIndex(idx);
+            }}
+            contentOffset={{ x: viewerIndex * SCREEN_W, y: 0 }}
+          >
+            {viewerPhotos.map((url, i) => (
+              <View key={i} style={{ width: SCREEN_W, height: SCREEN_H, justifyContent: 'center', alignItems: 'center' }}>
+                <Image
+                  source={{ uri: url }}
+                  style={{ width: SCREEN_W, height: SCREEN_H }}
+                  resizeMode="contain"
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -671,6 +790,21 @@ function localStyles(colors: any) {
       fontSize: typography.captionSmall.fontSize,
       fontWeight: fontWeights.medium,
     },
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      borderWidth: 1,
+      borderRadius: radius.md,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      marginBottom: spacing.sm,
+    },
+    filterInput: {
+      flex: 1,
+      fontSize: typography.sizes.sm,
+      paddingVertical: 0,
+    },
     loadPrompt: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -721,24 +855,52 @@ function localStyles(colors: any) {
       gap: spacing.xs,
       flex: 1,
     },
+    weatherInline: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: colors.muted,
+      borderRadius: radius.sm,
+      paddingHorizontal: 5,
+      paddingVertical: 2,
+    },
+    weatherInlineText: {
+      fontSize: 10,
+      color: colors.mutedForeground,
+      fontWeight: fontWeights.medium,
+    },
     entryDate: {
       fontSize: typography.sizes.sm,
       fontWeight: fontWeights.medium,
       color: colors.foreground,
     },
-    weatherBadge: {
-      backgroundColor: colors.muted,
-      borderRadius: radius.pill,
-      paddingHorizontal: spacing.xs,
-      paddingVertical: 2,
-    },
-    weatherBadgeText: {
-      fontSize: typography.captionSmall.fontSize,
-      color: colors.mutedForeground,
-    },
     workerCount: {
       fontSize: typography.captionSmall.fontSize,
       color: colors.mutedForeground,
+    },
+    thumbStrip: {
+      flexDirection: 'row',
+      gap: 3,
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    thumbImg: {
+      width: 52,
+      height: 52,
+      borderRadius: radius.sm,
+    },
+    thumbOverlay: {
+      position: 'absolute',
+      inset: 0,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      borderRadius: radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    thumbOverlayText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: fontWeights.bold,
     },
     entryBody: {
       paddingHorizontal: spacing.md,
@@ -747,6 +909,9 @@ function localStyles(colors: any) {
       borderTopColor: colors.border,
       backgroundColor: `${colors.muted}40`,
       gap: spacing.sm,
+    },
+    field: {
+      gap: spacing.xs,
     },
     fieldLabel: {
       fontSize: typography.captionSmall.fontSize,
@@ -759,6 +924,16 @@ function localStyles(colors: any) {
       fontSize: typography.sizes.sm,
       color: colors.foreground,
       lineHeight: 20,
+    },
+    photoGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+    },
+    photoGridImg: {
+      width: 80,
+      height: 80,
+      borderRadius: radius.sm,
     },
     photo: {
       width: 80,
@@ -819,9 +994,6 @@ function localStyles(colors: any) {
       fontWeight: fontWeights.semibold,
       fontSize: typography.button.fontSize,
     },
-    field: {
-      gap: spacing.xs,
-    },
     label: {
       fontSize: typography.caption.fontSize,
       fontWeight: fontWeights.semibold,
@@ -844,7 +1016,7 @@ function localStyles(colors: any) {
     },
     hint: {
       fontSize: typography.captionSmall.fontSize,
-      marginTop: spacing.xxs ?? 3,
+      marginTop: 2,
     },
     photoPickBtn: {
       flexDirection: 'row',
@@ -883,6 +1055,33 @@ function localStyles(colors: any) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       borderRadius: radius.md,
+    },
+    // Viewer
+    viewerContainer: {
+      flex: 1,
+      backgroundColor: '#000',
+    },
+    viewerClose: {
+      position: 'absolute',
+      top: 54,
+      right: 20,
+      zIndex: 10,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      borderRadius: 20,
+      padding: 8,
+    },
+    viewerCounter: {
+      position: 'absolute',
+      top: 56,
+      alignSelf: 'center',
+      zIndex: 10,
+      color: '#fff',
+      fontSize: 13,
+      fontWeight: fontWeights.semibold,
+      backgroundColor: 'rgba(0,0,0,0.4)',
+      borderRadius: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
     },
   });
 }
