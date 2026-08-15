@@ -2034,7 +2034,7 @@ export default function JobDetailView({
                   {(job as any).jobNumber}
                 </span>
               )}
-              {isProject ? (
+              {!isTradie && (isProject ? (
                 <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
                   style={{ backgroundColor: 'hsl(221 83% 95%)', color: 'hsl(221 83% 35%)', borderColor: 'hsl(221 83% 80%)' }}
                   data-testid="badge-job-type-project"
@@ -2048,7 +2048,7 @@ export default function JobDetailView({
                 >
                   Service Call
                 </span>
-              )}
+              ))}
               <PresenceIndicator editors={collaboration.otherEditors} />
               <ImportOriginBadge importRunId={(job as any).importRunId} rowNumber={(job as any).importRowNumber} />
             </div>
