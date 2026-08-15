@@ -903,10 +903,32 @@ import { computeRetentionSummary } from "./retentionSummary";
       if (!data.hideSections.swms) pushFormRows('SAFETY FORMS & CHECKLISTS', (data.safetyForms as any[]).filter(isSafetyType));
       if (!(data.hideSections as any).forms) pushFormRows('JOB CARDS & FORMS', (data.safetyForms as any[]).filter((f: any) => !isSafetyType(f)));
 
+      if (!(data.hideSections as any).variations && (data as any).variations?.length > 0) {
+        lines.push(row(['VARIATIONS']));
+        lines.push(row(['Number', 'Title', 'Status', 'Amount', 'Approved By', 'Approved At']));
+        for (const v of (data as any).variations) {
+          lines.push(row([v.number, v.title, v.status, v.totalAmount || '', v.approvedByName || '', v.approvedAt || '']));
+        }
+        lines.push('');
+      }
+
       if (!data.hideSections.invoice && data.invoice) {
         lines.push(row(['INVOICE']));
         lines.push(row(['Number', 'Date', 'Total', 'GST', 'Status']));
         lines.push(row([data.invoice.number, data.invoice.date, data.invoice.total, data.invoice.gstAmount, data.invoice.status]));
+        lines.push('');
+      }
+
+      if (!(data.hideSections as any).retention && (data as any).retention?.sumRetentionHeld > 0) {
+        const ret = (data as any).retention;
+        lines.push(row(['RETENTION SCHEDULE']));
+        lines.push(row(['Total Retention Held', ret.sumRetentionHeld]));
+        lines.push(row(['Outstanding (unreleased)', ret.outstandingRetention]));
+        lines.push(row(['Practical Completion', ret.practicalCompletionDate || '']));
+        lines.push(row(['DLP Period (months)', ret.defectsLiabilityMonths]));
+        lines.push(row(['DLP End / Release Date', ret.releaseDate || '']));
+        lines.push(row(['Retention Status', ret.retentionStatus || '']));
+        lines.push('');
       }
 
       const content = '\ufeff' + lines.join('\r\n');

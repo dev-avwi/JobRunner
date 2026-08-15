@@ -2371,8 +2371,10 @@ export default function JobDetailScreen() {
     attendance: true,
     gpsProof: true,
     materials: true,
+    variations: true,
     photos: true,
     invoice: true,
+    retention: true,
     compliance: true,
     subcontractors: true,
     swms: true,
@@ -13640,13 +13642,17 @@ export default function JobDetailScreen() {
                 { key: 'attendance' as const, label: 'Worker Hours', icon: 'users' as const, desc: 'Time entries and duration per worker' },
                 { key: 'gpsProof' as const, label: 'GPS Verification', icon: 'map-pin' as const, desc: 'Clock-in/out locations and geofence alerts' },
                 { key: 'materials' as const, label: 'Materials & Costs', icon: 'package' as const, desc: 'Materials used with quantities and costs' },
+                { key: 'variations' as const, label: 'Variations', icon: 'edit' as const, desc: 'Approved and pending variation orders' },
                 { key: 'photos' as const, label: 'Photos', icon: 'camera' as const, desc: 'Before/after photos with GPS badges' },
                 { key: 'invoice' as const, label: 'Invoice Summary', icon: 'file-text' as const, desc: 'Invoice details and payment status' },
+                ...((profitabilityData as any)?.retentionSummary?.sumRetentionHeld > 0 ? [
+                  { key: 'retention' as const, label: 'Retention Schedule', icon: 'lock' as const, desc: 'Retention held, DLP period, and release date' },
+                ] : []),
                 { key: 'compliance' as const, label: 'Compliance & Licensing', icon: 'shield' as const, desc: 'Trade licences, insurance & certifications' },
-                { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'hard-hat' as const, desc: 'Subcontractor invites and activity' },
+                { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'tool' as const, desc: 'Subcontractor invites and activity' },
                 { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & safety checklists' },
                 { key: 'forms' as const, label: 'Job Cards & Forms', icon: 'clipboard' as const, desc: 'Completed job cards and forms with who filled them in' },
-              ]).map(({ key, label, icon, desc }) => (
+              ] as Array<{ key: keyof typeof proofPackSections; label: string; icon: React.ComponentProps<typeof Feather>['name']; desc: string }>).map(({ key, label, icon, desc }) => (
                 <TouchableOpacity
                   key={key}
                   activeOpacity={0.7}
@@ -13669,7 +13675,7 @@ export default function JobDetailScreen() {
                     marginRight: spacing.sm + 2,
                   }}>
                     <Feather
-                      name={icon === 'hard-hat' ? 'tool' : icon}
+                      name={icon}
                       size={18}
                       color={proofPackSections[key] ? colors.primary : colors.mutedForeground}
                     />
@@ -13696,13 +13702,13 @@ export default function JobDetailScreen() {
               ))}
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.md, gap: spacing.sm }}>
                 <TouchableOpacity
-                  onPress={() => setProofPackSections({ timeline: true, attendance: true, gpsProof: true, materials: true, photos: true, invoice: true, compliance: true, subcontractors: true, swms: true, forms: true })}
+                  onPress={() => setProofPackSections({ timeline: true, attendance: true, gpsProof: true, materials: true, variations: true, photos: true, invoice: true, retention: true, compliance: true, subcontractors: true, swms: true, forms: true })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
                   <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold }}>Select All</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => setProofPackSections({ timeline: false, attendance: false, gpsProof: false, materials: false, photos: false, invoice: false, compliance: false, subcontractors: false, swms: false, forms: false })}
+                  onPress={() => setProofPackSections({ timeline: false, attendance: false, gpsProof: false, materials: false, variations: false, photos: false, invoice: false, retention: false, compliance: false, subcontractors: false, swms: false, forms: false })}
                   style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm }}
                 >
                   <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>Deselect All</Text>

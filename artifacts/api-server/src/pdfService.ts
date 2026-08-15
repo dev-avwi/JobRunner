@@ -4586,7 +4586,7 @@ export const generateJobProofPackPDF = (data: {
   variations?: Array<{number: string; title: string; description?: string; reason?: string; additionalAmount: string; gstAmount: string; totalAmount: string; status: string; approvedByName?: string; approvedAt?: string; createdAt?: string}>;
   swmsList?: Array<{title: string; status: string; siteAddress?: string; workActivity?: string; ppe: string[]; hazards: Array<{activity: string; hazard: string; riskBefore: string; controlMeasures?: string; riskAfter: string}>; signatures: Array<{name: string; signedAt: string; location?: string | null}>; createdAt: string}>;
   safetyForms?: Array<{formName: string; formType: string; isJobCard?: boolean; description?: string; status: string; submittedAt: string; submittedBy?: string; notes?: string; responses: Array<{label: string; value: string; type: string}>}>;
-  hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; photos?: boolean; invoice?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; forms?: boolean; variations?: boolean};
+  hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; variations?: boolean; photos?: boolean; invoice?: boolean; retention?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; forms?: boolean};
   accentColor?: string;
   retention?: {
     sumRetentionHeld: number;
@@ -5195,7 +5195,7 @@ export const generateJobProofPackPDF = (data: {
       ${invoiceHtml}
     </div>` : ''}
 
-    ${retention && retention.sumRetentionHeld > 0 ? `<div class="section">
+    ${!hideSections.retention && retention && retention.sumRetentionHeld > 0 ? `<div class="section">
       <div class="section-title">Retention Schedule</div>
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
         <div style="flex:1;min-width:180px">
