@@ -8421,6 +8421,27 @@ Be specific about materials, colors, and features that would be included.`
       console.error('Error fetching safety forms for proof pack:', e);
     }
 
+    // --- retention schedule (only included when retention has been withheld) ---
+    let retention: {
+      sumRetentionHeld: number;
+      outstandingRetention: number;
+      practicalCompletionDate: string | null;
+      defectsLiabilityMonths: number;
+      releaseDate: string | null;
+      retentionStatus: string;
+    } | null = null;
+    try {
+      const { computeRetentionSummary } = await import('./routes/retentionSummary');
+      const allClaims = await storage.getClaims(jobId, userId);
+      const rs = computeRetentionSummary(allClaims as any, {
+        practicalCompletionDate: (job as any).practicalCompletionDate || null,
+        defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
+      });
+      retention = rs.sumRetentionHeld > 0 ? rs : null;
+    } catch (e) {
+      console.error('Error computing retention for proof pack:', e);
+    }
+
     return {
       job,
       business,
@@ -8443,6 +8464,7 @@ Be specific about materials, colors, and features that would be included.`
       swmsList,
       safetyForms,
       hideSections,
+      retention,
     };
   }
 

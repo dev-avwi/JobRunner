@@ -4588,8 +4588,16 @@ export const generateJobProofPackPDF = (data: {
   safetyForms?: Array<{formName: string; formType: string; isJobCard?: boolean; description?: string; status: string; submittedAt: string; submittedBy?: string; notes?: string; responses: Array<{label: string; value: string; type: string}>}>;
   hideSections?: {timeline?: boolean; attendance?: boolean; gpsProof?: boolean; materials?: boolean; photos?: boolean; invoice?: boolean; compliance?: boolean; subcontractors?: boolean; swms?: boolean; forms?: boolean; variations?: boolean};
   accentColor?: string;
+  retention?: {
+    sumRetentionHeld: number;
+    outstandingRetention: number;
+    practicalCompletionDate: string | null;
+    defectsLiabilityMonths: number;
+    releaseDate: string | null;
+    retentionStatus: string;
+  } | null;
 }): string => {
-  const { job, business, client, timeEntries, materials, photos, invoice, geofenceAlerts = [], complianceDocs = [], subcontractors = [], variations = [], swmsList = [], safetyForms = [], hideSections = {}, accentColor: overrideColor } = data;
+  const { job, business, client, timeEntries, materials, photos, invoice, geofenceAlerts = [], complianceDocs = [], subcontractors = [], variations = [], swmsList = [], safetyForms = [], hideSections = {}, accentColor: overrideColor, retention = null } = data;
   const safetyOnlyForms = safetyForms.filter(f => !f.isJobCard && ['safety', 'inspection', 'compliance'].includes(f.formType));
   const jobCardForms = safetyForms.filter(f => f.isJobCard || !['safety', 'inspection', 'compliance'].includes(f.formType));
 
@@ -5185,6 +5193,31 @@ export const generateJobProofPackPDF = (data: {
     ${!hideSections.invoice ? `<div class="section">
       <div class="section-title">${!hideSections.variations && variations.length > 0 ? '7' : '6'}. Invoice Summary</div>
       ${invoiceHtml}
+    </div>` : ''}
+
+    ${retention && retention.sumRetentionHeld > 0 ? `<div class="section">
+      <div class="section-title">Retention Schedule</div>
+      <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <table class="proof-table">
+            <tbody>
+              <tr><td style="font-weight:600">Total Retention Held</td><td style="text-align:right;font-weight:700">${new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(retention.sumRetentionHeld)}</td></tr>
+              <tr><td style="font-weight:600">Outstanding (unreleased)</td><td style="text-align:right;font-weight:600;color:${retention.outstandingRetention > 0 ? '#d97706' : '#16a34a'}">${new Intl.NumberFormat('en-AU',{style:'currency',currency:'AUD'}).format(retention.outstandingRetention)}</td></tr>
+              ${retention.outstandingRetention === 0 ? `<tr><td style="font-weight:600">Status</td><td style="text-align:right;color:#16a34a;font-weight:600">Released in Full</td></tr>` : ''}
+            </tbody>
+          </table>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <table class="proof-table">
+            <tbody>
+              <tr><td style="font-weight:600">Practical Completion</td><td style="text-align:right">${retention.practicalCompletionDate ? new Date(retention.practicalCompletionDate).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '—'}</td></tr>
+              <tr><td style="font-weight:600">DLP Period</td><td style="text-align:right">${retention.defectsLiabilityMonths} months</td></tr>
+              <tr><td style="font-weight:600">DLP End / Release Date</td><td style="text-align:right">${retention.releaseDate ? new Date(retention.releaseDate).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'numeric'}) : '—'}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p style="font-size:9px;color:#6b7280;margin-top:6px">* Retention held is the total withheld across all approved and paid progress claims. Outstanding retention is the amount not yet returned via an approved retention release claim.</p>
     </div>` : ''}
 
     ${!hideSections.compliance ? `<div class="section">
