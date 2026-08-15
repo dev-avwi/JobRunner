@@ -2305,6 +2305,10 @@ export default function JobDetailScreen() {
   const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<Set<string>>(new Set());
   const [teamAvailability, setTeamAvailability] = useState<Map<string, any>>(new Map());
+  const [isLoadingAvailability, setIsLoadingAvailability] = useState(false);
+  // Counter that increments on every loadTeamAvailability call so that an older
+  // in-flight request cannot overwrite results from a newer one (race-condition guard).
+  const availabilityRequestCountRef = useRef(0);
   const [isNudging, setIsNudging] = useState<string | null>(null);
 
   const [jobMessages, setJobMessages] = useState<JobChatMessage[]>([]);
@@ -3800,6 +3804,12 @@ export default function JobDetailScreen() {
   };
 
   const loadTeamAvailability = async () => {
+    // Increment the counter and capture the value for this specific call so
+    // that a stale (slower) earlier request cannot overwrite a newer result or
+    // prematurely clear the loading flag once a newer request is in-flight.
+    availabilityRequestCountRef.current += 1;
+    const thisRequest = availabilityRequestCountRef.current;
+    setIsLoadingAvailability(true);
     try {
       // Pass the job's scheduled date so the endpoint checks leave for that day,
       // not just today. Falls back to today if scheduledAt is not set.
@@ -3807,12 +3817,21 @@ export default function JobDetailScreen() {
         ? new Date(job.scheduledAt).toISOString().slice(0, 10)
         : new Date().toISOString().slice(0, 10);
       const response = await api.get(`/api/team/members/availability?date=${scheduledDate}`);
-      const avail = new Map<string, any>();
-      if (Array.isArray(response.data)) {
-        response.data.forEach((item: any) => avail.set(item.memberId, item));
+      // Only apply result if no newer request has been dispatched since this one started.
+      if (thisRequest === availabilityRequestCountRef.current) {
+        const avail = new Map<string, any>();
+        if (Array.isArray(response.data)) {
+          response.data.forEach((item: any) => avail.set(item.memberId, item));
+        }
+        setTeamAvailability(avail);
       }
-      setTeamAvailability(avail);
-    } catch (e) {}
+    } catch (e) {
+    } finally {
+      // Only clear the spinner if this is still the latest request.
+      if (thisRequest === availabilityRequestCountRef.current) {
+        setIsLoadingAvailability(false);
+      }
+    }
   };
 
   const handleMultiAssign = async () => {
@@ -8148,55 +8167,64 @@ export default function JobDetailScreen() {
               </Text>
             </View>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {jobAssignments.map((assignment: any) => {
-              const member = teamMembers.find((m: any) =>
-                m.userId === assignment.userId || m.memberId === assignment.userId || m.id === assignment.userId
-              );
-              const displayName = assignment.workerDisplayNameSnapshot || member?.name || 'Worker';
-              const memberId = assignment.userId;
-              const avail = teamAvailability.get(memberId);
-              // green = available, amber = has leave but still assigned, red = approved leave
-              // onLeave=true already means the leave is approved (the API only sets it for approved records).
-              // Amber = has leave overlap but was still assigned; red = on approved leave.
-              const hasLeave = avail?.onLeave === true;
-              const isApprovedLeave = hasLeave; // API only sets onLeave for approved leave
-              const dotColor = !avail ? '#9CA3AF' : !hasLeave ? '#10B981' : '#EF4444';
-              const leaveStart = avail?.leaveStartDate
-                ? new Date(avail.leaveStartDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
-                : null;
-              const leaveEnd = avail?.leaveEndDate
-                ? new Date(avail.leaveEndDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
-                : null;
-              const tooltipText = hasLeave
-                ? `${avail?.leaveType ?? 'Leave'}${leaveStart ? `: ${leaveStart}${leaveEnd && leaveEnd !== leaveStart ? ` – ${leaveEnd}` : ''}` : ''}`
-                : 'Available';
-              return (
-                <TouchableOpacity
-                  key={assignment.id}
-                  onPress={() => hasLeave ? showToast({ type: 'info', message: tooltipText }) : undefined}
-                  activeOpacity={hasLeave ? 0.7 : 1}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 5 }}
-                >
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor }} />
-                  <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, fontWeight: fontWeights.medium }}>{displayName.split(' ')[0]}</Text>
-                  {hasLeave && <Feather name={isApprovedLeave ? 'alert-circle' : 'alert-triangle'} size={11} color={dotColor} />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
-            {[
-              { color: '#10B981', label: 'Available' },
-              { color: '#F59E0B', label: 'Leave (check)' },
-              { color: '#EF4444', label: 'Approved leave' },
-            ].map(({ color, label }) => (
-              <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color }} />
-                <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{label}</Text>
+          {isLoadingAvailability ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Checking availability...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                {jobAssignments.map((assignment: any) => {
+                  const member = teamMembers.find((m: any) =>
+                    m.userId === assignment.userId || m.memberId === assignment.userId || m.id === assignment.userId
+                  );
+                  const displayName = assignment.workerDisplayNameSnapshot || member?.name || 'Worker';
+                  const memberId = assignment.userId;
+                  const avail = teamAvailability.get(memberId);
+                  // green = available, amber = has leave but still assigned, red = approved leave
+                  // onLeave=true already means the leave is approved (the API only sets it for approved records).
+                  // Amber = has leave overlap but was still assigned; red = on approved leave.
+                  const hasLeave = avail?.onLeave === true;
+                  const isApprovedLeave = hasLeave; // API only sets onLeave for approved leave
+                  const dotColor = !avail ? '#9CA3AF' : !hasLeave ? '#10B981' : '#EF4444';
+                  const leaveStart = avail?.leaveStartDate
+                    ? new Date(avail.leaveStartDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                    : null;
+                  const leaveEnd = avail?.leaveEndDate
+                    ? new Date(avail.leaveEndDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                    : null;
+                  const tooltipText = hasLeave
+                    ? `${avail?.leaveType ?? 'Leave'}${leaveStart ? `: ${leaveStart}${leaveEnd && leaveEnd !== leaveStart ? ` – ${leaveEnd}` : ''}` : ''}`
+                    : 'Available';
+                  return (
+                    <TouchableOpacity
+                      key={assignment.id}
+                      onPress={() => hasLeave ? showToast({ type: 'info', message: tooltipText }) : undefined}
+                      activeOpacity={hasLeave ? 0.7 : 1}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 5 }}
+                    >
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor }} />
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, fontWeight: fontWeights.medium }}>{displayName.split(' ')[0]}</Text>
+                      {hasLeave && <Feather name={isApprovedLeave ? 'alert-circle' : 'alert-triangle'} size={11} color={dotColor} />}
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
-            ))}
-          </View>
+              <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
+                {[
+                  { color: '#10B981', label: 'Available' },
+                  { color: '#F59E0B', label: 'Leave (check)' },
+                  { color: '#EF4444', label: 'Approved leave' },
+                ].map(({ color, label }) => (
+                  <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color }} />
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
         </View>
       )}
 
