@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSessionToken } from "@/lib/queryClient";
-import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Target } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, AlertTriangle, Target, FileDown, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(n);
@@ -116,6 +118,33 @@ function TrafficLight({ color }: { color: "green" | "amber" | "red" }) {
 }
 
 export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadCostReport = async () => {
+    setIsDownloading(true);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`/api/jobs/${jobId}/cost-report`, {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error("Failed to generate report");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `cost-report-${jobId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Cost report download failed:", err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const { data, isLoading } = useQuery<ProfitabilityData>({
     queryKey: ["/api/jobs", jobId, "profitability"],
     queryFn: async () => {
@@ -152,24 +181,17 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
 
   if (!data) return null;
 
+  // Include PO and variation totals in the "has data" check so early-stage jobs
+  // with only a quote or approved variation still show the header + download button.
   const hasFinancialData =
-    data.revenue.invoiced > 0 || data.revenue.pending > 0 || data.costs.total > 0 || !!data.budget;
-
-  if (!hasFinancialData) {
-    return (
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <DollarSign className="h-4 w-4" style={{ color: "hsl(var(--trade))" }} />
-            <CardTitle className="text-sm font-medium">Profitability</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">No financial data yet</p>
-        </CardContent>
-      </Card>
-    );
-  }
+    data.revenue.invoiced > 0 ||
+    data.revenue.pending > 0 ||
+    data.costs.total > 0 ||
+    !!data.budget ||
+    (data as any).purchaseOrders?.total > 0 ||
+    (data as any).variations?.approvedTotal > 0 ||
+    (data as any).variations?.pendingTotal > 0 ||
+    !!data.quoted?.amount;
 
   const colors = getStatusColor(data.status);
   const marginCapped = Math.min(Math.max(data.profit.margin, 0), 100);
@@ -178,19 +200,57 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
   const historical = data.historicalComparison;
   const marginDelta = historical ? Math.round((data.profit.margin - historical.avgMargin) * 10) / 10 : null;
 
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 flex-wrap">
-          <DollarSign className="h-4 w-4" style={{ color: "hsl(var(--trade))" }} />
-          <CardTitle className="text-sm font-medium">Profitability</CardTitle>
-          {data.profit.isNegative && (
-            <Badge variant="destructive" className="text-xs">
-              <AlertTriangle className="h-3 w-3 mr-1" /> Loss
-            </Badge>
+  // Shared card header — always rendered so the download button is always accessible.
+  const cardHeader = (
+    <CardHeader className="pb-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <DollarSign className="h-4 w-4" style={{ color: "hsl(var(--trade))" }} />
+        <CardTitle className="text-sm font-medium">Job Costing</CardTitle>
+        {data.profit.isNegative && (
+          <Badge variant="destructive" className="text-xs">
+            <AlertTriangle className="h-3 w-3 mr-1" /> Loss
+          </Badge>
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="ml-auto h-7 gap-1 text-xs"
+          onClick={handleDownloadCostReport}
+          disabled={isDownloading}
+        >
+          {isDownloading ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <FileDown className="h-3 w-3" />
           )}
+          Cost Report
+        </Button>
+      </div>
+    </CardHeader>
+  );
+
+  if (!hasFinancialData) {
+    return (
+      <Card>
+        {cardHeader}
+        <CardContent>
+          <p className="text-sm text-muted-foreground">No financial data yet</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className={data.profit.isNegative ? "border-red-300 dark:border-red-800" : ""}>
+      {data.profit.isNegative && (
+        <div className="rounded-t-lg bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-800 px-4 py-2.5 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+          <p className="text-sm font-medium text-red-700 dark:text-red-300">
+            This job is currently running at a loss
+          </p>
         </div>
-      </CardHeader>
+      )}
+      {cardHeader}
       <CardContent className="space-y-3">
         {data.quoted?.amount ? (
           <div className="flex items-center justify-between">

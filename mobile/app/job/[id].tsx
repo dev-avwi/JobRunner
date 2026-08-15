@@ -2396,13 +2396,16 @@ export default function JobDetailScreen() {
     quoted: { amount: number; gst: number; quoteNumber: string } | null;
     revenue: { invoiced: number; pending: number; received: number };
     costs: { labour: number; subcontractor: number; materials: number; otherExpenses: number; expenses?: number; total: number };
-    profit: { amount: number; margin: number; vsQuote: number | null };
+    variations: { approvedTotal: number; approvedCount: number; pendingTotal: number; pendingCount: number };
+    purchaseOrders: { total: number; count: number };
+    profit: { amount: number; margin: number; vsQuote: number | null; isNegative?: boolean };
     hours: { total: number; billable: number; nonBillable: number };
     status: 'profitable' | 'tight' | 'loss';
-    materials: Array<{ id: string; name: string; quantity: number; unitCost: number; totalCost: number; supplier: string; status: string }>;
+    materials: Array<{ id: string; name: string; quantity: number; unitCost: number; totalCost: number; totalPrice?: number; markupPercent?: string; supplier: string; status: string }>;
   }
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
+  const [showJobCostingSheet, setShowJobCostingSheet] = useState(false);
 
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
   const [rollbackTargetStatus, setRollbackTargetStatus] = useState<string | null>(null);
@@ -4933,7 +4936,17 @@ export default function JobDetailScreen() {
             materials: n(raw.costs.materials), otherExpenses: n(raw.costs.otherExpenses),
             expenses: n(raw.costs.expenses), total: n(raw.costs.total),
           },
-          profit: { amount: n(raw.profit.amount), margin: n(raw.profit.margin), vsQuote: raw.profit.vsQuote ?? null },
+          variations: {
+            approvedTotal: n(raw.variations?.approvedTotal),
+            approvedCount: n(raw.variations?.approvedCount),
+            pendingTotal: n(raw.variations?.pendingTotal),
+            pendingCount: n(raw.variations?.pendingCount),
+          },
+          purchaseOrders: {
+            total: n(raw.purchaseOrders?.total),
+            count: n(raw.purchaseOrders?.count),
+          },
+          profit: { amount: n(raw.profit.amount), margin: n(raw.profit.margin), vsQuote: raw.profit.vsQuote ?? null, isNegative: raw.profit.isNegative === true },
           hours: { total: n(raw.hours.total), billable: n(raw.hours.billable), nonBillable: n(raw.hours.nonBillable) },
           status: raw.status === 'profitable' || raw.status === 'tight' || raw.status === 'loss' ? raw.status : 'loss',
           materials: Array.isArray(raw.materials) ? raw.materials : [],
@@ -7199,6 +7212,36 @@ export default function JobDetailScreen() {
         </View>
       )}
 
+      {/* Loss warning banner — owners/managers only, when job is at a loss */}
+      {(isOwnerOrManager || isSoloOwner) && profitabilityData?.profit?.isNegative && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.destructiveLight,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: colors.destructive,
+            gap: spacing.sm,
+          }}
+        >
+          <Feather name="trending-down" size={18} color={colors.destructive} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.destructive }}>
+              This job is currently running at a loss
+            </Text>
+            <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginTop: spacing.xxs }}>
+              Margin: {profitabilityData.profit.margin.toFixed(1)}% — tap to view full cost breakdown
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.destructive} />
+        </TouchableOpacity>
+      )}
+
       {/* What's Next card — project jobs only */}
       {isProject ? (() => {
         const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
@@ -8759,33 +8802,54 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Quick Financial Summary - Compact overview with tap to More */}
+      {/* Job Costing Summary - Compact overview with tap to full breakdown bottom sheet */}
       {(isOwnerOrManager || isSoloOwner) && (
-        <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          padding: spacing.lg,
-          marginBottom: spacing.md,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          ...shadows.sm,
-        }}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: radius.xl,
+            padding: spacing.lg,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: profitabilityData?.profit?.isNegative ? colors.destructive : colors.cardBorder,
+            ...shadows.sm,
+          }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
             <View style={{
               width: 32,
               height: 32,
               borderRadius: radius.md,
-              backgroundColor: `${colors.success}15`,
+              backgroundColor: profitabilityData?.profit?.isNegative ? `${colors.destructive}15` : `${colors.success}15`,
               alignItems: 'center',
               justifyContent: 'center',
               marginRight: spacing.sm,
             }}>
-              <Feather name="bar-chart-2" size={iconSizes.md} color={colors.success} />
+              <Feather name="bar-chart-2" size={iconSizes.md} color={profitabilityData?.profit?.isNegative ? colors.destructive : colors.success} />
             </View>
-            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Financials</Text>
-            <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
-              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Details</Text>
-            </TouchableOpacity>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Job Costing</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              {profitabilityData?.status && (
+                <View style={{
+                  backgroundColor: profitabilityData.status === 'profitable' ? `${colors.success}15` : profitabilityData.status === 'tight' ? `${colors.warning}15` : `${colors.destructive}15`,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: 2,
+                  borderRadius: radius.sm,
+                }}>
+                  <Text style={{
+                    fontSize: typography.captionSmall.fontSize,
+                    fontWeight: fontWeights.semibold,
+                    color: profitabilityData.status === 'profitable' ? colors.success : profitabilityData.status === 'tight' ? colors.warning : colors.destructive,
+                    textTransform: 'capitalize',
+                  }}>
+                    {profitabilityData.status}
+                  </Text>
+                </View>
+              )}
+              <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+            </View>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {(() => {
@@ -8799,23 +8863,21 @@ export default function JobDetailScreen() {
               }
               if (pd && (pd.revenue.invoiced > 0 || pd.costs.total > 0)) {
                 const profitColor = pd.status === 'profitable' ? colors.success : pd.status === 'tight' ? colors.warning : colors.destructive;
-                summaryItems.push({ label: 'Profit', value: `${pd.profit.margin.toFixed(0)}%`, color: profitColor });
+                summaryItems.push({ label: 'Margin', value: `${pd.profit.margin.toFixed(0)}%`, color: profitColor });
               }
-              if (materials.length > 0) {
+              if (pd && pd.profit.amount !== 0) {
+                const profitColor = pd.profit.amount >= 0 ? colors.success : colors.destructive;
+                summaryItems.push({ label: 'Profit', value: formatCurrency(pd.profit.amount), color: profitColor });
+              } else if (materials.length > 0) {
                 summaryItems.push({ label: 'Materials', value: `${materials.length}`, color: colors.foreground });
-              }
-              if (jobExpenses.length > 0) {
-                summaryItems.push({ label: 'Expenses', value: `${jobExpenses.length}`, color: colors.foreground });
               }
               if (summaryItems.length === 0) {
                 summaryItems.push({ label: 'Revenue', value: '$0', color: colors.mutedForeground });
                 summaryItems.push({ label: 'Costs', value: '$0', color: colors.mutedForeground });
               }
-              return summaryItems.slice(0, 4).map((item, i) => (
-                <TouchableOpacity
+              return summaryItems.slice(0, 4).map((item) => (
+                <View
                   key={item.label}
-                  onPress={() => setActiveTab('manage')}
-                  activeOpacity={0.7}
                   style={{
                     flex: 1,
                     backgroundColor: colors.muted,
@@ -8826,11 +8888,11 @@ export default function JobDetailScreen() {
                 >
                   <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: item.color }}>{item.value}</Text>
                   <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xxs, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</Text>
-                </TouchableOpacity>
+                </View>
               ));
             })()}
           </View>
-        </View>
+        </TouchableOpacity>
       )}
 
       </CollapsibleSection>
@@ -13893,6 +13955,181 @@ export default function JobDetailScreen() {
             multiline
           />
         </View>
+      </AppBottomSheet>
+
+      {/* Job Costing Bottom Sheet — full P&L breakdown */}
+      <AppBottomSheet
+        visible={showJobCostingSheet}
+        onDismiss={() => setShowJobCostingSheet(false)}
+        title="Job Costing"
+        showCloseButton
+      >
+        <BottomSheetScrollView>
+          {(() => {
+            const pd = profitabilityData;
+            if (!pd) {
+              return (
+                <View style={{ paddingVertical: spacing.xl, alignItems: 'center' }}>
+                  <Text style={{ color: colors.mutedForeground, fontSize: typography.body.fontSize }}>No financial data yet</Text>
+                  <Text style={{ color: colors.mutedForeground, fontSize: typography.captionSmall.fontSize, marginTop: spacing.xs, textAlign: 'center' }}>
+                    Create invoices and track expenses to see profitability
+                  </Text>
+                </View>
+              );
+            }
+
+            const profitColor = pd.status === 'profitable' ? colors.success : pd.status === 'tight' ? colors.warning : colors.destructive;
+            const marginCapped = Math.min(Math.max(pd.profit.margin, 0), 100);
+
+            const SectionHeader = ({ label }: { label: string }) => (
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm }}>
+                {label}
+              </Text>
+            );
+
+            const Row = ({ label, value, color, bold }: { label: string; value: string; color?: string; bold?: boolean }) => (
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Text style={{ fontSize: typography.button.fontSize, color: bold ? colors.foreground : colors.mutedForeground, fontWeight: bold ? fontWeights.semibold : fontWeights.regular, flex: 1, marginRight: spacing.sm }}>
+                  {label}
+                </Text>
+                <Text style={{ fontSize: typography.button.fontSize, fontWeight: bold ? fontWeights.bold : fontWeights.medium, color: color || colors.foreground }}>
+                  {value}
+                </Text>
+              </View>
+            );
+
+            return (
+              <View style={{ paddingBottom: spacing.xl }}>
+                {/* Revenue */}
+                <SectionHeader label="Revenue" />
+                {pd.quoted?.amount ? <Row label="Quoted / Contract" value={formatCurrency(pd.quoted.amount)} /> : null}
+                {pd.variations.approvedTotal > 0 && <Row label={`Approved Variations (${pd.variations.approvedCount})`} value={formatCurrency(pd.variations.approvedTotal)} color={colors.success} />}
+                {pd.quoted?.amount && pd.variations.approvedTotal > 0 && (
+                  <Row label="Revised Contract Value" value={formatCurrency((pd.quoted?.amount ?? 0) + pd.variations.approvedTotal)} bold />
+                )}
+                <Row label="Invoiced (paid)" value={formatCurrency(pd.revenue.invoiced)} />
+                {pd.revenue.pending > 0 && <Row label="Pending Invoices" value={formatCurrency(pd.revenue.pending)} color={colors.warning} />}
+                {pd.variations.pendingTotal > 0 && <Row label={`Pending Variations (${pd.variations.pendingCount})`} value={formatCurrency(pd.variations.pendingTotal)} color={colors.warning} />}
+
+                {/* Labour */}
+                <SectionHeader label="Labour Costs" />
+                <Row
+                  label={`Hours logged${pd.hours.total > 0 ? ` (${pd.hours.total.toFixed(1)} hrs)` : ''}`}
+                  value={formatCurrency(pd.costs.labour)}
+                />
+                {pd.costs.subcontractor > 0 && <Row label="Subcontractor labour" value={formatCurrency(pd.costs.subcontractor)} />}
+
+                {/* Materials */}
+                <SectionHeader label="Materials" />
+                <Row label="Purchase cost" value={formatCurrency(pd.costs.materials)} />
+                {pd.materials.length > 0 && pd.materials.some(m => parseFloat(m.totalPrice?.toString() || '0') > parseFloat(m.totalCost?.toString() || '0')) && (
+                  <Row
+                    label="Markup earned"
+                    value={`+${formatCurrency(pd.materials.reduce((s, m) => {
+                      const price = parseFloat(m.totalPrice?.toString() || '0');
+                      const cost = parseFloat(m.totalCost?.toString() || '0');
+                      return s + Math.max(0, price > 0 ? price - cost : 0);
+                    }, 0))}`}
+                    color={colors.success}
+                  />
+                )}
+                {pd.materials.slice(0, 5).map(m => (
+                  <View key={m.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, paddingLeft: spacing.md }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, flex: 1 }} numberOfLines={1}>{m.name}</Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(parseFloat(m.totalCost?.toString() || '0'))}</Text>
+                  </View>
+                ))}
+                {pd.materials.length > 5 && (
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, paddingLeft: spacing.md, paddingBottom: spacing.xs }}>
+                    +{pd.materials.length - 5} more items
+                  </Text>
+                )}
+
+                {/* Purchase Orders */}
+                {pd.purchaseOrders.total > 0 && (
+                  <>
+                    <SectionHeader label="Purchase Orders" />
+                    <Row label={`${pd.purchaseOrders.count} PO${pd.purchaseOrders.count !== 1 ? 's' : ''} (active)`} value={formatCurrency(pd.purchaseOrders.total)} />
+                  </>
+                )}
+
+                {/* Other */}
+                {pd.costs.otherExpenses > 0 && (
+                  <>
+                    <SectionHeader label="Other Expenses" />
+                    <Row label="Other costs" value={formatCurrency(pd.costs.otherExpenses)} />
+                  </>
+                )}
+
+                {/* Total & Result */}
+                <SectionHeader label="Summary" />
+                <Row label="Total Revenue" value={formatCurrency(pd.revenue.invoiced)} bold />
+                <Row label="Total Costs" value={formatCurrency(pd.costs.total)} bold />
+
+                {/* Profit / Loss row */}
+                <View style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginTop: spacing.md,
+                  padding: spacing.md,
+                  backgroundColor: `${profitColor}12`,
+                  borderRadius: radius.lg,
+                  borderWidth: 1,
+                  borderColor: `${profitColor}30`,
+                }}>
+                  <View>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: profitColor, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      {pd.profit.amount >= 0 ? 'Gross Profit' : 'Gross Loss'}
+                    </Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
+                      Revenue {formatCurrency(pd.revenue.invoiced)} - Costs {formatCurrency(pd.costs.total)}
+                    </Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: profitColor }}>
+                      {formatCurrency(pd.profit.amount)}
+                    </Text>
+                    <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: profitColor }}>
+                      {pd.profit.margin.toFixed(1)}% margin
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Margin bar */}
+                <View style={{ marginTop: spacing.md, height: 8, backgroundColor: colors.muted, borderRadius: 4, overflow: 'hidden' }}>
+                  <View style={{ width: `${marginCapped}%`, height: '100%', backgroundColor: profitColor, borderRadius: 4 }} />
+                </View>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: profitColor, marginTop: spacing.xs, fontWeight: fontWeights.semibold }}>
+                  {pd.profit.margin.toFixed(1)}% gross margin
+                </Text>
+
+                {/* Tap to see full breakdown in More tab */}
+                <TouchableOpacity
+                  onPress={() => { setShowJobCostingSheet(false); setActiveTab('manage'); }}
+                  activeOpacity={0.7}
+                  style={{
+                    marginTop: spacing.lg,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                    paddingVertical: spacing.md,
+                    borderRadius: radius.lg,
+                    backgroundColor: `${colors.primary}10`,
+                    borderWidth: 1,
+                    borderColor: `${colors.primary}25`,
+                  }}
+                >
+                  <Feather name="bar-chart-2" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: typography.button.fontSize, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                    Full Financials in More Tab
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
+        </BottomSheetScrollView>
       </AppBottomSheet>
     </>
   );

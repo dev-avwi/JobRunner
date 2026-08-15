@@ -6344,6 +6344,18 @@ import { computeRetentionSummary } from "./retentionSummary";
         }, 0);
       } catch (e) { /* no materials */ }
 
+      // Get purchase order totals (informational — shown as a separate line; not added
+      // to totalCosts to avoid double-counting with expenses/materials tables)
+      let purchaseOrdersTotal = 0;
+      let purchaseOrdersCount = 0;
+      let purchaseOrdersList: any[] = [];
+      try {
+        const pos = await storage.getPurchaseOrdersByJobId(jobId, userId);
+        purchaseOrdersList = pos.filter((po: any) => po.status !== 'cancelled');
+        purchaseOrdersCount = purchaseOrdersList.length;
+        purchaseOrdersTotal = purchaseOrdersList.reduce((sum: number, po: any) => sum + parseFloat(po.total?.toString() || '0'), 0);
+      } catch (e) { /* no POs */ }
+
       const totalMaterialsCost = materialExpenseCost + materialsCostFromTable;
       // Markup captured = difference between what we charge and what we paid for materials
       const markupCaptured = Math.max(0, materialsPriceFromTable - materialsCostFromTable);
@@ -6561,6 +6573,17 @@ import { computeRetentionSummary } from "./retentionSummary";
           supplier: m.supplier,
           status: m.status,
         })),
+        purchaseOrders: {
+          total: Math.round(purchaseOrdersTotal * 100) / 100,
+          count: purchaseOrdersCount,
+          items: purchaseOrdersList.map((po: any) => ({
+            id: po.id,
+            poNumber: po.poNumber,
+            supplier: po.supplierName || po.supplierId,
+            total: parseFloat(po.total?.toString() || '0'),
+            status: po.status,
+          })),
+        },
         retentionSummary: await (async () => {
           try {
             const allClaims = await storage.getClaims(jobId, userId);
@@ -6576,6 +6599,162 @@ import { computeRetentionSummary } from "./retentionSummary";
     } catch (error) {
       console.error("Get job profitability error:", error);
       res.status(500).json({ error: "Failed to fetch job profitability" });
+    }
+  });
+
+  // Cost report PDF — generates a clean cost breakdown PDF for internal review or client disputes
+  app.get("/api/jobs/:id/cost-report", requireAuth, pdfPerUserLimiter, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { id: jobId } = req.params;
+
+      const job = await storage.getJob(jobId, userId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Re-use the profitability data we already compute
+      const allQuotes = await storage.getQuotes(userId);
+      const jobQuote = allQuotes.find((q: any) => q.jobId === jobId && (q.status === 'accepted' || q.status === 'sent'));
+      const quotedAmount = jobQuote ? parseFloat(jobQuote.total || '0') : null;
+
+      const invoices = await storage.getInvoices(userId);
+      const jobInvoices = invoices.filter((inv: any) => inv.jobId === jobId);
+      const totalRevenue = jobInvoices.reduce((s: number, inv: any) => s + (inv.status === 'paid' ? parseFloat(inv.total || '0') : 0), 0);
+
+      let approvedVariationsTotal = 0;
+      let pendingVariationsTotal = 0;
+      let variationsList: any[] = [];
+      try {
+        const vars = await storage.getJobVariations(jobId, userId);
+        variationsList = vars;
+        for (const v of vars) {
+          if (v.status === 'approved') approvedVariationsTotal += parseFloat(v.totalAmount || '0');
+          else if (v.status === 'sent') pendingVariationsTotal += parseFloat(v.totalAmount || '0');
+        }
+      } catch (_) {}
+
+      const expenses = await storage.getExpenses(userId, { jobId });
+      const totalExpenses = expenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+
+      let jobMaterials: any[] = [];
+      let materialsCost = 0;
+      let materialsPrice = 0;
+      try {
+        jobMaterials = await storage.getJobMaterials(jobId, userId);
+        materialsCost = jobMaterials.reduce((s: number, m: any) => s + parseFloat(m.totalCost?.toString() || '0'), 0);
+        materialsPrice = jobMaterials.reduce((s: number, m: any) => {
+          const p = parseFloat(m.totalPrice?.toString() || '0');
+          const c = parseFloat(m.totalCost?.toString() || '0');
+          return s + (p > 0 ? p : c);
+        }, 0);
+      } catch (_) {}
+
+      const allTimeEntries = await storage.getTimeEntries(userId, jobId);
+      const completedEntries = allTimeEntries.filter((e: any) => e.endTime);
+      const labourCost = completedEntries.reduce((s: number, e: any) => {
+        const hrs = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000;
+        return s + hrs * parseFloat(e.hourlyRate?.toString() || '0');
+      }, 0);
+      const totalHours = completedEntries.reduce((s: number, e: any) =>
+        s + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / 3600000, 0);
+
+      let poTotal = 0;
+      let poItems: any[] = [];
+      try {
+        const pos = await storage.getPurchaseOrdersByJobId(jobId, userId);
+        poItems = pos.filter((po: any) => po.status !== 'cancelled');
+        poTotal = poItems.reduce((s: number, po: any) => s + parseFloat(po.total?.toString() || '0'), 0);
+      } catch (_) {}
+
+      const totalCosts = labourCost + materialsCost + totalExpenses;
+      const grossProfit = totalRevenue - totalCosts;
+      const margin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
+      const markupEarned = Math.max(0, materialsPrice - materialsCost);
+
+      const biz = await storage.getBusinessSettings(userId);
+      const bizName = (biz as any)?.businessName || 'Business';
+      const accentColor = margin < 0 ? '#dc2626' : margin < 15 ? '#d97706' : '#16a34a';
+
+      const fmt = (n: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(n);
+      const fmtDate = (d: string | Date) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // Escape all user-controlled strings before interpolation into the PDF HTML.
+      // accentColor, margin, fmt(), fmtDate() are computed from numbers/dates — safe.
+      const safeTitle = escapeHtml(job.title);
+      const safeBizName = escapeHtml(bizName);
+      const safeStatusLabel = margin < 0 ? 'Loss' : margin < 15 ? 'Tight' : 'Profitable';
+      const safeProfitLabel = grossProfit < 0 ? 'Gross Loss' : 'Gross Profit';
+
+      const row = (label: string, value: string, bold = false, color = '#374151') =>
+        `<tr><td style="padding:8px 12px;color:#6b7280;font-size:13px;${bold ? 'font-weight:600;color:#111827;' : ''}">${escapeHtml(label)}</td><td style="padding:8px 12px;text-align:right;font-size:13px;font-weight:${bold ? '700' : '500'};color:${color}">${value}</td></tr>`;
+
+      const section = (title: string, rows: string) =>
+        `<div style="margin-bottom:24px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:8px;padding:0 12px">${escapeHtml(title)}</div><table style="width:100%;border-collapse:collapse;background:#f9fafb;border-radius:8px;overflow:hidden">${rows}</table></div>`;
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Cost Report</title></head><body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#fff;color:#111827">
+<div style="max-width:680px;margin:0 auto;padding:40px 24px">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:2px solid #e5e7eb">
+    <div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#9ca3af;margin-bottom:4px">Cost Report</div>
+      <div style="font-size:22px;font-weight:800;color:#111827">${safeTitle}</div>
+      <div style="font-size:13px;color:#6b7280;margin-top:4px">${safeBizName} &bull; Generated ${fmtDate(new Date())}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="display:inline-block;background:${accentColor};color:#fff;font-size:12px;font-weight:700;padding:4px 12px;border-radius:20px">${safeStatusLabel}</div>
+      <div style="font-size:24px;font-weight:800;color:${accentColor};margin-top:4px">${margin.toFixed(1)}%</div>
+      <div style="font-size:11px;color:#9ca3af">gross margin</div>
+    </div>
+  </div>
+
+  ${section('Revenue', [
+    quotedAmount ? row('Quoted / Contract Value', fmt(quotedAmount)) : '',
+    approvedVariationsTotal > 0 ? row('Approved Variations', fmt(approvedVariationsTotal)) : '',
+    quotedAmount && approvedVariationsTotal > 0 ? row('Revised Contract Value', fmt(quotedAmount + approvedVariationsTotal), true) : '',
+    row('Invoiced (paid)', fmt(totalRevenue)),
+    pendingVariationsTotal > 0 ? row('Pending Variations', fmt(pendingVariationsTotal)) : '',
+  ].filter(Boolean).join(''))}
+
+  ${section('Costs', [
+    row(`Labour (${totalHours.toFixed(1)} hrs)`, fmt(labourCost)),
+    row('Materials (purchase cost)', fmt(materialsCost)),
+    markupEarned > 0 ? row('Markup captured', `+${fmt(markupEarned)}`, false, '#16a34a') : '',
+    totalExpenses > 0 ? row('Expenses (other)', fmt(totalExpenses)) : '',
+    poTotal > 0 ? row(`Purchase Orders (${poItems.length})`, fmt(poTotal)) : '',
+    row('Total Costs', fmt(totalCosts), true),
+  ].filter(Boolean).join(''))}
+
+  <div style="background:${margin < 0 ? '#fef2f2' : margin < 15 ? '#fffbeb' : '#f0fdf4'};border:2px solid ${accentColor};border-radius:10px;padding:20px;margin-bottom:24px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-size:13px;color:#6b7280;margin-bottom:2px">${safeProfitLabel}</div>
+        <div style="font-size:28px;font-weight:800;color:${accentColor}">${fmt(grossProfit)}</div>
+        <div style="font-size:12px;color:${accentColor};font-weight:600">${margin.toFixed(1)}% margin = Revenue ${fmt(totalRevenue)} &minus; Costs ${fmt(totalCosts)}</div>
+      </div>
+    </div>
+    ${margin < 0 ? `<div style="margin-top:12px;padding:10px;background:rgba(220,38,38,0.08);border-radius:6px;font-size:12px;color:#dc2626;font-weight:600">This job is currently running at a loss. Review labour hours and material costs.</div>` : ''}
+  </div>
+
+  ${jobMaterials.length > 0 ? `<div style="margin-bottom:24px"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:8px;padding:0 12px">Materials Breakdown</div><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f3f4f6"><th style="padding:8px 12px;text-align:left;color:#6b7280;font-weight:600">Item</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Qty</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Cost</th><th style="padding:8px 12px;text-align:right;color:#6b7280;font-weight:600">Sell</th></tr></thead><tbody>${jobMaterials.map((m: any, i: number) => `<tr style="background:${i % 2 === 0 ? '#fff' : '#f9fafb'}"><td style="padding:7px 12px">${escapeHtml(m.name || 'Unnamed')}</td><td style="padding:7px 12px;text-align:right">${escapeHtml(String(m.quantity ?? ''))}</td><td style="padding:7px 12px;text-align:right">${fmt(parseFloat(m.totalCost?.toString() || '0'))}</td><td style="padding:7px 12px;text-align:right">${fmt(parseFloat(m.totalPrice?.toString() || m.totalCost?.toString() || '0'))}</td></tr>`).join('')}</tbody></table></div>` : ''}
+
+  ${variationsList.length > 0 ? section('Variations', variationsList.map((v: any) => {
+    const vLabel = escapeHtml(v.title || v.number || 'Variation');
+    const vStatusSuffix = v.status === 'approved' ? ' (Approved)' : v.status === 'sent' ? ' (Pending)' : ` (${escapeHtml(v.status || '')})`;
+    return row(vLabel + vStatusSuffix, fmt(parseFloat(v.totalAmount || '0')));
+  }).join('')) : ''}
+
+  <div style="margin-top:32px;padding-top:16px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center">
+    Generated by ${safeBizName} &bull; ${fmtDate(new Date())} &bull; For internal use only
+  </div>
+</div></body></html>`;
+
+      const { generatePDFBuffer } = await import('../pdfService');
+      const pdfBuffer = await generatePDFBuffer(html);
+      const fileName = `cost-report-${job.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-${jobId.slice(0, 8)}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      console.error("Error generating cost report PDF:", error);
+      res.status(500).json({ error: "Failed to generate cost report PDF" });
     }
   });
 

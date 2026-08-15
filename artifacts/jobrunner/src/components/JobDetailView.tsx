@@ -2119,6 +2119,23 @@ export default function JobDetailView({
 
       {/* Full-width banners */}
       <div className="space-y-4">
+        {/* Loss warning banner — visible to owners/managers when job is at a loss */}
+        {!isTradie && jobProfitabilityData?.profit?.isNegative && (
+          <div className="rounded-xl p-4 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/50 shrink-0">
+                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-red-700 dark:text-red-300">This job is currently running at a loss</p>
+                <p className="text-sm text-red-600/80 dark:text-red-400/80">
+                  Margin: {jobProfitabilityData.profit.margin.toFixed(1)}% — review labour hours and costs in the Financials section.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Urgency Banner for scheduled jobs */}
         {job.status === 'scheduled' && jobUrgency && !activeTimerForThisJob && (
           <div 
