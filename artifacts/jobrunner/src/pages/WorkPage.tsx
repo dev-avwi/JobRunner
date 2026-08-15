@@ -37,9 +37,7 @@ import {
   FileText,
   Bot,
   Globe,
-  Phone,
-  Layers,
-  Wrench
+  Phone
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -716,16 +714,9 @@ export default function WorkPage({
               <div className="flex items-center gap-1 shrink-0 flex-wrap">
                 <StatusBadge status={job.status} />
                 {job.jobType === 'project' && (
-                  <Badge variant="outline" className="text-xs gap-1 border-violet-300 text-violet-700 bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:bg-violet-950">
-                    <Layers className="w-3 h-3" />
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                     Project
-                  </Badge>
-                )}
-                {job.jobType === 'service' && (
-                  <Badge variant="outline" className="text-xs gap-1 border-sky-300 text-sky-700 bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:bg-sky-950">
-                    <Wrench className="w-3 h-3" />
-                    Service Call
-                  </Badge>
+                  </span>
                 )}
                 {job.leadSource && getLeadSourceBadge(job.leadSource)}
                 {job.requiresInspection && (

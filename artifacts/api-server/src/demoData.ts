@@ -605,10 +605,10 @@ export async function createDemoUserAndData(
 
     // IN_PROGRESS JOBS (4)
     const inProgressJobs = [
-      { clientIdx: 3, title: 'Bathroom Renovation Plumbing', description: 'Full bathroom rough-in for renovation', address: clientsData[3].address, startedAt: getDaysAgo(2) },
-      { clientIdx: 4, title: 'Hot Water System Replacement', description: 'Replacing old electric HWS with heat pump', address: clientsData[4].address, startedAt: getDaysAgo(1) },
+      { clientIdx: 3, title: 'Bathroom Renovation Plumbing', description: 'Full bathroom rough-in for renovation', address: clientsData[3].address, startedAt: getDaysAgo(2), jobType: 'project' as const },
+      { clientIdx: 4, title: 'Hot Water System Replacement', description: 'Replacing old electric HWS with heat pump', address: clientsData[4].address, startedAt: getDaysAgo(1), jobType: 'project' as const },
       { clientIdx: 5, title: 'Kitchen Sink Installation', description: 'Installing new undermount kitchen sink', address: clientsData[5].address, startedAt: getDaysAgo(0) },
-      { clientIdx: 6, title: 'Gas Line Extension', description: 'Extending gas line to new BBQ area', address: clientsData[6].address, startedAt: getDaysAgo(3), isXeroImport: true, xeroJobId: generateXeroId('JOB') },
+      { clientIdx: 6, title: 'Gas Line Extension', description: 'Extending gas line to new BBQ area', address: clientsData[6].address, startedAt: getDaysAgo(3), isXeroImport: true, xeroJobId: generateXeroId('JOB'), jobType: 'project' as const },
     ];
 
     for (const job of inProgressJobs) {
@@ -623,6 +623,7 @@ export async function createDemoUserAndData(
         estimatedDuration: 120,
         isXeroImport: job.isXeroImport || false,
         xeroJobId: job.xeroJobId || null,
+        jobType: job.jobType || 'service',
       });
       createdJobs.push(createdJob);
     }
@@ -682,7 +683,7 @@ export async function createDemoUserAndData(
     // ADDITIONAL IN_PROGRESS JOBS (2) - converted from cancelled for better demo presentation
     const additionalInProgressJobs = [
       { clientIdx: 6, title: 'Pool Pump Repair', description: 'Replacing worn pool pump motor and seals', address: clientsData[6].address },
-      { clientIdx: 7, title: 'Solar Hot Water Install', description: 'Installing solar hot water system on north-facing roof', address: clientsData[7].address },
+      { clientIdx: 7, title: 'Solar Hot Water Install', description: 'Installing solar hot water system on north-facing roof', address: clientsData[7].address, jobType: 'project' as const },
     ];
 
     for (const job of additionalInProgressJobs) {
@@ -696,6 +697,7 @@ export async function createDemoUserAndData(
         scheduledAt: getDaysAgo(1),
         startedAt: getDaysAgo(0),
         estimatedDuration: 180,
+        jobType: (job as any).jobType || 'service',
       });
       createdJobs.push(createdJob);
     }
