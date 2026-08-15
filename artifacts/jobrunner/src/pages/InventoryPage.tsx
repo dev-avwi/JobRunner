@@ -1990,7 +1990,9 @@ function PurchaseOrdersTab({
   const [expandedPO, setExpandedPO] = useState<string | null>(null);
   const [poItems, setPOItems] = useState<Record<string, any[]>>({});
   const [sendDialogPO, setSendDialogPO] = useState<PurchaseOrder | null>(null);
-  const [sendEmail, setSendEmail] = useState("");
+  const [sendChannel, setSendChannel] = useState<"email" | "sms">("email");
+  const [sendTo, setSendTo] = useState("");
+  const [sendMessage, setSendMessage] = useState("");
   const [sendingPO, setSendingPO] = useState(false);
   const { toast } = useToast();
 
@@ -2029,17 +2031,29 @@ function PurchaseOrdersTab({
 
   const openSendDialog = (po: PurchaseOrder) => {
     const supplier = suppliers.find(s => s.id === po.supplierId);
-    setSendEmail(supplier?.email || "");
+    const hasEmail = !!supplier?.email;
+    const defaultChannel = hasEmail ? "email" : "sms";
+    setSendChannel(defaultChannel);
+    setSendTo(defaultChannel === "email" ? (supplier?.email || "") : ((supplier as any)?.phone || ""));
+    setSendMessage("");
     setSendDialogPO(po);
   };
 
   const handleSendPO = async () => {
     if (!sendDialogPO) return;
+    if (!sendTo.trim()) {
+      toast({ title: sendChannel === "email" ? "Enter a supplier email address" : "Enter a supplier phone number", variant: "destructive" });
+      return;
+    }
     setSendingPO(true);
     try {
-      await apiRequest("POST", `/api/purchase-orders/${sendDialogPO.id}/send`, { email: sendEmail });
+      await apiRequest("POST", `/api/purchase-orders/${sendDialogPO.id}/send`, {
+        channel: sendChannel,
+        to: sendTo.trim(),
+        message: sendMessage.trim() || undefined,
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
-      toast({ title: "Purchase order sent to supplier" });
+      toast({ title: sendChannel === "email" ? "Purchase order emailed to supplier" : "Purchase order sent via SMS" });
       setSendDialogPO(null);
     } catch (e: any) {
       toast({ title: e?.message || "Failed to send PO", variant: "destructive" });
@@ -2224,26 +2238,65 @@ function PurchaseOrdersTab({
           {sendDialogPO && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                PO <strong>{sendDialogPO.poNumber}</strong> will be emailed to the supplier as an HTML document.
+                Sending <strong>{sendDialogPO.poNumber}</strong> to supplier
+                {(sendDialogPO as any).sentAt && (
+                  <span className="ml-2 text-xs text-green-600 font-medium">
+                    (previously sent {new Date((sendDialogPO as any).sentAt).toLocaleDateString("en-AU")})
+                  </span>
+                )}
               </p>
+              {/* Channel selector */}
+              <div className="flex rounded-md border overflow-hidden">
+                {(["email", "sms"] as const).map((ch) => (
+                  <button
+                    key={ch}
+                    type="button"
+                    onClick={() => {
+                      const supplier = suppliers.find(s => s.id === sendDialogPO.supplierId);
+                      setSendChannel(ch);
+                      setSendTo(ch === "email" ? (supplier?.email || "") : ((supplier as any)?.phone || ""));
+                    }}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium transition-colors ${
+                      sendChannel === ch
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {ch === "email" ? <Mail className="w-3.5 h-3.5" /> : <Send className="w-3.5 h-3.5" />}
+                    {ch === "email" ? "Email" : "SMS"}
+                  </button>
+                ))}
+              </div>
               <div className="space-y-2">
-                <Label>Supplier email *</Label>
+                <Label>{sendChannel === "email" ? "Supplier email *" : "Supplier phone *"}</Label>
                 <Input
-                  type="email"
-                  value={sendEmail}
-                  onChange={(e) => setSendEmail(e.target.value)}
-                  placeholder="supplier@example.com"
+                  type={sendChannel === "email" ? "email" : "tel"}
+                  value={sendTo}
+                  onChange={(e) => setSendTo(e.target.value)}
+                  placeholder={sendChannel === "email" ? "supplier@example.com" : "04xx xxx xxx"}
                 />
               </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Message (optional)</Label>
+                <Textarea
+                  value={sendMessage}
+                  onChange={(e) => setSendMessage(e.target.value)}
+                  placeholder={sendChannel === "email" ? "Custom covering note (leave blank for default)" : "Custom SMS text (leave blank for default)"}
+                  rows={3}
+                />
+              </div>
+              {sendChannel === "email" && (
+                <p className="text-xs text-muted-foreground">The PO will be attached as a PDF.</p>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setSendDialogPO(null)}>Cancel</Button>
             <Button
               onClick={handleSendPO}
-              disabled={sendingPO || !sendEmail}
+              disabled={sendingPO || !sendTo.trim()}
             >
-              {sendingPO ? "Sending..." : "Send PO"}
+              {sendingPO ? "Sending..." : sendChannel === "email" ? "Email PO" : "Send SMS"}
             </Button>
           </DialogFooter>
         </DialogContent>

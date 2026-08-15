@@ -1,9 +1,49 @@
 import type { Express } from "express";
 import { z } from "zod";
+import { createHmac } from "crypto";
 import { storage, db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
 import { requireAuth } from "./middleware";
 import { ownerOnly, ownerOrManagerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
+import { getProductionBaseUrl } from "../urlHelper";
+
+// ── Signed PO access tokens (no DB required) ──────────────────────────────────
+// Token format (base64url-encoded): `${poId}:${expiryUnix}:${hmac-hex}`
+// HMAC-SHA256 over `${poId}:${expiryUnix}` using ENCRYPTION_SECRET.
+// Supplier-facing: 30-day expiry, no auth required.
+
+const PO_TOKEN_TTL_DAYS = 30;
+
+export function generatePoAccessToken(poId: string): string {
+  const secret = process.env.ENCRYPTION_SECRET;
+  if (!secret) throw new Error('ENCRYPTION_SECRET is required to generate PO access tokens');
+  const expiry = Math.floor(Date.now() / 1000) + PO_TOKEN_TTL_DAYS * 86400;
+  const payload = `${poId}:${expiry}`;
+  const sig = createHmac('sha256', secret).update(payload).digest('hex');
+  return Buffer.from(`${payload}:${sig}`).toString('base64url');
+}
+
+export function verifyPoAccessToken(token: string): { poId: string } | null {
+  try {
+    const secret = process.env.ENCRYPTION_SECRET;
+    if (!secret) return null; // Cannot verify without a configured secret
+    const decoded = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = decoded.split(':');
+    if (parts.length !== 3) return null;
+    const [poId, expiryStr, sig] = parts;
+    const expiry = parseInt(expiryStr, 10);
+    if (isNaN(expiry) || Date.now() / 1000 > expiry) return null;
+    const expected = createHmac('sha256', secret).update(`${poId}:${expiryStr}`).digest('hex');
+    // Constant-time compare to avoid timing attacks
+    if (sig.length !== expected.length) return null;
+    let diff = 0;
+    for (let i = 0; i < sig.length; i++) diff |= sig.charCodeAt(i) ^ expected.charCodeAt(i);
+    if (diff !== 0) return null;
+    return { poId };
+  } catch {
+    return null;
+  }
+}
 import {
   equipmentCategories,
   jobEquipment,
@@ -19,6 +59,10 @@ import {
   insertPurchaseOrderItemSchema,
   insertRebateSchema,
   insertTeamGroupSchema,
+  purchaseOrders as purchaseOrdersTable,
+  purchaseOrderItems as purchaseOrderItemsTable,
+  suppliers as suppliersTable,
+  businessSettings as businessSettingsTable,
 } from "@workspace/db";
 
 /** Recompute and persist PO-level status from the current set of line items. */
@@ -58,6 +102,85 @@ async function recomputePoStatus(
 }
 
 export function registerInventoryRoutes(app: Express): void {
+
+  // ── GET /api/po/view/:token — supplier-facing PO PDF (no auth required) ──────
+  // Suppliers follow this link from the SMS. The signed token encodes the PO ID
+  // and a 30-day expiry; no session or login is needed.
+  app.get("/api/po/view/:token", async (req: any, res) => {
+    try {
+      const verified = verifyPoAccessToken(req.params.token);
+      if (!verified) {
+        return res.status(410).send('<html><body style="font-family:sans-serif;padding:40px"><h2>Link expired or invalid</h2><p>Ask your supplier to resend the purchase order.</p></body></html>');
+      }
+
+      // Query without userId scoping — the signed token is the auth mechanism
+      const [poRows, items] = await Promise.all([
+        db.select().from(purchaseOrdersTable).where(eq(purchaseOrdersTable.id, verified.poId)).limit(1),
+        db.select().from(purchaseOrderItemsTable).where(eq(purchaseOrderItemsTable.poId, verified.poId)),
+      ]);
+      const po = poRows[0] ?? null;
+      if (!po) {
+        return res.status(404).send('<html><body style="font-family:sans-serif;padding:40px"><h2>Purchase order not found.</h2></body></html>');
+      }
+
+      const [supplierRows, bizRows] = await Promise.all([
+        (po as any).supplierId
+          ? db.select().from(suppliersTable).where(eq(suppliersTable.id, (po as any).supplierId)).limit(1)
+          : Promise.resolve([]),
+        db.select().from(businessSettingsTable).where(eq(businessSettingsTable.userId, (po as any).userId)).limit(1),
+      ]);
+
+      const supplier = supplierRows[0] ?? null;
+      const biz = bizRows[0] ?? null;
+
+      const { generatePurchaseOrderPDF, generatePDFBuffer } = await import('../pdfService');
+      const pdfHtml = generatePurchaseOrderPDF({
+        po: {
+          poNumber: (po as any).poNumber,
+          orderDate: (po as any).orderDate,
+          requiredDate: (po as any).requiredDate,
+          status: (po as any).status,
+          subtotal: (po as any).subtotal,
+          gstAmount: (po as any).gstAmount,
+          total: (po as any).total,
+          terms: (po as any).terms,
+          notes: (po as any).notes,
+        },
+        items: items.map((i: any) => ({
+          description: i.description,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          lineTotal: i.lineTotal,
+        })),
+        supplier: supplier ? {
+          name: (supplier as any).name,
+          email: (supplier as any).email,
+          phone: (supplier as any).phone,
+          address: (supplier as any).address,
+        } : null,
+        business: biz ? {
+          businessName: (biz as any).businessName,
+          logoUrl: (biz as any).logoUrl,
+          abn: (biz as any).abn,
+          address: (biz as any).address,
+          phone: (biz as any).phone,
+          email: (biz as any).email,
+        } : { businessName: 'Your Contractor' },
+        job: null,
+      });
+
+      const pdfBuffer = await generatePDFBuffer(pdfHtml);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="PO-${po.poNumber}.pdf"`);
+      res.setHeader('Cache-Control', 'private, no-store');
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('[PO view] Error:', error);
+      res.status(500).send('<html><body><h2>Failed to load purchase order.</h2></body></html>');
+    }
+  });
+
   // ============================================================
   // Inventory Management Routes
   // ============================================================
@@ -487,84 +610,155 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
-  // ── POST /api/purchase-orders/:id/send — email PO to supplier (owner/manager only) ──
+  // ── POST /api/purchase-orders/:id/send — send PO to supplier via email or SMS ──
   app.post("/api/purchase-orders/:id/send", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const po = await storage.getPurchaseOrder(req.params.id, userContext.effectiveUserId);
       if (!po) return res.status(404).json({ error: "Purchase order not found" });
 
+      // Resolve channel and recipient — accept new { channel, to } or legacy { email }
+      const channel: 'email' | 'sms' = req.body.channel === 'sms' ? 'sms' : 'email';
+      const customMessage: string | undefined = req.body.message;
+
       const items = await storage.getPurchaseOrderItems(po.id);
       const businessSettings = await storage.getBusinessSettings(userContext.effectiveUserId);
-
-      // Determine recipient email
-      let toEmail: string = req.body.email || '';
-      if (!toEmail && po.supplierId) {
-        const supplier = await storage.getSupplier(po.supplierId, userContext.effectiveUserId);
-        toEmail = supplier?.email || '';
-      }
-      if (!toEmail) {
-        return res.status(400).json({ error: "No supplier email address available. Please enter an email address." });
-      }
-
       const businessName = businessSettings?.businessName || 'Your Contractor';
-      const abn = businessSettings?.abn ? `ABN: ${businessSettings.abn}` : '';
-      const orderDate = po.orderDate ? new Date(po.orderDate).toLocaleDateString('en-AU') : '';
 
-      // Build a simple HTML email body (no PDF dependency — simple and fast)
-      const lineRows = items.map(item => `
-        <tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${item.description}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${parseFloat(item.unitPrice).toFixed(2)}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">$${parseFloat(item.lineTotal).toFixed(2)}</td>
-        </tr>`).join('');
+      // Resolve supplier contact details
+      let supplier: any = null;
+      if (po.supplierId) {
+        supplier = await storage.getSupplier(po.supplierId, userContext.effectiveUserId);
+      }
 
-      const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Purchase Order ${po.poNumber}</title></head>
-<body style="font-family:Arial,sans-serif;color:#333;max-width:700px;margin:0 auto;padding:24px;">
+      // Resolve job details for the PDF
+      let job: any = null;
+      if ((po as any).jobId) {
+        try { job = await storage.getJob((po as any).jobId, userContext.effectiveUserId); } catch {}
+      }
+
+      if (channel === 'email') {
+        // ── Email channel ──────────────────────────────────────────────────────
+        let toEmail: string = req.body.to || req.body.email || '';
+        if (!toEmail) toEmail = supplier?.email || '';
+        if (!toEmail) {
+          return res.status(400).json({ error: "No supplier email address available. Please enter an email address." });
+        }
+
+        // Generate PDF attachment
+        const { generatePurchaseOrderPDF, generatePDFBuffer } = await import('../pdfService');
+        const pdfHtml = generatePurchaseOrderPDF({
+          po: {
+            poNumber: po.poNumber,
+            orderDate: po.orderDate,
+            requiredDate: (po as any).requiredDate,
+            status: po.status,
+            subtotal: po.subtotal,
+            gstAmount: po.gstAmount,
+            total: po.total,
+            terms: (po as any).terms,
+            notes: po.notes,
+          },
+          items: items.map(i => ({
+            description: i.description,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice,
+            lineTotal: i.lineTotal,
+          })),
+          supplier: supplier ? { name: supplier.name, email: supplier.email, phone: supplier.phone, address: supplier.address } : null,
+          business: {
+            businessName: businessSettings?.businessName,
+            logoUrl: (businessSettings as any)?.logoUrl,
+            abn: businessSettings?.abn,
+            address: businessSettings?.address,
+            phone: businessSettings?.phone,
+            email: businessSettings?.email,
+          },
+          job: job ? { number: job.number, title: job.title, address: job.address } : null,
+        });
+
+        const pdfBuffer = await generatePDFBuffer(pdfHtml);
+
+        // Email body — concise covering note
+        const emailBody = customMessage
+          ? `<p style="font-family:Arial,sans-serif;color:#374151;">${customMessage}</p>`
+          : `<p style="font-family:Arial,sans-serif;color:#374151;">Please find attached Purchase Order <strong>${po.poNumber}</strong> from <strong>${businessName}</strong>.</p>`;
+
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px;">
   <h2 style="margin:0 0 4px 0;">${businessName}</h2>
-  ${abn ? `<p style="margin:0 0 16px 0;color:#6b7280;font-size:14px;">${abn}</p>` : ''}
-  <hr style="border:none;border-top:2px solid #2563EB;margin:16px 0;">
-  <h1 style="font-size:22px;margin:0 0 8px 0;">Purchase Order</h1>
-  <p style="margin:0;color:#6b7280;font-size:14px;">PO# <strong>${po.poNumber}</strong>&nbsp;&nbsp;|&nbsp;&nbsp;Date: ${orderDate}</p>
-  ${po.requiredDate ? `<p style="margin:4px 0 0;color:#6b7280;font-size:14px;">Required by: ${new Date(po.requiredDate).toLocaleDateString('en-AU')}</p>` : ''}
-  <table style="width:100%;border-collapse:collapse;margin-top:24px;font-size:14px;">
-    <thead>
-      <tr style="background:#f3f4f6;">
-        <th style="padding:10px 12px;text-align:left;font-weight:600;">Description</th>
-        <th style="padding:10px 12px;text-align:center;font-weight:600;">Qty</th>
-        <th style="padding:10px 12px;text-align:right;font-weight:600;">Unit Price</th>
-        <th style="padding:10px 12px;text-align:right;font-weight:600;">Total</th>
-      </tr>
-    </thead>
-    <tbody>${lineRows}</tbody>
-    <tfoot>
-      ${po.gstAmount && parseFloat(po.gstAmount) > 0 ? `
-      <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-size:13px;color:#6b7280;">Subtotal</td><td style="padding:8px 12px;text-align:right;">$${parseFloat(po.subtotal || '0').toFixed(2)}</td></tr>
-      <tr><td colspan="3" style="padding:8px 12px;text-align:right;font-size:13px;color:#6b7280;">GST (10%)</td><td style="padding:8px 12px;text-align:right;">$${parseFloat(po.gstAmount).toFixed(2)}</td></tr>
-      ` : ''}
-      <tr style="background:#f3f4f6;font-weight:700;">
-        <td colspan="3" style="padding:10px 12px;text-align:right;">Total</td>
-        <td style="padding:10px 12px;text-align:right;">$${parseFloat(po.total || '0').toFixed(2)}</td>
-      </tr>
-    </tfoot>
-  </table>
-  ${po.terms ? `<p style="margin-top:20px;font-size:13px;color:#6b7280;"><strong>Terms:</strong> ${po.terms}</p>` : ''}
-  ${po.notes ? `<p style="margin-top:8px;font-size:13px;color:#6b7280;"><strong>Notes:</strong> ${po.notes}</p>` : ''}
-  <p style="margin-top:32px;font-size:12px;color:#9ca3af;">This purchase order was sent by ${businessName} via JobRunner.</p>
+  <hr style="border:none;border-top:2px solid #2563EB;margin:12px 0 16px;">
+  ${emailBody}
+  <p style="font-family:Arial,sans-serif;color:#6b7280;font-size:13px;">The full purchase order is attached as a PDF.</p>
+  <p style="margin-top:32px;font-size:12px;color:#9ca3af;">Sent via JobRunner</p>
 </body></html>`;
 
-      const { sendEmailWithAttachment } = await import('../emailService');
-      await sendEmailWithAttachment({
-        to: toEmail,
-        fromName: businessName,
-        subject: `Purchase Order ${po.poNumber} from ${businessName}`,
-        html,
-        _meta: { userId: userContext.effectiveUserId, type: 'purchase_order', relatedId: po.id },
-      });
+        const { sendEmailWithAttachment } = await import('../emailService');
+        await sendEmailWithAttachment({
+          to: toEmail,
+          fromName: businessName,
+          subject: `Purchase Order ${po.poNumber} from ${businessName}`,
+          html,
+          attachments: [{
+            filename: `PO-${po.poNumber}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          }],
+          _meta: { userId: userContext.effectiveUserId, type: 'purchase_order', relatedId: po.id },
+        });
 
-      // Mark PO as sent
+        // Record audit trail as a job note if the PO is linked to a job
+        if ((po as any).jobId) {
+          try {
+            await storage.createJobNote({
+              jobId: (po as any).jobId,
+              userId: userContext.effectiveUserId,
+              content: `Purchase order ${po.poNumber} emailed to supplier${supplier?.name ? ` (${supplier.name})` : ''} at ${toEmail}.`,
+            } as any);
+          } catch {}
+        }
+
+      } else {
+        // ── SMS channel ────────────────────────────────────────────────────────
+        let toPhone: string = req.body.to || '';
+        if (!toPhone) toPhone = supplier?.phone || '';
+        if (!toPhone) {
+          return res.status(400).json({ error: "No supplier phone number available. Please enter a phone number." });
+        }
+
+        // Generate a signed, time-limited link so the supplier can view the full PO PDF.
+        // The link is always appended — even when the sender provides custom text —
+        // so the supplier can access the document regardless of message phrasing.
+        const accessToken = generatePoAccessToken(po.id);
+        const baseUrl = getProductionBaseUrl(req);
+        const poViewUrl = `${baseUrl}/api/po/view/${accessToken}`;
+
+        const smsBody = customMessage
+          ? `${customMessage}\nView PO: ${poViewUrl}`
+          : `Hi${supplier?.name ? ` ${supplier.name}` : ''}, ${businessName} has sent you Purchase Order ${po.poNumber} totalling $${parseFloat(po.total || '0').toFixed(2)}. View the full PO here: ${poViewUrl}`;
+
+        const defaultMessage = smsBody;
+
+        const { sendSMS } = await import('../twilioClient');
+        const smsResult = await sendSMS({ to: toPhone, message: defaultMessage });
+
+        if (!smsResult.success && !smsResult.simulated) {
+          return res.status(500).json({ error: smsResult.error || "Failed to send SMS" });
+        }
+
+        // Record audit trail
+        if ((po as any).jobId) {
+          try {
+            await storage.createJobNote({
+              jobId: (po as any).jobId,
+              userId: userContext.effectiveUserId,
+              content: `Purchase order ${po.poNumber} sent via SMS to ${toPhone}${supplier?.name ? ` (${supplier.name})` : ''} with a link to view the PO document (expires in ${PO_TOKEN_TTL_DAYS} days).`,
+            } as any);
+          } catch {}
+        }
+      }
+
+      // Mark PO as sent and record timestamp
       const updated = await storage.updatePurchaseOrder(po.id, userContext.effectiveUserId, {
         status: 'sent',
         sentAt: new Date(),

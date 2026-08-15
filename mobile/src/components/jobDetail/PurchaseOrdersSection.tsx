@@ -8,7 +8,7 @@
  *  - Supplier phone/email shown in expanded PO for direct contact
  */
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Linking, TextInput } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Linking, TextInput, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, shadows, typography, fontWeights } from '../../lib/design-tokens';
@@ -97,6 +97,14 @@ function formatDate(val: string | null | undefined): string {
   } catch { return ''; }
 }
 
+interface SendState {
+  poId: string;
+  poNumber: string;
+  channel: 'email' | 'sms';
+  to: string;
+  message: string;
+}
+
 export function PurchaseOrdersSection({
   colors,
   purchaseOrders,
@@ -112,7 +120,45 @@ export function PurchaseOrdersSection({
   const [itemQtyEdits, setItemQtyEdits] = useState<Record<string, string>>({});
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
 
+  // Send-to-supplier modal state
+  const [sendState, setSendState] = useState<SendState | null>(null);
+  const [isSending, setIsSending] = useState(false);
+
   const toggleExpand = (id: string) => setExpandedId(prev => prev === id ? null : id);
+
+  const openSendModal = (po: PurchaseOrder) => {
+    setSendState({
+      poId: po.id,
+      poNumber: po.poNumber,
+      channel: po.supplierEmail ? 'email' : 'sms',
+      to: po.supplierEmail || po.supplierPhone || '',
+      message: '',
+    });
+  };
+
+  const handleSend = async () => {
+    if (!sendState) return;
+    const { poId, channel, to, message } = sendState;
+    if (!to.trim()) {
+      showToast({ type: 'error', message: channel === 'email' ? 'Enter a supplier email address' : 'Enter a supplier phone number' });
+      return;
+    }
+    setIsSending(true);
+    try {
+      const res = await api.post(`/api/purchase-orders/${poId}/send`, { channel, to: to.trim(), message: message.trim() || undefined });
+      if (res.error) {
+        showToast({ type: 'error', message: res.error });
+      } else {
+        showToast({ type: 'success', message: channel === 'email' ? 'Purchase order emailed to supplier' : 'Purchase order sent via SMS' });
+        setSendState(null);
+        onRefresh?.();
+      }
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.message ?? 'Failed to send purchase order' });
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const handleStatusChange = async (po: PurchaseOrder, newStatus: string) => {
     if (!jobId) return;
@@ -407,6 +453,34 @@ export function PurchaseOrdersSection({
                       </View>
                     )}
 
+                    {/* Send to supplier row */}
+                    {isOwnerOrManager && (
+                      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        {po.sentAt ? (
+                          <>
+                            <Feather name="check-circle" size={13} color="#059669" />
+                            <Text style={{ fontSize: typography.sizes.xs, color: '#059669', flex: 1 }}>
+                              Sent to supplier {formatDate(po.sentAt)}
+                            </Text>
+                          </>
+                        ) : (
+                          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, flex: 1 }}>
+                            Not yet sent to supplier
+                          </Text>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => openSendModal(po)}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primary, paddingHorizontal: spacing.sm, paddingVertical: 5, borderRadius: 8 }}
+                          activeOpacity={0.8}
+                        >
+                          <Feather name="send" size={12} color="#fff" />
+                          <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: '#fff' }}>
+                            {po.sentAt ? 'Resend' : 'Send'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+
                     {/* Status picker row */}
                     {isOwnerOrManager && nextStatus && nextStatus !== 'received' && (
                       <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -450,6 +524,146 @@ export function PurchaseOrdersSection({
           })}
         </View>
       )}
+
+      {/* Send to Supplier Modal */}
+      <Modal
+        visible={!!sendState}
+        animationType="slide"
+        transparent
+        onRequestClose={() => { if (!isSending) setSendState(null); }}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' }}>
+            <View style={{ backgroundColor: colors.background, borderTopLeftRadius: radius.xl, borderTopRightRadius: radius.xl, paddingBottom: 32 }}>
+              {/* Handle */}
+              <View style={{ alignItems: 'center', paddingTop: 12, marginBottom: 4 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+              </View>
+
+              {/* Header */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                <Feather name="send" size={16} color={colors.primary} />
+                <Text style={{ flex: 1, fontSize: typography.sizes.md, fontWeight: fontWeights.semibold as any, color: colors.foreground, marginLeft: spacing.sm }}>
+                  Send PO {sendState?.poNumber}
+                </Text>
+                <TouchableOpacity onPress={() => setSendState(null)} disabled={isSending} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Feather name="x" size={20} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView keyboardShouldPersistTaps="handled" style={{ maxHeight: 420 }}>
+                <View style={{ padding: spacing.md, gap: spacing.md }}>
+                  {/* Channel toggle */}
+                  <View style={{ flexDirection: 'row', backgroundColor: colors.muted, borderRadius: radius.md, padding: 3, gap: 3 }}>
+                    {(['email', 'sms'] as const).map((ch) => (
+                      <TouchableOpacity
+                        key={ch}
+                        onPress={() => setSendState(prev => prev ? { ...prev, channel: ch, to: ch === 'email' ? (purchaseOrders.find(p => p.id === prev.poId)?.supplierEmail || '') : (purchaseOrders.find(p => p.id === prev.poId)?.supplierPhone || '') } : null)}
+                        style={{
+                          flex: 1,
+                          paddingVertical: 8,
+                          borderRadius: radius.sm,
+                          alignItems: 'center',
+                          flexDirection: 'row',
+                          justifyContent: 'center',
+                          gap: 5,
+                          backgroundColor: sendState?.channel === ch ? colors.card : 'transparent',
+                          ...( sendState?.channel === ch ? shadows.sm : {}),
+                        }}
+                      >
+                        <Feather name={ch === 'email' ? 'mail' : 'message-square'} size={13} color={sendState?.channel === ch ? colors.primary : colors.mutedForeground} />
+                        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium as any, color: sendState?.channel === ch ? colors.primary : colors.mutedForeground }}>
+                          {ch === 'email' ? 'Email' : 'SMS'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Recipient field */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold as any, color: colors.mutedForeground }}>
+                      {sendState?.channel === 'email' ? 'SUPPLIER EMAIL' : 'SUPPLIER PHONE'}
+                    </Text>
+                    <TextInput
+                      value={sendState?.to ?? ''}
+                      onChangeText={(t) => setSendState(prev => prev ? { ...prev, to: t } : null)}
+                      placeholder={sendState?.channel === 'email' ? 'supplier@example.com' : '04xx xxx xxx'}
+                      keyboardType={sendState?.channel === 'email' ? 'email-address' : 'phone-pad'}
+                      autoCapitalize="none"
+                      style={{
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: radius.md,
+                        paddingHorizontal: spacing.sm,
+                        paddingVertical: 10,
+                        fontSize: typography.sizes.sm,
+                        color: colors.foreground,
+                        backgroundColor: colors.card,
+                      }}
+                    />
+                  </View>
+
+                  {/* Optional message */}
+                  <View style={{ gap: 6 }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold as any, color: colors.mutedForeground }}>
+                      MESSAGE (OPTIONAL)
+                    </Text>
+                    <TextInput
+                      value={sendState?.message ?? ''}
+                      onChangeText={(t) => setSendState(prev => prev ? { ...prev, message: t } : null)}
+                      placeholder={sendState?.channel === 'sms' ? 'Default: brief summary SMS' : 'Default: covering note'}
+                      multiline
+                      numberOfLines={3}
+                      style={{
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        borderRadius: radius.md,
+                        paddingHorizontal: spacing.sm,
+                        paddingVertical: 10,
+                        fontSize: typography.sizes.sm,
+                        color: colors.foreground,
+                        backgroundColor: colors.card,
+                        minHeight: 72,
+                        textAlignVertical: 'top',
+                      }}
+                    />
+                  </View>
+                </View>
+              </ScrollView>
+
+              {/* Send button */}
+              <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
+                <TouchableOpacity
+                  onPress={handleSend}
+                  disabled={isSending || !sendState?.to.trim()}
+                  style={{
+                    backgroundColor: (isSending || !sendState?.to.trim()) ? colors.mutedForeground : colors.primary,
+                    borderRadius: radius.md,
+                    paddingVertical: 14,
+                    alignItems: 'center',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    gap: spacing.sm,
+                  }}
+                  activeOpacity={0.85}
+                >
+                  {isSending ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Feather name="send" size={15} color="#fff" />
+                  )}
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold as any, color: '#fff' }}>
+                    {isSending ? 'Sending...' : sendState?.channel === 'email' ? 'Email PO' : 'Send SMS'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }

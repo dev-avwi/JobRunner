@@ -6147,3 +6147,190 @@ export function generateVariationOrderPDF(data: {
 </body>
 </html>`;
 }
+
+// ── Purchase Order PDF ─────────────────────────────────────────────────────────
+
+export interface PurchaseOrderPDFData {
+  po: {
+    poNumber: string;
+    orderDate?: Date | string | null;
+    requiredDate?: Date | string | null;
+    status?: string | null;
+    subtotal?: string | null;
+    gstAmount?: string | null;
+    total?: string | null;
+    terms?: string | null;
+    notes?: string | null;
+  };
+  items: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: string;
+    lineTotal: string;
+  }>;
+  supplier?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  } | null;
+  business: {
+    businessName?: string | null;
+    logoUrl?: string | null;
+    abn?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+  };
+  job?: {
+    number?: string | null;
+    title?: string | null;
+    address?: string | null;
+  } | null;
+}
+
+export function generatePurchaseOrderPDF(data: PurchaseOrderPDFData): string {
+  const { po, items, supplier, business, job } = data;
+
+  const esc = (v: string | null | undefined) =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const fmtDate = (d: Date | string | null | undefined) => {
+    if (!d) return '';
+    try { return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return ''; }
+  };
+
+  const fmtMoney = (v: string | number | null | undefined) => {
+    const n = parseFloat(String(v ?? '0'));
+    return isNaN(n) ? '$0.00' : `$${n.toFixed(2)}`;
+  };
+
+  const accent = '#2563EB';
+  const logoHtml = business.logoUrl
+    ? `<img src="${esc(business.logoUrl)}" alt="${esc(business.businessName)}" style="max-height:64px;max-width:160px;object-fit:contain;" />`
+    : '';
+
+  const itemRows = items.map(item => `
+    <tr>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;">${esc(item.description)}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.unitPrice)}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.lineTotal)}</td>
+    </tr>`).join('');
+
+  const gst = parseFloat(po.gstAmount ?? '0');
+  const subtotal = parseFloat(po.subtotal ?? '0');
+  const total = parseFloat(po.total ?? '0');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Purchase Order ${esc(po.poNumber)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #1f2937; background: #fff; padding: 32px; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
+    .biz-name { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 4px; }
+    .biz-detail { font-size: 12px; color: #6b7280; line-height: 1.6; }
+    .po-block { text-align: right; }
+    .po-title { font-size: 28px; font-weight: 800; color: ${accent}; letter-spacing: -0.5px; }
+    .po-number { font-size: 15px; font-weight: 600; color: #374151; margin-top: 4px; }
+    .po-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
+    .divider { border: none; border-top: 2px solid ${accent}; margin: 20px 0; }
+    .info-row { display: flex; gap: 32px; margin-bottom: 24px; }
+    .info-block { flex: 1; }
+    .info-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 6px; }
+    .info-value { font-size: 13px; color: #1f2937; line-height: 1.5; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    thead tr { background: ${accent}; color: #fff; }
+    thead th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; }
+    thead th.right { text-align: right; }
+    thead th.center { text-align: center; }
+    tbody tr:nth-child(even) { background: #f9fafb; }
+    .totals { display: flex; justify-content: flex-end; margin-top: 8px; }
+    .totals-table { width: 260px; }
+    .totals-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+    .totals-row.grand { font-weight: 700; font-size: 15px; border-top: 2px solid #1f2937; border-bottom: none; padding-top: 8px; margin-top: 4px; }
+    .notes-block { margin-top: 24px; padding: 14px 16px; background: #f9fafb; border-left: 3px solid ${accent}; border-radius: 4px; font-size: 12px; color: #374151; line-height: 1.6; }
+    .footer { margin-top: 40px; padding-top: 12px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      ${logoHtml}
+      <div class="biz-name">${esc(business.businessName)}</div>
+      <div class="biz-detail">
+        ${business.abn ? `ABN: ${esc(business.abn)}<br>` : ''}
+        ${business.address ? `${esc(business.address)}<br>` : ''}
+        ${business.phone ? `${esc(business.phone)}<br>` : ''}
+        ${business.email ? `${esc(business.email)}` : ''}
+      </div>
+    </div>
+    <div class="po-block">
+      <div class="po-title">PURCHASE ORDER</div>
+      <div class="po-number">${esc(po.poNumber)}</div>
+      ${po.orderDate ? `<div class="po-meta">Date: ${fmtDate(po.orderDate)}</div>` : ''}
+      ${po.requiredDate ? `<div class="po-meta">Required by: ${fmtDate(po.requiredDate)}</div>` : ''}
+    </div>
+  </div>
+  <hr class="divider">
+
+  <div class="info-row">
+    <div class="info-block">
+      <div class="info-label">Supplier</div>
+      <div class="info-value">
+        ${supplier?.name ? `<strong>${esc(supplier.name)}</strong><br>` : '<em>No supplier</em>'}
+        ${supplier?.address ? `${esc(supplier.address)}<br>` : ''}
+        ${supplier?.email ? `${esc(supplier.email)}<br>` : ''}
+        ${supplier?.phone ? `${esc(supplier.phone)}` : ''}
+      </div>
+    </div>
+    ${job ? `
+    <div class="info-block">
+      <div class="info-label">Job Reference</div>
+      <div class="info-value">
+        ${job.number ? `<strong>#${esc(job.number)}</strong><br>` : ''}
+        ${job.title ? `${esc(job.title)}<br>` : ''}
+        ${job.address ? `${esc(job.address)}` : ''}
+      </div>
+    </div>` : ''}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:52%;">Description</th>
+        <th class="center" style="width:12%;">Qty</th>
+        <th class="right" style="width:18%;">Unit Price</th>
+        <th class="right" style="width:18%;">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows || '<tr><td colspan="4" style="padding:12px;color:#9ca3af;font-style:italic;">No line items</td></tr>'}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div class="totals-table">
+      ${gst > 0 ? `
+      <div class="totals-row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>
+      <div class="totals-row"><span>GST (10%)</span><span>${fmtMoney(gst)}</span></div>
+      ` : ''}
+      <div class="totals-row grand"><span>Total</span><span>${fmtMoney(total)}</span></div>
+    </div>
+  </div>
+
+  ${(po.terms || po.notes) ? `
+  <div class="notes-block">
+    ${po.terms ? `<strong>Terms:</strong> ${esc(po.terms)}<br>` : ''}
+    ${po.notes ? `<strong>Notes:</strong> ${esc(po.notes)}` : ''}
+  </div>` : ''}
+
+  <div class="footer">
+    This purchase order was issued by ${esc(business.businessName)} &bull; Generated ${new Date().toLocaleDateString('en-AU')}
+  </div>
+</body>
+</html>`;
+}
