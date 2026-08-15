@@ -183,6 +183,7 @@ export function PurchaseOrdersSection({
           borderRadius: radius.lg,
           padding: spacing.lg,
           marginHorizontal: spacing.md,
+          marginBottom: spacing.md,
           alignItems: 'center',
           borderWidth: 1,
           borderColor: colors.cardBorder,

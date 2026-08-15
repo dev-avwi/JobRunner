@@ -7169,7 +7169,7 @@ export default function JobDetailScreen() {
   const TAB_CONFIG = [
     { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
     { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
-    { id: 'chat' as const, label: 'Chat', icon: 'message-circle' as const },
+    { id: 'chat' as const, label: 'Comms', icon: 'message-circle' as const },
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
   ];
 
@@ -7199,16 +7199,23 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Project Health Card — replaces the generic progress bar for project jobs */}
+      {/* What's Next card — project jobs only */}
       {isProject ? (() => {
         const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
         const totalPhases = phases.length;
-        const claimedTotal = progressClaims
-          .filter(c => c.status !== 'draft')
-          .reduce((sum, c) => sum + parseFloat((c as any).total || '0'), 0);
+        const nextPhase = phases
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .find(p => p.status === 'in_progress') ??
+          phases
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .find(p => p.status === 'not_started');
         const pd = profitabilityData;
         const budgetStatus = pd?.status ?? null;
         const budgetColor = budgetStatus === 'profitable' ? colors.success : budgetStatus === 'tight' ? colors.warning : budgetStatus === 'loss' ? colors.destructive : colors.mutedForeground;
+        const budgetLabel = budgetStatus === 'profitable' ? 'On track' : budgetStatus === 'tight' ? 'Near limit' : budgetStatus === 'loss' ? 'Over budget' : null;
+
         return (
           <View style={{
             backgroundColor: colors.card,
@@ -7219,55 +7226,72 @@ export default function JobDetailScreen() {
             marginBottom: spacing.md,
             gap: spacing.sm,
           }}>
-            {/* Header row */}
+            {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <Feather name="activity" size={14} color={colors.primary} />
-              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, flex: 1 }}>Project Health</Text>
-              {budgetStatus && (
-                <View style={{ backgroundColor: `${budgetColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: budgetColor, textTransform: 'capitalize' }}>{budgetStatus}</Text>
+              <Feather name="arrow-right-circle" size={14} color={colors.primary} />
+              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, flex: 1 }}>
+                What's Next
+              </Text>
+              {budgetLabel && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${budgetColor}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: budgetColor }} />
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: budgetColor }}>
+                    {budgetLabel}
+                  </Text>
                 </View>
               )}
             </View>
 
-            {/* Stat row */}
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {/* Phases */}
-              <View style={{ flex: 1, backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
-                {isLoadingPhases ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <>
-                    <Text style={{ fontSize: 18, fontWeight: fontWeights.bold, color: colors.foreground }}>
-                      {totalPhases > 0 ? `${completedPhases}/${totalPhases}` : '-'}
+            {isLoadingPhases ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : nextPhase ? (
+              /* Next / active phase */
+              <View style={{ gap: spacing.xs }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <View style={{
+                    width: 8, height: 8, borderRadius: 4,
+                    backgroundColor: nextPhase.status === 'in_progress' ? colors.primary : colors.border,
+                  }} />
+                  <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                    {nextPhase.name}
+                  </Text>
+                  <View style={{ backgroundColor: nextPhase.status === 'in_progress' ? `${colors.primary}15` : colors.muted, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 }}>
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.medium, color: nextPhase.status === 'in_progress' ? colors.primary : colors.mutedForeground }}>
+                      {nextPhase.status === 'in_progress' ? 'In Progress' : 'Up Next'}
                     </Text>
-                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>Phases done</Text>
-                  </>
+                  </View>
+                </View>
+                {nextPhase.description ? (
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 16 }} numberOfLines={2}>
+                    {nextPhase.description}
+                  </Text>
+                ) : null}
+                {/* Progress summary */}
+                {totalPhases > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
+                    <View style={{ flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
+                      <View style={{ width: `${Math.round((completedPhases / totalPhases) * 100)}%` as any, height: '100%', backgroundColor: colors.primary, borderRadius: 2 }} />
+                    </View>
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                      {completedPhases}/{totalPhases} phases
+                    </Text>
+                  </View>
                 )}
               </View>
-
-              {/* Phase progress bar */}
-              {totalPhases > 0 && (
-                <View style={{ flex: 2, justifyContent: 'center', gap: 4 }}>
-                  <View style={{ height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' }}>
-                    <View style={{ width: `${Math.round((completedPhases / totalPhases) * 100)}%` as any, height: '100%', backgroundColor: colors.primary, borderRadius: 3 }} />
-                  </View>
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                    {Math.round((completedPhases / totalPhases) * 100)}% complete
-                  </Text>
-                </View>
-              )}
-
-              {/* Claimed total */}
-              {(isOwnerOrManager || isSoloOwner) && claimedTotal > 0 && (
-                <View style={{ flex: 1, backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }} numberOfLines={1} adjustsFontSizeToFit>
-                    {formatCurrency(claimedTotal)}
-                  </Text>
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>Claimed</Text>
-                </View>
-              )}
-            </View>
+            ) : totalPhases > 0 ? (
+              /* All phases done */
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Feather name="check-circle" size={16} color={colors.success} />
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.medium, color: colors.success }}>
+                  All {totalPhases} phases complete
+                </Text>
+              </View>
+            ) : (
+              /* No phases yet */
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                No phases added yet — add phases to track progress.
+              </Text>
+            )}
           </View>
         );
       })() : (
@@ -10831,7 +10855,7 @@ export default function JobDetailScreen() {
                     onRefresh={loadClaims}
                     onAddClaim={(isOwnerOrManager || isSoloOwner) ? () => setShowAddClaimModal(true) : undefined}
                     contractValue={quote?.total ?? undefined}
-                    onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job!.id}${client ? `&clientId=${client.id}` : ''}`) : undefined}
+                    onCreateInvoice={canCreateInvoices ? (claim) => router.push(`/more/invoice/new?jobId=${job!.id}${client ? `&clientId=${client.id}` : ''}&claimId=${claim.id}` as any) : undefined}
                   />
                 </View>
                 <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>

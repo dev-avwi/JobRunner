@@ -671,7 +671,7 @@ interface LineItem {
 export default function NewInvoiceScreen() {
   const insets = useSafeAreaInsets();
   const confirm = useConfirmDialog();
-  const params = useLocalSearchParams<{ jobId?: string; clientId?: string; editInvoiceId?: string; batchQueue?: string; batchIndex?: string }>();
+  const params = useLocalSearchParams<{ jobId?: string; clientId?: string; editInvoiceId?: string; batchQueue?: string; batchIndex?: string; claimId?: string }>();
   const batchQueue = useMemo(
     () => (params.batchQueue ? String(params.batchQueue).split(',').filter(Boolean) : []),
     [params.batchQueue],
@@ -803,8 +803,12 @@ export default function NewInvoiceScreen() {
     setJobExpenses([]);
     setIsRecurring(false);
     fetchJobExpenses(params.jobId);
-    fetchJobAndPrefill(params.jobId);
-  }, [params.jobId]);
+    if (params.claimId) {
+      fetchClaimAndPrefill(params.jobId, params.claimId);
+    } else {
+      fetchJobAndPrefill(params.jobId);
+    }
+  }, [params.jobId, params.claimId]);
 
   const loadInvoiceForEditing = async (invoiceId: string) => {
     setIsLoading(true);
@@ -843,6 +847,49 @@ export default function NewInvoiceScreen() {
       Alert.alert('Error', 'Failed to load invoice data');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchClaimAndPrefill = async (jId: string, cId: string) => {
+    setIsLoadingJob(true);
+    try {
+      // Fetch job metadata for client name
+      const jobRes = await api.get<{ clientId?: string; title?: string; description?: string }>(`/api/jobs/${jId}`);
+      if (jobRes.data) {
+        const job = jobRes.data;
+        setForm(prev => ({ ...prev, clientId: job.clientId || prev.clientId }));
+        if (job.clientId) {
+          const clientRes = await api.get<{ name?: string }>(`/api/clients/${job.clientId}`);
+          if (clientRes.data) {
+            setForm(prev => ({ ...prev, clientName: clientRes.data!.name || '' }));
+          }
+        }
+      }
+      // Fetch the progress claim detail
+      const claimRes = await api.get<{ claim: any; lineItems: any[] }>(`/api/jobs/${jId}/claims/${cId}`);
+      if (claimRes.data) {
+        const { claim, lineItems } = claimRes.data;
+        setForm(prev => ({
+          ...prev,
+          title: `Progress Claim ${claim.claimNumber || ''}`.trim(),
+          description: claim.notes || prev.description,
+        }));
+        if (Array.isArray(lineItems) && lineItems.length > 0) {
+          const invoiceLines: LineItem[] = lineItems
+            .filter((li: any) => parseFloat(li.thisClaim || '0') > 0)
+            .map((li: any, idx: number) => ({
+              id: `claim-${cId}-${idx}`,
+              description: String(li.description || ''),
+              quantity: '1',
+              unitPrice: String(Math.abs(parseFloat(li.thisClaim || '0')).toFixed(2)),
+            }));
+          if (invoiceLines.length > 0) setLineItems(invoiceLines);
+        }
+      }
+    } catch (err) {
+      if (__DEV__) console.log('[invoice/new] Error loading claim for prefill:', err);
+    } finally {
+      setIsLoadingJob(false);
     }
   };
 

@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, TextInput, ActivityIndicator } from 'reac
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
-import { spacing, radius, typography } from '../../lib/design-tokens';
+import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
 
 interface Client {
   id: string;
@@ -57,67 +57,91 @@ export function ChatSection(props: ChatSectionProps) {
 
   return (
     <>
-      {/* Contact Client - compact action row */}
-      {client && (client.phone || client.email) && (
+      {/* ── Client contact card ── */}
+      {client && (
         <View style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.sm,
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          padding: spacing.md,
           marginBottom: spacing.md,
-          paddingVertical: spacing.xs,
+          gap: spacing.sm,
         }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: `${colors.invoiced}12`, alignItems: 'center', justifyContent: 'center' }}>
-            <Feather name="user" size={14} color={colors.invoiced} />
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
+              <Feather name="user" size={16} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                {client.name || 'Client'}
+              </Text>
+              {(client.phone || client.email) && (
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }} numberOfLines={1}>
+                  {client.phone || client.email}
+                </Text>
+              )}
+            </View>
           </View>
-          <Text style={{ ...typography.bodySmall, fontWeight: '600', color: colors.foreground, flex: 1 }} numberOfLines={1}>
-            {client.name || 'Client'}
-          </Text>
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+
+          {/* Action buttons */}
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {client.phone && (
               <TouchableOpacity
                 onPress={handleCall}
-                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.success}12`, alignItems: 'center', justifyContent: 'center' }}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: `${colors.success}12`, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, borderColor: `${colors.success}25` }}
                 activeOpacity={0.7}
               >
-                <Feather name="phone" size={15} color={colors.success} />
+                <Feather name="phone" size={14} color={colors.success} />
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.success }}>Call</Text>
               </TouchableOpacity>
             )}
             {client.phone && (
               <TouchableOpacity
                 onPress={handleSMS}
-                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.scheduled}12`, alignItems: 'center', justifyContent: 'center' }}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: `${colors.scheduled}12`, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, borderColor: `${colors.scheduled}25` }}
                 activeOpacity={0.7}
               >
-                <Feather name="message-square" size={15} color={colors.scheduled} />
+                <Feather name="message-square" size={14} color={colors.scheduled} />
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.scheduled }}>SMS</Text>
               </TouchableOpacity>
             )}
             {client.email && (
               <TouchableOpacity
                 onPress={handleEmail}
-                style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.invoiced}12`, alignItems: 'center', justifyContent: 'center' }}
+                style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: `${colors.invoiced}12`, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, borderColor: `${colors.invoiced}25` }}
                 activeOpacity={0.7}
               >
-                <Feather name="mail" size={15} color={colors.invoiced} />
+                <Feather name="mail" size={14} color={colors.invoiced} />
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.invoiced }}>Email</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              onPress={() => {
-                setSendModalDefaultTab(client?.email ? 'email' : 'sms');
-                setShowSendModal(true);
-              }}
-              style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center' }}
-              activeOpacity={0.7}
-            >
-              <Feather name="zap" size={15} color={colors.primary} />
-            </TouchableOpacity>
           </View>
+
+          {/* Send document / update */}
+          <TouchableOpacity
+            onPress={() => {
+              setSendModalDefaultTab(client?.email ? 'email' : 'sms');
+              setShowSendModal(true);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, backgroundColor: `${colors.primary}08`, paddingVertical: 10, borderRadius: radius.md, borderWidth: 1, borderColor: `${colors.primary}20` }}
+            activeOpacity={0.7}
+          >
+            <Feather name="zap" size={14} color={colors.primary} />
+            <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.primary }}>
+              Send quote, invoice or update
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Team Chat Header */}
+      {/* ── Team chat section label ── */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm }}>
         <Feather name="users" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.xs }} />
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.3, flex: 1 }}>Team Chat</Text>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.3, flex: 1 }}>
+          Team Chat
+        </Text>
         {jobMessages.length > 0 && (
           <View style={{ backgroundColor: `${colors.primary}15`, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 }}>
             <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>{jobMessages.length}</Text>
@@ -125,7 +149,7 @@ export function ChatSection(props: ChatSectionProps) {
         )}
       </View>
 
-      {/* Chat Messages Area */}
+      {/* ── Chat messages card ── */}
       <View style={{
         backgroundColor: colors.card,
         borderRadius: radius.xl,
@@ -194,7 +218,7 @@ export function ChatSection(props: ChatSectionProps) {
           </View>
         )}
 
-        {/* Message Input - integrated into chat card */}
+        {/* Message input */}
         <View style={{
           flexDirection: 'row',
           gap: spacing.sm,
@@ -244,26 +268,40 @@ export function ChatSection(props: ChatSectionProps) {
         </View>
       </View>
 
-      {/* Quick link to full ChatHub */}
-      <TouchableOpacity
-        onPress={() => router.push('/more/chat-hub')}
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: spacing.sm,
-          paddingVertical: spacing.sm + 2,
-          borderRadius: radius.lg,
-          backgroundColor: `${colors.primary}08`,
-        }}
-        activeOpacity={0.7}
-      >
-        <Feather name="message-circle" size={14} color={colors.primary} />
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>
-          Open ChatHub
+      {/* ── Quick links ── */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+        <TouchableOpacity
+          onPress={() => router.push('/more/chat-hub')}
+          style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: spacing.sm + 2, borderRadius: radius.lg, backgroundColor: `${colors.primary}08`, borderWidth: 1, borderColor: `${colors.primary}20` }}
+          activeOpacity={0.7}
+        >
+          <Feather name="message-circle" size={14} color={colors.primary} />
+          <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.primary }}>Open ChatHub</Text>
+          <Feather name="chevron-right" size={13} color={colors.primary} />
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Communication tips ── */}
+      <View style={{
+        backgroundColor: colors.muted,
+        borderRadius: radius.lg,
+        padding: spacing.md,
+        gap: spacing.xs,
+      }}>
+        <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 2 }}>
+          Communication tips
         </Text>
-        <Feather name="chevron-right" size={14} color={colors.primary} />
-      </TouchableOpacity>
+        {[
+          { icon: 'zap' as const, text: 'Send automated updates when job status changes' },
+          { icon: 'file-text' as const, text: 'Share quotes and invoices directly from the Docs tab' },
+          { icon: 'users' as const, text: 'Use Team Chat to keep the crew aligned on site' },
+        ].map((tip, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+            <Feather name={tip.icon} size={12} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+            <Text style={{ fontSize: 12, color: colors.mutedForeground, flex: 1, lineHeight: 17 }}>{tip.text}</Text>
+          </View>
+        ))}
+      </View>
     </>
   );
 }

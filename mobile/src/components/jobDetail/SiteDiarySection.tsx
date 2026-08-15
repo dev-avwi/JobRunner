@@ -19,12 +19,11 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   Image,
   Dimensions,
   StatusBar,
 } from 'react-native';
+import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../lib/api';
@@ -516,184 +515,161 @@ export function SiteDiarySection({
         </View>
       )}
 
-      {/* Add / Edit Modal */}
-      <Modal
+      {/* Add / Edit Sheet */}
+      <AppBottomSheet
         visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={closeForm}
-      >
-        <KeyboardAvoidingView
-          style={{ flex: 1, backgroundColor: colors.background }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[s.modalTitle, { color: colors.foreground }]}>
-              {editingEntry ? 'Edit Diary Entry' : 'New Diary Entry'}
-            </Text>
-            <TouchableOpacity onPress={closeForm} disabled={saving}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
-            keyboardShouldPersistTaps="handled"
+        title={editingEntry ? 'Edit Diary Entry' : 'New Diary Entry'}
+        showCloseButton
+        onDismiss={closeForm}
+        autoHeight
+        footer={
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: colors.primary, opacity: saving || !form.entryDate ? 0.5 : 1 }]}
+            onPress={handleSave}
+            disabled={saving || !form.entryDate}
           >
-            {/* Date */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Date</Text>
-              <TextInput
-                style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-                value={form.entryDate}
-                onChangeText={(v) => setForm((f) => ({ ...f, entryDate: v }))}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.mutedForeground}
-                editable={!editingEntry}
-              />
-            </View>
+            {saving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={s.submitBtnText}>{editingEntry ? 'Save Changes' : 'Save Entry'}</Text>
+            )}
+          </TouchableOpacity>
+        }
+      >
+        <View style={{ gap: spacing.md }}>
+          {/* Date */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Date</Text>
+            <TextInput
+              style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              value={form.entryDate}
+              onChangeText={(v) => setForm((f) => ({ ...f, entryDate: v }))}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.mutedForeground}
+              editable={!editingEntry}
+            />
+          </View>
 
-            {/* Weather */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Weather (optional)</Text>
-              <TouchableOpacity
-                style={[s.textInput, { borderColor: colors.border, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-                onPress={() => setShowWeatherPicker(true)}
-              >
-                {form.weather ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Feather name={weatherIcon(form.weather) as any} size={15} color={colors.foreground} />
-                    <Text style={{ color: colors.foreground }}>{weatherLabel(form.weather)}</Text>
-                  </View>
-                ) : (
-                  <Text style={{ color: colors.mutedForeground }}>Select weather…</Text>
-                )}
-                <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Workers */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Workers on site (optional)</Text>
-              <TextInput
-                style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-                value={form.workersOnSite}
-                onChangeText={(v) => setForm((f) => ({ ...f, workersOnSite: v }))}
-                placeholder="e.g. John Smith, Maria Garcia"
-                placeholderTextColor={colors.mutedForeground}
-              />
-              <Text style={[s.hint, { color: colors.mutedForeground }]}>Separate names with commas</Text>
-            </View>
-
-            {/* Work done */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Summary of work done (optional)</Text>
-              <TextInput
-                style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-                value={form.workDone}
-                onChangeText={(v) => setForm((f) => ({ ...f, workDone: v }))}
-                placeholder="What was completed today?"
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Issues */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Issues / delays (optional)</Text>
-              <TextInput
-                style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-                value={form.issuesDelays}
-                onChangeText={(v) => setForm((f) => ({ ...f, issuesDelays: v }))}
-                placeholder="Any problems, delays, or incidents?"
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-
-            {/* Photos */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Photos (optional)</Text>
-              <TouchableOpacity
-                style={[s.photoPickBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
-                onPress={pickPhoto}
-              >
-                <Feather name="camera" size={20} color={colors.mutedForeground} />
-                <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize }}>Attach photos</Text>
-              </TouchableOpacity>
-              {newPhotos.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }}>
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                    {newPhotos.map((p, i) => (
-                      <View key={i} style={{ position: 'relative' }}>
-                        <Image source={{ uri: p.uri }} style={s.photo} />
-                        <TouchableOpacity
-                          style={s.removePhoto}
-                          onPress={() => setNewPhotos((prev) => prev.filter((_, j) => j !== i))}
-                        >
-                          <Feather name="x" size={10} color="#fff" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                  </View>
-                </ScrollView>
-              )}
-            </View>
-          </ScrollView>
-
-          {/* Footer submit button */}
-          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
+          {/* Weather */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Weather (optional)</Text>
             <TouchableOpacity
-              style={[
-                s.submitBtn,
-                { backgroundColor: colors.primary, opacity: saving || !form.entryDate ? 0.5 : 1 },
-              ]}
-              onPress={handleSave}
-              disabled={saving || !form.entryDate}
+              style={[s.textInput, { borderColor: colors.border, backgroundColor: colors.muted, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => setShowWeatherPicker(true)}
             >
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
+              {form.weather ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                  <Feather name={weatherIcon(form.weather) as any} size={15} color={colors.foreground} />
+                  <Text style={{ color: colors.foreground }}>{weatherLabel(form.weather)}</Text>
+                </View>
               ) : (
-                <Text style={s.submitBtnText}>
-                  {editingEntry ? 'Save Changes' : 'Save Entry'}
-                </Text>
+                <Text style={{ color: colors.mutedForeground }}>Select weather…</Text>
               )}
+              <Feather name="chevron-down" size={14} color={colors.mutedForeground} />
             </TouchableOpacity>
           </View>
 
-          {/* Weather picker modal */}
-          <Modal visible={showWeatherPicker} transparent animationType="slide">
-            <TouchableOpacity
-              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}
-              onPress={() => setShowWeatherPicker(false)}
+          {/* Workers */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Workers on site (optional)</Text>
+            <TextInput
+              style={[s.textInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              value={form.workersOnSite}
+              onChangeText={(v) => setForm((f) => ({ ...f, workersOnSite: v }))}
+              placeholder="e.g. John Smith, Maria Garcia"
+              placeholderTextColor={colors.mutedForeground}
             />
-            <View style={[s.weatherSheet, { backgroundColor: colors.card }]}>
-              <Text style={[s.weatherSheetTitle, { color: colors.foreground }]}>Select Weather</Text>
-              {WEATHER_OPTIONS.map((opt) => (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[s.weatherOption, form.weather === opt.value && { backgroundColor: `${colors.primary}15` }]}
-                  onPress={() => {
-                    setForm((f) => ({ ...f, weather: opt.value }));
-                    setShowWeatherPicker(false);
-                  }}
-                >
-                  <Feather name={opt.icon as any} size={16} color={colors.foreground} />
-                  <Text style={{ color: colors.foreground, fontSize: typography.sizes.sm }}>{opt.label}</Text>
-                  {form.weather === opt.value && (
-                    <Feather name="check" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Modal>
-        </KeyboardAvoidingView>
-      </Modal>
+            <Text style={[s.hint, { color: colors.mutedForeground }]}>Separate names with commas</Text>
+          </View>
+
+          {/* Work done */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Summary of work done (optional)</Text>
+            <TextInput
+              style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              value={form.workDone}
+              onChangeText={(v) => setForm((f) => ({ ...f, workDone: v }))}
+              placeholder="What was completed today?"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Issues */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Issues / delays (optional)</Text>
+            <TextInput
+              style={[s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              value={form.issuesDelays}
+              onChangeText={(v) => setForm((f) => ({ ...f, issuesDelays: v }))}
+              placeholder="Any problems, delays, or incidents?"
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
+
+          {/* Photos */}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Photos (optional)</Text>
+            <TouchableOpacity
+              style={[s.photoPickBtn, { borderColor: colors.border, backgroundColor: colors.muted }]}
+              onPress={pickPhoto}
+            >
+              <Feather name="camera" size={20} color={colors.mutedForeground} />
+              <Text style={{ color: colors.mutedForeground, fontSize: typography.button.fontSize }}>Attach photos</Text>
+            </TouchableOpacity>
+            {newPhotos.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }}>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {newPhotos.map((p, i) => (
+                    <View key={i} style={{ position: 'relative' }}>
+                      <Image source={{ uri: p.uri }} style={s.photo} />
+                      <TouchableOpacity
+                        style={s.removePhoto}
+                        onPress={() => setNewPhotos((prev) => prev.filter((_, j) => j !== i))}
+                      >
+                        <Feather name="x" size={10} color="#fff" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* Weather picker sheet */}
+      <AppBottomSheet
+        visible={showWeatherPicker}
+        title="Select Weather"
+        showCloseButton
+        onDismiss={() => setShowWeatherPicker(false)}
+        autoHeight
+      >
+        <View style={{ gap: spacing.xs }}>
+          {WEATHER_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              style={[s.weatherOption, { borderRadius: 10 }, form.weather === opt.value && { backgroundColor: `${colors.primary}15` }]}
+              onPress={() => {
+                setForm((f) => ({ ...f, weather: opt.value }));
+                setShowWeatherPicker(false);
+              }}
+            >
+              <Feather name={opt.icon as any} size={16} color={colors.foreground} />
+              <Text style={{ color: colors.foreground, fontSize: typography.sizes.sm }}>{opt.label}</Text>
+              {form.weather === opt.value && (
+                <Feather name="check" size={14} color={colors.primary} style={{ marginLeft: 'auto' }} />
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </AppBottomSheet>
 
       {/* Full-screen photo viewer */}
       <Modal

@@ -1,18 +1,15 @@
 /**
  * PhasesSection — displays job phases on the mobile job detail screen.
- * Read-only for workers (isTradie), status-editable for owners/managers.
- *
- * Polish additions:
- *  - Haptic feedback when cycling phase status
- *  - Success micro-animation (flash) when last phase is marked Complete
- *  - Estimated vs actual hours comparison per phase (when timeEntries exist)
+ * Tapping a phase opens a read-only detail sheet; owners/managers can tap
+ * "Edit" inside the sheet or cycle the status badge directly.
  */
 import { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated, ScrollView } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
+import { AppBottomSheet } from '../ui/AppBottomSheet';
 
 export type PhaseStatus = 'not_started' | 'in_progress' | 'complete' | 'invoiced';
 
@@ -98,10 +95,10 @@ function SuccessFlash({ visible, onDone }: { visible: boolean; onDone: () => voi
       style={{
         position: 'absolute',
         inset: 0,
-        backgroundColor: '#10B981',
         borderRadius: radius.md,
-        opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.18] }),
-        zIndex: 20,
+        backgroundColor: '#22c55e',
+        opacity: anim,
+        zIndex: 10,
       }}
     />
   );
@@ -110,7 +107,7 @@ function SuccessFlash({ visible, onDone }: { visible: boolean; onDone: () => voi
 export interface PhasesSectionProps {
   colors: ThemeColors;
   phases: JobPhase[];
-  isLoading: boolean;
+  isLoading?: boolean;
   isTradie?: boolean;
   onStatusChange?: (phaseId: string, status: PhaseStatus) => Promise<void>;
   onAddPhase?: () => void;
@@ -134,6 +131,7 @@ export function PhasesSection({
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [flashingId, setFlashingId] = useState<string | null>(null);
+  const [viewingPhase, setViewingPhase] = useState<JobPhase | null>(null);
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
 
@@ -143,15 +141,17 @@ export function PhasesSection({
     const nextStatus = STATUS_ORDER[(currentIdx + 1) % STATUS_ORDER.length];
     setUpdatingId(phase.id);
     try {
-      // Haptic feedback
       await Haptics.impactAsync(
         nextStatus === 'complete'
           ? Haptics.ImpactFeedbackStyle.Heavy
           : Haptics.ImpactFeedbackStyle.Light,
       );
       await onStatusChange(phase.id, nextStatus);
+      // Update the viewing phase status live if sheet is open
+      if (viewingPhase?.id === phase.id) {
+        setViewingPhase({ ...phase, status: nextStatus });
+      }
       if (nextStatus === 'complete') {
-        // Check if this is the last phase to complete
         const allOthersDone = sorted
           .filter((p) => p.id !== phase.id)
           .every((p) => p.status === 'complete' || p.status === 'invoiced');
@@ -171,6 +171,140 @@ export function PhasesSection({
     0,
   );
   const completedCount = phases.filter((p) => p.status === 'complete' || p.status === 'invoiced').length;
+
+  // Phase detail sheet content
+  const renderPhaseDetail = () => {
+    if (!viewingPhase) return null;
+    const cfg = STATUS_CONFIG[viewingPhase.status] ?? STATUS_CONFIG.not_started;
+    const startStr = fmtDate(viewingPhase.scheduledStart);
+    const endStr = fmtDate(viewingPhase.scheduledEnd);
+    const hoursNum = parseFloat(viewingPhase.bookedHours ?? '0') || 0;
+    const isClaimed = claimedPhaseIds?.has(viewingPhase.id);
+    const isUpdatingView = updatingId === viewingPhase.id;
+
+    return (
+      <View style={{ gap: spacing.md, paddingBottom: spacing.sm }}>
+        {/* Phase code + name */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
+          <View style={{ borderWidth: 1, borderColor: `${colors.primary}66`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: fontWeights.semibold, color: colors.primary }}>
+              {viewingPhase.phaseCode}
+            </Text>
+          </View>
+          {isClaimed && (
+            <View style={styles.claimedBadge}>
+              <Text style={styles.claimedBadgeText}>Claimed</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={{ fontSize: 20, fontWeight: fontWeights.bold, color: colors.foreground, lineHeight: 26 }}>
+          {viewingPhase.name}
+        </Text>
+
+        {/* Status row — owners can cycle */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Status</Text>
+          <TouchableOpacity
+            onPress={() => !isTradie && handleCycleStatus(viewingPhase)}
+            disabled={isTradie || isUpdatingView}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: cfg.bg, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 }}
+            activeOpacity={isTradie ? 1 : 0.7}
+          >
+            {isUpdatingView ? (
+              <ActivityIndicator size="small" color={cfg.text} />
+            ) : (
+              <>
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: cfg.text }}>{cfg.label}</Text>
+                {!isTradie && <Feather name="refresh-cw" size={11} color={cfg.text} />}
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Team member */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Assigned</Text>
+          {viewingPhase.assignedUserName ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
+                  {getInitials(viewingPhase.assignedUserName)}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 14, fontWeight: fontWeights.medium, color: colors.foreground }}>
+                {viewingPhase.assignedUserName}
+              </Text>
+            </View>
+          ) : (
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: 'italic' }}>Not assigned</Text>
+          )}
+        </View>
+
+        {/* Date range */}
+        {(startStr || endStr) && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Dates</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Feather name="calendar" size={13} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.foreground }}>
+                {startStr ?? '?'} → {endStr ?? '?'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Hours */}
+        {hoursNum > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Hours</Text>
+            <View style={{ gap: 3 }}>
+              <Text style={{ fontSize: 13, color: colors.foreground }}>{hoursNum.toFixed(1)} hrs booked</Text>
+              <HoursComparison booked={hoursNum} actual={viewingPhase.actualHours} colors={colors} />
+            </View>
+          </View>
+        )}
+
+        {/* Description */}
+        {viewingPhase.description ? (
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Notes</Text>
+            <Text style={{ fontSize: 13, color: colors.foreground, flex: 1, lineHeight: 19 }}>
+              {viewingPhase.description}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Divider */}
+        <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />
+
+        {/* Edit button — owners/managers only */}
+        {!isTradie && onEditPhase && (
+          <TouchableOpacity
+            onPress={() => {
+              setViewingPhase(null);
+              setTimeout(() => onEditPhase(viewingPhase!), 350);
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.sm,
+              backgroundColor: colors.primary,
+              paddingVertical: 14,
+              borderRadius: radius.lg,
+            }}
+            activeOpacity={0.8}
+          >
+            <Feather name="edit-2" size={15} color={colors.primaryForeground} />
+            <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
+              Edit Phase
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -251,14 +385,13 @@ export function PhasesSection({
                   {!isLast && <View style={[styles.timelineLine, { backgroundColor: colors.border }]} />}
                 </View>
 
-                {/* Content */}
+                {/* Content — tap to VIEW details */}
                 <View style={{ flex: 1, position: 'relative' }}>
                   <SuccessFlash visible={isFlashing} onDone={() => setFlashingId(null)} />
                   <TouchableOpacity
                     style={styles.phaseContent}
-                    onPress={() => !isTradie && onEditPhase && onEditPhase(phase)}
-                    disabled={isTradie || !onEditPhase}
-                    activeOpacity={onEditPhase && !isTradie ? 0.7 : 1}
+                    onPress={() => setViewingPhase(phase)}
+                    activeOpacity={0.7}
                   >
                     <View style={styles.phaseTopRow}>
                       {/* Phase code */}
@@ -268,9 +401,9 @@ export function PhasesSection({
                       <Text style={[styles.phaseName, { color: colors.foreground }]} numberOfLines={1}>
                         {phase.name}
                       </Text>
-                      {/* Status badge — tappable for owners to cycle */}
+                      {/* Status badge — tappable for owners to cycle (stops propagation) */}
                       <TouchableOpacity
-                        onPress={() => handleCycleStatus(phase)}
+                        onPress={(e) => { e.stopPropagation?.(); handleCycleStatus(phase); }}
                         disabled={isTradie || isUpdating}
                         style={[styles.statusBadge, { backgroundColor: cfg.bg }]}
                       >
@@ -294,9 +427,7 @@ export function PhasesSection({
                           </Text>
                         </View>
                       ) : null}
-                      {!isTradie && onEditPhase && (
-                        <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-                      )}
+                      <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                     </View>
 
                     {/* Date range pill */}
@@ -309,7 +440,7 @@ export function PhasesSection({
                       </View>
                     )}
 
-                    {/* Estimated hours */}
+                    {/* Hours comparison */}
                     {hoursNum > 0 && (
                       <View style={styles.phaseMeta}>
                         <View style={styles.metaItem}>
@@ -333,6 +464,17 @@ export function PhasesSection({
           })}
         </>
       )}
+
+      {/* Phase detail bottom sheet */}
+      <AppBottomSheet
+        visible={viewingPhase !== null}
+        title={viewingPhase?.name ?? 'Phase Details'}
+        showCloseButton
+        onDismiss={() => setViewingPhase(null)}
+        autoHeight
+      >
+        {renderPhaseDetail()}
+      </AppBottomSheet>
     </View>
   );
 }

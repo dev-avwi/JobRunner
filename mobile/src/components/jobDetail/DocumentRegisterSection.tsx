@@ -10,13 +10,12 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   TextInput,
-  Modal,
   ScrollView,
   StyleSheet,
-  KeyboardAvoidingView,
   Platform,
   Linking,
 } from 'react-native';
+import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import { api } from '../../lib/api';
@@ -1026,510 +1025,321 @@ export function DocumentRegisterSection({
         )}
       </View>
 
-      {/* ── Upload Document Modal ── */}
-      <Modal
+      {/* ── Register Document Sheet ── */}
+      <AppBottomSheet
         visible={showUploadModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowUploadModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, backgroundColor: colors.background }}
-        >
-          <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[s.modalTitle, { color: colors.foreground }]}>Register Document</Text>
-            <TouchableOpacity onPress={() => setShowUploadModal(false)}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
+        title="Register Document"
+        showCloseButton
+        onDismiss={() => setShowUploadModal(false)}
+        autoHeight
+        footer={
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: colors.primary, opacity: !selectedDoc || !docTitle.trim() || isUploading ? 0.5 : 1 }]}
+            onPress={handleUploadDocument}
+            disabled={!selectedDoc || !docTitle.trim() || isUploading}
           >
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Title *</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="e.g. Ground Floor Plan"
-                placeholderTextColor={colors.mutedForeground}
-                value={docTitle}
-                onChangeText={setDocTitle}
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Category</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  {DOC_CATEGORIES.map(cat => (
-                    <TouchableOpacity
-                      key={cat}
-                      style={[
-                        s.chip,
-                        { borderColor: colors.border },
-                        docCategory === cat && {
-                          backgroundColor: `${colors.primary}20`,
-                          borderColor: colors.primary,
-                        },
-                      ]}
-                      onPress={() => setDocCategory(cat)}
-                    >
-                      <Text
-                        style={[
-                          s.chipText,
-                          { color: docCategory === cat ? colors.primary : colors.mutedForeground },
-                        ]}
-                      >
-                        {cat}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Initial Revision</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  {
-                    color: colors.foreground,
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                    width: 80,
-                  },
-                ]}
-                placeholder="A"
-                placeholderTextColor={colors.mutedForeground}
-                value={docRevision}
-                onChangeText={setDocRevision}
-                autoCapitalize="characters"
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>File *</Text>
-              <TouchableOpacity
-                style={[s.filePicker, { borderColor: colors.border, backgroundColor: colors.card }]}
-                onPress={() => pickFile(false)}
-              >
-                {selectedDoc ? (
-                  <View>
-                    <Text style={[s.filePickerText, { color: colors.foreground }]}>
-                      {selectedDoc.name}
-                    </Text>
-                    {selectedDoc.size ? (
-                      <Text style={[s.filePickerMeta, { color: colors.mutedForeground }]}>
-                        {formatFileSize(selectedDoc.size)}
-                      </Text>
-                    ) : null}
-                  </View>
-                ) : (
-                  <>
-                    <Feather name="upload" size={20} color={colors.mutedForeground} />
-                    <Text style={[s.filePickerText, { color: colors.mutedForeground }]}>
-                      Tap to select a file
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Notes (optional)</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  s.textArea,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="Any notes about this revision…"
-                placeholderTextColor={colors.mutedForeground}
-                value={docNotes}
-                onChangeText={setDocNotes}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-          </ScrollView>
-          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[
-                s.submitBtn,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: !selectedDoc || !docTitle.trim() || isUploading ? 0.5 : 1,
-                },
-              ]}
-              onPress={handleUploadDocument}
-              disabled={!selectedDoc || !docTitle.trim() || isUploading}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={s.submitBtnText}>Register Document</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── Upload Revision Modal ── */}
-      <Modal
-        visible={showRevisionModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowRevisionModal(false)}
+            {isUploading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.submitBtnText}>Register Document</Text>}
+          </TouchableOpacity>
+        }
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, backgroundColor: colors.background }}
-        >
-          <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <View>
-              <Text style={[s.modalTitle, { color: colors.foreground }]}>Upload New Revision</Text>
-              {revisionDocTitle ? (
-                <Text style={[s.modalSubtitle, { color: colors.mutedForeground }]}>
-                  {revisionDocTitle}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity onPress={() => setShowRevisionModal(false)}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </TouchableOpacity>
+        <View style={{ gap: spacing.md }}>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Title *</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="e.g. Ground Floor Plan"
+              placeholderTextColor={colors.mutedForeground}
+              value={docTitle}
+              onChangeText={setDocTitle}
+            />
           </View>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
-          >
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Revision Label *</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  {
-                    color: colors.foreground,
-                    borderColor: colors.border,
-                    backgroundColor: colors.card,
-                    width: 100,
-                  },
-                ]}
-                placeholder="e.g. B, C, 2…"
-                placeholderTextColor={colors.mutedForeground}
-                value={revisionLabel}
-                onChangeText={setRevisionLabel}
-                autoCapitalize="characters"
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>File *</Text>
-              <TouchableOpacity
-                style={[s.filePicker, { borderColor: colors.border, backgroundColor: colors.card }]}
-                onPress={() => pickFile(true)}
-              >
-                {selectedRevFile ? (
-                  <Text style={[s.filePickerText, { color: colors.foreground }]}>
-                    {selectedRevFile.name}
-                  </Text>
-                ) : (
-                  <>
-                    <Feather name="upload" size={20} color={colors.mutedForeground} />
-                    <Text style={[s.filePickerText, { color: colors.mutedForeground }]}>
-                      Tap to select a file
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Notes (optional)</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  s.textArea,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="What changed in this revision?"
-                placeholderTextColor={colors.mutedForeground}
-                value={revisionNotes}
-                onChangeText={setRevisionNotes}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-          </ScrollView>
-          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[
-                s.submitBtn,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: !selectedRevFile || !revisionLabel.trim() || isUploading ? 0.5 : 1,
-                },
-              ]}
-              onPress={handleAddRevision}
-              disabled={!selectedRevFile || !revisionLabel.trim() || isUploading}
-            >
-              {isUploading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={s.submitBtnText}>Upload Revision</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── Raise RFI Modal ── */}
-      <Modal
-        visible={showRfiModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowRfiModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, backgroundColor: colors.background }}
-        >
-          <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <Text style={[s.modalTitle, { color: colors.foreground }]}>Raise RFI</Text>
-            <TouchableOpacity onPress={() => setShowRfiModal(false)}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
-          >
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Question *</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="What information do you need?"
-                placeholderTextColor={colors.mutedForeground}
-                value={rfiQuestion}
-                onChangeText={setRfiQuestion}
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Description (optional)</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  s.textArea,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="Provide more context…"
-                placeholderTextColor={colors.mutedForeground}
-                value={rfiDescription}
-                onChangeText={setRfiDescription}
-                multiline
-                numberOfLines={3}
-                textAlignVertical="top"
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Assign to (optional)</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="Name of person to answer this RFI"
-                placeholderTextColor={colors.mutedForeground}
-                value={rfiAssignedToName}
-                onChangeText={setRfiAssignedToName}
-              />
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
-                    const cfg = RFI_PRIORITY_CONFIG[p];
-                    const isSelected = rfiPriority === p;
-                    return (
-                      <TouchableOpacity
-                        key={p}
-                        style={[s.chip, { borderColor: isSelected ? cfg.text : colors.border, backgroundColor: isSelected ? cfg.bg : undefined }]}
-                        onPress={() => setRfiPriority(p)}
-                      >
-                        <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>{cfg.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            </View>
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.mutedForeground}
-                value={rfiDueDate}
-                onChangeText={setRfiDueDate}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-          </ScrollView>
-          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
-            <TouchableOpacity
-              style={[
-                s.submitBtn,
-                {
-                  backgroundColor: colors.primary,
-                  opacity: !rfiQuestion.trim() || isCreatingRfi ? 0.5 : 1,
-                },
-              ]}
-              onPress={handleCreateRfi}
-              disabled={!rfiQuestion.trim() || isCreatingRfi}
-            >
-              {isCreatingRfi ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={s.submitBtnText}>Raise RFI</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
-
-      {/* ── Answer RFI Modal ── */}
-      <Modal
-        visible={showAnswerModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowAnswerModal(false)}
-      >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{ flex: 1, backgroundColor: colors.background }}
-        >
-          <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <View>
-              <Text style={[s.modalTitle, { color: colors.foreground }]}>Update RFI</Text>
-              {answeringRfiNumber ? (
-                <Text style={[s.modalSubtitle, { color: colors.mutedForeground }]}>
-                  {answeringRfiNumber}
-                </Text>
-              ) : null}
-            </View>
-            <TouchableOpacity onPress={() => setShowAnswerModal(false)}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.lg, gap: spacing.md }}
-          >
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Status</Text>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                {(['open', 'answered', 'closed'] as RfiStatus[]).map(st => (
+                {DOC_CATEGORIES.map(cat => (
                   <TouchableOpacity
-                    key={st}
-                    style={[
-                      s.chip,
-                      { borderColor: colors.border },
-                      answerStatus === st && {
-                        backgroundColor: `${colors.primary}20`,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                    onPress={() => setAnswerStatus(st)}
+                    key={cat}
+                    style={[s.chip, { borderColor: colors.border }, docCategory === cat && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary }]}
+                    onPress={() => setDocCategory(cat)}
                   >
-                    <Text
-                      style={[
-                        s.chipText,
-                        {
-                          color:
-                            answerStatus === st ? colors.primary : colors.mutedForeground,
-                        },
-                      ]}
-                    >
-                      {st.charAt(0).toUpperCase() + st.slice(1)}
-                    </Text>
+                    <Text style={[s.chipText, { color: docCategory === cat ? colors.primary : colors.mutedForeground }]}>{cat}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-            </View>
-            {/* Priority (editable in Update modal) */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
-              <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-                {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
-                  const cfg = RFI_PRIORITY_CONFIG[p];
-                  const isSelected = editPriority === p;
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      style={[
-                        s.chip,
-                        { borderColor: isSelected ? cfg.bg : colors.border },
-                        isSelected && { backgroundColor: cfg.bg },
-                      ]}
-                      onPress={() => setEditPriority(p)}
-                    >
-                      <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>
-                        {cfg.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Due Date (editable in Update modal) */}
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
-              <TextInput
-                style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card }]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.mutedForeground}
-                value={editDueDate}
-                onChangeText={setEditDueDate}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-
-            <View style={s.field}>
-              <Text style={[s.label, { color: colors.foreground }]}>Answer</Text>
-              <TextInput
-                style={[
-                  s.input,
-                  s.textArea,
-                  { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.card },
-                ]}
-                placeholder="Provide the answer here…"
-                placeholderTextColor={colors.mutedForeground}
-                value={answerText}
-                onChangeText={setAnswerText}
-                multiline
-                numberOfLines={5}
-                textAlignVertical="top"
-              />
-            </View>
-          </ScrollView>
-          <View style={[s.modalFooter, { borderTopColor: colors.border }]}>
+            </ScrollView>
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Initial Revision</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted, width: 80 }]}
+              placeholder="A"
+              placeholderTextColor={colors.mutedForeground}
+              value={docRevision}
+              onChangeText={setDocRevision}
+              autoCapitalize="characters"
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>File *</Text>
             <TouchableOpacity
-              style={[s.submitBtn, { backgroundColor: colors.primary }]}
-              onPress={handleAnswerRfi}
+              style={[s.filePicker, { borderColor: colors.border, backgroundColor: colors.muted }]}
+              onPress={() => pickFile(false)}
             >
-              <Text style={s.submitBtnText}>Save</Text>
+              {selectedDoc ? (
+                <View>
+                  <Text style={[s.filePickerText, { color: colors.foreground }]}>{selectedDoc.name}</Text>
+                  {selectedDoc.size ? <Text style={[s.filePickerMeta, { color: colors.mutedForeground }]}>{formatFileSize(selectedDoc.size)}</Text> : null}
+                </View>
+              ) : (
+                <>
+                  <Feather name="upload" size={20} color={colors.mutedForeground} />
+                  <Text style={[s.filePickerText, { color: colors.mutedForeground }]}>Tap to select a file</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Notes (optional)</Text>
+            <TextInput
+              style={[s.input, s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="Any notes about this revision…"
+              placeholderTextColor={colors.mutedForeground}
+              value={docNotes}
+              onChangeText={setDocNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* ── Upload Revision Sheet ── */}
+      <AppBottomSheet
+        visible={showRevisionModal}
+        title="Upload New Revision"
+        showCloseButton
+        onDismiss={() => setShowRevisionModal(false)}
+        autoHeight
+        footer={
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: colors.primary, opacity: !selectedRevFile || !revisionLabel.trim() || isUploading ? 0.5 : 1 }]}
+            onPress={handleAddRevision}
+            disabled={!selectedRevFile || !revisionLabel.trim() || isUploading}
+          >
+            {isUploading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.submitBtnText}>Upload Revision</Text>}
+          </TouchableOpacity>
+        }
+      >
+        <View style={{ gap: spacing.md }}>
+          {revisionDocTitle ? <Text style={[s.modalSubtitle, { color: colors.mutedForeground, marginBottom: -spacing.xs }]}>{revisionDocTitle}</Text> : null}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Revision Label *</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted, width: 100 }]}
+              placeholder="e.g. B, C, 2…"
+              placeholderTextColor={colors.mutedForeground}
+              value={revisionLabel}
+              onChangeText={setRevisionLabel}
+              autoCapitalize="characters"
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>File *</Text>
+            <TouchableOpacity
+              style={[s.filePicker, { borderColor: colors.border, backgroundColor: colors.muted }]}
+              onPress={() => pickFile(true)}
+            >
+              {selectedRevFile ? (
+                <Text style={[s.filePickerText, { color: colors.foreground }]}>{selectedRevFile.name}</Text>
+              ) : (
+                <>
+                  <Feather name="upload" size={20} color={colors.mutedForeground} />
+                  <Text style={[s.filePickerText, { color: colors.mutedForeground }]}>Tap to select a file</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Notes (optional)</Text>
+            <TextInput
+              style={[s.input, s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="What changed in this revision?"
+              placeholderTextColor={colors.mutedForeground}
+              value={revisionNotes}
+              onChangeText={setRevisionNotes}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* ── Raise RFI Sheet ── */}
+      <AppBottomSheet
+        visible={showRfiModal}
+        title="Raise RFI"
+        showCloseButton
+        onDismiss={() => setShowRfiModal(false)}
+        autoHeight
+        footer={
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: colors.primary, opacity: !rfiQuestion.trim() || isCreatingRfi ? 0.5 : 1 }]}
+            onPress={handleCreateRfi}
+            disabled={!rfiQuestion.trim() || isCreatingRfi}
+          >
+            {isCreatingRfi ? <ActivityIndicator size="small" color="#fff" /> : <Text style={s.submitBtnText}>Raise RFI</Text>}
+          </TouchableOpacity>
+        }
+      >
+        <View style={{ gap: spacing.md }}>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Question *</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="What information do you need?"
+              placeholderTextColor={colors.mutedForeground}
+              value={rfiQuestion}
+              onChangeText={setRfiQuestion}
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Description (optional)</Text>
+            <TextInput
+              style={[s.input, s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="Provide more context…"
+              placeholderTextColor={colors.mutedForeground}
+              value={rfiDescription}
+              onChangeText={setRfiDescription}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Assign to (optional)</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="Name of person to answer this RFI"
+              placeholderTextColor={colors.mutedForeground}
+              value={rfiAssignedToName}
+              onChangeText={setRfiAssignedToName}
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+              {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
+                const cfg = RFI_PRIORITY_CONFIG[p];
+                const isSelected = rfiPriority === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    style={[s.chip, { borderColor: isSelected ? cfg.text : colors.border, backgroundColor: isSelected ? cfg.bg : undefined }]}
+                    onPress={() => setRfiPriority(p)}
+                  >
+                    <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>{cfg.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.mutedForeground}
+              value={rfiDueDate}
+              onChangeText={setRfiDueDate}
+              keyboardType="numbers-and-punctuation"
+            />
+          </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* ── Answer RFI Sheet ── */}
+      <AppBottomSheet
+        visible={showAnswerModal}
+        title="Update RFI"
+        showCloseButton
+        onDismiss={() => setShowAnswerModal(false)}
+        autoHeight
+        footer={
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: colors.primary }]}
+            onPress={handleAnswerRfi}
+          >
+            <Text style={s.submitBtnText}>Save</Text>
+          </TouchableOpacity>
+        }
+      >
+        <View style={{ gap: spacing.md }}>
+          {answeringRfiNumber ? (
+            <Text style={[s.modalSubtitle, { color: colors.mutedForeground, marginBottom: -spacing.xs }]}>{answeringRfiNumber}</Text>
+          ) : null}
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Status</Text>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+              {(['open', 'answered', 'closed'] as RfiStatus[]).map(st => (
+                <TouchableOpacity
+                  key={st}
+                  style={[s.chip, { borderColor: colors.border }, answerStatus === st && { backgroundColor: `${colors.primary}20`, borderColor: colors.primary }]}
+                  onPress={() => setAnswerStatus(st)}
+                >
+                  <Text style={[s.chipText, { color: answerStatus === st ? colors.primary : colors.mutedForeground }]}>
+                    {st.charAt(0).toUpperCase() + st.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Priority</Text>
+            <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+              {(['low', 'medium', 'high', 'urgent'] as RfiPriority[]).map(p => {
+                const cfg = RFI_PRIORITY_CONFIG[p];
+                const isSelected = editPriority === p;
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    style={[s.chip, { borderColor: isSelected ? cfg.bg : colors.border }, isSelected && { backgroundColor: cfg.bg }]}
+                    onPress={() => setEditPriority(p)}
+                  >
+                    <Text style={[s.chipText, { color: isSelected ? cfg.text : colors.mutedForeground }]}>{cfg.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
+            <TextInput
+              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.mutedForeground}
+              value={editDueDate}
+              onChangeText={setEditDueDate}
+              keyboardType="numbers-and-punctuation"
+            />
+          </View>
+          <View style={s.field}>
+            <Text style={[s.label, { color: colors.foreground }]}>Answer</Text>
+            <TextInput
+              style={[s.input, s.textArea, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
+              placeholder="Provide the answer here…"
+              placeholderTextColor={colors.mutedForeground}
+              value={answerText}
+              onChangeText={setAnswerText}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
+      </AppBottomSheet>
     </View>
   );
 }
