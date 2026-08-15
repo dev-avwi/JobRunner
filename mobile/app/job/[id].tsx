@@ -10537,6 +10537,19 @@ export default function JobDetailScreen() {
         )}
         <View style={styles.statusRow}>
           <StatusBadge status={job.status} />
+          {(isOwnerOrManager || isSoloOwner) && (
+            isProject ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.primary}18`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}35` }}>
+                <Feather name="layers" size={11} color={colors.primary} />
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary, letterSpacing: 0.2 }}>Project</Text>
+              </View>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.invoiced}12`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.invoiced}30` }}>
+                <Feather name="tool" size={11} color={colors.invoiced} />
+                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.invoiced, letterSpacing: 0.2 }}>Service Call</Text>
+              </View>
+            )
+          )}
           {(() => {
             const urgency = getJobUrgency(job.scheduledAt, job.status, colors.isDark);
             if (!urgency) return null;
@@ -10555,18 +10568,6 @@ export default function JobDetailScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             {job.jobNumber && (
               <Text style={{ fontSize: 12, fontFamily: 'monospace', fontWeight: '700', color: colors.primary, backgroundColor: colors.primaryLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, overflow: 'hidden' as any }}>{job.jobNumber}</Text>
-            )}
-            {/* Job type accent — always shown, visually distinct */}
-            {isProject ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.primary}18`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${colors.primary}35` }}>
-                <Feather name="layers" size={11} color={colors.primary} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary, letterSpacing: 0.2 }}>Project</Text>
-              </View>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.invoiced}12`, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${colors.invoiced}30` }}>
-                <Feather name="tool" size={11} color={colors.invoiced} />
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.invoiced, letterSpacing: 0.2 }}>Service Call</Text>
-              </View>
             )}
           </View>
         <TouchableOpacity 
