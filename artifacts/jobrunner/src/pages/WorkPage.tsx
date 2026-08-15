@@ -37,7 +37,9 @@ import {
   FileText,
   Bot,
   Globe,
-  Phone
+  Phone,
+  Layers,
+  Wrench
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -94,6 +96,7 @@ interface Job {
   assignedTo?: string;
   scheduledAt?: string;
   status: JobStatus;
+  jobType?: 'project' | 'service_call' | string | null;
   requiresInspection?: boolean;
   inspectionCompletedAt?: string;
   isXeroImport?: boolean;
@@ -712,6 +715,18 @@ export default function WorkPage({
               </h4>
               <div className="flex items-center gap-1 shrink-0 flex-wrap">
                 <StatusBadge status={job.status} />
+                {job.jobType === 'project' && (
+                  <Badge variant="outline" className="text-xs gap-1 border-violet-300 text-violet-700 bg-violet-50 dark:border-violet-700 dark:text-violet-300 dark:bg-violet-950">
+                    <Layers className="w-3 h-3" />
+                    Project
+                  </Badge>
+                )}
+                {job.jobType === 'service_call' && (
+                  <Badge variant="outline" className="text-xs gap-1 border-sky-300 text-sky-700 bg-sky-50 dark:border-sky-700 dark:text-sky-300 dark:bg-sky-950">
+                    <Wrench className="w-3 h-3" />
+                    Service Call
+                  </Badge>
+                )}
                 {job.leadSource && getLeadSourceBadge(job.leadSource)}
                 {job.requiresInspection && (
                   <Badge variant="outline" className="text-xs gap-1">

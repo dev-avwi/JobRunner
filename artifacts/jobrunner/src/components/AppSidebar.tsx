@@ -131,48 +131,78 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
       </SidebarHeader>
       
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {visibleMenuItems.map((item: NavItem) => {
-                const isActive = location === item.url;
-                const Icon = item.icon || LayoutDashboard;
-                const badgeCount = getBadgeCount(item.url);
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      isActive={isActive}
-                      data-testid={`sidebar-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                      onClick={() => onNavigate?.(item.url)}
-                      onMouseEnter={() => prefetchRoute(item.url)}
-                      onTouchStart={() => prefetchRoute(item.url)}
-                      className={isActive ? 'text-white' : ''}
-                      style={isActive ? { 
-                        backgroundColor: 'hsl(var(--trade))', 
-                        color: 'white',
+        {(() => {
+          // Section definitions — URLs listed here are pulled into that group;
+          // anything not matched falls into the last catch-all group.
+          const sectionDefs: { label: string; urls: string[] }[] = [
+            { label: 'Operations', urls: ['/', '/action-center', '/work', '/schedule'] },
+            { label: 'Finance', urls: ['/clients', '/documents', '/payment-hub', '/expenses'] },
+            { label: 'Team', urls: ['/team', '/leave-management', '/staff-licences', '/time-tracking', '/reports/payroll'] },
+            { label: 'Tools', urls: [] }, // catch-all
+          ];
 
-                      } : {}}
-                    >
-                      <div className="relative">
-                        <Icon className="h-4 w-4" />
-                        {badgeCount > 0 && (
-                          <span 
-                            className="absolute -top-1.5 -right-1.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-medium px-0.5"
-                            data-testid={`badge-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-                          >
-                            {badgeCount > 99 ? '99+' : badgeCount}
-                          </span>
-                        )}
-                      </div>
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+          const assigned = new Set<string>();
+          const sections = sectionDefs.map((sec) => {
+            let items: NavItem[];
+            if (sec.urls.length === 0) {
+              // catch-all: everything not yet assigned
+              items = visibleMenuItems.filter((i: NavItem) => !assigned.has(i.url));
+            } else {
+              items = sec.urls
+                .map((url) => visibleMenuItems.find((i: NavItem) => i.url === url))
+                .filter(Boolean) as NavItem[];
+              items.forEach((i) => assigned.add(i.url));
+            }
+            return { label: sec.label, items };
+          });
+
+          const renderItem = (item: NavItem) => {
+            const isActive = location === item.url;
+            const Icon = item.icon || LayoutDashboard;
+            const badgeCount = getBadgeCount(item.url);
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  isActive={isActive}
+                  data-testid={`sidebar-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                  onClick={() => onNavigate?.(item.url)}
+                  onMouseEnter={() => prefetchRoute(item.url)}
+                  onTouchStart={() => prefetchRoute(item.url)}
+                  className={isActive ? 'text-white' : ''}
+                  style={isActive ? { backgroundColor: 'hsl(var(--trade))', color: 'white' } : {}}
+                >
+                  <div className="relative">
+                    <Icon className="h-4 w-4" />
+                    {badgeCount > 0 && (
+                      <span
+                        className="absolute -top-1.5 -right-1.5 h-4 min-w-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-medium px-0.5"
+                        data-testid={`badge-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+                      >
+                        {badgeCount > 99 ? '99+' : badgeCount}
+                      </span>
+                    )}
+                  </div>
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          };
+
+          return sections
+            .filter((sec) => sec.items.length > 0)
+            .map((sec) => (
+              <SidebarGroup key={sec.label}>
+                <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold px-2 py-1">
+                  {sec.label}
+                </SidebarGroupLabel>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {sec.items.map(renderItem)}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            ));
+        })()}
 
         {visibleSettingsItems.length > 0 && (
           <SidebarGroup>
