@@ -713,11 +713,6 @@ export default function WorkPage({
               </h4>
               <div className="flex items-center gap-1 shrink-0 flex-wrap">
                 <StatusBadge status={job.status} />
-                {job.jobType === 'project' && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    Project
-                  </span>
-                )}
                 {job.leadSource && getLeadSourceBadge(job.leadSource)}
                 {job.requiresInspection && (
                   <Badge variant="outline" className="text-xs gap-1">
@@ -776,8 +771,11 @@ export default function WorkPage({
             </div>
           </div>
           
-          {nextAction && (
-            <div className="mt-2 pt-2 border-t flex justify-end">
+          <div className="mt-2 pt-2 border-t flex items-center justify-between gap-2">
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+              {job.jobType === 'project' ? 'Project' : 'Job'}
+            </span>
+            {nextAction && (
               <Button
                 size="sm"
                 variant={job.status === 'done' ? 'default' : 'outline'}
@@ -791,8 +789,8 @@ export default function WorkPage({
                 <nextAction.icon className="h-3 w-3 mr-1" />
                 {nextAction.label}
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </CardContent>
       </Card>
     );
