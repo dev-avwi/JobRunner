@@ -5528,6 +5528,8 @@ export const claims = pgTable("claims", {
   retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).default('0.00'),
   retentionAmount: decimal("retention_amount", { precision: 12, scale: 2 }).default('0.00'),
   notes: text("notes"),
+  // Attached cost report PDF generated at submission time
+  costReportUrl: text("cost_report_url"),
   // Xero sync
   xeroInvoiceId: varchar("xero_invoice_id"),
   xeroSyncedAt: timestamp("xero_synced_at"),

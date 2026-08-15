@@ -11,10 +11,12 @@ import { requireAuth } from "./middleware";
 import { getUserContext, ownerOrManagerOnly } from "../permissions";
 import { storage } from "../storage";
 import * as xeroService from "../xeroService";
-import { generateProgressClaimPDF, generatePDFBuffer } from "../pdfService";
+import { generateProgressClaimPDF, generatePDFBuffer, generateCostReportPDF } from "../pdfService";
 import { computeRetentionSummary } from "./retentionSummary";
 import { sendProgressClaimSubmittedEmail } from "../emailService";
 import { getProductionBaseUrl } from "../urlHelper";
+import { ObjectStorageService } from "../objectStorage";
+import { buildCostReportData } from "../costReportService";
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -492,30 +494,40 @@ export function registerClaimsRoutes(app: Express): void {
       } as any);
       res.json(updated);
 
-      // ── Fire-and-forget: notify the client via email ─────────────────────────
-      // Run after the response is sent so email latency never blocks the caller.
+      // ── Fire-and-forget: generate cost report PDF + notify client ───────────
+      // Both tasks run after the response is sent so latency never blocks the caller.
       (async () => {
+        // 1. Generate cost report PDF and store it alongside the claim
         try {
-          // 1. Portal must be active for this job
+          const reportData = await buildCostReportData(jobId, effectiveUserId);
+          const html = generateCostReportPDF(reportData);
+          const pdfBuffer = await generatePDFBuffer(html);
+          const claimNum = ((updated as any)?.claimNumber || claim.claimNumber || claimId).replace(/[^a-z0-9-]/gi, '-');
+          const fileName = `claim-cost-reports/${effectiveUserId}/${jobId}/cost-report-${claimNum}.pdf`;
+          const objectService = new ObjectStorageService();
+          const objectUrl = await objectService.uploadFile(fileName, pdfBuffer, 'application/pdf');
+          await storage.updateClaim(claimId, effectiveUserId, { costReportUrl: objectUrl } as any);
+          console.info(`[claims] cost report attached for claim ${claimId}`);
+        } catch (pdfErr: any) {
+          // Non-fatal — a missing cost report never blocks the submitted claim
+          console.error("[claims] cost report generation error:", pdfErr?.message || pdfErr);
+        }
+
+        // 2. Notify client via email if portal is configured
+        try {
           const portalToken = await storage.getActiveJobPortalToken(jobId);
           if (!portalToken) return;
-
-          // 2. Financial details must be visible on the portal
           if (!portalToken.showFinancialsOnPortal) return;
 
-          // 3. Fetch the job to get the client id and title
           const job = await storage.getJob(jobId, effectiveUserId);
           if (!job || !(job as any).clientId) return;
 
-          // 4. Fetch client — need their email
           const client = await storage.getClient((job as any).clientId, effectiveUserId);
           if (!client || !(client as any).email) return;
 
-          // 5. Fetch business name so the email reads "XYZ Constructions has submitted…"
           const bizSettings = await storage.getBusinessSettings(effectiveUserId);
           const businessName = bizSettings?.businessName || null;
 
-          // 6. Build portal URL and send
           const baseUrl = getProductionBaseUrl();
           const portalUrl = `${baseUrl}/p/${portalToken.token}`;
 
@@ -539,7 +551,6 @@ export function registerClaimsRoutes(app: Express): void {
             jobTitle: (job as any).title || null,
           });
         } catch (emailErr: any) {
-          // Non-fatal — log but never surface to the caller
           console.error("[claims] submit email error:", emailErr?.message || emailErr);
         }
       })();
@@ -750,6 +761,31 @@ export function registerClaimsRoutes(app: Express): void {
       res.json(available);
     } catch (err: any) {
       console.error("[claims] approved-for-claim error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jobs/:jobId/claims/:claimId/cost-report-pdf
+  // Returns a short-lived (10 min) signed URL for the cost report PDF stored at
+  // submission time. Requires auth + owner/manager role — callers never receive
+  // the raw object-storage path, only the time-limited signed URL.
+  app.get("/api/jobs/:jobId/claims/:claimId/cost-report-pdf", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId, claimId } = req.params;
+      const claim = await storage.getClaim(claimId, effectiveUserId);
+      if (!claim || claim.jobId !== jobId) {
+        return res.status(404).json({ error: "Claim not found" });
+      }
+      const storedPath = (claim as any).costReportUrl as string | null | undefined;
+      if (!storedPath) {
+        return res.status(404).json({ error: "No cost report has been generated for this claim yet. Submit the claim first." });
+      }
+      const objectService = new ObjectStorageService();
+      const signedUrl = await objectService.getSignedDownloadURL(storedPath, 600);
+      res.json({ url: signedUrl });
+    } catch (err: any) {
+      console.error("[claims] cost-report-pdf error:", err);
       res.status(500).json({ error: err.message });
     }
   });

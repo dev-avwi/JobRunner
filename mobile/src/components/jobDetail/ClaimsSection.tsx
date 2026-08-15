@@ -15,13 +15,13 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet,
-  ScrollView, TextInput, Platform, KeyboardAvoidingView,
+  ScrollView, TextInput, Platform, KeyboardAvoidingView, Linking,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
-import api from '../../lib/api';
+import api, { API_URL } from '../../lib/api';
 import { showToast } from '../../lib/toast';
 import { AppBottomSheet, BottomSheetScrollView } from '../ui/AppBottomSheet';
 import { SheetButton } from '../ui/SheetButton';
@@ -45,6 +45,8 @@ export interface Claim {
   retentionAmount: string | null;
   notes: string | null;
   xeroInvoiceId: string | null;
+  /** Object-storage URL for the cost report PDF generated at submission time */
+  costReportUrl: string | null;
 }
 
 interface ClaimLineItem {
@@ -543,6 +545,33 @@ export function ClaimsSection({
                       <Text style={[styles.notes, { color: colors.mutedForeground }]}>{claim.notes}</Text>
                     ) : null}
 
+                    {/* Cost report PDF attached at submission — open via signed URL */}
+                    {claim.costReportUrl ? (
+                      <TouchableOpacity
+                        style={[styles.costReportBtn, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}
+                        onPress={async () => {
+                          try {
+                            const res = await api.get<{ url: string }>(
+                              `/api/jobs/${jobId}/claims/${claim.id}/cost-report-pdf`,
+                            );
+                            const signedUrl = res.data?.url;
+                            if (signedUrl) {
+                              await Linking.openURL(signedUrl);
+                            } else {
+                              showToast({ type: 'error', message: 'Could not get download link' });
+                            }
+                          } catch {
+                            showToast({ type: 'error', message: 'Failed to open cost report' });
+                          }
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="file-text" size={14} color={colors.primary} />
+                        <Text style={[styles.costReportBtnText, { color: colors.primary }]}>Download Cost Report PDF</Text>
+                        <Feather name="download" size={14} color={colors.primary} />
+                      </TouchableOpacity>
+                    ) : null}
+
                     {/* Action buttons */}
                     {isOwnerOrManager && (
                       <View style={styles.actions}>
@@ -855,6 +884,8 @@ const styles = StyleSheet.create({
   totalLabel: { fontSize: 13, fontWeight: fontWeights.bold },
   totalValue: { fontSize: 13, fontWeight: fontWeights.bold },
   notes: { fontSize: 11, marginBottom: spacing.sm, fontStyle: 'italic' },
+  costReportBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderWidth: 1, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, marginBottom: spacing.sm },
+  costReportBtnText: { flex: 1, fontSize: typography.sizes.sm, fontWeight: fontWeights.medium },
   actions: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: radius.md, borderWidth: 1, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   actionBtnText: { fontSize: typography.sizes.sm, fontWeight: fontWeights.medium },
