@@ -1997,6 +1997,9 @@ export default function JobDetailView({
     );
   }
 
+  const isProject = job.jobType === 'project';
+  const isServiceCall = !isProject; // service_call or unset
+
   return (
     <PageShell data-testid="job-detail-view">
       <div className="flex items-start justify-between mb-6">
@@ -2029,6 +2032,21 @@ export default function JobDetailView({
               {(job as any).jobNumber && (
                 <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border select-all">
                   {(job as any).jobNumber}
+                </span>
+              )}
+              {isProject ? (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
+                  style={{ backgroundColor: 'hsl(221 83% 95%)', color: 'hsl(221 83% 35%)', borderColor: 'hsl(221 83% 80%)' }}
+                  data-testid="badge-job-type-project"
+                >
+                  Project
+                </span>
+              ) : (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
+                  style={{ backgroundColor: 'hsl(38 92% 94%)', color: 'hsl(38 92% 30%)', borderColor: 'hsl(38 92% 75%)' }}
+                  data-testid="badge-job-type-service-call"
+                >
+                  Service Call
                 </span>
               )}
               <PresenceIndicator editors={collaboration.otherEditors} />
@@ -2997,7 +3015,7 @@ export default function JobDetailView({
             />
           )}
 
-          {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || jobMaterials.length > 0) && (
+          {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || (isProject && jobMaterials.length > 0)) && (
             <Card data-testid="card-job-brief">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -3041,7 +3059,7 @@ export default function JobDetailView({
                   </div>
                 )}
 
-                {jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
+                {isProject && jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <FileEdit className="h-3.5 w-3.5 text-amber-600" />
@@ -3071,7 +3089,7 @@ export default function JobDetailView({
                   </div>
                 )}
 
-                {!isTradie && jobVariations.filter((v: any) => v.status === 'sent' || v.status === 'draft').length > 0 && (
+                {isProject && !isTradie && jobVariations.filter((v: any) => v.status === 'sent' || v.status === 'draft').length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -3096,7 +3114,7 @@ export default function JobDetailView({
                   </div>
                 )}
 
-                {jobMaterials.length > 0 && (
+                {isProject && jobMaterials.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Package className="h-3.5 w-3.5 text-muted-foreground" />
@@ -3120,6 +3138,7 @@ export default function JobDetailView({
                   </div>
                 )}
 
+                {isProject && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
@@ -3159,6 +3178,7 @@ export default function JobDetailView({
                     <p className="text-xs text-muted-foreground">No equipment assigned yet</p>
                   )}
                 </div>
+                )}
 
                 {!isTradie && linkedQuote?.total && (
                   <div className="pt-2 border-t space-y-1">
@@ -3166,7 +3186,7 @@ export default function JobDetailView({
                       <span className="text-muted-foreground">Original Quote</span>
                       <span>${parseFloat(linkedQuote.total).toFixed(2)}</span>
                     </div>
-                    {jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
+                    {isProject && jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
                       <>
                         <div className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400">
                           <span>Approved Variations</span>
@@ -3178,7 +3198,7 @@ export default function JobDetailView({
                         </div>
                       </>
                     )}
-                    {jobVariations.filter((v: any) => v.status === 'approved').length === 0 && (
+                    {(!isProject || jobVariations.filter((v: any) => v.status === 'approved').length === 0) && (
                       <div className="flex items-center justify-between text-sm font-semibold">
                         <span>Total</span>
                         <span>${parseFloat(linkedQuote.total).toFixed(2)}</span>
@@ -3248,8 +3268,10 @@ export default function JobDetailView({
             </CardContent>
           </Card>
 
-          {/* Job Variations / Change Orders - for tracking scope changes */}
-          <JobVariations jobId={jobId} canEdit={job.status !== 'invoiced' && !isTradie} />
+          {/* Job Variations / Change Orders - project only */}
+          {isProject && (
+            <JobVariations jobId={jobId} canEdit={job.status !== 'invoiced' && !isTradie} />
+          )}
 
           {/* Client Signature - show for in_progress (for capturing before completion), done and invoiced jobs */}
           {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && (
@@ -3712,28 +3734,32 @@ export default function JobDetailView({
           )}
 
 
-          {/* Job Phases */}
-          <JobPhasesSection
-            jobId={jobId}
-            isTradie={isTradie}
-            onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
-          />
+          {/* Job Phases — project only */}
+          {isProject && (
+            <JobPhasesSection
+              jobId={jobId}
+              isTradie={isTradie}
+              onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
+            />
+          )}
 
-          {/* Project Timeline (Gantt) — only for project type */}
-          {job?.jobType === 'project' && (
+          {/* Project Timeline (Gantt) — project only */}
+          {isProject && (
             <ProjectGanttView jobId={jobId} isTradie={isTradie} />
           )}
 
-          {/* Progress Claims */}
-          <ClaimsSection
-            jobId={jobId}
-            isTradie={isTradie}
-            openNewClaimForPhase={pendingClaimPhase}
-            onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
-          />
+          {/* Progress Claims — project only */}
+          {isProject && (
+            <ClaimsSection
+              jobId={jobId}
+              isTradie={isTradie}
+              openNewClaimForPhase={pendingClaimPhase}
+              onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
+            />
+          )}
 
-          {/* Materials Tracking */}
-          <Card data-testid="card-materials">
+          {/* Materials Tracking — project only */}
+          {isProject && <Card data-testid="card-materials">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
@@ -4107,7 +4133,7 @@ export default function JobDetailView({
                 </div>
               )}
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Time Tracking Widget - Show only for in_progress jobs */}
           {job.status === 'in_progress' && (
@@ -4346,8 +4372,10 @@ export default function JobDetailView({
             currentUserId={currentUser?.id}
           />
 
-          {/* Project Document Register — drawings, specs, RFIs, revision tracking */}
-          <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />
+          {/* Project Document Register — drawings, specs, RFIs, revision tracking — project only */}
+          {isProject && (
+            <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />
+          )}
 
           {/* Uploaded Documents - external quotes, invoices, PDFs */}
           <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} />

@@ -3133,7 +3133,9 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       }
       
-      // Validate jobType enum on updates (same constraint enforced on create)
+      // Validate jobType enum on updates (same constraint enforced on create).
+      // null is permitted in the schema (legacy rows) but must never be used to
+      // silently downgrade a project — we catch that below.
       if (data.jobType !== undefined && data.jobType !== null && !['service', 'project'].includes(data.jobType)) {
         return res.status(400).json({ error: "jobType must be 'service' or 'project'" });
       }
@@ -3142,7 +3144,21 @@ import { computeRetentionSummary } from "./retentionSummary";
       
       const existingJob = await storage.getJob(req.params.id, effectiveUserId);
 
-      // Restrict jobType changes (service ↔ project conversion) to owner/manager only.
+      // Enforce one-way service → project conversion.
+      // A Project must never be convertible back to service/null — null is explicitly
+      // included because a caller could send { jobType: null } to bypass the 'service'
+      // check and reach updateJob with a value that the UI treats as a Service Call.
+      if (data.jobType !== undefined && existingJob?.jobType === 'project') {
+        const incomingType = data.jobType; // may be 'service', null, or 'project'
+        if (incomingType !== 'project') {
+          return res.status(422).json({
+            error: 'A Project cannot be converted back to a Service Call. Archive it and create a new Service Call instead.',
+            code: 'JOB_TYPE_DOWNGRADE_NOT_ALLOWED',
+          });
+        }
+      }
+
+      // Restrict any jobType change (service/null → project) to owner/manager only.
       // WRITE_JOBS alone is insufficient — a worker with that permission could call
       // this endpoint directly and bypass the UI gate.
       if (data.jobType !== undefined && data.jobType !== null && data.jobType !== existingJob?.jobType) {
