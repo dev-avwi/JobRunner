@@ -181,6 +181,22 @@ const defaultSupplierForm = {
   notes: '',
 };
 
+function validateAbn(abn: string): boolean {
+  const digits = abn.replace(/[^0-9]/g, '');
+  if (digits.length !== 11) return false;
+  const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+  const d = digits.split('').map(Number);
+  d[0] -= 1;
+  const total = d.reduce((acc, digit, i) => acc + digit * weights[i], 0);
+  return total % 89 === 0;
+}
+
+function formatAbn(raw: string): string {
+  const d = raw.replace(/[^0-9]/g, '');
+  if (d.length !== 11) return raw.trim();
+  return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8, 11)}`;
+}
+
 export default function InventoryScreen() {
   const { colors } = useTheme();
   const { isOwner, isManager } = useUserRole();
@@ -556,12 +572,24 @@ export default function InventoryScreen() {
       Alert.alert('Required', 'Company name is required.');
       return;
     }
+    if (supplierForm.abn.trim()) {
+      const digits = supplierForm.abn.replace(/[^0-9]/g, '');
+      if (digits.length !== 11 || !validateAbn(supplierForm.abn)) {
+        Alert.alert('Invalid ABN', 'Please enter a valid 11-digit ABN or leave the field blank.');
+        return;
+      }
+    }
     setIsSavingSupplier(true);
     try {
       const payload: Record<string, unknown> = {
         name: supplierForm.name.trim(),
       };
-      if (supplierForm.abn) payload.abn = supplierForm.abn.trim();
+      // Always send abn on edits so existing values can be cleared; omit on create when blank
+      if (editingSupplier) {
+        payload.abn = supplierForm.abn.trim() || null;
+      } else if (supplierForm.abn.trim()) {
+        payload.abn = supplierForm.abn.trim();
+      }
       if (supplierForm.contactName) payload.contactName = supplierForm.contactName.trim();
       if (supplierForm.phone) payload.phone = supplierForm.phone.trim();
       if (supplierForm.email) payload.email = supplierForm.email.trim();
@@ -1183,7 +1211,7 @@ export default function InventoryScreen() {
                 {s.abn ? (
                   <View style={styles.detailItem}>
                     <Text style={styles.detailItemLabel}>ABN</Text>
-                    <Text style={styles.detailItemValue}>{s.abn}</Text>
+                    <Text style={styles.detailItemValue}>{formatAbn(s.abn)}</Text>
                   </View>
                 ) : null}
                 {s.contactName ? (
@@ -1326,12 +1354,36 @@ export default function InventoryScreen() {
 
           <Text style={styles.fieldLabel}>ABN</Text>
           <TextInput
-            style={styles.textInput}
+            style={[
+              styles.textInput,
+              (() => {
+                const digits = supplierForm.abn.replace(/[^0-9]/g, '');
+                const nonEmpty = supplierForm.abn.trim() !== '';
+                const bad = nonEmpty && (digits.length !== 11 || !validateAbn(supplierForm.abn));
+                return bad ? { borderColor: '#f59e0b', borderWidth: 1 } : {};
+              })(),
+            ]}
             value={supplierForm.abn}
             onChangeText={(text) => setSupplierForm({ ...supplierForm, abn: text })}
             placeholder="e.g., 12 345 678 901"
             placeholderTextColor={colors.mutedForeground}
+            keyboardType="numeric"
           />
+          {(() => {
+            const digits = supplierForm.abn.replace(/[^0-9]/g, '');
+            const nonEmpty = supplierForm.abn.trim() !== '';
+            if (!nonEmpty) return null;
+            if (digits.length !== 11) {
+              return <Text style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>ABN must be 11 digits.</Text>;
+            }
+            if (digits.length === 11 && !validateAbn(supplierForm.abn)) {
+              return <Text style={{ color: '#f59e0b', fontSize: 12, marginTop: 2 }}>Invalid ABN checksum. Please double-check the number.</Text>;
+            }
+            if (digits.length === 11) {
+              return <Text style={{ color: '#22c55e', fontSize: 12, marginTop: 2 }}>Valid ABN</Text>;
+            }
+            return null;
+          })()}
 
           <Text style={styles.fieldLabel}>Contact Name</Text>
           <TextInput

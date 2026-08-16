@@ -104,6 +104,23 @@ const equipmentStatusConfig: Record<string, { label: string; className: string }
   sold: { label: "Sold", className: "bg-muted text-muted-foreground" },
 };
 
+// ── ABN validation (11-digit weighted mod-89 checksum) ───────────────────────
+function validateAbn(abn: string): boolean {
+  const digits = abn.replace(/[^0-9]/g, '');
+  if (digits.length !== 11) return false;
+  const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+  const d = digits.split('').map(Number);
+  d[0] -= 1;
+  const total = d.reduce((acc, digit, i) => acc + digit * weights[i], 0);
+  return total % 89 === 0;
+}
+
+function formatAbn(raw: string): string {
+  const d = raw.replace(/[^0-9]/g, '');
+  if (d.length !== 11) return raw.trim();
+  return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8, 11)}`;
+}
+
 function formatAUD(value: string | number | null | undefined): string {
   if (!value) return "-";
   const num = typeof value === "string" ? parseFloat(value) : value;
@@ -3388,6 +3405,16 @@ function SupplierDialog({
     notes: "",
   });
 
+  const abnDigits = form.abn.replace(/[^0-9]/g, '');
+  const abnNonEmpty = form.abn.trim() !== "";
+  const abnError = !abnNonEmpty
+    ? null
+    : abnDigits.length !== 11
+    ? "ABN must be 11 digits."
+    : !validateAbn(form.abn)
+    ? "Invalid ABN checksum. Please double-check the number."
+    : null;
+
   return (
     <Dialog
       open={open}
@@ -3440,8 +3467,19 @@ function SupplierDialog({
               <Label>ABN</Label>
               <Input
                 value={form.abn}
+                placeholder="e.g. 12 345 678 901"
                 onChange={(e) => setForm({ ...form, abn: e.target.value })}
+                className={abnError ? "border-warning focus-visible:ring-warning" : ""}
               />
+              {abnError && (
+                <p className="text-xs text-warning flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                  {abnError}
+                </p>
+              )}
+              {!abnError && abnNonEmpty && abnDigits.length === 11 && (
+                <p className="text-xs text-success">Valid ABN</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Payment Terms</Label>
@@ -3493,7 +3531,7 @@ function SupplierDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending || !form.name.trim()}>
+            <Button type="submit" disabled={isPending || !form.name.trim() || !!abnError}>
               {isPending ? "Saving..." : supplier ? "Update" : "Create"}
             </Button>
           </DialogFooter>
@@ -3636,7 +3674,7 @@ function SupplierDetailView({
             <div className="text-sm space-y-2 text-muted-foreground">
               <p className="flex items-start gap-2">
                 <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                <span>ABN: {supplier.abn || "-"}</span>
+                <span>ABN: {supplier.abn ? formatAbn(supplier.abn) : "-"}</span>
               </p>
               <p className="flex items-start gap-2">
                 <Building2 className="w-4 h-4 mt-0.5 flex-shrink-0" />

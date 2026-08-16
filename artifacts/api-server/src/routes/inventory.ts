@@ -102,6 +102,23 @@ async function recomputePoStatus(
   }
 }
 
+// ── ABN validation (11-digit weighted mod-89 checksum) ───────────────────────
+export function isValidAbn(abn: string): boolean {
+  const digits = abn.replace(/[^0-9]/g, '');
+  if (digits.length !== 11) return false;
+  const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+  const d = digits.split('').map(Number);
+  d[0] -= 1;
+  const total = d.reduce((acc, digit, i) => acc + digit * weights[i], 0);
+  return total % 89 === 0;
+}
+
+export function formatAbn(abn: string): string {
+  const d = abn.replace(/[^0-9]/g, '');
+  if (d.length !== 11) return abn.trim();
+  return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8, 11)}`;
+}
+
 export function registerInventoryRoutes(app: Express): void {
 
   // ── GET /api/po/view/:token — supplier-facing PO PDF (no auth required) ──────
@@ -434,6 +451,12 @@ export function registerInventoryRoutes(app: Express): void {
     try {
       const userContext = await getUserContext(req.userId);
       const parsed = insertSupplierSchema.parse(req.body);
+      if (parsed.abn) {
+        if (!isValidAbn(parsed.abn)) {
+          return res.status(422).json({ error: "Invalid ABN: must be 11 digits and pass the ABN checksum. Please double-check and try again." });
+        }
+        parsed.abn = formatAbn(parsed.abn);
+      }
       const supplier = await storage.createSupplier({ ...parsed, userId: userContext.effectiveUserId });
       res.status(201).json(supplier);
     } catch (error) {
@@ -446,6 +469,16 @@ export function registerInventoryRoutes(app: Express): void {
     try {
       const userContext = await getUserContext(req.userId);
       const patchData = { ...req.body }; delete patchData.id; delete patchData.userId; delete patchData.businessOwnerId; delete patchData.createdAt; delete patchData.updatedAt;
+      // Validate ABN if explicitly supplied and non-empty
+      if ('abn' in patchData && patchData.abn != null && patchData.abn !== '') {
+        if (typeof patchData.abn !== 'string') {
+          return res.status(422).json({ error: "Invalid ABN: must be a string." });
+        }
+        if (!isValidAbn(patchData.abn)) {
+          return res.status(422).json({ error: "Invalid ABN: must be 11 digits and pass the ABN checksum. Please double-check and try again." });
+        }
+        patchData.abn = formatAbn(patchData.abn);
+      }
       const updated = await storage.updateSupplier(req.params.id, userContext.effectiveUserId, patchData);
       if (!updated) return res.status(404).json({ error: "Supplier not found" });
       res.json(updated);
