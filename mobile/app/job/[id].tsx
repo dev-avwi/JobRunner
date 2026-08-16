@@ -44,6 +44,7 @@ import { getNestedHeaderOptions } from '../../src/lib/nested-header';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
@@ -2380,6 +2381,18 @@ export default function JobDetailScreen() {
     swms: true,
     forms: true,
   });
+  useEffect(() => {
+    AsyncStorage.getItem('proof_pack_sections').then((stored) => {
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setProofPackSections((prev) => ({ ...prev, ...parsed }));
+        } catch {
+          // ignore malformed data
+        }
+      }
+    });
+  }, []);
   const [portalEnabled, setPortalEnabled] = useState(false);
   const [portalLinks, setPortalLinks] = useState<{ id: string; url: string; token: string; expiresAt?: string; createdAt?: string }[]>([]);
   const [isTogglingPortal, setIsTogglingPortal] = useState(false);
@@ -5006,6 +5019,7 @@ export default function JobDetailScreen() {
       });
 
       if (downloadResult.status === 200) {
+        await AsyncStorage.setItem('proof_pack_sections', JSON.stringify(proofPackSections));
         setShowProofPackModal(false);
         const isSharingAvailable = await Sharing.isAvailableAsync();
         if (isSharingAvailable) {
@@ -5081,6 +5095,7 @@ export default function JobDetailScreen() {
       });
 
       if (downloadResult.status === 200) {
+        await AsyncStorage.setItem('proof_pack_sections', JSON.stringify(proofPackSections));
         setShowProofPackModal(false);
         const isSharingAvailable = await Sharing.isAvailableAsync();
         if (isSharingAvailable) {
