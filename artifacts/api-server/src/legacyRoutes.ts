@@ -294,86 +294,31 @@ function stripServerControlledFields<T extends Record<string, any>>(body: T): Pa
   return updates;
 }
 
-// Task: auto-create a draft job when a client accepts a quote that has no linked job.
-// The job inherits client, address, title/description, and quote line items become the
-// job scope (checklist items). Returns the new job id, or null if no job was created.
+import {
+  checkQuoteAcceptGuards,
+  buildQuoteAcceptHandler,
+  autoCreateJobFromAcceptedQuote as _autoCreateJobFromAcceptedQuote,
+} from './quoteAcceptance';
+
+// Thin adapter: wires the injected-deps version to the module-level storage/db.
 async function autoCreateJobFromAcceptedQuote(quote: any, acceptedByName: string): Promise<string | null> {
-  if (!quote || quote.jobId || !quote.clientId) return null;
-  try {
-    const client = await storage.getClientById(quote.clientId);
-    const job = await storage.createJob({
-      userId: quote.userId,
-      clientId: quote.clientId,
-      title: quote.title || `Job for quote ${quote.number || quote.id.slice(0, 8)}`,
-      description: quote.description || null,
-      address: client?.address || null,
-      status: 'pending',
-      notes: `Auto-created from accepted quote ${quote.number || quote.id.slice(0, 8)}`,
-    } as any);
-
-    // Atomically claim the quote: only link the new job if no job has been linked yet.
-    // Guards against concurrent accepts / double-submits creating duplicate jobs.
-    const claimed = await db
-      .update(quotes)
-      .set({ jobId: job.id, updatedAt: new Date() })
-      .where(and(eq(quotes.id, quote.id), isNull(quotes.jobId)))
-      .returning({ id: quotes.id });
-    if (!claimed.length) {
-      // Another request already linked a job to this quote; discard ours.
-      try {
-        await storage.deleteJob(job.id, quote.userId);
-      } catch (cleanupErr) {
-        console.error('[Quote Acceptance] Failed to clean up duplicate auto-created job:', cleanupErr);
-      }
-      return null;
-    }
-
-    // Quote line items become the job scope (checklist items)
-    try {
-      const lineItems = await storage.getQuoteLineItems(quote.id);
-      for (const item of lineItems) {
-        const desc = (item.description || '').trim();
-        if (!desc) continue;
-        const qty = parseFloat(String(item.quantity ?? '1'));
-        const text = qty && qty !== 1 ? `${desc} (x${qty})` : desc;
-        await storage.createChecklistItem({ jobId: job.id, text } as any, quote.userId);
-      }
-    } catch (e) {
-      console.error('[Quote Acceptance] Failed to copy quote line items to job scope:', e);
-    }
-
-    // Notify the owner that a draft job was created
-    try {
-      await storage.createNotification({
-        userId: quote.userId,
-        type: 'job_created',
-        title: 'Draft Job Created',
-        message: `${acceptedByName} accepted quote ${quote.number || quote.id.slice(0, 8)}. A draft job has been created and is ready to review and schedule.`,
-        relatedId: job.id,
-        relatedType: 'job',
-      } as any);
-    } catch (e) {
-      console.error('[Quote Acceptance] Failed to create draft-job notification:', e);
-    }
-
-    try {
-      await logActivity(
-        quote.userId,
-        'job_created' as any,
-        'Draft Job Created',
-        `Draft job auto-created after quote ${quote.number || quote.id.slice(0, 8)} was accepted by ${acceptedByName}`,
-        'job',
-        job.id,
-        { quoteId: quote.id, quoteNumber: quote.number, trigger: 'quote_accepted' }
-      );
-    } catch {}
-
-    console.log(`[Quote Acceptance] Auto-created draft job ${job.id} from quote ${quote.id}`);
-    return job.id;
-  } catch (e) {
-    console.error('[Quote Acceptance] Failed to auto-create job from accepted quote:', e);
-    return null;
-  }
+  return _autoCreateJobFromAcceptedQuote(quote, acceptedByName, {
+    getClientById: (id) => storage.getClientById(id),
+    createJob: (data) => storage.createJob(data as any),
+    claimQuoteJobId: async (quoteId, jobId) => {
+      const claimed = await db
+        .update(quotes)
+        .set({ jobId, updatedAt: new Date() })
+        .where(and(eq(quotes.id, quoteId), isNull(quotes.jobId)))
+        .returning({ id: quotes.id });
+      return claimed.length;
+    },
+    deleteJob: (jobId, userId) => storage.deleteJob(jobId, userId),
+    getQuoteLineItems: (quoteId) => storage.getQuoteLineItems(quoteId),
+    createChecklistItem: (data, userId) => storage.createChecklistItem(data as any, userId),
+    createNotification: (data) => storage.createNotification(data as any),
+    logActivity: (...args: any[]) => logActivity(...args),
+  });
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3386,79 +3331,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PUBLIC: Accept a quote
-  app.post("/api/public/quote/:token/accept", async (req, res) => {
-    try {
-      const { token } = req.params;
-      const { acceptedBy, signature } = req.body;
-      
-      const quote = await storage.getQuoteByToken(token);
-      if (!quote) {
-        return res.status(404).json({ error: 'Quote not found' });
-      }
-      
-      if (quote.status === 'accepted') {
-        return res.status(400).json({ error: 'Quote already accepted' });
-      }
-      
-      if (quote.status === 'declined') {
-        return res.status(400).json({ error: 'Quote was declined' });
-      }
-
-      // Require a name and a valid drawn signature (parity with legacy flow)
-      if (!acceptedBy || !acceptedBy.trim()) {
-        return res.status(400).json({ error: 'Name is required to accept the quote' });
-      }
-      if (!signature || !signature.startsWith('data:image/')) {
-        return res.status(400).json({ error: 'Signature is required to accept the quote' });
-      }
-
-      // Reject expired quotes (parity with legacy flow)
-      if (quote.validUntil && new Date(quote.validUntil) < new Date()) {
-        return res.status(400).json({ error: 'This quote has expired' });
-      }
-      
-      const clientIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
-      
-      await storage.updateQuote(quote.id, quote.userId, {
-        status: 'accepted',
-        acceptedAt: new Date(),
-        acceptedBy: acceptedBy || 'Client',
-        acceptanceIp: typeof clientIp === 'string' ? clientIp : clientIp[0],
-        acceptanceSignatureData: signature || null,
+  app.post("/api/public/quote/:token/accept", buildQuoteAcceptHandler({
+    getQuoteByToken: (token) => storage.getQuoteByToken(token),
+    updateQuote: (quoteId, userId, data) => storage.updateQuote(quoteId, userId, data as any),
+    notifyAccepted: async (userId, quote, acceptedBy) => {
+      await notifyQuoteAcceptedDB(storage, userId, quote, acceptedBy);
+      await notifyQuoteAccepted(userId, (quote as any).number, quote.id, acceptedBy);
+    },
+    autoCreateJob: (quote, name) => autoCreateJobFromAcceptedQuote(quote, name),
+    broadcastUpdate: (quoteId, userId, jobId) => {
+      const wss = (global as any).__wss;
+      if (!wss) return;
+      const message = JSON.stringify({ type: 'quote_update', data: { quoteId, status: 'accepted', jobId } });
+      wss.clients?.forEach((client: any) => {
+        if (client.userId === userId && client.readyState === 1) client.send(message);
       });
-      
-      try {
-        await notifyQuoteAcceptedDB(storage, quote.userId, quote, acceptedBy || 'Client');
-        await notifyQuoteAccepted(quote.userId, quote.number, quote.id, acceptedBy || 'Client');
-      } catch (e) {
-        console.error('Failed to create accept notification:', e);
-      }
-
-      // Auto-create a draft job when the quote has no linked job yet
-      const autoCreatedJobId = await autoCreateJobFromAcceptedQuote(quote, (acceptedBy || 'Client').trim());
-
-      try {
-        const wss = (global as any).__wss;
-        if (wss) {
-          const message = JSON.stringify({
-            type: 'quote_update',
-            data: { quoteId: quote.id, status: 'accepted', jobId: quote.jobId || autoCreatedJobId }
-          });
-          wss.clients?.forEach((client: any) => {
-            if (client.userId === quote.userId && client.readyState === 1) {
-              client.send(message);
-            }
-          });
-        }
-      } catch (e) {
-      }
-      
-      res.json({ success: true, message: 'Quote accepted successfully', jobId: quote.jobId || autoCreatedJobId });
-    } catch (error: any) {
-      console.error('Error accepting quote:', error);
-      res.status(500).json({ error: 'Failed to accept quote' });
-    }
-  });
+    },
+    getClientIp: (req: any) => {
+      const raw = req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+      return typeof raw === 'string' ? raw : raw[0];
+    },
+  }));
 
   // PUBLIC: Decline a quote
   app.post("/api/public/quote/:token/decline", async (req, res) => {
