@@ -20,14 +20,14 @@
   --card: 0 0% 96%;
   --card-foreground: 217 33% 17%;
   --card-border: 217 12% 88%;
-  --sidebar: 217 15% 94%;
-  --sidebar-foreground: 217 20% 14%;
-  --sidebar-border: 217 12% 86%;
-  --sidebar-primary: 217 91% 53%;
-  --sidebar-primary-foreground: 0 0% 98%;
-  --sidebar-accent: 217 12% 90%;
-  --sidebar-accent-foreground: 217 20% 14%;
-  --sidebar-ring: 217 12% 75%;
+  --sidebar: 220 25% 18%;
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-border: 220 20% 25%;
+  --sidebar-primary: 217 91% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 20% 25%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-ring: 217 91% 60%;
   --popover: 0 0% 92%;
   --popover-foreground: 217 20% 14%;
   --popover-border: 217 12% 84%;
@@ -58,11 +58,11 @@
   --info-foreground: 0 0% 98%;
 
   /* Job status colors - one token per 5-stage job status (light mode) */
-  --status-pending: 217 10% 45%;
-  --status-scheduled: 210 80% 45%;
-  --status-in-progress: 35 90% 42%;
-  --status-completed: 145 65% 35%;
-  --status-invoiced: 280 60% 45%;
+  --status-pending: 220 10% 45%;
+  --status-scheduled: 220 80% 45%;
+  --status-in-progress: 30 80% 45%;
+  --status-completed: 145 60% 40%;
+  --status-invoiced: 270 50% 45%;
 
   /* Trade-specific colors - dynamically set by JavaScript */
   --trade: 217 91% 53%; /* Default blue, overridden by trade selection */
@@ -171,11 +171,11 @@
   --info-foreground: 0 0% 10%;
 
   /* Job status colors - one token per 5-stage job status (dark mode) */
-  --status-pending: 217 10% 70%;
-  --status-scheduled: 210 85% 70%;
-  --status-in-progress: 35 90% 62%;
-  --status-completed: 145 55% 62%;
-  --status-invoiced: 280 65% 75%;
+  --status-pending: 220 10% 65%;
+  --status-scheduled: 220 80% 65%;
+  --status-in-progress: 30 80% 60%;
+  --status-completed: 145 60% 55%;
+  --status-invoiced: 270 50% 65%;
 
   /* Trade-specific colors - dynamically set by JavaScript */
   --trade: 217 25% 95%; /* Default blue for dark mode */
@@ -467,157 +467,92 @@
     inset: -1px;
   }
 
-  /* Special Trade Theme Utilities - Make themes distinctive */
+  /* Special Trade Theme Utilities - Cleaned up to be minimal */
   .trade-gradient-bg {
-    background: linear-gradient(135deg, 
-      hsl(var(--trade-bg) / 0.15) 0%, 
-      hsl(var(--trade-glow) / 0.12) 50%,
-      hsl(var(--trade-bg) / 0.15) 100%
-    );
-    width: 100%;
+    @apply bg-primary/5 w-full;
     margin-inline: 0;
   }
   
-  /* More subtle in light mode */
   :root .trade-gradient-bg {
-    background: linear-gradient(135deg, 
-      hsl(var(--trade-bg) / 0.08) 0%, 
-      hsl(var(--trade-glow) / 0.05) 50%,
-      hsl(var(--trade-bg) / 0.08) 100%
-    );
-    width: 100%;
+    @apply bg-primary/5 w-full;
     margin-inline: 0;
   }
 
   .trade-border-special {
-    border: 2px solid hsl(var(--trade) / 0.3);
-    box-shadow: 0 0 0 1px hsl(var(--trade) / 0.1);
+    @apply border-2 border-primary/20;
   }
 
   .trade-accent-glow {
-    box-shadow: 
-      0 4px 20px hsl(var(--trade) / 0.15),
-      0 2px 8px hsl(var(--trade) / 0.2);
+    @apply shadow-sm shadow-primary/10;
   }
 
   .trade-text-special {
-    background: linear-gradient(135deg, 
-      hsl(var(--trade)), 
-      hsl(var(--trade-accent))
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 600;
+    @apply text-primary font-semibold;
   }
 
-  /* Subtle trade-themed animation */
   .trade-pulse {
-    animation: trade-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    @apply animate-pulse;
   }
 
-  @keyframes trade-pulse {
-    0%, 100% {
-      box-shadow: 0 0 0 0 hsl(var(--trade) / 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 8px hsl(var(--trade) / 0);
-    }
-  }
-
-  /* Special hover effect for trade elements */
   .trade-hover-special:hover {
-    transform: translateY(-1px);
-    box-shadow: 
-      0 8px 25px hsl(var(--trade) / 0.15),
-      0 4px 10px hsl(var(--trade) / 0.1);
-    transition: all 0.2s ease-in-out;
+    @apply -translate-y-px shadow-md transition-all;
   }
 
   /* ============================================
-   * iOS-STYLE TYPOGRAPHY SYSTEM
-   * ServiceM8-inspired native mobile feel
+   * TYPOGRAPHY SYSTEM
+   * Cleaned up to be standard Tailwind sizes
    * ============================================ */
   
-  /* Large iOS-style page titles */
   .ios-title {
-    @apply text-[32px] sm:text-[34px] font-bold tracking-tight leading-tight;
+    @apply text-3xl sm:text-4xl font-bold tracking-tight text-foreground;
   }
   
-  /* Section headers with iOS large title feel */
   .ios-section-title {
-    @apply text-[22px] sm:text-[24px] font-semibold tracking-tight;
+    @apply text-xl sm:text-2xl font-semibold tracking-tight text-foreground;
   }
   
-  /* Card titles */
   .ios-card-title {
-    @apply text-[17px] font-semibold tracking-tight;
+    @apply text-lg font-semibold tracking-tight text-foreground;
   }
   
-  /* Body text */
   .ios-body {
-    @apply text-[15px] leading-relaxed;
+    @apply text-base leading-relaxed text-foreground;
   }
   
-  /* Caption/secondary text */
   .ios-caption {
-    @apply text-[13px] text-muted-foreground;
+    @apply text-sm text-muted-foreground;
   }
   
-  /* Tiny labels */
   .ios-label {
-    @apply text-[11px] font-medium uppercase tracking-wider text-muted-foreground;
+    @apply text-xs font-medium uppercase tracking-wider text-muted-foreground;
   }
 
   /* ============================================
-   * NATIVE MOBILE CARD STYLES
+   * CARD STYLES
    * ============================================ */
   
-  /* Native feed card - like a social media post */
   .feed-card {
-    @apply bg-card rounded-2xl overflow-hidden border;
-    border-color: hsl(var(--border) / 0.5);
-    box-shadow: 0 1px 2px hsl(var(--foreground) / 0.04);
+    @apply bg-card rounded-xl border border-border shadow-sm overflow-hidden;
   }
   
-  /* Elevated card with subtle depth */
   .card-elevated {
-    @apply bg-card rounded-2xl overflow-hidden border-0;
-    box-shadow: 
-      0 2px 8px hsl(var(--foreground) / 0.04),
-      0 1px 2px hsl(var(--foreground) / 0.06);
+    @apply bg-card rounded-xl border border-border shadow-md overflow-hidden;
   }
   
-  /* Primary action card with accent border */
   .card-accent {
-    @apply bg-card rounded-2xl overflow-hidden;
-    border: 2px solid hsl(var(--trade) / 0.2);
-    background: linear-gradient(
-      180deg,
-      hsl(var(--trade) / 0.03) 0%,
-      hsl(var(--card)) 100%
-    );
+    @apply bg-card rounded-xl border-2 border-primary/20 shadow-sm overflow-hidden;
   }
 
   /* ============================================
-   * NATIVE ANIMATIONS & MICRO-INTERACTIONS
+   * ANIMATIONS & MICRO-INTERACTIONS
    * ============================================ */
   
-  /* Springy press feedback */
   .press-scale {
-    @apply transition-transform duration-100;
-  }
-  .press-scale:active {
-    transform: scale(0.97);
+    @apply transition-transform active:scale-[0.98];
   }
   
-  /* Smooth card press */
   .card-press {
-    @apply transition-all duration-150 ease-out;
-  }
-  .card-press:active {
-    transform: scale(0.985);
-    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.08);
+    @apply transition-all active:scale-[0.98];
   }
   
   /* List item slide animation */
@@ -745,22 +680,19 @@
   }
 
   /* ============================================
-   * NATIVE SPACING UTILITIES
+   * SPACING UTILITIES
    * ============================================ */
   
-  /* iOS-style section spacing */
   .section-gap {
-    @apply space-y-6;
+    @apply space-y-8;
   }
   
-  /* Card content padding */
   .card-padding {
-    @apply p-4 sm:p-5;
+    @apply p-4 sm:p-6;
   }
   
-  /* Feed item gap */
   .feed-gap {
-    @apply space-y-3;
+    @apply space-y-4;
   }
 }
 

@@ -168,8 +168,8 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
                   onClick={() => onNavigate?.(item.url)}
                   onMouseEnter={() => prefetchRoute(item.url)}
                   onTouchStart={() => prefetchRoute(item.url)}
-                  className={isActive ? 'text-white' : ''}
-                  style={isActive ? { backgroundColor: 'hsl(var(--trade))', color: 'white' } : {}}
+                  className={isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                  
                 >
                   <div className="relative">
                     <Icon className="h-4 w-4" />
@@ -219,12 +219,8 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
                         onClick={() => onNavigate?.(item.url)}
                         onMouseEnter={() => prefetchRoute(item.url)}
                         onTouchStart={() => prefetchRoute(item.url)}
-                        className={isActive ? 'text-white' : ''}
-                        style={isActive ? { 
-                          backgroundColor: 'hsl(var(--trade))', 
-                          color: 'white',
+                        className={isActive ? 'bg-sidebar-primary text-sidebar-primary-foreground font-medium' : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
 
-                        } : {}}
                       >
                         <Icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -241,15 +237,10 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
       <SidebarFooter className="p-4">
         <div className="space-y-2">
           <div 
-            className="flex items-center gap-3 p-2 rounded-lg border"
-            style={{ 
-              backgroundColor: 'hsl(var(--trade) / 0.08)', 
-              borderColor: 'hsl(var(--trade) / 0.2)' 
-            }}
+            className="flex items-center gap-3 p-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30"
           >
             <UserAvatar
               className="h-8 w-8"
-              user={{ id: businessName, name: businessName, photoUrl: businessSettings?.logoUrl }}
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">

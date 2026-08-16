@@ -308,26 +308,27 @@ export function StatusBadge({
   status: string; 
   variant?: "default" | "success" | "warning" | "destructive" | "outline" | "secondary";
 }) {
-  const statusStyles: Record<string, { variant: typeof variant; label: string }> = {
-    pending: { variant: "outline", label: "Pending" },
-    in_progress: { variant: "secondary", label: "In Progress" },
-    scheduled: { variant: "secondary", label: "Scheduled" },
-    done: { variant: "default", label: "Completed" },
-    completed: { variant: "default", label: "Completed" },
-    draft: { variant: "outline", label: "Draft" },
-    sent: { variant: "secondary", label: "Sent" },
-    accepted: { variant: "default", label: "Accepted" },
-    declined: { variant: "destructive", label: "Declined" },
-    expired: { variant: "destructive", label: "Expired" },
-    paid: { variant: "default", label: "Paid" },
-    overdue: { variant: "destructive", label: "Overdue" },
-    cancelled: { variant: "destructive", label: "Cancelled" },
+  const statusStyles: Record<string, { className: string; label: string }> = {
+    pending: { className: "bg-status-pending/10 text-status-pending border-status-pending/20", label: "Pending" },
+    in_progress: { className: "bg-status-in-progress/10 text-status-in-progress border-status-in-progress/20", label: "In Progress" },
+    scheduled: { className: "bg-status-scheduled/10 text-status-scheduled border-status-scheduled/20", label: "Scheduled" },
+    done: { className: "bg-status-completed/10 text-status-completed border-status-completed/20", label: "Completed" },
+    completed: { className: "bg-status-completed/10 text-status-completed border-status-completed/20", label: "Completed" },
+    invoiced: { className: "bg-status-invoiced/10 text-status-invoiced border-status-invoiced/20", label: "Invoiced" },
+    draft: { className: "bg-muted text-muted-foreground border-border", label: "Draft" },
+    sent: { className: "bg-status-scheduled/10 text-status-scheduled border-status-scheduled/20", label: "Sent" },
+    accepted: { className: "bg-status-completed/10 text-status-completed border-status-completed/20", label: "Accepted" },
+    declined: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Declined" },
+    expired: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Expired" },
+    paid: { className: "bg-status-completed/10 text-status-completed border-status-completed/20", label: "Paid" },
+    overdue: { className: "bg-destructive/10 text-destructive border-destructive/20", label: "Overdue" },
+    cancelled: { className: "bg-muted text-muted-foreground border-border", label: "Cancelled" },
   };
 
-  const style = statusStyles[status] || { variant: "outline", label: status };
+  const style = statusStyles[status] || { className: "bg-muted text-muted-foreground border-border", label: status };
 
   return (
-    <Badge variant={style.variant as any} className="text-xs">
+    <Badge className={cn("text-[11px] font-medium px-2 py-0.5 rounded-full hover:bg-transparent", style.className)} variant="outline">
       {style.label}
     </Badge>
   );

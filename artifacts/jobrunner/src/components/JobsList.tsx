@@ -352,7 +352,7 @@ export default function JobsList({
     if (status === 'scheduled') {
       return <Badge className="bg-status-scheduled/10 text-status-scheduled border-status-scheduled/20 text-[11px] font-medium px-2 py-0.5 rounded-full">Scheduled</Badge>;
     }
-    return <Badge variant="outline" className="text-[11px] font-medium px-2 py-0.5 rounded-full">New</Badge>;
+    return <Badge className="bg-status-pending/10 text-status-pending border-status-pending/20 text-[11px] font-medium px-2 py-0.5 rounded-full">New</Badge>;
   };
 
   const getLeadSourceBadge = (source: string | null | undefined) => {
