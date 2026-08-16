@@ -453,6 +453,17 @@ export async function checkTeamSeatLimit(
 ): Promise<{ allowed: boolean; error?: string; code?: string; currentCount?: number; limit?: number }> {
   const tier = (owner?.subscriptionTier as string) || 'free';
 
+  // Active-trial owners get team-level seats regardless of which raw tier is
+  // stored (startTrial() stores 'pro' when trialing Pro but the trial should
+  // include team-member access). Use the same active-trial detection as
+  // ownerHasTeamCapability and the requirePaidTier gate.
+  const trialStatus = owner?.trialStatus as string | undefined;
+  const trialEndsAt = owner?.trialEndsAt as Date | string | null | undefined;
+  const isTrialActive =
+    trialStatus === 'active' &&
+    !!trialEndsAt &&
+    new Date(trialEndsAt) > new Date();
+
   const limits: Record<string, number> = {
     free: TIER_LIMITS.free.teamMembers,
     pro: TIER_LIMITS.pro.teamMembers,
@@ -460,7 +471,8 @@ export async function checkTeamSeatLimit(
     business: TIER_LIMITS.business.teamMembers,
   };
 
-  let seatLimit = limits[tier] ?? 0;
+  // Active trial → treat as team for seat-limit purposes.
+  let seatLimit = isTrialActive ? TIER_LIMITS.team.teamMembers : (limits[tier] ?? 0);
 
   if (owner?.betaLifetimeAccess) {
     seatLimit = TIER_LIMITS.business.teamMembers;

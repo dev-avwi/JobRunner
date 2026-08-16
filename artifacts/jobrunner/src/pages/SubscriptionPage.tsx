@@ -482,8 +482,8 @@ export default function SubscriptionPage() {
                 {(() => {
                   const isCurrent = isCurrentTier(tier.id);
                   const isFoundingMember = status?.betaLifetimeAccess;
-                  const userTierRank = { free: 0, trial: 1, pro: 2, team: 3, business: 4 }[status?.tier || 'free'] ?? 0;
-                  const thisTierRank = { free: 0, trial: 1, pro: 2, team: 3, business: 4 }[tier.id] ?? 0;
+                  const userTierRank = { free: 0, pro: 2, trial: 3, team: 3, business: 4 }[status?.tier || 'free'] ?? 0;
+                  const thisTierRank = { free: 0, pro: 2, trial: 3, team: 3, business: 4 }[tier.id] ?? 0;
                   const isDowngrade = thisTierRank < userTierRank;
                   const isUpgrade = thisTierRank > userTierRank;
 

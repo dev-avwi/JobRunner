@@ -465,17 +465,57 @@ export const requireAuth = async (req: any, res: any, next: any) => {
   next();
 };
 
-export const requireProSubscription = (req: any, res: any, next: any) => {
+// ── Single source of truth for active-trial detection ────────────────────────
+// startTrial() stores the trial tier as 'pro' or 'team' (not the string
+// 'trial') and sets trialStatus:'active' + trialEndsAt. An active trial
+// grants full team-level access so users can actually try every paid feature.
+// All three paid-feature gates and the /api/subscription/usage response use
+// this helper so the entitlement decision is never split across the codebase.
+export function isActiveTrialUser(user: any): boolean {
+  const trialStatus = user?.trialStatus as string | undefined;
+  const trialEndsAt = user?.trialEndsAt as Date | string | null | undefined;
+  return (
+    trialStatus === 'active' &&
+    !!trialEndsAt &&
+    new Date(trialEndsAt) > new Date()
+  );
+}
+
+export const requireProSubscription = async (req: any, res: any, next: any) => {
   if (IS_BETA) {
     return next();
   }
   if (req.user?.betaLifetimeAccess) {
     return next();
   }
-  const tier = req.user?.subscriptionTier;
-  if (tier === 'pro' || tier === 'team' || tier === 'business' || tier === 'beta') {
-    return next();
+
+  // Resolve the business owner so workers in a trial business inherit access.
+  // (req.user is the requesting user, which for team members is themselves —
+  // not the owner whose subscription covers the business's features.)
+  try {
+    const userContext = req.userContext || (await getUserContext(req.userId));
+    req.userContext = userContext;
+    const ownerId = userContext?.effectiveUserId || req.userId;
+    const owner = ownerId === req.userId ? req.user : await storage.getUser(ownerId);
+
+    if (owner?.betaLifetimeAccess) return next();
+    // Active trial (on the owner's account) grants full paid-feature access.
+    if (isActiveTrialUser(owner)) return next();
+
+    const tier = (owner?.subscriptionTier as string) || 'free';
+    if (tier === 'pro' || tier === 'team' || tier === 'business' || tier === 'beta') {
+      return next();
+    }
+  } catch {
+    // If owner resolution fails, fall back to req.user so an error here never
+    // locks out a legitimately-paying owner.
+    if (isActiveTrialUser(req.user)) return next();
+    const tier = req.user?.subscriptionTier;
+    if (tier === 'pro' || tier === 'team' || tier === 'business' || tier === 'beta') {
+      return next();
+    }
   }
+
   return res.status(403).json({ error: "This feature requires a Pro subscription" });
 };
 
@@ -491,6 +531,8 @@ export const requirePaidTierForSms = async (req: any, res: any, next: any) => {
       return res.status(404).json({ error: 'Account not found' });
     }
     if (owner.betaLifetimeAccess) return next();
+    // Active trial users get full access to paid features including SMS.
+    if (isActiveTrialUser(owner)) return next();
 
     const tier = owner.subscriptionTier;
     if (tier === 'pro' || tier === 'team' || tier === 'business' || tier === 'beta') {
@@ -510,14 +552,17 @@ export const requirePaidTierForSms = async (req: any, res: any, next: any) => {
 
 // Generic server-side tier gate. Resolves the BUSINESS OWNER (so team members
 // inherit the owner's plan and aren't wrongly blocked) and checks the owner's
-// subscriptionTier — the same value requireProSubscription / requirePaidTierForSms
-// use. This stays correct for manually-assigned tiers (demo, founding members)
-// that have no active Stripe status, and converges to 'free' on trial expiry
-// (scheduler) and cancellation (webhook + on-read sync). Defense-in-depth for
-// features the UI already gates but whose API was otherwise reachable directly.
+// subscriptionTier. Active-trial owners are elevated to team-level rank so they
+// can access every team-gated feature during their trial. Lapsed subscriptions
+// (canceled/past_due/unpaid/paused) are downgraded to free. Raw stored tier is
+// used for all other cases (pro, team, business, founding-member demo tiers).
 const PAID_TIER_RANK: Record<string, number> = {
   free: 0,
-  trial: 1,
+  // 'trial' (raw DB value) only appears on legacy accounts that were created
+  // before startTrial() began storing the actual tier. An expired raw-trial
+  // account is treated as free here; active ones are caught by isActiveTrialUser
+  // before this map is consulted.
+  trial: 0,
   pro: 2,
   team: 3,
   business: 4,
@@ -538,6 +583,8 @@ export const requirePaidTier = (minTier: 'pro' | 'team' | 'business' = 'pro') =>
       return res.status(404).json({ error: 'Account not found' });
     }
     if (owner.betaLifetimeAccess) return next();
+    // Active trial: full team-level access regardless of which tier is stored.
+    if (isActiveTrialUser(owner)) return next();
 
     // Honor the raw subscriptionTier (works for manual tiers like demo/founding
     // that have no active Stripe status), BUT if the subscription has explicitly

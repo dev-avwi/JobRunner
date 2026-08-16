@@ -34,6 +34,7 @@ import {
   photoUploadPerUserLimiter,
   transcribePerUserLimiter,
   backpressureErrorHandler,
+  isActiveTrialUser,
 } from "./routes/middleware";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { isBackpressure, send429, aiQueue } from "./concurrency";
@@ -5489,7 +5490,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const businessSettings = await storage.getBusinessSettings(req.userId);
       // A worker/subcontractor inherits the plan of the business they work in.
       const userContext = await getUserContext(req.userId);
-      const effectiveTier = userContext.effectiveSubscriptionTier || user?.subscriptionTier || 'free';
+      let effectiveTier = userContext.effectiveSubscriptionTier || user?.subscriptionTier || 'free';
+
+      // Active-trial resolution: startTrial() stores subscriptionTier as 'pro' or
+      // 'team' (not the string 'trial') and sets trialStatus:'active'. A user on an
+      // active trial gets full team-level access so every paid feature can be tried.
+      // Resolve the owner whose trial markers we check (for workers, that's the
+      // business owner they belong to, not themselves).
+      const resolvedOwner = userContext.isOwner
+        ? user
+        : (userContext.businessOwnerId ? await storage.getUser(userContext.businessOwnerId) : user);
+      if (isActiveTrialUser(resolvedOwner)) {
+        effectiveTier = 'team';
+      } else if (effectiveTier === 'trial') {
+        // Legacy accounts that have the raw 'trial' string stored as their tier
+        // but whose trial has expired (scheduler hasn't run yet): treat as free.
+        effectiveTier = 'free';
+      }
+
       res.json({
         ...usageInfo,
         subscriptionTier: effectiveTier,
