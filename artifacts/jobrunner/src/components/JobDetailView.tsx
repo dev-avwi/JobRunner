@@ -196,8 +196,10 @@ export default function JobDetailView({
     attendance: true,
     gpsProof: true,
     materials: true,
+    variations: true,
     photos: true,
     invoice: true,
+    retention: true,
     compliance: true,
     swms: true,
     forms: true,
@@ -5256,18 +5258,22 @@ export default function JobDetailView({
           <div className="flex gap-4">
             <div className="w-48 flex-shrink-0 space-y-3 border-r pr-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Include Sections</p>
-              {[
+              {([
                 { key: 'timeline' as const, label: 'Job Timeline' },
                 { key: 'attendance' as const, label: 'Worker Hours' },
                 { key: 'gpsProof' as const, label: 'GPS Verification' },
                 { key: 'materials' as const, label: 'Materials & Costs' },
+                { key: 'variations' as const, label: 'Variations' },
                 { key: 'photos' as const, label: 'Photos' },
                 { key: 'invoice' as const, label: 'Invoice Summary' },
+                ...((jobProfitabilityData?.retentionSummary?.sumRetentionHeld ?? 0) > 0
+                  ? [{ key: 'retention' as const, label: 'Retention' }]
+                  : []),
                 { key: 'compliance' as const, label: 'Compliance & Licensing' },
                 { key: 'subcontractors' as const, label: 'Subcontractor Coordination' },
                 { key: 'swms' as const, label: 'Safety & SWMS' },
                 { key: 'forms' as const, label: 'Job Cards & Forms' },
-              ].map(({ key, label }) => (
+              ] as { key: keyof typeof proofPackSections; label: string }[]).map(({ key, label }) => (
                 <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
