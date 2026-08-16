@@ -822,7 +822,11 @@ export default function NewInvoiceScreen() {
   const fetchCostCheck = async (jId: string) => {
     try {
       const res = await api.get(`/api/jobs/${jId}/invoice-cost-check`);
-      if (res.data) setCostCheckData(res.data as any);
+      if (res.data) setCostCheckData({
+        purchaseOrders: res.data.purchaseOrders ?? { reconciledCount: 0, reconciledTotal: 0, outstandingCount: 0, outstandingTotal: 0 },
+        variations: res.data.variations ?? [],
+        materials: res.data.materials ?? { markupCaptured: 0, sellPriceTotal: 0 },
+      });
     } catch (_) {
       // non-fatal: cost check is advisory only
     }
