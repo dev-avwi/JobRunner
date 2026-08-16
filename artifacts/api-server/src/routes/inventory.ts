@@ -63,6 +63,7 @@ import {
   purchaseOrderItems as purchaseOrderItemsTable,
   suppliers as suppliersTable,
   businessSettings as businessSettingsTable,
+  inventoryItems as inventoryItemsTable,
 } from "@workspace/db";
 
 /** Recompute and persist PO-level status from the current set of line items. */
@@ -457,10 +458,108 @@ export function registerInventoryRoutes(app: Express): void {
   app.delete("/api/suppliers/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const deleted = await storage.deleteSupplier(req.params.id, userContext.effectiveUserId);
-      if (!deleted) return res.status(404).json({ error: "Supplier not found" });
+
+      // Atomically check for POs and delete the supplier in a single transaction.
+      //
+      // Why this matters: purchaseOrders.supplierId carries ON DELETE CASCADE in the
+      // schema, so a non-transactional check-then-delete has a TOCTOU window — a PO
+      // created after the count returns zero but before the DELETE would be silently
+      // wiped along with the supplier row.
+      //
+      // The SELECT ... FOR UPDATE on the supplier row acquires an exclusive row lock.
+      // Any concurrent INSERT of a PO referencing this supplier must first acquire a
+      // FOR KEY SHARE lock on the same row (PostgreSQL FK enforcement), which conflicts
+      // with FOR UPDATE. So the concurrent insert blocks until our transaction commits
+      // or rolls back, at which point the supplier is already gone and the insert fails
+      // with an FK violation. This eliminates the race in both directions.
+      let found = true;
+      let poCount = 0;
+      let itemCount = 0;
+
+      await db.transaction(async (tx) => {
+        // Lock the supplier row exclusively before any further reads or writes.
+        // Any concurrent INSERT of a PO referencing this supplier must first acquire
+        // a FOR KEY SHARE lock on the same row (PostgreSQL FK enforcement for
+        // purchaseOrders.supplierId), which conflicts with FOR UPDATE — eliminating
+        // the TOCTOU window between the count check and the delete.
+        const supplierRows = await tx
+          .select({ id: suppliersTable.id })
+          .from(suppliersTable)
+          .where(
+            and(
+              eq(suppliersTable.id, req.params.id),
+              eq(suppliersTable.userId, userContext.effectiveUserId),
+            ),
+          )
+          .for('update')
+          .limit(1);
+
+        if (supplierRows.length === 0) {
+          found = false;
+          return; // transaction commits without changes; 404 returned below
+        }
+
+        // Count POs and inventory items that reference this supplier while holding
+        // the exclusive lock on the supplier row.
+        const [[poCountRow], [itemCountRow]] = await Promise.all([
+          tx
+            .select({ count: count() })
+            .from(purchaseOrdersTable)
+            .where(
+              and(
+                eq(purchaseOrdersTable.userId, userContext.effectiveUserId),
+                eq(purchaseOrdersTable.supplierId, req.params.id),
+              ),
+            ),
+          tx
+            .select({ count: count() })
+            .from(inventoryItemsTable)
+            .where(
+              and(
+                eq(inventoryItemsTable.userId, userContext.effectiveUserId),
+                eq(inventoryItemsTable.supplierId, req.params.id),
+              ),
+            ),
+        ]);
+        poCount = Number(poCountRow?.count ?? 0);
+        itemCount = Number(itemCountRow?.count ?? 0);
+
+        if (poCount === 0 && itemCount === 0) {
+          // Safe to delete — no references remain.
+          // The inventory_items.supplier_id FK (ON DELETE RESTRICT) provides a
+          // DB-level safety net if a concurrent write slips past the count above.
+          await tx
+            .delete(suppliersTable)
+            .where(
+              and(
+                eq(suppliersTable.id, req.params.id),
+                eq(suppliersTable.userId, userContext.effectiveUserId),
+              ),
+            );
+        }
+        // If references exist the transaction commits without deleting; 409 returned below.
+      });
+
+      if (!found) return res.status(404).json({ error: "Supplier not found" });
+
+      if (poCount > 0 || itemCount > 0) {
+        const parts: string[] = [];
+        if (poCount > 0) parts.push(`${poCount} purchase order${poCount === 1 ? '' : 's'}`);
+        if (itemCount > 0) parts.push(`${itemCount} inventory item${itemCount === 1 ? '' : 's'}`);
+        return res.status(409).json({
+          error: `Cannot delete this supplier — they are referenced by ${parts.join(' and ')}. Remove or reassign those references first.`,
+        });
+      }
+
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
+      // PostgreSQL FK violation (23503) — inventory_items.supplier_id RESTRICT caught
+      // a concurrent write that slipped past the count check in the transaction.
+      if (error?.code === '23503') {
+        return res.status(409).json({
+          error: 'Cannot delete this supplier — inventory items still reference them. Remove or reassign those items first.',
+        });
+      }
       console.error("Error deleting supplier:", error);
       res.status(500).json({ error: "Failed to delete supplier" });
     }

@@ -1846,6 +1846,39 @@ pool
     console.error('[Schema] Failed to ensure site_diary_entries table:', err.message);
   });
 
+// Add FK from inventory_items.supplier_id → suppliers.id ON DELETE RESTRICT.
+// First, nullify any orphaned supplier_id values left by prior hard-deletes, then
+// add the constraint so the database enforces referential integrity going forward.
+pool
+  .query(`
+    DO $$
+    BEGIN
+      -- Clear stale supplier references that point to non-existent supplier rows.
+      UPDATE inventory_items
+        SET supplier_id = NULL
+        WHERE supplier_id IS NOT NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM suppliers WHERE id = inventory_items.supplier_id
+          );
+
+      -- Add the FK constraint only if it does not already exist.
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+          WHERE conname = 'fk_inventory_items_supplier_id'
+            AND conrelid = 'inventory_items'::regclass
+      ) THEN
+        ALTER TABLE inventory_items
+          ADD CONSTRAINT fk_inventory_items_supplier_id
+          FOREIGN KEY (supplier_id)
+          REFERENCES suppliers(id)
+          ON DELETE RESTRICT;
+      END IF;
+    END $$;
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to add FK inventory_items.supplier_id → suppliers:', err.message);
+  });
+
 
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods

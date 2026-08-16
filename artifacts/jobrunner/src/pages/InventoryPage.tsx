@@ -324,7 +324,20 @@ function StockSection() {
       setSelectedSupplier(null);
       toast({ title: "Supplier deleted" });
     },
-    onError: () => toast({ title: "Failed to delete supplier", variant: "destructive" }),
+    onError: (error: Error) => {
+      // Extract the API's error message from the thrown Error string (format: "409: {\"error\":\"...\"}")
+      let description: string | undefined;
+      const match = error.message.match(/^\d+:\s*(.+)$/s);
+      if (match) {
+        try {
+          const parsed = JSON.parse(match[1]);
+          description = parsed.error || parsed.message;
+        } catch {
+          description = match[1];
+        }
+      }
+      toast({ title: "Cannot delete supplier", description, variant: "destructive" });
+    },
   });
 
   const filteredItems = items

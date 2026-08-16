@@ -1750,7 +1750,7 @@ export const inventoryItems = pgTable("inventory_items", {
   maximumStock: integer("maximum_stock"),
   reorderLevel: integer("reorder_level").default(0),
   reorderQuantity: integer("reorder_quantity"),
-  supplierId: varchar("supplier_id"),
+  supplierId: varchar("supplier_id").references(() => suppliers.id, { onDelete: 'restrict' }),
   location: text("location"), // warehouse location/bin
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
