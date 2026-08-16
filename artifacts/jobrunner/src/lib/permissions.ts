@@ -93,7 +93,7 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { path: '/schedule', label: 'Schedule', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
   
   // Dispatch - owner/manager only
-  { path: '/dispatch', label: 'Dispatch', allowedRoles: ['owner', 'manager'], showInNav: true },
+  { path: '/dispatch', label: 'Dispatch', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
   { path: '/dispatch-board', label: 'Dispatch Board', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   
   // Time Tracking - all roles (office admin excluded - no field work)
