@@ -13,6 +13,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import Svg, { Rect, Path, Line, Text as SvgText, G } from 'react-native-svg';
 import { useReportsStore } from '../../src/lib/store';
@@ -904,7 +905,7 @@ function SVGDonutChart({ segments, colors, size }: { segments: { label: string; 
   );
 }
 
-export default function ReportsScreen() {
+function ReportsScreenInner() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -2232,5 +2233,13 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
         </ScrollView>
       </View>
     </>
+  );
+}
+
+export default function ReportsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <ReportsScreenInner />
+    </OwnerOnlyGuard>
   );
 }

@@ -17,6 +17,7 @@ import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -1837,7 +1838,7 @@ const createStyles = (colors: any) => StyleSheet.create({
   },
 });
 
-export default function TeamManagementScreen() {
+function TeamManagementScreenInner() {
   const { colors } = useTheme();
   const confirm = useConfirmDialog();
   const bottomInset = useBottomInset(40);
@@ -3904,5 +3905,13 @@ export default function TeamManagementScreen() {
         </AppBottomSheet>
       </View>
     </>
+  );
+}
+
+export default function TeamManagementScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <TeamManagementScreenInner />
+    </OwnerOnlyGuard>
   );
 }

@@ -12,6 +12,7 @@ import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { router, Stack, useFocusEffect } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -160,7 +161,7 @@ function formatJobTimeRange(job: JobData): string {
   } catch { return ''; }
 }
 
-export default function TeamOperationsScreen() {
+function TeamOperationsScreenInner() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const responsiveShell = usePageShell();
@@ -1508,3 +1509,11 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     marginTop: 2,
   },
 });
+
+export default function TeamOperationsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <TeamOperationsScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

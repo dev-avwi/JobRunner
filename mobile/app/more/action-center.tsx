@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Linking, Modal, Platform } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, colorWithOpacity } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, typographySizes, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
@@ -408,7 +409,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
 });
 
-export default function ActionCenterScreen() {
+function ActionCenterScreenInner() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -839,5 +840,13 @@ export default function ActionCenterScreen() {
         </View>
       </Modal>
     </>
+  );
+}
+
+export default function ActionCenterScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <ActionCenterScreenInner />
+    </OwnerOnlyGuard>
   );
 }

@@ -21,6 +21,7 @@ if (Platform.OS !== 'web') {
   Marker = maps.Marker;
 }
 import { router, Stack } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -110,7 +111,7 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): nu
   return 2 * R * Math.atan2(Math.sqrt(sa), Math.sqrt(1 - sa));
 }
 
-export default function DispatchBoardScreen() {
+function DispatchBoardScreenInner() {
   const { colors, isDark } = useTheme();
   const confirm = useConfirmDialog();
   const responsiveShell = usePageShell();
@@ -1393,3 +1394,11 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     color: colors.mutedForeground,
   },
 });
+
+export default function DispatchBoardScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <DispatchBoardScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, A
 import { Alert } from '@/lib/alert';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { Stack } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
@@ -644,7 +645,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
 });
 
-export default function AutopilotScreen() {
+function AutopilotScreenInner() {
   const confirm = useConfirmDialog();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -1684,5 +1685,13 @@ export default function AutopilotScreen() {
         {renderEditorModal()}
       </View>
     </>
+  );
+}
+
+export default function AutopilotScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <AutopilotScreenInner />
+    </OwnerOnlyGuard>
   );
 }

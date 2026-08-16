@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { api } from '../../src/lib/api';
@@ -470,7 +471,7 @@ function StatCard({
   );
 }
 
-export default function InsightsScreen() {
+function InsightsScreenInner() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -927,5 +928,13 @@ export default function InsightsScreen() {
         </ScrollView>
       </View>
     </>
+  );
+}
+
+export default function InsightsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <InsightsScreenInner />
+    </OwnerOnlyGuard>
   );
 }
