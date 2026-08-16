@@ -391,6 +391,44 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
+  // Supplier PO history + spend stats (for the supplier detail view)
+  app.get("/api/suppliers/:id/purchase-orders", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const supplier = await storage.getSupplier(req.params.id, userContext.effectiveUserId);
+      if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+
+      const pos = await db.select().from(purchaseOrdersTable)
+        .where(and(
+          eq(purchaseOrdersTable.userId, userContext.effectiveUserId),
+          eq(purchaseOrdersTable.supplierId, req.params.id),
+        ))
+        .orderBy(desc(purchaseOrdersTable.orderDate));
+
+      const nonCancelled = pos.filter((po: any) => po.status !== 'cancelled');
+      const totalSpend = nonCancelled.reduce((sum: number, po: any) => sum + (parseFloat(po.total || '0') || 0), 0);
+      const openPoCount = pos.filter((po: any) => po.status === 'pending' || po.status === 'approved' || po.status === 'sent' || po.status === 'partial').length;
+      const lastOrderDate = pos.reduce((latest: string | null, po: any) => {
+        const d = po.orderDate ? new Date(po.orderDate).toISOString() : null;
+        if (!d) return latest;
+        return !latest || d > latest ? d : latest;
+      }, null as string | null);
+
+      res.json({
+        purchaseOrders: pos,
+        stats: {
+          poCount: pos.length,
+          totalSpend: totalSpend.toFixed(2),
+          openPoCount,
+          lastOrderDate,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching supplier purchase orders:", error);
+      res.status(500).json({ error: "Failed to fetch supplier purchase orders" });
+    }
+  });
+
   app.post("/api/suppliers", requireAuth, createPermissionMiddleware(PERMISSIONS.MANAGE_CATALOG), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

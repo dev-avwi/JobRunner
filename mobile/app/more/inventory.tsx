@@ -25,8 +25,9 @@ import { BottomSheetScrollView } from '../../src/components/ui/AppBottomSheet';
 import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
-type TabType = 'items' | 'categories' | 'lowStock' | 'purchaseOrders';
+type TabType = 'items' | 'categories' | 'lowStock' | 'purchaseOrders' | 'suppliers';
 type TransactionType = 'in' | 'out' | 'adjustment';
 type SortField = 'name' | 'currentStock' | 'sellPrice';
 type SortDir = 'asc' | 'desc';
@@ -78,6 +79,17 @@ interface Supplier {
   contactName?: string;
   email?: string;
   phone?: string;
+  abn?: string;
+  address?: string;
+  paymentTerms?: string;
+  notes?: string;
+}
+
+interface SupplierPOStats {
+  poCount: number;
+  totalSpend: string;
+  openPoCount: number;
+  lastOrderDate: string | null;
 }
 
 interface PurchaseOrder {
@@ -158,8 +170,21 @@ const defaultPOForm = {
   notes: '',
 };
 
+const defaultSupplierForm = {
+  name: '',
+  abn: '',
+  contactName: '',
+  phone: '',
+  email: '',
+  address: '',
+  paymentTerms: 'Net 30',
+  notes: '',
+};
+
 export default function InventoryScreen() {
   const { colors } = useTheme();
+  const { isOwner, isManager } = useUserRole();
+  const canManageSuppliers = isOwner || isManager;
   const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -207,6 +232,18 @@ export default function InventoryScreen() {
   const [poForm, setPOForm] = useState(defaultPOForm);
   const [isSavingPO, setIsSavingPO] = useState(false);
   const [showSupplierPicker, setShowSupplierPicker] = useState(false);
+
+  const [supplierSearch, setSupplierSearch] = useState('');
+  const [showSupplierModal, setShowSupplierModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [supplierForm, setSupplierForm] = useState(defaultSupplierForm);
+  const [isSavingSupplier, setIsSavingSupplier] = useState(false);
+
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [showSupplierDetail, setShowSupplierDetail] = useState(false);
+  const [supplierPOs, setSupplierPOs] = useState<PurchaseOrder[]>([]);
+  const [supplierStats, setSupplierStats] = useState<SupplierPOStats | null>(null);
+  const [isLoadingSupplierPOs, setIsLoadingSupplierPOs] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -277,6 +314,26 @@ export default function InventoryScreen() {
       return stock <= reorder || stock <= min;
     });
   }, [items]);
+
+  const filteredSuppliers = useMemo(() => {
+    let result = [...suppliers];
+    if (supplierSearch.trim()) {
+      const q = supplierSearch.toLowerCase();
+      result = result.filter(
+        s => s.name.toLowerCase().includes(q) ||
+             (s.contactName && s.contactName.toLowerCase().includes(q)) ||
+             (s.phone && s.phone.toLowerCase().includes(q)) ||
+             (s.email && s.email.toLowerCase().includes(q))
+      );
+    }
+    result.sort((a, b) => a.name.localeCompare(b.name));
+    return result;
+  }, [suppliers, supplierSearch]);
+
+  const selectedPOSupplier = useMemo(
+    () => suppliers.find(s => s.id === poForm.supplierId) || null,
+    [suppliers, poForm.supplierId]
+  );
 
   const getCategoryName = (categoryId?: string) => {
     if (!categoryId) return null;
@@ -472,6 +529,108 @@ export default function InventoryScreen() {
     }
   };
 
+  const openCreateSupplier = () => {
+    setSupplierForm(defaultSupplierForm);
+    setEditingSupplier(null);
+    setShowSupplierModal(true);
+  };
+
+  const openEditSupplier = (supplier: Supplier) => {
+    setSupplierForm({
+      name: supplier.name || '',
+      abn: supplier.abn || '',
+      contactName: supplier.contactName || '',
+      phone: supplier.phone || '',
+      email: supplier.email || '',
+      address: supplier.address || '',
+      paymentTerms: supplier.paymentTerms || 'Net 30',
+      notes: supplier.notes || '',
+    });
+    setEditingSupplier(supplier);
+    setShowSupplierDetail(false);
+    setShowSupplierModal(true);
+  };
+
+  const handleSubmitSupplier = async () => {
+    if (!supplierForm.name.trim()) {
+      Alert.alert('Required', 'Company name is required.');
+      return;
+    }
+    setIsSavingSupplier(true);
+    try {
+      const payload: Record<string, unknown> = {
+        name: supplierForm.name.trim(),
+      };
+      if (supplierForm.abn) payload.abn = supplierForm.abn.trim();
+      if (supplierForm.contactName) payload.contactName = supplierForm.contactName.trim();
+      if (supplierForm.phone) payload.phone = supplierForm.phone.trim();
+      if (supplierForm.email) payload.email = supplierForm.email.trim();
+      if (supplierForm.address) payload.address = supplierForm.address.trim();
+      if (supplierForm.paymentTerms) payload.paymentTerms = supplierForm.paymentTerms.trim();
+      if (supplierForm.notes) payload.notes = supplierForm.notes.trim();
+
+      if (editingSupplier) {
+        const res = await api.patch(`/api/suppliers/${editingSupplier.id}`, payload);
+        if (res.error) { Alert.alert('Error', res.error); return; }
+        Alert.alert('Success', 'Supplier updated.');
+      } else {
+        const res = await api.post('/api/suppliers', payload);
+        if (res.error) { Alert.alert('Error', res.error); return; }
+        Alert.alert('Success', 'Supplier added.');
+      }
+      setShowSupplierModal(false);
+      setSupplierForm(defaultSupplierForm);
+      setEditingSupplier(null);
+      fetchData();
+    } catch (err) {
+      Alert.alert('Error', 'Failed to save supplier.');
+    } finally {
+      setIsSavingSupplier(false);
+    }
+  };
+
+  const handleDeleteSupplier = (supplier: Supplier) => {
+    confirm({
+      title: 'Delete Supplier',
+      message: `Are you sure you want to delete "${supplier.name}"?`,
+      confirmText: 'Delete',
+      destructive: true,
+    }).then(async (ok) => {
+      if (!ok) return;
+      try {
+        const res = await api.delete(`/api/suppliers/${supplier.id}`);
+        if (res.error) { Alert.alert('Error', res.error); return; }
+        setShowSupplierDetail(false);
+        setSelectedSupplier(null);
+        fetchData();
+      } catch (err) {
+        Alert.alert('Error', 'Failed to delete supplier.');
+      }
+    });
+  };
+
+  const openSupplierDetail = async (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setShowSupplierDetail(true);
+    setSupplierPOs([]);
+    setSupplierStats(null);
+    setIsLoadingSupplierPOs(true);
+    try {
+      const res = await api.get<{ purchaseOrders: PurchaseOrder[]; stats: SupplierPOStats }>(
+        `/api/suppliers/${supplier.id}/purchase-orders`
+      );
+      if (!res.error && res.data) {
+        setSupplierPOs(Array.isArray(res.data.purchaseOrders) ? res.data.purchaseOrders : []);
+        setSupplierStats(res.data.stats || null);
+      }
+    } catch (err) {
+      setSupplierPOs([]);
+      setSupplierStats(null);
+    } finally {
+      setIsLoadingSupplierPOs(false);
+    }
+  };
+
   const transactionTypeOptions: { value: TransactionType; label: string }[] = [
     { value: 'in', label: 'Stock In' },
     { value: 'out', label: 'Stock Out' },
@@ -489,6 +648,9 @@ export default function InventoryScreen() {
     { key: 'categories', label: 'Categories', icon: 'grid' },
     { key: 'lowStock', label: 'Low Stock', icon: 'alert-triangle' },
     { key: 'purchaseOrders', label: 'Orders', icon: 'shopping-cart' },
+    ...(canManageSuppliers
+      ? [{ key: 'suppliers' as TabType, label: 'Suppliers', icon: 'truck' as keyof typeof Feather.glyphMap }]
+      : []),
   ];
 
   const renderPickerModal = (
@@ -534,6 +696,7 @@ export default function InventoryScreen() {
           const count = tab.key === 'lowStock' ? lowStockItems.length :
                         tab.key === 'items' ? items.length :
                         tab.key === 'categories' ? categories.length :
+                        tab.key === 'suppliers' ? suppliers.length :
                         purchaseOrders.length;
           return (
             <TouchableOpacity
@@ -568,6 +731,7 @@ export default function InventoryScreen() {
     if (activeTab === 'items') { onAddPress = openCreateItem; addLabel = 'Add Item'; }
     else if (activeTab === 'categories') { onAddPress = () => setShowCategoryModal(true); addLabel = 'Add Category'; }
     else if (activeTab === 'purchaseOrders') { onAddPress = () => setShowPOModal(true); addLabel = 'New Order'; }
+    else if (activeTab === 'suppliers') { onAddPress = openCreateSupplier; addLabel = 'Add Supplier'; }
 
     return (
       <View style={styles.pageHeader}>
@@ -897,6 +1061,344 @@ export default function InventoryScreen() {
         })
       )}
     </>
+  );
+
+  const renderSuppliersTab = () => (
+    <>
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputWrapper}>
+          <Feather name="search" size={iconSizes.md} color={colors.mutedForeground} />
+          <TextInput
+            style={styles.searchInput}
+            value={supplierSearch}
+            onChangeText={setSupplierSearch}
+            placeholder="Search suppliers..."
+            placeholderTextColor={colors.mutedForeground}
+          />
+          {supplierSearch ? (
+            <TouchableOpacity onPress={() => setSupplierSearch('')} activeOpacity={0.7}>
+              <Feather name="x" size={iconSizes.md} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
+      {filteredSuppliers.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIcon}>
+            <Feather name="truck" size={40} color={colors.mutedForeground} />
+          </View>
+          <Text style={styles.emptyTitle}>No Suppliers</Text>
+          <Text style={styles.emptySubtitle}>
+            {supplierSearch
+              ? 'Try adjusting your search.'
+              : 'Add your suppliers to keep contact details and order history in one place.'}
+          </Text>
+          {!supplierSearch && (
+            <TouchableOpacity style={styles.emptyButton} onPress={openCreateSupplier} activeOpacity={0.7}>
+              <Feather name="plus" size={iconSizes.md} color={colors.primaryForeground} />
+              <Text style={styles.emptyButtonText}>Add Supplier</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <FlatList
+          data={filteredSuppliers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <PressableRow style={styles.card} onPress={() => openSupplierDetail(item)}>
+              <View style={styles.cardTopRow}>
+                <View style={styles.cardNameRow}>
+                  <View style={styles.supplierAvatar}>
+                    <Feather name="truck" size={16} color={colors.primary} />
+                  </View>
+                  <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
+                </View>
+                {item.paymentTerms ? (
+                  <View style={[styles.poBadge, { backgroundColor: colors.muted }]}>
+                    <Text style={[styles.poBadgeText, { color: colors.mutedForeground }]}>{item.paymentTerms}</Text>
+                  </View>
+                ) : null}
+              </View>
+              {item.contactName ? (
+                <View style={styles.cardMetaRow}>
+                  <Feather name="user" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.cardMetaText} numberOfLines={1}>{item.contactName}</Text>
+                </View>
+              ) : null}
+              {item.phone ? (
+                <View style={styles.cardMetaRow}>
+                  <Feather name="phone" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.cardMetaText} numberOfLines={1}>{item.phone}</Text>
+                </View>
+              ) : null}
+            </PressableRow>
+          )}
+          scrollEnabled={false}
+          contentContainerStyle={{ gap: spacing.sm }}
+        />
+      )}
+    </>
+  );
+
+  const renderSupplierDetailModal = () => {
+    if (!selectedSupplier) return null;
+    const s = selectedSupplier;
+    return (
+      <AppBottomSheet
+        visible={showSupplierDetail}
+        onDismiss={() => setShowSupplierDetail(false)}
+        snapPoints={['90%']}
+        scrollable={false}
+        contentPadding={0}>
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalHeader, {}]}>
+            <TouchableOpacity onPress={() => setShowSupplierDetail(false)} activeOpacity={0.7}>
+              <Feather name="x" size={24} color={colors.foreground} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle} numberOfLines={1}>{s.name}</Text>
+            <View style={{ width: 24 }} />
+          </View>
+          <BottomSheetScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: 40 }}>
+            <View style={styles.detailActions}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => openEditSupplier(s)}
+                activeOpacity={0.7}
+              >
+                <Feather name="edit-2" size={iconSizes.md} color={colors.foreground} />
+                <Text style={[styles.editButtonText, { color: colors.foreground }]}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteSupplier(s)}
+                activeOpacity={0.7}
+              >
+                <Feather name="trash-2" size={iconSizes.md} color="#ef4444" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>DETAILS</Text>
+              <View style={styles.detailGrid}>
+                {s.abn ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>ABN</Text>
+                    <Text style={styles.detailItemValue}>{s.abn}</Text>
+                  </View>
+                ) : null}
+                {s.contactName ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>Contact</Text>
+                    <Text style={styles.detailItemValue}>{s.contactName}</Text>
+                  </View>
+                ) : null}
+                {s.phone ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>Phone</Text>
+                    <Text style={styles.detailItemValue}>{s.phone}</Text>
+                  </View>
+                ) : null}
+                {s.email ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>Email</Text>
+                    <Text style={styles.detailItemValue}>{s.email}</Text>
+                  </View>
+                ) : null}
+                {s.paymentTerms ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>Payment Terms</Text>
+                    <Text style={styles.detailItemValue}>{s.paymentTerms}</Text>
+                  </View>
+                ) : null}
+                {s.address ? (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailItemLabel}>Address</Text>
+                    <Text style={styles.detailItemValue}>{s.address}</Text>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+
+            {s.notes ? (
+              <View style={styles.detailSection}>
+                <Text style={styles.detailSectionTitle}>NOTES</Text>
+                <Text style={[styles.detailItemValue, { marginTop: spacing.xs }]}>{s.notes}</Text>
+              </View>
+            ) : null}
+
+            {supplierStats ? (
+              <View style={styles.statsRow}>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIconContainer, { backgroundColor: 'rgba(34,197,94,0.1)' }]}>
+                    <Feather name="dollar-sign" size={16} color="#22c55e" />
+                  </View>
+                  <Text style={styles.statValue}>{formatCurrency(supplierStats.totalSpend)}</Text>
+                  <Text style={styles.statLabel}>TOTAL SPEND</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIconContainer, { backgroundColor: 'rgba(59,130,246,0.1)' }]}>
+                    <Feather name="shopping-cart" size={16} color="#3b82f6" />
+                  </View>
+                  <Text style={styles.statValue}>{supplierStats.openPoCount}</Text>
+                  <Text style={styles.statLabel}>OPEN POS</Text>
+                </View>
+                <View style={styles.statCard}>
+                  <View style={[styles.statIconContainer, { backgroundColor: 'rgba(139,92,246,0.1)' }]}>
+                    <Feather name="calendar" size={16} color="#8b5cf6" />
+                  </View>
+                  <Text style={styles.statValue}>{supplierStats.lastOrderDate ? formatDate(supplierStats.lastOrderDate) : '-'}</Text>
+                  <Text style={styles.statLabel}>LAST ORDER</Text>
+                </View>
+              </View>
+            ) : null}
+
+            <View style={styles.detailSection}>
+              <Text style={styles.detailSectionTitle}>PURCHASE ORDER HISTORY</Text>
+              {isLoadingSupplierPOs ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: spacing.md }} />
+              ) : supplierPOs.length === 0 ? (
+                <View style={styles.noMaintenanceContainer}>
+                  <Text style={styles.noMaintenanceText}>No purchase orders yet</Text>
+                </View>
+              ) : (
+                <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
+                  {supplierPOs.map((po) => {
+                    const statusConfig = getPOStatusConfig((po.status || 'pending') as POStatus);
+                    return (
+                      <View key={po.id} style={styles.poCard}>
+                        <View style={styles.poHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.cardTitle}>{po.poNumber}</Text>
+                            {po.orderDate ? (
+                              <Text style={styles.cardMetaText}>{formatDate(po.orderDate)}</Text>
+                            ) : null}
+                          </View>
+                          <View style={[styles.poBadge, { backgroundColor: statusConfig.bgColor }]}>
+                            <Text style={[styles.poBadgeText, { color: statusConfig.color }]}>
+                              {statusConfig.label}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.poFooter}>
+                          <View />
+                          <Text style={styles.poTotal}>{formatCurrency(po.total)}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          </BottomSheetScrollView>
+        </View>
+      </AppBottomSheet>
+    );
+  };
+
+  const renderSupplierFormModal = () => (
+    <AppBottomSheet visible={showSupplierModal} onDismiss={() => setShowSupplierModal(false)} snapPoints={['92%']} scrollable={false} contentPadding={0}>
+      <KeyboardAvoidingView
+        style={styles.modalContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={[styles.modalHeader, {}]}>
+          <TouchableOpacity onPress={() => setShowSupplierModal(false)} activeOpacity={0.7}>
+            <Feather name="x" size={24} color={colors.foreground} />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>{editingSupplier ? 'Edit Supplier' : 'Add Supplier'}</Text>
+          <TouchableOpacity onPress={handleSubmitSupplier} disabled={isSavingSupplier} activeOpacity={0.7}>
+            {isSavingSupplier ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={styles.modalSaveText}>Save</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+        <BottomSheetScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <Text style={styles.fieldLabel}>Company Name *</Text>
+          <TextInput
+            style={styles.textInput}
+            value={supplierForm.name}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, name: text })}
+            placeholder="e.g., Reece Plumbing"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          <Text style={styles.fieldLabel}>ABN</Text>
+          <TextInput
+            style={styles.textInput}
+            value={supplierForm.abn}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, abn: text })}
+            placeholder="e.g., 12 345 678 901"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          <Text style={styles.fieldLabel}>Contact Name</Text>
+          <TextInput
+            style={styles.textInput}
+            value={supplierForm.contactName}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, contactName: text })}
+            placeholder="e.g., Jane Smith"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          <View style={styles.fieldRow}>
+            <View style={styles.fieldHalf}>
+              <Text style={styles.fieldLabel}>Phone</Text>
+              <TextInput
+                style={styles.textInput}
+                value={supplierForm.phone}
+                onChangeText={(text) => setSupplierForm({ ...supplierForm, phone: text })}
+                placeholder="e.g., 0400 000 000"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="phone-pad"
+              />
+            </View>
+            <View style={styles.fieldHalf}>
+              <Text style={styles.fieldLabel}>Payment Terms</Text>
+              <TextInput
+                style={styles.textInput}
+                value={supplierForm.paymentTerms}
+                onChangeText={(text) => setSupplierForm({ ...supplierForm, paymentTerms: text })}
+                placeholder="Net 30"
+                placeholderTextColor={colors.mutedForeground}
+              />
+            </View>
+          </View>
+
+          <Text style={styles.fieldLabel}>Email</Text>
+          <TextInput
+            style={styles.textInput}
+            value={supplierForm.email}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, email: text })}
+            placeholder="e.g., orders@supplier.com"
+            placeholderTextColor={colors.mutedForeground}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Text style={styles.fieldLabel}>Address</Text>
+          <TextInput
+            style={styles.textInput}
+            value={supplierForm.address}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, address: text })}
+            placeholder="e.g., 12 Trade St, Sydney NSW"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          <Text style={styles.fieldLabel}>Notes</Text>
+          <TextInput
+            style={[styles.textInput, styles.textArea]}
+            value={supplierForm.notes}
+            onChangeText={(text) => setSupplierForm({ ...supplierForm, notes: text })}
+            placeholder="Additional notes..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            numberOfLines={3}
+          />
+        </BottomSheetScrollView>
+      </KeyboardAvoidingView>
+    </AppBottomSheet>
   );
 
   const renderDetailModal = () => {
@@ -1367,6 +1869,41 @@ export default function InventoryScreen() {
             <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
           </TouchableOpacity>
 
+          {selectedPOSupplier ? (
+            <View style={styles.supplierAutofill}>
+              {selectedPOSupplier.contactName ? (
+                <View style={styles.supplierAutofillRow}>
+                  <Feather name="user" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.supplierAutofillText} numberOfLines={1}>{selectedPOSupplier.contactName}</Text>
+                </View>
+              ) : null}
+              {selectedPOSupplier.phone ? (
+                <View style={styles.supplierAutofillRow}>
+                  <Feather name="phone" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.supplierAutofillText} numberOfLines={1}>{selectedPOSupplier.phone}</Text>
+                </View>
+              ) : null}
+              {selectedPOSupplier.email ? (
+                <View style={styles.supplierAutofillRow}>
+                  <Feather name="mail" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.supplierAutofillText} numberOfLines={1}>{selectedPOSupplier.email}</Text>
+                </View>
+              ) : null}
+              {selectedPOSupplier.address ? (
+                <View style={styles.supplierAutofillRow}>
+                  <Feather name="map-pin" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.supplierAutofillText} numberOfLines={1}>{selectedPOSupplier.address}</Text>
+                </View>
+              ) : null}
+              {selectedPOSupplier.paymentTerms ? (
+                <View style={styles.supplierAutofillRow}>
+                  <Feather name="clock" size={13} color={colors.mutedForeground} />
+                  <Text style={styles.supplierAutofillText} numberOfLines={1}>{selectedPOSupplier.paymentTerms}</Text>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           <Text style={styles.fieldLabel}>PO Number *</Text>
           <TextInput
             style={styles.textInput}
@@ -1440,6 +1977,7 @@ export default function InventoryScreen() {
         {activeTab === 'categories' && renderCategoriesTab()}
         {activeTab === 'lowStock' && renderLowStockTab()}
         {activeTab === 'purchaseOrders' && renderPurchaseOrdersTab()}
+        {activeTab === 'suppliers' && canManageSuppliers && renderSuppliersTab()}
       </ScrollView>
 
       {renderFab()}
@@ -1449,6 +1987,8 @@ export default function InventoryScreen() {
       {renderAdjustmentModal()}
       {renderCategoryModal()}
       {renderPOModal()}
+      {renderSupplierDetailModal()}
+      {renderSupplierFormModal()}
 
       {renderPickerModal(
         showCategoryPicker,
@@ -1658,6 +2198,33 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  supplierAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+  },
+  supplierAutofill: {
+    backgroundColor: colors.muted,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  supplierAutofillRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  supplierAutofillText: {
+    ...typography.caption,
+    color: colors.mutedForeground,
+    flex: 1,
   },
   cardTitle: {
     ...typography.body,

@@ -57,6 +57,11 @@ import {
   Send,
   Mail,
   X,
+  Building2,
+  Phone,
+  MapPin,
+  FileText,
+  DollarSign,
 } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
@@ -75,7 +80,7 @@ import type {
 } from "@shared/schema";
 
 type Section = "stock" | "equipment";
-type StockTab = "items" | "categories" | "low-stock" | "purchase-orders";
+type StockTab = "items" | "categories" | "low-stock" | "purchase-orders" | "suppliers";
 type EquipmentTab = "all" | "available" | "in_use" | "maintenance" | "utilisation";
 type SortField = "name" | "currentStock" | "costPrice" | "sellPrice";
 type SortDir = "asc" | "desc";
@@ -168,6 +173,11 @@ function StockSection() {
   const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null);
 
   const [showPODialog, setShowPODialog] = useState(false);
+
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [showSupplierDialog, setShowSupplierDialog] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
 
   const { toast } = useToast();
 
@@ -281,6 +291,42 @@ function StockSection() {
     onError: () => toast({ title: "Failed to update purchase order", variant: "destructive" }),
   });
 
+  const createSupplierMutation = useMutation({
+    mutationFn: (data: any) => apiRequest("POST", "/api/suppliers", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      setShowSupplierDialog(false);
+      setEditingSupplier(null);
+      toast({ title: "Supplier created" });
+    },
+    onError: () => toast({ title: "Failed to create supplier", variant: "destructive" }),
+  });
+
+  const updateSupplierMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest("PATCH", `/api/suppliers/${id}`, data),
+    onSuccess: (_res, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      setShowSupplierDialog(false);
+      setEditingSupplier(null);
+      setSelectedSupplier((prev) =>
+        prev && prev.id === vars.id ? { ...prev, ...vars.data } : prev,
+      );
+      toast({ title: "Supplier updated" });
+    },
+    onError: () => toast({ title: "Failed to update supplier", variant: "destructive" }),
+  });
+
+  const deleteSupplierMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/suppliers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      setSelectedSupplier(null);
+      toast({ title: "Supplier deleted" });
+    },
+    onError: () => toast({ title: "Failed to delete supplier", variant: "destructive" }),
+  });
+
   const filteredItems = items
     .filter((item) => {
       const matchesSearch =
@@ -320,6 +366,39 @@ function StockSection() {
       setSortDir("asc");
     }
   };
+
+  if (selectedSupplier) {
+    return (
+      <>
+        <SupplierDetailView
+          supplier={selectedSupplier}
+          onBack={() => setSelectedSupplier(null)}
+          onEdit={() => {
+            setEditingSupplier(selectedSupplier);
+            setShowSupplierDialog(true);
+          }}
+          onDelete={() => {
+            if (window.confirm(`Delete supplier "${selectedSupplier.name}"? This cannot be undone.`)) {
+              deleteSupplierMutation.mutate(selectedSupplier.id);
+            }
+          }}
+        />
+        <SupplierDialog
+          open={showSupplierDialog}
+          onOpenChange={setShowSupplierDialog}
+          supplier={editingSupplier}
+          isPending={createSupplierMutation.isPending || updateSupplierMutation.isPending}
+          onSubmit={(data) => {
+            if (editingSupplier) {
+              updateSupplierMutation.mutate({ id: editingSupplier.id, data });
+            } else {
+              createSupplierMutation.mutate(data);
+            }
+          }}
+        />
+      </>
+    );
+  }
 
   if (selectedItem) {
     return (
@@ -375,6 +454,11 @@ function StockSection() {
               <Plus className="w-4 h-4 mr-1" /> New PO
             </Button>
           )}
+          {activeTab === "suppliers" && (
+            <Button onClick={() => { setEditingSupplier(null); setShowSupplierDialog(true); }}>
+              <Plus className="w-4 h-4 mr-1" /> Add Supplier
+            </Button>
+          )}
         </div>
       </div>
 
@@ -391,6 +475,7 @@ function StockSection() {
             )}
           </TabsTrigger>
           <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
+          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -447,6 +532,22 @@ function StockSection() {
         />
       )}
 
+      {activeTab === "suppliers" && (
+        <SuppliersTab
+          suppliers={suppliers}
+          searchQuery={supplierSearch}
+          onSearchChange={setSupplierSearch}
+          onSelect={setSelectedSupplier}
+          onAdd={() => { setEditingSupplier(null); setShowSupplierDialog(true); }}
+          onEdit={(s) => { setEditingSupplier(s); setShowSupplierDialog(true); }}
+          onDelete={(s) => {
+            if (window.confirm(`Delete supplier "${s.name}"? This cannot be undone.`)) {
+              deleteSupplierMutation.mutate(s.id);
+            }
+          }}
+        />
+      )}
+
       <ItemDialog
         open={showItemDialog}
         onOpenChange={setShowItemDialog}
@@ -489,6 +590,20 @@ function StockSection() {
         suppliers={suppliers}
         isPending={createPOMutation.isPending}
         onSubmit={(data) => createPOMutation.mutate(data)}
+      />
+
+      <SupplierDialog
+        open={showSupplierDialog}
+        onOpenChange={setShowSupplierDialog}
+        supplier={editingSupplier}
+        isPending={createSupplierMutation.isPending || updateSupplierMutation.isPending}
+        onSubmit={(data) => {
+          if (editingSupplier) {
+            updateSupplierMutation.mutate({ id: editingSupplier.id, data });
+          } else {
+            createSupplierMutation.mutate(data);
+          }
+        }}
       />
     </>
   );
@@ -2967,14 +3082,17 @@ function PurchaseOrderDialog({
     poNumber: "",
     notes: "",
     total: "",
+    terms: "",
   });
+
+  const selectedSupplier = suppliers.find((s) => s.id === formData.supplierId) || null;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(v) => {
         if (v) {
-          setFormData({ supplierId: "", poNumber: "", notes: "", total: "" });
+          setFormData({ supplierId: "", poNumber: "", notes: "", total: "", terms: "" });
         }
         onOpenChange(v);
       }}
@@ -2990,6 +3108,7 @@ function PurchaseOrderDialog({
               supplierId: formData.supplierId,
               poNumber: formData.poNumber,
               notes: formData.notes || null,
+              terms: formData.terms || null,
               total: formData.total || "0",
               subtotal: formData.total || "0",
               status: "pending",
@@ -3011,9 +3130,14 @@ function PurchaseOrderDialog({
             <Label>Supplier *</Label>
             <Select
               value={formData.supplierId}
-              onValueChange={(v) =>
-                setFormData({ ...formData, supplierId: v })
-              }
+              onValueChange={(v) => {
+                const supplier = suppliers.find((s) => s.id === v);
+                setFormData((prev) => ({
+                  ...prev,
+                  supplierId: v,
+                  terms: prev.terms || supplier?.paymentTerms || "",
+                }));
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select supplier" />
@@ -3026,6 +3150,27 @@ function PurchaseOrderDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          {selectedSupplier && (
+            <div className="rounded-md border bg-muted/30 p-3 space-y-1 text-sm">
+              <p className="font-medium text-foreground">Supplier details</p>
+              <div className="text-muted-foreground space-y-0.5">
+                <p>Contact: {selectedSupplier.contactName || "-"}</p>
+                <p>Phone: {selectedSupplier.phone || "-"}</p>
+                <p>Email: {selectedSupplier.email || "-"}</p>
+                <p>Address: {selectedSupplier.address || "-"}</p>
+                <p>Payment terms: {selectedSupplier.paymentTerms || "-"}</p>
+              </div>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label>Payment Terms</Label>
+            <Input
+              value={formData.terms}
+              onChange={(e) =>
+                setFormData({ ...formData, terms: e.target.value })
+              }
+            />
           </div>
           <div className="space-y-2">
             <Label>Total ($)</Label>
@@ -3065,5 +3210,454 @@ function PurchaseOrderDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function SuppliersTab({
+  suppliers,
+  searchQuery,
+  onSearchChange,
+  onSelect,
+  onAdd,
+  onEdit,
+  onDelete,
+}: {
+  suppliers: Supplier[];
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
+  onSelect: (s: Supplier) => void;
+  onAdd: () => void;
+  onEdit: (s: Supplier) => void;
+  onDelete: (s: Supplier) => void;
+}) {
+  const filtered = suppliers.filter((s) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      s.name.toLowerCase().includes(q) ||
+      (s.contactName || "").toLowerCase().includes(q) ||
+      (s.phone || "").toLowerCase().includes(q) ||
+      (s.abn || "").toLowerCase().includes(q) ||
+      (s.email || "").toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search suppliers..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState
+          icon={Building2}
+          title="No suppliers"
+          description="Add your first supplier to track contacts and purchase history"
+          action={
+            <Button onClick={onAdd}>
+              <Plus className="w-4 h-4 mr-1" /> Add Supplier
+            </Button>
+          }
+        />
+      ) : (
+        <Card>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-left text-muted-foreground">
+                  <th className="p-3 font-medium">Name</th>
+                  <th className="p-3 font-medium hidden sm:table-cell">Contact</th>
+                  <th className="p-3 font-medium hidden md:table-cell">Phone</th>
+                  <th className="p-3 font-medium hidden lg:table-cell">ABN</th>
+                  <th className="p-3 font-medium hidden lg:table-cell">Terms</th>
+                  <th className="p-3 font-medium text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s) => (
+                  <tr
+                    key={s.id}
+                    className="border-b last:border-0 hover-elevate cursor-pointer"
+                    onClick={() => onSelect(s)}
+                  >
+                    <td className="p-3 font-medium">{s.name}</td>
+                    <td className="p-3 hidden sm:table-cell text-muted-foreground">
+                      {s.contactName || "-"}
+                    </td>
+                    <td className="p-3 hidden md:table-cell text-muted-foreground">
+                      {s.phone || "-"}
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                      {s.abn || "-"}
+                    </td>
+                    <td className="p-3 hidden lg:table-cell text-muted-foreground">
+                      {s.paymentTerms || "-"}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); onEdit(s); }}
+                          title="Edit supplier"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={(e) => { e.stopPropagation(); onDelete(s); }}
+                          title="Delete supplier"
+                        >
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function SupplierDialog({
+  open,
+  onOpenChange,
+  supplier,
+  isPending,
+  onSubmit,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  supplier: Supplier | null;
+  isPending: boolean;
+  onSubmit: (data: any) => void;
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    abn: "",
+    contactName: "",
+    phone: "",
+    email: "",
+    address: "",
+    paymentTerms: "Net 30",
+    notes: "",
+  });
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (v) {
+          setForm({
+            name: supplier?.name || "",
+            abn: supplier?.abn || "",
+            contactName: supplier?.contactName || "",
+            phone: supplier?.phone || "",
+            email: supplier?.email || "",
+            address: supplier?.address || "",
+            paymentTerms: supplier?.paymentTerms || "Net 30",
+            notes: supplier?.notes || "",
+          });
+        }
+        onOpenChange(v);
+      }}
+    >
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{supplier ? "Edit Supplier" : "Add Supplier"}</DialogTitle>
+        </DialogHeader>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit({
+              name: form.name,
+              abn: form.abn || null,
+              contactName: form.contactName || null,
+              phone: form.phone || null,
+              email: form.email || null,
+              address: form.address || null,
+              paymentTerms: form.paymentTerms || null,
+              notes: form.notes || null,
+            });
+          }}
+          className="space-y-4"
+        >
+          <div className="space-y-2">
+            <Label>Company Name *</Label>
+            <Input
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>ABN</Label>
+              <Input
+                value={form.abn}
+                onChange={(e) => setForm({ ...form, abn: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Payment Terms</Label>
+              <Input
+                value={form.paymentTerms}
+                onChange={(e) => setForm({ ...form, paymentTerms: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Contact Name</Label>
+            <Input
+              value={form.contactName}
+              onChange={(e) => setForm({ ...form, contactName: e.target.value })}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Phone</Label>
+              <Input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Address</Label>
+            <Textarea
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Notes</Label>
+            <Textarea
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending || !form.name.trim()}>
+              {isPending ? "Saving..." : supplier ? "Update" : "Create"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface SupplierPOHistory {
+  purchaseOrders: PurchaseOrder[];
+  stats: {
+    poCount: number;
+    totalSpend: string;
+    openPoCount: number;
+    lastOrderDate: string | null;
+  };
+}
+
+function SupplierDetailView({
+  supplier,
+  onBack,
+  onEdit,
+  onDelete,
+}: {
+  supplier: Supplier;
+  onBack: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { data, isLoading } = useQuery<SupplierPOHistory>({
+    queryKey: ["/api/suppliers", supplier.id, "purchase-orders"],
+    queryFn: async () => {
+      const res = await fetch(`/api/suppliers/${supplier.id}/purchase-orders`, {
+        credentials: "include",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to fetch purchase orders");
+      return res.json();
+    },
+  });
+
+  const stats = data?.stats;
+  const pos = data?.purchaseOrders || [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={onBack}>
+          <ChevronLeft className="w-5 h-5" />
+        </Button>
+        <h2 className="text-xl font-semibold flex-1 truncate">{supplier.name}</h2>
+        <Button variant="outline" onClick={onEdit}>
+          <Edit className="w-4 h-4 mr-1" /> Edit
+        </Button>
+        <Button variant="destructive" onClick={onDelete}>
+          <Trash2 className="w-4 h-4 mr-1" /> Delete
+        </Button>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <DollarSign className="w-3.5 h-3.5" /> Total Spend
+            </p>
+            <p className="text-2xl font-bold mt-1">
+              {isLoading ? "..." : formatAUD(stats?.totalSpend)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <ShoppingCart className="w-3.5 h-3.5" /> Open POs
+            </p>
+            <p className="text-2xl font-bold mt-1">
+              {isLoading ? "..." : stats?.openPoCount ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <CalendarIcon className="w-3.5 h-3.5" /> Last Order
+            </p>
+            <p className="text-lg font-medium mt-1">
+              {isLoading
+                ? "..."
+                : stats?.lastOrderDate
+                ? format(new Date(stats.lastOrderDate), "dd MMM yyyy")
+                : "-"}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5" /> PO Count
+            </p>
+            <p className="text-2xl font-bold mt-1">
+              {isLoading ? "..." : stats?.poCount ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardContent className="p-4 space-y-3">
+            <p className="font-medium flex items-center gap-1.5">
+              <Building2 className="w-4 h-4" /> Details
+            </p>
+            <div className="text-sm space-y-2 text-muted-foreground">
+              <p className="flex items-start gap-2">
+                <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>ABN: {supplier.abn || "-"}</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <Building2 className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Contact: {supplier.contactName || "-"}</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <Phone className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Phone: {supplier.phone || "-"}</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <Mail className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Email: {supplier.email || "-"}</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Address: {supplier.address || "-"}</span>
+              </p>
+              <p className="flex items-start gap-2">
+                <DollarSign className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <span>Payment terms: {supplier.paymentTerms || "-"}</span>
+              </p>
+              {supplier.notes && (
+                <p className="flex items-start gap-2">
+                  <FileText className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>Notes: {supplier.notes}</span>
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="space-y-3">
+          <p className="font-medium flex items-center gap-1.5">
+            <History className="w-4 h-4" /> Purchase Order History
+          </p>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-14 w-full rounded-md" />
+              ))}
+            </div>
+          ) : pos.length === 0 ? (
+            <Card>
+              <CardContent className="p-4 text-center text-muted-foreground text-sm">
+                No purchase orders for this supplier
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <div className="max-h-[400px] overflow-y-auto">
+                {pos.map((po) => (
+                  <div
+                    key={po.id}
+                    className="flex items-center justify-between gap-2 p-3 border-b last:border-0 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold">{po.poNumber}</span>
+                        <Badge className={statusColors[po.status || "pending"]}>
+                          {(po.status || "pending").charAt(0).toUpperCase() +
+                            (po.status || "pending").slice(1)}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {po.orderDate
+                          ? format(new Date(po.orderDate), "dd MMM yyyy")
+                          : "-"}
+                      </p>
+                    </div>
+                    <span className="font-medium text-foreground flex-shrink-0">
+                      {formatAUD(po.total)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
