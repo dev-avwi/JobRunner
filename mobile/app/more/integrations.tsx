@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { showToast } from '../../src/lib/toast';
 import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 interface StripeConnectStatus {
   connected: boolean;
@@ -387,7 +388,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   },
 });
 
-export default function IntegrationsScreen() {
+function IntegrationsScreenInner() {
   const { colors } = useTheme();
   const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
@@ -1588,5 +1589,13 @@ export default function IntegrationsScreen() {
         </ScrollView>
       </View>
     </>
+  );
+}
+
+export default function IntegrationsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <IntegrationsScreenInner />
+    </OwnerOnlyGuard>
   );
 }

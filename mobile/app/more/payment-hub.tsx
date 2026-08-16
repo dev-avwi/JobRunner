@@ -21,6 +21,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format, isAfter, isBefore, subDays, differenceInDays } from 'date-fns';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 interface Invoice {
   id: string;
@@ -127,7 +128,7 @@ const formatCurrency = (amount: number | string) => {
   return fmt(amount, { compact: true });
 };
 
-export default function PaymentHubScreen() {
+function PaymentHubScreenInner() {
   const { colors } = useTheme();
   const showActionSheet = useActionSheet();
   const bottomInset = useBottomInset(40);
@@ -1873,3 +1874,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
   },
 });
+
+export default function PaymentHubScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <PaymentHubScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

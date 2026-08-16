@@ -26,6 +26,7 @@ import { api } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useUserRole } from '../../src/hooks/use-user-role';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 type TabType = 'items' | 'categories' | 'lowStock' | 'purchaseOrders' | 'suppliers';
 type TransactionType = 'in' | 'out' | 'adjustment';
@@ -197,7 +198,7 @@ function formatAbn(raw: string): string {
   return `${d.slice(0, 2)} ${d.slice(2, 5)} ${d.slice(5, 8)} ${d.slice(8, 11)}`;
 }
 
-export default function InventoryScreen() {
+function InventoryScreenInner() {
   const { colors } = useTheme();
   const { isOwner, isManager } = useUserRole();
   const canManageSuppliers = isOwner || isManager;
@@ -2845,3 +2846,11 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     color: colors.primaryForeground,
   },
 });
+
+export default function InventoryScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <InventoryScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

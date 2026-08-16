@@ -40,6 +40,7 @@ import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, shadows, typography, pageShell, iconSizes, sizes, componentStyles, fontWeights } from '../../src/lib/design-tokens';
 import { showToast } from '../../src/lib/toast';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 // Keep money inputs clean: digits only, a single decimal point, max 2 decimals.
 const sanitizeAmountInput = (text: string): string => {
@@ -1001,7 +1002,7 @@ function TapPreparingOverlay({ colors, isDark }: { colors: ThemeColors; isDark: 
   );
 }
 
-export default function CollectScreen() {
+function CollectScreenInner() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -4177,4 +4178,12 @@ export default function CollectScreen() {
       </AppBottomSheet>
     );
   }
+}
+
+export default function CollectScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <CollectScreenInner />
+    </OwnerOnlyGuard>
+  );
 }

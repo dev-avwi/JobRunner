@@ -29,6 +29,7 @@ import { showToast } from '../../src/lib/toast';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { format } from 'date-fns';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 interface Expense {
   id: string;
@@ -129,7 +130,7 @@ function ExpenseCard({
   );
 }
 
-export default function ExpensesScreen() {
+function ExpensesScreenInner() {
   const { colors } = useTheme();
   const confirm = useConfirmDialog();
   const insets = useSafeAreaInsets();
@@ -1378,3 +1379,11 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       marginTop: 2,
     },
   });
+
+export default function ExpensesScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <ExpensesScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

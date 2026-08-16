@@ -20,6 +20,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, typographySizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 interface CommunicationItem {
   id: string;
@@ -405,7 +406,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   },
 });
 
-export default function CommunicationsScreen() {
+function CommunicationsScreenInner() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   
@@ -870,5 +871,13 @@ export default function CommunicationsScreen() {
         </View>
       </AppBottomSheet>
     </View>
+  );
+}
+
+export default function CommunicationsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <CommunicationsScreenInner />
+    </OwnerOnlyGuard>
   );
 }

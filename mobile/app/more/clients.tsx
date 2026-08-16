@@ -25,6 +25,7 @@ import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable
 import api from '../../src/lib/api';
 import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 type FilterKey = 'all' | 'residential' | 'commercial' | 'vip' | 'outstanding' | 'inactive_6mo' | 'with_email' | 'with_phone' | 'with_address';
 
@@ -190,7 +191,7 @@ function ClientCard({
   );
 }
 
-export default function ClientsScreen() {
+function ClientsScreenInner() {
   const confirm = useConfirmDialog();
   const { clients, fetchClients, isLoading, deleteClient } = useClientsStore();
   const { invoices, fetchInvoices } = useInvoicesStore();
@@ -978,3 +979,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     lineHeight: 20,
   },
 });
+
+export default function ClientsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <ClientsScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

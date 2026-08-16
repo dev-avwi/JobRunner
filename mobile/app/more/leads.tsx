@@ -23,6 +23,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { spacing, radius, typography, iconSizes, sizes, fontWeights } from '../../src/lib/design-tokens';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 type LeadSource = 'phone' | 'email' | 'website' | 'referral' | 'other';
 type LeadStatus = 'new' | 'contacted' | 'quoted' | 'won' | 'lost';
@@ -104,7 +105,7 @@ const formatRelativeDate = (dateString?: string): string => {
   return date.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
 };
 
-export default function LeadsScreen() {
+function LeadsScreenInner() {
   const { colors } = useTheme();
   const confirm = useConfirmDialog();
 
@@ -673,3 +674,11 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   convertConfirmBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md },
   convertConfirmText: { ...typography.label, color: colors.primaryForeground },
 });
+
+export default function LeadsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <LeadsScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

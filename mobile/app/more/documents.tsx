@@ -18,6 +18,7 @@ import { spacing, radius, shadows, typography, iconSizes, usePageShell, fontWeig
 import { api } from '../../src/lib/api';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useContentWidth, useIsTablet } from '../../src/lib/device';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 const CARD_GAP = spacing.sm;
 
@@ -130,7 +131,7 @@ const getPaymentMethodLabel = (method: string) => {
   }
 };
 
-export default function DocumentsScreen() {
+function DocumentsScreenInner() {
   const { colors } = useTheme();
   const contentWidth = useContentWidth();
   const isTabletDevice = useIsTablet();
@@ -1525,3 +1526,11 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
   },
 });
 };
+
+export default function DocumentsScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <DocumentsScreenInner />
+    </OwnerOnlyGuard>
+  );
+}

@@ -31,6 +31,7 @@ import {
 import { initGlobalIAP } from '../../src/lib/iap-global';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 interface SubscriptionStatus {
   tier: 'free' | 'pro' | 'team' | 'business' | 'trial';
@@ -459,7 +460,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
 });
 
-export default function SubscriptionPage() {
+function SubscriptionPageInner() {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -1096,5 +1097,13 @@ export default function SubscriptionPage() {
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+export default function SubscriptionPage() {
+  return (
+    <OwnerOnlyGuard>
+      <SubscriptionPageInner />
+    </OwnerOnlyGuard>
   );
 }

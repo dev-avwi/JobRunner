@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { isIAPAvailable, purchaseSubscription, IAP_ADDON_PRODUCT_IDS } from '../../src/lib/iap';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 type FeatherIconName = React.ComponentProps<typeof Feather>['name'];
 
@@ -211,7 +212,7 @@ interface MultiNumberConfig {
   approvalStatus: string | null;
 }
 
-export default function AIReceptionistScreen() {
+function AIReceptionistScreenInner() {
   const confirm = useConfirmDialog();
   const showActionSheet = useActionSheet();
   const { colors } = useTheme();
@@ -2284,5 +2285,13 @@ export default function AIReceptionistScreen() {
 
       </ScrollView>
     </View>
+  );
+}
+
+export default function AIReceptionistScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <AIReceptionistScreenInner />
+    </OwnerOnlyGuard>
   );
 }

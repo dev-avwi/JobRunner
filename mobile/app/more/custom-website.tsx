@@ -22,6 +22,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 const PRICING_TIERS = [
   {
@@ -87,7 +88,7 @@ interface WebsiteAddonData {
   hostingStatus: string;
 }
 
-export default function CustomWebsitePage() {
+function CustomWebsitePageInner() {
   const { colors, isDark } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -508,3 +509,11 @@ const createStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create
   successButton: { backgroundColor: `${colors.primary}10`, paddingHorizontal: spacing.lg, paddingVertical: 10, borderRadius: radius.lg },
   successButtonText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary },
 });
+
+export default function CustomWebsitePage() {
+  return (
+    <OwnerOnlyGuard>
+      <CustomWebsitePageInner />
+    </OwnerOnlyGuard>
+  );
+}

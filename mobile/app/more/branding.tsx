@@ -28,6 +28,7 @@ import {
 } from '../../src/lib/advanced-theme-store';
 import api from '../../src/lib/api';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 const PRESET_COLORS = [
   { name: 'Blue', hex: '#3b82f6' },
@@ -411,7 +412,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
 });
 
-export default function BrandingScreen() {
+function BrandingScreenInner() {
   const { colors, brandColor } = useTheme();
   const confirm = useConfirmDialog();
   const { businessSettings, updateBusinessSettings } = useAuthStore();
@@ -851,5 +852,13 @@ export default function BrandingScreen() {
         </View>
       </ScrollView>
     </>
+  );
+}
+
+export default function BrandingScreen() {
+  return (
+    <OwnerOnlyGuard>
+      <BrandingScreenInner />
+    </OwnerOnlyGuard>
   );
 }
