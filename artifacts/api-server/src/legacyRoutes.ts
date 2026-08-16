@@ -294,6 +294,88 @@ function stripServerControlledFields<T extends Record<string, any>>(body: T): Pa
   return updates;
 }
 
+// Task: auto-create a draft job when a client accepts a quote that has no linked job.
+// The job inherits client, address, title/description, and quote line items become the
+// job scope (checklist items). Returns the new job id, or null if no job was created.
+async function autoCreateJobFromAcceptedQuote(quote: any, acceptedByName: string): Promise<string | null> {
+  if (!quote || quote.jobId || !quote.clientId) return null;
+  try {
+    const client = await storage.getClientById(quote.clientId);
+    const job = await storage.createJob({
+      userId: quote.userId,
+      clientId: quote.clientId,
+      title: quote.title || `Job for quote ${quote.number || quote.id.slice(0, 8)}`,
+      description: quote.description || null,
+      address: client?.address || null,
+      status: 'pending',
+      notes: `Auto-created from accepted quote ${quote.number || quote.id.slice(0, 8)}`,
+    } as any);
+
+    // Atomically claim the quote: only link the new job if no job has been linked yet.
+    // Guards against concurrent accepts / double-submits creating duplicate jobs.
+    const claimed = await db
+      .update(quotes)
+      .set({ jobId: job.id, updatedAt: new Date() })
+      .where(and(eq(quotes.id, quote.id), isNull(quotes.jobId)))
+      .returning({ id: quotes.id });
+    if (!claimed.length) {
+      // Another request already linked a job to this quote; discard ours.
+      try {
+        await storage.deleteJob(job.id, quote.userId);
+      } catch (cleanupErr) {
+        console.error('[Quote Acceptance] Failed to clean up duplicate auto-created job:', cleanupErr);
+      }
+      return null;
+    }
+
+    // Quote line items become the job scope (checklist items)
+    try {
+      const lineItems = await storage.getQuoteLineItems(quote.id);
+      for (const item of lineItems) {
+        const desc = (item.description || '').trim();
+        if (!desc) continue;
+        const qty = parseFloat(String(item.quantity ?? '1'));
+        const text = qty && qty !== 1 ? `${desc} (x${qty})` : desc;
+        await storage.createChecklistItem({ jobId: job.id, text } as any, quote.userId);
+      }
+    } catch (e) {
+      console.error('[Quote Acceptance] Failed to copy quote line items to job scope:', e);
+    }
+
+    // Notify the owner that a draft job was created
+    try {
+      await storage.createNotification({
+        userId: quote.userId,
+        type: 'job_created',
+        title: 'Draft Job Created',
+        message: `${acceptedByName} accepted quote ${quote.number || quote.id.slice(0, 8)}. A draft job has been created and is ready to review and schedule.`,
+        relatedId: job.id,
+        relatedType: 'job',
+      } as any);
+    } catch (e) {
+      console.error('[Quote Acceptance] Failed to create draft-job notification:', e);
+    }
+
+    try {
+      await logActivity(
+        quote.userId,
+        'job_created' as any,
+        'Draft Job Created',
+        `Draft job auto-created after quote ${quote.number || quote.id.slice(0, 8)} was accepted by ${acceptedByName}`,
+        'job',
+        job.id,
+        { quoteId: quote.id, quoteNumber: quote.number, trigger: 'quote_accepted' }
+      );
+    } catch {}
+
+    console.log(`[Quote Acceptance] Auto-created draft job ${job.id} from quote ${quote.id}`);
+    return job.id;
+  } catch (e) {
+    console.error('[Quote Acceptance] Failed to auto-create job from accepted quote:', e);
+    return null;
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/', generalApiLimiter);
 
@@ -687,6 +769,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updatedQuote = await storage.acceptQuoteByToken(token, accepted_by.trim(), clientIp);
         
         if (updatedQuote) {
+          // No linked job yet: auto-create a draft job from the accepted quote.
+          // Runs immediately after successful acceptance, independent of the
+          // best-effort notification delivery below.
+          let autoCreatedJobId: string | null = null;
+          if (!quote.jobId) {
+            autoCreatedJobId = await autoCreateJobFromAcceptedQuote(quote, accepted_by.trim());
+            if (autoCreatedJobId) quote.jobId = autoCreatedJobId;
+          }
+
           // Store signature on the quote record for portal display
           if (signature_data) {
             try {
@@ -772,8 +863,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             } catch (e) { console.error('Owner email notification failed:', e); }
 
-            // Update linked job status to scheduled if quote is accepted
-            if (quote.jobId) {
+            // Update linked job status to scheduled if quote is accepted.
+            // Auto-created jobs stay 'pending' so they can be reviewed and scheduled first.
+            if (quote.jobId && quote.jobId !== autoCreatedJobId) {
               try {
                 const job = await storage.getJob(quote.jobId, quote.userId);
                 if (job && (job.status === 'pending' || job.status === 'draft')) {
@@ -3342,12 +3434,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error('Failed to create accept notification:', e);
       }
 
+      // Auto-create a draft job when the quote has no linked job yet
+      const autoCreatedJobId = await autoCreateJobFromAcceptedQuote(quote, (acceptedBy || 'Client').trim());
+
       try {
         const wss = (global as any).__wss;
         if (wss) {
           const message = JSON.stringify({
             type: 'quote_update',
-            data: { quoteId: quote.id, status: 'accepted', jobId: quote.jobId }
+            data: { quoteId: quote.id, status: 'accepted', jobId: quote.jobId || autoCreatedJobId }
           });
           wss.clients?.forEach((client: any) => {
             if (client.userId === quote.userId && client.readyState === 1) {
@@ -3358,7 +3453,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } catch (e) {
       }
       
-      res.json({ success: true, message: 'Quote accepted successfully' });
+      res.json({ success: true, message: 'Quote accepted successfully', jobId: quote.jobId || autoCreatedJobId });
     } catch (error: any) {
       console.error('Error accepting quote:', error);
       res.status(500).json({ error: 'Failed to accept quote' });
@@ -19349,8 +19444,13 @@ Be specific about materials, colors, and features that would be included.`
         { previousStatus, quoteNumber: quote.number, linkedJobId: quote.jobId }
       );
       
-      // If quote is linked to a job, update the job status and log activity
-      if (quote.jobId) {
+      // No linked job yet: auto-create a draft job from the accepted quote
+      if (!quote.jobId) {
+        const client = await storage.getClientById(quote.clientId).catch(() => undefined);
+        const newJobId = await autoCreateJobFromAcceptedQuote(quote, client?.name || 'Client');
+        if (newJobId) (quote as any).jobId = newJobId;
+      } else {
+        // If quote is linked to a job, update the job status and log activity
         const job = await storage.getJob(quote.jobId, userContext.effectiveUserId);
         if (job && (job.status === 'pending' || job.status === 'draft')) {
           // Update job to 'scheduled' when quote is accepted
@@ -19411,8 +19511,13 @@ Be specific about materials, colors, and features that would be included.`
         { previousStatus, quoteNumber: quote.number, linkedJobId: quote.jobId }
       );
       
-      // If quote is linked to a job, update the job status and log activity
-      if (quote.jobId) {
+      // No linked job yet: auto-create a draft job from the accepted quote
+      if (!quote.jobId) {
+        const client = await storage.getClientById(quote.clientId).catch(() => undefined);
+        const newJobId = await autoCreateJobFromAcceptedQuote(quote, client?.name || 'Client');
+        if (newJobId) (quote as any).jobId = newJobId;
+      } else {
+        // If quote is linked to a job, update the job status and log activity
         const job = await storage.getJob(quote.jobId, userContext.effectiveUserId);
         if (job && (job.status === 'pending' || job.status === 'draft')) {
           // Update job to 'scheduled' when quote is accepted

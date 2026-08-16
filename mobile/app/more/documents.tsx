@@ -44,6 +44,7 @@ interface Quote {
   status: string;
   validUntil?: string;
   createdAt?: string;
+  jobId?: string;
 }
 
 interface Receipt {
@@ -639,6 +640,17 @@ export default function DocumentsScreen() {
             {quote.createdAt ? formatDistanceToNow(new Date(quote.createdAt), { addSuffix: true }) : ''}
           </Text>
         </View>
+        {quote.jobId && quote.status === 'accepted' && (
+          <TouchableOpacity
+            style={styles.viewJobLink}
+            onPress={(e: any) => { e?.stopPropagation?.(); router.push(`/job/${quote.jobId}`); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            data-testid={`quote-job-link-${quote.id}`}
+          >
+            <Feather name="briefcase" size={12} color={colors.primary} />
+            <Text style={[styles.viewJobLinkText, { color: colors.primary }]}>View Job</Text>
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     );
   };
@@ -664,6 +676,17 @@ export default function DocumentsScreen() {
                 {statusConfig.label}
               </Text>
             </View>
+            {quote.jobId && quote.status === 'accepted' && (
+              <TouchableOpacity
+                style={styles.viewJobLink}
+                onPress={(e: any) => { e?.stopPropagation?.(); router.push(`/job/${quote.jobId}`); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                data-testid={`row-quote-job-link-${quote.id}`}
+              >
+                <Feather name="briefcase" size={11} color={colors.primary} />
+                <Text style={[styles.viewJobLinkText, { color: colors.primary }]}>View Job</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </PressableRow>
@@ -1187,6 +1210,18 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  viewJobLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: spacing.xs,
+    alignSelf: 'flex-start',
+  },
+  viewJobLinkText: {
+    ...typography.caption,
+    fontWeight: fontWeights.medium,
+    fontSize: 11,
   },
   gridCardAmount: {
     ...typography.body,

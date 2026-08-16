@@ -140,7 +140,7 @@ function StatusFilterPill({
   );
 }
 
-function CompactQuoteCard({ quote, onView, onSend, onConvert, onDelete, linkedInvoice, onViewInvoice }: { 
+function CompactQuoteCard({ quote, onView, onSend, onConvert, onDelete, linkedInvoice, onViewInvoice, onViewJob }: { 
   quote: any; 
   onView: () => void;
   onSend: () => void;
@@ -148,6 +148,7 @@ function CompactQuoteCard({ quote, onView, onSend, onConvert, onDelete, linkedIn
   onDelete: () => void;
   linkedInvoice?: any;
   onViewInvoice?: () => void;
+  onViewJob?: () => void;
 }) {
   const statusConfig = getQuoteStatusConfig(quote.status);
   const amount = normalizeToDollars(quote.total);
@@ -197,6 +198,17 @@ function CompactQuoteCard({ quote, onView, onSend, onConvert, onDelete, linkedIn
               >
                 <Link2 className="w-3 h-3 mr-1" />
                 Invoice
+              </Badge>
+            )}
+            {quote.jobId && onViewJob && (
+              <Badge 
+                variant="outline" 
+                className="text-xs px-2 py-0.5 cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); onViewJob(); }}
+                data-testid={`quote-job-link-${quote.id}`}
+              >
+                <Briefcase className="w-3 h-3 mr-1" />
+                View Job
               </Badge>
             )}
           </div>
@@ -882,6 +894,12 @@ export default function DocumentsHub({ onNavigate }: DocumentsHubProps) {
               <Eye className="h-4 w-4 mr-2" />
               View Details
             </DropdownMenuItem>
+            {row.jobId && (
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); navigate(`/jobs/${row.jobId}`); }}>
+                <Briefcase className="h-4 w-4 mr-2" />
+                View Job
+              </DropdownMenuItem>
+            )}
             {row.status === 'draft' && (
               <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleSendQuote(row); }}>
                 <Send className="h-4 w-4 mr-2" />
@@ -1272,6 +1290,7 @@ export default function DocumentsHub({ onNavigate }: DocumentsHubProps) {
                       onDelete={() => handleDeleteQuote(quote)}
                       linkedInvoice={linkedInvoice}
                       onViewInvoice={linkedInvoice ? () => navigate(`/invoices/${linkedInvoice.id}`) : undefined}
+                      onViewJob={quote.jobId ? () => navigate(`/jobs/${quote.jobId}`) : undefined}
                     />
                   );
                 })}
