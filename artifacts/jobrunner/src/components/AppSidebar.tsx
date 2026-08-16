@@ -63,6 +63,9 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
   });
 
   const { roleName, isSubcontractor } = useUserRole();
+  const { data: currentUser } = useQuery<{ id: string; email: string; username: string; firstName?: string; lastName?: string }>({
+    queryKey: ["/api/auth/me"],
+  });
 
   const filterOptions = { isTeam, isTradie, isOwner, isManager, userRole, isSimpleMode, hasProSubscription: canUseAIFeatures, extraAllowedUrls: permissionNavUrls };
   const baseMenuItems = getSidebarMenuItems(filterOptions);
@@ -240,6 +243,7 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
             className="flex items-center gap-3 p-2 rounded-lg border border-sidebar-border bg-sidebar-accent/30"
           >
             <UserAvatar
+              user={currentUser ?? {}}
               className="h-8 w-8"
             />
             <div className="flex-1 min-w-0">
