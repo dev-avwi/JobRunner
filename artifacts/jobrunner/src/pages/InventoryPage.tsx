@@ -62,6 +62,7 @@ import {
   MapPin,
   FileText,
   DollarSign,
+  GitMerge,
 } from "lucide-react";
 import { PageShell, PageHeader } from "@/components/ui/page-shell";
 import { EmptyState } from "@/components/ui/compact-card";
@@ -340,6 +341,19 @@ function StockSection() {
     },
   });
 
+  const mergeSupplierMutation = useMutation({
+    mutationFn: ({ survivingId, mergeFromId }: { survivingId: string; mergeFromId: string }) =>
+      apiRequest("POST", `/api/suppliers/${survivingId}/merge`, { mergeFromId }),
+    onSuccess: (_res, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers", vars.survivingId, "purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/items"] });
+      toast({ title: "Suppliers merged", description: "Purchase orders and inventory items have been consolidated." });
+    },
+    onError: () => toast({ title: "Failed to merge suppliers", variant: "destructive" }),
+  });
+
   const filteredItems = items
     .filter((item) => {
       const matchesSearch =
@@ -385,6 +399,7 @@ function StockSection() {
       <>
         <SupplierDetailView
           supplier={selectedSupplier}
+          allSuppliers={suppliers}
           onBack={() => setSelectedSupplier(null)}
           onEdit={() => {
             setEditingSupplier(selectedSupplier);
@@ -395,6 +410,10 @@ function StockSection() {
               deleteSupplierMutation.mutate(selectedSupplier.id);
             }
           }}
+          onMerge={(mergeFromId) =>
+            mergeSupplierMutation.mutate({ survivingId: selectedSupplier.id, mergeFromId })
+          }
+          isMergePending={mergeSupplierMutation.isPending}
         />
         <SupplierDialog
           open={showSupplierDialog}
@@ -3496,15 +3515,23 @@ interface SupplierPOHistory {
 
 function SupplierDetailView({
   supplier,
+  allSuppliers,
   onBack,
   onEdit,
   onDelete,
+  onMerge,
+  isMergePending,
 }: {
   supplier: Supplier;
+  allSuppliers: Supplier[];
   onBack: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onMerge: (mergeFromId: string) => void;
+  isMergePending: boolean;
 }) {
+  const [showMergeDialog, setShowMergeDialog] = useState(false);
+
   const { data, isLoading } = useQuery<SupplierPOHistory>({
     queryKey: ["/api/suppliers", supplier.id, "purchase-orders"],
     queryFn: async () => {
@@ -3520,13 +3547,19 @@ function SupplierDetailView({
   const stats = data?.stats;
   const pos = data?.purchaseOrders || [];
 
+  // Other suppliers the user can merge into this one
+  const otherSuppliers = allSuppliers.filter((s) => s.id !== supplier.id);
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button variant="ghost" size="icon" onClick={onBack}>
           <ChevronLeft className="w-5 h-5" />
         </Button>
         <h2 className="text-xl font-semibold flex-1 truncate">{supplier.name}</h2>
+        <Button variant="outline" onClick={() => setShowMergeDialog(true)} disabled={otherSuppliers.length === 0}>
+          <GitMerge className="w-4 h-4 mr-1" /> Merge
+        </Button>
         <Button variant="outline" onClick={onEdit}>
           <Edit className="w-4 h-4 mr-1" /> Edit
         </Button>
@@ -3534,6 +3567,18 @@ function SupplierDetailView({
           <Trash2 className="w-4 h-4 mr-1" /> Delete
         </Button>
       </div>
+
+      <MergeSupplierDialog
+        open={showMergeDialog}
+        onOpenChange={setShowMergeDialog}
+        survivingSupplier={supplier}
+        otherSuppliers={otherSuppliers}
+        isPending={isMergePending}
+        onMerge={(mergeFromId) => {
+          onMerge(mergeFromId);
+          setShowMergeDialog(false);
+        }}
+      />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
@@ -3672,5 +3717,69 @@ function SupplierDetailView({
         </div>
       </div>
     </div>
+  );
+}
+
+function MergeSupplierDialog({
+  open,
+  onOpenChange,
+  survivingSupplier,
+  otherSuppliers,
+  isPending,
+  onMerge,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  survivingSupplier: Supplier;
+  otherSuppliers: Supplier[];
+  isPending: boolean;
+  onMerge: (mergeFromId: string) => void;
+}) {
+  const [selectedId, setSelectedId] = useState<string>("");
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) setSelectedId(""); onOpenChange(v); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <GitMerge className="w-5 h-5" /> Merge Duplicate Supplier
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-muted-foreground">
+            Select a duplicate supplier to merge into <strong>{survivingSupplier.name}</strong>. All purchase orders and inventory items from the duplicate will be moved here, and the duplicate record will be removed.
+          </p>
+          <div className="space-y-2">
+            <Label>Duplicate supplier to remove</Label>
+            <Select value={selectedId} onValueChange={setSelectedId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pick a supplier..." />
+              </SelectTrigger>
+              <SelectContent>
+                {otherSuppliers.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}{s.abn ? ` (ABN ${s.abn})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedId && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              The selected supplier will be permanently deleted after the merge.
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            disabled={!selectedId || isPending}
+            onClick={() => selectedId && onMerge(selectedId)}
+          >
+            {isPending ? "Merging..." : "Merge"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

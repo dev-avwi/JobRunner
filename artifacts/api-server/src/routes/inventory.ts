@@ -455,6 +455,27 @@ export function registerInventoryRoutes(app: Express): void {
     }
   });
 
+  // POST /api/suppliers/:id/merge — merge a duplicate supplier into this one
+  app.post("/api/suppliers/:id/merge", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const survivingId = req.params.id;
+      const { mergeFromId } = z.object({ mergeFromId: z.string().min(1) }).parse(req.body);
+
+      if (survivingId === mergeFromId) {
+        return res.status(400).json({ error: "Cannot merge a supplier into itself" });
+      }
+
+      const ok = await storage.mergeSupplier(survivingId, mergeFromId, userContext.effectiveUserId);
+      if (!ok) return res.status(404).json({ error: "One or both suppliers not found" });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error merging suppliers:", error);
+      res.status(500).json({ error: "Failed to merge suppliers" });
+    }
+  });
+
   app.delete("/api/suppliers/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

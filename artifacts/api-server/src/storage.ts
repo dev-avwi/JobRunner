@@ -849,6 +849,7 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier & { userId: string }): Promise<Supplier>;
   updateSupplier(id: string, userId: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: string, userId: string): Promise<boolean>;
+  mergeSupplier(survivingId: string, duplicateId: string, userId: string): Promise<boolean>;
   
   getPurchaseOrders(userId: string): Promise<PurchaseOrder[]>;
   getPurchaseOrder(id: string, userId: string): Promise<PurchaseOrder | undefined>;
@@ -1879,6 +1880,36 @@ pool
     console.error('[Schema] Failed to add FK inventory_items.supplier_id → suppliers:', err.message);
   });
 
+
+// Task #625 (Supplier merge): add a FK from inventory_items.supplier_id to
+// suppliers so that the FOR UPDATE row lock acquired during a merge also blocks
+// concurrent inventory item inserts that reference the duplicate supplier — the
+// same protection purchase_orders already has via its existing FK.
+// Steps:
+//   1. Null out any legacy dangling supplier_id values (items whose supplier was
+//      deleted before this constraint existed) to avoid a constraint-violation on
+//      the ALTER TABLE.
+//   2. Add the constraint idempotently.  ON DELETE SET NULL is the safe cascade:
+//      the merge itself re-points items before deletion, so the cascade is purely
+//      a last-resort safety net for any admin-level direct deletes.
+pool
+  .query(`
+    UPDATE inventory_items
+    SET supplier_id = NULL
+    WHERE supplier_id IS NOT NULL
+      AND supplier_id NOT IN (SELECT id FROM suppliers);
+
+    DO $$ BEGIN
+      ALTER TABLE inventory_items
+        ADD CONSTRAINT fk_inventory_items_supplier_id
+        FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL;
+    EXCEPTION WHEN duplicate_object THEN
+      NULL;
+    END $$;
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to add FK from inventory_items.supplier_id to suppliers:', err.message);
+  });
 
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
@@ -4845,6 +4876,50 @@ export class PostgresStorage implements IStorage {
     const result = await db.delete(suppliers)
       .where(and(eq(suppliers.id, id), eq(suppliers.userId, userId)));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async mergeSupplier(survivingId: string, duplicateId: string, userId: string): Promise<boolean> {
+    return await db.transaction(async (tx) => {
+      // Lock both supplier rows FOR UPDATE in deterministic ID order to prevent
+      // deadlocks when two concurrent merges involve the same pair.
+      //
+      // FOR UPDATE conflicts with the FOR KEY SHARE lock PostgreSQL acquires on
+      // a referenced row when a child row is inserted with a FK constraint.
+      // Both purchase_orders.supplier_id and inventory_items.supplier_id now have
+      // FK constraints (the latter was added at startup in the schema migration
+      // above), so while we hold FOR UPDATE on the duplicate row, no new child
+      // row can be inserted referencing it — concurrent inserts block until this
+      // transaction commits or rolls back.  This makes both re-pointing sweeps
+      // below exhaustive: no row can slip through and be cascade-deleted.
+      const [idA, idB] = [survivingId, duplicateId].sort();
+      const locked = await tx.execute(
+        sql`SELECT id FROM suppliers
+            WHERE id = ANY(ARRAY[${idA}, ${idB}]::text[])
+              AND user_id = ${userId}
+            ORDER BY id
+            FOR UPDATE`
+      );
+      // Both rows must exist and belong to this user.
+      if ((locked.rows as { id: string }[]).length < 2) return false;
+
+      // Re-point all purchase orders from duplicate → surviving.
+      await tx.update(purchaseOrders)
+        .set({ supplierId: survivingId })
+        .where(and(eq(purchaseOrders.supplierId, duplicateId), eq(purchaseOrders.userId, userId)));
+
+      // Re-point all inventory items from duplicate → surviving.
+      await tx.update(inventoryItems)
+        .set({ supplierId: survivingId })
+        .where(and(eq(inventoryItems.supplierId, duplicateId), eq(inventoryItems.userId, userId)));
+
+      // Delete the duplicate.  Both child tables are fully re-pointed above.
+      // The FK ON DELETE SET NULL on inventory_items is a last-resort safety net
+      // for any edge case (e.g. direct admin deletes), not the primary mechanism.
+      await tx.delete(suppliers)
+        .where(and(eq(suppliers.id, duplicateId), eq(suppliers.userId, userId)));
+
+      return true;
+    });
   }
 
   async getPurchaseOrders(userId: string): Promise<PurchaseOrder[]> {
