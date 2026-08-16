@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
+type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced' | 'paid';
 
 interface LinkedDocument {
   id: string;
@@ -40,6 +40,7 @@ const STATUS_ORDER: Record<JobStatus, number> = {
   in_progress: 2,
   done: 3,
   invoiced: 4,
+  paid: 4,
 };
 
 export function JobProgressBar({ status, hasQuote, hasInvoice, className }: JobProgressBarProps) {

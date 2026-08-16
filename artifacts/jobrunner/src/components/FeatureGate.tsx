@@ -18,8 +18,8 @@ interface FeatureGateProps {
 
 const TIER_RANK: Record<string, number> = {
   free: 0,
-  trial: 1,
   pro: 2,
+  trial: 3, // trial grants full team-level access so users can actually try the features
   team: 3,
   business: 4,
 };

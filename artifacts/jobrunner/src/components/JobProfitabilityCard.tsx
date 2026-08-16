@@ -293,7 +293,7 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
     );
   }
 
-  if (!data) return null;
+  if (!data || !data.revenue) return null;
 
   // Include PO and variation totals in the "has data" check so early-stage jobs
   // with only a quote or approved variation still show the header + download button.

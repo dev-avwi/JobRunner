@@ -154,6 +154,12 @@ export function ClaimsSection({ jobId, isTradie = false, openNewClaimForPhase, o
     enabled: !!jobId,
   });
 
+  const { data: xeroStatus } = useQuery<{ connected: boolean }>({
+    queryKey: ['/api/integrations/xero/status'],
+    staleTime: 60_000,
+  });
+  const xeroConnected = xeroStatus?.connected === true;
+
   const { data: phases = [] } = useQuery<JobPhaseOption[]>({
     queryKey: [`/api/jobs/${jobId}/phases`],
     enabled: !!jobId,
@@ -251,6 +257,7 @@ export function ClaimsSection({ jobId, isTradie = false, openNewClaimForPhase, o
             isSubmitting={submitMutation.isPending}
             isApproving={approveMutation.isPending}
             isMarkingPaid={paidMutation.isPending}
+            xeroConnected={xeroConnected}
           />
         ))}
       </CardContent>
@@ -306,12 +313,13 @@ interface ClaimRowProps {
   isSubmitting: boolean;
   isApproving: boolean;
   isMarkingPaid: boolean;
+  xeroConnected: boolean;
 }
 
 function ClaimRow({
   claim, jobId, isTradie, isExpanded, onToggle,
   onSubmit, onApprove, onMarkPaid, onDownloadPDF, onDelete,
-  isSubmitting, isApproving, isMarkingPaid,
+  isSubmitting, isApproving, isMarkingPaid, xeroConnected,
 }: ClaimRowProps) {
   const cfg = STATUS_CONFIG[claim.status] ?? STATUS_CONFIG.draft;
 
@@ -446,7 +454,7 @@ function ClaimRow({
                   {claim.status === "submitted" && (
                     <Button size="sm" variant="outline" onClick={onApprove} disabled={isApproving}>
                       {isApproving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-                      Approve &amp; Push to Xero
+                      {xeroConnected ? "Approve & Push to Xero" : "Approve"}
                     </Button>
                   )}
                   {claim.status === "approved" && (
