@@ -9,11 +9,24 @@
  *
  * Also verifies that owners and managers are let through without a redirect.
  *
- * These tests cover the guard logic shared by all four restricted screens:
+ * These tests cover the guard logic shared by all 17 restricted screens:
  *   mobile/app/more/insights.tsx
  *   mobile/app/more/reports.tsx
  *   mobile/app/more/autopilot.tsx
  *   mobile/app/more/team-management.tsx
+ *   mobile/app/more/clients.tsx
+ *   mobile/app/more/documents.tsx
+ *   mobile/app/more/payment-hub.tsx
+ *   mobile/app/more/expenses.tsx
+ *   mobile/app/more/collect-payment.tsx
+ *   mobile/app/more/inventory.tsx
+ *   mobile/app/more/communications.tsx
+ *   mobile/app/more/leads.tsx
+ *   mobile/app/more/ai-receptionist.tsx
+ *   mobile/app/more/integrations.tsx
+ *   mobile/app/more/branding.tsx
+ *   mobile/app/more/custom-website.tsx
+ *   mobile/app/more/subscription.tsx
  */
 
 import React from 'react';
@@ -167,13 +180,28 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
     expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
   });
 
-  // -- Simulates the four restricted More screens ----------------------------
+  // -- Simulates all restricted More screens (original 4 + 13 added in Task #645) --
 
   const RESTRICTED_PATHS = [
+    // Original four
     '/more/insights',
     '/more/reports',
     '/more/autopilot',
     '/more/team-management',
+    // 13 screens guarded in Task #645
+    '/more/clients',
+    '/more/documents',
+    '/more/payment-hub',
+    '/more/expenses',
+    '/more/collect-payment',
+    '/more/inventory',
+    '/more/communications',
+    '/more/leads',
+    '/more/ai-receptionist',
+    '/more/integrations',
+    '/more/branding',
+    '/more/custom-website',
+    '/more/subscription',
   ];
 
   it.each(RESTRICTED_PATHS)(
