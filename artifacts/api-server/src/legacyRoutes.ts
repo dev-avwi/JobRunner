@@ -18217,6 +18217,32 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // Client-portal: download a Proof Pack PDF (identical output to the contractor download)
+  app.get("/api/public/job-portal/:token/proof-pack", portalIpRateLimiterMiddleware, async (req: any, res) => {
+    try {
+      const portalToken = await storage.getJobPortalTokenByToken(req.params.token);
+      if (!portalToken) return res.status(404).json({ error: 'Portal link not found or expired' });
+      if (portalToken.revokedAt) return res.status(410).json({ error: 'This tracking link has been revoked' });
+      if (portalToken.expiresAt && new Date(portalToken.expiresAt) < new Date()) {
+        return res.status(410).json({ error: 'This tracking link has expired' });
+      }
+
+      const { generateJobProofPackPDF, generatePDFBuffer } = await import('./pdfService');
+      // buildProofPackData already computes retention and returns it in the result object
+      const data = await buildProofPackData(portalToken.jobId, portalToken.userId, req.query);
+      const html = generateJobProofPackPDF(data);
+      const pdfBuffer = await generatePDFBuffer(html);
+
+      const fileName = `proof-pack-${data.job.number || portalToken.jobId}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.send(pdfBuffer);
+    } catch (error: any) {
+      console.error('[Portal ProofPack] Error generating proof pack PDF:', error);
+      res.status(500).json({ error: 'Failed to generate proof pack PDF' });
+    }
+  });
+
   // In-memory rate limiter for portal messages (max 5 per token per hour)
   const portalMessageRateLimit = new Map<string, { count: number; resetAt: number }>();
 
