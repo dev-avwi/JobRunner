@@ -110,6 +110,27 @@ interface PortalJob {
   userId?: string;
 }
 
+interface PortalVariation {
+  id: string;
+  jobId: string;
+  clientId?: string;
+  jobTitle?: string;
+  number: string;
+  title?: string;
+  description?: string;
+  reason?: string;
+  totalAmount: string;
+  status: string;
+  sentAt?: string;
+  approvedAt?: string;
+  approvedByName?: string;
+  rejectedAt?: string;
+  rejectionReason?: string;
+  businessInfo?: {
+    businessName?: string;
+  } | null;
+}
+
 interface PortalData {
   phone: string;
   clients: PortalClient[];
@@ -117,6 +138,16 @@ interface PortalData {
   invoices: PortalInvoice[];
   receipts: PortalReceipt[];
   jobs: PortalJob[];
+  variations?: PortalVariation[];
+}
+
+function getVariationStatusColor(status: string): string {
+  switch (status) {
+    case 'approved': return 'bg-green-100 text-green-800';
+    case 'rejected': return 'bg-red-100 text-red-800';
+    case 'sent': return 'bg-amber-100 text-amber-800';
+    default: return 'bg-slate-100 text-slate-700';
+  }
 }
 
 type ViewState = 'phone' | 'code' | 'dashboard' | 'quote-detail' | 'invoice-detail' | 'not-found' | 'select-client';
@@ -181,6 +212,8 @@ export default function ClientPortalHub() {
   const [sourceDocument, setSourceDocument] = useState<{ type: string; token: string } | null>(null);
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
+  const [variationApprovalNames, setVariationApprovalNames] = useState<Record<string, string>>({});
+  const [variationActionId, setVariationActionId] = useState<string | null>(null);
   const [requestingWorker, setRequestingWorker] = useState<{ workerId: string; workerName: string; jobId: string; jobTitle: string } | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
@@ -488,6 +521,81 @@ export default function ClientPortalHub() {
       window.location.href = `/portal/receipt/${receipt.viewToken}`;
     } else {
       toast({ title: "Receipt", description: `Receipt #${receipt.number} — ${formatCurrency(receipt.total)}`, variant: "default" });
+    }
+  };
+
+  const handleApproveVariation = async (variation: PortalVariation) => {
+    const name = (variationApprovalNames[variation.id] || '').trim();
+    if (!name) {
+      toast({
+        title: "Name Required",
+        description: "Please enter your name to approve this variation",
+        variant: "destructive"
+      });
+      return;
+    }
+    setVariationActionId(variation.id);
+    try {
+      const res = await fetch(`/api/portal/variations/${variation.id}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ approvedByName: name })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to approve variation');
+      }
+      toast({
+        title: "Variation Approved",
+        description: "Thank you! The business has been notified.",
+      });
+      if (sessionToken) await fetchPortalData(sessionToken);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't Approve Variation",
+        description: err?.message || 'Something went wrong. Please try again.',
+        variant: "destructive"
+      });
+    } finally {
+      setVariationActionId(null);
+    }
+  };
+
+  const handleRejectVariation = async (variation: PortalVariation) => {
+    if (!window.confirm('Are you sure you want to reject this variation? The business will be notified.')) {
+      return;
+    }
+    const reason = window.prompt('Optional: let them know why you are rejecting this variation') || '';
+    setVariationActionId(variation.id);
+    try {
+      const res = await fetch(`/api/portal/variations/${variation.id}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ rejectionReason: reason.trim() || undefined })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to reject variation');
+      }
+      toast({
+        title: "Variation Rejected",
+        description: "The business has been notified of your decision.",
+      });
+      if (sessionToken) await fetchPortalData(sessionToken);
+    } catch (err: any) {
+      toast({
+        title: "Couldn't Reject Variation",
+        description: err?.message || 'Something went wrong. Please try again.',
+        variant: "destructive"
+      });
+    } finally {
+      setVariationActionId(null);
     }
   };
 
@@ -978,6 +1086,8 @@ export default function ClientPortalHub() {
     const filteredInvoices = selectedClientId ? portalData?.invoices.filter(i => i.clientId === selectedClientId) : portalData?.invoices;
     const filteredReceipts = selectedClientId ? portalData?.receipts.filter(r => r.clientId === selectedClientId) : portalData?.receipts;
     const filteredJobs = selectedClientId ? portalData?.jobs.filter(j => j.clientId === selectedClientId) : portalData?.jobs;
+    const filteredVariations = selectedClientId ? portalData?.variations?.filter(v => v.clientId === selectedClientId) : portalData?.variations;
+    const pendingVariationCount = filteredVariations?.filter(v => v.status === 'sent').length || 0;
     const business = filteredQuotes?.[0]?.business || filteredInvoices?.[0]?.business || null;
     const selectedClient = portalData?.clients.find(c => c.id === selectedClientId);
     const clientName = selectedClient?.name || portalData?.clients[0]?.name;
@@ -1080,7 +1190,7 @@ export default function ClientPortalHub() {
               </div>
             ) : (
               <Tabs defaultValue="quotes" className="w-full">
-                <TabsList className="grid w-full grid-cols-5 mb-6 bg-slate-100">
+                <TabsList className="grid w-full grid-cols-6 mb-6 bg-slate-100">
                   <TabsTrigger value="quotes" className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     <span className="hidden sm:inline">Quotes</span>
@@ -1100,6 +1210,13 @@ export default function ClientPortalHub() {
                     <span className="hidden sm:inline">Receipts</span>
                     {filteredReceipts?.length ? (
                       <Badge variant="secondary" className="ml-1">{filteredReceipts.length}</Badge>
+                    ) : null}
+                  </TabsTrigger>
+                  <TabsTrigger value="variations" className="flex items-center gap-2">
+                    <ClipboardList className="w-4 h-4" />
+                    <span className="hidden sm:inline">Variations</span>
+                    {pendingVariationCount ? (
+                      <Badge variant="secondary" className="ml-1 bg-amber-100 text-amber-800">{pendingVariationCount}</Badge>
                     ) : null}
                   </TabsTrigger>
                   <TabsTrigger value="jobs" className="flex items-center gap-2">
@@ -1332,6 +1449,127 @@ export default function ClientPortalHub() {
                             View Receipt
                           </Button>
                         </div>
+                      </div>
+                    ))
+                  )}
+                </TabsContent>
+
+                <TabsContent value="variations" className="space-y-4">
+                  {!filteredVariations || filteredVariations.length === 0 ? (
+                    <div className="bg-white rounded-md shadow-lg p-10 text-center">
+                      <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                        <ClipboardList className="w-8 h-8 text-slate-500" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">No Variations</h3>
+                      <p className="text-sm text-slate-500">Any scope changes needing your approval will appear here</p>
+                    </div>
+                  ) : (
+                    filteredVariations.map((variation) => (
+                      <div
+                        key={variation.id}
+                        className={`bg-white rounded-md shadow-lg overflow-hidden ${
+                          variation.status === 'sent' ? 'border border-amber-300' : ''
+                        }`}
+                      >
+                        <div className="p-5">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                              <ClipboardList className="w-5 h-5 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <h3 className="font-semibold text-slate-900 truncate">Variation {variation.number}</h3>
+                                <Badge className={getVariationStatusColor(variation.status)}>
+                                  {variation.status === 'sent' ? 'Awaiting Your Approval' : variation.status.charAt(0).toUpperCase() + variation.status.slice(1)}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            {variation.title && (
+                              <p className="text-sm font-medium text-slate-900">{variation.title}</p>
+                            )}
+                            {variation.description && (
+                              <p className="text-sm text-slate-600">{variation.description}</p>
+                            )}
+                            {variation.reason && (
+                              <p className="text-xs text-slate-500"><span className="font-semibold uppercase tracking-wider">Reason:</span> {variation.reason}</p>
+                            )}
+                            {variation.jobTitle && (
+                              <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <Briefcase className="w-3 h-3" /> {variation.jobTitle}
+                              </p>
+                            )}
+                            {variation.businessInfo?.businessName && (
+                              <p className="text-xs text-slate-500 flex items-center gap-1">
+                                <Building2 className="w-3 h-3" /> {variation.businessInfo.businessName}
+                              </p>
+                            )}
+                          </div>
+                          <div className="mt-4 pt-4 border-t border-slate-200">
+                            <div className="flex items-center justify-between gap-4">
+                              <div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Amount (incl. GST)</p>
+                                <p className="text-xl font-bold text-slate-900">{formatCurrency(variation.totalAmount)}</p>
+                              </div>
+                              {variation.status === 'approved' && (
+                                <div className="text-right">
+                                  <p className="text-xs text-green-700 flex items-center gap-1 justify-end">
+                                    <CheckCircle2 className="w-3 h-3" /> Approved{variation.approvedByName ? ` by ${variation.approvedByName}` : ''}
+                                  </p>
+                                  {variation.approvedAt && (
+                                    <p className="text-xs text-slate-500">{formatDate(variation.approvedAt)}</p>
+                                  )}
+                                </div>
+                              )}
+                              {variation.status === 'rejected' && (
+                                <div className="text-right">
+                                  <p className="text-xs text-red-700 flex items-center gap-1 justify-end">
+                                    <X className="w-3 h-3" /> Rejected
+                                  </p>
+                                  {variation.rejectedAt && (
+                                    <p className="text-xs text-slate-500">{formatDate(variation.rejectedAt)}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {variation.status === 'sent' && (
+                          <div className="px-5 pb-5 space-y-3">
+                            <Input
+                              placeholder="Your full name (required to approve)"
+                              value={variationApprovalNames[variation.id] || ''}
+                              onChange={(e) => setVariationApprovalNames(prev => ({ ...prev, [variation.id]: e.target.value }))}
+                              disabled={variationActionId === variation.id}
+                            />
+                            <div className="flex gap-3">
+                              <Button
+                                className="flex-1"
+                                size="lg"
+                                onClick={() => handleApproveVariation(variation)}
+                                disabled={variationActionId === variation.id}
+                              >
+                                {variationActionId === variation.id ? (
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Check className="w-4 h-4 mr-2" />
+                                )}
+                                Approve Variation
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="lg"
+                                className="text-red-600 border-red-200"
+                                onClick={() => handleRejectVariation(variation)}
+                                disabled={variationActionId === variation.id}
+                              >
+                                <X className="w-4 h-4 mr-2" />
+                                Reject
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}

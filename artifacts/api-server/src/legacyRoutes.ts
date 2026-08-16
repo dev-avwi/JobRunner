@@ -245,8 +245,8 @@ import {
 import { getSafetyFormTemplates, getSafetyFormTemplate } from "./safetyTemplates";
 import { evaluateTaskRules } from "./taskRules";
 import { generateAISuggestions, chatWithAI, analyzeReceipt, detectHazards, type BusinessContext } from "./ai";
-import { notifyQuoteSent, notifyInvoiceSent, notifyInvoicePaid, notifyJobScheduled, notifyJobStarted, notifyJobCompleted, notifyJobAssigned as notifyJobAssignedDB, notifyTeamMemberInvited, notifySmsReceived, notifyTimesheetSubmitted, notifyChatMessage, notifyQuoteAccepted as notifyQuoteAcceptedDB, notifyQuoteRejected as notifyQuoteRejectedDB, notifyGeofenceCheckIn, notifyGeofenceCheckOut, notifyRecurringJobCreated, notifyRecurringInvoiceCreated, notifyInvoiceOverdue as notifyInvoiceOverdueDB, notifyQuoteExpiring, notifyPaymentFailed } from "./notifications";
-import { notifyJobAssigned, notifyJobUpdate, notifyPaymentReceived, notifyQuoteAccepted, notifyQuoteRejected, notifyTeamMessage, notifyInvoiceOverdue, notifySmsReceived as notifySmsReceivedPush, notifyGeofenceEvent, notifyTimesheetSubmitted as notifyTimesheetSubmittedPush, notifyQuoteExpiring as notifyQuoteExpiringPush, notifyPaymentFailed as notifyPaymentFailedPush, notifyTrialExpiring as notifyTrialExpiringPush, notifyTimesheetDisputeFiled, notifyTimesheetDisputeResolved, notifyJobNudge, notifyNudgeResponse } from "./pushNotifications";
+import { createNotification, notifyQuoteSent, notifyInvoiceSent, notifyInvoicePaid, notifyJobScheduled, notifyJobStarted, notifyJobCompleted, notifyJobAssigned as notifyJobAssignedDB, notifyTeamMemberInvited, notifySmsReceived, notifyTimesheetSubmitted, notifyChatMessage, notifyQuoteAccepted as notifyQuoteAcceptedDB, notifyQuoteRejected as notifyQuoteRejectedDB, notifyGeofenceCheckIn, notifyGeofenceCheckOut, notifyRecurringJobCreated, notifyRecurringInvoiceCreated, notifyInvoiceOverdue as notifyInvoiceOverdueDB, notifyQuoteExpiring, notifyPaymentFailed } from "./notifications";
+import { sendPushNotification, notifyJobAssigned, notifyJobUpdate, notifyPaymentReceived, notifyQuoteAccepted, notifyQuoteRejected, notifyTeamMessage, notifyInvoiceOverdue, notifySmsReceived as notifySmsReceivedPush, notifyGeofenceEvent, notifyTimesheetSubmitted as notifyTimesheetSubmittedPush, notifyQuoteExpiring as notifyQuoteExpiringPush, notifyPaymentFailed as notifyPaymentFailedPush, notifyTrialExpiring as notifyTrialExpiringPush, notifyTimesheetDisputeFiled, notifyTimesheetDisputeResolved, notifyJobNudge, notifyNudgeResponse } from "./pushNotifications";
 import { getEmailIntegration, getGmailConnectionStatus } from "./emailIntegrationService";
 import { getUncachableStripeClient, getStripePublishableKey, isStripeInitialized } from "./stripeClient";
 import { checkTwilioAvailability, sendSMS, validateTwilioWebhook } from "./twilioClient";
@@ -1135,6 +1135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           invoices: [],
           receipts: [],
           jobs: [],
+          variations: [],
         });
       }
       
@@ -1274,6 +1275,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }));
       
+      // Variations for the client's jobs: pending ('sent') ones can be
+      // approved/rejected from the portal; approved/rejected are shown as history.
+      const variations: any[] = [];
+      await Promise.all(jobs.map(async (j) => {
+        try {
+          const jobVariations = await storage.getJobVariations(j.id, j.userId);
+          for (const v of jobVariations) {
+            if (v.status !== 'sent' && v.status !== 'approved' && v.status !== 'rejected') continue;
+            variations.push({
+              id: v.id,
+              jobId: j.id,
+              clientId: j.clientId,
+              jobTitle: j.title,
+              number: v.number,
+              title: v.title,
+              description: v.description,
+              reason: v.reason,
+              totalAmount: v.totalAmount,
+              status: v.status,
+              sentAt: v.sentAt,
+              approvedAt: v.approvedAt,
+              approvedByName: v.approvedByName,
+              rejectedAt: v.rejectedAt,
+              rejectionReason: v.rejectionReason,
+              businessInfo: businessInfoMap.get(j.userId),
+            });
+          }
+        } catch (e) {
+          logger.warn('api', 'Failed to load variations for portal job', { userId: j.userId, error: e, metadata: { jobId: j.id } });
+        }
+      }));
+      variations.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+
       return res.json({
         phone: session.phone,
         clients,
@@ -1281,10 +1315,185 @@ export async function registerRoutes(app: Express): Promise<Server> {
         invoices: invoicesWithBusiness,
         receipts: receiptsWithBusiness,
         jobs: jobsWithPortalTokens,
+        variations,
       });
     } catch (error: any) {
       console.error('Error fetching portal data:', error);
       res.status(500).json({ error: 'Failed to fetch data' });
+    }
+  });
+
+  // CLIENT PORTAL: Approve or reject a variation using the portal session token.
+  // The variation must belong to a job owned by one of the clients matching the
+  // session phone, and must be in 'sent' status.
+  async function resolvePortalVariation(req: Request): Promise<
+    | { error: { status: number; message: string } }
+    | { session: any; job: any; client: any; variation: any }
+  > {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { error: { status: 401, message: 'Missing or invalid authorization header' } };
+    }
+    const sessionToken = authHeader.substring(7);
+    const session = await storage.getPortalSessionByToken(sessionToken);
+    if (!session) {
+      return { error: { status: 401, message: 'Invalid session token' } };
+    }
+    if (new Date() > session.expiresAt) {
+      await storage.deletePortalSession(sessionToken);
+      return { error: { status: 401, message: 'Session has expired' } };
+    }
+
+    const variationId = (req.params as any).variationId;
+    const clients = await storage.getClientsByPhone(session.phone);
+    if (clients.length === 0) {
+      return { error: { status: 404, message: 'Variation not found' } };
+    }
+    const clientById = new Map(clients.map((c) => [c.id, c]));
+    const jobs = await storage.getJobsForClientIds(clients.map((c) => c.id));
+    for (const job of jobs) {
+      try {
+        const jobVariations = await storage.getJobVariations(job.id, job.userId);
+        const variation = jobVariations.find((v: any) => v.id === variationId);
+        if (variation) {
+          return { session, job, client: clientById.get(job.clientId) || clients[0], variation };
+        }
+      } catch (e) {
+        logger.warn('api', 'Portal variation lookup failed for job', { userId: job.userId, error: e, metadata: { jobId: job.id } });
+      }
+    }
+    return { error: { status: 404, message: 'Variation not found' } };
+  }
+
+  // Fire-and-forget: in-app + push notification to the business owner (and the
+  // variation creator, when different) about a client portal approval decision.
+  function notifyOwnerVariationDecision(opts: {
+    job: any;
+    variation: any;
+    decision: 'approved' | 'rejected';
+    clientName: string;
+    rejectionReason?: string | null;
+  }): void {
+    const { job, variation, decision, clientName, rejectionReason } = opts;
+    const amount = `$${parseFloat(String(variation.totalAmount ?? '0')).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const approved = decision === 'approved';
+    const title = approved ? 'Variation Approved!' : 'Variation Rejected';
+    const message = approved
+      ? `${clientName} approved variation ${variation.number} (${amount}) on ${job.title}`
+      : `${clientName} rejected variation ${variation.number} on ${job.title}${rejectionReason ? `: ${rejectionReason}` : ''}`;
+
+    const recipientIds = new Set<string>([job.userId]);
+    if (variation.createdBy && variation.createdBy !== job.userId) {
+      recipientIds.add(variation.createdBy);
+    }
+    for (const recipientId of Array.from(recipientIds)) {
+      createNotification(storage, {
+        userId: recipientId,
+        type: approved ? 'variation_approved' : 'variation_rejected',
+        title,
+        message,
+        relatedType: 'job',
+        relatedId: job.id,
+        priority: approved ? 'urgent' : 'high',
+        actionUrl: `/jobs/${job.id}`,
+        actionLabel: 'View Job',
+      }).catch((err: any) => console.error('[Variation] owner in-app notification failed:', err));
+      sendPushNotification({
+        userId: recipientId,
+        type: approved ? 'variation_approved' : 'variation_rejected',
+        title,
+        body: message,
+        data: { jobId: job.id, variationId: variation.id, relatedType: 'job' },
+      }).catch((err: any) => console.error('[Variation] owner push notification failed:', err));
+    }
+  }
+
+  app.post("/api/portal/variations/:variationId/approve", portalIpRateLimiterMiddleware, async (req, res) => {
+    try {
+      const resolved = await resolvePortalVariation(req);
+      if ('error' in resolved) {
+        return res.status(resolved.error.status).json({ error: resolved.error.message });
+      }
+      const { session, job, client, variation } = resolved;
+
+      if (variation.status === 'approved') {
+        return res.status(400).json({ error: 'This variation has already been approved' });
+      }
+      if (variation.status !== 'sent') {
+        return res.status(400).json({ error: 'Variation must be sent before it can be approved' });
+      }
+
+      const approvedByName = typeof req.body?.approvedByName === 'string' && req.body.approvedByName.trim()
+        ? req.body.approvedByName.trim().slice(0, 100)
+        : (client?.name || 'Client');
+
+      const updated = await storage.updateJobVariation(variation.id, job.userId, {
+        status: 'approved',
+        approvedAt: new Date(),
+        approvedByName,
+        approvalMethod: 'client_portal',
+        approvalContact: session.phone,
+      } as any);
+
+      await storage.createActivityLog({
+        userId: job.userId,
+        type: 'variation_approved',
+        title: 'Variation Approved',
+        entityType: 'job',
+        entityId: job.id,
+        description: `Variation ${variation.number} approved by ${approvedByName} via client portal`,
+      });
+
+      notifyOwnerVariationDecision({ job, variation, decision: 'approved', clientName: approvedByName });
+
+      res.json({ success: true, variation: updated });
+    } catch (error: any) {
+      console.error('Error approving variation via portal:', error);
+      res.status(500).json({ error: 'Failed to approve variation' });
+    }
+  });
+
+  app.post("/api/portal/variations/:variationId/reject", portalIpRateLimiterMiddleware, async (req, res) => {
+    try {
+      const resolved = await resolvePortalVariation(req);
+      if ('error' in resolved) {
+        return res.status(resolved.error.status).json({ error: resolved.error.message });
+      }
+      const { job, client, variation } = resolved;
+
+      if (variation.status === 'rejected') {
+        return res.status(400).json({ error: 'This variation has already been rejected' });
+      }
+      if (variation.status !== 'sent') {
+        return res.status(400).json({ error: 'Variation must be sent before it can be rejected' });
+      }
+
+      const rejectionReason = typeof req.body?.rejectionReason === 'string' && req.body.rejectionReason.trim()
+        ? req.body.rejectionReason.trim().slice(0, 500)
+        : null;
+      const clientName = client?.name || 'Client';
+
+      const updated = await storage.updateJobVariation(variation.id, job.userId, {
+        status: 'rejected',
+        rejectedAt: new Date(),
+        rejectionReason,
+      });
+
+      await storage.createActivityLog({
+        userId: job.userId,
+        type: 'variation_rejected',
+        title: 'Variation Rejected',
+        entityType: 'job',
+        entityId: job.id,
+        description: `Variation ${variation.number} rejected by ${clientName} via client portal${rejectionReason ? `: ${rejectionReason}` : ''}`,
+      });
+
+      notifyOwnerVariationDecision({ job, variation, decision: 'rejected', clientName, rejectionReason });
+
+      res.json({ success: true, variation: updated });
+    } catch (error: any) {
+      console.error('Error rejecting variation via portal:', error);
+      res.status(500).json({ error: 'Failed to reject variation' });
     }
   });
 
