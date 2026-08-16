@@ -219,6 +219,12 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Team Groups - owner/manager
   { path: '/team-groups', label: 'Team Groups', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 
+  // Leave Management - owner/manager only (workers get redirected)
+  { path: '/leave-management', label: 'Leave Management', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
+
+  // Staff Licences - owner/manager only (workers get redirected)
+  { path: '/staff-licences', label: 'Staff Licences', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
+
   // AI Visualization - owner/manager
   { path: '/ai-visualization', label: 'AI Visualization', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 
