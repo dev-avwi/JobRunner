@@ -1,0 +1,36 @@
+None selected 
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+2 of 2,859
+[JobRunner ERROR] email: [Lifecycle] Error processing lifecycle emails
+External
+Inbox
+JobRunner <noreply@jobrunner.com.au>
+13:00 (5 hours ago)
+to me
+
+Images in this message are hidden. This message appears suspicious. Don't show the images unless you trust the sender and the message.
+Show imagesReport spam
+External image icon
+Images are not displayed. Display images below - Always display images from noreply@jobrunner.com.au
+JobRunner ERROR Alert
+Category: email
+
+Message: [Lifecycle] Error processing lifecycle emails
+
+Error: Failed query: select "id", "email", "first_name", "last_name", "created_at", "lifecycle_emails_sent", "last_lifecycle_email_at", "subscription_tier" from "users" where ("users"."email" is not null and "users"."email_verified" = $1 and "users"."created_at" is not null and "users"."created_at" > $2) params: true,2026-06-17T02:59:27.476Z
+
+Error: Failed query: select "id", "email", "first_name", "last_name", "created_at", "lifecycle_emails_sent", "last_lifecycle_email_at", "subscription_tier" from "users" where ("users"."email" is not null and "users"."email_verified" = $1 and "users"."created_at" is not null and "users"."created_at" > $2)
+params: true,2026-06-17T02:59:27.476Z
+    at NodePgPreparedQuery.queryWithCache (/home/runner/workspace/node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+pg@8.20.0_pg@8.22.0/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async  (/home/runner/workspace/node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+pg@8.20.0_pg@8.22.0/node_modules/src/node-postgres/session.ts:154:19)
+    at async getUsersWithMilestones (/home/runner/workspace/artifacts/api-server/src/lifecycleEmailService.ts:245:20)
+    at async Timeout.processLifecycleEmails (/home/runner/workspace/artifacts/api-server/src/lifecycleEmailService.ts:343:28)
+Time: 2026-08-16T02:59:49.976Z
+
+Alerts are throttled to one every 5 minutes.
+
+
