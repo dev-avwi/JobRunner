@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,13 @@ import {
   Users,
   LayoutGrid,
   Wrench,
+  Sun,
 } from "lucide-react";
 import {
   format,
   addDays,
   subDays,
   isSameDay,
-  parseISO,
 } from "date-fns";
 
 interface Job {
@@ -57,11 +57,234 @@ interface JobForDate {
   duration: string;
   status: string;
   date: string;
+  _sortMinutes?: number;
+  _durationHours?: number;
 }
 
 interface SchedulePageProps {
   onCreateJob?: () => void;
   onViewJob?: (id: string) => void;
+}
+
+const TIMELINE_START = 6;  // 6 am
+const TIMELINE_END = 20;   // 8 pm
+const HOUR_HEIGHT = 72;    // px per hour
+
+function parseTime12(timeStr: string): { hours: number; minutes: number } | null {
+  if (!timeStr) return null;
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const ampm = match[3].toLowerCase();
+  if (ampm === 'pm' && h !== 12) h += 12;
+  if (ampm === 'am' && h === 12) h = 0;
+  return { hours: h, minutes: m };
+}
+
+function TodayView({
+  currentDate,
+  getJobsForDate,
+  isToday: isTodayFn,
+  onViewJob,
+  onCreateJob,
+}: {
+  currentDate: Date;
+  getJobsForDate: (date: Date) => JobForDate[];
+  isToday: (date: Date) => boolean;
+  onViewJob?: (id: string) => void;
+  onCreateJob?: () => void;
+}) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const totalHours = TIMELINE_END - TIMELINE_START;
+  const hours = Array.from({ length: totalHours }, (_, i) => TIMELINE_START + i);
+
+  const showNowLine =
+    isTodayFn(currentDate) &&
+    now.getHours() >= TIMELINE_START &&
+    now.getHours() < TIMELINE_END;
+  const nowTop =
+    (now.getHours() - TIMELINE_START) * HOUR_HEIGHT +
+    (now.getMinutes() / 60) * HOUR_HEIGHT;
+
+  const dayJobs = getJobsForDate(currentDate);
+
+  const timedJobs = dayJobs.filter((job) => {
+    if (!job.time) return false;
+    const parsed = parseTime12(job.time);
+    if (!parsed) return false;
+    return parsed.hours >= TIMELINE_START && parsed.hours < TIMELINE_END;
+  });
+
+  const outsideJobs = dayJobs.filter(
+    (job) => !timedJobs.some((t) => t.id === job.id)
+  );
+
+  return (
+    <Card className="mt-3 overflow-hidden">
+      {/* Day header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <div>
+          <p className="font-semibold text-base">
+            {format(currentDate, "EEEE, d MMMM")}
+          </p>
+          {isTodayFn(currentDate) && (
+            <p className="text-xs text-muted-foreground">Today</p>
+          )}
+        </div>
+        <Badge
+          variant="secondary"
+          style={{
+            backgroundColor: "hsl(var(--trade) / 0.12)",
+            color: "hsl(var(--trade))",
+          }}
+        >
+          {dayJobs.length} job{dayJobs.length !== 1 ? "s" : ""}
+        </Badge>
+      </div>
+
+      {/* Hour timeline */}
+      <div
+        className="relative overflow-y-auto"
+        style={{ maxHeight: "calc(100vh - 320px)", minHeight: "360px" }}
+      >
+        <div
+          className="relative select-none"
+          style={{ height: `${totalHours * HOUR_HEIGHT}px` }}
+        >
+          {/* Hour rows */}
+          {hours.map((hour) => {
+            const label =
+              hour === 12
+                ? "12 pm"
+                : hour > 12
+                ? `${hour - 12} pm`
+                : `${hour} am`;
+            return (
+              <div
+                key={hour}
+                className="absolute left-0 right-0 flex items-start pointer-events-none"
+                style={{ top: `${(hour - TIMELINE_START) * HOUR_HEIGHT}px` }}
+              >
+                <span className="text-[11px] text-muted-foreground/70 w-14 pl-3 pt-1 flex-shrink-0 leading-none">
+                  {label}
+                </span>
+                <div className="flex-1 border-t border-border/40 mt-[9px] mr-3" />
+              </div>
+            );
+          })}
+
+          {/* Now line */}
+          {showNowLine && (
+            <div
+              className="absolute left-0 right-0 flex items-center z-20 pointer-events-none"
+              style={{ top: `${nowTop}px` }}
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500 ml-[46px] flex-shrink-0 -translate-y-1/2" />
+              <div className="flex-1 border-t-2 border-red-500 mr-3" />
+            </div>
+          )}
+
+          {/* Job blocks */}
+          {timedJobs.map((job) => {
+            const parsed = parseTime12(job.time);
+            if (!parsed) return null;
+            const top =
+              (parsed.hours - TIMELINE_START) * HOUR_HEIGHT +
+              (parsed.minutes / 60) * HOUR_HEIGHT;
+            const durationHrs = job._durationHours ?? 1;
+            const height = Math.max(durationHrs * HOUR_HEIGHT - 4, 48);
+
+            return (
+              <div
+                key={job.id}
+                className="absolute rounded-lg px-2 py-1.5 cursor-pointer transition-all hover:brightness-95 active:scale-[0.99]"
+                style={{
+                  top: `${top + 2}px`,
+                  left: "60px",
+                  right: "12px",
+                  height: `${height}px`,
+                  backgroundColor: "hsl(var(--trade) / 0.13)",
+                  borderLeft: "3px solid hsl(var(--trade))",
+                }}
+                onClick={() => onViewJob?.(job.id)}
+                data-testid={`today-job-${job.id}`}
+              >
+                <div className="flex items-center gap-1.5 mb-0.5">
+                  <Clock
+                    className="h-3 w-3 flex-shrink-0"
+                    style={{ color: "hsl(var(--trade))" }}
+                  />
+                  <span
+                    className="text-[11px] font-semibold"
+                    style={{ color: "hsl(var(--trade))" }}
+                  >
+                    {job.time}
+                  </span>
+                </div>
+                <p className="text-xs font-medium truncate leading-tight">
+                  {job.title}
+                </p>
+                {height > 56 && (
+                  <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                    {job.client}
+                  </p>
+                )}
+                {height > 72 && (
+                  <div className="mt-1">
+                    <StatusBadge status={job.status} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Outside hours / unscheduled jobs */}
+      {outsideJobs.length > 0 && (
+        <div className="border-t p-3 space-y-2">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide px-1">
+            Unscheduled / outside hours
+          </p>
+          {outsideJobs.map((job) => (
+            <div
+              key={job.id}
+              className="p-3 rounded-lg border hover-elevate cursor-pointer"
+              onClick={() => onViewJob?.(job.id)}
+              data-testid={`today-outside-job-${job.id}`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">{job.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {job.client}
+                  </p>
+                </div>
+                <StatusBadge status={job.status} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {dayJobs.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-14 text-muted-foreground">
+          <Briefcase className="h-10 w-10 mb-3 opacity-30" />
+          <p className="text-sm mb-3">No jobs scheduled</p>
+          <Button variant="outline" size="sm" onClick={onCreateJob}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" />
+            Schedule Job
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 function MonthView({ 
@@ -211,7 +434,7 @@ function MonthView({
 
 export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePageProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'week' | 'month'>('week');
+  const [view, setView] = useState<'today' | 'week' | 'month'>('today');
   const [, navigate] = useLocation();
 
   const { data: jobs = [] } = useQuery<Job[]>({
@@ -270,15 +493,15 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
     return days;
   };
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
+  const navigate_ = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
-    setCurrentDate(newDate);
-  };
-
-  const navigateMonth = (direction: 'prev' | 'next') => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+    if (view === 'today') {
+      newDate.setDate(currentDate.getDate() + (direction === 'next' ? 1 : -1));
+    } else if (view === 'week') {
+      newDate.setDate(currentDate.getDate() + (direction === 'next' ? 7 : -7));
+    } else {
+      newDate.setMonth(currentDate.getMonth() + (direction === 'next' ? 1 : -1));
+    }
     setCurrentDate(newDate);
   };
 
@@ -326,9 +549,10 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
         duration: job.estimatedHours ? `${job.estimatedHours} hours` : 'TBD',
         status: job.status,
         date: dateStr,
-        _sortMinutes: sortMinutes
+        _sortMinutes: sortMinutes,
+        _durationHours: job.estimatedHours ?? 1,
       };
-    }).sort((a, b) => a._sortMinutes - b._sortMinutes);
+    }).sort((a, b) => (a._sortMinutes ?? 0) - (b._sortMinutes ?? 0));
   };
 
   const isToday = (date: Date) => isSameDay(date, new Date());
@@ -340,9 +564,17 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
 
   const goToToday = () => {
     setCurrentDate(new Date());
-    if (view === 'month') {
-      setView('week');
+    setView('today');
+  };
+
+  const headerLabel = () => {
+    if (view === 'today') {
+      return isToday(currentDate)
+        ? "Today"
+        : format(currentDate, "EEE, d MMM");
     }
+    if (view === 'week') return `${weekStart} - ${weekEnd}`;
+    return formatMonthYear(currentDate);
   };
 
   return (
@@ -370,7 +602,22 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
         <CardContent className="p-3 space-y-2">
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <div className="flex items-center justify-center gap-2 w-full sm:w-auto">
+              {/* View toggle: Today / Week / Month */}
               <div className="flex items-center gap-1 p-1 bg-muted rounded-lg flex-1 sm:flex-none">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { setView('today'); setCurrentDate(new Date()); }}
+                  data-testid="button-today-view"
+                  className={`flex-1 sm:flex-none px-3 ${view === 'today' ? 'shadow-sm' : ''}`}
+                  style={view === 'today' ? {
+                    backgroundColor: 'hsl(var(--trade))',
+                    color: 'white'
+                  } : {}}
+                >
+                  <Sun className="h-4 w-4 mr-1.5" />
+                  Today
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -400,16 +647,7 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
                   Month
                 </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={goToToday}
-                data-testid="button-today"
-                className="px-4"
-              >
-                <CalendarIcon className="h-4 w-4 mr-1" />
-                Today
-              </Button>
+
               <Button
                 variant="outline"
                 size="sm"
@@ -417,7 +655,7 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
                 className="px-3"
               >
                 <Users className="h-4 w-4 mr-1.5" />
-                Dispatch Board
+                Dispatch
               </Button>
             </div>
           </div>
@@ -426,10 +664,7 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
             <Button
               variant="outline"
               size="icon"
-              onClick={() => {
-                if (view === 'week') navigateWeek('prev');
-                else navigateMonth('prev');
-              }}
+              onClick={() => navigate_('prev')}
               data-testid="button-prev-period"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -437,14 +672,20 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
             
             <div className="text-center flex-1 min-w-0 px-2">
               <h2 className="text-base sm:text-lg font-semibold truncate">
-                {view === 'week' 
-                  ? `${weekStart} - ${weekEnd}`
-                  : formatMonthYear(currentDate)
-                }
+                {headerLabel()}
               </h2>
               <p className="text-xs text-muted-foreground">
                 {view === 'week' && weekJobCount > 0 
-                  ? `${weekJobCount} job${weekJobCount === 1 ? '' : 's'} scheduled` 
+                  ? `${weekJobCount} job${weekJobCount === 1 ? '' : 's'} this week`
+                  : view === 'today' && !isToday(currentDate)
+                  ? (
+                    <button
+                      className="underline underline-offset-2 hover:text-foreground transition-colors"
+                      onClick={goToToday}
+                    >
+                      Back to today
+                    </button>
+                  )
                   : ''
                 }
               </p>
@@ -453,10 +694,7 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
             <Button
               variant="outline"
               size="icon"
-              onClick={() => {
-                if (view === 'week') navigateWeek('next');
-                else navigateMonth('next');
-              }}
+              onClick={() => navigate_('next')}
               data-testid="button-next-period"
             >
               <ChevronRight className="h-4 w-4" />
@@ -464,6 +702,16 @@ export default function SchedulePage({ onCreateJob, onViewJob }: SchedulePagePro
           </div>
         </CardContent>
       </Card>
+
+      {view === 'today' && (
+        <TodayView
+          currentDate={currentDate}
+          getJobsForDate={getJobsForDate}
+          isToday={isToday}
+          onViewJob={onViewJob}
+          onCreateJob={onCreateJob}
+        />
+      )}
 
       {view === 'week' && (
         <>
