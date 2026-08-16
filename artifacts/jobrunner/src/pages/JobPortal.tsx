@@ -1111,6 +1111,50 @@ const DEFECT_STATUS_COLORS: Record<string, string> = {
   client_approved: 'bg-purple-100 text-purple-700',
 };
 
+function ProofPackButton({ token }: { token: string }) {
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/public/job-portal/${token}/proof-pack`);
+      if (!res.ok) throw new Error('Failed to download');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const disposition = res.headers.get('content-disposition');
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      a.download = match?.[1] ?? 'proof-pack.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // silently ignore — the user will see nothing happened and can retry
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleDownload}
+      disabled={downloading}
+      className="text-brand border-brand/30"
+    >
+      {downloading ? (
+        <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+      ) : (
+        <Download className="w-4 h-4 mr-1.5" />
+      )}
+      Download Proof Pack
+    </Button>
+  );
+}
+
 export default function JobPortal() {
   const { token } = useParams<{ token: string }>();
 
@@ -2603,15 +2647,18 @@ export default function JobPortal() {
         </div>
 
         <div className="text-center py-8 space-y-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open('/portal', '_blank')}
-            className="text-brand border-brand/30"
-          >
-            <FileText className="w-4 h-4 mr-1.5" />
-            Open Client Portal
-          </Button>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open('/portal', '_blank')}
+              className="text-brand border-brand/30"
+            >
+              <FileText className="w-4 h-4 mr-1.5" />
+              Open Client Portal
+            </Button>
+            <ProofPackButton token={token} />
+          </div>
           <div className="flex items-center justify-center gap-2.5">
             <img src={jobrunnerLogo} alt="JobRunner" className="w-7 h-7 object-contain" />
             <span className="text-sm font-medium text-brand/70">Powered by <strong className="text-brand">JobRunner</strong></span>
