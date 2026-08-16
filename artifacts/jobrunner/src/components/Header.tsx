@@ -111,7 +111,7 @@ export default function Header({
               className="text-base sm:text-xl font-bold"
               data-testid="header-brand"
             >
-              <span className="text-primary">Job</span><span style={{ color: '#F97316' }}>Runner</span>
+              <span className="text-primary">Job</span><span className="text-primary">Runner</span>
             </span>
           </button>
           
