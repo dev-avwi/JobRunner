@@ -105,7 +105,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   { path: '/team', label: 'Team', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   { path: '/team-dashboard', label: 'Team Hub', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: false },
   { path: '/team/invite', label: 'Invite Team', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
-  { path: '/team-operations', label: 'Team Management', allowedRoles: ['owner', 'manager'], showInNav: true },
+  // solo_owner added for parity with mobile (mainMenuItems allowedRoles: owner/solo_owner/manager)
+  { path: '/team-operations', label: 'Team Management', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
   
   // Chat - all roles including solo owners for SMS conversations
   { path: '/chat', label: 'Chat', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
@@ -125,7 +126,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   
   // Payment Hub - office admin can manage payments
   { path: '/payment-hub', label: 'Payment Hub', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'], showInNav: true },
-  { path: '/expenses', label: 'Expenses', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
+  // office_admin and staff_tradie removed to match mobile (allowedRoles: owner/solo_owner/manager only)
+  { path: '/expenses', label: 'Expenses', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
   // Subcontractor's own invoices to the businesses they work with (web parity with mobile)
   { path: '/my-invoices', label: 'My Invoices', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: false },
   
@@ -166,8 +168,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Bring-your-business migration wizard (Task #303) - owner only, reached from onboarding/Settings
   { path: '/bring-your-business', label: 'Bring Your Business', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
 
-  // Website Addon - owner only (upsell page handles its own locked/unlocked states)
-  { path: '/website', label: 'Website', allowedRoles: ['owner', 'solo_owner'], showInNav: false },
+  // Website Addon - manager added for parity with mobile custom-website (allowedRoles: owner/solo_owner/manager)
+  { path: '/website', label: 'Website', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   
   // Settings - owner/solo full, manager limited, staff profile/notifications/appearance only
   { path: '/settings', label: 'Settings', allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'], showInNav: true },
@@ -180,7 +182,8 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // Business Intelligence - Action Centre, Insights, Autopilot
   { path: '/action-center', label: 'Action Centre', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
   { path: '/insights', label: 'Insights', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
-  { path: '/autopilot', label: 'Autopilot', allowedRoles: ['owner', 'solo_owner'], showInNav: true },
+  // manager added for parity with mobile (allowedRoles: owner/solo_owner/manager)
+  { path: '/autopilot', label: 'Autopilot', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: true },
 
   // More page - all roles
   { path: '/more', label: 'More', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
@@ -228,9 +231,10 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // AI Visualization - owner/manager
   { path: '/ai-visualization', label: 'AI Visualization', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 
-  // AI Receptionist - owner/solo_owner/office_admin full access, manager partial, staff_tradie self-availability only
-  { path: '/ai-receptionist', label: 'AI Receptionist', allowedRoles: ['owner', 'solo_owner', 'office_admin', 'manager', 'staff_tradie'], showInNav: false },
-  { path: '/ai-receptionist/calls', label: 'AI Receptionist Calls', allowedRoles: ['owner', 'solo_owner', 'office_admin', 'manager'], showInNav: false },
+  // AI Receptionist - restricted to owner/solo_owner/manager to match mobile (allowedRoles: owner/solo_owner/manager)
+  // office_admin and staff_tradie removed from main page; office_admin removed from calls page
+  { path: '/ai-receptionist', label: 'AI Receptionist', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
+  { path: '/ai-receptionist/calls', label: 'AI Receptionist Calls', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 ];
 
 // Check if a role can access a specific path
