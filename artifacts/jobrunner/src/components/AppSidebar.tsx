@@ -125,8 +125,10 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-sm truncate text-foreground" data-testid="text-business-name">
-              {businessName}
+            <h1 className="font-semibold text-sm truncate" data-testid="text-business-name">
+              {businessName === 'JobRunner' ? (
+                <><span className="text-primary">Job</span><span style={{ color: '#F97316' }}>Runner</span></>
+              ) : businessName}
             </h1>
             <p className="text-xs truncate text-muted-foreground">My Account</p>
           </div>
