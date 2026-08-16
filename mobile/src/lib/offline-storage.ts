@@ -123,6 +123,7 @@ export interface CachedTimeEntry {
   startTime: string;
   endTime?: string;
   notes?: string;
+  phaseId?: string;
   cachedAt: number;
   pendingSync: boolean;
   syncAction?: 'create' | 'update' | 'delete';
@@ -812,6 +813,7 @@ class OfflineStorageService {
           ['start_lat', 'REAL'], ['start_lng', 'REAL'],
           ['end_lat', 'REAL'], ['end_lng', 'REAL'],
           ['time_category', 'TEXT'], ['distance_km', 'TEXT'],
+          ['phase_id', 'TEXT'],
         ];
         for (const [name, type] of addCols) {
           if (!cols.has(name)) {
@@ -1715,7 +1717,7 @@ class OfflineStorageService {
    * Start a time entry offline with local timestamp
    * Creates a new time entry with the current time as start time
    */
-  async startTimeEntryOffline(userId: string, jobId?: string, description?: string): Promise<CachedTimeEntry> {
+  async startTimeEntryOffline(userId: string, jobId?: string, description?: string, phaseId?: string): Promise<CachedTimeEntry> {
     if (!this.db) throw new Error('Database not initialized');
     
     const now = Date.now();
@@ -1742,9 +1744,9 @@ class OfflineStorageService {
 
     await this.db.runAsync(
       `INSERT INTO time_entries 
-       (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action, local_id, start_lat, start_lng)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'create', ?, ?, ?)`,
-      [localId, userId, jobId ?? null, description ?? null, startTime, null, null, now, localId, startLat, startLng]
+       (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action, local_id, start_lat, start_lng, phase_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'create', ?, ?, ?, ?)`,
+      [localId, userId, jobId ?? null, description ?? null, startTime, null, null, now, localId, startLat, startLng, phaseId ?? null]
     );
     
     const entry: CachedTimeEntry = {
@@ -1755,6 +1757,7 @@ class OfflineStorageService {
       startTime,
       endTime: undefined,
       notes: undefined,
+      phaseId: phaseId || undefined,
       cachedAt: now,
       pendingSync: true,
       syncAction: 'create',

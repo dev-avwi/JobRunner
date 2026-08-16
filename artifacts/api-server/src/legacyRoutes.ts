@@ -28483,6 +28483,13 @@ Respond with JSON in this format:
         if (!ownedJob) {
           return res.status(404).json({ error: 'Job not found' });
         }
+        // Validate phaseId belongs to this job — prevents cross-job/cross-business attribution
+        if ((data as any).phaseId) {
+          const phases = await storage.getJobPhases(data.jobId, tc.effectiveUserId);
+          if (!phases.some((p: any) => p.id === (data as any).phaseId)) {
+            return res.status(400).json({ error: 'Phase not found or does not belong to this job' });
+          }
+        }
       }
 
       // Multiple workers can now track time on the same job simultaneously
@@ -35094,6 +35101,17 @@ Respond with JSON in this format:
         const onlyStatus = allowedKeys.every(k => k === 'status');
         if (!onlyStatus) {
           return res.status(403).json({ error: "Workers can only update material status" });
+        }
+      }
+
+      // Validate phaseId belongs to this material's job — prevents cross-job/cross-business attribution
+      if (req.body.phaseId) {
+        const materialJobId = (existing as any).jobId;
+        if (materialJobId) {
+          const phases = await storage.getJobPhases(materialJobId, effectiveUserId);
+          if (!phases.some((p: any) => p.id === req.body.phaseId)) {
+            return res.status(400).json({ error: 'Phase not found or does not belong to this job' });
+          }
         }
       }
 

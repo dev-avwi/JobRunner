@@ -106,6 +106,14 @@ export function TimerWidget({
   compact?: boolean;
 }) {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [timerPhaseId, setTimerPhaseId] = useState<string>('');
+
+  // Fetch phases so the worker can tag their time to the active phase.
+  const { data: jobPhasesList = [] } = useQuery<Array<{ id: string; name: string; phaseCode: string; status: string }>>({
+    queryKey: ['/api/jobs', jobId, 'phases'],
+    enabled: !!jobId,
+    staleTime: 60000,
+  });
   const [locationStatus, setLocationStatus] = useState<'checking' | 'captured' | 'unavailable' | 'idle'>('idle');
   const { toast } = useToast();
 
@@ -447,6 +455,7 @@ export function TimerWidget({
         description,
         hourlyRate: 85.00,
         isBreak: false,
+        phaseId: timerPhaseId === '__none__' ? undefined : (timerPhaseId || undefined),
       });
       captureLocation();
       onTimerStart?.();
@@ -839,6 +848,21 @@ export function TimerWidget({
         
         {/* Add more time button */}
         <OfflineIndicator />
+        {jobPhasesList.length > 0 && (
+          <Select value={timerPhaseId} onValueChange={setTimerPhaseId}>
+            <SelectTrigger className="w-full" data-testid="select-timer-phase">
+              <SelectValue placeholder="Phase (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">No phase</SelectItem>
+              {jobPhasesList.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.phaseCode} — {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Button 
           className="w-full h-12 text-base font-semibold text-white" 
           style={{ backgroundColor: 'hsl(var(--trade))' }}
@@ -893,6 +917,22 @@ export function TimerWidget({
         </p>
         <OfflineIndicator />
       </div>
+
+      {jobPhasesList.length > 0 && (
+        <Select value={timerPhaseId} onValueChange={setTimerPhaseId}>
+          <SelectTrigger className="w-full" data-testid="select-timer-phase">
+            <SelectValue placeholder="Phase (optional)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">No phase</SelectItem>
+            {jobPhasesList.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.phaseCode} — {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       
       <Button 
         className="w-full h-12 text-base font-semibold text-white" 

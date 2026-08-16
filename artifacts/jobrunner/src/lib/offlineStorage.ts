@@ -260,6 +260,7 @@ export interface TimeEntry {
   description?: string;
   billable?: boolean;
   hourlyRate?: number;
+  phaseId?: string;
   createdAt?: string;
   updatedAt?: string;
   pendingSync?: boolean;

@@ -179,6 +179,7 @@ export default function JobDetailView({
   const [materialTrackingUrl, setMaterialTrackingUrl] = useState('');
   const [materialNotes, setMaterialNotes] = useState('');
   const [materialMarkupPercent, setMaterialMarkupPercent] = useState('');
+  const [materialPhaseId, setMaterialPhaseId] = useState('');
   const [costPromptMaterial, setCostPromptMaterial] = useState<{ id: string; name: string; status: string } | null>(null);
   const [costPromptValue, setCostPromptValue] = useState('');
   
@@ -346,6 +347,13 @@ export default function JobDetailView({
   const { data: jobProfitabilityData } = useQuery<any>({
     queryKey: ['/api/jobs', jobId, 'profitability'],
     enabled: !isTradie && !!jobId,
+  });
+
+  // Phases for the phase picker — loaded for project jobs only
+  const { data: jobPhasesForPicker = [] } = useQuery<Array<{ id: string; name: string; phaseCode: string; status: string }>>({
+    queryKey: ['/api/jobs', jobId, 'phases'],
+    enabled: !!jobId && (job as any)?.jobType === 'project',
+    staleTime: 30000,
   });
 
   // Defect items — fetched here (not just in DefectsSection) so the retention
@@ -1037,6 +1045,7 @@ export default function JobDetailView({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'materials'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'profitability'] });
       setShowAddMaterial(false);
       setMaterialName('');
       setMaterialQty('1');
@@ -1049,6 +1058,7 @@ export default function JobDetailView({
       setMaterialTrackingUrl('');
       setMaterialNotes('');
       setMaterialMarkupPercent('');
+      setMaterialPhaseId('');
       toast({ title: 'Material added' });
     },
     onError: () => {
@@ -3908,6 +3918,21 @@ export default function JobDetailView({
                     value={materialNotes}
                     onChange={(e) => setMaterialNotes(e.target.value)}
                   />
+                  {jobPhasesForPicker.length > 0 && (
+                    <Select value={materialPhaseId} onValueChange={setMaterialPhaseId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Phase (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">No phase</SelectItem>
+                        {jobPhasesForPicker.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.phaseCode} — {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   {!isTradie && (
                     <div className="relative">
                       <Input
@@ -3938,6 +3963,7 @@ export default function JobDetailView({
                           trackingUrl: materialTrackingUrl || undefined,
                           notes: materialNotes || undefined,
                           markupPercent: materialMarkupPercent || undefined,
+                          phaseId: materialPhaseId === '__none__' ? undefined : (materialPhaseId || undefined),
                         });
                       }}
                       style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}

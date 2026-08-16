@@ -7,6 +7,10 @@ Only `job_variations` carries a `phaseId` link. Labour (time entries), materials
 
 **Why:** avoids schema changes and works with existing data; adding phase_id columns would leave all historical costs unattributed.
 
-**How to apply:** if a future task adds real phase links to time entries/materials/POs, prefer the explicit link and keep the date-window logic only as fallback. Phase `costs.total` deliberately excludes POs, matching the job-level total (POs are informational to avoid double-counting with materials/expenses).
+**How to apply:** the profitability endpoint now prefers explicit `phaseId` and falls back to date-window — this is live. Phase `costs.total` deliberately excludes POs to avoid double-counting with materials/expenses.
 
-Note: `job_variations.phase_id` had to be added to BOTH dev databases via raw ALTER (see two-databases note below).
+Explicit `phaseId` columns now exist on `time_entries`, `job_materials`, and `purchase_orders`. DATABASE_URL has FK constraint to job_phases(id); NEON_DATABASE_URL has plain varchar (UUID type mismatch — job_phases.id is UUID in NEON, varchar in DATABASE_URL).
+
+UI: web TimerWidget shows phase picker (Select) when job has phases; web add-material form shows phase picker after Notes field; mobile add-material modal shows phase chip-picker; mobile timer start shows an action sheet phase picker for project jobs with phases.
+
+Note: `job_variations.phase_id` and the new columns had to be added to BOTH dev databases via raw ALTER (see two-databases note).

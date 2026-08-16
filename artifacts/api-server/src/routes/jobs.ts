@@ -6557,29 +6557,32 @@ import { computeRetentionSummary } from "./retentionSummary";
             const buckets = new Map<string, PhaseBucket>();
             const unallocated = emptyBucket();
             for (const p of sortedPhases) buckets.set(p.id, emptyBucket());
-            const bucketFor = (dateVal: any): PhaseBucket => {
-              const pid = findPhaseId(dateVal);
+            // Prefer explicit phaseId link; fall back to date-window attribution.
+            const bucketFor = (dateVal: any, explicitPhaseId?: string | null): PhaseBucket => {
+              const pid = (explicitPhaseId && buckets.has(explicitPhaseId))
+                ? explicitPhaseId
+                : findPhaseId(dateVal);
               return pid ? buckets.get(pid)! : unallocated;
             };
 
             for (const entry of employeeEntries) {
-              const b = bucketFor(entry.startTime);
+              const b = bucketFor(entry.startTime, (entry as any).phaseId);
               b.labour += calcEntryCost(entry);
               b.hours += (new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime()) / 3600000;
             }
             for (const entry of subcontractorEntries) {
-              const b = bucketFor(entry.startTime);
+              const b = bucketFor(entry.startTime, (entry as any).phaseId);
               b.subcontractor += calcEntryCost(entry);
               b.hours += (new Date(entry.endTime!).getTime() - new Date(entry.startTime).getTime()) / 3600000;
             }
             for (const m of jobMaterials) {
-              bucketFor((m as any).createdAt).materials += parseFloat(m.totalCost?.toString() || '0');
+              bucketFor((m as any).createdAt, (m as any).phaseId).materials += parseFloat(m.totalCost?.toString() || '0');
             }
             for (const e of materialExpenses) {
               bucketFor((e as any).expenseDate || (e as any).createdAt).materials += parseFloat(e.amount || '0');
             }
             for (const po of purchaseOrdersList) {
-              bucketFor((po as any).orderDate || (po as any).createdAt).purchaseOrders +=
+              bucketFor((po as any).orderDate || (po as any).createdAt, (po as any).phaseId).purchaseOrders +=
                 parseFloat(po.total?.toString() || '0');
             }
 
@@ -8930,6 +8933,14 @@ import { computeRetentionSummary } from "./retentionSummary";
       const job = await storage.getJob(jobId, effectiveUserId);
       if (!job) {
         return res.status(404).json({ error: "Job not found" });
+      }
+
+      // Validate phaseId belongs to this job — prevents cross-job/cross-business attribution
+      if (req.body.phaseId) {
+        const phases = await storage.getJobPhases(jobId, effectiveUserId);
+        if (!phases.some((p: any) => p.id === req.body.phaseId)) {
+          return res.status(400).json({ error: 'Phase not found or does not belong to this job' });
+        }
       }
 
       const parsed = insertJobMaterialSchema.parse({

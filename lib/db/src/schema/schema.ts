@@ -1672,6 +1672,8 @@ export const timeEntries = pgTable("time_entries", {
   disputeResolution: text("dispute_resolution"),
   // Driving/travel distance tracking — populated when timeCategory = 'travel'
   distanceKm: decimal("distance_km", { precision: 10, scale: 2 }),
+  // Optional phase tag — when set, overrides date-window attribution in the profitability breakdown
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -2599,6 +2601,8 @@ export const purchaseOrders = pgTable("purchase_orders", {
   receiptUrl: text("receipt_url"),
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
+  // Optional phase tag — when set, overrides date-window attribution in the profitability breakdown
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -4111,6 +4115,8 @@ export const jobMaterials = pgTable("job_materials", {
   notes: text("notes"),
   markupPercent: decimal("markup_percent", { precision: 5, scale: 2 }),
   receiptPhotoUrl: text("receipt_photo_url"),
+  // Optional phase tag — when set, overrides date-window attribution in the profitability breakdown
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

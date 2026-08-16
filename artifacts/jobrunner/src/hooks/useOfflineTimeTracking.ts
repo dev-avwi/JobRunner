@@ -64,6 +64,7 @@ interface StartTimerData {
   description?: string;
   hourlyRate?: number;
   isBreak?: boolean;
+  phaseId?: string;
 }
 
 function getActiveTimerFromStorage(): ActiveTimer | null {
@@ -290,6 +291,7 @@ export function useOfflineTimeTracking(
       startTime,
       description: data.description || (data.isBreak ? 'Break' : 'Work session'),
       hourlyRate: data.hourlyRate,
+      phaseId: data.phaseId,
       isBreak: data.isBreak || false,
       pendingSync: true,
       syncStatus: 'pending',
@@ -319,6 +321,7 @@ export function useOfflineTimeTracking(
           description: newEntry.description,
           hourlyRate: newEntry.hourlyRate?.toString(),
           isBreak: newEntry.isBreak,
+          ...(data.phaseId ? { phaseId: data.phaseId } : {}),
         });
         const serverEntry = await response.json();
 

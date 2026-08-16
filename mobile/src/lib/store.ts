@@ -2153,7 +2153,7 @@ interface TimeTrackingState {
   error: string | null;
 
   fetchActiveTimer: () => Promise<void>;
-  startTimer: (jobId: string, description?: string, isBreak?: boolean) => Promise<boolean>;
+  startTimer: (jobId: string, description?: string, isBreak?: boolean, phaseId?: string) => Promise<boolean>;
   stopTimer: (options?: { keepLiveActivity?: boolean; distanceKm?: string }) => Promise<boolean>;
   pauseTimer: () => Promise<boolean>;
   resumeTimer: () => Promise<boolean>;
@@ -2217,7 +2217,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     }
   },
 
-  startTimer: async (jobId: string, description?: string, isBreak?: boolean) => {
+  startTimer: async (jobId: string, description?: string, isBreak?: boolean, phaseId?: string) => {
     set({ isLoading: true, error: null });
 
     // Offline path: write to local SQLite + queue, no network
@@ -2230,7 +2230,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
           return false;
         }
         const desc = description || (isBreak ? 'Taking a break' : 'Working on job');
-        const offlineEntry = await offlineStorage.startTimeEntryOffline(userId, jobId || undefined, desc);
+        const offlineEntry = await offlineStorage.startTimeEntryOffline(userId, jobId || undefined, desc, phaseId || undefined);
         const localTimer: TimeEntry = {
           id: offlineEntry.id,
           jobId: offlineEntry.jobId,
@@ -2255,6 +2255,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         description: description || (isBreak ? 'Taking a break' : 'Working on job'),
         startTime: new Date().toISOString(),
         isBreak: isBreak || false,
+        ...(phaseId ? { phaseId } : {}),
       });
       
       if (response.data) {

@@ -2264,7 +2264,7 @@ export default function JobDetailScreen() {
   const [showInlineSupplierList, setShowInlineSupplierList] = useState(false);
   const [supplierSearch, setSupplierSearch] = useState('');
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
-  const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
+  const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' });
   const [isSavingMaterial, setIsSavingMaterial] = useState(false);
   const [costPromptMaterial, setCostPromptMaterial] = useState<{ id: string; name: string; status: string } | null>(null);
   const [costPromptValue, setCostPromptValue] = useState('');
@@ -3724,6 +3724,7 @@ export default function JobDetailScreen() {
       if (materialForm.markupPercent) {
         payload.markupPercent = parseFloat(materialForm.markupPercent) || 0;
       }
+      if (materialForm.phaseId) payload.phaseId = materialForm.phaseId;
       if (editingMaterial) {
         await api.patch(`/api/materials/${editingMaterial.id}`, payload);
       } else {
@@ -3732,7 +3733,7 @@ export default function JobDetailScreen() {
       await loadMaterials();
       setShowAddMaterialModal(false);
       setEditingMaterial(null);
-      setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
+      setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' });
     } catch (e) {
       showToast({ type: 'error', message: 'Failed to save material' });
     } finally {
@@ -5922,9 +5923,9 @@ export default function JobDetailScreen() {
     });
   };
 
-  const proceedWithTimerStart = async (skipStatusChange?: boolean) => {
+  const proceedWithTimerStart = async (skipStatusChange?: boolean, phaseId?: string) => {
     if (!job) return;
-    const success = await startTimer(job.id, `Working on: ${job.title}`);
+    const success = await startTimer(job.id, `Working on: ${job.title}`, false, phaseId);
     if (success) {
       if (!skipStatusChange && job.status === 'scheduled') {
         await updateJobStatus(job.id, 'in_progress');
@@ -5934,6 +5935,26 @@ export default function JobDetailScreen() {
     } else {
       showToast({ type: 'error', message: 'Failed to start timer. Please try again.' });
     }
+  };
+
+  // For project jobs with phases, pick a phase before starting the timer.
+  const startTimerWithOptionalPhase = async (callback: (phaseId?: string) => void) => {
+    if (!job || !isProject || phases.length === 0) {
+      callback(undefined);
+      return;
+    }
+    const phaseActions = [
+      { label: 'No phase', onPress: () => callback(undefined) },
+      ...phases.map(p => ({
+        label: `${p.phaseCode} — ${p.name}`,
+        onPress: () => callback(p.id),
+      })),
+    ];
+    showActionSheet({
+      title: 'Assign to phase?',
+      message: 'Optionally tag this time entry to a phase for exact cost tracking.',
+      actions: phaseActions,
+    });
   };
 
   const handleStartTimer = async () => {
@@ -5951,7 +5972,7 @@ export default function JobDetailScreen() {
           showToast({ type: 'error', message: 'Error', description: 'Failed to stop the existing timer. Please try again.' });
           return;
         }
-        await proceedWithTimerStart();
+        startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
       });
       return;
     }
@@ -5962,14 +5983,14 @@ export default function JobDetailScreen() {
         'Safety documentation is incomplete. Starting the timer will transition this job to "In Progress". Complete safety docs first?',
         [
           { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('documents') },
-          { text: 'Start Anyway', style: 'secondary', onPress: () => proceedWithTimerStart() },
+          { text: 'Start Anyway', style: 'secondary', onPress: () => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId)) },
           { text: 'Cancel', style: 'plain' },
         ],
       );
       return;
     }
 
-    await proceedWithTimerStart();
+    startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
   };
 
   const handleStopTimer = async () => {
@@ -11503,6 +11524,45 @@ export default function JobDetailScreen() {
 
                 <View style={{ height: 1, backgroundColor: colors.border, marginBottom: spacing.md }} />
                 <Text style={{ ...typography.label, color: colors.mutedForeground, marginBottom: spacing.sm }}>DETAILS</Text>
+
+                {isProject && phases.length > 0 && (
+                  <View style={{ marginBottom: spacing.md }}>
+                    <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase (optional)</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                      <TouchableOpacity
+                        onPress={() => setMaterialForm(f => ({ ...f, phaseId: '' }))}
+                        style={{
+                          paddingHorizontal: spacing.md,
+                          paddingVertical: spacing.xs,
+                          borderRadius: radius.full,
+                          borderWidth: 1,
+                          borderColor: !materialForm.phaseId ? colors.primary : colors.border,
+                          backgroundColor: !materialForm.phaseId ? `${colors.primary}15` : 'transparent',
+                        }}
+                      >
+                        <Text style={{ fontSize: typography.sizes.sm, color: !materialForm.phaseId ? colors.primary : colors.mutedForeground }}>None</Text>
+                      </TouchableOpacity>
+                      {phases.map(p => (
+                        <TouchableOpacity
+                          key={p.id}
+                          onPress={() => setMaterialForm(f => ({ ...f, phaseId: p.id }))}
+                          style={{
+                            paddingHorizontal: spacing.md,
+                            paddingVertical: spacing.xs,
+                            borderRadius: radius.full,
+                            borderWidth: 1,
+                            borderColor: materialForm.phaseId === p.id ? colors.primary : colors.border,
+                            backgroundColor: materialForm.phaseId === p.id ? `${colors.primary}15` : 'transparent',
+                          }}
+                        >
+                          <Text style={{ fontSize: typography.sizes.sm, color: materialForm.phaseId === p.id ? colors.primary : colors.mutedForeground }}>
+                            {p.phaseCode} {p.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </View>
+                )}
 
                 <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Supplier</Text>
                 <TextInput
