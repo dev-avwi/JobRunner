@@ -240,21 +240,25 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
     alignItems: 'center',
     borderRadius: radius.md,
   },
-  monthDayToday: {
+  monthDayCircle: {
+    width: isTabletDevice ? 40 : 32,
+    height: isTabletDevice ? 40 : 32,
+    borderRadius: isTabletDevice ? 20 : 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  monthDayCircleToday: {
     borderWidth: 2,
     borderColor: colors.primary,
-    borderRadius: radius.md,
-    backgroundColor: isTabletDevice ? colors.primaryLight : undefined,
   },
-  monthDaySelected: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.md,
+  monthDayCircleSelected: {
+    backgroundColor: colors.primary,
   },
   monthDayNumber: {
     fontSize: isTabletDevice ? 16 : 14,
     fontWeight: isTabletDevice ? fontWeights.medium : undefined,
     color: colors.foreground,
-    marginBottom: isTabletDevice ? spacing.xs : 2,
   },
   monthDayNumberToday: {
     fontWeight: fontWeights.bold,
@@ -262,6 +266,7 @@ const createStyles = (colors: ThemeColors, isTabletDevice: boolean = false, resp
   },
   monthDayNumberSelected: {
     fontWeight: fontWeights.semibold,
+    color: colors.primaryForeground,
   },
   monthJobIndicator: {
     flexDirection: 'row',
@@ -904,14 +909,20 @@ export default function CalendarScreen() {
                   }
                   const dateJobs = getJobsForDate(date);
                   return (
-                    <TouchableOpacity key={index} activeOpacity={0.7} style={[ styles.monthDay, isToday(date) && styles.monthDayToday, isSelected(date) && styles.monthDaySelected, ]} onPress={() => setSelectedDate(date)} >
-                      <Text style={[
-                        styles.monthDayNumber,
-                        isToday(date) && styles.monthDayNumberToday,
-                        isSelected(date) && styles.monthDayNumberSelected,
+                    <TouchableOpacity key={index} activeOpacity={0.7} style={styles.monthDay} onPress={() => setSelectedDate(date)} >
+                      <View style={[
+                        styles.monthDayCircle,
+                        isToday(date) && styles.monthDayCircleToday,
+                        isSelected(date) && styles.monthDayCircleSelected,
                       ]}>
-                        {date.getDate()}
-                      </Text>
+                        <Text style={[
+                          styles.monthDayNumber,
+                          isToday(date) && styles.monthDayNumberToday,
+                          isSelected(date) && styles.monthDayNumberSelected,
+                        ]}>
+                          {date.getDate()}
+                        </Text>
+                      </View>
                       {dateJobs.length > 0 && (
                         <View style={styles.monthJobIndicator}>
                           {dateJobs.slice(0, 3).map((_, i) => (

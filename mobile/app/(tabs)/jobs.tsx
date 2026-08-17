@@ -277,41 +277,41 @@ function JobCard({
       style={job.isXeroImport ? { ...styles.jobCard, overflow: 'visible' as const } : styles.jobCard}
     >
       {job.isXeroImport && <XeroBadge size="sm" />}
-      <View style={[styles.jobCardContent, { position: 'relative' }]}>
-        {/* … button floats top-right so it never pushes badges onto a second line */}
-        <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, zIndex: 1 }}>
+      <View style={styles.jobCardContent}>
+        {/* Top row: badges left, … button right — no absolute positioning */}
+        <View style={styles.jobCardStatusRow}>
+          <View style={styles.jobCardBadges}>
+            <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
+            {job.jobType === 'project' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
+                <Feather name="layers" size={9} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 10, fontWeight: '500', color: colors.mutedForeground }}>Project</Text>
+              </View>
+            )}
+            {job.isRecurring && (
+              <View style={styles.recurringBadge}>
+                <Feather name="repeat" size={10} color={colors.primary} />
+                <Text style={styles.recurringBadgeText}>Recurring</Text>
+              </View>
+            )}
+            {urgency && urgency.level !== 'overdue' && (
+              <View style={[styles.urgencyBadge, { backgroundColor: urgency.bgColor }]}>
+                {urgency.animate && (
+                  <View style={[styles.urgencyDot, { backgroundColor: urgency.color }]} />
+                )}
+                <Text style={[styles.urgencyBadgeText, { color: urgency.color }]} numberOfLines={1}>
+                  {urgency.shortLabel}
+                </Text>
+              </View>
+            )}
+          </View>
           <Button
             size="icon"
             variant="ghost"
             onPress={handleMorePress}
             icon={<Feather name="more-horizontal" size={16} color={colors.mutedForeground} />}
+            style={{ marginTop: -4, marginRight: -8, flexShrink: 0 }}
           >{null}</Button>
-        </View>
-
-        <View style={styles.jobCardStatusRow}>
-          <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
-          {job.jobType === 'project' && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
-              <Feather name="layers" size={9} color={colors.mutedForeground} />
-              <Text style={{ fontSize: 10, fontWeight: '500', color: colors.mutedForeground }}>Project</Text>
-            </View>
-          )}
-          {job.isRecurring && (
-            <View style={styles.recurringBadge}>
-              <Feather name="repeat" size={10} color={colors.primary} />
-              <Text style={styles.recurringBadgeText}>Recurring</Text>
-            </View>
-          )}
-          {urgency && urgency.level !== 'overdue' && (
-            <View style={[styles.urgencyBadge, { backgroundColor: urgency.bgColor }]}>
-              {urgency.animate && (
-                <View style={[styles.urgencyDot, { backgroundColor: urgency.color }]} />
-              )}
-              <Text style={[styles.urgencyBadgeText, { color: urgency.color }]} numberOfLines={1}>
-                {urgency.shortLabel}
-              </Text>
-            </View>
-          )}
         </View>
 
         {job.jobNumber && (
@@ -2187,13 +2187,18 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     padding: spacing.md,
   },
   jobCardStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: spacing.xs,
+  },
+  jobCardBadges: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'nowrap',
+    flexWrap: 'wrap',
     gap: spacing.xs,
-    // leave room for the absolutely-positioned … button (≈28px)
-    paddingRight: 28,
+    paddingTop: 2,
   },
   recurringBadge: {
     flexDirection: 'row',
