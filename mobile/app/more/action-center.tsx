@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Linking, Modal, Platform } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet, ActivityIndicator, Linking } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
@@ -10,6 +10,7 @@ import { api } from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 
 interface ActionItem {
   id: string;
@@ -774,57 +775,18 @@ function ActionCenterScreenInner() {
         )}
       </View>
 
-      <Modal
+      <AppBottomSheet
         visible={showBatchModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowBatchModal(false)}
-      >
-        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-            <PressableRow onPress={() => setShowBatchModal(false)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Feather name="x" size={22} color={colors.foreground} />
-            </PressableRow>
-            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Create Invoices</Text>
-            <PressableRow onPress={selectAllBatchJobs} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={[styles.modalSelectAll, { color: colors.primary }]}>
-                {batchJobs.every(j => j.selected) ? 'Deselect All' : 'Select All'}
-              </Text>
-            </PressableRow>
-          </View>
-
-          <Text style={[styles.batchSubtitle, { color: colors.mutedForeground }]}>
-            Select completed jobs to generate draft invoices. Invoices will be created from quote line items or time entries.
-          </Text>
-
-          <ScrollView style={styles.batchJobList} showsVerticalScrollIndicator={false}>
-            {batchJobs.map(job => (
-              <PressableRow key={job.id} style={[styles.batchJobItem, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colorWithOpacity(colors.primary, 0.04) : 'transparent' }]} onPress={() => toggleBatchJob(job.id)} >
-                <View style={[styles.batchCheckbox, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colors.primary : 'transparent' }]}>
-                  {job.selected && <Feather name="check" size={14} color={colors.primaryForeground} />}
-                </View>
-                <View style={styles.batchJobInfo}>
-                  <Text style={[styles.batchJobTitle, { color: colors.foreground }]} numberOfLines={1}>
-                    {job.title || `Job #${job.id.slice(0, 6)}`}
-                  </Text>
-                  {job.clientName ? (
-                    <Text style={[styles.batchJobClient, { color: colors.mutedForeground }]} numberOfLines={1}>
-                      {job.clientName}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={[styles.batchStatusBadge, { backgroundColor: colorWithOpacity(colors.success, 0.12) }]}>
-                  <Text style={[styles.batchStatusText, { color: colors.success }]}>Done</Text>
-                </View>
-              </PressableRow>
-            ))}
-          </ScrollView>
-
+        onDismiss={() => setShowBatchModal(false)}
+        title="Create Invoices"
+        snapPoints={['80%']}
+        scrollable
+        footer={
           <View style={[styles.batchFooter, { borderTopColor: colors.border }]}>
             <Text style={[styles.batchFooterText, { color: colors.mutedForeground }]}>
               {selectedCount} of {batchJobs.length} job{batchJobs.length !== 1 ? 's' : ''} selected
             </Text>
-            <PressableRow style={[styles.batchCreateButton, { backgroundColor: selectedCount> 0 ? colors.primary : colors.muted, opacity: isBatchCreating ? 0.7 : 1 }]} onPress={handleBatchCreate} disabled={isBatchCreating || selectedCount === 0} >
+            <PressableRow style={[styles.batchCreateButton, { backgroundColor: selectedCount > 0 ? colors.primary : colors.muted, opacity: isBatchCreating ? 0.7 : 1 }]} onPress={handleBatchCreate} disabled={isBatchCreating || selectedCount === 0}>
               {isBatchCreating ? (
                 <ActivityIndicator size="small" color={colors.primaryForeground} />
               ) : (
@@ -837,8 +799,40 @@ function ActionCenterScreenInner() {
               )}
             </PressableRow>
           </View>
+        }
+      >
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm }}>
+          <Text style={[styles.batchSubtitle, { color: colors.mutedForeground, marginBottom: 0, flex: 1 }]}>
+            Select completed jobs to generate draft invoices.
+          </Text>
+          <PressableRow onPress={selectAllBatchJobs} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <Text style={[styles.modalSelectAll, { color: colors.primary }]}>
+              {batchJobs.every(j => j.selected) ? 'Deselect All' : 'Select All'}
+            </Text>
+          </PressableRow>
         </View>
-      </Modal>
+
+        {batchJobs.map(job => (
+          <PressableRow key={job.id} style={[styles.batchJobItem, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colorWithOpacity(colors.primary, 0.04) : 'transparent' }]} onPress={() => toggleBatchJob(job.id)}>
+            <View style={[styles.batchCheckbox, { borderColor: job.selected ? colors.primary : colors.border, backgroundColor: job.selected ? colors.primary : 'transparent' }]}>
+              {job.selected && <Feather name="check" size={14} color={colors.primaryForeground} />}
+            </View>
+            <View style={styles.batchJobInfo}>
+              <Text style={[styles.batchJobTitle, { color: colors.foreground }]} numberOfLines={1}>
+                {job.title || `Job #${job.id.slice(0, 6)}`}
+              </Text>
+              {job.clientName ? (
+                <Text style={[styles.batchJobClient, { color: colors.mutedForeground }]} numberOfLines={1}>
+                  {job.clientName}
+                </Text>
+              ) : null}
+            </View>
+            <View style={[styles.batchStatusBadge, { backgroundColor: colorWithOpacity(colors.success, 0.12) }]}>
+              <Text style={[styles.batchStatusText, { color: colors.success }]}>Done</Text>
+            </View>
+          </PressableRow>
+        ))}
+      </AppBottomSheet>
     </>
   );
 }

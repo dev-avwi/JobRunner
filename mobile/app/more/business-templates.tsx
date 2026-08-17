@@ -9,11 +9,10 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { Stack, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
@@ -977,121 +976,100 @@ export default function BusinessTemplatesScreen() {
     const previewContent = renderTemplatePreview(formData.content);
 
     return (
-      <Modal
+      <AppBottomSheet
         visible={showEditModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowEditModal(false)}
+        onDismiss={() => setShowEditModal(false)}
+        title={editingTemplate ? 'Edit Template' : 'New Template'}
+        snapPoints={['92%']}
+        scrollable
+        footer={
+          <PressableRow style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} onPress={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <ActivityIndicator color={colors.primaryForeground} />
+            ) : (
+              <>
+                <Feather name="check" size={20} color={colors.primaryForeground} />
+                <Text style={styles.saveButtonText}>
+                  {editingTemplate ? 'Update Template' : 'Create Template'}
+                </Text>
+              </>
+            )}
+          </PressableRow>
+        }
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <PressableRow onPress={() => setShowEditModal(false)}>
-              <Text style={{ color: colors.primary, fontSize: typography.subtitle.fontSize }}>Cancel</Text>
-            </PressableRow>
-            <Text style={styles.modalTitle}>
-              {editingTemplate ? 'Edit Template' : 'New Template'}
-            </Text>
-            <PressableRow onPress={handleSave} disabled={isSaving} >
-              <Text style={{ color: colors.primary, fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.semibold }}>
-                {isSaving ? 'Saving...' : 'Save'}
-              </Text>
-            </PressableRow>
-          </View>
-
-          <ScrollView style={styles.modalContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Name</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.name}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
-                placeholder="Template name"
-                placeholderTextColor={colors.mutedForeground}
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Description (optional)</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.description}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                placeholder="What is this template for?"
-                placeholderTextColor={colors.mutedForeground}
-              />
-            </View>
-
-            {purposes.length > 1 && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Trigger / Purpose</Text>
-                <View style={styles.purposeSelector}>
-                  {purposes.map((purposeOption) => (
-                    <PressableRow key={purposeOption.id} style={[ styles.purposeChip, formData.purpose === purposeOption.id && styles.purposeChipActive, ]} onPress={() => setFormData(prev => ({ ...prev, purpose: purposeOption.id }))} >
-                      <Text style={[
-                        styles.purposeChipText,
-                        formData.purpose === purposeOption.id && styles.purposeChipTextActive,
-                      ]}>
-                        {purposeOption.label}
-                      </Text>
-                    </PressableRow>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {showSubject && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Email Subject</Text>
-                <TextInput
-                  style={styles.input}
-                  value={formData.subject}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, subject: text }))}
-                  placeholder="Email subject line"
-                  placeholderTextColor={colors.mutedForeground}
-                />
-              </View>
-            )}
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Content</Text>
-              <TextInput
-                style={[styles.input, styles.inputMultiline]}
-                value={formData.content}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, content: text }))}
-                placeholder="Template content..."
-                placeholderTextColor={colors.mutedForeground}
-                multiline
-                numberOfLines={6}
-              />
-            </View>
-
-            {formData.content.trim() && (
-              <View style={styles.previewContainer}>
-                <Text style={styles.previewLabel}>PREVIEW</Text>
-                <Text style={styles.previewText}>{previewContent}</Text>
-              </View>
-            )}
-
-            <PressableRow style={[styles.saveButton, isSaving && styles.saveButtonDisabled]} onPress={handleSave} disabled={isSaving} >
-              {isSaving ? (
-                <ActivityIndicator color={colors.primaryForeground} />
-              ) : (
-                <>
-                  <Feather name="check" size={20} color={colors.primaryForeground} />
-                  <Text style={styles.saveButtonText}>
-                    {editingTemplate ? 'Update Template' : 'Create Template'}
-                  </Text>
-                </>
-              )}
-            </PressableRow>
-          </ScrollView>
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Name</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.name}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+            placeholder="Template name"
+            placeholderTextColor={colors.mutedForeground}
+          />
         </View>
-        </KeyboardAvoidingView>
-      </Modal>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Description (optional)</Text>
+          <TextInput
+            style={styles.input}
+            value={formData.description}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+            placeholder="What is this template for?"
+            placeholderTextColor={colors.mutedForeground}
+          />
+        </View>
+
+        {purposes.length > 1 && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Trigger / Purpose</Text>
+            <View style={styles.purposeSelector}>
+              {purposes.map((purposeOption) => (
+                <PressableRow key={purposeOption.id} style={[ styles.purposeChip, formData.purpose === purposeOption.id && styles.purposeChipActive, ]} onPress={() => setFormData(prev => ({ ...prev, purpose: purposeOption.id }))} >
+                  <Text style={[
+                    styles.purposeChipText,
+                    formData.purpose === purposeOption.id && styles.purposeChipTextActive,
+                  ]}>
+                    {purposeOption.label}
+                  </Text>
+                </PressableRow>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {showSubject && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email Subject</Text>
+            <TextInput
+              style={styles.input}
+              value={formData.subject}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, subject: text }))}
+              placeholder="Email subject line"
+              placeholderTextColor={colors.mutedForeground}
+            />
+          </View>
+        )}
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Content</Text>
+          <TextInput
+            style={[styles.input, styles.inputMultiline]}
+            value={formData.content}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, content: text }))}
+            placeholder="Template content..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            numberOfLines={6}
+          />
+        </View>
+
+        {formData.content.trim() && (
+          <View style={styles.previewContainer}>
+            <Text style={styles.previewLabel}>PREVIEW</Text>
+            <Text style={styles.previewText}>{previewContent}</Text>
+          </View>
+        )}
+      </AppBottomSheet>
     );
   };
 

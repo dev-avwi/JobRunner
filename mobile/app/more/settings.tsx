@@ -11,7 +11,6 @@ import {
   Linking,
   Switch,
   TextInput,
-  Modal,
   ActivityIndicator,
   LayoutAnimation,
   UIManager,
@@ -19,6 +18,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
+import { AppBottomSheet } from '@/components/ui/AppBottomSheet';
 import { Stack, router } from 'expo-router';
 import { asHref } from '../../src/lib/nav';
 import { Feather } from '@expo/vector-icons';
@@ -3284,32 +3284,29 @@ export default function SettingsScreen() {
           )}
         </ScrollView>
 
-        <Modal
+        <AppBottomSheet
           visible={showCreateModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => {
+          onDismiss={() => {
             setShowCreateModal(false);
             resetTemplateForm();
           }}
-        >
-          <View style={[styles.modalContainer, { paddingBottom: insets.bottom }]}>
-            <View style={styles.modalHeader}>
-              <TouchableOpacity 
-                onPress={() => {
-                  setShowCreateModal(false);
-                  resetTemplateForm();
-                }} 
-              >
-                <Feather name="x" size={24} color={colors.foreground} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>
-                {editingTemplate ? 'Edit Template' : 'New Template'}
+          title={editingTemplate ? 'Edit Template' : 'New Template'}
+          snapPoints={['92%']}
+          scrollable
+          footer={
+            <TouchableOpacity
+              style={[styles.modalSaveButton, isCreatingTemplate && styles.modalSaveButtonDisabled]}
+              onPress={handleCreateTemplate}
+              disabled={isCreatingTemplate}
+            >
+              <Feather name="check" size={18} color={colors.primaryForeground} />
+              <Text style={styles.modalSaveButtonText}>
+                {isCreatingTemplate ? 'Saving...' : (editingTemplate ? 'Update Template' : 'Create Template')}
               </Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+            </TouchableOpacity>
+          }
+        >
+            <View>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Template Name</Text>
                 <TextInput
@@ -3476,21 +3473,9 @@ export default function SettingsScreen() {
                 <Text style={styles.addLineItemText}>Add Line Item</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.modalSaveButton, isCreatingTemplate && styles.modalSaveButtonDisabled]}
-                onPress={handleCreateTemplate}
-                disabled={isCreatingTemplate}
-              >
-                <Feather name="check" size={18} color={colors.primaryForeground} />
-                <Text style={styles.modalSaveButtonText}>
-                  {isCreatingTemplate ? 'Saving...' : (editingTemplate ? 'Update Template' : 'Create Template')}
-                </Text>
-              </TouchableOpacity>
-
               <View style={{ height: 40 }} />
-            </ScrollView>
-          </View>
-        </Modal>
+            </View>
+        </AppBottomSheet>
 
         <AppTour 
           visible={showTour} 

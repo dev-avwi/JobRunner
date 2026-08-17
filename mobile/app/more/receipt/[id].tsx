@@ -9,10 +9,10 @@ import {
   Image,
   Share,
   Linking,
-  Modal,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../../src/components/ui/AppBottomSheet';
 import { useBottomInset } from '../../../src/components/ui/BottomInsetSpacer';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { useActionSheet } from '../../../src/components/ui/ActionSheet';
@@ -866,47 +866,41 @@ ${businessName}`;
         <View style={{ height: spacing['4xl'] }} />
       </ScrollView>
 
-      {/* Receipt Preview Modal */}
-      <Modal
+      {/* Receipt Preview Sheet */}
+      <AppBottomSheet
         visible={showPreview}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowPreview(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-          <View style={styles.previewModalHeader}>
-            <PressableRow onPress={() => setShowPreview(false)} style={styles.previewCloseButton}>
-              <Feather name="x" size={24} color={colors.foreground} />
+        onDismiss={() => setShowPreview(false)}
+        title="Receipt Preview"
+        snapPoints={['92%']}
+        scrollable
+        footer={
+          <View style={styles.previewActionButtons}>
+            <PressableRow onPress={() => { setShowPreview(false); setTimeout(() => handleSendReceipt(), 300); }} style={styles.previewActionButton}>
+              <Feather name="mail" size={20} color={colors.primary} />
+              <Text style={{ color: colors.primary, fontSize: 13, marginLeft: 4 }}>Email</Text>
             </PressableRow>
-            <Text style={styles.previewModalTitle}>Receipt Preview</Text>
-            <View style={styles.previewActionButtons}>
-              <PressableRow onPress={() => { setShowPreview(false); setTimeout(() => handleSendReceipt(), 300); }} style={styles.previewActionButton} >
-                <Feather name="mail" size={20} color={colors.primary} />
-              </PressableRow>
-              <PressableRow onPress={() => { setShowPreview(false); setTimeout(() => handleSharePdf(), 300); }} style={styles.previewActionButton} disabled={isDownloadingPdf} >
-                <Feather name="share-2" size={20} color={isDownloadingPdf ? colors.mutedForeground : colors.primary} />
-              </PressableRow>
-            </View>
+            <PressableRow onPress={() => { setShowPreview(false); setTimeout(() => handleSharePdf(), 300); }} style={styles.previewActionButton} disabled={isDownloadingPdf}>
+              <Feather name="share-2" size={20} color={isDownloadingPdf ? colors.mutedForeground : colors.primary} />
+              <Text style={{ color: isDownloadingPdf ? colors.mutedForeground : colors.primary, fontSize: 13, marginLeft: 4 }}>Share PDF</Text>
+            </PressableRow>
           </View>
+        }
+      >
           <View style={styles.previewOptionsRow}>
-            <PressableRow style={[styles.previewOptionChip, includeBusinessInfo && styles.previewOptionChipActive]} onPress={() => setIncludeBusinessInfo(!includeBusinessInfo)} >
+            <PressableRow style={[styles.previewOptionChip, includeBusinessInfo && styles.previewOptionChipActive]} onPress={() => setIncludeBusinessInfo(!includeBusinessInfo)}>
               <Feather name={includeBusinessInfo ? "check-square" : "square"} size={14} color={includeBusinessInfo ? colors.primary : colors.mutedForeground} />
               <Text style={[styles.previewOptionChipText, includeBusinessInfo && { color: colors.primary }]}>Business</Text>
             </PressableRow>
-            <PressableRow style={[styles.previewOptionChip, includeClientInfo && styles.previewOptionChipActive]} onPress={() => setIncludeClientInfo(!includeClientInfo)} >
+            <PressableRow style={[styles.previewOptionChip, includeClientInfo && styles.previewOptionChipActive]} onPress={() => setIncludeClientInfo(!includeClientInfo)}>
               <Feather name={includeClientInfo ? "check-square" : "square"} size={14} color={includeClientInfo ? colors.primary : colors.mutedForeground} />
               <Text style={[styles.previewOptionChipText, includeClientInfo && { color: colors.primary }]}>Client</Text>
             </PressableRow>
-            <PressableRow style={[styles.previewOptionChip, includePaymentDetails && styles.previewOptionChipActive]} onPress={() => setIncludePaymentDetails(!includePaymentDetails)} >
+            <PressableRow style={[styles.previewOptionChip, includePaymentDetails && styles.previewOptionChipActive]} onPress={() => setIncludePaymentDetails(!includePaymentDetails)}>
               <Feather name={includePaymentDetails ? "check-square" : "square"} size={14} color={includePaymentDetails ? colors.primary : colors.mutedForeground} />
               <Text style={[styles.previewOptionChipText, includePaymentDetails && { color: colors.primary }]}>Details</Text>
             </PressableRow>
           </View>
-          <ScrollView 
-            style={{ flex: 1 }} 
-            contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing['4xl'] }}
-            showsVerticalScrollIndicator={false}
-          >
+          <View>
             <View style={styles.previewDocumentCard}>
               <View style={styles.previewDocumentContent}>
                 {/* Header */}
@@ -1037,9 +1031,8 @@ ${businessName}`;
                 </View>
               </View>
             </View>
-          </ScrollView>
-        </View>
-      </Modal>
+          </View>
+      </AppBottomSheet>
 
       {/* Email Compose Modal for customizing receipt email */}
       {receipt && client && (

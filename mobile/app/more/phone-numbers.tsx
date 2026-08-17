@@ -8,12 +8,11 @@ import {
   TextInput,
   ActivityIndicator,
   Linking,
-  Modal,
-  KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
@@ -1015,67 +1014,12 @@ export default function PhoneNumbersPage() {
         <View style={{ height: spacing.xl }} />
       </ScrollView>
 
-      <Modal
+      <AppBottomSheet
         visible={showReleaseModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowReleaseModal(false)}
-      >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          // iOS pageSheet modals sit ~status-bar height below the window top;
-          // compensate so keyboard padding isn't short by that gap.
-          keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
-        >
-        <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, paddingTop: spacing.xl }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xl }}>
-            <Text style={{ fontSize: typography.sizes.xl, fontWeight: fontWeights.bold, color: colors.foreground }}>Revert to Shared</Text>
-            <PressableRow onPress={() => setShowReleaseModal(false)} >
-              <Feather name="x" size={24} color={colors.mutedForeground} />
-            </PressableRow>
-          </View>
-
-          <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-              <Feather name="info" size={18} color={colors.primary} />
-              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Your number will be archived</Text>
-            </View>
-            <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, lineHeight: 20 }}>
-              Reverting {formatPhone(currentNumber || '')} means:{'\n'}
-              {'\n'}{'\u2022'} You'll go back to the shared JobRunner number
-              {'\n'}{'\u2022'} Your AI Receptionist will be paused if active
-              {'\n'}{'\u2022'} Existing SMS conversations will be kept
-              {'\n'}{'\u2022'} Your number is archived — re-apply it anytime
-            </Text>
-          </View>
-
-          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold, marginBottom: spacing.sm }}>
-            Type REVERT to confirm
-          </Text>
-          <TextInput
-            style={{
-              backgroundColor: colors.card,
-              borderRadius: radius.md,
-              borderWidth: 1,
-              borderColor: releaseConfirmText === 'REVERT' ? colors.primary : colors.border,
-              padding: spacing.md,
-              fontSize: typography.subtitle.fontSize,
-              fontWeight: fontWeights.semibold,
-              color: colors.foreground,
-              letterSpacing: 2,
-              textAlign: 'center',
-              marginBottom: spacing.lg,
-            }}
-            placeholder="REVERT"
-            placeholderTextColor={colors.mutedForeground + '60'}
-            value={releaseConfirmText}
-            onChangeText={setReleaseConfirmText}
-            autoCapitalize="characters"
-            autoCorrect={false}
-          />
-
-          <PressableRow style={{ backgroundColor: releaseConfirmText === 'REVERT' ? colors.primary : colors.muted, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', opacity: releaseConfirmText === 'REVERT' ? 1 : 0.5, }} onPress={executeRelease} disabled={releaseConfirmText !== 'REVERT' || releasing} >
+        onDismiss={() => setShowReleaseModal(false)}
+        title="Revert to Shared"
+        footer={
+          <PressableRow style={{ backgroundColor: releaseConfirmText === 'REVERT' ? colors.primary : colors.muted, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', opacity: releaseConfirmText === 'REVERT' ? 1 : 0.5 }} onPress={executeRelease} disabled={releaseConfirmText !== 'REVERT' || releasing}>
             {releasing ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
@@ -1084,9 +1028,47 @@ export default function PhoneNumbersPage() {
               </Text>
             )}
           </PressableRow>
+        }
+      >
+        <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Feather name="info" size={18} color={colors.primary} />
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Your number will be archived</Text>
+          </View>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, lineHeight: 20 }}>
+            Reverting {formatPhone(currentNumber || '')} means:{'\n'}
+            {'\n'}{'\u2022'} You'll go back to the shared JobRunner number
+            {'\n'}{'\u2022'} Your AI Receptionist will be paused if active
+            {'\n'}{'\u2022'} Existing SMS conversations will be kept
+            {'\n'}{'\u2022'} Your number is archived — re-apply it anytime
+          </Text>
         </View>
-        </KeyboardAvoidingView>
-      </Modal>
+
+        <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold, marginBottom: spacing.sm }}>
+          Type REVERT to confirm
+        </Text>
+        <TextInput
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: radius.md,
+            borderWidth: 1,
+            borderColor: releaseConfirmText === 'REVERT' ? colors.primary : colors.border,
+            padding: spacing.md,
+            fontSize: typography.subtitle.fontSize,
+            fontWeight: fontWeights.semibold,
+            color: colors.foreground,
+            letterSpacing: 2,
+            textAlign: 'center',
+            marginBottom: spacing.lg,
+          }}
+          placeholder="REVERT"
+          placeholderTextColor={colors.mutedForeground + '60'}
+          value={releaseConfirmText}
+          onChangeText={setReleaseConfirmText}
+          autoCapitalize="characters"
+          autoCorrect={false}
+        />
+      </AppBottomSheet>
     </>
   );
 }
