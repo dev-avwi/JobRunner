@@ -1,0 +1,36 @@
+
+
+Skip to content
+Using AV Web Innovation Mail with screen readers
+
+1 of 2,871
+[JobRunner ERROR] background: Failed SMS retry scheduler error
+External
+Inbox
+JobRunner <noreply@jobrunner.com.au>
+05:00 (2 hours ago)
+to me
+
+Images in this message are hidden. This message appears suspicious. Don't show the images unless you trust the sender and the message.
+Show imagesReport spam
+External image icon
+Images are not displayed. Display images below - Always display images from noreply@jobrunner.com.au
+JobRunner ERROR Alert
+Category: background
+
+Message: Failed SMS retry scheduler error
+
+Error: Failed query: select "sms_messages"."id", "sms_messages"."body", "sms_messages"."retry_count", "sms_messages"."conversation_id", "sms_conversations"."client_phone", "sms_conversations"."business_owner_id" from "sms_messages" inner join "sms_conversations" on "sms_messages"."conversation_id" = "sms_conversations"."id" where ("sms_messages"."status" = $1 and "sms_messages"."direction" = $2 and coalesce("sms_messages"."retry_count", 0) < $3 and "sms_messages"."next_retry_at" is not null and "sms_messages"."next_retry_at" <= $4) limit $5 params: failed,outbound,3,2026-08-17T18:59:48.876Z,10
+
+Error: Failed query: select "sms_messages"."id", "sms_messages"."body", "sms_messages"."retry_count", "sms_messages"."conversation_id", "sms_conversations"."client_phone", "sms_conversations"."business_owner_id" from "sms_messages" inner join "sms_conversations" on "sms_messages"."conversation_id" = "sms_conversations"."id" where ("sms_messages"."status" = $1 and "sms_messages"."direction" = $2 and coalesce("sms_messages"."retry_count", 0) < $3 and "sms_messages"."next_retry_at" is not null and "sms_messages"."next_retry_at" <= $4) limit $5
+params: failed,outbound,3,2026-08-17T18:59:48.876Z,10
+    at NodePgPreparedQuery.queryWithCache (/home/runner/workspace/node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+pg@8.20.0_pg@8.22.0/node_modules/src/pg-core/session.ts:73:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async  (/home/runner/workspace/node_modules/.pnpm/drizzle-orm@0.45.2_@opentelemetry+api@1.9.1_@types+pg@8.20.0_pg@8.22.0/node_modules/src/node-postgres/session.ts:154:19)
+    at async processFailedSmsMessages (/home/runner/workspace/artifacts/api-server/src/retryScheduler.ts:27:28)
+    at async Timeout._onTimeout (/home/runner/workspace/artifacts/api-server/src/retryScheduler.ts:278:5)
+Time: 2026-08-17T19:00:07.276Z
+
+Alerts are throttled to one every 5 minutes.
+
+
