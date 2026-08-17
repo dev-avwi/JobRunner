@@ -27,6 +27,7 @@ import { TemplateId, DOCUMENT_TEMPLATES, TemplateCustomization, DOCUMENT_ACCENT_
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 
 interface StylePreset {
   id: string;
@@ -2804,139 +2805,121 @@ export default function TemplatesScreen() {
           </KeyboardAvoidingView>
         </Modal>
 
-        {/* Style Presets Modal */}
-        <Modal
+        {/* Style Presets Sheet */}
+        <AppBottomSheet
           visible={showPresetsModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          onRequestClose={() => setShowPresetsModal(false)}
-        >
-          <View style={styles.stylePresetListModal}>
-            <View style={[styles.modalHeader]}>
-              <TouchableOpacity
-                onPress={() => setShowPresetsModal(false)}
-                activeOpacity={0.7}
-              >
-                <Feather name="x" size={24} color={colors.foreground} />
-              </TouchableOpacity>
-              <Text style={styles.modalTitle}>Style Presets</Text>
-              <View style={{ width: 24 }} />
-            </View>
-
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.contentContainer}
-              showsVerticalScrollIndicator={false}
+          onDismiss={() => setShowPresetsModal(false)}
+          title="Style Presets"
+          snapPoints={['90%']}
+          scrollable
+          footer={
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={() => setShowPresetsModal(false)}
+              activeOpacity={0.7}
             >
-              <Text style={[styles.pageSubtitle, { marginBottom: spacing.lg }]}>
-                Select a style preset to preview how your documents will look.
-              </Text>
+              <Feather name="check" size={18} color={colors.white} />
+              <Text style={styles.saveButtonText}>Done</Text>
+            </TouchableOpacity>
+          }
+        >
+          <Text style={[styles.pageSubtitle, { marginBottom: spacing.lg }]}>
+            Select a style preset to preview how your documents will look.
+          </Text>
 
-              <View style={styles.stylePresetList}>
-                {stylePresets.map((preset) => (
-                  <PressableRow
-                    key={preset.id}
-                    style={[
-                      styles.stylePresetCard,
-                      selectedPreset?.id === preset.id && styles.stylePresetCardActive
-                    ]}
-                    onPress={() => setSelectedPreset(preset)}
-
-                  >
-                    <View style={styles.stylePresetHeader}>
-                      <View style={styles.stylePresetInfo}>
-                        <Text style={styles.stylePresetName}>{preset.name}</Text>
-                        <View style={styles.stylePresetMeta}>
-                          {preset.isDefault && (
-                            <View style={styles.defaultBadge}>
-                              <Text style={styles.defaultBadgeText}>Default</Text>
-                            </View>
-                          )}
-                          <View style={styles.colorSwatches}>
-                            <View style={[styles.colorSwatch, { backgroundColor: preset.primaryColor }]} />
-                            <View style={[styles.colorSwatch, { backgroundColor: preset.accentColor }]} />
-                          </View>
-                        </View>
-                      </View>
-                      {selectedPreset?.id === preset.id && (
-                        <Feather name="check-circle" size={20} color={colors.primary} />
-                      )}
-                    </View>
-
-                    <View style={styles.stylePresetDetails}>
-                      <View style={styles.stylePresetDetail}>
-                        <Feather name="type" size={12} color={colors.mutedForeground} />
-                        <Text style={styles.stylePresetDetailText}>{preset.fontFamily}</Text>
-                      </View>
-                      <View style={styles.stylePresetDetail}>
-                        <Feather name="layout" size={12} color={colors.mutedForeground} />
-                        <Text style={styles.stylePresetDetailText}>{preset.headerLayout}</Text>
-                      </View>
-                      {preset.showLogo && (
-                        <View style={styles.stylePresetDetail}>
-                          <Feather name="image" size={12} color={colors.mutedForeground} />
-                          <Text style={styles.stylePresetDetailText}>Logo</Text>
-                        </View>
-                      )}
-                      {preset.tableBorders && (
-                        <View style={styles.stylePresetDetail}>
-                          <Feather name="grid" size={12} color={colors.mutedForeground} />
-                          <Text style={styles.stylePresetDetailText}>Table Borders</Text>
-                        </View>
-                      )}
-                    </View>
-
-                    {selectedPreset?.id === preset.id && (
-                      <View style={styles.previewSection}>
-                        <LiveDocumentPreview
-                          type="quote"
-                          documentNumber="Q-PREVIEW"
-                          title="Sample Quote"
-                          description="Preview of how your documents will look."
-                          date={new Date().toISOString()}
-                          validUntil={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()}
-                          lineItems={[
-                            { description: 'Sample Service', quantity: 2, unitPrice: 150 },
-                            { description: 'Materials', quantity: 1, unitPrice: 85 },
-                          ]}
-                          terms="Payment due within 14 days."
-                          business={{
-                            businessName: businessSettings?.businessName || 'Your Business',
-                            abn: businessSettings?.abn,
-                            address: businessSettings?.address,
-                            phone: businessSettings?.phone,
-                            email: businessSettings?.email,
-                            logoUrl: preset.showLogo ? businessSettings?.logoUrl : undefined,
-                            brandColor: templateCustomization.accentColor || DOCUMENT_ACCENT_COLOR,
-                            gstEnabled: businessSettings?.gstEnabled ?? true,
-                          }}
-                          client={{
-                            name: 'John Smith',
-                            email: 'john@example.com',
-                            phone: '0400 123 456',
-                            address: '123 Sample St, Sydney NSW 2000',
-                          }}
-                          gstEnabled={businessSettings?.gstEnabled ?? true}
-                          templateId={selectedTemplateStyle}
-                          templateCustomization={templateCustomization}
-                        />
-                      </View>
-                    )}
-                  </PressableRow>
-                ))}
-              </View>
-
-              <TouchableOpacity
-                style={[styles.saveButton, { marginTop: spacing.xl }]}
-                onPress={() => setShowPresetsModal(false)}
-                activeOpacity={0.7}
+          <View style={styles.stylePresetList}>
+            {stylePresets.map((preset) => (
+              <PressableRow
+                key={preset.id}
+                style={[
+                  styles.stylePresetCard,
+                  selectedPreset?.id === preset.id && styles.stylePresetCardActive
+                ]}
+                onPress={() => setSelectedPreset(preset)}
               >
-                <Feather name="check" size={18} color={colors.white} />
-                <Text style={styles.saveButtonText}>Done</Text>
-              </TouchableOpacity>
-            </ScrollView>
+                <View style={styles.stylePresetHeader}>
+                  <View style={styles.stylePresetInfo}>
+                    <Text style={styles.stylePresetName}>{preset.name}</Text>
+                    <View style={styles.stylePresetMeta}>
+                      {preset.isDefault && (
+                        <View style={styles.defaultBadge}>
+                          <Text style={styles.defaultBadgeText}>Default</Text>
+                        </View>
+                      )}
+                      <View style={styles.colorSwatches}>
+                        <View style={[styles.colorSwatch, { backgroundColor: preset.primaryColor }]} />
+                        <View style={[styles.colorSwatch, { backgroundColor: preset.accentColor }]} />
+                      </View>
+                    </View>
+                  </View>
+                  {selectedPreset?.id === preset.id && (
+                    <Feather name="check-circle" size={20} color={colors.primary} />
+                  )}
+                </View>
+
+                <View style={styles.stylePresetDetails}>
+                  <View style={styles.stylePresetDetail}>
+                    <Feather name="type" size={12} color={colors.mutedForeground} />
+                    <Text style={styles.stylePresetDetailText}>{preset.fontFamily}</Text>
+                  </View>
+                  <View style={styles.stylePresetDetail}>
+                    <Feather name="layout" size={12} color={colors.mutedForeground} />
+                    <Text style={styles.stylePresetDetailText}>{preset.headerLayout}</Text>
+                  </View>
+                  {preset.showLogo && (
+                    <View style={styles.stylePresetDetail}>
+                      <Feather name="image" size={12} color={colors.mutedForeground} />
+                      <Text style={styles.stylePresetDetailText}>Logo</Text>
+                    </View>
+                  )}
+                  {preset.tableBorders && (
+                    <View style={styles.stylePresetDetail}>
+                      <Feather name="grid" size={12} color={colors.mutedForeground} />
+                      <Text style={styles.stylePresetDetailText}>Table Borders</Text>
+                    </View>
+                  )}
+                </View>
+
+                {selectedPreset?.id === preset.id && (
+                  <View style={styles.previewSection}>
+                    <LiveDocumentPreview
+                      type="quote"
+                      documentNumber="Q-PREVIEW"
+                      title="Sample Quote"
+                      description="Preview of how your documents will look."
+                      date={new Date().toISOString()}
+                      validUntil={new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()}
+                      lineItems={[
+                        { description: 'Sample Service', quantity: 2, unitPrice: 150 },
+                        { description: 'Materials', quantity: 1, unitPrice: 85 },
+                      ]}
+                      terms="Payment due within 14 days."
+                      business={{
+                        businessName: businessSettings?.businessName || 'Your Business',
+                        abn: businessSettings?.abn,
+                        address: businessSettings?.address,
+                        phone: businessSettings?.phone,
+                        email: businessSettings?.email,
+                        logoUrl: preset.showLogo ? businessSettings?.logoUrl : undefined,
+                        brandColor: templateCustomization.accentColor || DOCUMENT_ACCENT_COLOR,
+                        gstEnabled: businessSettings?.gstEnabled ?? true,
+                      }}
+                      client={{
+                        name: 'John Smith',
+                        email: 'john@example.com',
+                        phone: '0400 123 456',
+                        address: '123 Sample St, Sydney NSW 2000',
+                      }}
+                      gstEnabled={businessSettings?.gstEnabled ?? true}
+                      templateId={selectedTemplateStyle}
+                      templateCustomization={templateCustomization}
+                    />
+                  </View>
+                )}
+              </PressableRow>
+            ))}
           </View>
-        </Modal>
+        </AppBottomSheet>
       </View>
     </>
   );
