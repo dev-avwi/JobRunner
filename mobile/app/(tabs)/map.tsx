@@ -1801,7 +1801,7 @@ export default function MapScreen() {
           const coordLat = Number(member.lastLocation.latitude);
           const coordLng = Number(member.lastLocation.longitude);
           if (!Number.isFinite(coordLat) || !Number.isFinite(coordLng)) {
-            if (__DEV__) console.log(`[Map] Skipping ${member.user?.firstName} - non-finite coords:`, coordLat, coordLng);
+            if (__DEV__) console.log('[Map] Skipping team marker with non-finite coordinates');
             return null;
           }
           

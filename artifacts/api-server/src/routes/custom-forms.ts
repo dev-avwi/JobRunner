@@ -7,6 +7,7 @@ import { requireAuth, visionPerUserLimiter } from "./middleware";
 import { extractFormFromImages, extractFormFromText } from "../ai";
 import { ownerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
 import { evaluateTaskRules } from "../taskRules";
+import { parseFormSpreadsheet } from "../spreadsheetIsolation";
 import {
   equipmentCategories,
   jobEquipment,
@@ -98,12 +99,7 @@ export function registerCustomFormsRoutes(app: Express): void {
           }
           textParts.push(pdfText);
         } else if (EXCEL_MIME_TYPES.has(mime) || name.endsWith('.xlsx') || name.endsWith('.xls') || name.endsWith('.csv')) {
-          const XLSX = await import('xlsx');
-          const wb = XLSX.read(file.buffer, { type: 'buffer' });
-          for (const sheetName of wb.SheetNames.slice(0, 10)) {
-            const csv = XLSX.utils.sheet_to_csv(wb.Sheets[sheetName], { blankrows: false });
-            if (csv.trim()) textParts.push(`Sheet: ${sheetName}\n${csv}`);
-          }
+          textParts.push(...await parseFormSpreadsheet(file.buffer));
           if (textParts.length === 0) {
             return res.status(422).json({ error: 'That spreadsheet appears to be empty.' });
           }

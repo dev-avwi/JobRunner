@@ -1,7 +1,6 @@
 import type { Express } from "express";
 import multer from "multer";
 import { randomUUID } from "crypto";
-import * as XLSX from "xlsx";
 import OpenAI from "openai";
 import { storage, db } from "../storage";
 import { and, eq, sql, isNotNull } from "drizzle-orm";
@@ -20,6 +19,7 @@ import { ownerOnly } from "../permissions";
 import { createNotification } from "../notifications";
 import { logger } from "../logger";
 import { persistImportFile, createPendingImportRun, finalizeImportRun } from "./import-history";
+import { parseSmartImportSpreadsheet } from "../spreadsheetIsolation";
 
 // ============================================================
 // Smart Import: AI column mapping + edit-in-preview
@@ -167,40 +167,6 @@ setInterval(() => {
 }, 15 * 60 * 1000).unref?.();
 
 // ---------- parsing ----------
-
-function parseSpreadsheet(buffer: Buffer, fileName: string): { headers: string[]; rows: Record<string, string>[] } {
-  const wb = XLSX.read(buffer, { type: 'buffer', raw: false, cellDates: false });
-  const sheetName = wb.SheetNames[0];
-  if (!sheetName) throw new Error('The file has no sheets');
-  const sheet = wb.Sheets[sheetName];
-  const grid: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
-  // Drop fully-empty leading rows (common in messy Excel exports)
-  while (grid.length && grid[0].every((c: any) => String(c ?? '').trim() === '')) grid.shift();
-  if (grid.length < 2) throw new Error('The file needs a header row and at least one data row');
-  const headerRow = grid[0].map((h: any, i: number) => {
-    const s = String(h ?? '').trim();
-    return s || `Column ${i + 1}`;
-  });
-  // De-duplicate header names so they can key objects
-  const seen = new Map<string, number>();
-  const headers = headerRow.map((h: string) => {
-    const n = seen.get(h) || 0;
-    seen.set(h, n + 1);
-    return n === 0 ? h : `${h} (${n + 1})`;
-  });
-  const rows: Record<string, string>[] = [];
-  for (let r = 1; r < grid.length; r++) {
-    const raw = grid[r];
-    if (!raw || raw.every((c: any) => String(c ?? '').trim() === '')) continue; // skip blank rows
-    const obj: Record<string, string> = {};
-    headers.forEach((h, i) => { obj[h] = String(raw[i] ?? '').trim(); });
-    rows.push(obj);
-  }
-  if (rows.length > MAX_IMPORT_ROWS) {
-    throw new Error(`Maximum ${MAX_IMPORT_ROWS} rows per import. "${fileName}" has ${rows.length} data rows.`);
-  }
-  return { headers, rows };
-}
 
 // ---------- heuristic fallback mapping ----------
 
@@ -534,7 +500,11 @@ async function detectDuplicates(
 
 async function processPreviewJob(job: SmartImportJob, buffer: Buffer, requestedType?: SmartImportType) {
   try {
-    const { headers, rows } = parseSpreadsheet(buffer, job.fileName);
+    const { headers, rows } = await parseSmartImportSpreadsheet(
+      buffer,
+      job.fileName,
+      MAX_IMPORT_ROWS,
+    );
     job.headers = headers;
     job.rows = rows;
     job.totalRows = rows.length;

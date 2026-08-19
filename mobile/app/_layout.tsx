@@ -1005,7 +1005,7 @@ function RootLayoutContent() {
 
   useEffect(() => {
     if (user) {
-      setSentryUser({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName });
+      setSentryUser({ id: user.id });
     } else {
       setSentryUser(null);
     }

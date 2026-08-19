@@ -809,6 +809,31 @@ export async function canAccessJobMedia(userContext: UserContext, jobId: string)
 }
 
 /**
+ * Express middleware for job-scoped documents and media.
+ *
+ * Permission middleware still decides whether the caller may perform the
+ * requested operation at all. This second gate prevents a worker or
+ * subcontractor with broad read/write verbs from using a guessed job URL to
+ * reach another crew's private files.
+ */
+export async function requireJobMediaAccess(req: any, res: any, next: any) {
+  try {
+    const userContext = req.userContext || await getUserContext(req.userId);
+    req.userContext = userContext;
+    req.effectiveUserId = userContext.effectiveUserId;
+
+    if (!await canAccessJobMedia(userContext, req.params.jobId)) {
+      return res.status(403).json({ error: 'You are not assigned to this job.' });
+    }
+
+    next();
+  } catch (error) {
+    console.error('Job media access check error:', error);
+    return res.status(500).json({ error: 'Job media access check failed' });
+  }
+}
+
+/**
  * Checks if a user can write/modify a specific job's media (photos, notes, videos, voice)
  * 
  * Write rules (granular job media separation):

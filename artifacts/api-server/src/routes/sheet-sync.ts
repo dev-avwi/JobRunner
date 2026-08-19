@@ -109,22 +109,22 @@ export function registerSheetSyncRoutes(app: Express) {
     try {
       const { code, state } = req.query;
       if (!code || !state) {
-        return res.redirect('/settings?tab=data&sheetsync=error&message=' + encodeURIComponent('Missing parameters'));
+        return res.redirect('/settings?tab=data&sheetsync=error&message=Missing%20parameters');
       }
       cleanupStates();
       const entry = oauthStates.get(state as string);
       oauthStates.delete(state as string);
       if (!entry || entry.expiresAt < Date.now()) {
-        return res.redirect('/settings?tab=data&sheetsync=error&message=' + encodeURIComponent('Connection request expired. Please try again.'));
+        return res.redirect('/settings?tab=data&sheetsync=error&message=Connection%20request%20expired.%20Please%20try%20again.');
       }
       const result = await handleSheetsOAuthCallback(code as string, entry.userId);
       if (result.success) {
         return res.redirect('/settings?tab=data&sheetsync=connected');
       }
-      return res.redirect('/settings?tab=data&sheetsync=error&message=' + encodeURIComponent(result.error || 'Connection failed'));
+      return res.redirect('/settings?tab=data&sheetsync=error&message=Connection%20failed');
     } catch (error: any) {
       console.error("Error in Google Sheets OAuth callback:", error);
-      return res.redirect('/settings?tab=data&sheetsync=error&message=' + encodeURIComponent(error.message || 'Connection failed'));
+      return res.redirect('/settings?tab=data&sheetsync=error&message=Connection%20failed');
     }
   });
 

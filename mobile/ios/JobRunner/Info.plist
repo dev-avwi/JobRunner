@@ -71,8 +71,6 @@
     <string>Location access is required in order to accept payments.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>JobRunner uses your microphone to record voice notes that are transcribed and attached to jobs, allowing you to dictate site observations hands-free while working.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>JobRunner saves exported receipts, invoices, and job site photos to your photo library so you can share them with clients or keep them for your records.</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>JobRunner accesses your photo library so you can attach existing site photos to jobs, quotes, and invoices as visual records for your clients.</string>
     <key>NSSupportsLiveActivities</key>

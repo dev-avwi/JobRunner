@@ -38,7 +38,6 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "JobRunner uses your background location so your team's live positions appear on the dispatch map and to automatically clock you in and out when you arrive at or leave a job site using geofence technology. Your location is only shared with your team owner or manager.",
         "NSMicrophoneUsageDescription": "JobRunner uses your microphone to record voice notes that are transcribed and attached to jobs, allowing you to dictate site observations hands-free while working.",
         "NSBluetoothAlwaysUsageDescription": "JobRunner uses Bluetooth to connect to Stripe card readers for processing on-site payments from your clients.",
-        "NSPhotoLibraryAddUsageDescription": "JobRunner saves exported receipts, invoices, and job site photos to your photo library so you can share them with clients or keep them for your records.",
         "UIBackgroundModes": [
           "fetch",
           "remote-notification",
@@ -201,7 +200,9 @@
         "android.permission.READ_MEDIA_VIDEO"
       ],
       "blockedPermissions": [
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
       "newArchEnabled": true,
       "runtimeVersion": "1.0.0",

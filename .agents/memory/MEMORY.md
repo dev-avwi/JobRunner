@@ -10,3 +10,4 @@
 - [PDF renderer runtime](pdf-renderer-runtime.md) — server PDF generation needs the Chromium Nix package because Puppeteer has no downloaded browser here
 - [Project creation replay safety](project-creation-replay.md) — response-loss retries need a persisted payload and durable per-user DB identity; TTL caches alone are insufficient
 - [Web runtime overlay debugging](web-runtime-overlay-debugging.md) — Vite’s unknown-runtime overlay can hide the source error; instrument before retrying UI-path guesses.
+- [Live RBAC fixtures](live-rbac-fixtures.md) — seeded staff may authenticate without job assignments; create isolated assignments and clean them up for authorization checks.

@@ -59,7 +59,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "../emailService";
 import { FreemiumService } from "../freemiumService";
 import { DEMO_USER, VISITOR_USER } from "../demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, canAccessJobMedia } from "../permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, canAccessJobMedia, requireJobMediaAccess } from "../permissions";
 import { logTeamActivity, type TeamActivityType } from "../activityService";
 import {
   insertBusinessSettingsSchema,
@@ -10798,7 +10798,7 @@ import { computeRetentionSummary } from "./retentionSummary";
 
   // ── Document Register Export (PDF) ────────────────────────────────────────
   // Must be registered BEFORE /:docId routes so Express doesn't capture "export".
-  app.get("/api/jobs/:jobId/project-documents/export", requireAuth, pdfPerUserLimiter, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+  app.get("/api/jobs/:jobId/project-documents/export", requireAuth, pdfPerUserLimiter, createPermissionMiddleware(PERMISSIONS.READ_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -10912,7 +10912,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.get("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+  app.get("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -10955,7 +10955,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.post("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('file'), async (req: any, res) => {
+  app.post("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), requireJobMediaAccess, docUpload.single('file'), async (req: any, res) => {
     let uploadedObject: { bucketId: string; objectKey: string } | null = null;
     try {
       const userContext = await getUserContext(req.userId);
@@ -11068,7 +11068,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.post("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('file'), async (req: any, res) => {
+  app.post("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), requireJobMediaAccess, docUpload.single('file'), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -11111,7 +11111,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.get("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+  app.get("/api/jobs/:jobId/project-documents/:docId/revisions", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -11160,7 +11160,7 @@ import { computeRetentionSummary } from "./retentionSummary";
   });
 
   // Toggle the "visible to client" flag on a project document
-  app.patch("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+  app.patch("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -11187,7 +11187,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.delete("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+  app.delete("/api/jobs/:jobId/project-documents/:docId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -11215,7 +11215,7 @@ import { computeRetentionSummary } from "./retentionSummary";
     }
   });
 
-  app.post("/api/jobs/:jobId/project-documents/:docId/notify", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+  app.post("/api/jobs/:jobId/project-documents/:docId/notify", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;

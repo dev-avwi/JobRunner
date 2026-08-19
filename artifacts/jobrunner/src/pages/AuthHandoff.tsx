@@ -5,24 +5,6 @@ import { setSessionToken } from '@/lib/queryClient';
 // The mobile app opens /auth/handoff?token=<single-use nonce>&next=/bring-your-business.
 // We redeem the nonce for a real web session token, store it, then hard-reload
 // into the app so every provider boots with the fresh session.
-function getSafeNextPath(rawNext: string): string {
-  const fallback = '/bring-your-business';
-
-  if (!rawNext.startsWith('/') || rawNext.startsWith('//') || rawNext.includes('\\')) {
-    return fallback;
-  }
-
-  try {
-    const target = new URL(rawNext, window.location.origin);
-    if (target.origin !== window.location.origin) {
-      return fallback;
-    }
-
-    return `${target.pathname}${target.search}${target.hash}`;
-  } catch {
-    return fallback;
-  }
-}
 
 export default function AuthHandoff() {
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +16,6 @@ export default function AuthHandoff() {
 
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token') || '';
-    const rawNext = params.get('next') || '/bring-your-business';
-    const next = getSafeNextPath(rawNext);
 
     if (!token) {
       setError('This sign-in link is missing its token. Please sign in normally.');
@@ -56,9 +36,9 @@ export default function AuthHandoff() {
           return;
         }
         setSessionToken(data.sessionToken);
-        // Hard reload so the whole app boots authenticated (matches how other
-        // standalone flows re-enter the shell).
-        window.location.replace(next);
+        // Mobile handoff has exactly one supported destination. Keeping the
+        // navigation literal ensures query parameters can never influence it.
+        window.location.replace('/bring-your-business');
       } catch {
         setError('Could not reach the server. Please check your connection and try again.');
       }

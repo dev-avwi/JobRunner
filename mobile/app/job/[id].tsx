@@ -39,6 +39,7 @@ import { useLocalSearchParams, router, Stack, useFocusEffect } from 'expo-router
 import { GlassButton } from '../../src/components/ui/GlassButton';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import * as Camera from 'expo-camera';
 import { getDocumentPicker } from '../../src/lib/document-picker';
 import { getNestedHeaderOptions } from '../../src/lib/nested-header';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -6747,7 +6748,11 @@ export default function JobDetailScreen() {
       return;
     }
 
-    const microphonePermission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const microphonePermission = await Camera.Camera.requestMicrophonePermissionsAsync();
+    if (microphonePermission.status !== 'granted') {
+      Alert.alert('Permission Required', 'Microphone access is needed to record video with sound.');
+      return;
+    }
     
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
