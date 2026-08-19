@@ -4600,6 +4600,8 @@ export const generateJobProofPackPDF = (data: {
   const { job, business, client, timeEntries, materials, photos, invoice, geofenceAlerts = [], complianceDocs = [], subcontractors = [], variations = [], swmsList = [], safetyForms = [], hideSections = {}, accentColor: overrideColor, retention = null } = data;
   const safetyOnlyForms = safetyForms.filter(f => !f.isJobCard && ['safety', 'inspection', 'compliance'].includes(f.formType));
   const jobCardForms = safetyForms.filter(f => f.isJobCard || !['safety', 'inspection', 'compliance'].includes(f.formType));
+  let proofSectionNumber = 0;
+  const proofSectionTitle = (title: string) => `${++proofSectionNumber}. ${title}`;
 
   const { template, accentColor: templateColor } = getTemplateFromBusinessSettings(business);
   const brandColor = overrideColor || templateColor;
@@ -5147,7 +5149,7 @@ export const generateJobProofPackPDF = (data: {
     </div>
 
     ${!hideSections.timeline ? `<div class="section">
-      <div class="section-title">1. Job Timeline</div>
+      <div class="section-title">${proofSectionTitle('Job Timeline')}</div>
       <table class="proof-table">
         <thead>
           <tr>
@@ -5166,37 +5168,38 @@ export const generateJobProofPackPDF = (data: {
     </div>` : ''}
 
     ${!hideSections.attendance ? `<div class="section">
-      <div class="section-title">2. Hours Per Worker</div>
+      <div class="section-title">${proofSectionTitle('Hours Per Worker')}</div>
       ${timeEntriesHtml}
     </div>` : ''}
 
     ${!hideSections.gpsProof ? `<div class="section">
-      <div class="section-title">3. Worker Presence Verification (GPS)</div>
+      <div class="section-title">${proofSectionTitle('Worker Presence Verification (GPS)')}</div>
       ${gpsProofHtml}
     </div>` : ''}
 
     ${!hideSections.materials ? `<div class="section">
-      <div class="section-title">4. Materials &amp; Costs</div>
+      <div class="section-title">${proofSectionTitle('Materials &amp; Costs')}</div>
       ${materialsHtml}
     </div>` : ''}
 
-    ${!hideSections.variations && variations.length > 0 ? `<div class="section">
-      <div class="section-title">5. Variations</div>
+    ${!hideSections.variations ? `<div class="section">
+      <div class="section-title">${proofSectionTitle('Variations')}</div>
       ${variationsHtml}
     </div>` : ''}
 
     ${!hideSections.photos ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '6' : '5'}. Photos (Before / After)</div>
+      <div class="section-title">${proofSectionTitle('Photos (Before / After)')}</div>
       ${photosHtml}
     </div>` : ''}
 
     ${!hideSections.invoice ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '7' : '6'}. Invoice Summary</div>
+      <div class="section-title">${proofSectionTitle('Invoice Summary')}</div>
       ${invoiceHtml}
     </div>` : ''}
 
-    ${!hideSections.retention && retention && retention.sumRetentionHeld > 0 ? `<div class="section">
-      <div class="section-title">Retention Schedule</div>
+    ${!hideSections.retention ? `<div class="section">
+      <div class="section-title">${proofSectionTitle('Retention Schedule')}</div>
+      ${retention && retention.sumRetentionHeld > 0 ? `
       <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
         <div style="flex:1;min-width:180px">
           <table class="proof-table">
@@ -5217,21 +5220,21 @@ export const generateJobProofPackPDF = (data: {
           </table>
         </div>
       </div>
-      <p style="font-size:9px;color:#6b7280;margin-top:6px">* Retention held is the total withheld across all approved and paid progress claims. Outstanding retention is the amount not yet returned via an approved retention release claim.</p>
+      <p style="font-size:9px;color:#6b7280;margin-top:6px">* Retention held is the total withheld across all approved and paid progress claims. Outstanding retention is the amount not yet returned via an approved retention release claim.</p>` : '<p class="empty-message">No retention has been withheld for this job</p>'}
     </div>` : ''}
 
     ${!hideSections.compliance ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '8' : '7'}. Compliance &amp; Licensing</div>
+      <div class="section-title">${proofSectionTitle('Compliance &amp; Licensing')}</div>
       ${complianceHtml}
     </div>` : ''}
 
     ${!hideSections.subcontractors ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '9' : '8'}. Subcontractor Coordination</div>
+      <div class="section-title">${proofSectionTitle('Subcontractor Coordination')}</div>
       ${subcontractorsHtml}
     </div>` : ''}
 
     ${!(hideSections as any).swms ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '10' : '9'}. Safety &amp; SWMS</div>
+      <div class="section-title">${proofSectionTitle('Safety &amp; SWMS')}</div>
       ${swmsList.length > 0 ? `
       <div style="margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;color:${brandColor};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #e2e8f0">Safe Work Method Statements</div>
@@ -5297,7 +5300,7 @@ export const generateJobProofPackPDF = (data: {
     </div>` : ''}
 
     ${!(hideSections as any).forms ? `<div class="section">
-      <div class="section-title">${!hideSections.variations && variations.length > 0 ? '11' : '10'}. Job Cards &amp; Forms</div>
+      <div class="section-title">${proofSectionTitle('Job Cards &amp; Forms')}</div>
       ${jobCardForms.length === 0 ? '<p style="font-size:10px;color:#888">No job cards or forms submitted for this job</p>' : ''}
       ${jobCardForms.map(f => {
         const typeLabel = f.isJobCard ? 'Job Card' : 'Form';

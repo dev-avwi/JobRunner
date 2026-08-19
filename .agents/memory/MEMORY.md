@@ -6,3 +6,5 @@
 - [Two dev databases](two-dev-databases.md) — workspace env sets BOTH DATABASE_URL and NEON_DATABASE_URL (different DBs); api-server + sessions + demo data use DATABASE_URL; raw ALTERs must run on both
 - [Avoid em dashes in copy](avoid-em-dashes.md) — user preference: never use — in hard-coded UI strings; use commas, colons, or rewrite
 - [Metro hoisting trap](metro-hoisting-trap.md) — Metro/Babel rewrites function declarations to var assignments; never define a helper after the component that calls it during render
+- [Expo preview validation](expo-preview-validation.md) — validate mobile changes through the Expo virtual Android entry; the web root has unrelated native-map bundling limits
+- [PDF renderer runtime](pdf-renderer-runtime.md) — server PDF generation needs the Chromium Nix package because Puppeteer has no downloaded browser here

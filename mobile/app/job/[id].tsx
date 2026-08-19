@@ -2244,11 +2244,13 @@ export default function JobDetailScreen() {
   const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
-  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '' });
+  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', assignedUserId: '' });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
-  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus });
+  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '' });
+  const [showAddPhaseTeamPicker, setShowAddPhaseTeamPicker] = useState(false);
+  const [showEditPhaseTeamPicker, setShowEditPhaseTeamPicker] = useState(false);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
@@ -2256,6 +2258,7 @@ export default function JobDetailScreen() {
   const [showPhaseClaimPrompt, setShowPhaseClaimPrompt] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
   const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '', receiptUrl: '' });
+  const [isUploadingPOReceipt, setIsUploadingPOReceipt] = useState(false);
   const [isSavingPO, setIsSavingPO] = useState(false);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
@@ -2804,10 +2807,11 @@ export default function JobDetailScreen() {
         phaseCode,
         name: addPhaseForm.name.trim(),
         description: addPhaseForm.description.trim() || null,
+        assignedUserId: addPhaseForm.assignedUserId || null,
       });
       await loadPhases();
       setShowAddPhaseModal(false);
-      setAddPhaseForm({ phaseCode: '', name: '', description: '' });
+      setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' });
       showToast({ type: 'success', message: 'Phase added' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
@@ -2831,6 +2835,7 @@ export default function JobDetailScreen() {
         scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
         bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
         status: editPhaseForm.status,
+        assignedUserId: editPhaseForm.assignedUserId || null,
       };
       await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
       await loadPhases();
@@ -10992,6 +10997,7 @@ export default function JobDetailScreen() {
                         scheduledEnd: phase.scheduledEnd ?? '',
                         bookedHours: phase.bookedHours ?? '',
                         status: phase.status,
+                        assignedUserId: phase.assignedUserId ?? '',
                       });
                       setShowEditPhaseModal(true);
                     } : undefined}
@@ -11013,6 +11019,7 @@ export default function JobDetailScreen() {
                         scheduledEnd: phase.scheduledEnd ?? '',
                         bookedHours: phase.bookedHours ?? '',
                         status: phase.status,
+                        assignedUserId: phase.assignedUserId ?? '',
                       });
                       setShowEditPhaseModal(true);
                     } : undefined}
@@ -11066,13 +11073,13 @@ export default function JobDetailScreen() {
       {/* Add Phase Modal */}
       <AppBottomSheet
         visible={showAddPhaseModal}
-        onDismiss={() => { setShowAddPhaseModal(false); setAddPhaseForm({ phaseCode: '', name: '', description: '' }); }}
+        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' }); }}
         title="Add Phase"
         showCloseButton
-        snapPoints={['65%']}
+        snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setAddPhaseForm({ phaseCode: '', name: '', description: '' }); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' }); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
           </View>
         )}>
@@ -11105,19 +11112,89 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
+          {/* Assign Team Member */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
+          <TouchableOpacity
+            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showAddPhaseTeamPicker ? spacing.xs : spacing.lg }]}
+            onPress={() => setShowAddPhaseTeamPicker(v => !v)}
+            activeOpacity={0.7}
+          >
+            {addPhaseForm.assignedUserId ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                    {(teamMembers.find(m => (m.memberId || m.userId || m.id) === addPhaseForm.assignedUserId)?.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                  {teamMembers.find(m => (m.memberId || m.userId || m.id) === addPhaseForm.assignedUserId)?.name ?? 'Unknown'}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground }}>Not assigned</Text>
+            )}
+            <Feather name={showAddPhaseTeamPicker ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          {showAddPhaseTeamPicker && (
+            <View style={{ marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                onPress={() => { setAddPhaseForm(f => ({ ...f, assignedUserId: '' })); setShowAddPhaseTeamPicker(false); }}
+                activeOpacity={0.6}
+              >
+                <Feather name="user-x" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
+                <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.mutedForeground, fontStyle: 'italic' }}>No assignment</Text>
+                {!addPhaseForm.assignedUserId && <Feather name="check" size={14} color={colors.primary} />}
+              </TouchableOpacity>
+              {teamMembers.length === 0 ? (
+                <View style={{ padding: spacing.md, alignItems: 'center' }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No team members yet</Text>
+                </View>
+              ) : teamMembers.map(m => {
+                const uid = m.memberId || m.userId || m.id;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                    onPress={() => { setAddPhaseForm(f => ({ ...f, assignedUserId: uid })); setShowAddPhaseTeamPicker(false); }}
+                    activeOpacity={0.6}
+                  >
+                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{(m.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.sizes.md, color: colors.foreground }}>{m.name}</Text>
+                      {m.role && <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{m.role}</Text>}
+                    </View>
+                    {addPhaseForm.assignedUserId === uid && <Feather name="check" size={14} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                onPress={() => { setShowAddPhaseTeamPicker(false); router.push('/more/team-management'); }}
+                activeOpacity={0.7}
+              >
+                <Feather name="user-plus" size={14} color={colors.primary} style={{ marginRight: spacing.sm }} />
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold as any }}>
+                  Invite or manage team members
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </AppBottomSheet>
 
       {/* Edit Phase Modal */}
       <AppBottomSheet
         visible={showEditPhaseModal}
-        onDismiss={() => { setShowEditPhaseModal(false); setEditingPhase(null); }}
+        onDismiss={() => { setShowEditPhaseModal(false); setShowEditPhaseTeamPicker(false); setEditingPhase(null); }}
         title="Edit Phase"
         showCloseButton
         snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowEditPhaseModal(false); setEditingPhase(null); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowEditPhaseModal(false); setShowEditPhaseTeamPicker(false); setEditingPhase(null); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleUpdatePhase} loading={isSavingEditPhase} disabled={isSavingEditPhase || !editPhaseForm.name.trim()} label="Save Changes" style={{ flex: 1 }} />
           </View>
         )}>
@@ -11207,6 +11284,76 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
+          {/* Assign Team Member */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
+          <TouchableOpacity
+            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showEditPhaseTeamPicker ? spacing.xs : spacing.lg }]}
+            onPress={() => setShowEditPhaseTeamPicker(v => !v)}
+            activeOpacity={0.7}
+          >
+            {editPhaseForm.assignedUserId ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
+                    {(teamMembers.find(m => (m.memberId || m.userId || m.id) === editPhaseForm.assignedUserId)?.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                  {teamMembers.find(m => (m.memberId || m.userId || m.id) === editPhaseForm.assignedUserId)?.name ?? 'Unknown'}
+                </Text>
+              </View>
+            ) : (
+              <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground }}>Not assigned</Text>
+            )}
+            <Feather name={showEditPhaseTeamPicker ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          {showEditPhaseTeamPicker && (
+            <View style={{ marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card }}>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
+                onPress={() => { setEditPhaseForm(f => ({ ...f, assignedUserId: '' })); setShowEditPhaseTeamPicker(false); }}
+                activeOpacity={0.6}
+              >
+                <Feather name="user-x" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
+                <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.mutedForeground, fontStyle: 'italic' }}>No assignment</Text>
+                {!editPhaseForm.assignedUserId && <Feather name="check" size={14} color={colors.primary} />}
+              </TouchableOpacity>
+              {teamMembers.length === 0 ? (
+                <View style={{ padding: spacing.md, alignItems: 'center' }}>
+                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No team members yet</Text>
+                </View>
+              ) : teamMembers.map(m => {
+                const uid = m.memberId || m.userId || m.id;
+                return (
+                  <TouchableOpacity
+                    key={m.id}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                    onPress={() => { setEditPhaseForm(f => ({ ...f, assignedUserId: uid })); setShowEditPhaseTeamPicker(false); }}
+                    activeOpacity={0.6}
+                  >
+                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
+                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{(m.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.sizes.md, color: colors.foreground }}>{m.name}</Text>
+                      {m.role && <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{m.role}</Text>}
+                    </View>
+                    {editPhaseForm.assignedUserId === uid && <Feather name="check" size={14} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                onPress={() => { setShowEditPhaseTeamPicker(false); router.push('/more/team-management'); }}
+                activeOpacity={0.7}
+              >
+                <Feather name="user-plus" size={14} color={colors.primary} style={{ marginRight: spacing.sm }} />
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold as any }}>
+                  Invite or manage team members
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </AppBottomSheet>
 
@@ -11400,18 +11547,108 @@ export default function JobDetailScreen() {
             Receipt / Proof of Purchase
             <Text style={{ fontWeight: '400', color: colors.mutedForeground }}> (optional)</Text>
           </Text>
+          {/* Photo/PDF action buttons */}
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card }}
+              activeOpacity={0.7}
+              disabled={isUploadingPOReceipt}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+                const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingPOReceipt(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'po-receipt');
+                  const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await res.json();
+                  if (json.url) setAddPOForm(f => ({ ...f, receiptUrl: json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url }));
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingPOReceipt(false); }
+              }}
+            >
+              {isUploadingPOReceipt ? <ActivityIndicator size="small" color={colors.primary} /> : <><Feather name="camera" size={14} color={colors.primary} /><Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Take Photo</Text></>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card }}
+              activeOpacity={0.7}
+              disabled={isUploadingPOReceipt}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+                const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingPOReceipt(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'po-receipt');
+                  const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await res.json();
+                  if (json.url) setAddPOForm(f => ({ ...f, receiptUrl: json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url }));
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingPOReceipt(false); }
+              }}
+            >
+              <Feather name="image" size={14} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Choose Photo</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card }}
+              activeOpacity={0.7}
+              disabled={isUploadingPOReceipt}
+              onPress={async () => {
+                const DocumentPicker = getDocumentPicker();
+                if (!DocumentPicker) { Alert.alert('Update required', 'Attaching PDFs needs the latest app build. Please update the app.'); return; }
+                try {
+                  const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
+                  if (result.canceled || !result.assets?.[0]) return;
+                  const asset = result.assets[0];
+                  setIsUploadingPOReceipt(true);
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.name || `receipt-${Date.now()}`, type: asset.mimeType || 'application/octet-stream' } as any);
+                  formData.append('type', 'po-receipt');
+                  const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await res.json();
+                  if (json.url) setAddPOForm(f => ({ ...f, receiptUrl: json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url }));
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingPOReceipt(false); }
+              }}
+            >
+              <Feather name="file-text" size={14} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>PDF</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Uploaded preview or link input */}
+          {(addPOForm.receiptUrl && (addPOForm.receiptUrl.startsWith('data:') || addPOForm.receiptUrl.startsWith('/objects/') || addPOForm.receiptUrl.startsWith(`${API_URL}/objects/`))) ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, backgroundColor: colors.muted, borderRadius: radius.md, marginBottom: spacing.xs }}>
+              <Feather name="check-circle" size={14} color="#059669" />
+              <Text style={{ flex: 1, fontSize: typography.sizes.xs, color: '#059669', fontWeight: fontWeights.medium as any }}>Receipt attached</Text>
+              <TouchableOpacity onPress={() => setAddPOForm(f => ({ ...f, receiptUrl: '' }))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={14} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+          ) : null}
           <TextInput
             style={[styles.singleLineInput, { marginBottom: spacing.xs }]}
-            placeholder="Paste a link — Google Drive, Dropbox, email, etc."
+            placeholder="Or paste a link: Google Drive, Dropbox, etc."
             placeholderTextColor={colors.mutedForeground}
-            value={addPOForm.receiptUrl}
+            value={addPOForm.receiptUrl.startsWith('/objects/') || addPOForm.receiptUrl.startsWith('data:') || addPOForm.receiptUrl.startsWith(`${API_URL}/objects/`) ? '' : addPOForm.receiptUrl}
             onChangeText={(t) => setAddPOForm(f => ({ ...f, receiptUrl: t }))}
             autoCapitalize="none"
             keyboardType="url"
             returnKeyType="done"
           />
           <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.lg }}>
-            Link to a photo of the receipt, delivery docket, or any proof of purchase.
+            Take a photo, choose from your library, or attach a PDF of the receipt.
           </Text>
         </View>
       </AppBottomSheet>
@@ -13720,9 +13957,7 @@ export default function JobDetailScreen() {
                 { key: 'variations' as const, label: 'Variations', icon: 'edit' as const, desc: 'Approved and pending variation orders' },
                 { key: 'photos' as const, label: 'Photos', icon: 'camera' as const, desc: 'Before/after photos with GPS badges' },
                 { key: 'invoice' as const, label: 'Invoice Summary', icon: 'file-text' as const, desc: 'Invoice details and payment status' },
-                ...((profitabilityData as any)?.retentionSummary?.sumRetentionHeld > 0 ? [
-                  { key: 'retention' as const, label: 'Retention Schedule', icon: 'lock' as const, desc: 'Retention held, DLP period, and release date' },
-                ] : []),
+                { key: 'retention' as const, label: 'Retention Schedule', icon: 'lock' as const, desc: 'Retention held, DLP period, and release date' },
                 { key: 'compliance' as const, label: 'Compliance & Licensing', icon: 'shield' as const, desc: 'Trade licences, insurance & certifications' },
                 { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'tool' as const, desc: 'Subcontractor invites and activity' },
                 { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & safety checklists' },
