@@ -3,3 +3,14 @@
 
 # No need to store the pnpm store twice.
 .local
+
+# Chat-session image attachments — not part of the application.
+attached_assets/
+
+# Archived migration backup — not needed at runtime.
+.migration-backup/
+
+# Mobile app node_modules and build output — the mobile app is not
+# deployed through this artifact; only the API and web are.
+mobile/node_modules/
+mobile/dist/
