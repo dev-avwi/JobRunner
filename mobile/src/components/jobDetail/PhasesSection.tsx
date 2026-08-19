@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
+import { TeamAvatar } from '../TeamAvatar';
 
 export type PhaseStatus = 'not_started' | 'in_progress' | 'complete' | 'invoiced';
 
@@ -33,12 +34,6 @@ export interface JobPhase {
   assignedUserName?: string | null;
 }
 
-function getInitials(name?: string | null): string {
-  if (!name) return '';
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return (parts[0][0] ?? '').toUpperCase();
-  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
-}
 
 const STATUS_CONFIG: Record<PhaseStatus, { label: string; bg: string; text: string }> = {
   not_started: { label: 'Not Started', bg: '#F3F4F6', text: '#374151' },
@@ -233,8 +228,8 @@ export function PhasesSection({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <View style={{ flexDirection: 'row' }}>
                 {(viewingPhase.assignedUsers?.length ? viewingPhase.assignedUsers : [{ id: viewingPhase.assignedUserId || 'lead', name: viewingPhase.assignedUserName || '' }]).slice(0, 3).map((member, index) => (
-                  <View key={member.id} style={{ width: 32, height: 32, marginLeft: index ? -9 : 0, borderRadius: 16, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>{getInitials(member.name)}</Text>
+                  <View key={member.id} style={{ marginLeft: index ? -9 : 0, borderWidth: 2, borderColor: colors.card, borderRadius: 16 }}>
+                    <TeamAvatar name={member.name} userId={member.id} size={32} />
                   </View>
                 ))}
               </View>
@@ -434,13 +429,13 @@ export function PhasesSection({
                           <Text style={styles.claimedBadgeText}>Claimed</Text>
                         </View>
                       )}
-                      {/* Assignee initials badge */}
+                      {/* Assignee avatar badge */}
                       {phase.assignedUserName ? (
-                        <View style={[styles.assigneeBadge, { backgroundColor: colors.primary }]}>
-                          <Text style={styles.assigneeBadgeText}>
-                            {getInitials(phase.assignedUserName)}
-                          </Text>
-                        </View>
+                        <TeamAvatar
+                          name={phase.assignedUserName}
+                          userId={phase.assignedUserId || phase.assignedUserName}
+                          size={20}
+                        />
                       ) : null}
                       <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                     </View>
@@ -652,18 +647,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: fontWeights.medium,
     color: '#1E40AF',
-  },
-  assigneeBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  assigneeBadgeText: {
-    fontSize: 8,
-    fontWeight: '700' as any,
-    color: '#fff',
-    lineHeight: 10,
   },
 });

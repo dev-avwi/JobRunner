@@ -13,6 +13,7 @@ export interface PendingProjectCreation {
   createdAt: string;
   postCreate?: {
     assignedToId?: string | null;
+    assignedToIds?: string[];
     smsConversationId?: string | null;
   };
 }

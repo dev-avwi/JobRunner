@@ -26,6 +26,7 @@ import api from '../../src/lib/api';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
+import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { ProjectSetupSection } from '../../src/components/projectSetup';
 import type { DocumentFile, ProjectSetupData } from '../../src/components/projectSetup';
 import { DEFAULT_FINANCIAL_SETTINGS, hasAdvancedData, validateProjectSetup } from '../../src/components/projectSetup';
@@ -571,7 +572,7 @@ export default function CreateJobScreen() {
   });
 
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
-  const [assignedToId, setAssignedToId] = useState<string | null>(null);
+  const [assignedToIds, setAssignedToIds] = useState<Set<string>>(new Set());
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
 
@@ -705,7 +706,7 @@ export default function CreateJobScreen() {
   ];
 
   const selectedPriorityOption = PRIORITY_OPTIONS.find((p) => p.value === priority);
-  const selectedTeamMember = teamMembers.find((m) => String(m.memberId || m.id) === assignedToId);
+  const selectedTeamMembers = teamMembers.filter((m) => assignedToIds.has(String(m.memberId || m.id)));
 
   const getTeamMemberDisplayName = (member: any): string => {
     if (member.name && member.name.trim()) return member.name;
@@ -760,9 +761,9 @@ export default function CreateJobScreen() {
         return;
       }
 
-      if (pending.postCreate?.assignedToId) {
+      if (pending.postCreate?.assignedToIds?.length) {
         await api.post(`/api/jobs/${jobId}/multi-assign`, {
-          workerIds: [pending.postCreate.assignedToId],
+          workerIds: pending.postCreate.assignedToIds,
         });
       }
       if (pending.postCreate?.smsConversationId) {
@@ -972,7 +973,7 @@ export default function CreateJobScreen() {
       longitude: addressLatLng?.lng?.toString() || null,
       status,
       priority,
-      assignedTo: assignedToId || null,
+      assignedTo: assignedToIds.size > 0 ? [...assignedToIds][0] : null,
       notes: notes.trim() || null,
       jobType: isProject ? 'project' : 'service',
       // Project-specific financial fields
@@ -1086,7 +1087,7 @@ export default function CreateJobScreen() {
           payload: jobData,
           createdAt: new Date().toISOString(),
           postCreate: {
-            assignedToId,
+            assignedToIds: [...assignedToIds],
             smsConversationId: params.smsConversationId || null,
           },
         });
@@ -1137,9 +1138,9 @@ export default function CreateJobScreen() {
       if (response.data?.id) {
         const jobId = response.data.id;
 
-        if (assignedToId) {
+        if (assignedToIds.size > 0) {
           try {
-            await api.post(`/api/jobs/${jobId}/multi-assign`, { workerIds: [assignedToId] });
+            await api.post(`/api/jobs/${jobId}/multi-assign`, { workerIds: [...assignedToIds] });
           } catch (assignErr) {
             if (__DEV__) console.log('Failed to assign worker on create:', assignErr);
           }
@@ -1642,16 +1643,36 @@ export default function CreateJobScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Assign To (Optional)</Text>
               <PressableRow style={styles.selector} onPress={() => setShowTeamPicker(true)} >
-                {selectedTeamMember ? (
+                {selectedTeamMembers.length > 0 ? (
                   <View style={styles.selectedItem}>
-                    <View style={[styles.clientAvatar, { backgroundColor: (selectedTeamMember.themeColor || colors.primary) + '20' }]}>
-                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: selectedTeamMember.themeColor || colors.primary }}>
-                        {getTeamMemberDisplayName(selectedTeamMember).charAt(0).toUpperCase()}
-                      </Text>
+                    {/* Stacked avatars */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                      {selectedTeamMembers.slice(0, 4).map((m, i) => (
+                        <View key={m.memberId || m.id} style={{ marginLeft: i === 0 ? 0 : -8, zIndex: 4 - i }}>
+                          <TeamAvatar
+                            name={getTeamMemberDisplayName(m)}
+                            email={m.email}
+                            userId={String(m.memberId || m.id)}
+                            themeColor={m.themeColor}
+                            size={32}
+                          />
+                        </View>
+                      ))}
+                      {selectedTeamMembers.length > 4 && (
+                        <View style={{ marginLeft: -8, width: 32, height: 32, borderRadius: 16, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', zIndex: 0 }}>
+                          <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>+{selectedTeamMembers.length - 4}</Text>
+                        </View>
+                      )}
                     </View>
-                    <View style={styles.selectedItemText}>
-                      <Text style={styles.selectedItemName}>{getTeamMemberDisplayName(selectedTeamMember)}</Text>
-                      <Text style={styles.selectedItemDetail}>{getTeamMemberSubtitle(selectedTeamMember)}</Text>
+                    <View style={{ flex: 1, marginLeft: spacing.sm }}>
+                      {selectedTeamMembers.length === 1 ? (
+                        <>
+                          <Text style={styles.selectedItemName}>{getTeamMemberDisplayName(selectedTeamMembers[0])}</Text>
+                          <Text style={styles.selectedItemDetail}>{getTeamMemberSubtitle(selectedTeamMembers[0])}</Text>
+                        </>
+                      ) : (
+                        <Text style={styles.selectedItemName}>{selectedTeamMembers.length} workers assigned</Text>
+                      )}
                     </View>
                   </View>
                 ) : (
@@ -1880,49 +1901,111 @@ export default function CreateJobScreen() {
         onDismiss={() => setShowTeamPicker(false)}
         title="Assign Team Member"
         scrollable={false}
-        contentPadding={0}>
-        <View>
-          <View>
-            <View style={{ height: 0 }} />
-            <ScrollView style={styles.modalList}>
-              <PressableRow style={[styles.clientItem, !assignedToId && styles.clientItemSelected]} onPress={() => { setAssignedToId(null); setShowTeamPicker(false); }} >
-                <Text style={styles.clientItemName}>Unassigned</Text>
-                {!assignedToId && <Feather name="check" size={20} color={colors.primary} />}
-              </PressableRow>
-
-              {teamMembers.map((member) => (
-                <PressableRow key={member.memberId || member.id} style={[ styles.clientItem, assignedToId === String(member.memberId || member.id) && styles.clientItemSelected, ]} onPress={() => { setAssignedToId(String(member.memberId || member.id)); setShowTeamPicker(false); }} >
-                  <View style={styles.clientItemContent}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <View style={[styles.clientAvatar, { backgroundColor: (member.themeColor || colors.primary) + '20' }]}>
-                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: member.themeColor || colors.primary }}>
-                          {getTeamMemberDisplayName(member).charAt(0).toUpperCase()}
-                        </Text>
-                      </View>
-                      <View>
-                        <Text style={styles.clientItemName}>{getTeamMemberDisplayName(member)}</Text>
-                        <Text style={styles.clientItemEmail}>{getTeamMemberSubtitle(member)}</Text>
-                      </View>
-                    </View>
-                  </View>
-                  {assignedToId === String(member.memberId || member.id) && (
-                    <Feather name="check" size={20} color={colors.primary} />
-                  )}
-                </PressableRow>
-              ))}
-
-              {teamMembers.length === 0 && !loadingTeam && (
-                <View style={styles.emptyList}>
-                  <Text style={styles.emptyListText}>No team members found</Text>
-                </View>
-              )}
-              {loadingTeam && (
-                <View style={styles.emptyList}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                </View>
-              )}
-            </ScrollView>
+        contentPadding={0}
+        footer={
+          <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm }}>
+            <TouchableOpacity
+              style={{
+                backgroundColor: colors.primary,
+                borderRadius: 10,
+                paddingVertical: spacing.md,
+                alignItems: 'center',
+              }}
+              onPress={() => setShowTeamPicker(false)}
+              activeOpacity={0.8}
+            >
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
+                {assignedToIds.size > 0 ? `Assign ${assignedToIds.size} Worker${assignedToIds.size !== 1 ? 's' : ''}` : 'Done'}
+              </Text>
+            </TouchableOpacity>
           </View>
+        }
+      >
+        <View>
+          {assignedToIds.size > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+              <Feather name="check-circle" size={14} color={colors.primary} />
+              <Text style={{ ...typography.caption, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                {assignedToIds.size} worker{assignedToIds.size !== 1 ? 's' : ''} selected
+              </Text>
+            </View>
+          )}
+          <ScrollView style={styles.modalList}>
+            {/* Unassigned row */}
+            <TouchableOpacity
+              style={[
+                styles.clientItem,
+                assignedToIds.size === 0 && styles.clientItemSelected,
+                { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+              ]}
+              onPress={() => setAssignedToIds(new Set())}
+              activeOpacity={0.7}
+            >
+              <View style={{
+                width: 22, height: 22, borderRadius: 11,
+                borderWidth: 2,
+                borderColor: assignedToIds.size === 0 ? colors.primary : colors.border,
+                backgroundColor: assignedToIds.size === 0 ? colors.primary : 'transparent',
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                {assignedToIds.size === 0 && <Feather name="check" size={13} color={colors.primaryForeground} />}
+              </View>
+              <Text style={[styles.clientItemName, { flex: 1 }]}>Unassigned</Text>
+            </TouchableOpacity>
+
+            {teamMembers.map((member) => {
+              const memberId = String(member.memberId || member.id);
+              const isSelected = assignedToIds.has(memberId);
+              return (
+                <TouchableOpacity
+                  key={memberId}
+                  style={[
+                    styles.clientItem,
+                    isSelected && styles.clientItemSelected,
+                    { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+                  ]}
+                  onPress={() => {
+                    const next = new Set(assignedToIds);
+                    if (next.has(memberId)) { next.delete(memberId); } else { next.add(memberId); }
+                    setAssignedToIds(next);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{
+                    width: 22, height: 22, borderRadius: 4,
+                    borderWidth: 2,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary : 'transparent',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isSelected && <Feather name="check" size={13} color={colors.primaryForeground} />}
+                  </View>
+                  <TeamAvatar
+                    name={getTeamMemberDisplayName(member)}
+                    email={member.email}
+                    userId={memberId}
+                    themeColor={member.themeColor}
+                    size={36}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.clientItemName}>{getTeamMemberDisplayName(member)}</Text>
+                    <Text style={styles.clientItemEmail}>{getTeamMemberSubtitle(member)}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+
+            {teamMembers.length === 0 && !loadingTeam && (
+              <View style={styles.emptyList}>
+                <Text style={styles.emptyListText}>No team members found</Text>
+              </View>
+            )}
+            {loadingTeam && (
+              <View style={styles.emptyList}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            )}
+          </ScrollView>
         </View>
       </AppBottomSheet>
 

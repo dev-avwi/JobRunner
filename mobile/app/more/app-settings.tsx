@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { TeamAvatar } from '../../src/components/TeamAvatar';
 
 const MAP_COLORS = [
   { name: 'Blue', hex: '#3b82f6' },
@@ -597,10 +598,6 @@ export default function AppSettingsScreen() {
     return new Date(lastSyncTime).toLocaleDateString();
   };
 
-  const initials = user 
-    ? `${user.firstName?.[0] || ''}${user.lastName?.[0] || ''}`.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'
-    : 'U';
-
   const getColorOption = (hex: string) => colorOptions.find(opt => opt.color.toLowerCase() === hex.toLowerCase());
 
   return (
@@ -665,13 +662,16 @@ export default function AppSettingsScreen() {
             </View>
             <View style={styles.card}>
               <View style={styles.colorPreview}>
-                {user?.profileImageUrl ? (
-                  <Image source={{ uri: user.profileImageUrl }} style={styles.colorAvatar} />
-                ) : (
-                  <View style={[styles.colorAvatar, { backgroundColor: selectedColor || colors.primary }]}>
-                    <Text style={styles.colorAvatarInitials}>{initials}</Text>
-                  </View>
-                )}
+                <View style={[styles.colorAvatar, { backgroundColor: 'transparent', padding: 0 }]}>
+                  <TeamAvatar
+                    name={user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : ''}
+                    email={user?.email}
+                    userId={user?.id ? String(user.id) : undefined}
+                    profileImageUrl={user?.profileImageUrl}
+                    themeColor={selectedColor || undefined}
+                    size={52}
+                  />
+                </View>
                 <View style={styles.colorInfo}>
                   <Text style={styles.settingTitle}>{user?.firstName} {user?.lastName}</Text>
                   <Text style={styles.settingDescription}>
