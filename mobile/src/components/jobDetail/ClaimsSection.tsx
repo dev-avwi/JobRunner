@@ -43,6 +43,7 @@ export interface Claim {
   total: string;
   retentionPercent: string | null;
   retentionAmount: string | null;
+  plannedPercentage?: string | null;
   notes: string | null;
   xeroInvoiceId: string | null;
   /** Object-storage URL for the cost report PDF generated at submission time */
@@ -422,6 +423,13 @@ export function ClaimsSection({
                   <View style={[styles.statusBadge, { backgroundColor: cfg.bg }]}>
                     <Text style={[styles.statusText, { color: cfg.text }]}>{cfg.label}</Text>
                   </View>
+                  {claim.plannedPercentage && (
+                    <View style={[styles.statusBadge, { backgroundColor: colors.primaryLight }]}>
+                      <Text style={[styles.statusText, { color: colors.primary }]}>
+                        {parseFloat(claim.plannedPercentage).toFixed(0)}% stage
+                      </Text>
+                    </View>
+                  )}
                   {claim.xeroInvoiceId && (
                     <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5' }]}>
                       <Text style={[styles.statusText, { color: '#065F46' }]}>Xero ✓</Text>

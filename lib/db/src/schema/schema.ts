@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, index, unique, real, doublePrecision, date } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, json, jsonb, index, unique, uniqueIndex, real, doublePrecision, date } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -760,6 +760,9 @@ export const jobs = pgTable("jobs", {
   jobType: text("job_type").default('service'), // 'service' | 'project'
   // Auto-generated job number (e.g., GEM1001). Set when businessSettings.jobPrefix is configured.
   jobNumber: text("job_number"),
+  // Stable client request identifier used to recover setup work after a mobile
+  // process interruption between project creation and document upload.
+  creationRequestId: varchar("creation_request_id", { length: 100 }),
   // Retention / holdback ledger fields (for project-type jobs with progress claims)
   // practicalCompletionDate: the date the project reached practical completion (PC)
   // defectsLiabilityMonths: DLP period in months after PC; retention is due at PC + DLP
@@ -772,6 +775,9 @@ export const jobs = pgTable("jobs", {
 }, (table) => [
   index("idx_jobs_user_id").on(table.userId),
   index("idx_jobs_client_id").on(table.clientId),
+  uniqueIndex("uq_jobs_user_creation_request_id")
+    .on(table.userId, table.creationRequestId)
+    .where(sql`${table.creationRequestId} IS NOT NULL`),
 ]);
 
 export const jobPhases = pgTable("job_phases", {
@@ -784,6 +790,7 @@ export const jobPhases = pgTable("job_phases", {
   scheduledStart: timestamp("scheduled_start"),
   scheduledEnd: timestamp("scheduled_end"),
   bookedHours: decimal("booked_hours", { precision: 10, scale: 2 }),
+  budgetedCost: decimal("budgeted_cost", { precision: 12, scale: 2 }),
   status: text("status").notNull().default('not_started'), // not_started | in_progress | complete | invoiced
   sortOrder: integer("sort_order").default(0),
   notes: text("notes"),
@@ -5533,6 +5540,7 @@ export const claims = pgTable("claims", {
   total: decimal("total", { precision: 12, scale: 2 }).notNull().default('0.00'),
   retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).default('0.00'),
   retentionAmount: decimal("retention_amount", { precision: 12, scale: 2 }).default('0.00'),
+  plannedPercentage: decimal("planned_percentage", { precision: 5, scale: 2 }),
   notes: text("notes"),
   // Attached cost report PDF generated at submission time
   costReportUrl: text("cost_report_url"),
@@ -5644,6 +5652,8 @@ export const projectDocuments = pgTable("project_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Stable mobile-side identifier used to make initial document upload retries safe.
+  clientGeneratedId: varchar("client_generated_id", { length: 100 }),
   // Auto-generated sequential number within the job, e.g. "DOC-001"
   docNumber: varchar("doc_number", { length: 20 }).notNull(),
   title: text("title").notNull(),
@@ -5657,6 +5667,11 @@ export const projectDocuments = pgTable("project_documents", {
 }, (table) => [
   index("idx_project_documents_job_id").on(table.jobId),
   index("idx_project_documents_user_id").on(table.userId),
+  unique("uq_project_documents_job_client_generated_id").on(
+    table.jobId,
+    table.userId,
+    table.clientGeneratedId,
+  ),
 ]);
 
 export const projectDocumentRevisions = pgTable("project_document_revisions", {

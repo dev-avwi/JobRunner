@@ -18,7 +18,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePicker } from '../../src/components/ui/DatePicker';
 import { TimePicker } from '../../src/components/ui/TimePicker';
-import { useClientsStore, useJobsStore } from '../../src/lib/store';
+import { useAuthStore, useClientsStore, useJobsStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
@@ -26,6 +26,25 @@ import api from '../../src/lib/api';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
+import { ProjectSetupSection } from '../../src/components/projectSetup';
+import type { DocumentFile, ProjectSetupData } from '../../src/components/projectSetup';
+import { DEFAULT_FINANCIAL_SETTINGS, hasAdvancedData, validateProjectSetup } from '../../src/components/projectSetup';
+import {
+  copyToDurableLocation,
+  claimPendingUploadsForJob,
+  discardPendingUploadsForRequest,
+  persistPendingUploads,
+  persistPendingUploadsForRequest,
+  uploadPendingDocuments,
+  type PendingProjectUpload,
+} from '../../src/lib/pending-project-uploads';
+import {
+  clearPendingProjectCreation,
+  getPendingProjectCreation,
+  persistPendingProjectCreation,
+  replayPendingProjectCreation,
+  type PendingProjectCreation,
+} from '../../src/lib/pending-project-creation';
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -519,6 +538,7 @@ export default function CreateJobScreen() {
   const params = useLocalSearchParams<{ clientId?: string; recurring?: string; enquiryName?: string; enquiryPhone?: string; smsConversationId?: string }>();
   const { clients, fetchClients } = useClientsStore();
   const { fetchJobs } = useJobsStore();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -539,11 +559,16 @@ export default function CreateJobScreen() {
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Project-only fields
-  const [budgetedCost, setBudgetedCost] = useState('');
-  const [materialMarkupPct, setMaterialMarkupPct] = useState('');
-  const [equipmentMarkupPct, setEquipmentMarkupPct] = useState('');
-  const [subcontractorMarkupPct, setSubcontractorMarkupPct] = useState('');
+  // Advanced project setup (phases, POs, claims, docs, etc.)
+  const [projectSetupData, setProjectSetupData] = useState<ProjectSetupData>({
+    phases: [],
+    purchaseOrders: [],
+    claimStages: [],
+    checklistItems: [],
+    requiredInformation: [],
+    documents: [],
+    financialSettings: DEFAULT_FINANCIAL_SETTINGS,
+  });
 
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium');
   const [assignedToId, setAssignedToId] = useState<string | null>(null);
@@ -556,6 +581,9 @@ export default function CreateJobScreen() {
   const [showTeamPicker, setShowTeamPicker] = useState(false);
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const isOnline = useOfflineStore((state) => state.isOnline);
+  const clientGeneratedIdRef = useRef<string | null>(null);
+  const creationRecoveryAttemptedRef = useRef(false);
   const [prefillSuggestions, setPrefillSuggestions] = useState<any>(null);
   const [loadingPrefill, setLoadingPrefill] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
@@ -693,10 +721,101 @@ export default function CreateJobScreen() {
     return member.roleName || member.role?.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()) || 'Team Member';
   };
 
+  const reconcilePendingProjectCreation: (
+    pending: PendingProjectCreation,
+  ) => Promise<void> = useCallback(async (pending) => {
+    clientGeneratedIdRef.current = pending.requestId;
+    if (!useOfflineStore.getState().isOnline) {
+      Alert.alert(
+        'Project Creation Waiting',
+        'A previous Project creation is saved on this device and still needs to be checked. Connect to the internet, then tap Create Project to recover it safely.',
+      );
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const response = await replayPendingProjectCreation(
+        pending,
+        (payload) => api.post<{ id?: string }>('/api/jobs', payload),
+      );
+      const jobId = response.data?.id;
+      if (!jobId) {
+        Alert.alert(
+          'Project Creation Needs Attention',
+          `${response.error || 'The saved Project creation could not be checked.'}\n\nKeep it for a safe retry, or discard the saved attempt if you are certain you no longer need it.`,
+          [
+            {
+              text: 'Discard Attempt',
+              style: 'destructive',
+              onPress: async () => {
+                await discardPendingUploadsForRequest(pending.requestId);
+                await clearPendingProjectCreation(pending.userId, pending.requestId);
+                clientGeneratedIdRef.current = null;
+              },
+            },
+            { text: 'Keep for Retry', style: 'cancel' },
+          ],
+        );
+        return;
+      }
+
+      if (pending.postCreate?.assignedToId) {
+        await api.post(`/api/jobs/${jobId}/multi-assign`, {
+          workerIds: [pending.postCreate.assignedToId],
+        });
+      }
+      if (pending.postCreate?.smsConversationId) {
+        await api.patch(`/api/sms/conversations/${pending.postCreate.smsConversationId}`, { jobId });
+      }
+
+      try {
+        const pendingDocuments = await claimPendingUploadsForJob(pending.requestId, jobId);
+        const failedDocuments = await uploadPendingDocuments(jobId, pendingDocuments);
+        await persistPendingUploads(jobId, failedDocuments);
+        await clearPendingProjectCreation(pending.userId, pending.requestId);
+        await fetchJobs();
+
+        Alert.alert(
+          'Project Recovered',
+          failedDocuments.length > 0
+            ? `The Project was already created. ${failedDocuments.length} document${failedDocuments.length === 1 ? '' : 's'} are still saved on this device and can be retried from the Project.`
+            : 'The previous Project creation was recovered successfully.',
+          [
+            { text: 'View Project', onPress: () => router.replace(`/job/${jobId}`) },
+            { text: 'Back to Jobs', onPress: () => router.back(), style: 'cancel' },
+          ],
+        );
+      } catch (queueError) {
+        if (__DEV__) console.log('Failed to reconcile recovered project documents:', queueError);
+        Alert.alert(
+          'Project Recovered',
+          'The Project was already created, but its selected documents are still waiting on this device. Open the Project to finish recovering them.',
+          [{ text: 'View Project', onPress: () => router.replace(`/job/${jobId}`) }],
+        );
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [fetchJobs]);
+
   useEffect(() => {
     fetchClients();
     fetchTeamMembers();
   }, []);
+
+  useEffect(() => {
+    if (isRoleLoading || !canCreateJob || creationRecoveryAttemptedRef.current) return;
+    creationRecoveryAttemptedRef.current = true;
+    if (!currentUserId) return;
+    getPendingProjectCreation(currentUserId)
+      .then((pending) => {
+        if (pending) return reconcilePendingProjectCreation(pending);
+      })
+      .catch((error) => {
+        if (__DEV__) console.log('Failed to check pending project creation:', error);
+      });
+  }, [canCreateJob, currentUserId, isRoleLoading, reconcilePendingProjectCreation]);
 
   const fetchTeamMembers = async () => {
     setLoadingTeam(true);
@@ -769,14 +888,81 @@ export default function CreateJobScreen() {
   };
 
   const saveJob = async () => {
+    if (!currentUserId) {
+      Alert.alert('Sign In Required', 'Please sign in again before creating a Project.');
+      return;
+    }
+
+    const pendingCreation = await getPendingProjectCreation(currentUserId);
+    if (pendingCreation) {
+      await reconcilePendingProjectCreation(pendingCreation);
+      return;
+    }
+
     if (!validateJob()) return;
 
-    setIsSaving(true);
-    
     const { isOnline } = useOfflineStore.getState();
     const selectedClient = clients.find(c => c.id === clientId);
 
+    // Advanced project setup has been filled in - requires online save
+    const isProject = jobType === 'project';
+    const advancedData = isProject && hasAdvancedData(projectSetupData);
+    if (advancedData) {
+      const setupError = validateProjectSetup(projectSetupData);
+      if (setupError) {
+        Alert.alert('Check Project Setup', setupError);
+        return;
+      }
+    }
+    if (!isOnline && advancedData) {
+      Alert.alert(
+        'Internet Required',
+        'Advanced project setup (phases, POs, claims, documents, and financial settings) can only be saved when online. Please connect to the internet before creating this project, or remove the advanced setup data to save a minimal project offline.'
+      );
+      return;
+    }
+
+    if (!clientGeneratedIdRef.current) {
+      clientGeneratedIdRef.current = `job_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    }
+
+    const toPendingUploads = (documents: DocumentFile[]): PendingProjectUpload[] =>
+      documents.map((doc) => ({
+        clientId: doc.clientId,
+        uri: doc.uri,
+        name: doc.name,
+        mimeType: doc.mimeType,
+        title: doc.title,
+        category: doc.category,
+      }));
+
+    let durableProjectDocuments = projectSetupData.documents;
+    if (isProject && durableProjectDocuments.length > 0) {
+      try {
+        const prepared: DocumentFile[] = [];
+        for (const doc of durableProjectDocuments) {
+          prepared.push(await copyToDurableLocation(doc));
+        }
+        durableProjectDocuments = prepared;
+        await persistPendingUploadsForRequest(
+          clientGeneratedIdRef.current,
+          toPendingUploads(durableProjectDocuments),
+        );
+      } catch (error: any) {
+        Alert.alert(
+          'Document Not Available',
+          error?.message || 'A selected document could not be saved for upload. Remove it or select it again before creating the project.',
+        );
+        return;
+      }
+    }
+
+    setIsSaving(true);
+
+    const fs = projectSetupData.financialSettings;
+
     const jobData: any = {
+      clientGeneratedId: clientGeneratedIdRef.current,
       title: title.trim(),
       description: description.trim() || null,
       clientId: clientId || null,
@@ -788,13 +974,63 @@ export default function CreateJobScreen() {
       priority,
       assignedTo: assignedToId || null,
       notes: notes.trim() || null,
-      jobType: jobType ?? 'service',
-      // Project-specific fields (only sent when jobType === 'project')
-      ...(jobType === 'project' && {
-        ...(budgetedCost ? { budgetedCost } : {}),
-        ...(materialMarkupPct ? { materialMarkupPct } : {}),
-        ...(equipmentMarkupPct ? { equipmentMarkupPct } : {}),
-        ...(subcontractorMarkupPct ? { subcontractorMarkupPct } : {}),
+      jobType: isProject ? 'project' : 'service',
+      // Project-specific financial fields
+      ...(isProject && {
+        ...(fs.totalBudget ? { budgetedCost: fs.totalBudget } : {}),
+        ...(fs.materialMarkupPct ? { materialMarkupPct: fs.materialMarkupPct } : {}),
+        ...(fs.equipmentMarkupPct ? { equipmentMarkupPct: fs.equipmentMarkupPct } : {}),
+        ...(fs.subcontractorMarkupPct ? { subcontractorMarkupPct: fs.subcontractorMarkupPct } : {}),
+        ...(fs.defectsLiabilityMonths ? { defectsLiabilityMonths: parseInt(fs.defectsLiabilityMonths, 10) } : {}),
+        customFields: {
+          projectSetup: {
+            ...(fs.contractValue ? { contractValue: fs.contractValue } : {}),
+            ...(fs.paymentTerms ? { paymentTerms: fs.paymentTerms } : {}),
+            ...(fs.depositPercent ? { depositPercent: fs.depositPercent } : {}),
+            ...(fs.retentionPercent ? { retentionPercent: fs.retentionPercent } : {}),
+            ...(projectSetupData.requiredInformation.length > 0
+              ? { requiredInformation: projectSetupData.requiredInformation.map((r) => ({ label: r.label, value: r.value })) }
+              : {}),
+          },
+        },
+        // Send initialProjectSetup only if there is advanced data
+        ...(advancedData && {
+          initialProjectSetup: {
+            phases: projectSetupData.phases.map((ph, index) => ({
+              clientId: ph.clientId,
+              phaseCode: ph.phaseCode.trim() || `P${String(index + 1).padStart(2, '0')}`,
+              name: ph.name,
+              description: ph.description || null,
+              scheduledStart: ph.scheduledStart || null,
+              scheduledEnd: ph.scheduledEnd || null,
+              budgetedCost: ph.budgetedCost || null,
+              assignedUserId: ph.assignedUserId || null,
+              sortOrder: ph.sortOrder,
+            })),
+            purchaseOrders: projectSetupData.purchaseOrders.map((po) => ({
+              poNumber: po.poNumber,
+              supplierId: po.supplierId,
+              phaseClientId: po.phaseClientId || null,
+              requiredDate: po.requiredDate || null,
+              terms: po.terms || null,
+              notes: po.notes || null,
+              items: po.items.map((it) => ({
+                description: it.description,
+                quantity: Number(it.quantity),
+                unitPrice: Number(it.unitPrice),
+              })),
+            })),
+            claimStages: projectSetupData.claimStages.map((cs) => ({
+              name: cs.name,
+              claimDate: cs.claimDate,
+              percentage: Number(cs.percentage),
+              retentionPercent: cs.retentionPercent ? Number(cs.retentionPercent) : 0,
+              phaseClientId: cs.phaseClientId || null,
+            })),
+            checklistItems: projectSetupData.checklistItems.map((ci) => ({ title: ci.title })),
+            requiredInformation: projectSetupData.requiredInformation.map((r) => ({ label: r.label, value: r.value })),
+          },
+        }),
       }),
     };
 
@@ -824,7 +1060,7 @@ export default function CreateJobScreen() {
       }
     }
     
-    // Offline-first: save offline if no connection
+    // Offline-first: save offline if no connection (only for minimal service/project jobs)
     if (!isOnline) {
       try {
         await offlineStorage.saveJobOffline(jobData, 'create');
@@ -840,46 +1076,158 @@ export default function CreateJobScreen() {
       setIsSaving(false);
       return;
     }
+
+    if (isProject) {
+      try {
+        await persistPendingProjectCreation({
+          userId: currentUserId,
+          requestId: clientGeneratedIdRef.current,
+          payload: jobData,
+          createdAt: new Date().toISOString(),
+          postCreate: {
+            assignedToId,
+            smsConversationId: params.smsConversationId || null,
+          },
+        });
+      } catch (error) {
+        if (__DEV__) console.log('Failed to persist project creation recovery:', error);
+        await discardPendingUploadsForRequest(clientGeneratedIdRef.current);
+        Alert.alert(
+          'Could Not Prepare Project',
+          'The Project was not sent because a safe recovery copy could not be saved on this device. Free some storage and try again.',
+        );
+        setIsSaving(false);
+        return;
+      }
+    }
     
     // Online: try API first, fallback to offline if network error
     try {
-      const response = await api.post<{ id: string }>('/api/jobs', jobData);
+      const response = await api.post<{
+        id?: string;
+        code?: string;
+        jobId?: string;
+      }>('/api/jobs', jobData);
+
+      if (response.error && !response.data?.id) {
+        if (response.data?.code === 'PROJECT_SETUP_INCOMPLETE' && response.data.jobId) {
+          const incompleteJobId = response.data.jobId;
+          Alert.alert(
+            'Project Needs Attention',
+            response.error,
+            [
+              { text: 'View Project', onPress: () => router.replace(`/job/${incompleteJobId}`) },
+              { text: 'Back to Jobs', onPress: () => router.back(), style: 'cancel' },
+            ],
+          );
+          setIsSaving(false);
+          return;
+        }
+        Alert.alert(
+          isProject ? 'Project Creation Waiting' : 'Error',
+          isProject
+            ? `${response.error || 'Failed to create Project.'}\n\nThis creation attempt is saved on this device. Tap Create Project again to retry safely without creating a duplicate.`
+            : response.error || 'Failed to create job. Please try again.',
+        );
+        setIsSaving(false);
+        return;
+      }
 
       if (response.data?.id) {
+        const jobId = response.data.id;
+
         if (assignedToId) {
           try {
-            await api.post(`/api/jobs/${response.data.id}/multi-assign`, { workerIds: [assignedToId] });
+            await api.post(`/api/jobs/${jobId}/multi-assign`, { workerIds: [assignedToId] });
           } catch (assignErr) {
             if (__DEV__) console.log('Failed to assign worker on create:', assignErr);
           }
         }
         if (params.smsConversationId) {
           try {
-            await api.patch(`/api/sms/conversations/${params.smsConversationId}`, { jobId: response.data.id });
+            await api.patch(`/api/sms/conversations/${params.smsConversationId}`, { jobId });
           } catch (linkErr) {
             if (__DEV__) console.log('Failed to link SMS conversation to job:', linkErr);
           }
         }
+
+        const docs = durableProjectDocuments;
+
+        const showUploadRecovery = (failedDocuments: PendingProjectUpload[]) => {
+          Alert.alert(
+            'Project Created',
+            `The project was created successfully, but ${failedDocuments.length} document${failedDocuments.length !== 1 ? 's' : ''} did not upload. They are saved and will keep waiting. Retry now or open the project and finish uploading there.`,
+            [
+              {
+                text: 'Retry Uploads',
+                onPress: async () => {
+                  setIsSaving(true);
+                  const stillFailed = await uploadPendingDocuments(jobId, failedDocuments);
+                  await persistPendingUploads(jobId, stillFailed);
+                  setIsSaving(false);
+                  if (stillFailed.length > 0) {
+                    showUploadRecovery(stillFailed);
+                  } else {
+                    Alert.alert(
+                      'Uploads Complete',
+                      'All selected documents are now attached to the project.',
+                      [{ text: 'View Project', onPress: () => router.replace(`/job/${jobId}`) }],
+                    );
+                  }
+                },
+              },
+              { text: 'View Project', onPress: () => router.replace(`/job/${jobId}`) },
+              { text: 'Back to Jobs', onPress: () => router.back(), style: 'cancel' },
+            ],
+          );
+        };
+
+        let failedDocuments: PendingProjectUpload[] = [];
+        if (isProject && docs.length > 0) {
+          try {
+            // Claim the provisional request queue for this project before
+            // uploading. Project detail can perform the same claim after an
+            // app restart by using the creationRequestId returned on the job.
+            const pending = await claimPendingUploadsForJob(
+              clientGeneratedIdRef.current!,
+              jobId,
+            );
+            failedDocuments = await uploadPendingDocuments(jobId, pending);
+            await persistPendingUploads(jobId, failedDocuments);
+          } catch (queueError) {
+            if (__DEV__) console.log('Failed to prepare project document uploads:', queueError);
+            Alert.alert(
+              'Project Created',
+              'The project was created, but its selected documents are still waiting on this device. Open the project to retry them.',
+              [{ text: 'View Project', onPress: () => router.replace(`/job/${jobId}`) }],
+            );
+            setIsSaving(false);
+            return;
+          }
+        }
+
+        if (isProject) {
+          await clearPendingProjectCreation(currentUserId, clientGeneratedIdRef.current!);
+        }
+
         await fetchJobs();
-        Alert.alert(
-          'Job Created!',
-          isFromEnquiry ? 'Job created and linked to the enquiry conversation.' : 'Your job has been created successfully.',
-          [
-            {
-              text: 'View Job',
-              onPress: () => router.replace(`/job/${response.data!.id}`),
-            },
-            {
-              text: 'Back to Jobs',
-              onPress: () => router.back(),
-              style: 'cancel',
-            },
-          ]
-        );
+
+        if (failedDocuments.length > 0) {
+          showUploadRecovery(failedDocuments);
+        } else {
+          Alert.alert(
+            'Job Created!',
+            isFromEnquiry ? 'Job created and linked to the enquiry conversation.' : 'Your job has been created successfully.',
+            [
+              { text: 'View Job', onPress: () => router.replace(`/job/${jobId}`) },
+              { text: 'Back to Jobs', onPress: () => router.back(), style: 'cancel' },
+            ]
+          );
+        }
       }
     } catch (error: any) {
-      // Network error - save offline
-      if (error.message?.includes('Network') || error.code === 'ECONNABORTED') {
+      // Network error - save offline (only if no advanced data)
+      if ((error.message?.includes('Network') || error.code === 'ECONNABORTED') && !advancedData && !isProject) {
         try {
           await offlineStorage.saveJobOffline(jobData, 'create');
           Alert.alert(
@@ -894,8 +1242,10 @@ export default function CreateJobScreen() {
       } else {
         console.error('Save job error:', error);
         Alert.alert(
-          'Error',
-          error.response?.data?.error || 'Failed to save job. Please try again.'
+          isProject ? 'Project Creation Waiting' : 'Error',
+          isProject
+            ? 'This Project creation attempt is saved on this device. Tap Create Project again when connected to recover it safely.'
+            : error.response?.data?.error || 'Failed to save job. Please try again.'
         );
       }
     } finally {
@@ -1365,87 +1715,14 @@ export default function CreateJobScreen() {
               />
             </View>
 
-            {/* Project-only fields */}
+            {/* Guided Project Setup (expandable and optional) */}
             {jobType === 'project' && (
-              <View style={[styles.section, { backgroundColor: colors.card, padding: spacing.lg, borderRadius: 12, borderWidth: 2, borderColor: '#EA580C' + '30' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg }}>
-                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: '#FFF7ED', alignItems: 'center', justifyContent: 'center' }}>
-                    <Feather name="briefcase" size={16} color="#EA580C" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                      Project Settings
-                    </Text>
-                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                      Phases, POs &amp; claims unlock once the job is created
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Contract Value */}
-                <View style={{ marginBottom: spacing.lg }}>
-                  <Text style={[styles.sectionTitle, { marginBottom: spacing.xs }]}>Contract / Estimated Value ($)</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. 45000"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={budgetedCost}
-                    onChangeText={setBudgetedCost}
-                    keyboardType="decimal-pad"
-                    testID="input-budgeted-cost"
-                  />
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs }}>
-                    Shown on the profitability card and progress claims
-                  </Text>
-                </View>
-
-                {/* Markup overrides */}
-                <View style={{ marginBottom: spacing.lg }}>
-                  <Text style={[styles.sectionTitle, { marginBottom: spacing.xs }]}>Markup overrides (optional)</Text>
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>
-                    Leave blank to use business defaults
-                  </Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Materials %</Text>
-                      <TextInput
-                        style={[styles.input, { textAlign: 'center' }]}
-                        placeholder="20"
-                        placeholderTextColor={colors.mutedForeground}
-                        value={materialMarkupPct}
-                        onChangeText={setMaterialMarkupPct}
-                        keyboardType="decimal-pad"
-                        testID="input-material-markup"
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Equipment %</Text>
-                      <TextInput
-                        style={[styles.input, { textAlign: 'center' }]}
-                        placeholder="15"
-                        placeholderTextColor={colors.mutedForeground}
-                        value={equipmentMarkupPct}
-                        onChangeText={setEquipmentMarkupPct}
-                        keyboardType="decimal-pad"
-                        testID="input-equipment-markup"
-                      />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginBottom: 4 }}>Subcon %</Text>
-                      <TextInput
-                        style={[styles.input, { textAlign: 'center' }]}
-                        placeholder="10"
-                        placeholderTextColor={colors.mutedForeground}
-                        value={subcontractorMarkupPct}
-                        onChangeText={setSubcontractorMarkupPct}
-                        keyboardType="decimal-pad"
-                        testID="input-subcontractor-markup"
-                      />
-                    </View>
-                  </View>
-                </View>
-
-              </View>
+              <ProjectSetupSection
+                data={projectSetupData}
+                onChange={setProjectSetupData}
+                teamMembers={teamMembers}
+                isOffline={!isOnline}
+              />
             )}
 
             {/* Recurring Job Section */}
@@ -1523,7 +1800,7 @@ export default function CreateJobScreen() {
 
           {/* Save Button */}
           <View style={[styles.actionsContainer, { paddingBottom: bottomNavHeight }]}>
-            <PressableRow style={styles.saveButton} onPress={saveJob} disabled={isSaving} >
+            <PressableRow style={styles.saveButton} onPress={saveJob} disabled={isSaving} testID="button-create-job">
               {isSaving ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (

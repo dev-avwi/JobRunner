@@ -11,7 +11,7 @@ import connectPgSimple from "connect-pg-simple";
 import helmet from "helmet";
 import { createServer } from "http";
 import { registerRoutes } from "./legacyRoutes";
-import { storage, pool as sharedPgPool } from "./storage";
+import { storage, pool as sharedPgPool, guidedProjectSetupSchemaReady } from "./storage";
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
 import { activityTrackingMiddleware, backfillSignupDayActivity, backfillFeaturePermissions } from "./routes/middleware";
@@ -60,6 +60,8 @@ if (process.env.DATABASE_URL) {
 }
 
 (async () => {
+  await guidedProjectSetupSchemaReady;
+
   // Initialize Stripe and get webhook UUID
   const { stripe, webhookUuid } = await initializeStripe();
 

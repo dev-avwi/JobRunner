@@ -90,6 +90,7 @@ import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
 import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
+import { PendingProjectUploadsBanner } from '../../src/components/jobDetail/PendingProjectUploadsBanner';
 
 interface JobNoteItem {
   id: string;
@@ -10890,6 +10891,14 @@ export default function JobDetailScreen() {
           />
         }
       >
+        {isProject && (
+          <PendingProjectUploadsBanner
+            jobId={id as string}
+            creationRequestId={(job as any).creationRequestId}
+            onUploaded={handleRefresh}
+          />
+        )}
+
         {isSubcontractor && subbieLocationSharing && (
           <View style={{
             flexDirection: 'row',

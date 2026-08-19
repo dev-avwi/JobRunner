@@ -1660,6 +1660,76 @@ pool
     console.error('[Schema] Failed to ensure job_phases.assigned_user_id column:', err.message);
   });
 
+// Guided project setup fields are a hard startup dependency. Most historical
+// bootstrap DDL in this file is fire-and-forget, so wait briefly for that work
+// and retry deadlocks before allowing the API to listen.
+async function ensureGuidedProjectSetupSchema(): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  const statements: Array<{ query: string; duplicateRepair?: boolean }> = [
+    { query: `ALTER TABLE job_phases ADD COLUMN IF NOT EXISTS budgeted_cost decimal(12,2)` },
+    { query: `ALTER TABLE claims ADD COLUMN IF NOT EXISTS planned_percentage decimal(5,2)` },
+    { query: `ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS phase_id varchar` },
+    { query: `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS creation_request_id varchar(100)` },
+    {
+      duplicateRepair: true,
+      query: `
+        WITH duplicate_creation_requests AS (
+          SELECT id,
+                 row_number() OVER (
+                   PARTITION BY user_id, creation_request_id
+                   ORDER BY created_at ASC NULLS LAST, id ASC
+                 ) AS duplicate_rank
+          FROM jobs
+          WHERE creation_request_id IS NOT NULL
+        )
+        UPDATE jobs
+        SET creation_request_id = NULL
+        FROM duplicate_creation_requests
+        WHERE jobs.id = duplicate_creation_requests.id
+          AND duplicate_creation_requests.duplicate_rank > 1
+      `,
+    },
+    { query: `DROP INDEX IF EXISTS idx_jobs_creation_request_id` },
+    {
+      query: `CREATE UNIQUE INDEX IF NOT EXISTS uq_jobs_user_creation_request_id
+                ON jobs (user_id, creation_request_id)
+                WHERE creation_request_id IS NOT NULL`,
+    },
+    { query: `ALTER TABLE project_documents ADD COLUMN IF NOT EXISTS client_generated_id varchar(100)` },
+    {
+      query: `CREATE UNIQUE INDEX IF NOT EXISTS uq_project_documents_job_client_generated_id
+                ON project_documents (job_id, user_id, client_generated_id)
+                WHERE client_generated_id IS NOT NULL`,
+    },
+  ];
+
+  for (const statement of statements) {
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 5; attempt += 1) {
+      try {
+        const result = await pool.query(statement.query);
+        if (statement.duplicateRepair && (result.rowCount ?? 0) > 0) {
+          console.warn(
+            `[Schema] Cleared duplicate project creation request IDs from ${result.rowCount} existing job(s) before adding the unique index`,
+          );
+        }
+        lastError = undefined;
+        break;
+      } catch (error: any) {
+        lastError = error;
+        if (error?.code !== '40P01' || attempt === 5) break;
+        await new Promise((resolve) => setTimeout(resolve, attempt * 250));
+      }
+    }
+    if (lastError) throw lastError;
+  }
+}
+
+export const guidedProjectSetupSchemaReady = ensureGuidedProjectSetupSchema().catch((error: any) => {
+  console.error('[Schema] Failed to ensure guided project setup columns:', error.message);
+  throw error;
+});
+
 // Ensure staff HR tables: emergency contacts, leave balances, and approver comment on time-off
 pool
   .query(`

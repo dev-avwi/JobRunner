@@ -218,6 +218,12 @@ import {
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
   jobPhases,
+  purchaseOrders,
+  purchaseOrderItems,
+  claims,
+  claimLineItems,
+  tasks,
+  idempotencyKeys,
 } from "@workspace/db";
 import { db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
@@ -423,6 +429,74 @@ import { computeRetentionSummary } from "./retentionSummary";
     } catch (err) {
       console.error('[resolveJobCompletionTime] failed, using now:', err);
       return now;
+    }
+  }
+
+  const setupMoneySchema = z.coerce.string().trim().regex(
+    /^\d+(\.\d{1,2})?$/,
+    "Must be a non-negative amount with up to 2 decimal places",
+  );
+  const setupPercentSchema = z.coerce.string().trim().regex(/^\d+(\.\d{1,2})?$/, "Must be a percentage");
+  const setupDateSchema = z.string().trim().refine(
+    (value) => !Number.isNaN(new Date(value).getTime()),
+    "Must be a valid date",
+  );
+
+  const initialProjectSetupSchema = z.object({
+    phases: z.array(z.object({
+      clientId: z.string().min(1).max(100),
+      phaseCode: z.string().min(1).max(20),
+      name: z.string().trim().min(1).max(200),
+      description: z.string().max(4000).optional().nullable(),
+      scheduledStart: setupDateSchema.optional().nullable(),
+      scheduledEnd: setupDateSchema.optional().nullable(),
+      budgetedCost: setupMoneySchema.optional().nullable(),
+      assignedUserId: z.string().optional().nullable(),
+      sortOrder: z.number().int().min(0).optional(),
+    })).max(100).default([]),
+    purchaseOrders: z.array(z.object({
+      poNumber: z.string().trim().min(1).max(100),
+      supplierId: z.string().min(1),
+      phaseClientId: z.string().optional().nullable(),
+      requiredDate: setupDateSchema.optional().nullable(),
+      terms: z.string().max(4000).optional().nullable(),
+      notes: z.string().max(4000).optional().nullable(),
+      items: z.array(z.object({
+        description: z.string().trim().min(1).max(1000),
+        quantity: z.coerce.number().int().positive(),
+        unitPrice: z.coerce.number().min(0),
+      })).min(1).max(100),
+    })).max(50).default([]),
+    claimStages: z.array(z.object({
+      name: z.string().trim().min(1).max(200),
+      claimDate: setupDateSchema,
+      percentage: z.coerce.number().positive().max(100),
+      retentionPercent: z.coerce.number().min(0).max(100).default(0),
+      phaseClientId: z.string().optional().nullable(),
+    })).max(100).default([]),
+    checklistItems: z.array(z.object({
+      title: z.string().trim().min(1).max(500),
+      description: z.string().max(4000).optional().nullable(),
+      assignedTo: z.string().optional().nullable(),
+      dueAt: setupDateSchema.optional().nullable(),
+    })).max(200).default([]),
+    requiredInformation: z.array(z.object({
+      label: z.string().trim().min(1).max(200),
+      value: z.string().trim().max(4000),
+    })).max(100).default([]),
+  });
+
+  class InitialProjectSetupSaveError extends Error {
+    constructor(cause: unknown) {
+      super(cause instanceof Error ? cause.message : "Initial project setup failed");
+      this.name = "InitialProjectSetupSaveError";
+    }
+  }
+
+  class AtomicProjectReplay extends Error {
+    constructor(readonly responseBody: any) {
+      super("Project creation request already completed");
+      this.name = "AtomicProjectReplay";
     }
   }
 
@@ -2814,11 +2888,64 @@ import { computeRetentionSummary } from "./retentionSummary";
     try {
       const { clientGeneratedId, ...reqBody } = req.body;
       const effectiveUserId = req.effectiveUserId || req.userId;
+      if (clientGeneratedId != null && (
+        typeof clientGeneratedId !== 'string' ||
+        clientGeneratedId.length === 0 ||
+        clientGeneratedId.length > 100
+      )) {
+        return res.status(400).json({ error: "clientGeneratedId must be between 1 and 100 characters" });
+      }
       const idempKey = clientGeneratedId ? `job:${effectiveUserId}:${clientGeneratedId}` : null;
       if (idempKey) {
         const cached = await getIdempotencyRecord(idempKey);
         if (cached) return res.status(201).json(cached);
       }
+
+      const findDurableProjectReplay = async (database: any) => {
+        if (!clientGeneratedId) return null;
+        const existingRows = await database
+          .select()
+          .from(jobs)
+          .where(and(
+            eq(jobs.userId, effectiveUserId),
+            eq(jobs.creationRequestId, clientGeneratedId),
+          ))
+          .limit(1);
+        const existingJob = existingRows[0];
+        if (!existingJob) return null;
+
+        const [phaseRows, purchaseOrderRows, claimRows, checklistRows] = await Promise.all([
+          database
+            .select({ value: count() })
+            .from(jobPhases)
+            .where(eq(jobPhases.jobId, existingJob.id)),
+          database
+            .select({ value: count() })
+            .from(purchaseOrders)
+            .where(eq(purchaseOrders.jobId, existingJob.id)),
+          database
+            .select({ value: count() })
+            .from(claims)
+            .where(eq(claims.jobId, existingJob.id)),
+          database
+            .select({ value: count() })
+            .from(tasks)
+            .where(eq(tasks.jobId, existingJob.id)),
+        ]);
+        const summary = {
+          phaseCount: Number(phaseRows[0]?.value ?? 0),
+          purchaseOrderCount: Number(purchaseOrderRows[0]?.value ?? 0),
+          claimStageCount: Number(claimRows[0]?.value ?? 0),
+          checklistItemCount: Number(checklistRows[0]?.value ?? 0),
+        };
+        const hasLinkedSetup = Object.values(summary).some((value) => value > 0);
+        return hasLinkedSetup
+          ? { ...existingJob, initialSetup: summary }
+          : existingJob;
+      };
+
+      const durableReplay = await findDurableProjectReplay(db);
+      if (durableReplay) return res.status(201).json(durableReplay);
       
       // Check freemium limits first
       const limitCheck = await FreemiumService.canUserCreateJob(effectiveUserId);
@@ -2849,10 +2976,16 @@ import { computeRetentionSummary } from "./retentionSummary";
       }
 
       const data = insertJobSchema.parse(body);
+      const initialProjectSetup = req.body.initialProjectSetup
+        ? initialProjectSetupSchema.parse(req.body.initialProjectSetup)
+        : null;
 
       // Validate job_type to the two allowed values
       if (data.jobType !== undefined && data.jobType !== null && !['service', 'project'].includes(data.jobType)) {
         return res.status(400).json({ error: "jobType must be 'service' or 'project'" });
+      }
+      if (initialProjectSetup && data.jobType !== 'project') {
+        return res.status(400).json({ error: "Initial project setup can only be used when jobType is 'project'" });
       }
 
       // Verify referenced client belongs to this business (cross-business write guard)
@@ -2893,8 +3026,103 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       }
 
+      // Validate every linked setup reference before creating the project. The
+      // actual related records are inserted together below, so a bad PO, phase,
+      // claim stage, or checklist item cannot leave a partially configured job.
+      if (initialProjectSetup) {
+        const phaseClientIds = new Set<string>();
+        for (const phase of initialProjectSetup.phases) {
+          if (phaseClientIds.has(phase.clientId)) {
+            return res.status(400).json({ error: `Duplicate phase clientId: ${phase.clientId}` });
+          }
+          phaseClientIds.add(phase.clientId);
+          if (
+            phase.scheduledStart &&
+            phase.scheduledEnd &&
+            new Date(phase.scheduledStart) > new Date(phase.scheduledEnd)
+          ) {
+            return res.status(400).json({ error: `Phase "${phase.name}" ends before it starts` });
+          }
+        }
+
+        const callerContext = req.userContext || await getUserContext(req.userId);
+        if (
+          initialProjectSetup.purchaseOrders.length > 0 &&
+          !callerContext.isOwner &&
+          !hasPermission(callerContext, PERMISSIONS.MANAGE_CATALOG)
+        ) {
+          return res.status(403).json({ error: "You do not have permission to create purchase orders" });
+        }
+
+        const members = await storage.getTeamMembers(effectiveUserId);
+        const allowedUserIds = new Set<string>([
+          effectiveUserId,
+          req.userId,
+          ...members
+            .filter((member: any) =>
+              member.isActive !== false &&
+              member.inviteStatus === 'accepted' &&
+              member.memberId
+            )
+            .map((member: any) => member.memberId),
+        ]);
+        for (const phase of initialProjectSetup.phases) {
+          if (phase.assignedUserId && !allowedUserIds.has(phase.assignedUserId)) {
+            return res.status(400).json({ error: `The responsible team member for "${phase.name}" is not available` });
+          }
+        }
+        for (const item of initialProjectSetup.checklistItems) {
+          if (item.assignedTo && !allowedUserIds.has(item.assignedTo)) {
+            return res.status(400).json({ error: `The checklist assignee for "${item.title}" is not available` });
+          }
+        }
+
+        const supplierIds = [...new Set(initialProjectSetup.purchaseOrders.map((po) => po.supplierId))];
+        for (const supplierId of supplierIds) {
+          const supplier = await storage.getSupplier(supplierId, effectiveUserId);
+          if (!supplier) return res.status(404).json({ error: "A selected purchase order supplier was not found" });
+        }
+        for (const po of initialProjectSetup.purchaseOrders) {
+          if (po.phaseClientId && !phaseClientIds.has(po.phaseClientId)) {
+            return res.status(400).json({ error: `Purchase order "${po.poNumber}" references an unknown phase` });
+          }
+        }
+        for (const stage of initialProjectSetup.claimStages) {
+          if (stage.phaseClientId && !phaseClientIds.has(stage.phaseClientId)) {
+            return res.status(400).json({ error: `Claim stage "${stage.name}" references an unknown phase` });
+          }
+        }
+        const totalClaimPercentage = initialProjectSetup.claimStages.reduce(
+          (sum, stage) => sum + stage.percentage,
+          0,
+        );
+        if (totalClaimPercentage > 100.0001) {
+          return res.status(400).json({ error: "Progress claim stage percentages cannot total more than 100%" });
+        }
+      }
+
       // Auto-geocode address if provided but lat/lng missing
       let jobData = { ...data, userId: effectiveUserId };
+      if (data.jobType === 'project' && clientGeneratedId) {
+        jobData = { ...jobData, creationRequestId: clientGeneratedId } as typeof jobData;
+      }
+      if (initialProjectSetup) {
+        const existingCustomFields =
+          data.customFields && typeof data.customFields === 'object' && !Array.isArray(data.customFields)
+            ? data.customFields as Record<string, any>
+            : {};
+        const existingProjectSetup =
+          existingCustomFields.projectSetup && typeof existingCustomFields.projectSetup === 'object'
+            ? existingCustomFields.projectSetup
+            : {};
+        jobData.customFields = {
+          ...existingCustomFields,
+          projectSetup: {
+            ...existingProjectSetup,
+            requiredInformation: initialProjectSetup.requiredInformation,
+          },
+        };
+      }
       if (data.address && (!data.latitude || !data.longitude)) {
         const geocoded = await geocodeAddress(data.address);
         if (geocoded) {
@@ -2904,8 +3132,232 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       }
       
-      const job = await storage.createJob(jobData);
-      // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
+      let job: any;
+      let initialSetupSummary: {
+        phaseCount: number;
+        purchaseOrderCount: number;
+        claimStageCount: number;
+        checklistItemCount: number;
+      } | null = null;
+
+      if (data.jobType === 'project') {
+        try {
+          const business = await storage.getBusinessSettings(effectiveUserId);
+          const gstEnabled = business?.gstEnabled ?? false;
+          const generatedJobNumber = data.jobNumber
+            ? null
+            : await storage.generateJobNumber(effectiveUserId).catch((numberError: any) => {
+                console.error('[Project Setup] Failed to generate job number (non-fatal):', numberError.message);
+                return null;
+              });
+          const projectSetupFields =
+            jobData.customFields &&
+            typeof jobData.customFields === 'object' &&
+            !Array.isArray(jobData.customFields) &&
+            (jobData.customFields as any).projectSetup
+              ? (jobData.customFields as any).projectSetup
+              : {};
+          const contractValue = parseFloat(String(projectSetupFields.contractValue || '0')) || 0;
+
+          const transactionResult = await db.transaction(async (tx) => {
+            const durableReplay = await findDurableProjectReplay(tx);
+            if (durableReplay) throw new AtomicProjectReplay(durableReplay);
+
+            if (idempKey) {
+              const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+              let reservation = await tx
+                .insert(idempotencyKeys)
+                .values({
+                  key: idempKey,
+                  response: JSON.stringify({ state: 'processing' }),
+                  expiresAt,
+                })
+                .onConflictDoNothing()
+                .returning({ key: idempotencyKeys.key });
+
+              if (reservation.length === 0) {
+                await tx
+                  .delete(idempotencyKeys)
+                  .where(and(
+                    eq(idempotencyKeys.key, idempKey),
+                    lte(idempotencyKeys.expiresAt, new Date()),
+                  ));
+                reservation = await tx
+                  .insert(idempotencyKeys)
+                  .values({
+                    key: idempKey,
+                    response: JSON.stringify({ state: 'processing' }),
+                    expiresAt,
+                  })
+                  .onConflictDoNothing()
+                  .returning({ key: idempotencyKeys.key });
+              }
+
+              if (reservation.length === 0) {
+                const existingRows = await tx
+                  .select({ response: idempotencyKeys.response })
+                  .from(idempotencyKeys)
+                  .where(eq(idempotencyKeys.key, idempKey))
+                  .limit(1);
+                if (existingRows[0]) {
+                  throw new AtomicProjectReplay(JSON.parse(existingRows[0].response));
+                }
+                throw new Error("Could not reserve the project creation request");
+              }
+            }
+
+            const [createdJob] = await tx
+              .insert(jobs)
+              .values({
+                ...jobData,
+                jobNumber: data.jobNumber ?? generatedJobNumber ?? undefined,
+              })
+              .returning();
+            if (!createdJob) {
+              throw new Error("Project insert did not return a record");
+            }
+
+            const phaseIdByClientId = new Map<string, string>();
+
+            for (const [index, phase] of (initialProjectSetup?.phases ?? []).entries()) {
+              const phaseId = randomUUID();
+              phaseIdByClientId.set(phase.clientId, phaseId);
+              await tx.execute(sql`
+                INSERT INTO job_phases (
+                  id, job_id, user_id, phase_code, name, description,
+                  scheduled_start, scheduled_end, budgeted_cost, status,
+                  sort_order, assigned_user_id
+                ) VALUES (
+                  ${phaseId}, ${createdJob.id}, ${effectiveUserId},
+                  ${phase.phaseCode.trim().toUpperCase()}, ${phase.name},
+                  ${phase.description ?? null},
+                  ${phase.scheduledStart ? new Date(phase.scheduledStart) : null},
+                  ${phase.scheduledEnd ? new Date(phase.scheduledEnd) : null},
+                  ${phase.budgetedCost ?? null}, 'not_started',
+                  ${phase.sortOrder ?? index}, ${phase.assignedUserId ?? null}
+                )
+              `);
+            }
+
+            for (const po of initialProjectSetup?.purchaseOrders ?? []) {
+              const subtotal = po.items.reduce(
+                (sum, item) => sum + item.quantity * item.unitPrice,
+                0,
+              );
+              const gstAmount = gstEnabled ? subtotal * 0.1 : 0;
+              const poId = randomUUID();
+              await tx.execute(sql`
+                INSERT INTO purchase_orders (
+                  id, user_id, supplier_id, job_id, po_number, order_date,
+                  required_date, status, subtotal, gst_amount, total, terms,
+                  notes, phase_id
+                ) VALUES (
+                  ${poId}, ${effectiveUserId}, ${po.supplierId}, ${createdJob.id},
+                  ${po.poNumber}, ${new Date()},
+                  ${po.requiredDate ? new Date(po.requiredDate) : null},
+                  'pending', ${subtotal.toFixed(2)}, ${gstAmount.toFixed(2)},
+                  ${(subtotal + gstAmount).toFixed(2)}, ${po.terms ?? null},
+                  ${po.notes ?? null},
+                  ${po.phaseClientId ? phaseIdByClientId.get(po.phaseClientId) ?? null : null}
+                )
+              `);
+              for (const item of po.items) {
+                await tx.execute(sql`
+                  INSERT INTO purchase_order_items (
+                    id, po_id, description, quantity, unit_price, line_total,
+                    received_quantity, status
+                  ) VALUES (
+                    ${randomUUID()}, ${poId}, ${item.description}, ${item.quantity},
+                    ${item.unitPrice.toFixed(2)},
+                    ${(item.quantity * item.unitPrice).toFixed(2)}, 0, 'pending'
+                  )
+                `);
+              }
+            }
+
+            for (const [index, stage] of (initialProjectSetup?.claimStages ?? []).entries()) {
+              const claimId = randomUUID();
+              const stageValue = contractValue > 0
+                ? (contractValue * stage.percentage) / 100
+                : 0;
+              await tx.execute(sql`
+                INSERT INTO claims (
+                  id, job_id, user_id, claim_number, status, claim_date,
+                  subtotal, gst_amount, total, retention_percent,
+                  retention_amount, planned_percentage, notes
+                ) VALUES (
+                  ${claimId}, ${createdJob.id}, ${effectiveUserId},
+                  ${`PC-${String(index + 1).padStart(3, '0')}`}, 'draft',
+                  ${new Date(stage.claimDate)}, '0.00', '0.00', '0.00',
+                  ${stage.retentionPercent.toFixed(2)}, '0.00',
+                  ${stage.percentage.toFixed(2)}, ${`Planned stage: ${stage.name}`}
+                )
+              `);
+              await tx.execute(sql`
+                INSERT INTO claim_line_items (
+                  id, claim_id, phase_id, description, contract_value,
+                  previously_claimed, this_claim, retention_percent, sort_order
+                ) VALUES (
+                  ${randomUUID()}, ${claimId},
+                  ${stage.phaseClientId ? phaseIdByClientId.get(stage.phaseClientId) ?? null : null},
+                  ${stage.name}, ${stageValue.toFixed(2)}, '0.00', '0.00',
+                  ${stage.retentionPercent.toFixed(2)}, 0
+                )
+              `);
+            }
+
+            for (const item of initialProjectSetup?.checklistItems ?? []) {
+              await tx.execute(sql`
+                INSERT INTO tasks (
+                  id, user_id, job_id, title, description, status,
+                  assigned_to, due_at, source
+                ) VALUES (
+                  ${randomUUID()}, ${effectiveUserId}, ${createdJob.id},
+                  ${item.title}, ${item.description ?? null}, 'open',
+                  ${item.assignedTo ?? null},
+                  ${item.dueAt ? new Date(item.dueAt) : null}, 'manual'
+                )
+              `);
+            }
+
+            const summary = initialProjectSetup
+              ? {
+                  phaseCount: initialProjectSetup.phases.length,
+                  purchaseOrderCount: initialProjectSetup.purchaseOrders.length,
+                  claimStageCount: initialProjectSetup.claimStages.length,
+                  checklistItemCount: initialProjectSetup.checklistItems.length,
+                }
+              : null;
+            const responseBody = summary
+              ? { ...createdJob, initialSetup: summary }
+              : createdJob;
+
+            if (idempKey) {
+              await tx
+                .update(idempotencyKeys)
+                .set({ response: JSON.stringify(responseBody) })
+                .where(eq(idempotencyKeys.key, idempKey));
+            }
+
+            return { createdJob, summary };
+          });
+
+          job = transactionResult.createdJob;
+          initialSetupSummary = transactionResult.summary;
+          const { invalidateAggregateDashboard } = await import('../cache');
+          invalidateAggregateDashboard(effectiveUserId);
+        } catch (setupError) {
+          if (setupError instanceof AtomicProjectReplay) throw setupError;
+          if (initialProjectSetup) {
+            console.error("[Project Setup] Atomic project setup transaction failed:", setupError);
+            throw new InitialProjectSetupSaveError(setupError);
+          }
+          throw setupError;
+        }
+      } else {
+        job = await storage.createJob(jobData);
+        // Service Calls keep the existing creation path and behavior unchanged.
+      }
       
       // If job was created from a quote, update the quote's jobId to link back
       // and copy quote line items as job materials
@@ -2995,13 +3447,25 @@ import { computeRetentionSummary } from "./retentionSummary";
         }
       }
       
+      const responseBody = initialSetupSummary
+        ? { ...job, initialSetup: initialSetupSummary }
+        : job;
       if (idempKey) {
-        await setIdempotencyRecord(idempKey, job);
+        await setIdempotencyRecord(idempKey, responseBody);
       }
-      res.status(201).json(job);
+      res.status(201).json(responseBody);
     } catch (error) {
+      if (error instanceof AtomicProjectReplay) {
+        return res.status(201).json(error.responseBody);
+      }
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid input", details: error.errors });
+      }
+      if (error instanceof InitialProjectSetupSaveError) {
+        return res.status(500).json({
+          error: "The selected project setup could not be saved, so no project was created. Review the setup and try again.",
+          code: "PROJECT_SETUP_FAILED",
+        });
       }
       console.error("Error creating job:", error);
       res.status(500).json({ error: "Failed to create job" });
@@ -8769,7 +9233,9 @@ import { computeRetentionSummary } from "./retentionSummary";
     for (const key of ['scheduledStart', 'scheduledEnd']) {
       if (out[key] === '') out[key] = null;  // blank string → null; explicit null stays null
     }
-    if (out['bookedHours'] === '') out['bookedHours'] = null;
+    for (const key of ['bookedHours', 'budgetedCost']) {
+      if (out[key] === '') out[key] = null;
+    }
     if (out['assignedUserId'] === '') out['assignedUserId'] = null;
     return out;
   }
@@ -8789,6 +9255,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         scheduledStart: z.coerce.date().optional().nullable(),
         scheduledEnd: z.coerce.date().optional().nullable(),
         bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        budgetedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a positive amount').optional().nullable(),
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).default("not_started"),
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
@@ -8809,6 +9276,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         scheduledStart: parsed.scheduledStart ?? null,
         scheduledEnd: parsed.scheduledEnd ?? null,
         bookedHours: parsed.bookedHours ?? null,
+        budgetedCost: parsed.budgetedCost ?? null,
         status: parsed.status,
         sortOrder,
         notes: parsed.notes ?? null,
@@ -8855,6 +9323,7 @@ import { computeRetentionSummary } from "./retentionSummary";
         scheduledStart: z.coerce.date().optional().nullable(),
         scheduledEnd: z.coerce.date().optional().nullable(),
         bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        budgetedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a positive amount').optional().nullable(),
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).optional(),
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
@@ -10352,6 +10821,7 @@ import { computeRetentionSummary } from "./retentionSummary";
   });
 
   app.post("/api/jobs/:jobId/project-documents", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), docUpload.single('file'), async (req: any, res) => {
+    let uploadedObject: { bucketId: string; objectKey: string } | null = null;
     try {
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -10363,6 +10833,27 @@ import { computeRetentionSummary } from "./retentionSummary";
       if (!job) return res.status(404).json({ error: 'Job not found' });
 
       const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
+      const clientGeneratedId = typeof req.body.clientGeneratedId === 'string'
+        ? req.body.clientGeneratedId.trim()
+        : '';
+      if (clientGeneratedId.length > 100) {
+        return res.status(400).json({ error: 'clientGeneratedId is too long' });
+      }
+
+      if (clientGeneratedId) {
+        const [existingDocument] = await db
+          .select()
+          .from(pd)
+          .where(and(
+            eq(pd.jobId, jobId),
+            eq(pd.userId, effectiveUserId),
+            eq(pd.clientGeneratedId, clientGeneratedId),
+          ))
+          .limit(1);
+        if (existingDocument) {
+          return res.status(200).json({ ...existingDocument, idempotentReplay: true });
+        }
+      }
 
       const existing = await db.select({ count: sql<number>`count(*)` }).from(pd)
         .where(and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
@@ -10381,20 +10872,62 @@ import { computeRetentionSummary } from "./retentionSummary";
       await objectStorageClient.bucket(bucketId).file(objectKey).save(req.file.buffer, {
         metadata: { contentType: req.file.mimetype },
       });
+      uploadedObject = { bucketId, objectKey };
 
-      const [doc] = await db.insert(pd).values({
-        jobId, userId: effectiveUserId, docNumber, title, category, currentRevision: revision,
-      }).returning();
+      const doc = await db.transaction(async (tx) => {
+        const [createdDocument] = await tx.insert(pd).values({
+          jobId,
+          userId: effectiveUserId,
+          clientGeneratedId: clientGeneratedId || null,
+          docNumber,
+          title,
+          category,
+          currentRevision: revision,
+        }).returning();
 
-      await db.insert(pdr).values({
-        documentId: doc.id, revision, fileName: req.file.originalname,
-        objectStorageKey: `${bucketId}/${objectKey}`,
-        fileSize: req.file.size, mimeType: req.file.mimetype,
-        uploadedBy: req.userId, notes: notes || null,
+        await tx.insert(pdr).values({
+          documentId: createdDocument.id,
+          revision,
+          fileName: req.file.originalname,
+          objectStorageKey: `${bucketId}/${objectKey}`,
+          fileSize: req.file.size,
+          mimeType: req.file.mimetype,
+          uploadedBy: req.userId,
+          notes: notes || null,
+        });
+        return createdDocument;
       });
 
+      uploadedObject = null;
       res.status(201).json(doc);
     } catch (error: any) {
+      if (uploadedObject) {
+        await objectStorageClient
+          .bucket(uploadedObject.bucketId)
+          .file(uploadedObject.objectKey)
+          .delete()
+          .catch(() => {});
+      }
+
+      if (error?.cause?.code === '23505' && typeof req.body.clientGeneratedId === 'string') {
+        try {
+          const userContext = await getUserContext(req.userId);
+          const { projectDocuments: pd } = await import("@workspace/db");
+          const [existingDocument] = await db
+            .select()
+            .from(pd)
+            .where(and(
+              eq(pd.jobId, req.params.jobId),
+              eq(pd.userId, userContext.effectiveUserId),
+              eq(pd.clientGeneratedId, req.body.clientGeneratedId.trim()),
+            ))
+            .limit(1);
+          if (existingDocument) {
+            return res.status(200).json({ ...existingDocument, idempotentReplay: true });
+          }
+        } catch {}
+      }
+
       console.error('Error creating project document:', error);
       res.status(500).json({ error: error.message });
     }

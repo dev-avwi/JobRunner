@@ -22,6 +22,7 @@ export interface JobPhase {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   bookedHours?: string | null;
+  budgetedCost?: string | null;
   actualHours?: number | null;
   status: PhaseStatus;
   sortOrder: number;
@@ -179,6 +180,7 @@ export function PhasesSection({
     const startStr = fmtDate(viewingPhase.scheduledStart);
     const endStr = fmtDate(viewingPhase.scheduledEnd);
     const hoursNum = parseFloat(viewingPhase.bookedHours ?? '0') || 0;
+    const budgetNum = parseFloat(viewingPhase.budgetedCost ?? '0') || 0;
     const isClaimed = claimedPhaseIds?.has(viewingPhase.id);
     const isUpdatingView = updatingId === viewingPhase.id;
 
@@ -240,6 +242,15 @@ export function PhasesSection({
             <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: 'italic' }}>Not assigned</Text>
           )}
         </View>
+
+        {budgetNum > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Budget</Text>
+            <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+              ${budgetNum.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </Text>
+          </View>
+        )}
 
         {/* Date range */}
         {(startStr || endStr) && (
