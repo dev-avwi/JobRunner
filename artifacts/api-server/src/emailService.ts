@@ -34,7 +34,7 @@ export async function getSendGridCredentials(): Promise<{ apiKey: string; email:
       const conn = data.items?.[0];
       if (conn?.settings?.api_key && conn?.settings?.from_email) {
         connectorFromEmail = conn.settings.from_email;
-        console.log(`[SendGrid] Using connector credentials, from_email: ${conn.settings.from_email}, key prefix: ${conn.settings.api_key.substring(0, 10)}...`);
+        console.log(`[SendGrid] Using connector credentials for ${conn.settings.from_email}`);
         return { apiKey: conn.settings.api_key, email: conn.settings.from_email };
       }
       console.log(`[SendGrid] Connector found but missing api_key or from_email:`, JSON.stringify({ hasKey: !!conn?.settings?.api_key, hasEmail: !!conn?.settings?.from_email }));

@@ -309,7 +309,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
       if (selectedClient?.address) {
         const currentAddress = form.getValues("address");
         if (!currentAddress) {
-          form.setValue("address", selectedClient.address);
+          form.setValue("address", selectedClient.address, { shouldDirty: true, shouldValidate: true });
+          form.clearErrors("address");
           setAddressConfirmed(true);
           setLastAutoFilledClientId(selectedClientId);
           toast({
@@ -329,8 +330,12 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
       const response = await fetch(`/api/clients/${selectedClientId}/jobs`, { credentials: 'include', headers: token ? { 'Authorization': `Bearer ${token}` } : undefined });
       if (!response.ok) return [];
       const jobs = await response.json();
+      if (!Array.isArray(jobs)) {
+        console.warn('[JobForm] Ignoring malformed previous-jobs response');
+        return [];
+      }
       // Sort by date descending and limit to 5 most recent
-      return jobs
+      return [...jobs]
         .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         .slice(0, 5);
     },
@@ -359,8 +364,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
     });
   };
 
-  const formatJobDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-AU', {
+  const formatJobDate = (dateString?: string | null) => {
+    const date = dateString ? new Date(dateString) : null;
+    if (!date || Number.isNaN(date.getTime())) {
+      return 'Date unavailable';
+    }
+
+    return date.toLocaleDateString('en-AU', {
       day: 'numeric',
       month: 'short',
       year: 'numeric'
@@ -815,7 +825,10 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
             <FormControl>
               <SearchableSelect
                 value={field.value}
-                onValueChange={field.onChange}
+                onValueChange={(clientId) => {
+                  field.onChange(clientId);
+                  form.clearErrors('clientId');
+                }}
                 placeholder="Select a client"
                 searchPlaceholder="Search clients..."
                 emptyMessage="No clients yet. Add your first client!"

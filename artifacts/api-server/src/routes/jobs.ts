@@ -9571,6 +9571,10 @@ import { computeRetentionSummary } from "./retentionSummary";
       if (!document) {
         return res.status(404).json({ error: 'Document not found' });
       }
+
+      if (document.jobId !== jobId) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
       
       try {
         const { bucketName, objectName } = parseObjectPath(document.objectStorageKey);
@@ -9597,12 +9601,16 @@ import { computeRetentionSummary } from "./retentionSummary";
   app.get("/api/jobs/:jobId/documents/:docId/view", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
-      const { docId } = req.params;
+      const { jobId, docId } = req.params;
       
       const userContext = await getUserContext(userId);
       
       const document = await storage.getJobDocument(docId, userContext.effectiveUserId);
       if (!document) {
+        return res.status(404).json({ error: 'Document not found' });
+      }
+
+      if (document.jobId !== jobId) {
         return res.status(404).json({ error: 'Document not found' });
       }
       
