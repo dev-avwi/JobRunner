@@ -170,8 +170,8 @@ function MobileProjectHealthRow({ jobId, colors }: { jobId: string; colors: any 
         api.get<any>(`/api/jobs/${jobId}/profitability`),
       ]);
       if (!mounted) return;
-      if (phasesRes.status === 'fulfilled' && phasesRes.value.data) setPhases(phasesRes.value.data);
-      if (claimsRes.status === 'fulfilled' && claimsRes.value.data) setClaims(claimsRes.value.data);
+      if (phasesRes.status === 'fulfilled' && Array.isArray(phasesRes.value.data)) setPhases(phasesRes.value.data);
+      if (claimsRes.status === 'fulfilled' && Array.isArray(claimsRes.value.data)) setClaims(claimsRes.value.data);
       if (profitRes.status === 'fulfilled' && profitRes.value.data?.budget?.trafficLight) {
         setTrafficLight(profitRes.value.data.budget.trafficLight);
       }

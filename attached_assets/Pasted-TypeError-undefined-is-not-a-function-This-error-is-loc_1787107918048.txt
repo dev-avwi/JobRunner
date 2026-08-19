@@ -1,0 +1,81 @@
+TypeError: undefined is not a function
+
+This error is located at:
+    at MobileProjectHealthRow (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3265414)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at Animated(View) (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:654709)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at Pressable (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:755106)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571827)
+    at AnimatedPressable (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3302450)
+    at AnimatedCardPressable (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3303440)
+    at JobCard (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3266746)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at VirtualizedListCellContextProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:705195)
+    at CellRenderer (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:703422)
+    at RCTScrollContentView (<anonymous>)
+    at RCTScrollView (<anonymous>)
+    at ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:718068)
+    at ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:724800)
+    at CssInterop.ScrollView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at VirtualizedListContextProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:704987)
+    at VirtualizedList (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:678429)
+    at RemapPropsComponent (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571943)
+    at FlatList (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:671429)
+    at RemapPropsComponent (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571943)
+    at RCTView (<anonymous>)
+    at View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:567162)
+    at CssInterop.View (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571789)
+    at KeyboardAvoidingView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:744536)
+    at RemapPropsComponent (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:571943)
+    at JobsScreen (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3269793)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1406816)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1413867)
+    at StaticContainer (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1378468)
+    at EnsureSingleNavigator (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1323344)
+    at SceneView (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1376252)
+    at PreventRemoveProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1354542)
+    at NavigationStateListenerProvider (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1383806)
+    at NavigationContent (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1373334)
+    at anonymous (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1373237)
+    at SlotNavigator (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1585665)
+    at Slot (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1585878)
+    at TabLayout (<anonymous>)
+    at Suspense (<anonymous>)
+    at Route (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle:1:1406816)
+    at BaseRoute (address at /var/mobile/Containers/Data/Application/98AAC821-ECFF-40CE-B8FF-0A6353320F0A/Library/Application Support/.expo-internal/bb1227e8683c5a2106bb0b9b373c3177.bundle
+
+MobileProjectHealthRow
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:3265638
+renderWithHooks
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:326627
+updateFunctionComponent
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:345496
+beginWork
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:353384
+performUnitOfWork
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:372121
+workLoopSync
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:371128
+renderRootSync
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:370960
+performWorkOnRoot
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:368601
+performWorkOnRootViaSchedulerTask
+    bb1227e8683c5a2106bb0b9b373c3177.bundle:1:322071
