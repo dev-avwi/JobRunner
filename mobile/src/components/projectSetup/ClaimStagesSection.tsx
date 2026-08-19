@@ -9,9 +9,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { Alert } from '@/lib/alert';
@@ -19,6 +16,7 @@ import { useTheme } from '../../lib/theme';
 import { spacing, typography, fontWeights } from '../../lib/design-tokens';
 import type { ClaimStage, ProjectPhase } from './types';
 import { sharedStyles } from './sharedStyles';
+import { AppBottomSheet } from '../ui/AppBottomSheet';
 
 let _idCounter = 0;
 function genId() { return `claim_${Date.now()}_${++_idCounter}`; }
@@ -162,18 +160,14 @@ export function ClaimStagesSection({ claimStages, phases, onChange }: Props) {
         </Text>
       )}
 
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={[s.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={closeModal} testID="claim-modal-cancel">
-                <Text style={s.modalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={s.modalTitle}>{editingClientId ? 'Edit Claim Stage' : 'Add Claim Stage'}</Text>
-              <TouchableOpacity onPress={saveStage} testID="claim-modal-save">
-                <Text style={s.modalSave}>Save</Text>
-              </TouchableOpacity>
-            </View>
+      <AppBottomSheet
+        visible={showModal}
+        title={editingClientId ? 'Edit Claim Stage' : 'Add Claim Stage'}
+        showCloseButton
+        onDismiss={closeModal}
+        snapPoints={['88%']}
+        footer={<View style={{ flexDirection: 'row', gap: spacing.sm }}><TouchableOpacity onPress={closeModal} testID="claim-modal-cancel" style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: spacing.md, alignItems: 'center' }}><Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>Cancel</Text></TouchableOpacity><TouchableOpacity onPress={saveStage} testID="claim-modal-save" style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 10, padding: spacing.md, alignItems: 'center' }}><Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Save</Text></TouchableOpacity></View>}
+      >
             <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
               <View style={s.field}>
                 <Text style={s.label}>Stage Name *</Text>
@@ -236,16 +230,8 @@ export function ClaimStagesSection({ claimStages, phases, onChange }: Props) {
                 </TouchableOpacity>
               </View>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
 
-        <Modal visible={showPhasePicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPhasePicker(false)}>
-          <View style={[s.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => setShowPhasePicker(false)}><Text style={s.modalCancel}>Cancel</Text></TouchableOpacity>
-              <Text style={s.modalTitle}>Link to Phase</Text>
-              <View style={{ width: 60 }} />
-            </View>
+        <AppBottomSheet visible={showPhasePicker} title="Link to Phase" showCloseButton onDismiss={() => setShowPhasePicker(false)} snapPoints={['70%']}>
             <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
               <TouchableOpacity
                 style={[s.itemCard, !form.phaseClientId && { borderColor: colors.primary }]}
@@ -268,9 +254,8 @@ export function ClaimStagesSection({ claimStages, phases, onChange }: Props) {
                 );
               })}
             </ScrollView>
-          </View>
-        </Modal>
-      </Modal>
+        </AppBottomSheet>
+      </AppBottomSheet>
     </View>
   );
 }

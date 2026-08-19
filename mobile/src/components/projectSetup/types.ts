@@ -9,6 +9,7 @@ export interface ProjectPhase {
   scheduledEnd: string;   // YYYY-MM-DD
   budgetedCost: string;
   assignedUserId: string | null;
+  assignedUserIds?: string[];
   sortOrder: number;
 }
 

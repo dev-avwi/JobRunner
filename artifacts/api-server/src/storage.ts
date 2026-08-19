@@ -428,6 +428,7 @@ import {
   type ClientAssetService,
   type InsertClientAssetService,
   jobPhases,
+  jobPhaseAssignments,
   type JobPhase,
   type InsertJobPhase,
   claims,
@@ -1667,6 +1668,28 @@ async function ensureGuidedProjectSetupSchema(): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 500));
   const statements: Array<{ query: string; duplicateRepair?: boolean }> = [
     { query: `ALTER TABLE job_phases ADD COLUMN IF NOT EXISTS budgeted_cost decimal(12,2)` },
+    {
+      query: `
+        CREATE TABLE IF NOT EXISTS job_phase_assignments (
+          id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+          phase_id varchar NOT NULL REFERENCES job_phases(id) ON DELETE CASCADE,
+          user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          is_lead boolean NOT NULL DEFAULT false,
+          created_at timestamp DEFAULT now()
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_job_phase_assignments_phase_user
+          ON job_phase_assignments (phase_id, user_id);
+        CREATE INDEX IF NOT EXISTS idx_job_phase_assignments_phase_id
+          ON job_phase_assignments (phase_id);
+        CREATE INDEX IF NOT EXISTS idx_job_phase_assignments_user_id
+          ON job_phase_assignments (user_id);
+        INSERT INTO job_phase_assignments (id, phase_id, user_id, is_lead)
+        SELECT gen_random_uuid(), id, assigned_user_id, true
+        FROM job_phases
+        WHERE assigned_user_id IS NOT NULL
+        ON CONFLICT (phase_id, user_id) DO NOTHING;
+      `,
+    },
     { query: `ALTER TABLE claims ADD COLUMN IF NOT EXISTS planned_percentage decimal(5,2)` },
     { query: `ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS phase_id varchar` },
     { query: `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS creation_request_id varchar(100)` },
@@ -2755,9 +2778,21 @@ export class PostgresStorage implements IStorage {
         sortOrder: jobPhases.sortOrder,
       })
       .from(jobPhases)
+      // Join only the requesting member. Joining every member and OR-ing the
+      // legacy lead condition would repeat a lead's phase once per teammate.
+      .leftJoin(
+        jobPhaseAssignments,
+        and(
+          eq(jobPhaseAssignments.phaseId, jobPhases.id),
+          eq(jobPhaseAssignments.userId, userId),
+        ),
+      )
       .where(
         and(
-          eq(jobPhases.assignedUserId, userId),
+          or(
+            eq(jobPhases.assignedUserId, userId),
+            eq(jobPhaseAssignments.userId, userId),
+          ),
           isNotNull(jobPhases.scheduledStart),
           gte(jobPhases.scheduledStart, weekStart),
           lt(jobPhases.scheduledStart, weekEnd),

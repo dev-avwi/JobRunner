@@ -8,9 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
@@ -19,6 +16,7 @@ import { useTheme } from '../../lib/theme';
 import { spacing, typography, fontWeights } from '../../lib/design-tokens';
 import type { PurchaseOrder, POItem, ProjectPhase } from './types';
 import { sharedStyles } from './sharedStyles';
+import { AppBottomSheet } from '../ui/AppBottomSheet';
 
 let _idCounter = 0;
 function genId() { return `po_${Date.now()}_${++_idCounter}`; }
@@ -81,13 +79,7 @@ function SupplierPickerModal({
   const { colors } = useTheme();
   const s = useMemo(() => sharedStyles(colors), [colors]);
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <View style={[s.modalContainer, { backgroundColor: colors.background }]}>
-        <View style={s.modalHeader}>
-          <TouchableOpacity onPress={onClose}><Text style={s.modalCancel}>Cancel</Text></TouchableOpacity>
-          <Text style={s.modalTitle}>Select Supplier</Text>
-          <View style={{ width: 60 }} />
-        </View>
+    <AppBottomSheet visible={visible} title="Select Supplier" showCloseButton onDismiss={onClose} snapPoints={['75%']}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           {loading && <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: spacing.lg }} />}
           {!loading && suppliers.length === 0 && (
@@ -110,8 +102,7 @@ function SupplierPickerModal({
             );
           })}
         </ScrollView>
-      </View>
-    </Modal>
+    </AppBottomSheet>
   );
 }
 
@@ -222,18 +213,14 @@ export function PurchaseOrdersSection({ purchaseOrders, phases, suppliers, loadi
         <Text style={s.addButtonText}>Add Purchase Order</Text>
       </TouchableOpacity>
 
-      <Modal visible={showModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={closeModal}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={[s.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={closeModal} testID="po-modal-cancel">
-                <Text style={s.modalCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <Text style={s.modalTitle}>{editingIdx !== null ? 'Edit PO' : 'Add PO'}</Text>
-              <TouchableOpacity onPress={savePO} testID="po-modal-save">
-                <Text style={s.modalSave}>Save</Text>
-              </TouchableOpacity>
-            </View>
+      <AppBottomSheet
+        visible={showModal}
+        title={editingIdx !== null ? 'Edit Purchase Order' : 'Add Purchase Order'}
+        showCloseButton
+        onDismiss={closeModal}
+        snapPoints={['94%']}
+        footer={<View style={{ flexDirection: 'row', gap: spacing.sm }}><TouchableOpacity onPress={closeModal} testID="po-modal-cancel" style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: spacing.md, alignItems: 'center' }}><Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>Cancel</Text></TouchableOpacity><TouchableOpacity onPress={savePO} testID="po-modal-save" style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 10, padding: spacing.md, alignItems: 'center' }}><Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Save</Text></TouchableOpacity></View>}
+      >
             <ScrollView contentContainerStyle={s.modalContent} keyboardShouldPersistTaps="handled">
               <View style={s.field}>
                 <Text style={s.label}>Supplier *</Text>
@@ -366,8 +353,6 @@ export function PurchaseOrdersSection({ purchaseOrders, phases, suppliers, loadi
                 <Text style={s.addButtonText}>Add Line Item</Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </KeyboardAvoidingView>
 
         <SupplierPickerModal
           visible={showSupplierPicker}
@@ -379,13 +364,7 @@ export function PurchaseOrdersSection({ purchaseOrders, phases, suppliers, loadi
         />
 
         {/* Phase picker */}
-        <Modal visible={showPhasePicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowPhasePicker(false)}>
-          <View style={[s.modalContainer, { backgroundColor: colors.background }]}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => setShowPhasePicker(false)}><Text style={s.modalCancel}>Cancel</Text></TouchableOpacity>
-              <Text style={s.modalTitle}>Link to Phase</Text>
-              <View style={{ width: 60 }} />
-            </View>
+        <AppBottomSheet visible={showPhasePicker} title="Link to Phase" showCloseButton onDismiss={() => setShowPhasePicker(false)} snapPoints={['70%']}>
             <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
               <TouchableOpacity
                 style={[s.itemCard, !form.phaseClientId && { borderColor: colors.primary }]}
@@ -408,9 +387,8 @@ export function PurchaseOrdersSection({ purchaseOrders, phases, suppliers, loadi
                 );
               })}
             </ScrollView>
-          </View>
-        </Modal>
-      </Modal>
+        </AppBottomSheet>
+      </AppBottomSheet>
     </View>
   );
 }

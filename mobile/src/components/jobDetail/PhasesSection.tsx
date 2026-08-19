@@ -28,6 +28,8 @@ export interface JobPhase {
   sortOrder: number;
   notes?: string | null;
   assignedUserId?: string | null;
+  assignedUserIds?: string[];
+  assignedUsers?: Array<{ id: string; name: string; isLead?: boolean }>;
   assignedUserName?: string | null;
 }
 
@@ -224,18 +226,20 @@ export function PhasesSection({
           </TouchableOpacity>
         </View>
 
-        {/* Team member */}
+        {/* Phase team */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Assigned</Text>
-          {viewingPhase.assignedUserName ? (
+          {(viewingPhase.assignedUsers?.length || viewingPhase.assignedUserName) ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>
-                  {getInitials(viewingPhase.assignedUserName)}
-                </Text>
+              <View style={{ flexDirection: 'row' }}>
+                {(viewingPhase.assignedUsers?.length ? viewingPhase.assignedUsers : [{ id: viewingPhase.assignedUserId || 'lead', name: viewingPhase.assignedUserName || '' }]).slice(0, 3).map((member, index) => (
+                  <View key={member.id} style={{ width: 32, height: 32, marginLeft: index ? -9 : 0, borderRadius: 16, backgroundColor: colors.primary, borderWidth: 2, borderColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primaryForeground }}>{getInitials(member.name)}</Text>
+                  </View>
+                ))}
               </View>
-              <Text style={{ fontSize: 14, fontWeight: fontWeights.medium, color: colors.foreground }}>
-                {viewingPhase.assignedUserName}
+              <Text style={{ flex: 1, fontSize: 14, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>
+                {(viewingPhase.assignedUsers?.length ? viewingPhase.assignedUsers.map((member) => member.name) : [viewingPhase.assignedUserName]).join(', ')}
               </Text>
             </View>
           ) : (

@@ -1005,6 +1005,7 @@ export default function CreateJobScreen() {
               scheduledEnd: ph.scheduledEnd || null,
               budgetedCost: ph.budgetedCost || null,
               assignedUserId: ph.assignedUserId || null,
+              assignedUserIds: ph.assignedUserIds?.length ? ph.assignedUserIds : undefined,
               sortOrder: ph.sortOrder,
             })),
             purchaseOrders: projectSetupData.purchaseOrders.map((po) => ({

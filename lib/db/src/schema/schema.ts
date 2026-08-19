@@ -803,6 +803,21 @@ export const jobPhases = pgTable("job_phases", {
   index("idx_job_phases_user_id").on(table.userId),
   index("idx_job_phases_assigned_user_id").on(table.assignedUserId),
 ]);
+
+// A phase can have a lead assignee (job_phases.assigned_user_id, retained for
+// compatibility) plus any number of additional team members. Keep this
+// normalized so phase membership is queryable and duplicate-safe.
+export const jobPhaseAssignments = pgTable("job_phase_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phaseId: varchar("phase_id").notNull().references(() => jobPhases.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  isLead: boolean("is_lead").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_job_phase_assignments_phase_user").on(table.phaseId, table.userId),
+  index("idx_job_phase_assignments_phase_id").on(table.phaseId),
+  index("idx_job_phase_assignments_user_id").on(table.userId),
+]);
 export const serviceReminders = pgTable("service_reminders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").references(() => jobs.id, { onDelete: 'set null' }),
@@ -5515,6 +5530,7 @@ export type JobPhase = typeof jobPhases.$inferSelect;
 export const insertJobPhaseSchema = createInsertSchema(jobPhases).omit({ id: true, createdAt: true, updatedAt: true });
 
 export type InsertJobPhase = z.infer<typeof insertJobPhaseSchema>;
+export type JobPhaseAssignment = typeof jobPhaseAssignments.$inferSelect;
 
 // ─── Progress Claims ───────────────────────────────────────────────────────
 // A progress claim is a milestone billing document for large construction /

@@ -218,6 +218,7 @@ import {
   insertNumberPortRequestSchema,
   PORT_REQUEST_STATUSES,
   jobPhases,
+  jobPhaseAssignments,
   purchaseOrders,
   purchaseOrderItems,
   claims,
@@ -452,6 +453,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       scheduledEnd: setupDateSchema.optional().nullable(),
       budgetedCost: setupMoneySchema.optional().nullable(),
       assignedUserId: z.string().optional().nullable(),
+      assignedUserIds: z.array(z.string().min(1)).max(100).optional(),
       sortOrder: z.number().int().min(0).optional(),
     })).max(100).default([]),
     purchaseOrders: z.array(z.object({
@@ -485,6 +487,119 @@ import { computeRetentionSummary } from "./retentionSummary";
       value: z.string().trim().max(4000),
     })).max(100).default([]),
   });
+
+  type PhaseAssignmentInput = {
+    assignedUserId?: string | null;
+    assignedUserIds?: string[];
+  };
+
+  // Keep assignedUserId as the backwards-compatible lead assignment. A full
+  // phase team is additive and safely deduplicated before it is persisted.
+  function normalizePhaseAssignees(input: PhaseAssignmentInput) {
+    const listWasProvided = Array.isArray(input.assignedUserIds);
+    const userIds = (listWasProvided
+      ? input.assignedUserIds!
+      : input.assignedUserId ? [input.assignedUserId] : [])
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .filter((id, index, values) => values.indexOf(id) === index);
+    const requestedLead = input.assignedUserId?.trim() || null;
+    return {
+      userIds,
+      leadUserId: requestedLead && userIds.includes(requestedLead)
+        ? requestedLead
+        : userIds[0] ?? null,
+    };
+  }
+
+  async function getAvailablePhaseAssigneeIds(ownerUserId: string, requestUserId: string) {
+    const members = await storage.getTeamMembers(ownerUserId);
+    return new Set<string>([
+      ownerUserId,
+      requestUserId,
+      ...members
+        .filter((member: any) =>
+          member.isActive !== false &&
+          member.inviteStatus === 'accepted' &&
+          member.memberId,
+        )
+        .map((member: any) => member.memberId),
+    ]);
+  }
+
+  async function syncPhaseAssignments(
+    executor: any,
+    phaseId: string,
+    userIds: string[],
+    leadUserId: string | null,
+  ) {
+    await executor.delete(jobPhaseAssignments).where(eq(jobPhaseAssignments.phaseId, phaseId));
+    if (userIds.length > 0) {
+      await executor.insert(jobPhaseAssignments).values(
+        userIds.map((userId) => ({
+          id: randomUUID(),
+          phaseId,
+          userId,
+          isLead: userId === leadUserId,
+        })),
+      );
+    }
+  }
+
+  async function enrichPhasesWithAssignees(phases: any[]) {
+    if (phases.length === 0) return [];
+    const assignmentRows = await db
+      .select({
+        phaseId: jobPhaseAssignments.phaseId,
+        userId: jobPhaseAssignments.userId,
+        isLead: jobPhaseAssignments.isLead,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        email: users.email,
+      })
+      .from(jobPhaseAssignments)
+      .innerJoin(users, eq(jobPhaseAssignments.userId, users.id))
+      .where(inArray(jobPhaseAssignments.phaseId, phases.map((phase) => phase.id)));
+    const byPhaseId = new Map<string, Array<{ id: string; name: string; isLead: boolean }>>();
+    for (const row of assignmentRows) {
+      const member = {
+        id: row.userId,
+        name: [row.firstName, row.lastName].filter(Boolean).join(' ') || row.email || 'Team Member',
+        isLead: !!row.isLead,
+      };
+      byPhaseId.set(row.phaseId, [...(byPhaseId.get(row.phaseId) ?? []), member]);
+    }
+
+    const legacyIds = [...new Set(
+      phases
+        .filter((phase) => phase.assignedUserId && !(byPhaseId.get(phase.id) ?? []).some((member) => member.id === phase.assignedUserId))
+        .map((phase) => phase.assignedUserId as string),
+    )];
+    const legacyNames = new Map<string, string>();
+    await Promise.all(legacyIds.map(async (id) => {
+      const user = await storage.getUser(id);
+      if (user) legacyNames.set(id, [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email || 'Team Member');
+    }));
+
+    return phases.map((phase) => {
+      const members = [...(byPhaseId.get(phase.id) ?? [])];
+      if (phase.assignedUserId && !members.some((member) => member.id === phase.assignedUserId)) {
+        members.unshift({
+          id: phase.assignedUserId,
+          name: legacyNames.get(phase.assignedUserId) || 'Team Member',
+          isLead: true,
+        });
+      }
+      members.sort((a, b) => Number(b.isLead) - Number(a.isLead));
+      const lead = members.find((member) => member.id === phase.assignedUserId) ?? members[0];
+      return {
+        ...phase,
+        assignedUserName: lead?.name ?? null,
+        assignedUserIds: members.map((member) => member.id),
+        assignedUsers: members,
+      };
+    });
+  }
 
   class InitialProjectSetupSaveError extends Error {
     constructor(cause: unknown) {
@@ -3054,20 +3169,10 @@ import { computeRetentionSummary } from "./retentionSummary";
           return res.status(403).json({ error: "You do not have permission to create purchase orders" });
         }
 
-        const members = await storage.getTeamMembers(effectiveUserId);
-        const allowedUserIds = new Set<string>([
-          effectiveUserId,
-          req.userId,
-          ...members
-            .filter((member: any) =>
-              member.isActive !== false &&
-              member.inviteStatus === 'accepted' &&
-              member.memberId
-            )
-            .map((member: any) => member.memberId),
-        ]);
+        const allowedUserIds = await getAvailablePhaseAssigneeIds(effectiveUserId, req.userId);
         for (const phase of initialProjectSetup.phases) {
-          if (phase.assignedUserId && !allowedUserIds.has(phase.assignedUserId)) {
+          const phaseAssignees = normalizePhaseAssignees(phase);
+          if (phaseAssignees.userIds.some((id) => !allowedUserIds.has(id))) {
             return res.status(400).json({ error: `The responsible team member for "${phase.name}" is not available` });
           }
         }
@@ -3222,6 +3327,7 @@ import { computeRetentionSummary } from "./retentionSummary";
             for (const [index, phase] of (initialProjectSetup?.phases ?? []).entries()) {
               const phaseId = randomUUID();
               phaseIdByClientId.set(phase.clientId, phaseId);
+              const phaseAssignees = normalizePhaseAssignees(phase);
               await tx.execute(sql`
                 INSERT INTO job_phases (
                   id, job_id, user_id, phase_code, name, description,
@@ -3234,9 +3340,15 @@ import { computeRetentionSummary } from "./retentionSummary";
                   ${phase.scheduledStart ? new Date(phase.scheduledStart) : null},
                   ${phase.scheduledEnd ? new Date(phase.scheduledEnd) : null},
                   ${phase.budgetedCost ?? null}, 'not_started',
-                  ${phase.sortOrder ?? index}, ${phase.assignedUserId ?? null}
+                  ${phase.sortOrder ?? index}, ${phaseAssignees.leadUserId}
                 )
               `);
+              await syncPhaseAssignments(
+                tx,
+                phaseId,
+                phaseAssignees.userIds,
+                phaseAssignees.leadUserId,
+              );
             }
 
             for (const po of initialProjectSetup?.purchaseOrders ?? []) {
@@ -9202,23 +9314,7 @@ import { computeRetentionSummary } from "./retentionSummary";
       // so cross-business workers see the correct phases rather than an empty list from their own tenant.
       const phaseOwnerId = job.userId;
       const phases = await storage.getJobPhases(jobId, phaseOwnerId);
-      // Enrich each phase with the assignee's display name so UIs don't need a
-      // separate lookup. Batch-fetch unique assignee users to avoid N+1 queries.
-      const assigneeIds = [...new Set(phases.map((p: any) => p.assignedUserId).filter(Boolean))] as string[];
-      const assigneeMap = new Map<string, string>();
-      if (assigneeIds.length > 0) {
-        await Promise.all(assigneeIds.map(async (uid) => {
-          const u = await storage.getUser(uid);
-          if (u) {
-            assigneeMap.set(uid, [u.firstName, u.lastName].filter(Boolean).join(' ') || u.email || '');
-          }
-        }));
-      }
-      const enriched = phases.map((p: any) => ({
-        ...p,
-        assignedUserName: p.assignedUserId ? (assigneeMap.get(p.assignedUserId) || null) : null,
-      }));
-      res.json(enriched);
+      res.json(await enrichPhasesWithAssignees(phases));
     } catch (err: any) {
       console.error("Error fetching job phases:", err);
       res.status(500).json({ error: err.message });
@@ -9260,29 +9356,40 @@ import { computeRetentionSummary } from "./retentionSummary";
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
         assignedUserId: z.string().optional().nullable(),
+        assignedUserIds: z.array(z.string().min(1)).max(100).optional(),
       });
       const parsed = bodySchema.parse(normalizePhaseBody(req.body));
+      const phaseAssignees = normalizePhaseAssignees(parsed);
+      const allowedAssignees = await getAvailablePhaseAssigneeIds(effectiveUserId, userId);
+      if (phaseAssignees.userIds.some((id) => !allowedAssignees.has(id))) {
+        return res.status(400).json({ error: "One or more selected team members are not available" });
+      }
 
       // Auto-assign sortOrder = count of existing phases
       const existing = await storage.getJobPhases(jobId, effectiveUserId);
       const sortOrder = parsed.sortOrder ?? existing.length;
 
-      const phase = await storage.createJobPhase({
-        jobId,
-        userId: effectiveUserId,
-        phaseCode: parsed.phaseCode.trim().toUpperCase(),
-        name: parsed.name.trim(),
-        description: parsed.description ?? null,
-        scheduledStart: parsed.scheduledStart ?? null,
-        scheduledEnd: parsed.scheduledEnd ?? null,
-        bookedHours: parsed.bookedHours ?? null,
-        budgetedCost: parsed.budgetedCost ?? null,
-        status: parsed.status,
-        sortOrder,
-        notes: parsed.notes ?? null,
-        assignedUserId: parsed.assignedUserId ?? null,
+      const phase = await db.transaction(async (tx) => {
+        const [created] = await tx.insert(jobPhases).values({
+          id: randomUUID(),
+          jobId,
+          userId: effectiveUserId,
+          phaseCode: parsed.phaseCode.trim().toUpperCase(),
+          name: parsed.name.trim(),
+          description: parsed.description ?? null,
+          scheduledStart: parsed.scheduledStart ?? null,
+          scheduledEnd: parsed.scheduledEnd ?? null,
+          bookedHours: parsed.bookedHours ?? null,
+          budgetedCost: parsed.budgetedCost ?? null,
+          status: parsed.status,
+          sortOrder,
+          notes: parsed.notes ?? null,
+          assignedUserId: phaseAssignees.leadUserId,
+        }).returning();
+        await syncPhaseAssignments(tx, created.id, phaseAssignees.userIds, phaseAssignees.leadUserId);
+        return created;
       });
-      res.status(201).json(phase);
+      res.status(201).json((await enrichPhasesWithAssignees([phase]))[0]);
     } catch (err: any) {
       if (err instanceof z.ZodError) return res.status(400).json({ error: "Invalid phase data", details: err.errors });
       console.error("Error creating job phase:", err);
@@ -9328,15 +9435,35 @@ import { computeRetentionSummary } from "./retentionSummary";
         sortOrder: z.number().int().optional(),
         notes: z.string().optional().nullable(),
         assignedUserId: z.string().optional().nullable(),
+        assignedUserIds: z.array(z.string().min(1)).max(100).optional(),
       });
       const updates = updateSchema.parse(normalizePhaseBody(req.body));
       if (updates.phaseCode) updates.phaseCode = updates.phaseCode.trim().toUpperCase() as any;
       if (updates.name) updates.name = updates.name.trim() as any;
+      const hasAssignmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'assignedUserId')
+        || Object.prototype.hasOwnProperty.call(req.body, 'assignedUserIds');
+      const phaseAssignees = hasAssignmentUpdate ? normalizePhaseAssignees(updates) : null;
+      if (phaseAssignees) {
+        const allowedAssignees = await getAvailablePhaseAssigneeIds(effectiveUserId, userId);
+        if (phaseAssignees.userIds.some((id) => !allowedAssignees.has(id))) {
+          return res.status(400).json({ error: "One or more selected team members are not available" });
+        }
+        updates.assignedUserId = phaseAssignees.leadUserId;
+      }
 
-      // Pass jobId so storage scopes by phaseId + jobId + userId — prevents cross-job mutations
-      const phase = await storage.updateJobPhase(phaseId, jobId, effectiveUserId, updates as any);
+      const phase = await db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(jobPhases)
+          .set({ ...updates, updatedAt: new Date() })
+          .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, effectiveUserId)))
+          .returning();
+        if (updated && phaseAssignees) {
+          await syncPhaseAssignments(tx, phaseId, phaseAssignees.userIds, phaseAssignees.leadUserId);
+        }
+        return updated;
+      });
       if (!phase) return res.status(404).json({ error: "Phase not found" });
-      res.json(phase);
+      res.json((await enrichPhasesWithAssignees([phase]))[0]);
     } catch (err: any) {
       if (err instanceof z.ZodError) return res.status(400).json({ error: "Invalid phase data", details: err.errors });
       console.error("Error updating job phase:", err);

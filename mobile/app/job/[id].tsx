@@ -85,6 +85,7 @@ import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSectio
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
@@ -2245,11 +2246,11 @@ export default function JobDetailScreen() {
   const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
-  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', assignedUserId: '' });
+  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] as string[] });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
-  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '' });
+  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '', assignedUserIds: [] as string[] });
   const [showAddPhaseTeamPicker, setShowAddPhaseTeamPicker] = useState(false);
   const [showEditPhaseTeamPicker, setShowEditPhaseTeamPicker] = useState(false);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
@@ -2809,10 +2810,11 @@ export default function JobDetailScreen() {
         name: addPhaseForm.name.trim(),
         description: addPhaseForm.description.trim() || null,
         assignedUserId: addPhaseForm.assignedUserId || null,
+        assignedUserIds: addPhaseForm.assignedUserIds,
       });
       await loadPhases();
       setShowAddPhaseModal(false);
-      setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' });
+      setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] });
       showToast({ type: 'success', message: 'Phase added' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
@@ -2837,6 +2839,7 @@ export default function JobDetailScreen() {
         bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
         status: editPhaseForm.status,
         assignedUserId: editPhaseForm.assignedUserId || null,
+        assignedUserIds: editPhaseForm.assignedUserIds,
       };
       await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
       await loadPhases();
@@ -11007,6 +11010,7 @@ export default function JobDetailScreen() {
                         bookedHours: phase.bookedHours ?? '',
                         status: phase.status,
                         assignedUserId: phase.assignedUserId ?? '',
+                        assignedUserIds: phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : [],
                       });
                       setShowEditPhaseModal(true);
                     } : undefined}
@@ -11029,6 +11033,7 @@ export default function JobDetailScreen() {
                         bookedHours: phase.bookedHours ?? '',
                         status: phase.status,
                         assignedUserId: phase.assignedUserId ?? '',
+                        assignedUserIds: phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : [],
                       });
                       setShowEditPhaseModal(true);
                     } : undefined}
@@ -11082,13 +11087,13 @@ export default function JobDetailScreen() {
       {/* Add Phase Modal */}
       <AppBottomSheet
         visible={showAddPhaseModal}
-        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' }); }}
+        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] }); }}
         title="Add Phase"
         showCloseButton
         snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '' }); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] }); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
           </View>
         )}>
@@ -11121,7 +11126,15 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
-          {/* Assign Team Member */}
+          <PhaseTeamPicker
+            selectedIds={addPhaseForm.assignedUserIds}
+            teamMembers={teamMembers}
+            onChange={(assignedUserIds) => setAddPhaseForm((value) => ({ ...value, assignedUserIds, assignedUserId: assignedUserIds[0] || '' }))}
+            onManageTeam={() => { setShowAddPhaseModal(false); router.push('/more/team-management'); }}
+            testID="add-phase-team"
+          />
+          <View style={{ display: 'none' }}>
+          {/* Legacy single-member selector, retained only while hidden for a safe rollback. */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
           <TouchableOpacity
             style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showAddPhaseTeamPicker ? spacing.xs : spacing.lg }]}
@@ -11191,6 +11204,7 @@ export default function JobDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+          </View>
         </View>
       </AppBottomSheet>
 
@@ -11293,7 +11307,15 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
-          {/* Assign Team Member */}
+          <PhaseTeamPicker
+            selectedIds={editPhaseForm.assignedUserIds}
+            teamMembers={teamMembers}
+            onChange={(assignedUserIds) => setEditPhaseForm((value) => ({ ...value, assignedUserIds, assignedUserId: assignedUserIds[0] || '' }))}
+            onManageTeam={() => { setShowEditPhaseModal(false); router.push('/more/team-management'); }}
+            testID="edit-phase-team"
+          />
+          <View style={{ display: 'none' }}>
+          {/* Legacy single-member selector, retained only while hidden for a safe rollback. */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
           <TouchableOpacity
             style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showEditPhaseTeamPicker ? spacing.xs : spacing.lg }]}
@@ -11363,6 +11385,7 @@ export default function JobDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+          </View>
         </View>
       </AppBottomSheet>
 
