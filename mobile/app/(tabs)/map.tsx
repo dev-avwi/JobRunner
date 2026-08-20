@@ -61,6 +61,7 @@ import { statusColors, spacing, radius, shadows, typography, fontWeights } from 
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { TeamAvatar } from '../../src/components/TeamAvatar';
 
 // Real-time polling interval for team locations (10 seconds)
 const LOCATION_POLL_INTERVAL = 10000;
@@ -2444,9 +2445,7 @@ export default function MapScreen() {
             contentContainerStyle={{ gap: spacing.sm, paddingRight: spacing.sm }}
           >
             {teamMembers.map((member) => {
-              const memberColor = member.themeColor || '#5B8DEF';
               const activityColor = getActivityColor(member.activityStatus);
-              const initials = `${member.user?.firstName?.[0] || '?'}${member.user?.lastName?.[0] || '?'}`;
               const firstName = member.user?.firstName || 'Unknown';
               const isWorking = member.activityStatus === 'working';
               const isDriving = member.activityStatus === 'driving';
@@ -2474,18 +2473,13 @@ export default function MapScreen() {
                 >
                   {/* Compact avatar with activity dot */}
                   <View style={{ position: 'relative' }}>
-                    <View style={{
-                      width: 30,
-                      height: 30,
-                      borderRadius: 15,
-                      backgroundColor: memberColor,
-                      borderWidth: 2,
-                      borderColor: colors.card,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.white }}>{initials}</Text>
-                    </View>
+                    <TeamAvatar
+                      firstName={member.user?.firstName}
+                      lastName={member.user?.lastName}
+                      userId={String(member.userId || member.id)}
+                      themeColor={member.themeColor}
+                      size={30}
+                    />
                     {/* Activity indicator dot */}
                     <View style={{
                       position: 'absolute',
