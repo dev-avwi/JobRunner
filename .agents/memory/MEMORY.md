@@ -11,3 +11,4 @@
 - [Project creation replay safety](project-creation-replay.md) — response-loss retries need a persisted payload and durable per-user DB identity; TTL caches alone are insufficient
 - [Web runtime overlay debugging](web-runtime-overlay-debugging.md) — Vite’s unknown-runtime overlay can hide the source error; instrument before retrying UI-path guesses.
 - [Live RBAC fixtures](live-rbac-fixtures.md) — seeded staff may authenticate without job assignments; create isolated assignments and clean them up for authorization checks.
+- [Mobile UI conventions skill](mobile-ui-conventions-skill.md) — TeamAvatar, multi-select bottom sheets, AppBottomSheet footer; load `.agents/skills/mobile-ui-conventions/SKILL.md` before any mobile screen work.
