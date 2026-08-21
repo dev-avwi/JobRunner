@@ -69,7 +69,11 @@ export default function OnboardingSetupScreen() {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const confirm = useConfirmDialog();
-  const { user, fetchBusinessSettings } = useAuthStore();
+  const { user, fetchBusinessSettings, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -1465,6 +1469,16 @@ export default function OnboardingSetupScreen() {
                 >
                   <Text style={styles.skipChipText}>Skip</Text>
                 </TouchableOpacity>
+              ) : currentStep === 'role' ? (
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  style={styles.logoutChip}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="log-out-outline" size={15} color={colors.mutedForeground} />
+                  <Text style={styles.logoutChipText}>Log out</Text>
+                </TouchableOpacity>
               ) : (
                 <View style={{ width: 40 }} />
               )}
@@ -1854,6 +1868,22 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     fontSize: typography.sizes.sm,
     color: colors.primary,
     fontWeight: fontWeights.semibold,
+  },
+  logoutChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  logoutChipText: {
+    fontSize: typography.sizes.sm,
+    color: colors.mutedForeground,
+    fontWeight: fontWeights.medium,
   },
 
   codeInputWrap: {
