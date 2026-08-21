@@ -1529,7 +1529,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
 
 export default function DocumentsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_quotes', 'view_invoices', 'read_quotes', 'read_invoices']}>
       <DocumentsScreenInner />
     </OwnerOnlyGuard>
   );

@@ -933,7 +933,7 @@ function InsightsScreenInner() {
 
 export default function InsightsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_reports', 'read_reports']}>
       <InsightsScreenInner />
     </OwnerOnlyGuard>
   );

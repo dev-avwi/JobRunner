@@ -839,7 +839,7 @@ function ActionCenterScreenInner() {
 
 export default function ActionCenterScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_action_center']}>
       <ActionCenterScreenInner />
     </OwnerOnlyGuard>
   );

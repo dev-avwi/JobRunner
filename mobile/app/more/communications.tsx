@@ -876,7 +876,7 @@ function CommunicationsScreenInner() {
 
 export default function CommunicationsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_communications', 'read_communications']}>
       <CommunicationsScreenInner />
     </OwnerOnlyGuard>
   );

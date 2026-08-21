@@ -2849,7 +2849,7 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
 
 export default function InventoryScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_catalog']}>
       <InventoryScreenInner />
     </OwnerOnlyGuard>
   );

@@ -1382,7 +1382,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
 
 export default function ExpensesScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['read_expenses', 'write_expenses']}>
       <ExpensesScreenInner />
     </OwnerOnlyGuard>
   );

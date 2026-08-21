@@ -1512,7 +1512,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
 
 export default function TeamOperationsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_dispatch', 'assign_jobs', 'manage_team']}>
       <TeamOperationsScreenInner />
     </OwnerOnlyGuard>
   );

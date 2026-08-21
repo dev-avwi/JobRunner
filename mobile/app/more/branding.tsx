@@ -857,7 +857,7 @@ function BrandingScreenInner() {
 
 export default function BrandingScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_settings']}>
       <BrandingScreenInner />
     </OwnerOnlyGuard>
   );

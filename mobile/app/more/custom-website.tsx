@@ -512,7 +512,7 @@ const createStyles = (colors: ThemeColors, isDark: boolean) => StyleSheet.create
 
 export default function CustomWebsitePage() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_settings']}>
       <CustomWebsitePageInner />
     </OwnerOnlyGuard>
   );

@@ -2238,7 +2238,7 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
 
 export default function ReportsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_reports', 'read_reports']}>
       <ReportsScreenInner />
     </OwnerOnlyGuard>
   );

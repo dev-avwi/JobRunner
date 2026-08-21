@@ -2290,7 +2290,7 @@ function AIReceptionistScreenInner() {
 
 export default function AIReceptionistScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_ai_receptionist']}>
       <AIReceptionistScreenInner />
     </OwnerOnlyGuard>
   );

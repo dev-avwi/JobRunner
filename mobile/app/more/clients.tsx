@@ -982,7 +982,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 export default function ClientsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['edit_clients', 'create_clients', 'write_clients']}>
       <ClientsScreenInner />
     </OwnerOnlyGuard>
   );

@@ -9,7 +9,11 @@
  *
  * Also verifies that owners and managers are let through without a redirect.
  *
- * These tests cover the guard logic shared by all 17 restricted screens:
+ * Workers with custom permissions: when `requiredPermission` is supplied, a
+ * worker holding any of those permissions is also let through. Workers without
+ * the permission are still blocked.
+ *
+ * These tests cover the guard logic shared by all restricted screens:
  *   mobile/app/more/insights.tsx
  *   mobile/app/more/reports.tsx
  *   mobile/app/more/autopilot.tsx
@@ -40,10 +44,19 @@ jest.mock('expo-router', () => ({
 }));
 
 // ---- useUserRole mock -------------------------------------------------------
-let mockRoleState = {
+let mockHasPermission = jest.fn((_key: string) => false);
+let mockRoleState: {
+  isOwner: boolean;
+  isManager: boolean;
+  isStandaloneSubcontractor?: boolean;
+  isLoading: boolean;
+  hasPermission: jest.Mock;
+} = {
   isOwner: false,
   isManager: false,
+  isStandaloneSubcontractor: false,
   isLoading: false,
+  hasPermission: mockHasPermission,
 };
 jest.mock('../../../hooks/use-user-role', () => ({
   useUserRole: () => mockRoleState,
@@ -75,19 +88,19 @@ import { OwnerOnlyGuard } from '../OwnerOnlyGuard';
 const SENTINEL_TEST_ID = 'restricted-screen-content';
 
 /** JSX that wraps a sentinel View in the guard. Re-used across update() calls. */
-function makeGuardTree(redirectTo?: string): React.ReactElement {
+function makeGuardTree(redirectTo?: string, requiredPermission?: string | string[]): React.ReactElement {
   const sentinel = <View testID={SENTINEL_TEST_ID} />;
-  return redirectTo ? (
-    <OwnerOnlyGuard redirectTo={redirectTo}>{sentinel}</OwnerOnlyGuard>
-  ) : (
-    <OwnerOnlyGuard>{sentinel}</OwnerOnlyGuard>
+  return (
+    <OwnerOnlyGuard redirectTo={redirectTo} requiredPermission={requiredPermission}>
+      {sentinel}
+    </OwnerOnlyGuard>
   );
 }
 
-async function renderGuardWithContent(redirectTo?: string): Promise<ReactTestRenderer> {
+async function renderGuardWithContent(redirectTo?: string, requiredPermission?: string | string[]): Promise<ReactTestRenderer> {
   let tree!: ReactTestRenderer;
   await act(async () => {
-    tree = create(makeGuardTree(redirectTo));
+    tree = create(makeGuardTree(redirectTo, requiredPermission));
   });
   // Flush any microtask-queued effects (useEffect).
   await act(async () => {
@@ -114,12 +127,20 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   beforeEach(() => {
     mockRouterReplace.mockReset();
     mockShowToast.mockReset();
+    mockHasPermission = jest.fn((_key: string) => false);
+    mockRoleState = {
+      isOwner: false,
+      isManager: false,
+      isStandaloneSubcontractor: false,
+      isLoading: false,
+      hasPermission: mockHasPermission,
+    };
   });
 
   // -- Loading state ----------------------------------------------------------
 
   it('shows a spinner (not restricted content) while the role is still loading', async () => {
-    mockRoleState = { isOwner: false, isManager: false, isLoading: true };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: true, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent();
 
@@ -137,7 +158,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   // -- Staff / worker role (simulates staff_tradie) ---------------------------
 
   it('redirects a staff user to /jobs and shows a toast – no restricted content flash', async () => {
-    mockRoleState = { isOwner: false, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent();
 
@@ -156,7 +177,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   });
 
   it('does not trigger a second redirect if the component re-renders while still denied', async () => {
-    mockRoleState = { isOwner: false, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent();
 
@@ -172,7 +193,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   });
 
   it('redirects to a custom `redirectTo` path when provided', async () => {
-    mockRoleState = { isOwner: false, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent('/more');
 
@@ -207,7 +228,8 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   it.each(RESTRICTED_PATHS)(
     'blocks a staff user who deep-links to %s and shows no screen data',
     async (path) => {
-      mockRoleState = { isOwner: false, isManager: false, isLoading: false };
+      const localHasPermission = jest.fn((_key: string) => false);
+      mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
       mockRouterReplace.mockReset();
       mockShowToast.mockReset();
 
@@ -242,7 +264,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   // -- Owner role ------------------------------------------------------------
 
   it('renders restricted content for an owner without redirecting', async () => {
-    mockRoleState = { isOwner: true, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: true, isManager: false, isLoading: false, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent();
 
@@ -257,7 +279,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   // -- Manager role ----------------------------------------------------------
 
   it('renders restricted content for a manager without redirecting', async () => {
-    mockRoleState = { isOwner: false, isManager: true, isLoading: false };
+    mockRoleState = { isOwner: false, isManager: true, isLoading: false, hasPermission: mockHasPermission };
 
     const tree = await renderGuardWithContent();
 
@@ -270,7 +292,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
 
   it('redirects after role resolves from loading to staff (cold cache scenario)', async () => {
     // Start with role still loading (cold cache).
-    mockRoleState = { isOwner: false, isManager: false, isLoading: true };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: true, hasPermission: mockHasPermission };
 
     let tree!: ReactTestRenderer;
     await act(async () => {
@@ -282,7 +304,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
     expect(mockRouterReplace).not.toHaveBeenCalled();
 
     // Role resolves to staff.
-    mockRoleState = { isOwner: false, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: mockHasPermission };
     await act(async () => {
       tree.update(makeGuardTree());
       await Promise.resolve();
@@ -300,7 +322,7 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
   // -- Loading → owner transition (cold cache, should NOT redirect) ----------
 
   it('shows content once role resolves from loading to owner (no redirect)', async () => {
-    mockRoleState = { isOwner: false, isManager: false, isLoading: true };
+    mockRoleState = { isOwner: false, isManager: false, isLoading: true, hasPermission: mockHasPermission };
 
     let tree!: ReactTestRenderer;
     await act(async () => {
@@ -310,9 +332,89 @@ describe('OwnerOnlyGuard – staff user deep-link guard', () => {
     expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
 
     // Role resolves to owner.
-    mockRoleState = { isOwner: true, isManager: false, isLoading: false };
+    mockRoleState = { isOwner: true, isManager: false, isLoading: false, hasPermission: mockHasPermission };
     await act(async () => {
       tree.update(makeGuardTree());
+      await Promise.resolve();
+    });
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(true);
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+    expect(mockShowToast).not.toHaveBeenCalled();
+  });
+
+  // -- Workers with custom permissions (requiredPermission unlock) -----------
+
+  it('lets a worker through when they hold the required permission (single key)', async () => {
+    const localHasPermission = jest.fn((key: string) => key === 'collect_payments');
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
+
+    const tree = await renderGuardWithContent(undefined, 'collect_payments');
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(true);
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+    expect(mockShowToast).not.toHaveBeenCalled();
+  });
+
+  it('lets a worker through when they hold one of the required permissions (array of keys)', async () => {
+    const localHasPermission = jest.fn((key: string) => key === 'manage_payments');
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
+
+    const tree = await renderGuardWithContent(undefined, ['collect_payments', 'manage_payments']);
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(true);
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+    expect(mockShowToast).not.toHaveBeenCalled();
+  });
+
+  it('still blocks a worker who holds none of the required permissions', async () => {
+    const localHasPermission = jest.fn((_key: string) => false);
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
+
+    const tree = await renderGuardWithContent(undefined, ['collect_payments', 'manage_payments']);
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
+    expect(mockRouterReplace).toHaveBeenCalledWith('/jobs');
+    expect(mockShowToast).toHaveBeenCalledWith(expect.objectContaining({ type: 'error' }));
+  });
+
+  it('blocks a worker when requiredPermission is provided but the list is empty', async () => {
+    const localHasPermission = jest.fn((_key: string) => true);
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
+
+    // No requiredPermission passed — the worker has no role-based access.
+    const tree = await renderGuardWithContent(undefined, undefined);
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
+    expect(mockRouterReplace).toHaveBeenCalledWith('/jobs');
+  });
+
+  it('worker with permission is still blocked while role is loading', async () => {
+    const localHasPermission = jest.fn((key: string) => key === 'collect_payments');
+    mockRoleState = { isOwner: false, isManager: false, isLoading: true, hasPermission: localHasPermission };
+
+    const tree = await renderGuardWithContent(undefined, 'collect_payments');
+
+    expect(hasSpinner(tree)).toBe(true);
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
+    expect(mockRouterReplace).not.toHaveBeenCalled();
+  });
+
+  it('worker with permission is let through after role finishes loading', async () => {
+    const localHasPermission = jest.fn((key: string) => key === 'collect_payments');
+    mockRoleState = { isOwner: false, isManager: false, isLoading: true, hasPermission: localHasPermission };
+
+    let tree!: ReactTestRenderer;
+    await act(async () => {
+      tree = create(makeGuardTree(undefined, 'collect_payments'));
+    });
+
+    expect(hasTestID(tree, SENTINEL_TEST_ID)).toBe(false);
+
+    // Role resolves (still worker, but has the permission).
+    mockRoleState = { isOwner: false, isManager: false, isLoading: false, hasPermission: localHasPermission };
+    await act(async () => {
+      tree.update(makeGuardTree(undefined, 'collect_payments'));
       await Promise.resolve();
     });
 

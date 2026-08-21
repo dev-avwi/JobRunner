@@ -4182,7 +4182,7 @@ function CollectScreenInner() {
 
 export default function CollectScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['collect_payments', 'manage_payments']}>
       <CollectScreenInner />
     </OwnerOnlyGuard>
   );

@@ -1397,7 +1397,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
 
 export default function DispatchBoardScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['view_dispatch', 'assign_jobs']}>
       <DispatchBoardScreenInner />
     </OwnerOnlyGuard>
   );

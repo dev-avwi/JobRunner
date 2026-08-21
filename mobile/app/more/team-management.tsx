@@ -3910,7 +3910,7 @@ function TeamManagementScreenInner() {
 
 export default function TeamManagementScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_team', 'manage_roles']}>
       <TeamManagementScreenInner />
     </OwnerOnlyGuard>
   );

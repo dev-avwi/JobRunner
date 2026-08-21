@@ -1594,7 +1594,7 @@ function IntegrationsScreenInner() {
 
 export default function IntegrationsScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_settings']}>
       <IntegrationsScreenInner />
     </OwnerOnlyGuard>
   );

@@ -1690,7 +1690,7 @@ function AutopilotScreenInner() {
 
 export default function AutopilotScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['manage_settings']}>
       <AutopilotScreenInner />
     </OwnerOnlyGuard>
   );

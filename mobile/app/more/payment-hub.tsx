@@ -1877,7 +1877,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 export default function PaymentHubScreen() {
   return (
-    <OwnerOnlyGuard>
+    <OwnerOnlyGuard requiredPermission={['collect_payments', 'manage_payments']}>
       <PaymentHubScreenInner />
     </OwnerOnlyGuard>
   );
