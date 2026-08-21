@@ -41456,6 +41456,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.json({ received: true, ignored: true });
       }
 
+      // Drop cross-origin "Script error." — the browser strips all detail from
+      // errors thrown by scripts on a different origin. No stack, no file, no
+      // line number is ever available, so these alerts are pure noise.
+      if (msgStr.trim() === 'Script error.' || msgStr.trim() === 'Script error') {
+        return res.json({ received: true, ignored: true });
+      }
+
       // Drop Android WebView "Java object is gone" / postMessage lifecycle errors.
       // This fires when a user navigates away or backgrounds the app while JS is
       // still executing and tries to call back into Java via postMessage or a

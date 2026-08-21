@@ -24,6 +24,16 @@ function isBenignResizeObserverNoise(msg?: string): boolean {
   return msg.includes('ResizeObserver loop');
 }
 
+// "Script error." (with or without a trailing period) is what browsers report
+// when an error originates in a cross-origin script. The browser deliberately
+// strips all detail to prevent cross-origin data leakage. It is never
+// actionable — we have no stack, no file, no line — so don't report it.
+function isCrossOriginScriptError(msg?: string): boolean {
+  if (!msg) return false;
+  const t = msg.trim();
+  return t === 'Script error.' || t === 'Script error';
+}
+
 function reportErrorToServer(data: {
   message: string;
   stack?: string;
@@ -32,6 +42,7 @@ function reportErrorToServer(data: {
 }) {
   if (isBenignWebSocketNoise(data.message)) return;
   if (isBenignResizeObserverNoise(data.message)) return;
+  if (isCrossOriginScriptError(data.message)) return;
   try {
     fetch('/api/client-errors', {
       method: 'POST',
