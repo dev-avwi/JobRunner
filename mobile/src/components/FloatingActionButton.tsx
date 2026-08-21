@@ -445,17 +445,19 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
                 <Text style={[styles.quickActionText, { color: '#FF3B30' }]}>AI Assistant</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.quickActionButton, { borderColor: '#34C75940' }]}
-                onPress={() => {
-                  setIsOpen(false);
-                  router.push('/more/collect-payment');
-                }}
-                activeOpacity={0.7}
-              >
-                <Feather name="credit-card" size={14} color="#34C759" />
-                <Text style={[styles.quickActionText, { color: '#34C759' }]}>Collect Payment</Text>
-              </TouchableOpacity>
+              {!lockCreate && (
+                <TouchableOpacity
+                  style={[styles.quickActionButton, { borderColor: '#34C75940' }]}
+                  onPress={() => {
+                    setIsOpen(false);
+                    router.push('/more/collect-payment');
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="credit-card" size={14} color="#34C759" />
+                  <Text style={[styles.quickActionText, { color: '#34C759' }]}>Collect Payment</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
           </Pressable>
