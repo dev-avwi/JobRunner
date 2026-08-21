@@ -1025,7 +1025,7 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
     },
 
-    addButtonsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+    addButtonsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, marginHorizontal: spacing.xs },
     addItemButton: {
       flex: 1,
       flexDirection: 'row',

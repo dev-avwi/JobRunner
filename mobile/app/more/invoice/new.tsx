@@ -309,6 +309,8 @@ function createStyles(colors: ThemeColors) {
     addButtonsRow: {
       flexDirection: 'row',
       gap: spacing.sm,
+      marginTop: spacing.md,
+      marginHorizontal: spacing.xs,
     },
     addItemButton: {
       flex: 1,

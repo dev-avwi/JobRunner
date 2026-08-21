@@ -288,6 +288,8 @@ function createStyles(colors: ThemeColors) {
     addButtonsRow: {
       flexDirection: 'row',
       gap: spacing.sm,
+      marginTop: spacing.md,
+      marginHorizontal: spacing.xs,
     },
     addItemButton: {
       flex: 1,
@@ -312,6 +314,7 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       gap: spacing.sm,
       marginTop: spacing.sm,
+      marginHorizontal: spacing.xs,
       paddingVertical: spacing.md,
       borderRadius: 12,
       backgroundColor: colors.primaryLight,
