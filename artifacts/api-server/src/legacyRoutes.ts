@@ -50031,6 +50031,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(400).json({ error: 'Business owner and at least one line item required' });
       }
 
+      // Derive the employer scope from the server-side active-workspace context.
+      // Submitting an invoice is only permitted when the subcontractor is
+      // switched into a joined-business workspace, and only to that employer.
+      // A Personal/standalone workspace (businessOwnerId === null) is rejected
+      // outright; a mismatched employer ID is also rejected so a sub who
+      // belongs to two businesses cannot bill the wrong one.
+      const userContext = await getUserContext(userId);
+      if (!userContext.businessOwnerId) {
+        return res.status(403).json({ error: 'Switch into a business workspace first to send invoices.' });
+      }
+      if (userContext.businessOwnerId !== businessOwnerId) {
+        return res.status(403).json({ error: 'You can only submit invoices to your currently active employer. Switch workspaces first.' });
+      }
+
       // Verify user is a subcontractor for this business
       const membership = await db.select().from(teamMembers)
         .where(and(eq(teamMembers.memberId, userId), eq(teamMembers.businessOwnerId, businessOwnerId), eq(teamMembers.isActive, true)))
@@ -50433,11 +50447,22 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   app.get("/api/subcontractor/invoices", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId;
-      const businessOwnerId = req.query.businessOwnerId as string | undefined;
       const status = req.query.status as string | undefined;
       const docType = req.query.docType as string | undefined;
 
-      let invoicesList = await storage.getSubcontractorInvoices(userId, businessOwnerId || undefined);
+      // Scope results strictly to the subcontractor's currently-active employer.
+      // The mobile invoicing section is only surfaced when the user is switched
+      // into a joined business (showInvoicing = !isStandaloneSubcontractor).
+      // The server enforces the same rule: a null active-employer context (i.e.
+      // Personal/standalone workspace) returns an empty list rather than falling
+      // back to a client-supplied ID or returning an unscoped cross-employer set.
+      const userContext = await getUserContext(userId);
+      if (!userContext.businessOwnerId) {
+        return res.json([]);
+      }
+      const scopedBusinessOwnerId = userContext.businessOwnerId;
+
+      let invoicesList = await storage.getSubcontractorInvoices(userId, scopedBusinessOwnerId);
 
       if (status) {
         invoicesList = invoicesList.filter(inv => inv.status === status);
@@ -51149,6 +51174,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
       if (!Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: 'At least one line item is required' });
+      }
+
+      // Derive the employer scope from the server-side active-workspace context.
+      // Creating a billing document is only permitted when the subcontractor is
+      // switched into a joined-business workspace, and only for that employer.
+      // A Personal/standalone workspace (businessOwnerId === null) is rejected
+      // outright; a mismatched employer ID is also rejected so a sub who
+      // belongs to two businesses cannot bill the wrong one.
+      const userContext = await getUserContext(userId);
+      if (!userContext.businessOwnerId) {
+        return res.status(403).json({ error: 'Switch into a business workspace first to create billing documents.' });
+      }
+      if (userContext.businessOwnerId !== businessOwnerId) {
+        return res.status(403).json({ error: 'You can only bill your currently active employer. Switch workspaces first.' });
       }
 
       // Verify membership
