@@ -160,7 +160,30 @@ Key notes:
 
 ---
 
-## 4. Other enforced conventions
+## 4. Fix every screen, not just the one shown
+
+When the user reports a visual issue on one screen, always grep for the same pattern across the whole codebase before touching anything. If the same component, style, or behaviour exists on other screens, fix them all in the same pass.
+
+Workflow:
+1. Identify the broken pattern (component name, style key, or behaviour)
+2. `grep -rn "patternName" mobile/app --include="*.tsx" -l` to find all files that share it
+3. Read the relevant section in each file to confirm it has the same problem
+4. Fix all of them in parallel — one edit per file, one response
+
+Common screens that share line-item / action-button sections:
+- `mobile/app/more/quote/new.tsx`
+- `mobile/app/more/invoice/new.tsx`
+- `mobile/app/more/subbie-bill.tsx`
+
+Common screens that share team-picker sheets:
+- `mobile/app/job/[id].tsx`
+- `mobile/app/more/create-job.tsx`
+
+Do not ship a fix that only touches the screen the user screenshot. If you can't find other instances, note that explicitly so the user knows the search was done.
+
+---
+
+## 5. Other enforced conventions
 
 - **No em dashes (`—`) in UI copy.** Use commas, colons, or reword. This is a user preference.
 - **`PressableRow`** for tappable rows that need the standard press-highlight — don't use raw `TouchableOpacity` for list rows unless the row needs a checkbox or complex layout.
