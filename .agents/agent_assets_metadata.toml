@@ -7,3 +7,10 @@ uri = "file://artifacts/jobrunner/src/assets/jobrunner-logo-white.png"
 type = "image"
 title = "JobRunner Logo — White"
 description = "White version of the JobRunner logo"
+
+[[outputs]]
+id = "RJzdOm6ruxKJyVjyJH-X5"
+uri = "file://artifacts/jobrunner/src/assets/jobrunner-logo-white-transparent.png"
+type = "image"
+title = "JobRunner Logo — White, Transparent"
+description = "White logo with transparent background, clean edges. Saved to artifacts/jobrunner/src/assets/jobrunner-logo-white-transparent.png"
