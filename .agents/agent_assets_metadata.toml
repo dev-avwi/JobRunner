@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "jTmyCjlOgmP2LQ4UMo8LL"
+uri = "file://artifacts/jobrunner/src/assets/jobrunner-logo-white.png"
+type = "image"
+title = "JobRunner Logo — White"
+description = "White version of the JobRunner logo"
