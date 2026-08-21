@@ -951,7 +951,7 @@ function SubscriptionPageInner() {
               </View>
             )}
 
-            {!isSubcontractor && (currentTier === 'free' || currentTier === 'pro') && (
+            {(!isSubcontractor || isStandaloneSubcontractor) && (currentTier === 'free' || currentTier === 'pro') && (
               <View style={[styles.comparePlanCard, currentTier === 'pro' ? { borderColor: '#7C3AED', borderWidth: 2 } : {}]}>
                 <View style={styles.comparePlanHeader}>
                   <View style={[styles.comparePlanIcon, { backgroundColor: '#7C3AED15' }]}>
@@ -977,7 +977,7 @@ function SubscriptionPageInner() {
               </View>
             )}
 
-            {!isSubcontractor && (currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && (
+            {(!isSubcontractor || isStandaloneSubcontractor) && (currentTier === 'free' || currentTier === 'pro' || currentTier === 'team') && (
               <View style={[styles.comparePlanCard, currentTier === 'team' ? { borderColor: '#059669', borderWidth: 2 } : {}]}>
                 <View style={styles.comparePlanHeader}>
                   <View style={[styles.comparePlanIcon, { backgroundColor: '#05966915' }]}>

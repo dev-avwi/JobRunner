@@ -40,12 +40,16 @@ export function OwnerOnlyGuard({
   redirectTo = '/jobs',
 }: OwnerOnlyGuardProps) {
   const { colors } = useTheme();
-  const { isOwner, isManager, isLoading } = useUserRole();
+  const { isOwner, isManager, isStandaloneSubcontractor, isLoading } = useUserRole();
   const redirectedRef = useRef(false);
 
   // isOwner covers owner + solo_owner.
   // isManager covers manager + office_admin (the hook normalises office_admin → manager).
-  const hasAccess = isOwner || isManager;
+  // isStandaloneSubcontractor: a subcontractor operating in their own Personal workspace
+  // has full owner powers (server returns isOwner:true for them). The hook keeps
+  // role='subcontractor' so the dashboard/badge still shows, but they must pass
+  // owner-only guards the same way a solo owner would.
+  const hasAccess = isOwner || isManager || isStandaloneSubcontractor;
 
   useEffect(() => {
     // Wait until the role has been resolved before deciding to redirect.
