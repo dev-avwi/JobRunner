@@ -179,6 +179,7 @@ interface JobMaterial {
   supplier?: string;
   category?: string;
   status?: string;
+  phaseId?: string | null;
 }
 
 const MATERIAL_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -7388,6 +7389,13 @@ export default function JobDetailScreen() {
         const budgetColor = budgetStatus === 'profitable' ? colors.success : budgetStatus === 'tight' ? colors.warning : budgetStatus === 'loss' ? colors.destructive : colors.mutedForeground;
         const budgetLabel = budgetStatus === 'profitable' ? 'On track' : budgetStatus === 'tight' ? 'Near limit' : budgetStatus === 'loss' ? 'Over budget' : null;
 
+        // Phase-level over-budget check
+        const phaseCostEntry = nextPhase ? pd?.phases?.find(p => p.id === nextPhase.id) : null;
+        const phaseActual = phaseCostEntry?.costs?.total ?? 0;
+        const phaseBudget = nextPhase?.budgetedCost ? parseFloat(nextPhase.budgetedCost) : null;
+        const phaseOverBudget = phaseBudget !== null && phaseBudget > 0 && phaseActual > phaseBudget;
+        const phaseNearBudget = !phaseOverBudget && phaseBudget !== null && phaseBudget > 0 && phaseActual > phaseBudget * 0.85;
+
         const canOpenPhase = (isOwnerOrManager || isSoloOwner) && !!nextPhase;
         const handleWhatsNextPress = () => {
           if (canOpenPhase) {
@@ -7455,6 +7463,14 @@ export default function JobDetailScreen() {
                   <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }} numberOfLines={1}>
                     {nextPhase.name}
                   </Text>
+                  {(phaseOverBudget || phaseNearBudget) && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: phaseOverBudget ? `${colors.destructive}15` : `${colors.warning}15`, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 }}>
+                      <Feather name="alert-triangle" size={10} color={phaseOverBudget ? colors.destructive : colors.warning} />
+                      <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: phaseOverBudget ? colors.destructive : colors.warning }}>
+                        {phaseOverBudget ? 'Over budget' : 'Near limit'}
+                      </Text>
+                    </View>
+                  )}
                   <View style={{ backgroundColor: nextPhase.status === 'in_progress' ? `${colors.primary}15` : colors.muted, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 10 }}>
                     <Text style={{ fontSize: 10, fontWeight: fontWeights.medium, color: nextPhase.status === 'in_progress' ? colors.primary : colors.mutedForeground }}>
                       {nextPhase.status === 'in_progress' ? 'In Progress' : 'Up Next'}
@@ -10048,20 +10064,25 @@ export default function JobDetailScreen() {
     </>
   );
 
-  const renderMaterialsTab = () => (
-    <MaterialsSection
-      colors={colors}
-      styles={styles}
-      materials={materials}
-      isLoadingMaterials={isLoadingMaterials}
-      invoice={invoice}
-      setEditingMaterial={setEditingMaterial}
-      setMaterialForm={setMaterialForm}
-      setShowAddMaterialModal={setShowAddMaterialModal}
-      handleMaterialStatusChange={handleMaterialStatusChange}
-      handleDeleteMaterial={handleDeleteMaterial}
-    />
-  );
+  const renderMaterialsTab = () => {
+    const activePhaseId = phases.find(p => p.status === 'in_progress')?.id ?? phases.find(p => p.status === 'not_started')?.id ?? '';
+    return (
+      <MaterialsSection
+        colors={colors}
+        styles={styles}
+        materials={materials}
+        isLoadingMaterials={isLoadingMaterials}
+        invoice={invoice}
+        setEditingMaterial={setEditingMaterial}
+        setMaterialForm={setMaterialForm}
+        setShowAddMaterialModal={setShowAddMaterialModal}
+        handleMaterialStatusChange={handleMaterialStatusChange}
+        handleDeleteMaterial={handleDeleteMaterial}
+        phases={isProject && phases.length > 0 ? phases : undefined}
+        activePhaseId={activePhaseId}
+      />
+    );
+  };
 
   const renderSafetyTab = () => (
       <SwmsSection

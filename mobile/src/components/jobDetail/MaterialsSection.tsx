@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
-import { spacing, radius, shadows, typography } from '../../lib/design-tokens';
+import { spacing, radius, shadows, typography, fontWeights } from '../../lib/design-tokens';
 
-interface JobMaterial {
+export interface JobMaterial {
   id: string;
   name: string;
   description?: string;
@@ -15,10 +15,20 @@ interface JobMaterial {
   supplier?: string;
   category?: string;
   status?: string;
+  phaseId?: string | null;
 }
 
 interface Invoice {
   total: number;
+}
+
+interface PhaseStub {
+  id: string;
+  phaseCode: string;
+  name: string;
+  status: string;
+  sortOrder: number;
+  budgetedCost?: string | null;
 }
 
 const MATERIAL_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -29,6 +39,20 @@ const MATERIAL_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   installed: { bg: '#A7F3D0', text: '#047857' },
 };
 
+const PHASE_STATUS_COLORS: Record<string, { dot: string; badge: string; text: string }> = {
+  not_started: { dot: '#9CA3AF', badge: '#F3F4F6', text: '#374151' },
+  in_progress:  { dot: '#3B82F6', badge: '#DBEAFE', text: '#1E40AF' },
+  complete:     { dot: '#10B981', badge: '#D1FAE5', text: '#065F46' },
+  invoiced:     { dot: '#8B5CF6', badge: '#EDE9FE', text: '#6D28D9' },
+};
+
+const PHASE_STATUS_LABELS: Record<string, string> = {
+  not_started: 'Not Started',
+  in_progress:  'In Progress',
+  complete:     'Complete',
+  invoiced:     'Invoiced',
+};
+
 export interface MaterialsSectionProps {
   colors: ThemeColors;
   styles: any;
@@ -36,10 +60,14 @@ export interface MaterialsSectionProps {
   isLoadingMaterials: boolean;
   invoice: Invoice | null;
   setEditingMaterial: (m: JobMaterial | null) => void;
-  setMaterialForm: (f: { name: string; quantity: string; unitCost: string; unitPrice: string; markupPercent: string; supplier: string; description: string }) => void;
+  setMaterialForm: (f: { name: string; quantity: string; unitCost: string; unitPrice: string; markupPercent: string; supplier: string; description: string; phaseId: string }) => void;
   setShowAddMaterialModal: (value: boolean) => void;
   handleMaterialStatusChange: (material: JobMaterial) => void;
   handleDeleteMaterial: (material: JobMaterial) => void;
+  /** When provided, materials are grouped under phase headers */
+  phases?: PhaseStub[];
+  /** Pre-filled phaseId when opening the Add form */
+  activePhaseId?: string;
 }
 
 export function MaterialsSection(props: MaterialsSectionProps) {
@@ -54,6 +82,8 @@ export function MaterialsSection(props: MaterialsSectionProps) {
     setShowAddMaterialModal,
     handleMaterialStatusChange,
     handleDeleteMaterial,
+    phases,
+    activePhaseId,
   } = props;
 
   const totalCost = materials.reduce((s, m) => s + (Number(m.totalCost) || 0), 0);
@@ -64,6 +94,308 @@ export function MaterialsSection(props: MaterialsSectionProps) {
   const hasPricing = totalSellPrice > 0;
   const overallMargin = hasPricing && totalSellPrice > 0 ? ((totalSellPrice - totalCost) / totalSellPrice) * 100 : 0;
 
+  const openAddForm = (prefillPhaseId?: string) => {
+    setEditingMaterial(null);
+    setMaterialForm({
+      name: '',
+      quantity: '1',
+      unitCost: '',
+      unitPrice: '',
+      markupPercent: '',
+      supplier: '',
+      description: '',
+      phaseId: prefillPhaseId ?? activePhaseId ?? '',
+    });
+    setShowAddMaterialModal(true);
+  };
+
+  const openEditForm = (material: JobMaterial) => {
+    setEditingMaterial(material);
+    setMaterialForm({
+      name: material.name,
+      quantity: String(material.quantity),
+      unitCost: String(material.unitCost),
+      unitPrice: material.unitPrice ? String(material.unitPrice) : '',
+      markupPercent: material.markupPercent ? String(material.markupPercent) : '',
+      supplier: material.supplier || '',
+      description: material.description || '',
+      phaseId: material.phaseId || '',
+    });
+    setShowAddMaterialModal(true);
+  };
+
+  const renderMaterialRow = (material: JobMaterial) => {
+    const matStatus = material.status || 'needed';
+    const statusColor = MATERIAL_STATUS_COLORS[matStatus] || MATERIAL_STATUS_COLORS.needed;
+    return (
+      <View key={material.id} style={[styles.card, { paddingVertical: spacing.sm, flexDirection: 'column' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <View style={{ flex: 1 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+              <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600', flex: 1 }} numberOfLines={1}>
+                {material.name}
+              </Text>
+              <Text style={{ ...typography.body, color: Number(material.unitCost || 0) > 0 ? colors.foreground : colors.mutedForeground, fontWeight: '600', marginLeft: spacing.sm }}>
+                {Number(material.unitCost || 0) > 0 ? `$${Number(material.totalCost || 0).toFixed(2)}` : 'Add cost'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4, flexWrap: 'wrap' }}>
+              <TouchableOpacity
+                onPress={() => handleMaterialStatusChange(material)}
+                activeOpacity={0.7}
+                style={{
+                  backgroundColor: statusColor.bg,
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: radius.sm,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <Text style={{ fontSize: 11, fontWeight: '700', color: statusColor.text, textTransform: 'capitalize' }}>
+                  {matStatus}
+                </Text>
+                <Feather name="chevron-down" size={10} color={statusColor.text} />
+              </TouchableOpacity>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                Qty: {material.quantity} {Number(material.unitCost || 0) > 0 ? `× $${Number(material.unitCost || 0).toFixed(2)}` : ''}
+              </Text>
+              {material.unitPrice && Number(material.unitPrice) > 0 && (
+                <Text style={{ ...typography.caption, color: colors.primary, fontWeight: '600' }}>
+                  Sell: ${(Number(material.unitPrice) * Number(material.quantity || 1)).toFixed(2)}
+                </Text>
+              )}
+              {material.unitPrice && Number(material.unitPrice) > 0 && Number(material.unitCost) > 0 && (
+                <Text style={{ ...typography.caption, fontWeight: '600', color: Number(material.unitPrice) > Number(material.unitCost) ? colors.success : colors.destructive }}>
+                  {(((Number(material.unitPrice) - Number(material.unitCost)) / Number(material.unitPrice)) * 100).toFixed(0)}% margin
+                </Text>
+              )}
+              {(!material.unitPrice || Number(material.unitPrice) === 0) && material.markupPercent && Number(material.markupPercent) > 0 && (
+                <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                  +{Number(material.markupPercent).toFixed(0)}% markup
+                </Text>
+              )}
+              {material.supplier && (
+                <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                  · {material.supplier}
+                </Text>
+              )}
+            </View>
+            {material.description && (
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={2}>
+                {material.description}
+              </Text>
+            )}
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.xs, marginLeft: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => openEditForm(material)}
+              style={{ padding: spacing.xs }}
+              activeOpacity={0.7}
+            >
+              <Feather name="edit-2" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleDeleteMaterial(material)}
+              style={{ padding: spacing.xs }}
+              activeOpacity={0.7}
+            >
+              <Feather name="trash-2" size={16} color={colors.destructive} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const addButton = (prefillPhaseId?: string) => (
+    <TouchableOpacity
+      onPress={() => openAddForm(prefillPhaseId)}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.xs,
+        backgroundColor: `${colors.primary}12`,
+        borderWidth: 1,
+        borderColor: `${colors.primary}25`,
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: radius.lg,
+      }}
+      activeOpacity={0.7}
+    >
+      <Feather name="plus" size={14} color={colors.primary} />
+      <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Add</Text>
+    </TouchableOpacity>
+  );
+
+  // ── Phase-grouped view (projects) ─────────────────────────────────────
+  if (phases && phases.length > 0) {
+    const sortedPhases = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
+
+    const byPhase = new Map<string | null, JobMaterial[]>();
+    byPhase.set(null, []);
+    for (const ph of sortedPhases) byPhase.set(ph.id, []);
+    for (const m of materials) {
+      const key = m.phaseId ?? null;
+      if (!byPhase.has(key)) byPhase.set(null, []);
+      (byPhase.get(byPhase.has(key) ? key : null)!).push(m);
+    }
+
+    const unassigned = byPhase.get(null) ?? [];
+
+    return (
+      <>
+        {/* Section header */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, paddingHorizontal: spacing.md }}>
+          <View>
+            <Text style={styles.tabSectionTitle}>MATERIALS</Text>
+            {materials.length > 0 && (
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
+                {materials.length} item{materials.length !== 1 ? 's' : ''} · Total ${totalCost.toFixed(2)}
+              </Text>
+            )}
+          </View>
+          {addButton(activePhaseId)}
+        </View>
+
+        {isLoadingMaterials ? (
+          <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : (
+          <>
+            {sortedPhases.map(phase => {
+              const phaseMaterials = byPhase.get(phase.id) ?? [];
+              const phaseCost = phaseMaterials.reduce((s, m) => s + (Number(m.totalCost) || 0), 0);
+              const sc = PHASE_STATUS_COLORS[phase.status] ?? PHASE_STATUS_COLORS.not_started;
+              const label = PHASE_STATUS_LABELS[phase.status] ?? phase.status;
+
+              return (
+                <View key={phase.id} style={{
+                  backgroundColor: colors.card,
+                  borderRadius: radius.xl,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  marginBottom: spacing.md,
+                  overflow: 'hidden',
+                  ...shadows.sm,
+                }}>
+                  {/* Phase header row */}
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm + 2,
+                    backgroundColor: `${sc.dot}10`,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: sc.dot }} />
+                    <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                      {phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}
+                    </Text>
+                    {phaseCost > 0 && (
+                      <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                        ${phaseCost.toFixed(2)}
+                      </Text>
+                    )}
+                    <View style={{ backgroundColor: sc.badge, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                      <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: sc.text }}>{label}</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => openAddForm(phase.id)}
+                      activeOpacity={0.7}
+                      style={{ padding: 4 }}
+                    >
+                      <Feather name="plus" size={14} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Materials for this phase */}
+                  {phaseMaterials.length === 0 ? (
+                    <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+                      <Text style={{ ...typography.caption, color: colors.mutedForeground, fontStyle: 'italic' }}>
+                        No materials added to this phase
+                      </Text>
+                    </View>
+                  ) : (
+                    <View style={{ padding: spacing.sm }}>
+                      {phaseMaterials.map(renderMaterialRow)}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            {/* Unassigned */}
+            {unassigned.length > 0 && (
+              <View style={{
+                backgroundColor: colors.card,
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+                marginBottom: spacing.md,
+                overflow: 'hidden',
+                ...shadows.sm,
+              }}>
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.sm,
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: spacing.sm + 2,
+                  backgroundColor: colors.muted,
+                  borderBottomWidth: StyleSheet.hairlineWidth,
+                  borderBottomColor: colors.border,
+                }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border }} />
+                  <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.mutedForeground, flex: 1 }}>
+                    Unassigned
+                  </Text>
+                  <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                    ${unassigned.reduce((s, m) => s + (Number(m.totalCost) || 0), 0).toFixed(2)}
+                  </Text>
+                </View>
+                <View style={{ padding: spacing.sm }}>
+                  {unassigned.map(renderMaterialRow)}
+                </View>
+              </View>
+            )}
+
+            {/* Empty state when no materials at all */}
+            {materials.length === 0 && (
+              <View style={{
+                backgroundColor: colors.card,
+                borderRadius: radius.xl,
+                padding: spacing.xl,
+                marginBottom: spacing.xl,
+                flexDirection: 'column',
+                alignItems: 'center',
+                borderWidth: 1,
+                borderColor: colors.cardBorder,
+                ...shadows.sm,
+              }}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+                  <Feather name="package" size={28} color={colors.mutedForeground} />
+                </View>
+                <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
+                  No materials added yet
+                </Text>
+                <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.md }}>
+                  Tap the phase + button or Add above to track materials
+                </Text>
+              </View>
+            )}
+          </>
+        )}
+      </>
+    );
+  }
+
+  // ── Flat view (service calls / no phases) ──────────────────────────────
   return (
     <>
       {/* Materials Header */}
@@ -79,28 +411,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
             );
           })()}
         </View>
-        <TouchableOpacity
-          onPress={() => {
-            setEditingMaterial(null);
-            setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '' });
-            setShowAddMaterialModal(true);
-          }}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.xs,
-            backgroundColor: `${colors.primary}12`,
-            borderWidth: 1,
-            borderColor: `${colors.primary}25`,
-            paddingHorizontal: spacing.md,
-            paddingVertical: spacing.sm,
-            borderRadius: radius.lg,
-          }}
-          activeOpacity={0.7}
-        >
-          <Feather name="plus" size={14} color={colors.primary} />
-          <Text style={{ color: colors.primary, fontWeight: '600', fontSize: 13 }}>Add</Text>
-        </TouchableOpacity>
+        {addButton()}
       </View>
 
       {isLoadingMaterials ? (
@@ -131,102 +442,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
         </View>
       ) : (
         <>
-          {materials.map((material) => {
-            const matStatus = material.status || 'needed';
-            const statusColor = MATERIAL_STATUS_COLORS[matStatus] || MATERIAL_STATUS_COLORS.needed;
-            return (
-              <View key={material.id} style={[styles.card, { paddingVertical: spacing.sm, flexDirection: 'column' }]}>
-                <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                      <Text style={{ ...typography.body, color: colors.foreground, fontWeight: '600', flex: 1 }} numberOfLines={1}>
-                        {material.name}
-                      </Text>
-                      <Text style={{ ...typography.body, color: Number(material.unitCost || 0) > 0 ? colors.foreground : colors.mutedForeground, fontWeight: '600', marginLeft: spacing.sm }}>
-                        {Number(material.unitCost || 0) > 0 ? `$${Number(material.totalCost || 0).toFixed(2)}` : 'Add cost'}
-                      </Text>
-                    </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4, flexWrap: 'wrap' }}>
-                      <TouchableOpacity
-                        onPress={() => handleMaterialStatusChange(material)}
-                        activeOpacity={0.7}
-                        style={{
-                          backgroundColor: statusColor.bg,
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                          borderRadius: radius.sm,
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 4,
-                        }}
-                      >
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: statusColor.text, textTransform: 'capitalize' }}>
-                          {matStatus}
-                        </Text>
-                        <Feather name="chevron-down" size={10} color={statusColor.text} />
-                      </TouchableOpacity>
-                      <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                        Qty: {material.quantity} {Number(material.unitCost || 0) > 0 ? `× $${Number(material.unitCost || 0).toFixed(2)}` : ''}
-                      </Text>
-                      {material.unitPrice && Number(material.unitPrice) > 0 && (
-                        <Text style={{ ...typography.caption, color: colors.primary, fontWeight: '600' }}>
-                          Sell: ${(Number(material.unitPrice) * Number(material.quantity || 1)).toFixed(2)}
-                        </Text>
-                      )}
-                      {material.unitPrice && Number(material.unitPrice) > 0 && Number(material.unitCost) > 0 && (
-                        <Text style={{ ...typography.caption, fontWeight: '600', color: Number(material.unitPrice) > Number(material.unitCost) ? colors.success : colors.destructive }}>
-                          {(((Number(material.unitPrice) - Number(material.unitCost)) / Number(material.unitPrice)) * 100).toFixed(0)}% margin
-                        </Text>
-                      )}
-                      {(!material.unitPrice || Number(material.unitPrice) === 0) && material.markupPercent && Number(material.markupPercent) > 0 && (
-                        <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                          +{Number(material.markupPercent).toFixed(0)}% markup
-                        </Text>
-                      )}
-                      {material.supplier && (
-                        <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                          · {material.supplier}
-                        </Text>
-                      )}
-                    </View>
-                    {material.description && (
-                      <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={2}>
-                        {material.description}
-                      </Text>
-                    )}
-                  </View>
-                  <View style={{ flexDirection: 'row', gap: spacing.xs, marginLeft: spacing.sm }}>
-                    <TouchableOpacity
-                      onPress={() => {
-                        setEditingMaterial(material);
-                        setMaterialForm({
-                          name: material.name,
-                          quantity: String(material.quantity),
-                          unitCost: String(material.unitCost),
-                          unitPrice: material.unitPrice ? String(material.unitPrice) : '',
-                          markupPercent: material.markupPercent ? String(material.markupPercent) : '',
-                          supplier: material.supplier || '',
-                          description: material.description || '',
-                        });
-                        setShowAddMaterialModal(true);
-                      }}
-                      style={{ padding: spacing.xs }}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="edit-2" size={16} color={colors.mutedForeground} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDeleteMaterial(material)}
-                      style={{ padding: spacing.xs }}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="trash-2" size={16} color={colors.destructive} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
+          {materials.map(renderMaterialRow)}
 
           {/* Cost vs Price Summary */}
           {(() => {
