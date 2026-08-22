@@ -4,16 +4,14 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Modal,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
   Image,
-  Platform,
-  StatusBar,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
+import AppBottomSheet from './ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../lib/theme';
 import { spacing, radius, typography, shadows } from '../lib/design-tokens';
@@ -23,8 +21,6 @@ import { useNotificationsStore } from '../lib/notifications-store';
 import { clearRoleCache } from '../lib/role-cache';
 import offlineStorage from '../lib/offline-storage';
 import locationTracking from '../lib/location-tracking';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getBottomNavHeight } from './BottomNav';
 
 interface Business {
   businessOwnerId: string;
@@ -57,17 +53,7 @@ interface WorkspaceSwitcherProps {
 
 export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitcherProps) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
-  const bottomNavHeight = getBottomNavHeight(insets.bottom);
-  // On Android a pageSheet falls back to a full-screen Modal, so the header
-  // collides with the status bar unless we pad for it. insets.top can read 0
-  // inside an Android Modal window, so fall back to the native status-bar height.
-  // iOS pageSheet is already presented below the status bar, so no extra pad.
-  const topInset =
-    Platform.OS === 'android'
-      ? Math.max(insets.top, StatusBar.currentHeight ?? 0)
-      : 0;
-  const styles = useMemo(() => createStyles(colors, bottomNavHeight, topInset), [colors, bottomNavHeight, topInset]);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { forceRefreshAuth } = useAuthStore();
   const fetchNotifications = useNotificationsStore(s => s.fetchNotifications);
 
@@ -302,20 +288,14 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
   };
 
   return (
-    <Modal
+    <AppBottomSheet
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onDismiss={onClose}
+      title="Workspaces"
+      showCloseButton
+      scrollable={false}
+      snapPoints={['85%']}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Workspaces</Text>
-          <PressableRow onPress={onClose} style={styles.closeButton}>
-            <Feather name="x" size={22} color={colors.foreground} />
-          </PressableRow>
-        </View>
-
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -441,8 +421,7 @@ export function WorkspaceSwitcher({ visible, onClose, onSwitch }: WorkspaceSwitc
             </View>
           </ScrollView>
         )}
-      </View>
-    </Modal>
+    </AppBottomSheet>
   );
 }
 
@@ -475,33 +454,7 @@ export function WorkspaceBadge({ onPress }: { onPress: () => void }) {
   );
 }
 
-const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0, topInset: number = 0) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: topInset + spacing.md,
-    paddingBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.foreground,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+const createStyles = (colors: ThemeColors) => StyleSheet.create({
   loadingContainer: {
     flex: 1,
     alignItems: 'center',
@@ -517,7 +470,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0, topInset
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: bottomNavHeight,
+    paddingBottom: spacing.xl,
   },
   section: {
     marginBottom: spacing.xl,

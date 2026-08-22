@@ -445,19 +445,36 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
                 <Text style={[styles.quickActionText, { color: '#FF3B30' }]}>AI Assistant</Text>
               </TouchableOpacity>
 
-              {!lockCreate && (
-                <TouchableOpacity
-                  style={[styles.quickActionButton, { borderColor: '#34C75940' }]}
-                  onPress={() => {
-                    setIsOpen(false);
-                    router.push('/more/collect-payment');
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="credit-card" size={14} color="#34C759" />
-                  <Text style={[styles.quickActionText, { color: '#34C759' }]}>Collect Payment</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={[
+                  styles.quickActionButton,
+                  lockCreate
+                    ? { borderColor: colors.border, opacity: 0.55 }
+                    : { borderColor: '#34C75940' },
+                ]}
+                onPress={() => {
+                  if (lockCreate) {
+                    Alert.alert(
+                      'Collect Payment locked',
+                      'Switch to your Personal profile to collect payments.',
+                      [{ text: 'OK' }],
+                    );
+                    return;
+                  }
+                  setIsOpen(false);
+                  router.push('/more/collect-payment');
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather
+                  name={lockCreate ? 'lock' : 'credit-card'}
+                  size={14}
+                  color={lockCreate ? colors.mutedForeground : '#34C759'}
+                />
+                <Text style={[styles.quickActionText, { color: lockCreate ? colors.mutedForeground : '#34C759' }]}>
+                  Collect Payment
+                </Text>
+              </TouchableOpacity>
             </View>
 
           </Pressable>
