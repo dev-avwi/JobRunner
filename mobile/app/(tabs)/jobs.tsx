@@ -464,17 +464,26 @@ export default function JobsScreen() {
 
   const fetchSavedFilters = useCallback(async () => {
     setSavedFiltersLoading(true);
-    const response = await api.get<SavedFilter[]>('/api/saved-filters?entityType=jobs');
-    if (response.data) {
-      setSavedFilters(response.data);
+    try {
+      const response = await api.get<SavedFilter[]>('/api/saved-filters?entityType=jobs');
+      if (response.data) {
+        setSavedFilters(response.data);
+      }
+    } catch {
+      // Non-critical — filters just won't be available
+    } finally {
+      setSavedFiltersLoading(false);
     }
-    setSavedFiltersLoading(false);
   }, []);
 
   const fetchTeamMembers = useCallback(async () => {
-    const response = await api.get<any[]>('/api/team/members');
-    if (response.data) {
-      setTeamMembers(response.data);
+    try {
+      const response = await api.get<any[]>('/api/team/members');
+      if (response.data) {
+        setTeamMembers(response.data);
+      }
+    } catch {
+      // Non-critical — team filter just won't be populated
     }
   }, []);
 
@@ -637,11 +646,15 @@ export default function JobsScreen() {
         'Are you sure you want to start this job?',
         [
           { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Start', 
+          {
+            text: 'Start',
             onPress: async () => {
-              await updateJobStatus(jobId, 'in_progress');
-              refreshData();
+              try {
+                await updateJobStatus(jobId, 'in_progress');
+                refreshData();
+              } catch {
+                showToast({ type: 'error', message: 'Failed to start job. Please try again.' });
+              }
             }
           }
         ]
@@ -698,11 +711,8 @@ export default function JobsScreen() {
     return acts;
   }, [handleQuickAction, handleDeleteJob, canCreateQuotes, canCreateInvoices, canWriteJobs]);
 
-  useEffect(() => {
-    refreshData();
-  }, []);
-
-  // Refresh data when screen gains focus (syncs with web app)
+  // useFocusEffect already runs on first mount — the standalone useEffect
+  // below would fire a duplicate request on the same tick.
   useFocusEffect(
     useCallback(() => {
       refreshData();

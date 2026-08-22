@@ -10,6 +10,8 @@ import {
   Linking,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
@@ -98,6 +100,7 @@ export function SubcontractorDashboard() {
     }
   }, [isSubcontractor, isStandaloneSubcontractor]);
   const [data, setData] = useState<DashboardData | null>(null);
+  const [fetchError, setFetchError] = useState(false);
   const [activeBusinessId, setActiveBusinessId] = useState<string | null>(null);
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -183,13 +186,17 @@ export function SubcontractorDashboard() {
 
   const fetchDashboard = useCallback(async (showRefreshing = false) => {
     if (showRefreshing) setIsRefreshing(true);
+    setFetchError(false);
     try {
       const response = await api.get<DashboardData>('/api/subcontractor/dashboard');
       if (response.data) {
         setData(response.data);
+      } else if (response.error) {
+        setFetchError(true);
       }
     } catch (error) {
       if (__DEV__) console.log('Error fetching subcontractor dashboard:', error);
+      setFetchError(true);
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -259,8 +266,12 @@ export function SubcontractorDashboard() {
   const acceptJob = useCallback(async (jobId: string) => {
     setAcceptingJobId(jobId);
     try {
-      await api.post(`/api/subcontractor/jobs/${jobId}/accept`);
-      fetchDashboard();
+      const response = await api.post(`/api/subcontractor/jobs/${jobId}/accept`);
+      if (response.error) {
+        Alert.alert('Error', response.error || 'Failed to accept job');
+      } else {
+        fetchDashboard();
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to accept job');
     } finally {
@@ -279,10 +290,14 @@ export function SubcontractorDashboard() {
     setDecliningJobId(declineJobId);
     setShowDeclineModal(false);
     try {
-      await api.post(`/api/subcontractor/jobs/${declineJobId}/decline`, {
+      const response = await api.post(`/api/subcontractor/jobs/${declineJobId}/decline`, {
         reason: declineReason || undefined,
       });
-      fetchDashboard();
+      if (response.error) {
+        Alert.alert('Error', response.error || 'Failed to decline job');
+      } else {
+        fetchDashboard();
+      }
     } catch (error) {
       Alert.alert('Error', 'Failed to decline job');
     } finally {
@@ -554,7 +569,36 @@ export function SubcontractorDashboard() {
     return grouped;
   }, [viewMode, data]);
 
-  if (isLoading || !data) {
+  if (isLoading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (fetchError && !data) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', paddingHorizontal: spacing.xl }]}>
+        <Feather name="wifi-off" size={40} color={colors.mutedForeground} style={{ marginBottom: spacing.lg }} />
+        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm }}>
+          Could not load dashboard
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.xl }}>
+          Check your connection and try again.
+        </Text>
+        <TouchableOpacity
+          onPress={() => fetchDashboard()}
+          activeOpacity={0.7}
+          style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.xl, paddingVertical: spacing.md }}
+        >
+          <Text style={{ color: colors.primaryForeground, fontWeight: '600', fontSize: 15 }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  if (!data) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -1107,42 +1151,46 @@ export function SubcontractorDashboard() {
         scrollable={false}
         contentPadding={0}
       >
-        <View style={{ paddingHorizontal: spacing.lg }}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Decline Job</Text>
-              <TouchableOpacity onPress={() => setShowDeclineModal(false)} style={{ padding: spacing.xs }}>
-                <Feather name="x" size={22} color={colors.foreground} />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.modalSubtitle}>
-              Add an optional reason for declining this job. The business will be notified.
-            </Text>
-            <TextInput
-              style={[styles.modalInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
-              placeholder="Reason (optional)..."
-              placeholderTextColor={colors.mutedForeground}
-              value={declineReason}
-              onChangeText={setDeclineReason}
-              multiline
-              numberOfLines={3}
-            />
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.muted }]}
-                onPress={() => setShowDeclineModal(false)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.foreground }]}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalButton, { backgroundColor: colors.destructive }]}
-                onPress={confirmDeclineJob}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.modalButtonText, { color: colors.white }]}>Decline Job</Text>
-              </TouchableOpacity>
-            </View>
-        </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ paddingHorizontal: spacing.lg }}
+        >
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Decline Job</Text>
+            <TouchableOpacity onPress={() => setShowDeclineModal(false)} style={{ padding: spacing.xs }}>
+              <Feather name="x" size={22} color={colors.foreground} />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.modalSubtitle}>
+            Add an optional reason for declining this job. The business will be notified.
+          </Text>
+          <TextInput
+            style={[styles.modalInput, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+            placeholder="Reason (optional)..."
+            placeholderTextColor={colors.mutedForeground}
+            value={declineReason}
+            onChangeText={setDeclineReason}
+            multiline
+            numberOfLines={3}
+            autoFocus
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.muted }]}
+              onPress={() => setShowDeclineModal(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.foreground }]}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: colors.destructive }]}
+              onPress={confirmDeclineJob}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.modalButtonText, { color: colors.white }]}>Decline Job</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </AppBottomSheet>
 
       {/* Create Invoice Modal */}

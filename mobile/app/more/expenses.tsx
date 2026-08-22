@@ -202,9 +202,11 @@ function ExpensesScreenInner() {
     }
   }, [activeFilter, filterByJobId]);
 
+  // Depend on fetchData (which captures both activeFilter + filterByJobId)
+  // so a route-param job filter change also triggers a re-fetch.
   useEffect(() => {
     fetchData();
-  }, [activeFilter]);
+  }, [fetchData]);
 
   useFocusEffect(
     useCallback(() => {
@@ -349,9 +351,16 @@ function ExpensesScreenInner() {
       return;
     }
 
+    // Guard: amount must be a positive number
+    const parsedAmount = parseFloat(formAmount);
+    if (!isFinite(parsedAmount) || parsedAmount <= 0) {
+      showToast({ type: 'error', message: 'Amount must be greater than $0' });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      await api.post('/api/expenses', {
+      const response = await api.post('/api/expenses', {
         categoryId: formCategoryId,
         jobId: formJobId || undefined,
         phaseId: formPhaseId || undefined,
@@ -364,6 +373,10 @@ function ExpensesScreenInner() {
         expenseDate: formDate.toISOString(),
         isBillable: true,
       });
+      if (response.error) {
+        showToast({ type: 'error', message: 'Error', description: response.error });
+        return;
+      }
       setShowExpenseModal(false);
       resetForm();
       fetchData();
