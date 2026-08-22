@@ -15,6 +15,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
@@ -439,6 +440,7 @@ export function DocumentRegisterSection({
   const [rfiAssignedToName, setRfiAssignedToName] = useState('');
   const [rfiDueDate, setRfiDueDate] = useState('');
   const [rfiPriority, setRfiPriority] = useState<RfiPriority>('medium');
+  const [showRfiDueDatePicker, setShowRfiDueDatePicker] = useState(false);
 
   // RFI answer modal
   const [showAnswerModal, setShowAnswerModal] = useState(false);
@@ -448,6 +450,7 @@ export function DocumentRegisterSection({
   const [answerText, setAnswerText] = useState('');
   const [editPriority, setEditPriority] = useState<RfiPriority>('medium');
   const [editDueDate, setEditDueDate] = useState('');
+  const [showEditDueDatePicker, setShowEditDueDatePicker] = useState(false);
 
   const loadDocuments = useCallback(async () => {
     setIsLoadingDocs(true);
@@ -627,6 +630,7 @@ export function DocumentRegisterSection({
       setRfiAssignedToName('');
       setRfiDueDate('');
       setRfiPriority('medium');
+      setShowRfiDueDatePicker(false);
       loadRfis();
     } finally {
       setIsCreatingRfi(false);
@@ -654,6 +658,7 @@ export function DocumentRegisterSection({
       setAnswerStatus('answered');
       setEditPriority('medium');
       setEditDueDate('');
+      setShowEditDueDatePicker(false);
       loadRfis();
     } catch {
       showToast({ type: 'error', message: 'Update failed' });
@@ -1182,7 +1187,7 @@ export function DocumentRegisterSection({
         visible={showRfiModal}
         title="Raise RFI"
         showCloseButton
-        onDismiss={() => setShowRfiModal(false)}
+        onDismiss={() => { setShowRfiModal(false); setShowRfiDueDatePicker(false); }}
         autoHeight
         footer={
           <TouchableOpacity
@@ -1248,14 +1253,52 @@ export function DocumentRegisterSection({
           </View>
           <View style={s.field}>
             <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
-            <TextInput
-              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.mutedForeground}
-              value={rfiDueDate}
-              onChangeText={setRfiDueDate}
-              keyboardType="numbers-and-punctuation"
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowRfiDueDatePicker(v => !v)}
+                style={[s.input, { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderColor: showRfiDueDatePicker ? colors.primary : colors.border, backgroundColor: colors.muted }]}
+              >
+                <Text style={{ fontSize: 14, color: rfiDueDate ? colors.foreground : colors.mutedForeground }}>
+                  {rfiDueDate
+                    ? new Date(rfiDueDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'Select date'}
+                </Text>
+                <Feather name="calendar" size={14} color={showRfiDueDatePicker ? colors.primary : colors.mutedForeground} />
+              </TouchableOpacity>
+              {rfiDueDate ? (
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => { setRfiDueDate(''); setShowRfiDueDatePicker(false); }}
+                >
+                  <Feather name="x-circle" size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {showRfiDueDatePicker && (
+              <View style={{ marginTop: 4 }}>
+                <DateTimePicker
+                  value={rfiDueDate ? new Date(rfiDueDate) : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, date) => {
+                    if (Platform.OS !== 'ios') setShowRfiDueDatePicker(false);
+                    if (event.type !== 'dismissed' && date) {
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      setRfiDueDate(`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`);
+                    }
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
+                    onPress={() => setShowRfiDueDatePicker(false)}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
         </View>
       </AppBottomSheet>
@@ -1265,7 +1308,7 @@ export function DocumentRegisterSection({
         visible={showAnswerModal}
         title="Update RFI"
         showCloseButton
-        onDismiss={() => setShowAnswerModal(false)}
+        onDismiss={() => { setShowAnswerModal(false); setShowEditDueDatePicker(false); }}
         autoHeight
         footer={
           <TouchableOpacity
@@ -1316,14 +1359,52 @@ export function DocumentRegisterSection({
           </View>
           <View style={s.field}>
             <Text style={[s.label, { color: colors.foreground }]}>Due Date (optional)</Text>
-            <TextInput
-              style={[s.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.muted }]}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.mutedForeground}
-              value={editDueDate}
-              onChangeText={setEditDueDate}
-              keyboardType="numbers-and-punctuation"
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => setShowEditDueDatePicker(v => !v)}
+                style={[s.input, { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderColor: showEditDueDatePicker ? colors.primary : colors.border, backgroundColor: colors.muted }]}
+              >
+                <Text style={{ fontSize: 14, color: editDueDate ? colors.foreground : colors.mutedForeground }}>
+                  {editDueDate
+                    ? new Date(editDueDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'Select date'}
+                </Text>
+                <Feather name="calendar" size={14} color={showEditDueDatePicker ? colors.primary : colors.mutedForeground} />
+              </TouchableOpacity>
+              {editDueDate ? (
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => { setEditDueDate(''); setShowEditDueDatePicker(false); }}
+                >
+                  <Feather name="x-circle" size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+            {showEditDueDatePicker && (
+              <View style={{ marginTop: 4 }}>
+                <DateTimePicker
+                  value={editDueDate ? new Date(editDueDate) : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={(event, date) => {
+                    if (Platform.OS !== 'ios') setShowEditDueDatePicker(false);
+                    if (event.type !== 'dismissed' && date) {
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      setEditDueDate(`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`);
+                    }
+                  }}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
+                    onPress={() => setShowEditDueDatePicker(false)}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
           <View style={s.field}>
             <Text style={[s.label, { color: colors.foreground }]}>Answer</Text>

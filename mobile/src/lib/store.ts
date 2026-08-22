@@ -11,13 +11,15 @@ let _todaysJobsFetchGen = 0;
 // anywhere in the app triggers a clean logout without each screen handling it.
 // This runs once when the module loads; the handler reads the store lazily so
 // there is no circular-dependency issue.
-setAuthExpiredCallback(() => {
+// Exported so logout() can restore it after temporarily silencing it.
+export const _authExpiredHandler = () => {
   const { isAuthenticated, logout } = useAuthStore.getState();
   if (isAuthenticated) {
     if (__DEV__) console.log('[API] 401 received — triggering auth logout');
     logout();
   }
-});
+};
+setAuthExpiredCallback(_authExpiredHandler);
 import offlineStorage, { useOfflineStore } from './offline-storage';
 import { clearRoleCache } from './role-cache';
 import { useThemeStore, ThemeMode } from './theme-store';
@@ -413,6 +415,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     clearRoleCache();
     // Silence the 401 callback for the duration of logout — we're intentionally
     // clearing the token so a 401 on the logout call itself mustn't recurse.
+    // Restored in the finally block below.
     setAuthExpiredCallback(() => {});
     // Each cleanup step is best-effort: a failure in one (e.g. offline cache
     // or location tracking) must NOT prevent the auth state from being cleared.
@@ -456,6 +459,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (err) {
       if (__DEV__) console.warn('[Auth] logout cleanup error (continuing to clear state):', err);
     } finally {
+      // Restore the 401 callback now that logout is done; the user is signed
+      // out so new 401s (e.g. from a lingering request or next sign-in) are
+      // handled correctly again.
+      setAuthExpiredCallback(_authExpiredHandler);
       set({
         user: null,
         token: null,
