@@ -210,6 +210,7 @@ export default function JobDetailView({
   const [workerPopoverOpen, setWorkerPopoverOpen] = useState(false);
   // Retention ledger state
   const [retentionEditMode, setRetentionEditMode] = useState(false);
+  const [retentionPercent, setRetentionPercent] = useState('0');
   const [retentionPcDate, setRetentionPcDate] = useState('');
   const [retentionDlpMonths, setRetentionDlpMonths] = useState('12');
   const [retentionSaving, setRetentionSaving] = useState(false);
@@ -1799,9 +1800,9 @@ export default function JobDetailView({
   // ── Retention ledger card (computed before return; uses top-level state/hooks) ──
   const retentionStatusConfig = {
     no_retention:     { label: 'No retention held',                color: 'text-muted-foreground',                            bg: 'bg-muted' },
-    pre_pc:           { label: 'Pre-completion — retention held',  color: 'text-amber-700 dark:text-amber-400',               bg: 'bg-amber-50 dark:bg-amber-950/30' },
-    in_dlp:           { label: 'In DLP — retention held',         color: 'text-blue-700 dark:text-blue-400',                 bg: 'bg-blue-50 dark:bg-blue-950/30' },
-    dlp_ended:        { label: 'DLP ended — retention due',       color: 'text-green-700 dark:text-green-400',               bg: 'bg-green-50 dark:bg-green-950/30' },
+    pre_pc:           { label: 'Pre-completion, retention held',  color: 'text-amber-700 dark:text-amber-400',               bg: 'bg-amber-50 dark:bg-amber-950/30' },
+    in_dlp:           { label: 'Practical completion reached',    color: 'text-blue-700 dark:text-blue-400',                 bg: 'bg-blue-50 dark:bg-blue-950/30' },
+    dlp_ended:        { label: 'DLP ended, retention due',        color: 'text-green-700 dark:text-green-400',               bg: 'bg-green-50 dark:bg-green-950/30' },
     release_pending:  { label: 'Release claim in progress',       color: 'text-orange-700 dark:text-orange-400',             bg: 'bg-orange-50 dark:bg-orange-950/30' },
     released:         { label: 'Released',                        color: 'text-muted-foreground',                            bg: 'bg-muted' },
   } as const;
@@ -1810,6 +1811,7 @@ export default function JobDetailView({
     setRetentionSaving(true);
     try {
       await apiRequest('PATCH', `/api/jobs/${jobId}`, {
+        retentionPercent: retentionPercent || '0',
         practicalCompletionDate: retentionPcDate || null,
         defectsLiabilityMonths: parseInt(retentionDlpMonths) || 12,
       });
@@ -1870,13 +1872,11 @@ export default function JobDetailView({
 
   const retentionCard = (!isTradie && (job as any)?.jobType === 'project') ? (() => {
     const rs = jobProfitabilityData?.retentionSummary;
-    // Only show the panel when retention has actually been withheld
-    if (rs !== undefined && rs !== null && rs.sumRetentionHeld <= 0) return null;
     const rsStatus = (rs?.retentionStatus ?? 'no_retention') as keyof typeof retentionStatusConfig;
     const rsCfg = retentionStatusConfig[rsStatus] ?? retentionStatusConfig.no_retention;
     const outstanding = rs?.outstandingRetention ?? rs?.sumRetentionHeld ?? 0;
-    // Only allow release once DLP has ended — not pre_pc or in_dlp
-    const canRelease = outstanding > 0 && rsStatus === 'dlp_ended' && !retentionEditMode;
+    // A release claim becomes available as soon as practical completion is recorded.
+    const canRelease = outstanding > 0 && (rsStatus === 'in_dlp' || rsStatus === 'dlp_ended') && !retentionEditMode;
 
     return (
       <Card data-testid="card-retention-ledger">
@@ -1890,6 +1890,7 @@ export default function JobDetailView({
               <Button size="sm" variant="ghost" onClick={() => {
                 setRetentionPcDate((job as any)?.practicalCompletionDate ?? '');
                 setRetentionDlpMonths(String((job as any)?.defectsLiabilityMonths ?? 12));
+                setRetentionPercent(String((job as any)?.retentionPercent ?? 0));
                 setRetentionEditMode(true);
               }}>
                 <Edit className="h-3.5 w-3.5 mr-1" />
@@ -1901,7 +1902,7 @@ export default function JobDetailView({
         <CardContent className="pt-0 space-y-3">
           {/* Primary figure: outstanding (held − released) */}
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Outstanding retention</span>
+            <span className="text-sm text-muted-foreground">Retention held to date</span>
             <span className="text-sm font-semibold">
               {rs ? `$${outstanding.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
             </span>
@@ -1918,6 +1919,11 @@ export default function JobDetailView({
 
           {retentionEditMode ? (
             <div className="space-y-3 border rounded-md p-3 bg-muted/30">
+              <div className="space-y-1">
+                <Label className="text-xs">Retention %</Label>
+                <Input type="number" min={0} max={100} step="0.01" value={retentionPercent} onChange={e => setRetentionPercent(e.target.value)} className="h-8 text-sm" />
+                <p className="text-xs text-muted-foreground">Used as the default for new progress claims.</p>
+              </div>
               <div className="space-y-1">
                 <Label className="text-xs">Practical Completion Date</Label>
                 <Input type="date" value={retentionPcDate} onChange={e => setRetentionPcDate(e.target.value)} className="h-8 text-sm" />
@@ -1938,6 +1944,10 @@ export default function JobDetailView({
             </div>
           ) : (
             <>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Contract retention rate</span>
+                <span className="text-sm">{Number((job as any)?.retentionPercent ?? 0).toFixed(2)}%</span>
+              </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Practical completion</span>
                 <span className="text-sm">
@@ -3801,6 +3811,7 @@ export default function JobDetailView({
             <ClaimsSection
               jobId={jobId}
               isTradie={isTradie}
+              retentionPercent={(job as any)?.retentionPercent ?? '0'}
               openNewClaimForPhase={pendingClaimPhase}
               onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
             />

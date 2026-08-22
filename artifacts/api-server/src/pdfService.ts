@@ -6573,9 +6573,9 @@ export function generateProgressClaimPDF(data: {
 
   <div class="totals">
     <div class="totals-box">
-      <div class="totals-row"><span>This Claim (excl. retention)</span><span>${fmt(summary.thisClaimTotal)}</span></div>
-      <div class="totals-row"><span>Less Retention</span><span>-${fmt(summary.retentionTotal)}</span></div>
-      <div class="totals-row"><span>Subtotal</span><span>${fmt(summary.subtotal)}</span></div>
+      <div class="totals-row"><span>Gross Claimed</span><span>${fmt(summary.thisClaimTotal)}</span></div>
+      <div class="totals-row"><span>Retention Held</span><span>-${fmt(summary.retentionTotal)}</span></div>
+      <div class="totals-row"><span>Net Payable</span><span>${fmt(summary.subtotal)}</span></div>
       ${gstEnabled ? `<div class="totals-row"><span>GST (10%)</span><span>${fmt(summary.gstAmount)}</span></div>` : ''}
       <div class="totals-row total"><span>TOTAL DUE</span><span>${fmt(summary.total)}</span></div>
     </div>

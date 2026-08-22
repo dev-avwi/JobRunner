@@ -89,8 +89,10 @@ export function computeRetentionSummary(
 
   // Compute DLP release date.
   const pcDate = job.practicalCompletionDate
-    ? new Date(job.practicalCompletionDate)
+    ? new Date(`${job.practicalCompletionDate}T00:00:00`)
     : null;
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
   const dlpMonths = job.defectsLiabilityMonths ?? 12;
   let releaseDate: Date | null = null;
   if (pcDate) {
@@ -105,7 +107,7 @@ export function computeRetentionSummary(
       retentionStatus = "released";
     } else if (pendingReleaseClaims.length > 0) {
       retentionStatus = "release_pending";
-    } else if (!pcDate) {
+    } else if (!pcDate || pcDate > today) {
       retentionStatus = "pre_pc";
     } else if (releaseDate && now >= releaseDate) {
       retentionStatus = "dlp_ended";

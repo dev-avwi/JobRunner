@@ -133,6 +133,7 @@ interface Job {
   geofenceAutoClockOut?: boolean;
   portalEnabled?: boolean;
   jobType?: 'service' | 'project';
+  retentionPercent?: string | null;
   jobNumber?: string | null;
 }
 
@@ -2434,11 +2435,19 @@ export default function JobDetailScreen() {
       hours: number;
       variations: { approvedTotal: number; pendingTotal: number };
     }>;
+    retentionSummary?: {
+      sumRetentionHeld: number;
+      outstandingRetention: number;
+      hasReleasePending: boolean;
+      retentionStatus: string;
+      releaseDate: string | null;
+    };
   }
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
   const [showJobCostingSheet, setShowJobCostingSheet] = useState(false);
   const [isGeneratingCostReport, setIsGeneratingCostReport] = useState(false);
+  const [isReleasingRetention, setIsReleasingRetention] = useState(false);
 
   const [showRollbackConfirm, setShowRollbackConfirm] = useState(false);
   const [rollbackTargetStatus, setRollbackTargetStatus] = useState<string | null>(null);
@@ -4989,6 +4998,7 @@ export default function JobDetailScreen() {
           labourOverrun: raw.labourOverrun === true,
           status: raw.status === 'profitable' || raw.status === 'tight' || raw.status === 'loss' ? raw.status : 'loss',
           materials: Array.isArray(raw.materials) ? raw.materials : [],
+          retentionSummary: raw.retentionSummary ?? undefined,
         });
       } else {
         setProfitabilityData(null);
@@ -4999,6 +5009,40 @@ export default function JobDetailScreen() {
       setIsLoadingProfitability(false);
     }
   }, [id]);
+
+  const handleReleaseRetention = useCallback(async () => {
+    const retention = profitabilityData?.retentionSummary;
+    if (!id || !retention || retention.outstandingRetention <= 0) return;
+    if (retention.retentionStatus === 'pre_pc') {
+      showToast({ type: 'error', message: 'Record practical completion before releasing retention' });
+      return;
+    }
+
+    setIsReleasingRetention(true);
+    try {
+      const amount = retention.outstandingRetention.toFixed(2);
+      const res = await api.post(`/api/jobs/${id}/claims`, {
+        claimDate: new Date().toISOString().split('T')[0],
+        retentionPercent: '0.00',
+        notes: 'Retention Release',
+        lineItems: [{
+          description: 'Retention Release',
+          contractValue: amount,
+          previouslyClaimed: '0.00',
+          thisClaim: amount,
+          retentionPercent: '0.00',
+          sortOrder: 0,
+        }],
+      });
+      if (res.error) throw new Error(res.error);
+      await Promise.all([loadClaims(), loadProfitability()]);
+      showToast({ type: 'success', message: 'Retention release claim created' });
+    } catch (error: any) {
+      showToast({ type: 'error', message: error?.message || 'Failed to create retention release claim' });
+    } finally {
+      setIsReleasingRetention(false);
+    }
+  }, [id, profitabilityData?.retentionSummary, loadClaims, loadProfitability]);
 
   const loadPortalLinks = useCallback(async () => {
     if (!id) return;
@@ -9512,13 +9556,13 @@ export default function JobDetailScreen() {
         );
       })()}
 
-      {/* Retention held summary — project jobs with retention only */}
+      {/* Retention held summary for project jobs */}
       {(isOwnerOrManager || isSoloOwner) && job.jobType === 'project' && (() => {
         const rs = profitabilityData ? (profitabilityData as any).retentionSummary : null;
-        if (!rs || (rs.outstandingRetention ?? rs.sumRetentionHeld) <= 0) return null;
+        if (!rs) return null;
         const statusLabels: Record<string, string> = {
           pre_pc: 'Pre-completion',
-          in_dlp: 'In DLP',
+          in_dlp: 'Practical completion reached',
           dlp_ended: 'DLP ended, due now',
           released: 'Released',
         };
@@ -9537,13 +9581,13 @@ export default function JobDetailScreen() {
               <View style={[styles.costingIconContainer, { backgroundColor: `${stColor}15` }]}>
                 <Feather name="lock" size={iconSizes.lg} color={stColor} />
               </View>
-              <Text style={styles.costingTitle}>Retention Held</Text>
+              <Text style={styles.costingTitle}>Retention</Text>
               <View style={{ marginLeft: 'auto', backgroundColor: `${stColor}15`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs, borderRadius: radius.md }}>
                 <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: stColor }}>{stLabel}</Text>
               </View>
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: spacing.sm }}>
-              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Total withheld</Text>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Retention held to date</Text>
               <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
                 {formatCurrency(rs.outstandingRetention ?? rs.sumRetentionHeld)}
               </Text>
@@ -9556,9 +9600,22 @@ export default function JobDetailScreen() {
                 </Text>
               </View>
             )}
-            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.sm }}>
-              View full retention details on the web dashboard.
-            </Text>
+            {rs.outstandingRetention > 0 && (st === 'in_dlp' || st === 'dlp_ended') && !rs.hasReleasePending && (
+              <TouchableOpacity
+                style={{ marginTop: spacing.md, backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm, alignItems: 'center' }}
+                onPress={handleReleaseRetention}
+                disabled={isReleasingRetention}
+              >
+                {isReleasingRetention
+                  ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  : <Text style={{ color: colors.primaryForeground, fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold }}>Generate Retention Release Claim</Text>}
+              </TouchableOpacity>
+            )}
+            {rs.hasReleasePending && (
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.sm }}>
+                A retention release claim is awaiting review.
+              </Text>
+            )}
           </View>
         );
       })()}

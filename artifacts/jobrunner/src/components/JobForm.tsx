@@ -110,6 +110,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const [projectFlowStep, setProjectFlowStep] = useState<ProjectFlowStep>('type-picker');
   const [projectFormStep, setProjectFormStep] = useState<ProjectFormStep>('basic');
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  const [retentionPercent, setRetentionPercent] = useState('5');
   const [practicalCompletionDate, setPracticalCompletionDate] = useState('');
   const [defectsLiabilityMonths, setDefectsLiabilityMonths] = useState('12');
 
@@ -495,6 +496,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           ...(materialMarkupPct ? { materialMarkupPct } : {}),
           ...(equipmentMarkupPct ? { equipmentMarkupPct } : {}),
           ...(subcontractorMarkupPct ? { subcontractorMarkupPct } : {}),
+          retentionPercent: retentionPercent || '0',
           ...(practicalCompletionDate ? { practicalCompletionDate } : {}),
           ...(defectsLiabilityMonths ? { defectsLiabilityMonths: parseInt(defectsLiabilityMonths) } : {}),
         }),
@@ -1126,8 +1128,24 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           <p className="text-sm text-muted-foreground">Configure retention, defects liability, and markup overrides for this project.</p>
         </div>
 
-        {/* Practical completion date + DLP */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Retention, practical completion date, and DLP */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium flex items-center gap-1.5">
+              <Percent className="h-4 w-4 text-muted-foreground" />
+              Retention %
+            </label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={retentionPercent}
+              onChange={(e) => setRetentionPercent(e.target.value)}
+              data-testid="input-project-retention-percent"
+            />
+            <p className="text-xs text-muted-foreground">Held from each new progress claim. Use 0 for no retention.</p>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium flex items-center gap-1.5">
               <Calendar className="h-4 w-4 text-muted-foreground" />

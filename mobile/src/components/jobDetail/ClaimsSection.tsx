@@ -166,6 +166,14 @@ export function ClaimsSection({
   const claimProgressPct = contractValue && contractValue > 0
     ? Math.min(100, (cumulativeClaimed / contractValue) * 100)
     : null;
+  const settledClaims = claims.filter((claim) => claim.status === 'approved' || claim.status === 'paid');
+  const retentionWithheld = settledClaims
+    .filter((claim) => (claim.notes ?? '').trim().toLowerCase() !== 'retention release')
+    .reduce((sum, claim) => sum + parseFloat(claim.retentionAmount || '0'), 0);
+  const retentionReleased = settledClaims
+    .filter((claim) => (claim.notes ?? '').trim().toLowerCase() === 'retention release')
+    .reduce((sum, claim) => sum + parseFloat(claim.total || '0'), 0);
+  const retentionHeldToDate = Math.max(0, retentionWithheld - retentionReleased);
 
   // ── read-only expand ──────────────────────────────────────────────────────
   const loadDetail = useCallback(async (claimId: string) => {
@@ -398,6 +406,16 @@ export function ClaimsSection({
         </Text>
       )}
 
+      {!isLoading && (
+        <View style={[styles.retentionCard, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
+          <View>
+            <Text style={[styles.retentionLabel, { color: colors.mutedForeground }]}>Retention held to date</Text>
+            <Text style={[styles.retentionHint, { color: colors.mutedForeground }]}>Approved and paid claims</Text>
+          </View>
+          <Text style={[styles.retentionAmount, { color: colors.foreground }]}>{fmt(retentionHeldToDate)}</Text>
+        </View>
+      )}
+
       {claims.map((claim) => {
         const cfg = STATUS_CONFIG[claim.status] ?? STATUS_CONFIG.draft;
         const isExpanded = expandedId === claim.id;
@@ -446,7 +464,7 @@ export function ClaimsSection({
                   {claim.periodStart ? ` · ${fmtDate(claim.periodStart)} – ${fmtDate(claim.periodEnd)}` : ''}
                 </Text>
                 <Text style={[styles.claimTotal, { color: colors.foreground }]}>
-                  {fmt(claim.total)}
+                  Gross {fmt(Number(claim.subtotal || 0) + Number(claim.retentionAmount || 0))} · Held {fmt(claim.retentionAmount)} · Net {fmt(claim.total)}
                 </Text>
               </View>
               <Feather
@@ -533,9 +551,9 @@ export function ClaimsSection({
                     {/* Summary */}
                     <View style={[styles.summaryBox, { borderColor: colors.cardBorder }]}>
                       {[
-                        ['This Claim', detail.scheduleOfValues.thisClaimTotal],
-                        ['Less Retention', -detail.scheduleOfValues.retentionTotal],
-                        ['Subtotal', detail.scheduleOfValues.subtotal],
+                        ['Gross Claimed', detail.scheduleOfValues.thisClaimTotal],
+                        ['Retention Held', -detail.scheduleOfValues.retentionTotal],
+                        ['Net Payable', detail.scheduleOfValues.subtotal],
                         ...(detail.scheduleOfValues.gstAmount > 0 ? [['GST (10%)', detail.scheduleOfValues.gstAmount]] : []),
                       ].map(([label, val]) => (
                         <View key={String(label)} style={styles.summaryRow}>
@@ -831,7 +849,7 @@ export function ClaimsSection({
           {confirmDetail && (
             <View style={{ backgroundColor: colors.muted, borderRadius: radius.md, padding: spacing.md, gap: 6 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>This Claim</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Gross Claimed</Text>
                 <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>
                   {fmt(confirmDetail.thisClaimTotal)}
                 </Text>
@@ -844,7 +862,7 @@ export function ClaimsSection({
               </View>
               <View style={{ height: 1, backgroundColor: colors.border }} />
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }}>Amount Due</Text>
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.foreground }}>Net Payable</Text>
                 <Text style={{ fontSize: 14, fontWeight: fontWeights.bold, color: colors.primary }}>
                   {fmt(confirmDetail.amountDue)}
                 </Text>
@@ -865,6 +883,10 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', paddingVertical: spacing.lg },
   emptyText: { fontSize: typography.sizes.sm, textAlign: 'center', paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
   claimCard: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, borderWidth: 1, overflow: 'hidden' },
+  retentionCard: { marginHorizontal: spacing.md, marginBottom: spacing.sm, borderRadius: radius.md, borderWidth: 1, padding: spacing.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  retentionLabel: { fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold },
+  retentionHint: { fontSize: 11, marginTop: 2 },
+  retentionAmount: { fontSize: typography.sizes.sm, fontWeight: fontWeights.bold },
   claimHeader: { flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.sm },
   claimHeaderLeft: { flex: 1 },
   claimTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' },

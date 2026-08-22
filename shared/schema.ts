@@ -966,6 +966,8 @@ export const jobs = pgTable("jobs", {
   // Import traceability: which import created this row (null = created in-app)
   importRunId: varchar("import_run_id"),
   importRowNumber: integer("import_row_number"),
+  // Default retention rate used when new progress claims are created for this job.
+  retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).notNull().default('0.00'),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1495,6 +1497,11 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  retentionPercent: z.coerce.string().optional().nullable().refine(
+    (value) => value === null || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100),
+    { message: "Retention percent must be between 0 and 100" },
+  ),
 });
 
 export const insertChecklistItemSchema = createInsertSchema(checklistItems).omit({

@@ -119,6 +119,15 @@ describe("computeRetentionSummary", () => {
     expect(result.releaseDate).toBe("2027-01-01");
   });
 
+  it("does not release retention before a future practical-completion date", () => {
+    const result = computeRetentionSummary(
+      [claim({ retentionAmount: "5000.00" })],
+      { practicalCompletionDate: "2026-12-01", defectsLiabilityMonths: 12 },
+      new Date("2026-06-01"),
+    );
+    expect(result.retentionStatus).toBe("pre_pc");
+  });
+
   it("returns dlp_ended once the release date is reached or passed", () => {
     const result = computeRetentionSummary(
       [claim({ retentionAmount: "5000.00" })],

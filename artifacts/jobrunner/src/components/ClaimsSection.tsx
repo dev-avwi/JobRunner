@@ -121,13 +121,15 @@ function fmtDate(d: string | null | undefined): string {
 interface Props {
   jobId: string;
   isTradie?: boolean;
+  /** Contract default used to prefill a new progress claim. */
+  retentionPercent?: string | null;
   /** When set, immediately opens the wizard with this phase pre-populated as the first line item */
   openNewClaimForPhase?: JobPhaseOption | null;
   /** Called after the wizard has consumed the openNewClaimForPhase trigger */
   onNewClaimForPhaseConsumed?: () => void;
 }
 
-export function ClaimsSection({ jobId, isTradie = false, openNewClaimForPhase, onNewClaimForPhaseConsumed }: Props) {
+export function ClaimsSection({ jobId, isTradie = false, retentionPercent, openNewClaimForPhase, onNewClaimForPhaseConsumed }: Props) {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showNewWizard, setShowNewWizard] = useState(false);
@@ -267,6 +269,7 @@ export function ClaimsSection({ jobId, isTradie = false, openNewClaimForPhase, o
         <NewClaimWizard
           jobId={jobId}
           phases={phases}
+          retentionPercent={retentionPercent}
           prefillPhase={wizardPrefillPhase}
           onClose={() => { setShowNewWizard(false); setWizardPrefillPhase(null); }}
           onCreated={() => { invalidate(); setShowNewWizard(false); setWizardPrefillPhase(null); }}
@@ -354,7 +357,9 @@ function ClaimRow({
             {fmtDate(claim.claimDate)}
             {claim.periodStart && claim.periodEnd && ` · ${fmtDate(claim.periodStart)} – ${fmtDate(claim.periodEnd)}`}
             {" · "}
-            <span className="font-medium text-foreground">{fmt(claim.total)}</span>
+            <span>Gross {fmt(Number(claim.subtotal || 0) + Number(claim.retentionAmount || 0))}</span>
+            <span> · Held {fmt(claim.retentionAmount)}</span>
+            <span> · Net payable <span className="font-medium text-foreground">{fmt(claim.total)}</span></span>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -423,9 +428,9 @@ function ClaimRow({
               {/* Summary box */}
               <div className="flex justify-end">
                 <div className="text-xs space-y-1 min-w-[240px]">
-                  <div className="flex justify-between gap-8"><span className="text-muted-foreground">This Claim</span><span>{fmt(detail.scheduleOfValues.thisClaimTotal)}</span></div>
-                  <div className="flex justify-between gap-8"><span className="text-muted-foreground">Less Retention</span><span>-{fmt(detail.scheduleOfValues.retentionTotal)}</span></div>
-                  <div className="flex justify-between gap-8 border-t pt-1"><span className="text-muted-foreground">Subtotal</span><span>{fmt(detail.scheduleOfValues.subtotal)}</span></div>
+                  <div className="flex justify-between gap-8"><span className="text-muted-foreground">Gross claimed</span><span>{fmt(detail.scheduleOfValues.thisClaimTotal)}</span></div>
+                  <div className="flex justify-between gap-8"><span className="text-muted-foreground">Retention held</span><span>-{fmt(detail.scheduleOfValues.retentionTotal)}</span></div>
+                  <div className="flex justify-between gap-8 border-t pt-1"><span className="text-muted-foreground">Net payable</span><span>{fmt(detail.scheduleOfValues.subtotal)}</span></div>
                   {parseFloat(detail.claim.gstAmount) > 0 && (
                     <div className="flex justify-between gap-8"><span className="text-muted-foreground">GST (10%)</span><span>{fmt(detail.scheduleOfValues.gstAmount)}</span></div>
                   )}
@@ -486,6 +491,7 @@ function ClaimRow({
 interface WizardProps {
   jobId: string;
   phases: JobPhaseOption[];
+  retentionPercent?: string | null;
   onClose: () => void;
   onCreated: () => void;
   /** When set, seed the wizard with just this phase as the first (and only) line item */
@@ -545,13 +551,13 @@ function buildInitialLineItems(phases: JobPhaseOption[], prefillPhase?: JobPhase
   return [{ ...EMPTY_LINE }];
 }
 
-function NewClaimWizard({ jobId, phases, onClose, onCreated, prefillPhase }: WizardProps) {
+function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, prefillPhase }: WizardProps) {
   const { toast } = useToast();
   const [form, setForm] = useState({
     claimDate: format(new Date(), "yyyy-MM-dd"),
     periodStart: "",
     periodEnd: "",
-    retentionPercent: "5.00",
+    retentionPercent: retentionPercent ?? "0.00",
     notes: "",
   });
   const [lineItems, setLineItems] = useState<WizardLineItem[]>(
@@ -642,7 +648,7 @@ function NewClaimWizard({ jobId, phases, onClose, onCreated, prefillPhase }: Wiz
               <Input type="date" value={form.periodEnd} onChange={(e) => setForm((f) => ({ ...f, periodEnd: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Default Retention %</Label>
+              <Label className="text-xs">Claim Retention %</Label>
               <Input
                 type="number" step="0.01" min="0" max="100"
                 value={form.retentionPercent}
@@ -731,9 +737,9 @@ function NewClaimWizard({ jobId, phases, onClose, onCreated, prefillPhase }: Wiz
           <div className="flex justify-end">
             <div className="text-xs space-y-1 min-w-[220px] text-right">
               <div className="flex justify-between gap-6"><span className="text-muted-foreground">Contract Value</span><span>{fmt(totals.contractValueTotal)}</span></div>
-              <div className="flex justify-between gap-6"><span className="text-muted-foreground">This Claim</span><span>{fmt(totals.thisClaimTotal)}</span></div>
-              <div className="flex justify-between gap-6"><span className="text-muted-foreground">Less Retention</span><span>-{fmt(totals.retTotal)}</span></div>
-              <div className="flex justify-between gap-6 border-t pt-1 font-bold"><span>Net This Claim</span><span>{fmt(totals.subtotal)}</span></div>
+              <div className="flex justify-between gap-6"><span className="text-muted-foreground">Gross claimed</span><span>{fmt(totals.thisClaimTotal)}</span></div>
+              <div className="flex justify-between gap-6"><span className="text-muted-foreground">Retention held</span><span>-{fmt(totals.retTotal)}</span></div>
+              <div className="flex justify-between gap-6 border-t pt-1 font-bold"><span>Net payable</span><span>{fmt(totals.subtotal)}</span></div>
             </div>
           </div>
 

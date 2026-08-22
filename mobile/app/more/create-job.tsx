@@ -982,6 +982,7 @@ export default function CreateJobScreen() {
         ...(fs.materialMarkupPct ? { materialMarkupPct: fs.materialMarkupPct } : {}),
         ...(fs.equipmentMarkupPct ? { equipmentMarkupPct: fs.equipmentMarkupPct } : {}),
         ...(fs.subcontractorMarkupPct ? { subcontractorMarkupPct: fs.subcontractorMarkupPct } : {}),
+        retentionPercent: fs.retentionPercent || '0',
         ...(fs.defectsLiabilityMonths ? { defectsLiabilityMonths: parseInt(fs.defectsLiabilityMonths, 10) } : {}),
         customFields: {
           projectSetup: {

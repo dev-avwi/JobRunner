@@ -758,6 +758,8 @@ export const jobs = pgTable("jobs", {
   // Controls which tabs appear in job detail (phases, claims, POs only show for projects).
   // Null or 'service' = simple service call (default behaviour).
   jobType: text("job_type").default('service'), // 'service' | 'project'
+  // Default retention rate used when new progress claims are created for this job.
+  retentionPercent: decimal("retention_percent", { precision: 5, scale: 2 }).notNull().default('0.00'),
   // Auto-generated job number (e.g., GEM1001). Set when businessSettings.jobPrefix is configured.
   jobNumber: text("job_number"),
   // Stable client request identifier used to recover setup work after a mobile
@@ -1339,6 +1341,11 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   userId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  retentionPercent: z.coerce.string().optional().nullable().refine(
+    (value) => value === null || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100),
+    { message: "Retention percent must be between 0 and 100" },
+  ),
 });
 
 export const insertChecklistItemSchema = createInsertSchema(checklistItems).omit({

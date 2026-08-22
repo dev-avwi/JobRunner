@@ -81,7 +81,7 @@ const createClaimSchema = z.object({
   claimDate: z.string().optional(),
   periodStart: z.string().optional(),
   periodEnd: z.string().optional(),
-  retentionPercent: z.string().optional().default("0.00"),
+  retentionPercent: z.string().optional(),
   notes: z.string().optional(),
   lineItems: z
     .array(
@@ -142,17 +142,20 @@ export function registerClaimsRoutes(app: Express): void {
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
       }
-      const { lineItems, ...claimData } = parsed.data;
+      let { lineItems, ...claimData } = parsed.data;
 
       const claimNumber = claimData.claimNumber || (await storage.getNextClaimNumber(jobId, effectiveUserId));
 
       const bizSettings = await storage.getBusinessSettings(effectiveUserId);
       const gstEnabled = bizSettings?.gstEnabled ?? false;
-      const retentionPercent = claimData.retentionPercent ?? "0.00";
+      // A project-level rate is the contract default. Individual claims can still
+      // override it when a particular stage has different retention terms.
+      let retentionPercent = claimData.retentionPercent ?? (job as any).retentionPercent ?? "0.00";
 
       // ── Retention-release: eligibility + duplicate guard ─────────────────────
       // All reads happen before any write so no orphan claim is created on rejection.
-      if ((claimData.notes ?? "").trim().toLowerCase() === "retention release") {
+      const isRetentionRelease = (claimData.notes ?? "").trim().toLowerCase() === "retention release";
+      if (isRetentionRelease) {
         // 0. Project-type guard — retention release is only meaningful on project
         //    jobs. Service jobs may accrue retentionAmount if a non-zero retention %
         //    was set, but the full release flow is project-scoped only.
@@ -179,19 +182,40 @@ export function registerClaimsRoutes(app: Express): void {
           });
         }
 
-        // 2. DLP eligibility — retention may only be released after the defects
-        //    liability period has expired.
+        // 2. Practical-completion eligibility. The DLP remains visible in the
+        //    ledger as a contract milestone, but this release claim is available
+        //    once practical completion has been recorded.
         const summary = computeRetentionSummary(existingClaims as any, {
           practicalCompletionDate: (job as any).practicalCompletionDate || null,
           defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
         });
-        if (summary.retentionStatus !== "dlp_ended") {
+        if (summary.retentionStatus === "pre_pc") {
           return res.status(403).json({
-            error: "Retention cannot be released before the defects liability period has ended",
+            error: "Retention cannot be released before practical completion is reached",
             retentionStatus: summary.retentionStatus,
             releaseDate: summary.releaseDate,
           });
         }
+
+        if (summary.outstandingRetention <= 0) {
+          return res.status(409).json({
+            error: "There is no outstanding retention available to release",
+            retentionStatus: summary.retentionStatus,
+          });
+        }
+
+        // The outstanding ledger balance is authoritative. Never accept a
+        // client-supplied release figure because it could overpay the contract.
+        const releaseAmount = summary.outstandingRetention.toFixed(2);
+        retentionPercent = "0.00";
+        lineItems = [{
+          description: "Retention Release",
+          contractValue: releaseAmount,
+          previouslyClaimed: "0.00",
+          thisClaim: releaseAmount,
+          retentionPercent: "0.00",
+          sortOrder: 0,
+        }];
       }
       // ────────────────────────────────────────────────────────────────────────
 
