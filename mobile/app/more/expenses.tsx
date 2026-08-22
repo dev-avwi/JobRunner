@@ -63,6 +63,13 @@ interface Job {
   clientName?: string;
 }
 
+interface ExpensePhase {
+  id: string;
+  name: string;
+  phaseCode?: string | null;
+  status?: string;
+  sortOrder?: number;
+}
 type FilterKey = 'all' | string;
 
 const formatCurrency = (amount: number | string) => {
@@ -141,7 +148,9 @@ function ExpensesScreenInner() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [phases, setPhases] = useState<ExpensePhase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingPhases, setIsLoadingPhases] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [filterByJobId, setFilterByJobId] = useState<string | null>(routeJobId || null);
@@ -168,6 +177,7 @@ function ExpensesScreenInner() {
 
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showJobPicker, setShowJobPicker] = useState(false);
+  const [showPhasePicker, setShowPhasePicker] = useState(false);
   const [jobPickerSearch, setJobPickerSearch] = useState('');
 
   const fetchData = useCallback(async () => {
@@ -201,6 +211,44 @@ function ExpensesScreenInner() {
       fetchData();
     }, [fetchData])
   );
+
+  useEffect(() => {
+    if (!formJobId) {
+      setPhases([]);
+      setIsLoadingPhases(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingPhases(true);
+
+    api.get<ExpensePhase[]>(`/api/jobs/${formJobId}/phases`)
+      .then((response) => {
+        if (cancelled) return;
+        const nextPhases = Array.isArray(response.data)
+          ? [...response.data].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          : [];
+        setPhases(nextPhases);
+        setFormPhaseId((currentPhaseId) => (
+          currentPhaseId && !nextPhases.some((phase) => phase.id === currentPhaseId)
+            ? ''
+            : currentPhaseId
+        ));
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error('Error fetching job phases:', error);
+          setPhases([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingPhases(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formJobId]);
 
   const resetForm = () => {
     setFormCategoryId('');
@@ -415,6 +463,11 @@ function ExpensesScreenInner() {
 
   const selectedCategoryName = categories.find((c) => c.id === formCategoryId)?.name || 'Select Category';
   const selectedJobName = jobs.find((j) => j.id === formJobId)?.title || 'No Job';
+  const selectedPhase = phases.find((phase) => phase.id === formPhaseId);
+  const selectedPhaseName = selectedPhase
+    ? `${selectedPhase.phaseCode ? `${selectedPhase.phaseCode} · ` : ''}${selectedPhase.name}`
+    : formPhaseId || 'No phase selected';
+  const shouldShowPhasePicker = Boolean(formJobId && (isLoadingPhases || phases.length > 0 || formPhaseId));
 
   return (
     <>
@@ -672,6 +725,40 @@ function ExpensesScreenInner() {
                 </PressableRow>
               </View>
 
+              {shouldShowPhasePicker && (
+                <View style={styles.formSection}>
+                  <Text style={[styles.formLabel, { color: colors.foreground }]}>Phase (Optional)</Text>
+                  <PressableRow
+                    testID="expense-phase-picker"
+                    accessibilityRole="button"
+                    accessibilityLabel={formPhaseId ? `Phase: ${selectedPhaseName}` : 'Select phase'}
+                    style={[
+                      styles.phaseChip,
+                      {
+                        backgroundColor: formPhaseId ? colors.primaryLight : colors.card,
+                        borderColor: formPhaseId ? colors.primary : colors.cardBorder,
+                      },
+                    ]}
+                    onPress={() => setShowPhasePicker(true)}
+                  >
+                    <View style={styles.phaseChipContent}>
+                      <Feather name="layers" size={15} color={formPhaseId ? colors.primary : colors.mutedForeground} />
+                      <Text
+                        style={[styles.phaseChipText, { color: formPhaseId ? colors.foreground : colors.mutedForeground }]}
+                        numberOfLines={1}
+                      >
+                        {formPhaseId ? `Phase: ${selectedPhaseName}` : 'No phase selected'}
+                      </Text>
+                    </View>
+                    {isLoadingPhases ? (
+                      <ActivityIndicator size="small" color={colors.mutedForeground} />
+                    ) : (
+                      <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
+                    )}
+                  </PressableRow>
+                </View>
+              )}
+
               <View style={styles.formSection}>
                 <Text style={[styles.formLabel, { color: colors.foreground }]}>Vendor</Text>
                 <TextInput
@@ -801,7 +888,7 @@ function ExpensesScreenInner() {
               )}
             </View>
             <ScrollView keyboardShouldPersistTaps="handled">
-              <PressableRow style={[ styles.pickerItem, { borderBottomColor: colors.border }, !formJobId && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(''); setShowJobPicker(false); setJobPickerSearch(''); }} >
+               <PressableRow style={[ styles.pickerItem, { borderBottomColor: colors.border }, !formJobId && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(''); setFormPhaseId(''); setShowJobPicker(false); setJobPickerSearch(''); }} >
                 <View style={styles.pickerItemContent}>
                   <Feather name="minus-circle" size={16} color={!formJobId ? colors.primary : colors.mutedForeground} />
                   <Text style={[styles.pickerItemText, { color: colors.foreground }]}>No Job</Text>
@@ -813,7 +900,7 @@ function ExpensesScreenInner() {
                 if (!q) return true;
                 return job.title?.toLowerCase().includes(q) || job.clientName?.toLowerCase().includes(q);
               }).map((job) => (
-                <PressableRow key={job.id} style={[ styles.pickerItem, { borderBottomColor: colors.border }, formJobId === job.id && { backgroundColor: colors.primaryLight }, ]} onPress={() => { setFormJobId(job.id); setShowJobPicker(false); }} >
+                <PressableRow key={job.id} style={[ styles.pickerItem, { borderBottomColor: colors.border }, formJobId === job.id && { backgroundColor: colors.primaryLight }, ]} onPress={() => { if (formJobId !== job.id) setFormPhaseId(''); setFormJobId(job.id); setShowJobPicker(false); }} >
                   <View style={styles.pickerItemContent}>
                     <Feather name="briefcase" size={16} color={formJobId === job.id ? colors.primary : colors.mutedForeground} />
                     <View>
@@ -826,6 +913,85 @@ function ExpensesScreenInner() {
                   {formJobId === job.id && <Feather name="check" size={18} color={colors.primary} />}
                 </PressableRow>
               ))}
+            </ScrollView>
+          </View>
+        </AppBottomSheet>
+
+        <AppBottomSheet
+          visible={showPhasePicker}
+          onDismiss={() => setShowPhasePicker(false)}
+          snapPoints={['90%']}
+          scrollable={false}
+          contentPadding={0}
+        >
+          <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <PressableRow onPress={() => setShowPhasePicker(false)}>
+                <Text style={[styles.modalCancel, { color: colors.primary }]}>Done</Text>
+              </PressableRow>
+              <Text style={[styles.modalTitle, { color: colors.foreground }]}>Select Phase</Text>
+              <View style={{ width: 20 }} />
+            </View>
+            <ScrollView>
+              {isLoadingPhases ? (
+                <View style={styles.loadingPicker}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : phases.length === 0 ? (
+                <View style={styles.emptyPicker}>
+                  <Text style={[styles.emptyPickerText, { color: colors.mutedForeground }]}>
+                    No phases are available for this job.
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <PressableRow
+                    testID="expense-phase-none"
+                    style={[
+                      styles.pickerItem,
+                      { borderBottomColor: colors.border },
+                      !formPhaseId && { backgroundColor: colors.primaryLight },
+                    ]}
+                    onPress={() => {
+                      setFormPhaseId('');
+                      setShowPhasePicker(false);
+                    }}
+                  >
+                    <View style={styles.pickerItemContent}>
+                      <Feather name="minus-circle" size={16} color={!formPhaseId ? colors.primary : colors.mutedForeground} />
+                      <Text style={[styles.pickerItemText, { color: colors.foreground }]}>No Phase</Text>
+                    </View>
+                    {!formPhaseId && <Feather name="check" size={18} color={colors.primary} />}
+                  </PressableRow>
+                  {phases.map((phase) => {
+                    const isSelected = formPhaseId === phase.id;
+                    const phaseName = `${phase.phaseCode ? `${phase.phaseCode} · ` : ''}${phase.name}`;
+                    return (
+                      <PressableRow
+                        key={phase.id}
+                        testID={`expense-phase-option-${phase.id}`}
+                        style={[
+                          styles.pickerItem,
+                          { borderBottomColor: colors.border },
+                          isSelected && { backgroundColor: colors.primaryLight },
+                        ]}
+                        onPress={() => {
+                          setFormPhaseId(phase.id);
+                          setShowPhasePicker(false);
+                        }}
+                      >
+                        <View style={styles.pickerItemContent}>
+                          <Feather name="layers" size={16} color={isSelected ? colors.primary : colors.mutedForeground} />
+                          <Text style={[styles.pickerItemText, { color: colors.foreground }]} numberOfLines={1}>
+                            {phaseName}
+                          </Text>
+                        </View>
+                        {isSelected && <Feather name="check" size={18} color={colors.primary} />}
+                      </PressableRow>
+                    );
+                  })}
+                </>
+              )}
             </ScrollView>
           </View>
         </AppBottomSheet>
@@ -922,8 +1088,6 @@ function ExpensesScreenInner() {
             </View>
           </View>
         </AppBottomSheet>
-
-        
 
         
       </View>
@@ -1330,6 +1494,27 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       justifyContent: 'space-between',
       gap: spacing.sm,
     },
+    phaseChip: {
+      minHeight: sizes.inputHeight,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.md,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+    },
+    phaseChipContent: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    phaseChipText: {
+      ...typography.body,
+      flex: 1,
+      fontWeight: fontWeights.medium,
+    },
     scanButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -1348,6 +1533,10 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       alignItems: 'center',
       paddingVertical: spacing['4xl'],
       paddingHorizontal: spacing.lg,
+    },
+    loadingPicker: {
+      alignItems: 'center',
+      paddingVertical: spacing['4xl'],
     },
     emptyPickerText: {
       ...typography.body,

@@ -41,6 +41,7 @@ import {
   backpressureErrorHandler,
   isActiveTrialUser,
 } from "./routes/middleware";
+import { registerExpenseRoutes } from "./routes/expenses";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { isBackpressure, send429, aiQueue } from "./concurrency";
 import {
@@ -30133,22 +30134,7 @@ Respond with JSON in this format:
   });
 
   // Expenses
-  app.get("/api/expenses", requireAuth, async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const { jobId, categoryId, startDate, endDate } = req.query;
-      const expenses = await storage.getExpenses(userId, {
-        jobId: jobId as string,
-        categoryId: categoryId as string,
-        startDate: startDate as string,
-        endDate: endDate as string,
-      });
-      res.json(expenses);
-    } catch (error) {
-      console.error("Get expenses error:", error);
-      res.status(500).json({ error: "Failed to fetch expenses" });
-    }
-  });
+  registerExpenseRoutes(app);
 
   app.get("/api/expenses/:id", requireAuth, async (req: any, res) => {
     try {
@@ -30162,55 +30148,6 @@ Respond with JSON in this format:
     } catch (error) {
       console.error("Get expense error:", error);
       res.status(500).json({ error: "Failed to fetch expense" });
-    }
-  });
-
-  app.post("/api/expenses", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const data = insertExpenseSchema.parse(req.body);
-      
-      // Validate job ownership if jobId is provided
-      if (data.jobId) {
-        const job = await storage.getJob(data.jobId, userId);
-        if (!job) {
-          return res.status(404).json({ error: "Job not found" });
-        }
-      }
-
-      const expense = await storage.createExpense({
-        ...data,
-        userId,
-      });
-      res.status(201).json(expense);
-    } catch (error) {
-      console.error("Create expense error:", error);
-      res.status(400).json({ error: "Invalid expense data" });
-    }
-  });
-
-  app.put("/api/expenses/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES), async (req: any, res) => {
-    try {
-      const userId = req.userId!;
-      const { id } = req.params;
-      const data = insertExpenseSchema.partial().parse(req.body);
-      
-      // Validate job ownership if jobId is being updated
-      if (data.jobId) {
-        const job = await storage.getJob(data.jobId, userId);
-        if (!job) {
-          return res.status(404).json({ error: "Job not found" });
-        }
-      }
-
-      const expense = await storage.updateExpense(id, userId, data);
-      if (!expense) {
-        return res.status(404).json({ error: "Expense not found" });
-      }
-      res.json(expense);
-    } catch (error) {
-      console.error("Update expense error:", error);
-      res.status(400).json({ error: "Invalid expense data" });
     }
   });
 
