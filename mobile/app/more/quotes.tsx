@@ -24,6 +24,7 @@ import { SkeletonCard } from '../../src/components/Skeleton';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { Swipeable } from 'react-native-gesture-handler';
 
 type FilterKey = 'all' | 'draft' | 'sent' | 'accepted' | 'rejected' | 'archived';
 
@@ -72,6 +73,7 @@ function QuoteCard({
   onSend,
   onConvertToInvoice,
   onDelete,
+  onArchive,
 }: { 
   quote: any;
   clientName: string;
@@ -80,6 +82,7 @@ function QuoteCard({
   onSend?: () => void;
   onConvertToInvoice?: () => void;
   onDelete?: () => void;
+  onArchive?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -117,9 +120,41 @@ function QuoteCard({
   const quickAction = getQuickAction();
 
   return (
-    <PressableRow style={[styles.quoteCard, quote.isXeroImport && { overflow: 'visible' }]} onPress={onPress} >
-      {quote.isXeroImport && <XeroBadge size="sm" />}
-      <View style={styles.quoteCardContent}>
+    <Swipeable
+      renderRightActions={() => (
+        <View style={styles.swipeActions}>
+          {onArchive && !quote.archived && quote.status !== 'archived' && (
+            <PressableRow
+              testID={`swipe-archive-quote-${quote.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Archive quote ${quote.quoteNumber || ''}`}
+              style={[styles.swipeAction, styles.swipeArchiveAction]}
+              onPress={onArchive}
+            >
+              <Feather name="archive" size={18} color={colors.primaryForeground} />
+              <Text style={styles.swipeActionText}>Archive</Text>
+            </PressableRow>
+          )}
+          {onDelete && (
+            <PressableRow
+              testID={`swipe-delete-quote-${quote.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete quote ${quote.quoteNumber || ''}`}
+              style={[styles.swipeAction, styles.swipeDeleteAction]}
+              onPress={onDelete}
+            >
+              <Feather name="trash-2" size={18} color={colors.primaryForeground} />
+              <Text style={styles.swipeActionText}>Delete</Text>
+            </PressableRow>
+          )}
+        </View>
+      )}
+      overshootRight={false}
+      rightThreshold={40}
+    >
+      <PressableRow style={[styles.quoteCard, quote.isXeroImport && { overflow: 'visible' }]} onPress={onPress} >
+        {quote.isXeroImport && <XeroBadge size="sm" />}
+        <View style={styles.quoteCardContent}>
         {/* Main row: Left info + Right amount/actions */}
         <View style={styles.cardMainRow}>
           {/* Left side: Icon + Info */}
@@ -163,11 +198,6 @@ function QuoteCard({
                   ]}>{quickAction.label}</Text>
                 </PressableRow>
               )}
-              {onDelete && (
-                <PressableRow onPress={(e) => { e.stopPropagation(); onDelete(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }} >
-                  <Feather name="trash-2" size={16} color={colors.destructive} />
-                </PressableRow>
-              )}
               <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
             </View>
           </View>
@@ -200,8 +230,9 @@ function QuoteCard({
             )}
           </View>
         </View>
-      </View>
-    </PressableRow>
+        </View>
+      </PressableRow>
+    </Swipeable>
   );
 }
 
@@ -380,6 +411,27 @@ export default function QuotesScreen() {
     }
   };
 
+  const handleArchiveQuote = async (quoteId: string) => {
+    const quote = quotes.find(q => q.id === quoteId);
+    const ok = await confirm({
+      title: 'Archive Quote',
+      message: `Are you sure you want to archive ${quote?.quoteNumber || 'this quote'}?`,
+      confirmText: 'Archive',
+      cancelText: 'Cancel',
+    });
+    if (!ok) return;
+
+    try {
+      const response = await api.post(`/api/quotes/${quoteId}/archive`);
+      if (response.error) throw new Error(response.error);
+      await refreshData();
+      Alert.alert('Success', 'Quote archived successfully');
+    } catch (error) {
+      console.error('Error archiving quote:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to archive quote');
+    }
+  };
+
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
@@ -519,6 +571,7 @@ export default function QuotesScreen() {
               onSend={() => handleSendQuote(quote.id)}
               onConvertToInvoice={() => handleConvertToInvoice(quote.id)}
               onDelete={() => handleDeleteQuote(quote.id)}
+              onArchive={() => handleArchiveQuote(quote.id)}
             />
           )}
           ListEmptyComponent={
@@ -776,6 +829,29 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     ...shadows.sm,
+  },
+  swipeActions: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+  },
+  swipeAction: {
+    width: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  swipeArchiveAction: {
+    backgroundColor: colors.primary,
+  },
+  swipeDeleteAction: {
+    backgroundColor: colors.destructive,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  swipeActionText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
+    color: colors.primaryForeground,
   },
   quoteCardContent: {
     padding: 16, // p-4 equivalent

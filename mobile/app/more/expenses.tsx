@@ -32,6 +32,7 @@ import { SkeletonCard, Skeleton } from '../../src/components/Skeleton';
 import { format } from 'date-fns';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
+import { Swipeable } from 'react-native-gesture-handler';
 
 interface Expense {
   id: string;
@@ -92,60 +93,72 @@ function ExpenseCard({
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={[styles.expenseCard, deleting && { opacity: 0.5 }]}>
-      <View style={styles.expenseCardContent}>
-        <View style={styles.expenseCardHeader}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.expenseDescription} numberOfLines={1}>{expense.description}</Text>
-            {expense.categoryName && (
-              <View style={[styles.categoryBadge, { backgroundColor: colors.primaryLight }]}>
-                <Feather name="tag" size={10} color={colors.primary} />
-                <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>
-                  {expense.categoryName}
-                </Text>
+    <Swipeable
+      renderRightActions={() => (
+        <View style={styles.swipeActions}>
+          <PressableRow
+            testID={`swipe-delete-expense-${expense.id}`}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete expense ${expense.description}`}
+            style={[styles.swipeAction, styles.swipeDeleteAction]}
+            onPress={onDelete}
+            disabled={deleting}
+          >
+            {deleting
+              ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+              : <Feather name="trash-2" size={18} color={colors.primaryForeground} />}
+            <Text style={styles.swipeActionText}>Delete</Text>
+          </PressableRow>
+        </View>
+      )}
+      overshootRight={false}
+      rightThreshold={40}
+    >
+      <View style={[styles.expenseCard, deleting && { opacity: 0.5 }]}>
+        <View style={styles.expenseCardContent}>
+          <View style={styles.expenseCardHeader}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.expenseDescription} numberOfLines={1}>{expense.description}</Text>
+              {expense.categoryName && (
+                <View style={[styles.categoryBadge, { backgroundColor: colors.primaryLight }]}>
+                  <Feather name="tag" size={10} color={colors.primary} />
+                  <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>
+                    {expense.categoryName}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text style={[styles.expenseTotal, { color: colors.destructive }]}>
+              -{formatCurrency(expense.amount)}
+            </Text>
+          </View>
+
+          <View style={styles.expenseMetaRow}>
+            {expense.vendor && (
+              <View style={styles.expenseMetaChip}>
+                <Feather name="shopping-bag" size={11} color={colors.mutedForeground} />
+                <Text style={styles.expenseMetaText} numberOfLines={1}>{expense.vendor}</Text>
               </View>
             )}
-          </View>
-          <Text style={[styles.expenseTotal, { color: colors.destructive }]}>
-            -{formatCurrency(expense.amount)}
-          </Text>
-        </View>
-
-        <View style={styles.expenseMetaRow}>
-          {expense.vendor && (
+            {expense.jobTitle && (
+              <View style={styles.expenseMetaChip}>
+                <Feather name="briefcase" size={11} color={colors.mutedForeground} />
+                <Text style={styles.expenseMetaText} numberOfLines={1}>{expense.jobTitle}</Text>
+              </View>
+            )}
             <View style={styles.expenseMetaChip}>
-              <Feather name="shopping-bag" size={11} color={colors.mutedForeground} />
-              <Text style={styles.expenseMetaText} numberOfLines={1}>{expense.vendor}</Text>
+              <Feather name="calendar" size={11} color={colors.mutedForeground} />
+              <Text style={styles.expenseMetaText} numberOfLines={1}>
+                {(() => {
+                  const d = expense.expenseDate ? new Date(expense.expenseDate) : null;
+                  return d && !isNaN(d.getTime()) ? format(d, 'dd MMM yyyy') : 'No date';
+                })()}
+              </Text>
             </View>
-          )}
-          {expense.jobTitle && (
-            <View style={styles.expenseMetaChip}>
-              <Feather name="briefcase" size={11} color={colors.mutedForeground} />
-              <Text style={styles.expenseMetaText} numberOfLines={1}>{expense.jobTitle}</Text>
-            </View>
-          )}
-          <View style={styles.expenseMetaChip}>
-            <Feather name="calendar" size={11} color={colors.mutedForeground} />
-            <Text style={styles.expenseMetaText} numberOfLines={1}>
-              {(() => {
-                const d = expense.expenseDate ? new Date(expense.expenseDate) : null;
-                return d && !isNaN(d.getTime()) ? format(d, 'dd MMM yyyy') : 'No date';
-              })()}
-            </Text>
           </View>
         </View>
       </View>
-      <PressableRow
-        style={styles.deleteButton}
-        onPress={(e) => { e.stopPropagation(); if (!deleting) onDelete(); }}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        disabled={deleting}
-      >
-        {deleting
-          ? <ActivityIndicator size="small" color={colors.destructive} />
-          : <Feather name="trash-2" size={14} color={colors.destructive} />}
-      </PressableRow>
-    </View>
+    </Swipeable>
   );
 }
 
@@ -1440,9 +1453,25 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       fontSize: typography.sizes.xs,
       color: colors.mutedForeground,
     },
-    deleteButton: {
-      alignSelf: 'flex-start',
-      padding: spacing.md,
+    swipeActions: {
+      flexDirection: 'row',
+      alignSelf: 'stretch',
+    },
+    swipeAction: {
+      width: 92,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+    },
+    swipeDeleteAction: {
+      backgroundColor: colors.destructive,
+      borderTopRightRadius: radius.xl,
+      borderBottomRightRadius: radius.xl,
+    },
+    swipeActionText: {
+      fontSize: typography.sizes.xs,
+      fontWeight: fontWeights.semibold,
+      color: colors.primaryForeground,
     },
     modalContainer: {
       flex: 1,

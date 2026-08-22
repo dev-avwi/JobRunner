@@ -24,6 +24,7 @@ import { StatusBadge } from '../../src/components/ui/StatusBadge';
 import { SkeletonCard } from '../../src/components/Skeleton';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
+import { Swipeable } from 'react-native-gesture-handler';
 
 type FilterKey = 'all' | 'draft' | 'sent' | 'paid' | 'overdue' | 'recurring' | 'archived';
 
@@ -48,7 +49,7 @@ function InvoiceCard({
   onPress,
   onSend,
   onMarkPaid,
-  onDelete,
+  onArchive,
 }: { 
   invoice: any;
   clientName: string;
@@ -56,7 +57,7 @@ function InvoiceCard({
   onPress: () => void;
   onSend?: () => void;
   onMarkPaid?: () => void;
-  onDelete?: () => void;
+  onArchive?: () => void;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -94,9 +95,29 @@ function InvoiceCard({
   const quickAction = getQuickAction();
 
   return (
-    <PressableRow style={[styles.invoiceCard, invoice.isXeroImport && { overflow: 'visible' }]} onPress={onPress} >
-      {invoice.isXeroImport && <XeroBadge size="sm" />}
-      <View style={styles.invoiceCardContent}>
+    <Swipeable
+      renderRightActions={() => (
+        <View style={styles.swipeActions}>
+          {onArchive && !(invoice as any).archived && (
+            <PressableRow
+              testID={`swipe-archive-invoice-${invoice.id}`}
+              accessibilityRole="button"
+              accessibilityLabel={`Archive invoice ${invoice.invoiceNumber || ''}`}
+              style={[styles.swipeAction, styles.swipeArchiveAction]}
+              onPress={onArchive}
+            >
+              <Feather name="archive" size={18} color={colors.primaryForeground} />
+              <Text style={styles.swipeActionText}>Archive</Text>
+            </PressableRow>
+          )}
+        </View>
+      )}
+      overshootRight={false}
+      rightThreshold={40}
+    >
+      <PressableRow style={[styles.invoiceCard, invoice.isXeroImport && { overflow: 'visible' }]} onPress={onPress} >
+        {invoice.isXeroImport && <XeroBadge size="sm" />}
+        <View style={styles.invoiceCardContent}>
         {/* Main row: Left info + Right amount/actions */}
         <View style={styles.cardMainRow}>
           {/* Left side: Icon + Info */}
@@ -140,11 +161,6 @@ function InvoiceCard({
                   ]}>{quickAction.label}</Text>
                 </PressableRow>
               )}
-              {onDelete && (
-                <PressableRow onPress={(e) => { e.stopPropagation(); onDelete(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }} >
-                  <Feather name="trash-2" size={16} color={colors.destructive} />
-                </PressableRow>
-              )}
               <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
             </View>
           </View>
@@ -186,8 +202,9 @@ function InvoiceCard({
             )}
           </View>
         </View>
-      </View>
-    </PressableRow>
+        </View>
+      </PressableRow>
+    </Swipeable>
   );
 }
 
@@ -376,25 +393,25 @@ export default function InvoicesScreen() {
     );
   };
 
-  const handleDeleteInvoice = async (invoiceId: string) => {
+  const handleArchiveInvoice = async (invoiceId: string) => {
     const invoice = invoices.find(i => i.id === invoiceId);
     
     const ok = await confirm({
-      title: 'Delete Invoice',
-      message: `Are you sure you want to delete ${invoice?.invoiceNumber || 'this invoice'}? This action cannot be undone.`,
-      confirmText: 'Delete',
+      title: 'Archive Invoice',
+      message: `Are you sure you want to archive ${invoice?.invoiceNumber || 'this invoice'}?`,
+      confirmText: 'Archive',
       cancelText: 'Cancel',
-      destructive: true,
     });
-    if (ok) {
-      try {
-        await api.delete(`/api/invoices/${invoiceId}`);
-        await refreshData();
-        Alert.alert('Success', 'Invoice deleted successfully');
-      } catch (error) {
-        console.error('Error deleting invoice:', error);
-        Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete invoice');
-      }
+    if (!ok) return;
+
+    try {
+      const response = await api.post(`/api/invoices/${invoiceId}/archive`);
+      if (response.error) throw new Error(response.error);
+      await refreshData();
+      Alert.alert('Success', 'Invoice archived successfully');
+    } catch (error) {
+      console.error('Error archiving invoice:', error);
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to archive invoice');
     }
   };
 
@@ -532,7 +549,7 @@ export default function InvoicesScreen() {
                 onPress={() => router.push(`/more/invoice/${invoice.id}`)}
                 onSend={() => handleSendInvoice(invoice.id)}
                 onMarkPaid={() => handleMarkPaid(invoice.id)}
-                onDelete={() => handleDeleteInvoice(invoice.id)}
+                onArchive={() => handleArchiveInvoice(invoice.id)}
               />
             </View>
           )}
@@ -791,6 +808,26 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     ...shadows.sm,
+  },
+  swipeActions: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+  },
+  swipeAction: {
+    width: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  swipeArchiveAction: {
+    backgroundColor: colors.primary,
+    borderTopRightRadius: 14,
+    borderBottomRightRadius: 14,
+  },
+  swipeActionText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.semibold,
+    color: colors.primaryForeground,
   },
   invoiceCardContent: {
     padding: 16, // p-4 equivalent
