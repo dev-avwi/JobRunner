@@ -20,6 +20,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api, API_URL } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { StatusBadge } from '../../src/components/ui/StatusBadge';
+import { SkeletonCard } from '../../src/components/Skeleton';
 import { XeroBadge } from '../../src/components/ui/XeroBadge';
 import { EmailComposeModal } from '../../src/components/EmailComposeModal';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -503,8 +504,8 @@ export default function QuotesScreen() {
               </View>
 
               {isLoading && (
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color={colors.primary} />
+                <View style={{ paddingHorizontal: spacing.md }}>
+                  {[1, 2, 3, 4, 5].map((i) => <SkeletonCard key={i} />)}
                 </View>
               )}
             </>

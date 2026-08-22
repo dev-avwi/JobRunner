@@ -33,6 +33,7 @@ import { AnimatedCardPressable } from '../../src/components/ui/AnimatedPressable
 import { useTheme, ThemeColors, colorWithOpacity } from '../../src/lib/theme';
 import { fontWeights, spacing, radius, shadows, sizes, pageShell, typography, iconSizes, usePageShell, HEADER_HEIGHT } from '../../src/lib/design-tokens';
 import { useScrollToTop } from '../../src/contexts/ScrollContext';
+import { SkeletonJobCard } from '../../src/components/Skeleton';
 import { usePreserveScrollOnFold } from '../../src/hooks/usePreserveScrollOnFold';
 import { getJobUrgency, type JobUrgency } from '../../src/lib/jobUrgency';
 import UsageLimitBanner from '../../src/components/UsageLimitBanner';
@@ -1370,8 +1371,8 @@ export default function JobsScreen() {
   const listEmptyComponent = useMemo(() => {
     if (isLoading) {
       return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={{ padding: spacing.md }}>
+          {[1, 2, 3, 4, 5].map((i) => <SkeletonJobCard key={i} />)}
         </View>
       );
     }

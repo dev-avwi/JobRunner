@@ -26,6 +26,7 @@ import api from '../../src/lib/api';
 import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../src/lib/smsGate';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
+import { SkeletonListItem } from '../../src/components/Skeleton';
 
 type FilterKey = 'all' | 'residential' | 'commercial' | 'vip' | 'outstanding' | 'inactive_6mo' | 'with_email' | 'with_phone' | 'with_address';
 
@@ -519,8 +520,8 @@ function ClientsScreenInner() {
       </View>
 
       {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={{ paddingHorizontal: spacing.md }}>
+          {[1, 2, 3, 4, 5].map((i) => <SkeletonListItem key={i} />)}
         </View>
       )}
     </>

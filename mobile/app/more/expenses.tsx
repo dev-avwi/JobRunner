@@ -28,6 +28,7 @@ import { api } from '../../src/lib/api';
 import { showToast } from '../../src/lib/toast';
 import { relativeDateGroup } from '../../src/lib/relativeDate';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import { SkeletonCard, Skeleton } from '../../src/components/Skeleton';
 import { format } from 'date-fns';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
@@ -614,8 +615,13 @@ function ExpensesScreenInner() {
 
           <View style={styles.listSection}>
             {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.primary} />
+              <View style={{ padding: spacing.md, gap: spacing.md }}>
+                <Skeleton width="35%" height={14} />
+                <SkeletonCard />
+                <SkeletonCard />
+                <Skeleton width="35%" height={14} />
+                <SkeletonCard />
+                <SkeletonCard />
               </View>
             ) : loadError ? (
               <View style={styles.emptyState}>

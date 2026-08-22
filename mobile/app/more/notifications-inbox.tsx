@@ -7,7 +7,8 @@ import { useNotificationsStore } from '../../src/lib/notifications-store';
 import { formatDistanceToNow } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
-import { typography, fontWeights } from '../../src/lib/design-tokens';
+import { typography, fontWeights, spacing } from '../../src/lib/design-tokens';
+import { SkeletonListItem } from '../../src/components/Skeleton';
 
 const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -289,8 +290,8 @@ export default function NotificationsInboxScreen() {
     return (
       <>
         <Stack.Screen options={{ title: 'Notifications' }} />
-        <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={[styles.container, { padding: spacing.md }]}>
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => <SkeletonListItem key={i} />)}
         </View>
       </>
     );

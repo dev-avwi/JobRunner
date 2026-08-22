@@ -47,6 +47,7 @@ import { Button } from '../../src/components/ui/Button';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import LiveActivity from '../../modules/LiveActivity/src';
+import { SkeletonDashboard, Skeleton } from '../../src/components/Skeleton';
 
 interface WeatherData {
   temperature: number;
@@ -900,8 +901,10 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
 
   if (isLoading) {
     return (
-      <View style={[styles.timeTrackingWidget, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="small" color={colors.primary} />
+      <View style={[styles.timeTrackingWidget, { padding: spacing.md, gap: spacing.sm }]}>
+        <Skeleton width="50%" height={14} />
+        <Skeleton width="70%" height={28} />
+        <Skeleton width="40%" height={12} />
       </View>
     );
   }
@@ -2405,8 +2408,8 @@ export default function DashboardScreen() {
   // right after /api/auth/me), so they don't hit this spinner.
   if (!roleInfo && !serverSaysOwner) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <SkeletonDashboard />
       </View>
     );
   }
