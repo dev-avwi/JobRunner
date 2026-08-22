@@ -820,9 +820,15 @@ export default function NewInvoiceScreen() {
     }
   }, [params.jobId, params.claimId]);
 
+  type InvoiceCostCheckResponse = {
+    purchaseOrders: { reconciledCount: number; reconciledTotal: number; outstandingCount: number; outstandingTotal: number };
+    variations: Array<{ id: string; title: string; amount: number; variationNumber: number | null }>;
+    materials: { markupCaptured: number; sellPriceTotal: number };
+  };
+
   const fetchCostCheck = async (jId: string) => {
     try {
-      const res = await api.get(`/api/jobs/${jId}/invoice-cost-check`);
+      const res = await api.get<InvoiceCostCheckResponse>(`/api/jobs/${jId}/invoice-cost-check`);
       if (res.data) setCostCheckData({
         purchaseOrders: res.data.purchaseOrders ?? { reconciledCount: 0, reconciledTotal: 0, outstandingCount: 0, outstandingTotal: 0 },
         variations: res.data.variations ?? [],
