@@ -556,3 +556,177 @@ describe("retention release claim — PDF HTML content", () => {
     expect(html).toContain("Retention Release");
   });
 });
+
+// ─── 8. Zero line items edge case ─────────────────────────────────────────────
+//
+// If a claim is created with no line items (race condition, storage failure, etc.)
+// the PDF must still render a well-formed HTML document with all three key
+// financial labels present and no runtime errors.
+
+describe("progress-claim PDF — zero line items edge case", () => {
+  const zeroSummary = {
+    contractValueTotal: 0,
+    previouslyClaimedTotal: 0,
+    thisClaimTotal: 0,
+    retentionTotal: 0,
+    subtotal: 0,
+    gstAmount: 0,
+    total: 0,
+    balanceTotal: 0,
+  };
+
+  const minimalClaim = {
+    id: "claim-empty",
+    claimNumber: "PC-000",
+    status: "draft",
+    claimDate: "2026-08-01",
+    periodStart: null,
+    periodEnd: null,
+    retentionPercent: "5.00",
+    notes: null,
+  };
+
+  it("returns well-formed HTML even when lineItems is empty", () => {
+    const html = generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-empty", title: "Empty Claims Job", jobType: "project" },
+      client: { name: "Test Client" },
+      business: { businessName: "Test Business" },
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(200);
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("</html>");
+  });
+
+  it("contains Gross Claimed label when lineItems is empty", () => {
+    const html = generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-empty", title: "Empty Claims Job", jobType: "project" },
+      client: { name: "Test Client" },
+      business: { businessName: "Test Business" },
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+    expect(html).toContain("Gross Claimed");
+  });
+
+  it("contains Retention Held label when lineItems is empty", () => {
+    const html = generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-empty", title: "Empty Claims Job", jobType: "project" },
+      client: { name: "Test Client" },
+      business: { businessName: "Test Business" },
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+    expect(html).toContain("Retention Held");
+  });
+
+  it("contains Net Payable label when lineItems is empty", () => {
+    const html = generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-empty", title: "Empty Claims Job", jobType: "project" },
+      client: { name: "Test Client" },
+      business: { businessName: "Test Business" },
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+    expect(html).toContain("Net Payable");
+  });
+
+  it("renders $0.00 figures without crashing when all summary values are zero", () => {
+    const html = generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-empty", title: "Empty Claims Job", jobType: "project" },
+      client: { name: "Test Client" },
+      business: { businessName: "Test Business" },
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+    // The formatted zero value appears in the totals section
+    expect(html).toContain("$0.00");
+  });
+});
+
+// ─── 9. Zero line items with null client and business ─────────────────────────
+//
+// Verifies that the PDF handles the combination of empty line items AND missing
+// client/business objects (the most degenerate possible input) without crashing.
+
+describe("progress-claim PDF — zero line items with null client and business", () => {
+  const zeroSummary = {
+    contractValueTotal: 0,
+    previouslyClaimedTotal: 0,
+    thisClaimTotal: 0,
+    retentionTotal: 0,
+    subtotal: 0,
+    gstAmount: 0,
+    total: 0,
+    balanceTotal: 0,
+  };
+
+  const minimalClaim = {
+    id: "claim-bare",
+    claimNumber: "PC-BARE",
+    status: "draft",
+    claimDate: null,
+    periodStart: null,
+    periodEnd: null,
+    retentionPercent: null,
+    notes: null,
+  };
+
+  function buildBareHtml(): string {
+    return generateProgressClaimPDF({
+      claim: minimalClaim,
+      job: { id: "job-bare", title: "Bare Job", jobType: "project" },
+      client: null,
+      business: null,
+      lineItems: [],
+      summary: zeroSummary,
+      gstEnabled: false,
+    });
+  }
+
+  it("returns well-formed HTML when client and business are null and lineItems is empty", () => {
+    const html = buildBareHtml();
+    expect(typeof html).toBe("string");
+    expect(html.length).toBeGreaterThan(200);
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("</html>");
+  });
+
+  it("contains Gross Claimed label with null client/business and empty lineItems", () => {
+    const html = buildBareHtml();
+    expect(html).toContain("Gross Claimed");
+  });
+
+  it("contains Retention Held label with null client/business and empty lineItems", () => {
+    const html = buildBareHtml();
+    expect(html).toContain("Retention Held");
+  });
+
+  it("contains Net Payable label with null client/business and empty lineItems", () => {
+    const html = buildBareHtml();
+    expect(html).toContain("Net Payable");
+  });
+
+  it("falls back to default business name when business is null", () => {
+    const html = buildBareHtml();
+    expect(html).toContain("Your Business");
+  });
+
+  it("falls back to default brand colour when business has no brandColor", () => {
+    const html = buildBareHtml();
+    // Default brand colour is #1e3a5f — must appear at least once in the CSS
+    expect(html).toContain("#1e3a5f");
+  });
+});
