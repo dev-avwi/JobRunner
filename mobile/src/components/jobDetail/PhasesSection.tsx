@@ -540,27 +540,31 @@ export function PhasesSection({
                       </View>
                     )}
 
-                    <View style={{ marginTop: spacing.xs, gap: 3, padding: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${budgetColor}35` }}>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
-                          <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
-                            Budget {phaseBudget === null ? 'not set' : formatCost(phaseBudget)}
-                          </Text>
-                          <Text style={{ fontSize: 10, color: colors.foreground, fontWeight: fontWeights.semibold }}>
-                            Actual {actualCost === undefined ? 'unavailable' : formatCost(actualCost)}
-                          </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
-                          <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
-                            {actualCost === undefined ? 'Cost data unavailable' : variance === null ? 'Variance unavailable' : `Variance ${variance >= 0 ? '+' : ''}${formatCost(variance)}`}
-                          </Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: budgetColor }} />
-                            <Text style={{ fontSize: 10, color: budgetColor, fontWeight: fontWeights.semibold }}>
-                              {actualCost === undefined ? 'Cost unavailable' : phaseBudgetLabel(budgetStatus)}
+                    {/* Budget/cost row — only shown when there's a budget set or actual spend */}
+                    {(phaseBudget !== null || (actualCost !== undefined && actualCost > 0)) && (
+                      <View style={{ marginTop: spacing.xs, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingVertical: 5, borderRadius: radius.sm, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${budgetColor}35` }}>
+                        <View style={{ flex: 1 }}>
+                          {phaseBudget !== null ? (
+                            <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                              Budget {formatCost(phaseBudget)}{variance !== null ? `  ·  ${variance >= 0 ? '+' : ''}${formatCost(variance)} variance` : ''}
                             </Text>
-                          </View>
+                          ) : (
+                            <Text style={{ fontSize: 10, color: colors.mutedForeground }}>No budget set</Text>
+                          )}
                         </View>
-                    </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                            {actualCost !== undefined ? formatCost(actualCost) : '$0.00'}
+                          </Text>
+                          {budgetStatus !== 'none' && (
+                            <>
+                              <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: budgetColor }} />
+                              <Text style={{ fontSize: 10, color: budgetColor, fontWeight: fontWeights.semibold }}>{phaseBudgetLabel(budgetStatus)}</Text>
+                            </>
+                          )}
+                        </View>
+                      </View>
+                    )}
 
                     {phase.description ? (
                       <Text style={[styles.phaseDesc, { color: colors.mutedForeground }]} numberOfLines={2}>

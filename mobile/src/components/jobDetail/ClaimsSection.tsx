@@ -430,7 +430,7 @@ export function ClaimsSection({
         </Text>
       )}
 
-      {!isLoading && (
+      {!isLoading && retentionWithheld > 0 && (
         <View style={[styles.retentionCard, { backgroundColor: colors.muted, borderColor: colors.cardBorder }]}>
           <View>
             <Text style={[styles.retentionLabel, { color: colors.mutedForeground }]}>Retention held to date</Text>

@@ -314,14 +314,8 @@ export function MaterialsSection(props: MaterialsSectionProps) {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Materials for this phase */}
-                  {phaseMaterials.length === 0 ? (
-                    <View style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
-                      <Text style={{ ...typography.caption, color: colors.mutedForeground, fontStyle: 'italic' }}>
-                        No materials added to this phase
-                      </Text>
-                    </View>
-                  ) : (
+                  {/* Materials for this phase — only shown when there are items */}
+                  {phaseMaterials.length > 0 && (
                     <View style={{ padding: spacing.sm }}>
                       {phaseMaterials.map(renderMaterialRow)}
                     </View>
