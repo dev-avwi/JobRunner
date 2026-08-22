@@ -358,6 +358,42 @@ describe("POST /api/jobs/:jobId/claims — retention release happy path", () => 
 
     expect(mockUpdateClaim).toHaveBeenCalled();
   });
+
+  /**
+   * Core double-payment guard: the server must persist a subtotal that exactly
+   * equals outstandingRetention from the ledger (15,000 from three approved
+   * $5,000-retention claims).  buildScheduleOfValues runs against the real
+   * line-item fixture so this catches any mismatch between the computed release
+   * amount and what actually lands in the database.
+   */
+  it("persists a subtotal that equals the outstanding retention balance from the ledger", async () => {
+    await request(buildApp())
+      .post(`/api/jobs/${JOB_ID}/claims`)
+      .send(retentionReleaseBody);
+
+    expect(mockUpdateClaim).toHaveBeenCalled();
+    const updateArgs = mockUpdateClaim.mock.calls[0];
+    // updateClaim(claimId, userId, patch) — patch is the third argument
+    const patch = updateArgs[2] as Record<string, string>;
+    // Outstanding retention = sum of approved claim retentionAmounts = 15,000
+    expect(patch.subtotal).toBe("15000.00");
+    // The release claim itself withholds no additional retention
+    expect(patch.retentionAmount).toBe("0.00");
+    // total = subtotal when gstEnabled is false
+    expect(patch.total).toBe("15000.00");
+  });
+
+  it("response body includes the final claim with subtotal equal to the release amount", async () => {
+    const res = await request(buildApp())
+      .post(`/api/jobs/${JOB_ID}/claims`)
+      .send(retentionReleaseBody);
+
+    expect(res.status).toBe(201);
+    expect(res.body.claim).toBeDefined();
+    // freshReleaseClaim.subtotal is set to "15000.00" by setupHappyPath —
+    // the value the route returns after persisting the computed totals.
+    expect(res.body.claim.subtotal).toBe("15000.00");
+  });
 });
 
 describe("POST /api/jobs/:jobId/claims — blank retentionPercent on variation line items", () => {
