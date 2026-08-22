@@ -3,6 +3,10 @@ import { insertExpenseSchema } from "@workspace/db";
 import { storage } from "../storage";
 import { createPermissionMiddleware, PERMISSIONS } from "../permissions";
 import { requireAuth } from "./middleware";
+import {
+  assertExpensePhaseAssignment,
+  ExpensePhaseValidationError,
+} from "../phaseExpenseAttribution";
 
 type ExpenseScope = {
   jobId?: string | null;
@@ -20,29 +24,13 @@ async function validateExpenseScope({
   phaseId,
   ownerId,
 }: ExpenseScope): Promise<ValidationFailure | undefined> {
-  if (!jobId) {
-    if (phaseId) {
-      return {
-        status: 400,
-        error: "A job is required when assigning an expense to a phase",
-      };
+  try {
+    await assertExpensePhaseAssignment(storage, ownerId, jobId, phaseId);
+  } catch (error) {
+    if (error instanceof ExpensePhaseValidationError) {
+      return { status: error.status, error: error.message };
     }
-    return undefined;
-  }
-
-  const job = await storage.getJob(jobId, ownerId);
-  if (!job) {
-    return { status: 404, error: "Job not found" };
-  }
-
-  if (!phaseId) return undefined;
-
-  const phases = await storage.getJobPhases(jobId, job.userId);
-  if (!phases.some((phase) => phase.id === phaseId)) {
-    return {
-      status: 400,
-      error: "Phase not found or does not belong to this job",
-    };
+    throw error;
   }
 
   return undefined;

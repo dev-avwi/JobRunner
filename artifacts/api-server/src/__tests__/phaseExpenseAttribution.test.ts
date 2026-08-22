@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   allocateExpensesByPhase,
   assertExpensePhaseAssignment,
-  ExpensePhaseValidationError,
 } from "../phaseExpenseAttribution";
 
 describe("phase expense attribution", () => {
@@ -38,7 +37,7 @@ describe("phase expense attribution", () => {
 
     await expect(
       assertExpensePhaseAssignment(storage, "business-a", "job-a", "phase-b"),
-    ).rejects.toMatchObject<Partial<ExpensePhaseValidationError>>({
+    ).rejects.toMatchObject({
       status: 400,
       message: "The selected phase does not belong to this job",
     });

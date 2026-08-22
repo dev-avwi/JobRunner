@@ -53,18 +53,22 @@ export async function assertExpensePhaseAssignment(
   jobId: string | null | undefined,
   phaseId: string | null | undefined,
 ): Promise<void> {
-  if (!phaseId) return;
   if (!jobId) {
-    throw new ExpensePhaseValidationError(
-      "A job is required when assigning an expense to a phase",
-      400,
-    );
+    if (phaseId) {
+      throw new ExpensePhaseValidationError(
+        "A job is required when assigning an expense to a phase",
+        400,
+      );
+    }
+    return;
   }
 
   const job = await storage.getJob(jobId, effectiveUserId);
   if (!job) {
     throw new ExpensePhaseValidationError("Job not found", 404);
   }
+
+  if (!phaseId) return;
 
   const phases = await storage.getJobPhases(jobId, effectiveUserId);
   if (!phases.some((phase) => phase.id === phaseId)) {

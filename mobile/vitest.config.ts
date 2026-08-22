@@ -5,12 +5,10 @@
  * added later). It deliberately does NOT load the jest-expo / React Native
  * setup, which is only needed for component tests run via the `jest` script.
  */
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
+export default {
   test: {
     environment: "node",
     globals: true,
     include: ["src/utils/**/*.test.ts"],
   },
-});
+};
