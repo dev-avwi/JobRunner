@@ -285,7 +285,11 @@ export function registerClaimsRoutes(app: Express): void {
             contractValue: li.contractValue,
             previouslyClaimed: li.previouslyClaimed,
             thisClaim: li.thisClaim,
-            retentionPercent: li.retentionPercent ?? retentionPercent,
+            // Treat blank strings as absent — the wizard submits "" for variation
+            // line items when the user has not overridden the claim-level rate.
+            // `??` alone cannot catch "" because it is not nullish, so we use
+            // `||` which treats both "" and null/undefined as "use the default".
+            retentionPercent: li.retentionPercent?.trim() || retentionPercent,
             sortOrder: li.sortOrder ?? idx,
           });
         }
