@@ -262,9 +262,17 @@ function InventoryScreenInner() {
   const [supplierStats, setSupplierStats] = useState<SupplierPOStats | null>(null);
   const [isLoadingSupplierPOs, setIsLoadingSupplierPOs] = useState(false);
 
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [suppliersError, setSuppliersError] = useState<string | null>(null);
+  const [purchaseOrdersError, setPurchaseOrdersError] = useState<string | null>(null);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       setError(null);
+      setCategoriesError(null);
+      setSuppliersError(null);
+      setPurchaseOrdersError(null);
       const [itemsRes, catsRes, suppRes, poRes] = await Promise.all([
         api.get<InventoryItem[]>('/api/inventory/items'),
         api.get<InventoryCategory[]>('/api/inventory/categories'),
@@ -276,9 +284,21 @@ function InventoryScreenInner() {
       } else {
         setItems(itemsRes.data || []);
       }
-      if (!catsRes.error) setCategories(catsRes.data || []);
-      if (!suppRes.error) setSuppliers(suppRes.data || []);
-      if (!poRes.error) setPurchaseOrders(poRes.data || []);
+      if (catsRes.error) {
+        setCategoriesError(catsRes.error);
+      } else {
+        setCategories(catsRes.data || []);
+      }
+      if (suppRes.error) {
+        setSuppliersError(suppRes.error);
+      } else {
+        setSuppliers(suppRes.data || []);
+      }
+      if (poRes.error) {
+        setPurchaseOrdersError(poRes.error);
+      } else {
+        setPurchaseOrders(poRes.data || []);
+      }
     } catch (err) {
       setError('Failed to load inventory');
     } finally {
@@ -453,16 +473,66 @@ function InventoryScreenInner() {
   const openDetail = async (item: InventoryItem) => {
     setSelectedItem(item);
     setShowDetailModal(true);
+    setTransactionsError(null);
     setIsLoadingTransactions(true);
     try {
       const res = await api.get<InventoryTransaction[]>(`/api/inventory/items/${item.id}/transactions`);
-      if (!res.error) setTransactions(Array.isArray(res.data) ? res.data : []);
+      if (!res.error) {
+        setTransactions(Array.isArray(res.data) ? res.data : []);
+      } else {
+        setTransactionsError(res.error);
+        setTransactions([]);
+      }
     } catch (err) {
+      setTransactionsError('Failed to load transaction history');
       setTransactions([]);
     } finally {
       setIsLoadingTransactions(false);
     }
   };
+
+  const retryCategoriesFetch = useCallback(async () => {
+    setCategoriesError(null);
+    try {
+      const res = await api.get<InventoryCategory[]>('/api/inventory/categories');
+      if (res.error) { setCategoriesError(res.error); } else { setCategories(res.data || []); }
+    } catch { setCategoriesError('Failed to load categories'); }
+  }, []);
+
+  const retrySuppliersFetch = useCallback(async () => {
+    setSuppliersError(null);
+    try {
+      const res = await api.get<Supplier[]>('/api/suppliers');
+      if (res.error) { setSuppliersError(res.error); } else { setSuppliers(res.data || []); }
+    } catch { setSuppliersError('Failed to load suppliers'); }
+  }, []);
+
+  const retryPurchaseOrdersFetch = useCallback(async () => {
+    setPurchaseOrdersError(null);
+    try {
+      const res = await api.get<PurchaseOrder[]>('/api/purchase-orders');
+      if (res.error) { setPurchaseOrdersError(res.error); } else { setPurchaseOrders(res.data || []); }
+    } catch { setPurchaseOrdersError('Failed to load purchase orders'); }
+  }, []);
+
+  const retryTransactionsFetch = useCallback(async (itemId: string) => {
+    setTransactionsError(null);
+    setIsLoadingTransactions(true);
+    try {
+      const res = await api.get<InventoryTransaction[]>(`/api/inventory/items/${itemId}/transactions`);
+      if (!res.error) {
+        setTransactions(Array.isArray(res.data) ? res.data : []);
+      } else {
+        setTransactionsError(res.error);
+        setTransactions([]);
+      }
+    } catch {
+      setTransactionsError('Failed to load transaction history');
+      setTransactions([]);
+    } finally {
+      setIsLoadingTransactions(false);
+    }
+  }, []);
 
   const handleAdjustmentSubmit = async () => {
     if (!adjustmentForm.quantity || parseFloat(adjustmentForm.quantity) === 0) {
@@ -953,7 +1023,15 @@ function InventoryScreenInner() {
 
   const renderCategoriesTab = () => (
     <>
-      {categories.length === 0 ? (
+      {categoriesError ? (
+        <View style={styles.tabErrorContainer}>
+          <Feather name="alert-circle" size={32} color="#ef4444" />
+          <Text style={styles.tabErrorText}>{categoriesError}</Text>
+          <TouchableOpacity style={styles.tabRetryButton} onPress={retryCategoriesFetch} activeOpacity={0.7}>
+            <Text style={styles.tabRetryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : categories.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Feather name="grid" size={40} color={colors.mutedForeground} />
@@ -1044,7 +1122,15 @@ function InventoryScreenInner() {
 
   const renderPurchaseOrdersTab = () => (
     <>
-      {purchaseOrders.length === 0 ? (
+      {purchaseOrdersError ? (
+        <View style={styles.tabErrorContainer}>
+          <Feather name="alert-circle" size={32} color="#ef4444" />
+          <Text style={styles.tabErrorText}>{purchaseOrdersError}</Text>
+          <TouchableOpacity style={styles.tabRetryButton} onPress={retryPurchaseOrdersFetch} activeOpacity={0.7}>
+            <Text style={styles.tabRetryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : purchaseOrders.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Feather name="shopping-cart" size={40} color={colors.mutedForeground} />
@@ -1094,6 +1180,16 @@ function InventoryScreenInner() {
 
   const renderSuppliersTab = () => (
     <>
+      {suppliersError ? (
+        <View style={styles.tabErrorContainer}>
+          <Feather name="alert-circle" size={32} color="#ef4444" />
+          <Text style={styles.tabErrorText}>{suppliersError}</Text>
+          <TouchableOpacity style={styles.tabRetryButton} onPress={retrySuppliersFetch} activeOpacity={0.7}>
+            <Text style={styles.tabRetryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+      <>
       <View style={styles.searchContainer}>
         <View style={styles.searchInputWrapper}>
           <Feather name="search" size={iconSizes.md} color={colors.mutedForeground} />
@@ -1165,6 +1261,8 @@ function InventoryScreenInner() {
           scrollEnabled={false}
           contentContainerStyle={{ gap: spacing.sm }}
         />
+      )}
+      </>
       )}
     </>
   );
@@ -1582,6 +1680,18 @@ function InventoryScreenInner() {
               </View>
               {isLoadingTransactions ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: spacing.md }} />
+              ) : transactionsError ? (
+                <View style={styles.tabErrorContainer}>
+                  <Feather name="alert-circle" size={28} color="#ef4444" />
+                  <Text style={styles.tabErrorText}>{transactionsError}</Text>
+                  <TouchableOpacity
+                    style={styles.tabRetryButton}
+                    onPress={() => selectedItem && retryTransactionsFetch(selectedItem.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.tabRetryButtonText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
               ) : transactions.length === 0 ? (
                 <View style={styles.noMaintenanceContainer}>
                   <Text style={styles.noMaintenanceText}>No stock transactions yet</Text>
@@ -2509,6 +2619,32 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
     backgroundColor: colors.primary,
   },
   retryButtonText: {
+    ...typography.button,
+    color: colors.primaryForeground || colors.white,
+  },
+  tabErrorContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing['3xl'],
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+    gap: spacing.sm,
+  },
+  tabErrorText: {
+    ...typography.body,
+    color: '#ef4444',
+    textAlign: 'center',
+  },
+  tabRetryButton: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primary,
+  },
+  tabRetryButtonText: {
     ...typography.button,
     color: colors.primaryForeground || colors.white,
   },

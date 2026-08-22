@@ -1022,27 +1022,43 @@ export default function EquipmentScreen() {
               />
             }
           >
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.pageTitle}>Equipment</Text>
-                <Text style={styles.pageSubtitle}>{equipment.length} total items</Text>
-              </View>
-              <PressableRow style={styles.addButton} onPress={openCreate} >
-                <Feather name="plus" size={18} color={colors.primaryForeground} />
-                <Text style={styles.addButtonText}>Add</Text>
-              </PressableRow>
-            </View>
-
-            {renderFilterChips()}
-            {renderSummaryCards()}
-
-            {error ? renderError() : filteredEquipment.length === 0 ? renderEmptyState() : (
-              <View>
-                <Text style={styles.sectionLabel}>EQUIPMENT LIST</Text>
-                <View style={styles.cardList}>
-                  {filteredEquipment.map(renderCard)}
+            {error && equipment.length === 0 ? (
+              renderError()
+            ) : (
+              <>
+                <View style={styles.header}>
+                  <View>
+                    <Text style={styles.pageTitle}>Equipment</Text>
+                    <Text style={styles.pageSubtitle}>{equipment.length} total items</Text>
+                  </View>
+                  <PressableRow style={styles.addButton} onPress={openCreate} >
+                    <Feather name="plus" size={18} color={colors.primaryForeground} />
+                    <Text style={styles.addButtonText}>Add</Text>
+                  </PressableRow>
                 </View>
-              </View>
+
+                {renderFilterChips()}
+                {renderSummaryCards()}
+
+                {error ? (
+                  <>
+                    {renderError()}
+                    <View style={{ marginTop: spacing.md }}>
+                      <Text style={styles.sectionLabel}>EQUIPMENT LIST</Text>
+                      <View style={styles.cardList}>
+                        {filteredEquipment.map(renderCard)}
+                      </View>
+                    </View>
+                  </>
+                ) : filteredEquipment.length === 0 ? renderEmptyState() : (
+                  <View>
+                    <Text style={styles.sectionLabel}>EQUIPMENT LIST</Text>
+                    <View style={styles.cardList}>
+                      {filteredEquipment.map(renderCard)}
+                    </View>
+                  </View>
+                )}
+              </>
             )}
           </ScrollView>
         )}
