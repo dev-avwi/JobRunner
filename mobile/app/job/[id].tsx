@@ -2451,6 +2451,7 @@ export default function JobDetailScreen() {
       phaseCode: string | null;
       name: string;
       status: string | null;
+      budgetedCost?: number | null;
       costs: { labour: number; subcontractor: number; materials: number; purchaseOrders: number; total: number };
       hours: number;
       variations: { approvedTotal: number; pendingTotal: number };
@@ -2826,6 +2827,12 @@ export default function JobDetailScreen() {
       setIsLoadingClaims(false);
     }
   }, [id]);
+
+  // Phase cards and the phase-aware What's Next state both depend on this list.
+  // Load it on entry rather than only after a phase mutation in this screen.
+  useEffect(() => {
+    loadPhases();
+  }, [loadPhases]);
 
   const loadApprovedClaimVariations = useCallback(async () => {
     if (!id) return;
@@ -5054,6 +5061,25 @@ export default function JobDetailScreen() {
           labourOverrun: raw.labourOverrun === true,
           status: raw.status === 'profitable' || raw.status === 'tight' || raw.status === 'loss' ? raw.status : 'loss',
           materials: Array.isArray(raw.materials) ? raw.materials : [],
+          phases: Array.isArray(raw.phases) ? raw.phases.map((phase: any) => ({
+            id: typeof phase.id === 'string' ? phase.id : null,
+            phaseCode: typeof phase.phaseCode === 'string' ? phase.phaseCode : null,
+            name: typeof phase.name === 'string' ? phase.name : 'Unallocated',
+            status: typeof phase.status === 'string' ? phase.status : null,
+            budgetedCost: n(phase.budgetedCost) > 0 ? n(phase.budgetedCost) : null,
+            costs: {
+              labour: n(phase.costs?.labour),
+              subcontractor: n(phase.costs?.subcontractor),
+              materials: n(phase.costs?.materials),
+              purchaseOrders: n(phase.costs?.purchaseOrders),
+              total: n(phase.costs?.total),
+            },
+            hours: n(phase.hours),
+            variations: {
+              approvedTotal: n(phase.variations?.approvedTotal),
+              pendingTotal: n(phase.variations?.pendingTotal),
+            },
+          })) : [],
           retentionSummary: raw.retentionSummary ?? undefined,
         });
       } else {
@@ -7489,12 +7515,27 @@ export default function JobDetailScreen() {
         const budgetColor = budgetStatus === 'profitable' ? colors.success : budgetStatus === 'tight' ? colors.warning : budgetStatus === 'loss' ? colors.destructive : colors.mutedForeground;
         const budgetLabel = budgetStatus === 'profitable' ? 'On track' : budgetStatus === 'tight' ? 'Near limit' : budgetStatus === 'loss' ? 'Over budget' : null;
 
-        // Phase-level over-budget check
-        const phaseCostEntry = nextPhase ? pd?.phases?.find(p => p.id === nextPhase.id) : null;
-        const phaseActual = phaseCostEntry?.costs?.total ?? 0;
-        const phaseBudget = nextPhase?.budgetedCost ? parseFloat(nextPhase.budgetedCost) : null;
-        const phaseOverBudget = phaseBudget !== null && phaseBudget > 0 && phaseActual > phaseBudget;
-        const phaseNearBudget = !phaseOverBudget && phaseBudget !== null && phaseBudget > 0 && phaseActual > phaseBudget * 0.85;
+        // Phase-level budget state uses the same thresholds as the profitability API:
+        // green through 90%, amber through 105%, then red.
+        const phaseBudgetStates = phases.reduce<Array<{ phase: JobPhase; actual: number; budget: number | null; status: 'green' | 'amber' | 'red' | 'none' }>>((states, phase) => {
+          const costEntry = pd?.phases?.find((entry) => entry.id === phase.id);
+          // A phase's budget can be known before profitability finishes loading,
+          // but its actual and status are not. Never present unknown actuals as $0.
+          if (!costEntry) return states;
+          const actual = costEntry.costs.total;
+          const budgetValue = costEntry?.budgetedCost ?? parseFloat(phase.budgetedCost ?? '0');
+          const budget = budgetValue > 0 ? budgetValue : null;
+          const status = budget === null ? 'none' : actual > budget * 1.05 ? 'red' : actual > budget * 0.9 ? 'amber' : 'green';
+          states.push({ phase, actual, budget, status });
+          return states;
+        }, []);
+        const nextPhaseBudgetState = phaseBudgetStates.find((entry) => entry.phase.id === nextPhase?.id) ?? null;
+        const phaseActual = nextPhaseBudgetState?.actual ?? null;
+        const phaseBudget = nextPhaseBudgetState?.budget ?? null;
+        const phaseVariance = phaseBudget === null || phaseActual === null ? null : phaseActual - phaseBudget;
+        const phaseOverBudget = nextPhaseBudgetState?.status === 'red';
+        const phaseNearBudget = nextPhaseBudgetState?.status === 'amber';
+        const overBudgetPhaseCount = phaseBudgetStates.filter((entry) => entry.status === 'red').length;
 
         const canOpenPhase = (isOwnerOrManager || isSoloOwner) && !!nextPhase;
         const handleWhatsNextPress = () => {
@@ -7545,6 +7586,14 @@ export default function JobDetailScreen() {
                   </Text>
                 </View>
               )}
+              {overBudgetPhaseCount > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${colors.destructive}15`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm }}>
+                  <Feather name="alert-triangle" size={10} color={colors.destructive} />
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.destructive }}>
+                    {overBudgetPhaseCount} phase{overBudgetPhaseCount === 1 ? '' : 's'} over budget
+                  </Text>
+                </View>
+              )}
               {(canOpenPhase || (!nextPhase && (isOwnerOrManager || isSoloOwner))) && (
                 <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
               )}
@@ -7582,6 +7631,20 @@ export default function JobDetailScreen() {
                     {nextPhase.description}
                   </Text>
                 ) : null}
+                {nextPhaseBudgetState && phaseActual !== null ? (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xs }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, flex: 1 }}>
+                      {phaseBudget === null ? 'No budget' : `Budget ${formatCurrency(phaseBudget)}`} · Actual {formatCurrency(phaseActual)}
+                    </Text>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: phaseBudget === null ? colors.mutedForeground : phaseVariance !== null && phaseVariance > 0 ? colors.destructive : colors.success }}>
+                      {phaseBudget === null ? 'Variance unavailable' : `${phaseVariance !== null && phaseVariance >= 0 ? '+' : ''}${formatCurrency(phaseVariance ?? 0)}`}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, paddingTop: spacing.xs }}>
+                    Phase cost data unavailable
+                  </Text>
+                )}
                 {/* Progress summary */}
                 {totalPhases > 0 && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
@@ -9618,7 +9681,7 @@ export default function JobDetailScreen() {
         if (!rs) return null;
         const statusLabels: Record<string, string> = {
           pre_pc: 'Pre-completion',
-          in_dlp: 'Practical completion reached',
+          in_dlp: 'In DLP',
           dlp_ended: 'DLP ended, due now',
           released: 'Released',
         };
@@ -11157,6 +11220,7 @@ export default function JobDetailScreen() {
                     isLoading={isLoadingPhases}
                     isTradie={!(isOwnerOrManager || isSoloOwner)}
                     claimedPhaseIds={claimedPhaseIds}
+                    phaseCosts={profitabilityData?.phases}
                     onStatusChange={async (phaseId, status) => {
                       await api.patch(`/api/jobs/${id}/phases/${phaseId}`, { status });
                       await loadPhases();
@@ -14775,18 +14839,70 @@ export default function JobDetailScreen() {
                 )}
 
                 {/* Phase-level breakdown (project jobs with phases) */}
-                {pd.phases && pd.phases.length > 0 && (
+                {((pd.phases?.length ?? 0) > 0 || phases.length > 0) && (
                   <>
                     <SectionHeader label="Costs by Phase" />
-                    {pd.phases.map((ph) => (
+                    {(pd.phases ?? []).map((ph) => {
+                      const matchingPhase = ph.id ? phases.find((phase) => phase.id === ph.id) : null;
+                      const phaseBudgetValue = ph.budgetedCost ?? matchingPhase?.budgetedCost ?? null;
+                      const phaseBudget = phaseBudgetValue !== null && phaseBudgetValue !== undefined && Number(phaseBudgetValue) > 0
+                        ? Number(phaseBudgetValue)
+                        : null;
+                      const phaseActual = ph.costs.total;
+                      const phaseVariance = phaseBudget === null ? null : phaseActual - phaseBudget;
+                      const phaseStatus = phaseBudget === null
+                        ? 'none'
+                        : phaseActual > phaseBudget * 1.05
+                          ? 'red'
+                          : phaseActual > phaseBudget * 0.9
+                            ? 'amber'
+                            : 'green';
+                      const phaseColor = phaseStatus === 'green'
+                        ? colors.success
+                        : phaseStatus === 'amber'
+                          ? colors.warning
+                          : phaseStatus === 'red'
+                            ? colors.destructive
+                            : colors.mutedForeground;
+                      const phaseLabel = phaseStatus === 'green'
+                        ? 'On track'
+                        : phaseStatus === 'amber'
+                          ? 'Near limit'
+                          : phaseStatus === 'red'
+                            ? 'Over budget'
+                            : 'No budget';
+
+                      return (
                       <View key={ph.id ?? 'unallocated'} style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.sm }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                           <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold, flex: 1, marginRight: spacing.sm }} numberOfLines={1}>
-                            {ph.phaseCode ? `${ph.phaseCode} — ${ph.name}` : ph.name}
+                            {ph.phaseCode ? `${ph.phaseCode} - ${ph.name}` : ph.name}
                           </Text>
                           <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
                             {formatCurrency(ph.costs.total)}
                           </Text>
+                        </View>
+                        <View style={{ marginTop: spacing.xs, padding: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${phaseColor}35`, gap: 3 }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                            Budget vs actual
+                          </Text>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                              Budget {phaseBudget === null ? 'not set' : formatCurrency(phaseBudget)}
+                            </Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                              Actual {formatCurrency(phaseActual)}
+                            </Text>
+                          </View>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                              {phaseVariance === null ? 'Variance unavailable' : `Variance ${phaseVariance >= 0 ? '+' : ''}${formatCurrency(phaseVariance)}`}
+                            </Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: phaseColor }} />
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: phaseColor }}>{phaseLabel}</Text>
+                            </View>
+                          </View>
                         </View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xs }}>
                           <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
@@ -14823,7 +14939,41 @@ export default function JobDetailScreen() {
                           </View>
                         )}
                       </View>
-                    ))}
+                      );
+                    })}
+                    {phases
+                      .filter((phase) => !(pd.phases ?? []).some((entry) => entry.id === phase.id))
+                      .map((phase) => {
+                        const phaseBudgetValue = parseFloat(phase.budgetedCost ?? '0');
+                        const phaseBudget = phaseBudgetValue > 0 ? phaseBudgetValue : null;
+                        return (
+                          <View key={phase.id} style={{ borderBottomWidth: 1, borderBottomColor: colors.border, paddingVertical: spacing.sm }}>
+                            <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold }} numberOfLines={1}>
+                              {phase.phaseCode ? `${phase.phaseCode} - ${phase.name}` : phase.name}
+                            </Text>
+                            <View style={{ marginTop: spacing.xs, padding: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${colors.mutedForeground}35`, gap: 3 }}>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                                Budget vs actual
+                              </Text>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                                  Budget {phaseBudget === null ? 'not set' : formatCurrency(phaseBudget)}
+                                </Text>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                                  Actual unavailable
+                                </Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Variance unavailable</Text>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.mutedForeground }} />
+                                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>Cost unavailable</Text>
+                                </View>
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      })}
                   </>
                 )}
 

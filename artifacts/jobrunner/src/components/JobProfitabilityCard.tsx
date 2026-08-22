@@ -39,6 +39,7 @@ interface PhaseCostData {
   phaseCode: string | null;
   name: string;
   status: string | null;
+  budgetedCost: number | null;
   costs: {
     labour: number;
     subcontractor: number;
@@ -85,6 +86,31 @@ interface ProfitabilityData {
     status: string;
   }>;
   phases?: PhaseCostData[];
+}
+
+type PhaseBudgetStatus = "green" | "amber" | "red" | "none";
+
+function getPhaseBudgetStatus(actual: number, budget: number | null): PhaseBudgetStatus {
+  if (budget === null || budget <= 0) return "none";
+  if (actual > budget * 1.05) return "red";
+  if (actual > budget * 0.9) return "amber";
+  return "green";
+}
+
+function PhaseBudgetIndicator({ status }: { status: PhaseBudgetStatus }) {
+  const config = {
+    green: { dot: "bg-green-500", text: "text-green-600 dark:text-green-400", label: "On track" },
+    amber: { dot: "bg-amber-500", text: "text-amber-600 dark:text-amber-400", label: "Near limit" },
+    red: { dot: "bg-red-500", text: "text-red-600 dark:text-red-400", label: "Over budget" },
+    none: { dot: "bg-muted-foreground", text: "text-muted-foreground", label: "No budget" },
+  }[status];
+
+  return (
+    <span className={`flex items-center gap-1 text-xs font-medium ${config.text}`}>
+      <span className={`inline-block h-2 w-2 rounded-full ${config.dot}`} />
+      {config.label}
+    </span>
+  );
 }
 
 function getStatusColor(status: string) {
@@ -157,6 +183,12 @@ function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
         {phases.map((phase) => {
           const key = phase.id ?? "unallocated";
           const isOpen = expanded.has(key);
+          const budget = phase.budgetedCost !== null && phase.budgetedCost > 0
+            ? phase.budgetedCost
+            : null;
+          const actual = phase.costs.total;
+          const variance = budget === null ? null : actual - budget;
+          const budgetStatus = getPhaseBudgetStatus(actual, budget);
           return (
             <div key={key} className="rounded-md border">
               <button
@@ -177,12 +209,30 @@ function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
                   )}
                   <span className="text-sm truncate">{phase.name}</span>
                 </span>
-                <span className="text-sm font-medium shrink-0 ml-2">
-                  {formatCurrency(phase.costs.total)}
+                <span className="flex flex-col items-end gap-0.5 shrink-0 ml-2">
+                  <span className="text-sm font-medium">{formatCurrency(actual)}</span>
+                  <PhaseBudgetIndicator status={budgetStatus} />
                 </span>
               </button>
               {isOpen && (
                 <div className="px-3 pb-2 pt-0.5 space-y-1 pl-8">
+                  <div className="rounded-sm bg-muted px-2 py-1.5 space-y-1 mb-1">
+                    <span className="text-[11px] font-medium text-muted-foreground">Budget vs actual</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        Budget {budget === null ? "not set" : formatCurrency(budget)}
+                      </span>
+                      <span className="text-xs font-medium">Actual {formatCurrency(actual)}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {variance === null
+                          ? "Variance unavailable"
+                          : `Variance ${variance >= 0 ? "+" : ""}${formatCurrency(variance)}`}
+                      </span>
+                      <PhaseBudgetIndicator status={budgetStatus} />
+                    </div>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Labour{phase.hours > 0 ? ` (${phase.hours.toFixed(1)}hrs)` : ""}
@@ -295,13 +345,14 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
 
   if (!data || !data.revenue) return null;
 
-  // Include PO and variation totals in the "has data" check so early-stage jobs
-  // with only a quote or approved variation still show the header + download button.
+  // Include phase, PO, and variation totals so early-stage projects still show
+  // their available budget-versus-actual information.
   const hasFinancialData =
     data.revenue.invoiced > 0 ||
     data.revenue.pending > 0 ||
     data.costs.total > 0 ||
     !!data.budget ||
+    (data.phases?.length ?? 0) > 0 ||
     (data as any).purchaseOrders?.total > 0 ||
     (data as any).variations?.approvedTotal > 0 ||
     (data as any).variations?.pendingTotal > 0 ||

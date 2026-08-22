@@ -7163,13 +7163,26 @@ import { computeRetentionSummary } from "./retentionSummary";
             }
 
             const r2 = (n: number) => Math.round(n * 100) / 100;
-            const toPhaseRow = (id: string | null, phaseCode: string | null, name: string, status: string | null, b: PhaseBucket) => {
+            const toPhaseRow = (
+              id: string | null,
+              phaseCode: string | null,
+              name: string,
+              status: string | null,
+              b: PhaseBucket,
+              phase?: any,
+            ) => {
               const v = id ? variationsByPhase.get(id) : null;
               return {
                 id,
                 phaseCode,
                 name,
                 status,
+                budgetedCost: (() => {
+                  const budget = phase?.budgetedCost === null || phase?.budgetedCost === undefined
+                    ? 0
+                    : parseFloat(phase.budgetedCost.toString()) || 0;
+                  return id && budget > 0 ? r2(budget) : null;
+                })(),
                 costs: {
                   labour: r2(b.labour),
                   subcontractor: r2(b.subcontractor),
@@ -7188,7 +7201,7 @@ import { computeRetentionSummary } from "./retentionSummary";
             };
 
             phaseBreakdown = sortedPhases.map((p: any) =>
-              toPhaseRow(p.id, p.phaseCode, p.name, p.status, buckets.get(p.id)!),
+              toPhaseRow(p.id, p.phaseCode, p.name, p.status, buckets.get(p.id)!, p),
             );
             const hasUnallocated =
               unallocated.labour > 0 || unallocated.subcontractor > 0 ||

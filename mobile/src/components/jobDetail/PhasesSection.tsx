@@ -34,6 +34,16 @@ export interface JobPhase {
   assignedUserName?: string | null;
 }
 
+export type PhaseBudgetStatus = 'green' | 'amber' | 'red' | 'none';
+
+export interface PhaseCostBreakdown {
+  id: string | null;
+  budgetedCost?: number | null;
+  costs: {
+    total: number;
+  };
+}
+
 
 const STATUS_CONFIG: Record<PhaseStatus, { label: string; bg: string; text: string }> = {
   not_started: { label: 'Not Started', bg: '#F3F4F6', text: '#374151' },
@@ -69,6 +79,36 @@ function HoursComparison({ booked, actual, colors }: { booked: number; actual: n
       </Text>
     </View>
   );
+}
+
+function getPhaseBudgetStatus(actual: number, budget: number | null): PhaseBudgetStatus {
+  if (budget === null || budget <= 0) return 'none';
+  const percentUsed = actual / budget;
+  if (percentUsed > 1.05) return 'red';
+  if (percentUsed > 0.9) return 'amber';
+  return 'green';
+}
+
+function normalizePhaseBudget(budget: number | null | undefined): number | null {
+  return budget !== null && budget !== undefined && budget > 0 ? budget : null;
+}
+
+function formatCost(amount: number): string {
+  return `$${amount.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function phaseBudgetColor(status: PhaseBudgetStatus, colors: ThemeColors): string {
+  if (status === 'green') return colors.success;
+  if (status === 'amber') return colors.warning;
+  if (status === 'red') return colors.destructive;
+  return colors.mutedForeground;
+}
+
+function phaseBudgetLabel(status: PhaseBudgetStatus): string {
+  if (status === 'green') return 'On track';
+  if (status === 'amber') return 'Near limit';
+  if (status === 'red') return 'Over budget';
+  return 'No budget';
 }
 
 // Success flash animation for last-phase completion
@@ -114,6 +154,8 @@ export interface PhasesSectionProps {
   onPhaseCompleted?: (phase: JobPhase) => void;
   /** Set of phase IDs that already have a progress claim line item */
   claimedPhaseIds?: Set<string>;
+  /** Profitability costs used to show each phase's budget vs actual state */
+  phaseCosts?: PhaseCostBreakdown[];
 }
 
 export function PhasesSection({
@@ -126,6 +168,7 @@ export function PhasesSection({
   onEditPhase,
   onPhaseCompleted,
   claimedPhaseIds,
+  phaseCosts,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [flashingId, setFlashingId] = useState<string | null>(null);
@@ -178,6 +221,12 @@ export function PhasesSection({
     const endStr = fmtDate(viewingPhase.scheduledEnd);
     const hoursNum = parseFloat(viewingPhase.bookedHours ?? '0') || 0;
     const budgetNum = parseFloat(viewingPhase.budgetedCost ?? '0') || 0;
+    const costBreakdown = phaseCosts?.find((entry) => entry.id === viewingPhase.id);
+    const actualCost = costBreakdown?.costs.total;
+    const budgetedCost = normalizePhaseBudget(costBreakdown?.budgetedCost ?? (budgetNum > 0 ? budgetNum : null));
+    const budgetStatus = actualCost === undefined ? 'none' : getPhaseBudgetStatus(actualCost, budgetedCost);
+    const budgetColor = phaseBudgetColor(budgetStatus, colors);
+    const variance = budgetedCost === null || actualCost === undefined ? null : actualCost - budgetedCost;
     const isClaimed = claimedPhaseIds?.has(viewingPhase.id);
     const isUpdatingView = updatingId === viewingPhase.id;
 
@@ -250,6 +299,29 @@ export function PhasesSection({
             </Text>
           </View>
         )}
+
+        <View style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${budgetColor}35` }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Actual cost</Text>
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                {actualCost === undefined ? 'Unavailable' : formatCost(actualCost)}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
+              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                {actualCost === undefined ? 'Actual cost unavailable' : variance === null ? 'Budget variance' : `Variance ${variance >= 0 ? '+' : ''}${formatCost(variance)}`}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: budgetColor }} />
+                <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: budgetColor }}>
+                  {actualCost === undefined ? 'Cost unavailable' : phaseBudgetLabel(budgetStatus)}
+                </Text>
+              </View>
+            </View>
+            {budgetedCost === null && (
+              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>No phase budget set</Text>
+            )}
+        </View>
 
         {/* Date range */}
         {(startStr || endStr) && (
@@ -376,6 +448,12 @@ export function PhasesSection({
             const startStr = fmtDate(phase.scheduledStart);
             const endStr = fmtDate(phase.scheduledEnd);
             const hoursNum = parseFloat(phase.bookedHours ?? '0') || 0;
+            const costBreakdown = phaseCosts?.find((entry) => entry.id === phase.id);
+            const actualCost = costBreakdown?.costs.total;
+            const phaseBudget = normalizePhaseBudget(costBreakdown?.budgetedCost ?? (parseFloat(phase.budgetedCost ?? '0') || null));
+            const budgetStatus = actualCost === undefined ? 'none' : getPhaseBudgetStatus(actualCost, phaseBudget);
+            const budgetColor = phaseBudgetColor(budgetStatus, colors);
+            const variance = phaseBudget === null || actualCost === undefined ? null : actualCost - phaseBudget;
 
             return (
               <View key={phase.id} style={[styles.phaseRow, isLast && styles.phaseRowLast]}>
@@ -461,6 +539,28 @@ export function PhasesSection({
                         </View>
                       </View>
                     )}
+
+                    <View style={{ marginTop: spacing.xs, gap: 3, padding: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${budgetColor}35` }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                          <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                            Budget {phaseBudget === null ? 'not set' : formatCost(phaseBudget)}
+                          </Text>
+                          <Text style={{ fontSize: 10, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                            Actual {actualCost === undefined ? 'unavailable' : formatCost(actualCost)}
+                          </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.xs }}>
+                          <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                            {actualCost === undefined ? 'Cost data unavailable' : variance === null ? 'Variance unavailable' : `Variance ${variance >= 0 ? '+' : ''}${formatCost(variance)}`}
+                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: budgetColor }} />
+                            <Text style={{ fontSize: 10, color: budgetColor, fontWeight: fontWeights.semibold }}>
+                              {actualCost === undefined ? 'Cost unavailable' : phaseBudgetLabel(budgetStatus)}
+                            </Text>
+                          </View>
+                        </View>
+                    </View>
 
                     {phase.description ? (
                       <Text style={[styles.phaseDesc, { color: colors.mutedForeground }]} numberOfLines={2}>
