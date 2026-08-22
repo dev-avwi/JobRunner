@@ -779,7 +779,7 @@ export function registerClaimsRoutes(app: Express): void {
             description: `Variation ${v.number}: ${v.title}`,
             contractValue: v.additionalAmount,
             previouslyClaimed: "0.00",
-            thisClaim: "0.00",
+            thisClaim: v.additionalAmount,
           },
         }));
       res.json(available);

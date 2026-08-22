@@ -67,6 +67,7 @@ export interface ClaimLineItem {
   id: string;
   claimId: string;
   phaseId: string | null;
+  variationId?: string | null;
   description: string;
   contractValue: string;
   previouslyClaimed: string;
@@ -334,6 +335,19 @@ function ClaimRow({
     queryKey: [`/api/jobs/${jobId}/claims/${claim.id}`],
     enabled: isExpanded,
   });
+  const originalScopeLineItems = detail?.lineItems.filter((li) => !li.variationId) ?? [];
+  const variationClaimLineItems = detail?.lineItems.filter((li) => !!li.variationId) ?? [];
+  const renderScheduleRow = (li: ClaimLineItem, index: number) => (
+    <tr key={li.id} className={index % 2 === 0 ? "" : "bg-muted/30"}>
+      <td className="p-2">{li.description}</td>
+      <td className="p-2 text-right">{fmt(li.contractValue)}</td>
+      <td className="p-2 text-right">{fmt(li.previouslyClaimed)}</td>
+      <td className="p-2 text-right font-semibold text-blue-700 dark:text-blue-300">{fmt(li.thisClaim)}</td>
+      <td className="p-2 text-right text-muted-foreground">{li.cumulativePct?.toFixed(1) ?? "-"}%</td>
+      <td className="p-2 text-right">{fmt(li.retentionAmount)}</td>
+      <td className="p-2 text-right">{fmt(li.balance)}</td>
+    </tr>
+  );
 
   return (
     <div className="rounded-lg border bg-card overflow-hidden">
@@ -398,17 +412,15 @@ function ClaimRow({
                       </tr>
                     </thead>
                     <tbody>
-                      {detail.lineItems.map((li, i) => (
-                        <tr key={li.id} className={i % 2 === 0 ? "" : "bg-muted/30"}>
-                          <td className="p-2">{li.description}</td>
-                          <td className="p-2 text-right">{fmt(li.contractValue)}</td>
-                          <td className="p-2 text-right">{fmt(li.previouslyClaimed)}</td>
-                          <td className="p-2 text-right font-semibold text-blue-700 dark:text-blue-300">{fmt(li.thisClaim)}</td>
-                          <td className="p-2 text-right text-muted-foreground">{li.cumulativePct?.toFixed(1) ?? "-"}%</td>
-                          <td className="p-2 text-right">{fmt(li.retentionAmount)}</td>
-                          <td className="p-2 text-right">{fmt(li.balance)}</td>
+                      {originalScopeLineItems.map(renderScheduleRow)}
+                      {variationClaimLineItems.length > 0 && (
+                        <tr className="bg-blue-50 dark:bg-blue-950/30">
+                          <td colSpan={7} className="px-2 py-1.5 font-semibold text-blue-700 dark:text-blue-300">
+                            Approved variations
+                          </td>
                         </tr>
-                      ))}
+                      )}
+                      {variationClaimLineItems.map((li, index) => renderScheduleRow(li, originalScopeLineItems.length + index))}
                     </tbody>
                     <tfoot className="bg-muted/60 font-semibold">
                       <tr>
@@ -563,8 +575,6 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
   const [lineItems, setLineItems] = useState<WizardLineItem[]>(
     () => buildInitialLineItems(phases, prefillPhase),
   );
-  // Track which variation IDs have already been added as line items
-  const [addedVariationIds, setAddedVariationIds] = useState<Set<string>>(new Set());
 
   const { data: approvedVariations = [] } = useQuery<ApprovedVariationSuggestion[]>({
     queryKey: ["approved-variations-for-claim", jobId],
@@ -575,9 +585,17 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
     staleTime: 30_000,
   });
 
-  const unadded = approvedVariations.filter((v) => !addedVariationIds.has(v.id));
+  const selectedVariationIds = useMemo(
+    () => new Set(lineItems.flatMap((li) => li.variationId ? [li.variationId] : [])),
+    [lineItems],
+  );
 
-  const addVariationLine = (v: ApprovedVariationSuggestion) => {
+  const toggleVariation = (v: ApprovedVariationSuggestion) => {
+    if (selectedVariationIds.has(v.id)) {
+      setLineItems((prev) => prev.filter((li) => li.variationId !== v.id));
+      return;
+    }
+
     setLineItems((prev) => [
       ...prev,
       {
@@ -589,7 +607,6 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
         retentionPercent: "",
       },
     ]);
-    setAddedVariationIds((prev) => new Set([...prev, v.id]));
   };
 
   const updateLine = (idx: number, field: keyof WizardLineItem, value: string) => {
@@ -599,6 +616,43 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
   const addLine = () => setLineItems((prev) => [...prev, { ...EMPTY_LINE }]);
 
   const removeLine = (idx: number) => setLineItems((prev) => prev.filter((_, i) => i !== idx));
+
+  const originalLineItems = lineItems
+    .map((li, idx) => ({ li, idx }))
+    .filter(({ li }) => !li.variationId);
+  const variationLineItems = lineItems
+    .map((li, idx) => ({ li, idx }))
+    .filter(({ li }) => !!li.variationId);
+
+  const renderLineItem = ({ li, idx }: { li: WizardLineItem; idx: number }) => (
+    <tr key={`${li.variationId ? "variation" : "line"}-${li.variationId ?? idx}`} className={idx % 2 === 0 ? "" : "bg-muted/30"}>
+      <td className="p-1">
+        <Input
+          className="h-7 text-xs"
+          value={li.description}
+          onChange={(e) => updateLine(idx, "description", e.target.value)}
+          placeholder="Phase / description"
+        />
+      </td>
+      <td className="p-1">
+        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.contractValue} onChange={(e) => updateLine(idx, "contractValue", e.target.value)} />
+      </td>
+      <td className="p-1">
+        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.previouslyClaimed} onChange={(e) => updateLine(idx, "previouslyClaimed", e.target.value)} />
+      </td>
+      <td className="p-1">
+        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.thisClaim} onChange={(e) => updateLine(idx, "thisClaim", e.target.value)} />
+      </td>
+      <td className="p-1">
+        <Input className="h-7 text-xs text-right" type="number" step="0.01" placeholder={form.retentionPercent} value={li.retentionPercent} onChange={(e) => updateLine(idx, "retentionPercent", e.target.value)} />
+      </td>
+      <td className="p-1">
+        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeLine(idx)} disabled={lineItems.length === 1}>
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </td>
+    </tr>
+  );
 
   const totals = useMemo(() => {
     let contractValueTotal = 0, thisClaimTotal = 0, prevTotal = 0, retTotal = 0;
@@ -657,25 +711,29 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
             </div>
           </div>
 
-          {/* Approved variations — one-click add to line items */}
-          {unadded.length > 0 && (
+          {/* Approved variations — optional rows for the schedule of values */}
+          {approvedVariations.length > 0 && (
             <div className="rounded border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3">
               <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">
-                Approved Variations — click to add as line items
+                Approved Variations: select to add to this claim
               </p>
-              <div className="flex flex-wrap gap-2">
-                {unadded.map((v) => (
+              <div className="space-y-2">
+                {approvedVariations.map((v) => {
+                  const isSelected = selectedVariationIds.has(v.id);
+                  return (
                   <Button
                     key={v.id}
-                    size="sm"
+                    type="button"
                     variant="outline"
-                    className="h-7 text-xs border-blue-300 dark:border-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900"
-                    onClick={() => addVariationLine(v)}
+                    className={`w-full h-auto min-h-9 justify-start text-left text-xs border-blue-300 dark:border-blue-700 ${isSelected ? "bg-blue-100 dark:bg-blue-900" : "hover:bg-blue-100 dark:hover:bg-blue-900"}`}
+                    onClick={() => toggleVariation(v)}
                   >
-                    <Plus className="h-3 w-3 mr-1" />
-                    {v.number}: {v.title} — ${parseFloat(v.totalAmount || "0").toLocaleString("en-AU", { minimumFractionDigits: 2 })}
+                    {isSelected ? <Check className="h-3.5 w-3.5 mr-2 shrink-0" /> : <Plus className="h-3.5 w-3.5 mr-2 shrink-0" />}
+                    <span className="flex-1">{v.number}: {v.title}</span>
+                    <span className="font-semibold ml-2">{fmt(v.totalAmount)}</span>
                   </Button>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -696,35 +754,15 @@ function NewClaimWizard({ jobId, phases, retentionPercent, onClose, onCreated, p
                   </tr>
                 </thead>
                 <tbody>
-                  {lineItems.map((li, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? "" : "bg-muted/30"}>
-                      <td className="p-1">
-                        <Input
-                          className="h-7 text-xs"
-                          value={li.description}
-                          onChange={(e) => updateLine(idx, "description", e.target.value)}
-                          placeholder="Phase / description"
-                        />
-                      </td>
-                      <td className="p-1">
-                        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.contractValue} onChange={(e) => updateLine(idx, "contractValue", e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.previouslyClaimed} onChange={(e) => updateLine(idx, "previouslyClaimed", e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input className="h-7 text-xs text-right" type="number" step="0.01" value={li.thisClaim} onChange={(e) => updateLine(idx, "thisClaim", e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Input className="h-7 text-xs text-right" type="number" step="0.01" placeholder={form.retentionPercent} value={li.retentionPercent} onChange={(e) => updateLine(idx, "retentionPercent", e.target.value)} />
-                      </td>
-                      <td className="p-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeLine(idx)} disabled={lineItems.length === 1}>
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                  {originalLineItems.map(renderLineItem)}
+                  {variationLineItems.length > 0 && (
+                    <tr className="bg-blue-50 dark:bg-blue-950/30">
+                      <td colSpan={6} className="px-2 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300">
+                        Approved variations
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  {variationLineItems.map(renderLineItem)}
                 </tbody>
               </table>
             </div>

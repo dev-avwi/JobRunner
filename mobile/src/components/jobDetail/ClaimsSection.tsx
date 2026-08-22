@@ -52,6 +52,7 @@ export interface Claim {
 
 interface ClaimLineItem {
   id: string;
+  variationId?: string | null;
   description: string;
   contractValue: string;
   previouslyClaimed: string;
@@ -353,6 +354,29 @@ export function ClaimsSection({
     if (datePickerTarget) setEditForm(f => ({ ...f, [datePickerTarget]: toISODateStr(datePickerValue) }));
     setDatePickerTarget(null);
   };
+
+  const renderEditLineItem = (li: ClaimLineItem) => {
+    const isUnclaimed = parseFloat(li.previouslyClaimed || '0') <= 0 && (li.cumulativePct ?? 0) <= 0;
+    return (
+      <View
+        key={li.id}
+        style={[
+          styles.lineItemRow,
+          { borderColor: isUnclaimed ? colors.warning : colors.cardBorder, backgroundColor: isUnclaimed ? `${colors.warning}20` : `${colors.muted}60` },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.lineItemDesc, { color: colors.foreground }]} numberOfLines={2}>{li.description}</Text>
+          {isUnclaimed && (
+            <Text style={{ fontSize: 10, color: colors.warning, marginTop: 2 }}>Never claimed</Text>
+          )}
+        </View>
+        <Text style={[styles.lineItemAmount, { color: colors.primary }]}>{fmt(li.thisClaim)}</Text>
+      </View>
+    );
+  };
+  const originalEditLineItems = editLineItems.filter((li) => !li.variationId);
+  const variationEditLineItems = editLineItems.filter((li) => !!li.variationId);
 
   // ─── render ───────────────────────────────────────────────────────────────
 
@@ -750,26 +774,15 @@ export function ClaimsSection({
                 No line items yet. Add one below.
               </Text>
             )}
-            {!loadingEditItems && editLineItems.map((li) => {
-              const isUnclaimed = parseFloat(li.previouslyClaimed || '0') <= 0 && (li.cumulativePct ?? 0) <= 0;
-              return (
-                <View
-                  key={li.id}
-                  style={[
-                    styles.lineItemRow,
-                    { borderColor: isUnclaimed ? '#F59E0B' : colors.cardBorder, backgroundColor: isUnclaimed ? '#FEF3C720' : colors.muted + '60' },
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.lineItemDesc, { color: colors.foreground }]} numberOfLines={2}>{li.description}</Text>
-                    {isUnclaimed && (
-                      <Text style={{ fontSize: 10, color: '#92400E', marginTop: 2 }}>Never claimed</Text>
-                    )}
-                  </View>
-                  <Text style={[styles.lineItemAmount, { color: colors.primary }]}>{fmt(li.thisClaim)}</Text>
-                </View>
-              );
-            })}
+            {!loadingEditItems && originalEditLineItems.map(renderEditLineItem)}
+            {!loadingEditItems && variationEditLineItems.length > 0 && (
+              <View style={{ marginTop: spacing.xs, marginBottom: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: `${colors.primary}15` }}>
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  Approved variations
+                </Text>
+              </View>
+            )}
+            {!loadingEditItems && variationEditLineItems.map(renderEditLineItem)}
 
             {/* Add Line Item */}
             <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: spacing.md }]}>Add Line Item</Text>

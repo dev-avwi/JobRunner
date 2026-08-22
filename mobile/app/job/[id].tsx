@@ -2183,6 +2183,18 @@ export default function JobDetailScreen() {
     rejectionReason: string | null;
     createdAt: string;
   }
+  interface ApprovedClaimVariation {
+    id: string;
+    number: string;
+    title: string;
+    totalAmount: string;
+    suggestedLineItem: {
+      description: string;
+      contractValue: string;
+      previouslyClaimed: string;
+      thisClaim: string;
+    };
+  }
   const [variations, setVariations] = useState<JobVariation[]>([]);
   const [isLoadingVariations, setIsLoadingVariations] = useState(false);
   const [showAddVariationModal, setShowAddVariationModal] = useState(false);
@@ -2260,6 +2272,10 @@ export default function JobDetailScreen() {
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
   const [claimPrefillPhase, setClaimPrefillPhase] = useState<JobPhase | null>(null);
+  const [approvedClaimVariations, setApprovedClaimVariations] = useState<ApprovedClaimVariation[]>([]);
+  const [selectedClaimVariationIds, setSelectedClaimVariationIds] = useState<Set<string>>(new Set());
+  const [isLoadingClaimVariations, setIsLoadingClaimVariations] = useState(false);
+  const [claimVariationLoadError, setClaimVariationLoadError] = useState<string | null>(null);
   const [showPhaseClaimPrompt, setShowPhaseClaimPrompt] = useState(false);
   const [showAddPOModal, setShowAddPOModal] = useState(false);
   const [addPOForm, setAddPOForm] = useState({ poNumber: '', notes: '', estimatedTotal: '', receiptUrl: '' });
@@ -2807,6 +2823,29 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
+  const loadApprovedClaimVariations = useCallback(async () => {
+    if (!id) return;
+    setIsLoadingClaimVariations(true);
+    setClaimVariationLoadError(null);
+    try {
+      const res = await api.get<ApprovedClaimVariation[]>(`/api/jobs/${id}/variations/approved-for-claim`);
+      if (res.error) throw new Error(res.error);
+      setApprovedClaimVariations(Array.isArray(res.data) ? res.data : []);
+    } catch (e: any) {
+      console.error('Error loading approved claim variations:', e);
+      setApprovedClaimVariations([]);
+      setClaimVariationLoadError(e?.message || 'Failed to load approved variations');
+    } finally {
+      setIsLoadingClaimVariations(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!showAddClaimModal) return;
+    setSelectedClaimVariationIds(new Set());
+    loadApprovedClaimVariations();
+  }, [showAddClaimModal, loadApprovedClaimVariations]);
+
   const handleSavePhase = async () => {
     if (!addPhaseForm.name.trim()) {
       showToast({ type: 'error', message: 'Phase name is required' });
@@ -2873,23 +2912,37 @@ export default function JobDetailScreen() {
   const handleSaveClaim = async () => {
     setIsSavingClaim(true);
     try {
-      const lineItems = claimPrefillPhase
-        ? [{
-            phaseId: claimPrefillPhase.id,
-            description: `${claimPrefillPhase.phaseCode} – ${claimPrefillPhase.name}`,
-            contractValue: '0.00',
-            previouslyClaimed: '0.00',
-            thisClaim: '0.00',
-            sortOrder: 0,
-          }]
-        : [];
-      await api.post(`/api/jobs/${id}/claims`, {
+      const lineItems = [
+        ...(claimPrefillPhase
+          ? [{
+              phaseId: claimPrefillPhase.id,
+              description: `${claimPrefillPhase.phaseCode} – ${claimPrefillPhase.name}`,
+              contractValue: '0.00',
+              previouslyClaimed: '0.00',
+              thisClaim: '0.00',
+              sortOrder: 0,
+            }]
+          : []),
+        ...approvedClaimVariations
+          .filter((variation) => selectedClaimVariationIds.has(variation.id))
+          .map((variation, index) => ({
+            variationId: variation.id,
+            description: variation.suggestedLineItem.description,
+            contractValue: variation.suggestedLineItem.contractValue,
+            previouslyClaimed: variation.suggestedLineItem.previouslyClaimed,
+            thisClaim: variation.suggestedLineItem.thisClaim,
+            sortOrder: (claimPrefillPhase ? 1 : 0) + index,
+          })),
+      ];
+      const response = await api.post(`/api/jobs/${id}/claims`, {
         claimDate: new Date().toISOString(),
         lineItems,
       });
+      if (response.error) throw new Error(response.error);
       await loadClaims();
       setShowAddClaimModal(false);
       setClaimPrefillPhase(null);
+      setSelectedClaimVariationIds(new Set());
       showToast({ type: 'success', message: 'Draft claim created' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to create claim' });
@@ -3744,7 +3797,11 @@ export default function JobDetailScreen() {
       if (materialForm.markupPercent) {
         payload.markupPercent = parseFloat(materialForm.markupPercent) || 0;
       }
-      if (materialForm.phaseId) payload.phaseId = materialForm.phaseId;
+      // Existing materials need an explicit null to clear a prior phase assignment.
+      // Omitting phaseId would preserve the previous value on the PATCH request.
+      if (editingMaterial || materialForm.phaseId) {
+        payload.phaseId = materialForm.phaseId || null;
+      }
       if (editingMaterial) {
         await api.patch(`/api/materials/${editingMaterial.id}`, payload);
       } else {
@@ -11533,17 +11590,17 @@ export default function JobDetailScreen() {
       {/* Add Progress Claim Modal */}
       <AppBottomSheet
         visible={showAddClaimModal}
-        onDismiss={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); }}
+        onDismiss={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); setSelectedClaimVariationIds(new Set()); }}
         title={claimPrefillPhase ? `New Claim: ${claimPrefillPhase.name}` : 'New Progress Claim'}
         showCloseButton
-        snapPoints={['45%']}
+        snapPoints={['75%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddClaimModal(false); setClaimPrefillPhase(null); setSelectedClaimVariationIds(new Set()); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleSaveClaim} loading={isSavingClaim} disabled={isSavingClaim} label="Create Draft" style={{ flex: 1 }} />
           </View>
         )}>
-        <View style={{ paddingVertical: spacing.sm }}>
+        <BottomSheetScrollView contentContainerStyle={{ paddingVertical: spacing.sm }} keyboardShouldPersistTaps="handled">
           {claimPrefillPhase ? (
             <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, lineHeight: 22 }}>
               This creates a draft claim pre-loaded with a line item for{' '}
@@ -11557,7 +11614,94 @@ export default function JobDetailScreen() {
               This creates a draft progress claim for this job. Once created you can add line items, set the claim period, and submit it for approval.
             </Text>
           )}
-        </View>
+          <View style={{ marginTop: spacing.lg }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                Approved variations
+              </Text>
+              {selectedClaimVariationIds.size > 0 && (
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                  {selectedClaimVariationIds.size} selected
+                </Text>
+              )}
+            </View>
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginBottom: spacing.sm }}>
+              Select any approved variations to include as claim line items.
+            </Text>
+            {isLoadingClaimVariations ? (
+              <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+              </View>
+            ) : claimVariationLoadError ? (
+              <View style={{ alignItems: 'flex-start', gap: spacing.xs, paddingVertical: spacing.sm }}>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.destructive }}>
+                  {claimVariationLoadError}
+                </Text>
+                <TouchableOpacity onPress={loadApprovedClaimVariations} activeOpacity={0.7}>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                    Retry
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : approvedClaimVariations.length === 0 ? (
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, paddingVertical: spacing.sm }}>
+                No unclaimed approved variations available.
+              </Text>
+            ) : (
+              <View style={{ gap: spacing.xs }}>
+                {approvedClaimVariations.map((variation) => {
+                  const isSelected = selectedClaimVariationIds.has(variation.id);
+                  return (
+                    <TouchableOpacity
+                      key={variation.id}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.sm,
+                        padding: spacing.sm,
+                        borderRadius: radius.md,
+                        borderWidth: 1,
+                        borderColor: isSelected ? colors.primary : colors.cardBorder,
+                        backgroundColor: isSelected ? `${colors.primary}12` : colors.card,
+                      }}
+                      onPress={() => {
+                        setSelectedClaimVariationIds((current) => {
+                          const next = new Set(current);
+                          if (next.has(variation.id)) next.delete(variation.id);
+                          else next.add(variation.id);
+                          return next;
+                        });
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: 4,
+                        borderWidth: 2,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                        backgroundColor: isSelected ? colors.primary : 'transparent',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                        {isSelected && <Feather name="check" size={14} color={colors.primaryForeground} />}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.semibold }} numberOfLines={1}>
+                          {variation.number}: {variation.title}
+                        </Text>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }}>
+                          Total amount {formatCurrency(Number(variation.totalAmount) || 0)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+          <View style={{ height: spacing.lg }} />
+        </BottomSheetScrollView>
       </AppBottomSheet>
 
       {/* Add Purchase Order Modal */}
