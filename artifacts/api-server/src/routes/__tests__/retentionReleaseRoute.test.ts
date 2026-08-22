@@ -396,6 +396,52 @@ describe("POST /api/jobs/:jobId/claims — retention release happy path", () => 
   });
 });
 
+describe("POST /api/jobs/:jobId/claims — concurrent retention release race", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupHappyPath();
+  });
+
+  /**
+   * Fires two simultaneous Retention Release requests against the same job.
+   * The application-level duplicate guard runs before createClaim, so both
+   * requests can pass it when they race.  The database unique index
+   * (idx_claims_one_retention_release_active) is the final backstop: the
+   * second insert throws a 23505 constraint violation which the handler must
+   * translate to 409 rather than 500.
+   *
+   * We simulate this by making createClaim succeed on the first call and throw
+   * the constraint error on the second call, mirroring what PostgreSQL does
+   * when both requests reach the INSERT concurrently.
+   */
+  it("returns 201 for one request and 409 for the other when two concurrent requests race", async () => {
+    const constraintError = Object.assign(new Error("duplicate key value violates unique constraint"), {
+      code: "23505",
+      constraint: "idx_claims_one_retention_release_active",
+    });
+
+    // First call succeeds (one request wins); second call hits the DB constraint.
+    mockCreateClaim
+      .mockResolvedValueOnce(createdClaim)
+      .mockRejectedValueOnce(constraintError);
+
+    const app = buildApp();
+
+    const [res1, res2] = await Promise.all([
+      request(app).post(`/api/jobs/${JOB_ID}/claims`).send(retentionReleaseBody),
+      request(app).post(`/api/jobs/${JOB_ID}/claims`).send(retentionReleaseBody),
+    ]);
+
+    const statuses = [res1.status, res2.status].sort();
+    expect(statuses).toEqual([201, 409]);
+
+    const failed = res1.status === 409 ? res1 : res2;
+    expect(failed.body.error).toMatch(/concurrent request/i);
+    // Must not be a generic 500
+    expect(failed.status).not.toBe(500);
+  });
+});
+
 describe("POST /api/jobs/:jobId/claims — blank retentionPercent on variation line items", () => {
   beforeEach(() => vi.clearAllMocks());
 
