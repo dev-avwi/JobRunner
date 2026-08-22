@@ -7,6 +7,14 @@ import api, { isAuthErrorMessage, setAuthExpiredCallback } from './api';
 let _jobsFetchGen = 0;
 let _todaysJobsFetchGen = 0;
 
+// In-flight Promise for useClientsStore.fetchClients so concurrent callers
+// (e.g. both quotes and invoices useFocusEffect firing simultaneously) all
+// await the same network request rather than each launching their own.
+let _clientsFetchInFlight: Promise<void> | null = null;
+// Generation counter — incremented on logout/login so an in-flight request
+// from a prior session cannot commit its results into the new session's store.
+let _clientsFetchGen = 0;
+
 // Register the global 401 handler immediately so any expired-session response
 // anywhere in the app triggers a clean logout without each screen handling it.
 // This runs once when the module loads; the handler reads the store lazily so
@@ -477,6 +485,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         onboardingFinishing: false,
         dashboardReady: false,
       });
+      // Restore the real 401 handler now that state is cleared and the token is
+      // gone. Without this, a subsequent login leaves the app with a permanent
+      // no-op handler so expired-session 401s never trigger a sign-out again.
+      setAuthExpiredCallback(() => {
+        const { isAuthenticated, logout } = useAuthStore.getState();
+        if (isAuthenticated) {
+          if (__DEV__) console.log('[API] 401 received — triggering auth logout');
+          logout();
+        }
+      });
+      // Invalidate the clients cache so a subsequent login (possibly a different
+      // user on the same device) never serves the previous user's client list.
+      // Incrementing the generation also prevents any in-flight request that
+      // started before logout from committing its results into the new session.
+      _clientsFetchGen += 1;
+      _clientsFetchInFlight = null;
+      useClientsStore.setState({ clients: [], lastFetched: null, isLoading: false, isOfflineData: false });
     }
   },
 
@@ -1220,13 +1245,13 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   },
 }));
 
-// ============ CLIENTS STORE (with offline support) ============
-
+const CLIENTS_TTL_MS = 5 * 60 * 1000; // 5 minutes
 interface ClientsState {
   clients: Client[];
   isLoading: boolean;
   error: string | null;
   isOfflineData: boolean;
+  lastFetched: number | null;
   
   fetchClients: () => Promise<void>;
   getClient: (id: string) => Promise<Client | null>;
@@ -1240,60 +1265,96 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
   isLoading: false,
   error: null,
   isOfflineData: false,
+  lastFetched: null,
 
-  fetchClients: async () => {
-    set({ isLoading: true, error: null });
-    
-    const isOnline = useOfflineStore.getState().isOnline;
-    
-    // Check offline FIRST - use cache silently, NO errors
-    if (!isOnline) {
-      try {
-        const cachedClients = await offlineStorage.getCachedClients();
-        set({ 
-          clients: cachedClients as Client[], 
-          isLoading: false,
-          isOfflineData: true,
-          error: null
-        });
-        return;
-      } catch (e) {
-        if (__DEV__) console.log('[ClientsStore] Offline cache read failed:', e);
-        set({ isLoading: false, error: null, isOfflineData: true });
-        return;
-      }
+  fetchClients: (): Promise<void> => {
+    // TTL guard: skip the network round-trip if clients were loaded recently.
+    // A null lastFetched (never loaded) always falls through. An empty response
+    // is also cached — accounts with zero clients must not re-fetch every visit.
+    const { lastFetched } = get();
+    if (lastFetched !== null && Date.now() - lastFetched < CLIENTS_TTL_MS) {
+      return Promise.resolve();
     }
-    
-    const response = await api.get<Client[]>('/api/clients');
-    
-    if (response.error) {
-      // Fall back to cached data silently
+
+    // Coalesce concurrent callers onto the same in-flight Promise so parallel
+    // useFocusEffect triggers (e.g. quotes + invoices screens) share one request
+    // and all callers properly await the same result.
+    if (_clientsFetchInFlight) {
+      return _clientsFetchInFlight;
+    }
+
+    set({ isLoading: true, error: null });
+
+    // Capture generation at request start; if logout fires mid-flight the
+    // counter increments and every generation check below discards the result
+    // instead of committing stale data from a prior session.
+    const myGen = _clientsFetchGen;
+
+    _clientsFetchInFlight = (async () => {
       try {
-        const cachedClients = await offlineStorage.getCachedClients();
-        if (cachedClients.length > 0) {
-          set({ 
-            clients: cachedClients as Client[], 
-            isLoading: false,
-            isOfflineData: true,
-            error: null 
-          });
+        const isOnline = useOfflineStore.getState().isOnline;
+
+        // Offline: serve from cache silently
+        if (!isOnline) {
+          try {
+            const cachedClients = await offlineStorage.getCachedClients();
+            if (_clientsFetchGen === myGen) {
+              set({ clients: cachedClients as Client[], isLoading: false, isOfflineData: true, error: null });
+            }
+          } catch (e) {
+            if (__DEV__) console.log('[ClientsStore] Offline cache read failed:', e);
+            if (_clientsFetchGen === myGen) set({ isLoading: false, error: null, isOfflineData: true });
+          }
           return;
         }
-      } catch (e) {
-        if (__DEV__) console.log('[ClientsStore] Cache fallback failed:', e);
+
+        const response = await api.get<Client[]>('/api/clients');
+
+        // Discard if a logout occurred while the request was in flight
+        if (_clientsFetchGen !== myGen) return;
+
+        if (response.error) {
+          // Fall back to cached data silently on API error
+          try {
+            const cachedClients = await offlineStorage.getCachedClients();
+            if (cachedClients.length > 0) {
+              if (_clientsFetchGen === myGen) {
+                set({ clients: cachedClients as Client[], isLoading: false, isOfflineData: true, error: null });
+              }
+              return;
+            }
+          } catch (e) {
+            if (__DEV__) console.log('[ClientsStore] Cache fallback failed:', e);
+          }
+          if (_clientsFetchGen === myGen) set({ isLoading: false, error: null, isOfflineData: true });
+          return;
+        }
+
+        // Write to the offline cache, then recheck before committing to state.
+        // A logout during cacheClients would increment the generation and clear
+        // the SQLite cache; without this recheck the stale write would re-pollute
+        // the cache and commit the prior account's data to the new session.
+        try {
+          await offlineStorage.cacheClients(response.data || []);
+        } catch (e) {
+          if (__DEV__) console.log('[ClientsStore] Failed to cache clients:', e);
+        }
+
+        // Final generation check — must happen AFTER every awaited operation.
+        if (_clientsFetchGen !== myGen) return;
+
+        set({ clients: response.data || [], isLoading: false, isOfflineData: false, lastFetched: Date.now() });
+      } finally {
+        // Only clear the in-flight marker when our generation still owns it.
+        // If logout incremented _clientsFetchGen (and possibly a new-session fetch
+        // has already started), leave the new marker alone so it can coalesce.
+        if (_clientsFetchGen === myGen) {
+          _clientsFetchInFlight = null;
+        }
       }
-      set({ isLoading: false, error: null, isOfflineData: true });
-      return;
-    }
+    })();
 
-    // Cache the data
-    try {
-      await offlineStorage.cacheClients(response.data || []);
-    } catch (e) {
-      if (__DEV__) console.log('[ClientsStore] Failed to cache clients:', e);
-    }
-
-    set({ clients: response.data || [], isLoading: false, isOfflineData: false });
+    return _clientsFetchInFlight;
   },
 
   getClient: async (id: string) => {
@@ -1332,7 +1393,8 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
         const response = await api.post<Client>('/api/clients', client);
         if (response.data) {
           const { clients } = get();
-          set({ clients: [...clients, response.data] });
+          // Invalidate TTL so the next fetchClients() re-fetches from the server.
+          set({ clients: [...clients, response.data], lastFetched: null });
           
           // Cache the new client
           await offlineStorage.cacheClients([response.data]);
@@ -1375,7 +1437,8 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
     
     const previousClients = clients;
     
-    set({ clients: clients.map(c => c.id === id ? { ...c, ...client } : c) });
+    // Invalidate TTL so the next fetchClients() re-fetches fresh data.
+    set({ clients: clients.map(c => c.id === id ? { ...c, ...client } : c), lastFetched: null });
     
     if (isOnline) {
       try {
@@ -1435,8 +1498,9 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
         set({ clients });
         return false;
       }
-      // Remove from cache on successful delete
+      // Remove from cache on successful delete and invalidate TTL.
       await offlineStorage.removeFromCache('clients', id);
+      set({ lastFetched: null });
       return true;
     } catch (e) {
       // Network error - revert optimistic update
