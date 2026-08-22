@@ -23,7 +23,8 @@
     "build:android": "eas build --platform android",
     "typecheck": "./scripts/typecheck.sh",
     "security:permissions": "node ./scripts/security-permissions-check.mjs",
-    "test": "jest"
+    "test": "jest",
+    "test:utils": "vitest run"
   },
   "dependencies": {
     "@callstack/liquid-glass": "^0.7.1",
@@ -49,8 +50,8 @@
     "expo-build-properties": "~1.0.10",
     "expo-camera": "~17.0.9",
     "expo-clipboard": "~8.0.8",
-    "expo-contacts": "~15.0.11",
     "expo-constants": "~18.0.10",
+    "expo-contacts": "~15.0.11",
     "expo-crypto": "~15.0.8",
     "expo-dev-client": "~6.0.20",
     "expo-device": "~8.0.9",
@@ -101,7 +102,8 @@
     "jest": "^29.7.0",
     "jest-expo": "^54.0.17",
     "react-test-renderer": "^19.1.0",
-    "typescript": "~5.9.2"
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.10"
   },
   "private": true
 }

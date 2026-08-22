@@ -26,6 +26,7 @@ import {
   LayoutAnimation,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
+import { buildVariationLineItems } from '../../src/utils/claimVariations';
 import LiveActivity from '../../modules/LiveActivity/src';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -2926,16 +2927,11 @@ export default function JobDetailScreen() {
               sortOrder: 0,
             }]
           : []),
-        ...approvedClaimVariations
-          .filter((variation) => selectedClaimVariationIds.has(variation.id))
-          .map((variation, index) => ({
-            variationId: variation.id,
-            description: variation.suggestedLineItem.description,
-            contractValue: variation.suggestedLineItem.contractValue,
-            previouslyClaimed: variation.suggestedLineItem.previouslyClaimed,
-            thisClaim: variation.suggestedLineItem.thisClaim,
-            sortOrder: (claimPrefillPhase ? 1 : 0) + index,
-          })),
+        ...buildVariationLineItems(
+            approvedClaimVariations,
+            selectedClaimVariationIds,
+            claimPrefillPhase ? 1 : 0,
+          ),
       ];
       const response = await api.post(`/api/jobs/${id}/claims`, {
         claimDate: new Date().toISOString(),
