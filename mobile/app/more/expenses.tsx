@@ -26,6 +26,7 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { spacing, radius, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { api } from '../../src/lib/api';
 import { showToast } from '../../src/lib/toast';
+import { relativeDateGroup } from '../../src/lib/relativeDate';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { format } from 'date-fns';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -151,6 +152,7 @@ function ExpensesScreenInner() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [phases, setPhases] = useState<ExpensePhase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [isLoadingPhases, setIsLoadingPhases] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
@@ -183,6 +185,7 @@ function ExpensesScreenInner() {
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(false);
     try {
       const params = new URLSearchParams();
       if (activeFilter !== 'all') params.append('categoryId', activeFilter);
@@ -193,11 +196,16 @@ function ExpensesScreenInner() {
         api.get<ExpenseCategory[]>('/api/expense-categories'),
         api.get<Job[]>('/api/jobs'),
       ]);
-      setExpenses(expensesRes.data || []);
-      setCategories(categoriesRes.data || []);
-      setJobs(jobsRes.data || []);
+      if (expensesRes.error) {
+        setLoadError(true);
+      } else {
+        setExpenses(expensesRes.data || []);
+        setCategories(categoriesRes.data || []);
+        setJobs(jobsRes.data || []);
+      }
     } catch (error) {
       console.error('Error fetching expenses:', error);
+      setLoadError(true);
     } finally {
       setIsLoading(false);
     }
@@ -474,8 +482,7 @@ function ExpensesScreenInner() {
     const groups: Record<string, Expense[]> = {};
     sortedExpenses.forEach((exp) => {
       const raw = exp.expenseDate || exp.createdAt;
-      const d = raw ? new Date(raw) : null;
-      const key = d && !isNaN(d.getTime()) ? format(d, 'dd MMM yyyy') : 'Unknown date';
+      const key = relativeDateGroup(raw);
       if (!groups[key]) groups[key] = [];
       groups[key].push(exp);
     });
@@ -609,6 +616,18 @@ function ExpensesScreenInner() {
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color={colors.primary} />
+              </View>
+            ) : loadError ? (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconWrap}>
+                  <Feather name="alert-circle" size={28} color={colors.destructive} />
+                </View>
+                <Text style={styles.emptyTitle}>Couldn't load expenses</Text>
+                <Text style={styles.emptySubtitle}>Check your connection and try again</Text>
+                <PressableRow style={styles.emptyButton} onPress={fetchData}>
+                  <Feather name="refresh-cw" size={14} color={colors.primaryForeground} />
+                  <Text style={styles.emptyButtonText}>Retry</Text>
+                </PressableRow>
               </View>
             ) : sortedExpenses.length === 0 ? (
               <View style={styles.emptyState}>

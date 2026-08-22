@@ -21,6 +21,7 @@ import api, { API_URL } from '../../lib/api';
 import { showToast } from '../../lib/toast';
 import { AppBottomSheet, BottomSheetScrollView } from '../ui/AppBottomSheet';
 import { SheetButton } from '../ui/SheetButton';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -180,8 +181,17 @@ export function DefectsSection({ jobId, isTradie = false, items, loading = false
     }
   }, [jobId, onRefresh]);
 
+  const confirm = useConfirmDialog();
+
   // ── delete item ───────────────────────────────────────────────────────────
   const handleDelete = useCallback(async (item: DefectItem) => {
+    const ok = await confirm({
+      title: 'Remove Defect Item',
+      message: `Remove "${item.description || 'this item'}"? This cannot be undone.`,
+      confirmText: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       const res = await api.delete(`/api/jobs/${jobId}/defect-items/${item.id}`);
       if (res.error) {
@@ -193,7 +203,7 @@ export function DefectsSection({ jobId, isTradie = false, items, loading = false
     } catch (e: any) {
       showToast({ type: 'error', message: e?.message || 'Failed to remove item' });
     }
-  }, [jobId, onRefresh]);
+  }, [jobId, onRefresh, confirm]);
 
   const s = makeStyles(colors);
 
@@ -240,7 +250,21 @@ export function DefectsSection({ jobId, isTradie = false, items, loading = false
               )}
 
               {items.length === 0 ? (
-                <Text style={s.empty}>No defect items yet</Text>
+                <View style={s.emptyState}>
+                  <View style={s.emptyIconWrap}>
+                    <Feather name="tool" size={24} color={colors.mutedForeground} style={{ opacity: 0.5 }} />
+                  </View>
+                  <Text style={s.emptyTitle}>No defect items</Text>
+                  <Text style={s.emptySubtitle}>
+                    Track punch-list items, assign them to team members, and mark them resolved before releasing retention.
+                  </Text>
+                  {!isTradie && (
+                    <TouchableOpacity style={[s.addBtn, { marginTop: spacing.sm }]} onPress={() => setShowAddSheet(true)} activeOpacity={0.7}>
+                      <Feather name="plus" size={14} color={colors.primary} />
+                      <Text style={[s.addBtnText, { color: colors.primary }]}>Add Defect Item</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
               ) : (
                 items.map(item => {
                   const sc = STATUS_COLOR[item.status] ?? STATUS_COLOR.open;
@@ -424,6 +448,31 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       fontSize: typography.sizes.sm,
       textAlign: 'center',
       paddingVertical: spacing.lg,
+    },
+    emptyState: {
+      alignItems: 'center' as const,
+      paddingVertical: spacing.xl,
+      gap: spacing.xs,
+    },
+    emptyIconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: colorWithOpacity(colors.mutedForeground, 0.08),
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      marginBottom: spacing.xs,
+    },
+    emptyTitle: {
+      fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.medium as any,
+      color: colors.foreground,
+    },
+    emptySubtitle: {
+      fontSize: typography.sizes.xs,
+      color: colors.mutedForeground,
+      textAlign: 'center' as const,
+      paddingHorizontal: spacing.lg,
     },
     item: {
       flexDirection: 'row',

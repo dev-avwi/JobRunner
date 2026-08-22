@@ -66,10 +66,16 @@ function InvoiceCard({
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-AU', {
-      day: 'numeric',
-      month: 'short',
-    });
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return '';
+    // For past-due and sent dates, show relative label for recent entries
+    const now = new Date();
+    const daysDiff = Math.round((now.getTime() - d.getTime()) / 86400000);
+    if (daysDiff === 0) return 'today';
+    if (daysDiff === 1) return 'yesterday';
+    if (daysDiff >= 2 && daysDiff <= 6) return d.toLocaleDateString('en-AU', { weekday: 'short' });
+    return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
   };
 
   const getQuickAction = () => {

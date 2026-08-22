@@ -28,6 +28,7 @@ import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../lib/api';
 import { showToast } from '../../lib/toast';
+import { useConfirmDialog } from '../ui/ConfirmDialog';
 import { spacing, radius, typography, fontWeights, iconSizes } from '../../lib/design-tokens';
 import { format, parseISO, differenceInHours } from 'date-fns';
 
@@ -128,6 +129,8 @@ export function SiteDiarySection({
 
   // Date filter
   const [dateFilter, setDateFilter] = useState('');
+  const [loadError, setLoadError] = useState(false);
+  const confirm = useConfirmDialog();
 
   // Full-screen photo viewer
   const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
@@ -143,14 +146,19 @@ export function SiteDiarySection({
   const loadEntries = useCallback(async () => {
     if (loading) return;
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await api.get<SiteDiaryEntry[]>(`/api/jobs/${jobId}/diary`);
       if (!res.error && Array.isArray(res.data)) {
         setEntries(res.data);
+        setLoaded(true);
+      } else {
+        setLoadError(true);
+        setLoaded(false);
       }
-      setLoaded(true);
     } catch {
-      setLoaded(true);
+      setLoadError(true);
+      setLoaded(false);
     } finally {
       setLoading(false);
     }
@@ -250,7 +258,17 @@ export function SiteDiarySection({
     }
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id: string, entryDate: string) {
+    const label = entryDate
+      ? (() => { try { return format(parseISO(entryDate), 'd MMM yyyy'); } catch { return entryDate; } })()
+      : 'this entry';
+    const ok = await confirm({
+      title: 'Delete Diary Entry',
+      message: `Delete the diary entry for ${label}? This cannot be undone.`,
+      confirmText: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     setDeleting(id);
     try {
       const res = await api.delete(`/api/jobs/${jobId}/diary/${id}`);
@@ -314,7 +332,17 @@ export function SiteDiarySection({
       )}
 
       {/* Body */}
-      {!loaded && !loading && (
+      {loadError && (
+        <View style={s.errorState}>
+          <Feather name="alert-circle" size={20} color={colors.destructive} />
+          <Text style={s.errorText}>Couldn't load diary entries</Text>
+          <TouchableOpacity onPress={() => loadEntries()} style={s.retryBtn}>
+            <Text style={[s.addBtnText, { color: colors.primary }]}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!loaded && !loading && !loadError && (
         <TouchableOpacity onPress={handleSectionOpen} style={s.loadPrompt}>
           <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
           <Text style={s.loadPromptText}>Tap to load diary</Text>
@@ -492,7 +520,7 @@ export function SiteDiarySection({
                         {canDelete && (
                           <TouchableOpacity
                             style={[s.actionBtn, { borderColor: colors.border }]}
-                            onPress={() => handleDelete(entry.id)}
+                            onPress={() => handleDelete(entry.id, entry.entryDate)}
                             disabled={deleting === entry.id}
                           >
                             {deleting === entry.id ? (
@@ -783,10 +811,27 @@ function localStyles(colors: any) {
       fontSize: typography.sizes.sm,
       paddingVertical: 0,
     },
+    errorState: {
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
+      gap: spacing.sm,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+    },
+    errorText: {
+      fontSize: typography.sizes.sm,
+      color: colors.mutedForeground,
+      flex: 1,
+    },
+    retryBtn: {
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
     loadPrompt: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
+      flexDirection: 'row' as const,
+      alignItems: 'center' as const,
+      justifyContent: 'center' as const,
       gap: spacing.xs,
       paddingVertical: spacing.md,
     },
