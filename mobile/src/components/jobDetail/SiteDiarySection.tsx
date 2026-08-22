@@ -127,8 +127,8 @@ export function SiteDiarySection({
   const [newPhotos, setNewPhotos] = useState<{ uri: string; name: string; mimeType: string }[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  // Date filter
-  const [dateFilter, setDateFilter] = useState('');
+  // Month chip filter — value is "yyyy-MM" string or '' for All
+  const [selectedMonth, setSelectedMonth] = useState('');
   const [loadError, setLoadError] = useState(false);
   const confirm = useConfirmDialog();
 
@@ -283,9 +283,19 @@ export function SiteDiarySection({
     }
   }
 
-  // Filter entries by date input
-  const filteredEntries = dateFilter.trim()
-    ? entries.filter((e) => e.entryDate.includes(dateFilter.trim()))
+  // Derive sorted unique months (yyyy-MM) from loaded entries
+  const availableMonths = (() => {
+    const seen = new Set<string>();
+    for (const e of entries) {
+      const m = e.entryDate.slice(0, 7); // "yyyy-MM"
+      seen.add(m);
+    }
+    return Array.from(seen).sort();
+  })();
+
+  // Filter entries by selected month chip
+  const filteredEntries = selectedMonth
+    ? entries.filter((e) => e.entryDate.startsWith(selectedMonth))
     : entries;
 
   const s = localStyles(colors);
@@ -311,24 +321,44 @@ export function SiteDiarySection({
         </TouchableOpacity>
       </View>
 
-      {/* Date filter bar — only shown once entries are loaded */}
-      {loaded && entries.length > 0 && (
-        <View style={[s.filterRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-          <Feather name="search" size={14} color={colors.mutedForeground} />
-          <TextInput
-            style={[s.filterInput, { color: colors.foreground }]}
-            value={dateFilter}
-            onChangeText={setDateFilter}
-            placeholder="Filter by date (e.g. 2025-06)"
-            placeholderTextColor={colors.mutedForeground}
-            clearButtonMode="while-editing"
-          />
-          {dateFilter.length > 0 && (
-            <TouchableOpacity onPress={() => setDateFilter('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Feather name="x" size={14} color={colors.mutedForeground} />
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* Month chip filter — shown when there are multiple months, or while a month is actively selected
+          (keeping the bar visible lets the user always tap "All" to escape a now-empty filter) */}
+      {loaded && (availableMonths.length > 1 || selectedMonth !== '') && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={s.chipScroll}
+          contentContainerStyle={s.chipScrollContent}
+        >
+          {/* "All" chip */}
+          <TouchableOpacity
+            style={[s.chip, !selectedMonth && s.chipActive, !selectedMonth && { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }]}
+            onPress={() => setSelectedMonth('')}
+            activeOpacity={0.7}
+          >
+            <Text style={[s.chipText, { color: !selectedMonth ? colors.primary : colors.mutedForeground }, !selectedMonth && s.chipTextActive]}>
+              All
+            </Text>
+          </TouchableOpacity>
+
+          {availableMonths.map((month) => {
+            const isActive = selectedMonth === month;
+            let label = month;
+            try { label = format(parseISO(month + '-01'), 'MMM yyyy'); } catch {}
+            return (
+              <TouchableOpacity
+                key={month}
+                style={[s.chip, isActive && s.chipActive, isActive && { borderColor: colors.primary, backgroundColor: `${colors.primary}15` }]}
+                onPress={() => setSelectedMonth((prev) => (prev === month ? '' : month))}
+                activeOpacity={0.7}
+              >
+                <Text style={[s.chipText, { color: isActive ? colors.primary : colors.mutedForeground }, isActive && s.chipTextActive]}>
+                  {label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       )}
 
       {/* Body */}
@@ -369,7 +399,11 @@ export function SiteDiarySection({
 
       {loaded && filteredEntries.length === 0 && entries.length > 0 && (
         <View style={s.emptyState}>
-          <Text style={s.emptySubtitle}>No entries match "{dateFilter}"</Text>
+          <Text style={s.emptySubtitle}>
+            {selectedMonth
+              ? (() => { try { return `No entries for ${format(parseISO(selectedMonth + '-01'), 'MMMM yyyy')}`; } catch { return 'No entries for this month'; } })()
+              : 'No entries found'}
+          </Text>
         </View>
       )}
 
@@ -796,20 +830,32 @@ function localStyles(colors: any) {
       fontSize: typography.captionSmall.fontSize,
       fontWeight: fontWeights.medium,
     },
-    filterRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.xs,
-      borderWidth: 1,
-      borderRadius: radius.md,
-      paddingHorizontal: spacing.sm,
-      paddingVertical: 6,
+    chipScroll: {
       marginBottom: spacing.sm,
     },
-    filterInput: {
-      flex: 1,
-      fontSize: typography.sizes.sm,
-      paddingVertical: 0,
+    chipScrollContent: {
+      flexDirection: 'row',
+      gap: spacing.xs,
+      paddingHorizontal: 0,
+      paddingVertical: 2,
+    },
+    chip: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radius.pill,
+      paddingHorizontal: spacing.sm + 2,
+      paddingVertical: spacing.xs,
+      backgroundColor: colors.card,
+    },
+    chipActive: {
+      // border/bg overridden inline with colors.primary
+    },
+    chipText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
+    },
+    chipTextActive: {
+      fontWeight: fontWeights.semibold,
     },
     errorState: {
       flexDirection: 'row' as const,
