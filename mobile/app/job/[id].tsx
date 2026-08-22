@@ -7388,16 +7388,41 @@ export default function JobDetailScreen() {
         const budgetColor = budgetStatus === 'profitable' ? colors.success : budgetStatus === 'tight' ? colors.warning : budgetStatus === 'loss' ? colors.destructive : colors.mutedForeground;
         const budgetLabel = budgetStatus === 'profitable' ? 'On track' : budgetStatus === 'tight' ? 'Near limit' : budgetStatus === 'loss' ? 'Over budget' : null;
 
+        const canOpenPhase = (isOwnerOrManager || isSoloOwner) && !!nextPhase;
+        const handleWhatsNextPress = () => {
+          if (canOpenPhase) {
+            setEditingPhase(nextPhase!);
+            setEditPhaseForm({
+              phaseCode: nextPhase!.phaseCode,
+              name: nextPhase!.name,
+              description: nextPhase!.description ?? '',
+              scheduledStart: nextPhase!.scheduledStart ?? '',
+              scheduledEnd: nextPhase!.scheduledEnd ?? '',
+              bookedHours: nextPhase!.bookedHours ?? '',
+              status: nextPhase!.status,
+              assignedUserId: nextPhase!.assignedUserId ?? '',
+              assignedUserIds: nextPhase!.assignedUserIds?.length ? nextPhase!.assignedUserIds : nextPhase!.assignedUserId ? [nextPhase!.assignedUserId] : [],
+            });
+            setShowEditPhaseModal(true);
+          } else if (!nextPhase && (isOwnerOrManager || isSoloOwner)) {
+            setShowAddPhaseModal(true);
+          }
+        };
+
         return (
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: `${colors.primary}30`,
-            padding: spacing.md,
-            marginBottom: spacing.md,
-            gap: spacing.sm,
-          }}>
+          <TouchableOpacity
+            activeOpacity={canOpenPhase || (!nextPhase && (isOwnerOrManager || isSoloOwner)) ? 0.75 : 1}
+            onPress={handleWhatsNextPress}
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: `${colors.primary}30`,
+              padding: spacing.md,
+              marginBottom: spacing.md,
+              gap: spacing.sm,
+            }}
+          >
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <Feather name="arrow-right-circle" size={14} color={colors.primary} />
@@ -7411,6 +7436,9 @@ export default function JobDetailScreen() {
                     {budgetLabel}
                   </Text>
                 </View>
+              )}
+              {(canOpenPhase || (!nextPhase && (isOwnerOrManager || isSoloOwner))) && (
+                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
               )}
             </View>
 
@@ -7464,7 +7492,7 @@ export default function JobDetailScreen() {
                 No phases added yet — add phases to track progress.
               </Text>
             )}
-          </View>
+          </TouchableOpacity>
         );
       })() : (
         /* Service Call: standard job progress bar */
