@@ -166,7 +166,7 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
       '/clients': '/more/clients',
       '/quotes': '/more/quotes',
       '/invoices': '/more/invoices',
-      '/calendar': '/more/calendar',
+      '/calendar': '/more/dispatch-board',
       '/map': '/(tabs)/map',
       '/settings': '/more/business-settings',
     };

@@ -139,7 +139,7 @@ const getPageTitleFromPath = (pathname: string): string => {
   if (pathname.includes('/more/direct-messages')) return 'Messages';
   if (pathname.includes('/more/clients')) return 'Clients';
   if (pathname.includes('/more/client')) return 'Client';
-  if (pathname.includes('/more/calendar')) return 'Schedule';
+  if (pathname.includes('/more/dispatch-board')) return 'Dispatch Board';
   if (pathname.includes('/more/reports')) return 'Reports';
   if (pathname.includes('/more/team-management')) return 'Team';
   if (pathname.includes('/more/team')) return 'Team';

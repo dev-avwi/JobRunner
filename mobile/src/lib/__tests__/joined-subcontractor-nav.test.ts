@@ -95,7 +95,6 @@ describe('More menu – items accessible to joined subcontractors', () => {
   const navConfig = read('src/lib/navigation-config.ts');
 
   const accessibleItems: Array<{ title: string }> = [
-    { title: 'Schedule' },
     { title: 'Time Tracking' },
     { title: 'Chat' },
     { title: 'WHS Safety' },

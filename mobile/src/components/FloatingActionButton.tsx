@@ -317,7 +317,7 @@ export function FloatingActionButton({ isTeamOwner = false, onAssignPress, fabSt
         colorKey: 'job' as ColorKey,
         onPress: () => {
           setIsOpen(false);
-          router.push('/more/calendar' as any);
+          router.push('/more/dispatch-board' as any);
         },
       },
     ] : []),

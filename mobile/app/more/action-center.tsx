@@ -580,7 +580,7 @@ function ActionCenterScreenInner() {
         router.push('/more/documents' as any);
       }
     } else if (basePath === '/schedule' || basePath.startsWith('/schedule')) {
-      router.push('/more/calendar' as any);
+      router.push('/more/dispatch-board' as any);
     } else if (basePath === '/work' || basePath.startsWith('/work')) {
       router.push('/(tabs)/jobs' as any);
     } else if (basePath.startsWith('/jobs/')) {
