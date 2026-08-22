@@ -542,8 +542,23 @@ export default function ExpensesSection({
           borderColor: colors.cardBorder,
           ...shadows.sm,
         }}>
-          <Feather name="file-text" size={24} color={colors.mutedForeground} style={{ marginBottom: spacing.sm }} />
-          <Text style={{ ...typography.body, color: colors.mutedForeground }}>No expenses recorded</Text>
+          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+            <Feather name="file-text" size={24} color={colors.mutedForeground} />
+          </View>
+          <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>No expenses recorded</Text>
+          <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
+            Track receipts and site costs here
+          </Text>
+          {isOwnerOrManager && (
+            <TouchableOpacity
+              onPress={() => navigateToAdd(null)}
+              activeOpacity={0.7}
+              style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: `${colors.primary}25` }}
+            >
+              <Feather name="plus" size={14} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>Add Expense</Text>
+            </TouchableOpacity>
+          )}
         </View>
       ) : (
         <View style={{

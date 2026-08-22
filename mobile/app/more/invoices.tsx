@@ -193,8 +193,15 @@ export default function InvoicesScreen() {
   const { clients, fetchClients } = useClientsStore();
   const { user, businessSettings } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
-  
+
+  // Debounce search so filtering doesn't fire on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   // Inline email compose state
   const [showEmailCompose, setShowEmailCompose] = useState(false);
   const [selectedInvoiceForEmail, setSelectedInvoiceForEmail] = useState<any>(null);
@@ -202,10 +209,6 @@ export default function InvoicesScreen() {
   const refreshData = useCallback(async () => {
     await Promise.all([fetchInvoices(), fetchClients()]);
   }, [fetchInvoices, fetchClients]);
-
-  useEffect(() => {
-    refreshData();
-  }, []);
 
   // Refresh data when screen gains focus (syncs with web app)
   useFocusEffect(
@@ -251,7 +254,7 @@ export default function InvoicesScreen() {
   };
 
   const filteredInvoices = invoices.filter(invoice => {
-    const searchLower = searchQuery.toLowerCase();
+    const searchLower = debouncedSearch.toLowerCase();
     const clientName = getClientName(invoice.clientId);
     const matchesSearch = 
       invoice.invoiceNumber?.toLowerCase().includes(searchLower) ||

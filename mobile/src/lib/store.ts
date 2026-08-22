@@ -1,6 +1,23 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api, { isAuthErrorMessage } from './api';
+import api, { isAuthErrorMessage, setAuthExpiredCallback } from './api';
+
+// Module-level generation counters — incremented on each fetch so stale
+// out-of-order responses can be detected and discarded before committing state.
+let _jobsFetchGen = 0;
+let _todaysJobsFetchGen = 0;
+
+// Register the global 401 handler immediately so any expired-session response
+// anywhere in the app triggers a clean logout without each screen handling it.
+// This runs once when the module loads; the handler reads the store lazily so
+// there is no circular-dependency issue.
+setAuthExpiredCallback(() => {
+  const { isAuthenticated, logout } = useAuthStore.getState();
+  if (isAuthenticated) {
+    if (__DEV__) console.log('[API] 401 received — triggering auth logout');
+    logout();
+  }
+});
 import offlineStorage, { useOfflineStore } from './offline-storage';
 import { clearRoleCache } from './role-cache';
 import { useThemeStore, ThemeMode } from './theme-store';
@@ -394,6 +411,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     // Clear role cache BEFORE logout to prevent permission leakage
     clearRoleCache();
+    // Silence the 401 callback for the duration of logout — we're intentionally
+    // clearing the token so a 401 on the logout call itself mustn't recurse.
+    setAuthExpiredCallback(() => {});
     // Each cleanup step is best-effort: a failure in one (e.g. offline cache
     // or location tracking) must NOT prevent the auth state from being cleared.
     // The `finally` block always resets to a signed-out state so the UI can
@@ -914,6 +934,8 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   isOfflineData: false,
 
   fetchJobs: async () => {
+    // Generation guard: discard responses that arrive after a newer request started.
+    const gen = ++_jobsFetchGen;
     set({ isLoading: true, error: null });
     
     const isOnline = useOfflineStore.getState().isOnline;
@@ -921,6 +943,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     if (!isOnline) {
       try {
         const cachedJobs = await offlineStorage.getCachedJobs();
+        if (gen !== _jobsFetchGen) return;
         set({ 
           jobs: cachedJobs as Job[], 
           isLoading: false, 
@@ -930,17 +953,20 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         return;
       } catch (e) {
         if (__DEV__) console.log('[JobsStore] Offline cache read failed:', e);
+        if (gen !== _jobsFetchGen) return;
         set({ isLoading: false, error: null, isOfflineData: true });
         return;
       }
     }
     
     const response = await api.get<Job[]>('/api/jobs');
+    if (gen !== _jobsFetchGen) return; // stale — a newer fetch already owns the state
     
     if (response.error) {
       try {
         const cachedJobs = await offlineStorage.getCachedJobs();
         if (cachedJobs.length > 0) {
+          if (gen !== _jobsFetchGen) return;
           set({ 
             jobs: cachedJobs as Job[], 
             isLoading: false, 
@@ -966,6 +992,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   },
 
   fetchTodaysJobs: async () => {
+    const gen = ++_todaysJobsFetchGen;
     set({ isLoading: true, error: null });
     
     const isOnline = useOfflineStore.getState().isOnline;
@@ -977,6 +1004,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         const todaysJobs = cachedJobs.filter(j => 
           j.scheduledAt && new Date(j.scheduledAt).toDateString() === today
         );
+        if (gen !== _todaysJobsFetchGen) return;
         set({ 
           todaysJobs: todaysJobs as Job[], 
           isLoading: false,
@@ -986,12 +1014,14 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         return;
       } catch (e) {
         if (__DEV__) console.log('[JobsStore] Offline cache read failed:', e);
+        if (gen !== _todaysJobsFetchGen) return;
         set({ isLoading: false, error: null, isOfflineData: true });
         return;
       }
     }
     
     const response = await api.get<Job[]>('/api/jobs/today');
+    if (gen !== _todaysJobsFetchGen) return;
     
     if (response.error) {
       try {
@@ -999,6 +1029,7 @@ export const useJobsStore = create<JobsState>((set, get) => ({
         const todaysJobs = cachedJobs.filter(j => 
           j.scheduledAt && new Date(j.scheduledAt).toDateString() === today
         );
+        if (gen !== _todaysJobsFetchGen) return;
         set({ 
           todaysJobs: todaysJobs as Job[], 
           isLoading: false,

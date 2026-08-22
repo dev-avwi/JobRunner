@@ -81,6 +81,15 @@ interface ApiResponse<T> {
  * different middlewares, so match them all case-insensitively rather than
  * relying on one exact string.
  */
+/**
+ * Module-level 401 callback — registered once from useAuthStore so the API
+ * client can trigger a logout without importing the store (circular dep).
+ */
+let _authExpiredCallback: (() => void) | null = null;
+export function setAuthExpiredCallback(cb: () => void): void {
+  _authExpiredCallback = cb;
+}
+
 export function isAuthErrorMessage(error?: string | null): boolean {
   if (!error) return false;
   const e = error.toLowerCase();
@@ -241,6 +250,19 @@ class ApiClient {
             error: `Server is busy — please try again in ${retryAfterSec}s.`,
             backpressure: { code: 'BACKPRESSURE', retryAfterSec },
           };
+        }
+        if (response.status === 401) {
+          if (__DEV__) console.log(`[API] 401 on ${method} ${endpoint} — session expired`);
+          // Fire the registered auth-expiry handler (wired up in store.ts to avoid circular imports).
+          // Guarded so auth-related endpoints (login/verify) don't trigger a recursive logout.
+          const isAuthEndpoint = endpoint.startsWith('/api/auth/');
+          if (!isAuthEndpoint && _authExpiredCallback) {
+            _authExpiredCallback();
+          }
+          const text = await response.text().catch(() => '');
+          let errMsg = 'Session expired. Please sign in again.';
+          try { errMsg = JSON.parse(text).error || errMsg; } catch {}
+          return { error: errMsg };
         }
         if (response.status === 504) {
           return { error: 'Request took too long. Please try again.' };

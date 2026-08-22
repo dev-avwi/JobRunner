@@ -190,7 +190,19 @@ export function SubcontractorDashboard() {
     try {
       const response = await api.get<DashboardData>('/api/subcontractor/dashboard');
       if (response.data) {
-        setData(response.data);
+        // Normalise every array field so render code can call .map/.length
+        // safely even if the server returns a partial payload.
+        const raw = response.data as any;
+        const normalized: DashboardData = {
+          ...raw,
+          todaysJobs:        Array.isArray(raw.todaysJobs)        ? raw.todaysJobs        : [],
+          weekJobs:          Array.isArray(raw.weekJobs)          ? raw.weekJobs          : [],
+          pendingRequests:   Array.isArray(raw.pendingRequests)   ? raw.pendingRequests   : [],
+          earningsByBusiness:Array.isArray(raw.earningsByBusiness)? raw.earningsByBusiness: [],
+          earningsTrend:     Array.isArray(raw.earningsTrend)     ? raw.earningsTrend     : [],
+          businesses:        Array.isArray(raw.businesses)        ? raw.businesses        : [],
+        };
+        setData(normalized);
       } else if (response.error) {
         setFetchError(true);
       }
@@ -227,9 +239,10 @@ export function SubcontractorDashboard() {
 
   // Timer for active job
   useEffect(() => {
-    if (data?.activeJob?.startedAt) {
+    const startMs = data?.activeJob?.startedAt ? new Date(data.activeJob.startedAt).getTime() : NaN;
+    if (data?.activeJob?.startedAt && !isNaN(startMs)) {
       const updateTimer = () => {
-        const start = new Date(data.activeJob!.startedAt!).getTime();
+        const start = startMs;
         const now = Date.now();
         const diff = Math.max(0, now - start);
         const hours = Math.floor(diff / 3600000);

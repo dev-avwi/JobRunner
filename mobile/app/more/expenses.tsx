@@ -123,9 +123,10 @@ function ExpenseCard({
           <View style={styles.expenseMetaChip}>
             <Feather name="calendar" size={11} color={colors.mutedForeground} />
             <Text style={styles.expenseMetaText} numberOfLines={1}>
-              {expense.expenseDate
-                ? format(new Date(expense.expenseDate), 'dd MMM yyyy')
-                : 'No date'}
+              {(() => {
+                const d = expense.expenseDate ? new Date(expense.expenseDate) : null;
+                return d && !isNaN(d.getTime()) ? format(d, 'dd MMM yyyy') : 'No date';
+              })()}
             </Text>
           </View>
         </View>
@@ -458,16 +459,23 @@ function ExpensesScreenInner() {
     });
   }, [expenses, searchQuery]);
 
-  const sortedExpenses = [...filteredExpenses].sort((a, b) => {
-    const dateA = new Date(a.expenseDate || a.createdAt).getTime();
-    const dateB = new Date(b.expenseDate || b.createdAt).getTime();
-    return dateB - dateA;
-  });
+  // Safe date parser — returns epoch 0 for null/invalid so sort still works
+  const safeDate = (s?: string | null) => {
+    if (!s) return 0;
+    const ms = new Date(s).getTime();
+    return isNaN(ms) ? 0 : ms;
+  };
+
+  const sortedExpenses = [...filteredExpenses].sort((a, b) =>
+    safeDate(b.expenseDate || b.createdAt) - safeDate(a.expenseDate || a.createdAt)
+  );
 
   const groupedExpenses = useMemo(() => {
     const groups: Record<string, Expense[]> = {};
     sortedExpenses.forEach((exp) => {
-      const key = format(new Date(exp.expenseDate || exp.createdAt), 'dd MMM yyyy');
+      const raw = exp.expenseDate || exp.createdAt;
+      const d = raw ? new Date(raw) : null;
+      const key = d && !isNaN(d.getTime()) ? format(d, 'dd MMM yyyy') : 'Unknown date';
       if (!groups[key]) groups[key] = [];
       groups[key].push(exp);
     });

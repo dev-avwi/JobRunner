@@ -490,26 +490,34 @@ export default function JobsScreen() {
   const handleSaveFilter = useCallback(async () => {
     if (!saveFilterName.trim()) return;
     setSavingFilter(true);
-    const response = await api.post<SavedFilter>('/api/saved-filters', {
-      name: saveFilterName.trim(),
-      filters: advancedFilters,
-      entityType: 'jobs',
-    });
-    if (response.data) {
-      setSavedFilters(prev => [...prev, response.data!]);
-      showToast({ type: 'success', message: `"${saveFilterName}" has been saved.` });
-    } else {
+    try {
+      const response = await api.post<SavedFilter>('/api/saved-filters', {
+        name: saveFilterName.trim(),
+        filters: advancedFilters,
+        entityType: 'jobs',
+      });
+      if (response.data && !response.error) {
+        setSavedFilters(prev => [...prev, response.data!]);
+        showToast({ type: 'success', message: `"${saveFilterName}" has been saved.` });
+        setSaveDialogOpen(false);
+        setSaveFilterName('');
+      } else {
+        showToast({ type: 'error', message: response.error || 'Failed to save filter.' });
+      }
+    } catch {
       showToast({ type: 'error', message: 'Failed to save filter.' });
+    } finally {
+      setSavingFilter(false);
     }
-    setSavingFilter(false);
-    setSaveDialogOpen(false);
-    setSaveFilterName('');
   }, [saveFilterName, advancedFilters]);
 
   const handleDeleteSavedFilter = useCallback(async (id: string, name: string) => {
     const ok = await confirm({ title: 'Delete Filter', message: `Delete "${name}"?`, confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
-    if (ok) {
-      await api.delete(`/api/saved-filters/${id}`);
+    if (!ok) return;
+    const response = await api.delete(`/api/saved-filters/${id}`);
+    if (response.error) {
+      showToast({ type: 'error', message: 'Failed to delete filter. Please try again.' });
+    } else {
       setSavedFilters(prev => prev.filter(f => f.id !== id));
     }
   }, [confirm]);
@@ -937,6 +945,11 @@ export default function JobsScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={{ padding: 4 }}>
+              <Feather name="x" size={16} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          )}
         </View>
         <TouchableOpacity
           style={[styles.headerIconBtn, (advancedOpen || hasAdvancedFilters) && styles.headerIconBtnActive]}

@@ -209,8 +209,15 @@ export default function QuotesScreen() {
   const { clients, fetchClients } = useClientsStore();
   const { user, businessSettings } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
-  
+
+  // Debounce search so filtering doesn't fire on every keystroke
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
   // Inline email compose state
   const [showEmailCompose, setShowEmailCompose] = useState(false);
   const [selectedQuoteForEmail, setSelectedQuoteForEmail] = useState<any>(null);
@@ -218,10 +225,6 @@ export default function QuotesScreen() {
   const refreshData = useCallback(async () => {
     await Promise.all([fetchQuotes(), fetchClients()]);
   }, [fetchQuotes, fetchClients]);
-
-  useEffect(() => {
-    refreshData();
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -244,7 +247,7 @@ export default function QuotesScreen() {
   };
 
   const filteredQuotes = quotes.filter(quote => {
-    const searchLower = searchQuery.toLowerCase();
+    const searchLower = debouncedSearch.toLowerCase();
     const clientName = getClientName(quote.clientId);
     const matchesSearch = 
       quote.quoteNumber?.toLowerCase().includes(searchLower) ||

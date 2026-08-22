@@ -79,7 +79,15 @@ export function ChatSection(props: ChatSectionProps) {
               </Text>
               {(client.phone || client.email) && (
                 <Text style={{ fontSize: 12, color: colors.mutedForeground }} numberOfLines={1}>
-                  {client.phone || client.email}
+                  {client.phone
+                    ? (() => {
+                        const d = client.phone.replace(/\D/g, '');
+                        if (d.length === 10 && d.startsWith('04')) return `${d.slice(0,4)} ${d.slice(4,7)} ${d.slice(7)}`;
+                        if (d.length === 10) return `(0${d.slice(1,2)}) ${d.slice(2,6)} ${d.slice(6)}`;
+                        if (d.length === 11 && d.startsWith('61')) return `+61 ${d[2]} ${d.slice(3,7)} ${d.slice(7)}`;
+                        return client.phone;
+                      })()
+                    : client.email}
                 </Text>
               )}
             </View>
@@ -142,9 +150,11 @@ export function ChatSection(props: ChatSectionProps) {
         <Text style={{ fontSize: 12, fontWeight: '600', color: colors.mutedForeground, letterSpacing: 0.3, flex: 1 }}>
           Team Chat
         </Text>
-        {jobMessages.length > 0 && (
-          <View style={{ backgroundColor: `${colors.primary}15`, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 }}>
-            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.primary }}>{jobMessages.length}</Text>
+        {!isLoadingMessages && (
+          <View style={{ backgroundColor: jobMessages.length > 0 ? `${colors.primary}15` : `${colors.muted}80`, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 1 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: jobMessages.length > 0 ? colors.primary : colors.mutedForeground }}>
+              {jobMessages.length}
+            </Text>
           </View>
         )}
       </View>
@@ -210,7 +220,7 @@ export function ChatSection(props: ChatSectionProps) {
                     marginHorizontal: spacing.xs,
                     textAlign: isMe ? 'right' : 'left',
                   }}>
-                    {new Date(msg.createdAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+                    {(() => { const d = new Date(msg.createdAt); return isNaN(d.getTime()) ? '' : d.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' }); })()}
                   </Text>
                 </View>
               );

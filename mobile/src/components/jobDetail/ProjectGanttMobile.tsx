@@ -337,7 +337,7 @@ export function ProjectGanttMobile({
           <View key={status} style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: bar }]} />
             <Text style={[styles.legendLabel, { color: colors.mutedForeground }]}>
-              {status.replace(/_/g, ' ')}
+              {status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
             </Text>
           </View>
         ))}
