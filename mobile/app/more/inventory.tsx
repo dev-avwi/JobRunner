@@ -261,6 +261,7 @@ function InventoryScreenInner() {
   const [supplierPOs, setSupplierPOs] = useState<PurchaseOrder[]>([]);
   const [supplierStats, setSupplierStats] = useState<SupplierPOStats | null>(null);
   const [isLoadingSupplierPOs, setIsLoadingSupplierPOs] = useState(false);
+  const [supplierOrderError, setSupplierOrderError] = useState(false);
 
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
   const [suppliersError, setSuppliersError] = useState<string | null>(null);
@@ -713,6 +714,7 @@ function InventoryScreenInner() {
     setShowSupplierDetail(true);
     setSupplierPOs([]);
     setSupplierStats(null);
+    setSupplierOrderError(false);
     setIsLoadingSupplierPOs(true);
     try {
       const res = await api.get<{ purchaseOrders: PurchaseOrder[]; stats: SupplierPOStats }>(
@@ -721,13 +723,18 @@ function InventoryScreenInner() {
       if (!res.error && res.data) {
         setSupplierPOs(Array.isArray(res.data.purchaseOrders) ? res.data.purchaseOrders : []);
         setSupplierStats(res.data.stats || null);
+      } else {
+        setSupplierOrderError(true);
       }
-    } catch (err) {
-      setSupplierPOs([]);
-      setSupplierStats(null);
+    } catch {
+      setSupplierOrderError(true);
     } finally {
       setIsLoadingSupplierPOs(false);
     }
+  };
+
+  const retrySupplierOrders = () => {
+    if (selectedSupplier) openSupplierDetail(selectedSupplier);
   };
 
   const transactionTypeOptions: { value: TransactionType; label: string }[] = [
@@ -1383,6 +1390,16 @@ function InventoryScreenInner() {
               <Text style={styles.detailSectionTitle}>PURCHASE ORDER HISTORY</Text>
               {isLoadingSupplierPOs ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: spacing.md }} />
+              ) : supplierOrderError ? (
+                <View style={styles.noMaintenanceContainer}>
+                  <Feather name="alert-circle" size={16} color={colors.destructive} />
+                  <Text style={[styles.noMaintenanceText, { color: colors.destructive, marginTop: spacing.xs }]}>
+                    Couldn't load order history
+                  </Text>
+                  <TouchableOpacity onPress={retrySupplierOrders} style={{ marginTop: spacing.sm }}>
+                    <Text style={{ color: colors.primary, fontSize: 13 }}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
               ) : supplierPOs.length === 0 ? (
                 <View style={styles.noMaintenanceContainer}>
                   <Text style={styles.noMaintenanceText}>No purchase orders yet</Text>

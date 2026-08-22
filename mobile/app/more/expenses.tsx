@@ -82,15 +82,17 @@ const formatCurrency = (amount: number | string) => {
 function ExpenseCard({
   expense,
   onDelete,
+  deleting = false,
 }: {
   expense: Expense;
   onDelete: () => void;
+  deleting?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
-    <View style={styles.expenseCard}>
+    <View style={[styles.expenseCard, deleting && { opacity: 0.5 }]}>
       <View style={styles.expenseCardContent}>
         <View style={styles.expenseCardHeader}>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -133,8 +135,15 @@ function ExpenseCard({
           </View>
         </View>
       </View>
-      <PressableRow style={styles.deleteButton} onPress={(e) => { e.stopPropagation(); onDelete(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} >
-        <Feather name="trash-2" size={14} color={colors.destructive} />
+      <PressableRow
+        style={styles.deleteButton}
+        onPress={(e) => { e.stopPropagation(); if (!deleting) onDelete(); }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        disabled={deleting}
+      >
+        {deleting
+          ? <ActivityIndicator size="small" color={colors.destructive} />
+          : <Feather name="trash-2" size={14} color={colors.destructive} />}
       </PressableRow>
     </View>
   );
@@ -422,6 +431,8 @@ function ExpensesScreenInner() {
     }
   };
 
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const handleDeleteExpense = async (id: string) => {
     const ok = await confirm({
       title: 'Delete Expense',
@@ -430,11 +441,18 @@ function ExpensesScreenInner() {
       destructive: true,
     });
     if (!ok) return;
+    setDeletingId(id);
     try {
-      await api.delete(`/api/expenses/${id}`);
-      fetchData();
+      const res = await api.delete(`/api/expenses/${id}`);
+      if (res.error) {
+        showToast({ type: 'error', message: 'Failed to delete expense' });
+      } else {
+        fetchData();
+      }
     } catch (err: any) {
-      showToast({ type: 'error', message: 'Error', description: err.message || 'Failed to delete expense' });
+      showToast({ type: 'error', message: err.message || 'Failed to delete expense' });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -662,6 +680,7 @@ function ExpensesScreenInner() {
                       <ExpenseCard
                         key={expense.id}
                         expense={expense}
+                        deleting={deletingId === expense.id}
                         onDelete={() => handleDeleteExpense(expense.id)}
                       />
                     ))}
