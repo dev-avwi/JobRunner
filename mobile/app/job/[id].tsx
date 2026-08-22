@@ -201,6 +201,9 @@ interface TeamMember {
   memberId?: string;
   userId?: string;
   themeColor?: string;
+  compliance?: {
+    status: 'valid' | 'expiring_soon' | 'expired';
+  };
 }
 
 interface JobChatMessage {
@@ -12321,9 +12324,35 @@ export default function JobDetailScreen() {
                       size={36}
                     />
                     <View style={{ flex: 1 }}>
-                      <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.medium }}>
-                        {member.name || member.email || 'Team Member'}
-                      </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+                        <Text style={{ ...typography.body, color: colors.foreground, fontWeight: fontWeights.medium }}>
+                          {member.name || member.email || 'Team Member'}
+                        </Text>
+                        {member.role?.toLowerCase().includes('subcontractor') && member.compliance && (
+                          <View style={{
+                            paddingHorizontal: spacing.xs,
+                            paddingVertical: 2,
+                            borderRadius: radius.pill,
+                            backgroundColor: member.compliance.status === 'expired'
+                              ? colors.destructive + '15'
+                              : member.compliance.status === 'expiring_soon'
+                                ? colors.warning + '15'
+                                : colors.success + '15',
+                          }}>
+                            <Text style={{
+                              fontSize: 10,
+                              fontWeight: fontWeights.semibold,
+                              color: member.compliance.status === 'expired'
+                                ? colors.destructive
+                                : member.compliance.status === 'expiring_soon'
+                                  ? colors.warning
+                                  : colors.success,
+                            }}>
+                              {member.compliance.status === 'expired' ? 'Expired' : member.compliance.status === 'expiring_soon' ? 'Expiring Soon' : 'Valid'}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xxs }}>
                         <Feather name={availIcon as any} size={11} color={availColor} />
                         <Text style={{ fontSize: typography.sizes.xs, color: availColor }} numberOfLines={1}>

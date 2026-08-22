@@ -63,6 +63,15 @@ interface PayrollWorker {
   totalDistanceKm?: number;
 }
 
+interface ComplianceDueReport {
+  month: string;
+  due: Array<{
+    memberId: string;
+    name: string;
+    documents: Array<{ type: 'Licence' | 'Insurance'; expiry: string }>;
+  }>;
+}
+
 const PAYROLL_PAY_METHODS: { value: string; label: string }[] = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
   { value: 'payid', label: 'PayID' },
@@ -964,6 +973,7 @@ function ReportsScreenInner() {
   const [activeReportTab, setActiveReportTab] = useState<ReportTab>('overview');
   const [stripeData, setStripeData] = useState<StripePaymentsReport | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [complianceDue, setComplianceDue] = useState<ComplianceDueReport | null>(null);
 
   // Payroll pay-run state
   const [payWorker, setPayWorker] = useState<PayrollWorker | null>(null);
@@ -1060,9 +1070,18 @@ function ReportsScreenInner() {
     }
   }, []);
 
+  const fetchComplianceDue = useCallback(async () => {
+    try {
+      const response = await api.get<ComplianceDueReport>('/api/reports/compliance-due');
+      if (response.data) setComplianceDue(response.data);
+    } catch {
+      // The report may not be available to this role; keep the remaining reports usable.
+    }
+  }, []);
+
   const refreshData = useCallback(async () => {
-    await Promise.all([fetchAllReports(), fetchStripeData()]);
-  }, [fetchAllReports, fetchStripeData]);
+    await Promise.all([fetchAllReports(), fetchStripeData(), fetchComplianceDue()]);
+  }, [fetchAllReports, fetchStripeData, fetchComplianceDue]);
 
   useEffect(() => {
     refreshData();
@@ -1466,6 +1485,38 @@ Generated: ${new Date().toLocaleDateString('en-AU')}`;
                   <SVGBarChart data={monthlyData} colors={colors} width={SCREEN_WIDTH - pageShell.paddingHorizontal * 2} />
                 </View>
               )}
+
+              <View style={[styles.chartSection, { marginTop: spacing.lg }]}>
+                <View style={styles.chartHeader}>
+                  <Feather name="shield" size={16} color={colors.foreground} />
+                  <Text style={styles.chartTitle}>Compliance Due This Month</Text>
+                </View>
+                {complianceDue?.due.length ? (
+                  complianceDue.due.map((item) => (
+                    <View key={item.memberId} style={[styles.clientCard, { marginBottom: spacing.sm }]}>
+                      <View style={[styles.clientRank, { backgroundColor: colors.warningLight }]}>
+                        <Feather name="alert-triangle" size={14} color={colors.warning} />
+                      </View>
+                      <View style={styles.clientInfo}>
+                        <Text style={styles.clientName}>{item.name}</Text>
+                        <Text style={styles.clientMeta}>
+                          {item.documents.map((document) => `${document.type}: ${new Date(`${document.expiry}T00:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}`).join('  •  ')}
+                        </Text>
+                      </View>
+                      <View style={{ backgroundColor: colors.warningLight, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm }}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.warning, fontWeight: fontWeights.semibold }}>Due</Text>
+                      </View>
+                    </View>
+                  ))
+                ) : (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm }}>
+                    <Feather name="check-circle" size={18} color={colors.success} />
+                    <Text style={{ flex: 1, ...typography.caption, color: colors.mutedForeground }}>
+                      No subcontractor licence or insurance renewals are due in {complianceDue?.month || 'the current month'}.
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               {summary.jobs.total === 0 && summary.quotes.total === 0 && summary.invoices.total === 0 && (
                 <View style={styles.emptyCard}>

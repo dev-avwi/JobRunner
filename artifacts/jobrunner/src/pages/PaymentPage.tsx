@@ -124,7 +124,7 @@ function PaymentForm({
       setErrorMessage(`${parsed.title}: ${parsed.description}`);
       onError(error.message || "Payment failed");
       setIsProcessing(false);
-    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+    } else if (paymentIntent && (paymentIntent.status === 'succeeded' || paymentIntent.status === 'requires_capture')) {
       onSuccess();
     }
   };

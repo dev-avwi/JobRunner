@@ -8,6 +8,11 @@ import multer from "multer";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
+import {
+  isStalePaymentIntentCreation,
+  paymentIntentCreationRejection,
+  requiresSubcontractorPaymentReconciliation,
+} from "./paymentRequestGuards";
 import { AuthService, sanitizeUserResponse } from "./auth";
 import { setupGoogleAuth } from "./googleAuth";
 import { verifyAppleIdentityToken, type AppleTokenPayload } from "./appleAuth";
@@ -230,6 +235,7 @@ import {
   paymentRequests,
 } from '@workspace/db';
 import { db } from "./storage";
+import { getSubcontractorCompliance } from "./subcontractorCompliance";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
 import { logger } from "./logger";
 import { 
@@ -323,6 +329,105 @@ async function autoCreateJobFromAcceptedQuote(quote: any, acceptedByName: string
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const finalizeSubcontractorCardPayment = async (
+    requestId: string,
+    invoiceId: string,
+    expectedRequestStatus: string,
+    paymentReference: string | null,
+    expectedSubcontractorUserId: string,
+  ) => db.transaction(async (tx) => {
+    const invoice = await tx.select({
+      id: subcontractorInvoices.id,
+      subcontractorUserId: subcontractorInvoices.subcontractorUserId,
+    })
+      .from(subcontractorInvoices)
+      .where(eq(subcontractorInvoices.id, invoiceId))
+      .limit(1);
+    if (!invoice[0] || invoice[0].subcontractorUserId !== expectedSubcontractorUserId) {
+      throw new Error('Payment request does not match the subcontractor invoice');
+    }
+
+    const paidRequest = await tx.update(paymentRequests)
+      .set({ status: 'paid', paidAt: new Date(), paymentMethod: 'card', updatedAt: new Date() })
+      .where(and(eq(paymentRequests.id, requestId), eq(paymentRequests.status, expectedRequestStatus)))
+      .returning({ id: paymentRequests.id });
+    if (paidRequest.length === 0) return null;
+
+    const paidInvoice = await tx.update(subcontractorInvoices)
+      .set({
+        status: 'paid',
+        paidAt: new Date(),
+        paidMethod: 'card',
+        paidReference: paymentReference,
+        updatedAt: new Date(),
+      })
+      .where(and(
+        eq(subcontractorInvoices.id, invoiceId),
+        eq(subcontractorInvoices.status, 'approved'),
+      ))
+      .returning({
+        id: subcontractorInvoices.id,
+        businessOwnerId: subcontractorInvoices.businessOwnerId,
+        subcontractorUserId: subcontractorInvoices.subcontractorUserId,
+        invoiceNumber: subcontractorInvoices.invoiceNumber,
+      });
+    if (paidInvoice.length === 0) {
+      throw new Error('Subcontractor invoice was not found while finalizing card payment');
+    }
+    return paidInvoice[0];
+  });
+
+  // A card session claims its link before creating or capturing a PaymentIntent
+  // so manual and card payments cannot race. If a process dies mid-flight,
+  // reconcile the stale claim before anyone is allowed to pay the invoice again.
+  const reconcileStaleSubcontractorPayment = async (invoiceId: string) => {
+    const processing = await db.select()
+      .from(paymentRequests)
+      .where(and(
+        eq(paymentRequests.subcontractorInvoiceId, invoiceId),
+        or(
+          eq(paymentRequests.status, 'creating'),
+          eq(paymentRequests.status, 'processing'),
+        ),
+      ))
+      .limit(1);
+    const request = processing[0];
+    if (!requiresSubcontractorPaymentReconciliation(request)) return 'none' as const;
+
+    const updatedAt = request.updatedAt ? new Date(request.updatedAt).getTime() : 0;
+    if (Date.now() - updatedAt < 5 * 60 * 1000) return 'in_progress' as const;
+
+    if (!request.stripePaymentIntentId) {
+      await db.update(paymentRequests)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(and(eq(paymentRequests.id, request.id), eq(paymentRequests.status, request.status)));
+      return 'released' as const;
+    }
+
+    const stripe = await getUncachableStripeClient();
+    if (!stripe) return 'in_progress' as const;
+    const paymentIntent = await stripe.paymentIntents.retrieve(request.stripePaymentIntentId);
+
+    if (paymentIntent.status === 'succeeded') {
+      const finalized = await finalizeSubcontractorCardPayment(
+        request.id,
+        invoiceId,
+        request.status,
+        request.stripePaymentIntentId,
+        request.userId,
+      );
+      return finalized ? 'settled' as const : 'in_progress' as const;
+    }
+
+    if (paymentIntent.status === 'requires_capture') {
+      await stripe.paymentIntents.cancel(request.stripePaymentIntentId);
+    }
+    await db.update(paymentRequests)
+      .set({ status: 'cancelled', updatedAt: new Date() })
+      .where(and(eq(paymentRequests.id, request.id), eq(paymentRequests.status, request.status)));
+    return 'released' as const;
+  };
+
   app.use('/api/', generalApiLimiter);
 
   app.use((req, res, next) => {
@@ -6898,6 +7003,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone: (user as any).phone || null,
           profileImageUrl: user.profileImageUrl,
           tradeType: user.tradeType,
+          compliance: getSubcontractorCompliance(user),
           emailVerified: user.emailVerified,
           createdAt: user.createdAt,
         },
@@ -6970,6 +7076,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.userId!;
       const { firstName, lastName, phone, profileImageUrl } = req.body;
+      const complianceFields = ['licenseType', 'licenseNumber', 'licenseExpiry', 'insurancePolicyNumber', 'insuranceExpiry'];
+      if (complianceFields.some((field) => req.body?.[field] !== undefined)) {
+        return res.status(403).json({ error: 'Subcontractor compliance details must be updated by the business owner.' });
+      }
       
       // Update user record
       const updatedUser = await storage.updateUser(userId, {
@@ -25977,7 +26087,7 @@ Be specific about materials, colors, and features that would be included.`
   // PUBLIC: Get payment request by token (for customer payment page)
   app.get("/api/public/payment-request/:token", portalIpRateLimiterMiddleware, async (req, res) => {
     try {
-      const request = await storage.getPaymentRequestByToken(req.params.token);
+      let request = await storage.getPaymentRequestByToken(req.params.token);
       
       if (!request) {
         return res.status(404).json({ error: "Payment request not found" });
@@ -26033,19 +26143,35 @@ Be specific about materials, colors, and features that would be included.`
   // PUBLIC: Create Stripe payment intent for payment request
   app.post("/api/public/payment-request/:token/create-payment-intent", async (req, res) => {
     try {
-      const request = await storage.getPaymentRequestByToken(req.params.token);
+      let request = await storage.getPaymentRequestByToken(req.params.token);
       
       if (!request) {
         return res.status(404).json({ error: "Payment request not found" });
       }
       
-      // Validate status and expiry
-      if (request.status === 'paid') {
-        return res.status(409).json({ error: "Payment has already been made" });
+      // A crashed creator may be retried after its lease expires. Reusing the
+      // same stored attempt timestamp gives Stripe the same idempotency key.
+      if (isStalePaymentIntentCreation(request)) {
+        const resumed = await db.update(paymentRequests)
+          .set({ status: 'creating' })
+          .where(and(
+            eq(paymentRequests.id, request.id),
+            eq(paymentRequests.status, 'creating'),
+            isNull(paymentRequests.stripePaymentIntentId),
+            lt(paymentRequests.updatedAt, new Date(Date.now() - 5 * 60 * 1000)),
+          ))
+          .returning();
+        if (resumed[0]) request = resumed[0] as typeof request;
       }
-      
-      if (request.status === 'cancelled') {
-        return res.status(410).json({ error: "Payment request has been cancelled" });
+
+      // Do not replace an existing Stripe reference. Interrupted captures
+      // must reconcile the original intent before any payment can be retried.
+      const intentRejection = paymentIntentCreationRejection(request);
+      if (request.status === 'creating' && !request.stripePaymentIntentId && isStalePaymentIntentCreation(request)) {
+        // A stale lease is allowed to resume below using its original Stripe
+        // idempotency key, rather than creating a second card authorization.
+      } else if (intentRejection) {
+        return res.status(intentRejection.httpStatus).json({ error: intentRejection.error });
       }
       
       if (request.expiresAt && new Date(request.expiresAt) < new Date()) {
@@ -26075,12 +26201,29 @@ Be specific about materials, colors, and features that would be included.`
           businessName: settings?.businessName || 'Unknown',
         },
       };
+      // Subcontractor payments are captured only by the server after the
+      // final compliance check in confirm-payment. This prevents an already
+      // authorised browser payment from bypassing a newly-applied hold.
+      if ((request as any).subcontractorInvoiceId) {
+        paymentIntentParams.capture_method = 'manual';
+      }
       
       // Subcontractor-invoice links MUST pay out to the subbie's connected account.
       // If they've since disconnected Stripe, refuse rather than silently taking a
       // platform charge the subbie would never receive.
       if ((request as any).subcontractorInvoiceId && (!settings?.stripeConnectAccountId || !settings?.connectChargesEnabled)) {
         return res.status(409).json({ error: "This payment link is no longer available. Contact the subcontractor for updated payment details." });
+      }
+      if ((request as any).subcontractorInvoiceId) {
+        const subInvoice = await storage.getSubcontractorInvoiceWithItems((request as any).subcontractorInvoiceId);
+        const compliance = getSubcontractorCompliance(subInvoice ? await storage.getUser(subInvoice.subcontractorUserId) : null);
+        if (compliance.requiresPaymentConfirmation) {
+          return res.status(409).json({
+            error: 'This payment is on hold because the subcontractor has expired compliance documents. Contact the business owner.',
+            code: 'COMPLIANCE_CONFIRMATION_REQUIRED',
+            compliance,
+          });
+        }
       }
 
       // If tradie has Stripe Connect account with charges enabled, use destination charges
@@ -26093,13 +26236,47 @@ Be specific about materials, colors, and features that would be included.`
         paymentIntentParams.application_fee_amount = platformFee;
       }
       
-      const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
+      let intentReservation = request;
+      if (request.status === 'pending') {
+        const reserved = await db.update(paymentRequests)
+          .set({ status: 'creating', updatedAt: new Date() })
+          .where(and(
+            eq(paymentRequests.id, request.id),
+            eq(paymentRequests.status, 'pending'),
+            isNull(paymentRequests.stripePaymentIntentId),
+          ))
+          .returning();
+        if (!reserved[0]) {
+          return res.status(409).json({ error: 'A payment session is already being created for this request.' });
+        }
+        intentReservation = reserved[0] as typeof request;
+      }
+
+      const idempotencyKey = `payment-request-intent:${request.id}:${new Date(intentReservation.updatedAt || 0).getTime()}`;
+      const paymentIntent = await stripe.paymentIntents.create(
+        paymentIntentParams,
+        { idempotencyKey },
+      );
       
-      // Update payment request with Stripe data
-      await storage.updatePaymentRequestByToken(request.token, {
-        stripePaymentIntentId: paymentIntent.id,
-        stripeClientSecret: paymentIntent.client_secret,
-      } as any);
+      // Only the creator that holds this reservation can save an intent.
+      // A stale retry uses the same Stripe idempotency key and therefore
+      // persists the same original intent, never a replacement.
+      const savedIntent = await db.update(paymentRequests)
+        .set({
+          status: 'pending',
+          stripePaymentIntentId: paymentIntent.id,
+          stripeClientSecret: paymentIntent.client_secret,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(paymentRequests.id, request.id),
+          eq(paymentRequests.status, 'creating'),
+          isNull(paymentRequests.stripePaymentIntentId),
+        ))
+        .returning({ stripePaymentIntentId: paymentRequests.stripePaymentIntentId });
+      if (!savedIntent[0]) {
+        return res.status(409).json({ error: 'This payment request was updated while its payment session was being created.' });
+      }
       
       // Get publishable key
       const publishableKey = await getStripePublishableKey();
@@ -26132,6 +26309,28 @@ Be specific about materials, colors, and features that would be included.`
       if (request.status === 'cancelled') {
         return res.status(410).json({ error: "Payment request has been cancelled" });
       }
+      if (request.status === 'processing' && (request as any).subcontractorInvoiceId) {
+        const recovery = await reconcileStaleSubcontractorPayment((request as any).subcontractorInvoiceId);
+        if (recovery === 'settled') {
+          return res.json({ success: true, recovered: true });
+        }
+        return res.status(409).json({
+          error: recovery === 'in_progress'
+            ? 'This payment is still being processed. Please wait a moment and try again.'
+            : 'This payment request is no longer payable. Please request a new payment link.',
+        });
+      }
+      if ((request as any).subcontractorInvoiceId) {
+        const subInvoice = await storage.getSubcontractorInvoiceWithItems((request as any).subcontractorInvoiceId);
+        const compliance = getSubcontractorCompliance(subInvoice ? await storage.getUser(subInvoice.subcontractorUserId) : null);
+        if (compliance.requiresPaymentConfirmation) {
+          return res.status(409).json({
+            error: 'This payment is on hold because the subcontractor has expired compliance documents. Contact the business owner.',
+            code: 'COMPLIANCE_CONFIRMATION_REQUIRED',
+            compliance,
+          });
+        }
+      }
 
       // Demo-mode bypass is allowed ONLY when the receiving business is the demo
       // account — never on a client-supplied flag. Otherwise any client could mark
@@ -26139,37 +26338,104 @@ Be specific about materials, colors, and features that would be included.`
       const payReqOwner = await storage.getUser(request.userId);
       const isDemoBusiness = payReqOwner?.email === DEMO_USER.email || payReqOwner?.email === VISITOR_USER.email || payReqOwner?.email === TRY_DEMO_USER.email;
       const isDemoPayment = isDemoBusiness && (paymentMethod === 'demo' || (paymentIntentId && String(paymentIntentId).startsWith('demo_pi_')));
+      const isSubcontractorPayment = !!(request as any).subcontractorInvoiceId;
+      let paymentRequestClaimed = false;
+      const claimPaymentRequest = async () => {
+        const claimed = await db.update(paymentRequests)
+          .set({ status: 'processing', updatedAt: new Date() })
+          .where(and(eq(paymentRequests.token, request.token), eq(paymentRequests.status, 'pending')))
+          .returning({ id: paymentRequests.id });
+        return claimed.length > 0;
+      };
+      const releasePaymentRequestClaim = async () => {
+        await db.update(paymentRequests)
+          .set({ status: 'pending', updatedAt: new Date() })
+          .where(and(eq(paymentRequests.token, request.token), eq(paymentRequests.status, 'processing')));
+      };
 
+      let stripeClient: Awaited<ReturnType<typeof getUncachableStripeClient>> | null = null;
       if (!isDemoPayment) {
         // Real payment: the intent must match the one we created AND Stripe must
         // confirm it actually succeeded. Never trust the client's claim of payment.
         if (!paymentIntentId || request.stripePaymentIntentId !== paymentIntentId) {
           return res.status(400).json({ error: "Payment intent mismatch" });
         }
-        const stripe = await getUncachableStripeClient();
-        if (!stripe) {
+        stripeClient = await getUncachableStripeClient();
+        if (!stripeClient) {
           return res.status(503).json({ error: "Payment processing is not available" });
         }
-        const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
-        if (pi.status !== 'succeeded') {
+        const pi = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+        if (isSubcontractorPayment ? pi.status !== 'requires_capture' : pi.status !== 'succeeded') {
           return res.status(400).json({ error: "Payment has not been completed" });
         }
         // Defense-in-depth: the confirmed charge must match this request's amount/currency.
         const expectedCents = Math.round(parseFloat(request.amount) * 100);
-        const paidCents = pi.amount_received ?? pi.amount;
+        const paidCents = isSubcontractorPayment
+          ? pi.amount_capturable
+          : pi.amount_received ?? pi.amount;
         if ((pi.currency || '').toLowerCase() !== 'aud' || paidCents !== expectedCents) {
           return res.status(400).json({ error: "Payment amount mismatch" });
         }
+
+        // Re-check at the last possible moment before funds are captured.
+        if (isSubcontractorPayment) {
+          if (!await claimPaymentRequest()) {
+            return res.status(409).json({ error: "This payment request is already being processed or is no longer payable." });
+          }
+          paymentRequestClaimed = true;
+          const subInvoice = await storage.getSubcontractorInvoiceWithItems((request as any).subcontractorInvoiceId);
+          const compliance = getSubcontractorCompliance(subInvoice ? await storage.getUser(subInvoice.subcontractorUserId) : null);
+          if (compliance.requiresPaymentConfirmation) {
+            await releasePaymentRequestClaim();
+            return res.status(409).json({
+              error: 'This payment is on hold because the subcontractor has expired compliance documents. Contact the business owner.',
+              code: 'COMPLIANCE_CONFIRMATION_REQUIRED',
+              compliance,
+            });
+          }
+          let captured;
+          try {
+            captured = await stripeClient.paymentIntents.capture(paymentIntentId);
+          } catch (captureError) {
+            // A network timeout can occur after Stripe has captured the funds.
+            // Keep the claim for stale-processing reconciliation rather than
+            // risking a second manual payment.
+            throw captureError;
+          }
+          if (captured.status !== 'succeeded' || (captured.amount_received ?? 0) !== expectedCents) {
+            return res.status(409).json({ error: "Payment capture needs reconciliation before another payment can be recorded." });
+          }
+        }
       }
       
-      // Atomically flip pending -> paid. If another path (manual mark-paid,
-      // cancellation) changed the status since we loaded it, abort instead of
-      // resurrecting a cancelled/paid request.
-      const flipped = await db.update(paymentRequests)
-        .set({ status: 'paid', paidAt: new Date(), paymentMethod: paymentMethod || 'card', updatedAt: new Date() })
-        .where(and(eq(paymentRequests.token, request.token), eq(paymentRequests.status, 'pending')))
-        .returning({ id: paymentRequests.id });
-      if (flipped.length === 0) {
+      // Demo-mode subcontractor payments do not perform a Stripe capture but
+      // still claim the request so another payment path cannot race the state change.
+      if (isSubcontractorPayment && !paymentRequestClaimed) {
+        if (!await claimPaymentRequest()) {
+          return res.status(409).json({ error: "This payment request is already being processed or is no longer payable." });
+        }
+        paymentRequestClaimed = true;
+      }
+
+      // Only the path that owns the claim may complete the state transition.
+      let finalizedSubcontractorInvoice: Awaited<ReturnType<typeof finalizeSubcontractorCardPayment>> = null;
+      const flipped = isSubcontractorPayment
+        ? (() => finalizeSubcontractorCardPayment(
+            request.id,
+            (request as any).subcontractorInvoiceId,
+            'processing',
+            paymentIntentId || request.stripePaymentIntentId || null,
+            request.userId,
+          ).then((invoice) => {
+            finalizedSubcontractorInvoice = invoice;
+            return invoice ? [{ id: request.id }] : [];
+          }))()
+        : await db.update(paymentRequests)
+            .set({ status: 'paid', paidAt: new Date(), paymentMethod: paymentMethod || 'card', updatedAt: new Date() })
+            .where(and(eq(paymentRequests.token, request.token), eq(paymentRequests.status, 'pending')))
+            .returning({ id: paymentRequests.id });
+      const completedPaymentRequest = await flipped;
+      if (completedPaymentRequest.length === 0) {
         return res.status(409).json({ error: "This payment request is no longer payable. If you were charged, contact the business for a refund." });
       }
       
@@ -26188,30 +26454,15 @@ Be specific about materials, colors, and features that would be included.`
       }
 
       // If linked to a subcontractor invoice, mark it paid and notify both sides
-      if ((request as any).subcontractorInvoiceId) {
-        try {
-          const subInvId = (request as any).subcontractorInvoiceId as string;
-          const subInv = await storage.getSubcontractorInvoiceWithItems(subInvId);
-          // The payment request is always owned by the subcontractor, so verify linkage.
-          if (subInv && subInv.subcontractorUserId === request.userId && subInv.status !== 'paid') {
-            await storage.updateSubcontractorInvoice(subInvId, {
-              status: 'paid',
-              paidAt: new Date(),
-              paidMethod: 'card',
-              paidReference: paymentIntentId || request.stripePaymentIntentId || null,
-            });
-            await storage.createNotification({
-              userId: subInv.businessOwnerId,
-              type: 'subcontractor_invoice',
-              title: 'Subcontractor Invoice Paid',
-              message: `Invoice ${subInv.invoiceNumber} ($${parseFloat(request.amount).toFixed(2)}) was paid by card.`,
-              relatedType: 'subcontractor_invoice',
-              relatedId: subInvId,
-            });
-          }
-        } catch (subErr) {
-          console.error('Failed to mark subcontractor invoice paid:', subErr);
-        }
+      if (finalizedSubcontractorInvoice) {
+        await storage.createNotification({
+          userId: finalizedSubcontractorInvoice.businessOwnerId,
+          type: 'subcontractor_invoice',
+          title: 'Subcontractor Invoice Paid',
+          message: `Invoice ${finalizedSubcontractorInvoice.invoiceNumber} ($${parseFloat(request.amount).toFixed(2)}) was paid by card.`,
+          relatedType: 'subcontractor_invoice',
+          relatedId: finalizedSubcontractorInvoice.id,
+        });
       }
       
       // Create notification for the tradie
@@ -30472,6 +30723,7 @@ Respond with JSON in this format:
           // were wrongly rendered as "Active". Surface the real invite state so a
           // member only shows Active once they've actually accepted.
           invitationStatus: member.inviteStatus,
+          compliance: getSubcontractorCompliance(memberUser),
         };
       });
       
@@ -30730,6 +30982,11 @@ Respond with JSON in this format:
       if (!member) {
         return res.status(404).json({ error: 'Team member not found' });
       }
+      const complianceFields = ['licenseType', 'licenseNumber', 'licenseExpiry', 'insurancePolicyNumber', 'insuranceExpiry'];
+      const hasComplianceUpdate = complianceFields.some((field) => req.body?.[field] !== undefined);
+      if (hasComplianceUpdate && !req.userContext?.isOwner) {
+        return res.status(403).json({ error: 'Only the business owner can update subcontractor compliance details.' });
+      }
       
       // Build update object with only provided fields
       const updateData: any = {};
@@ -30747,13 +31004,44 @@ Respond with JSON in this format:
       if (afterHoursGhostMode !== undefined) updateData.afterHoursGhostMode = afterHoursGhostMode;
       
       const updated = await storage.updateTeamMember(memberId, effectiveUserId, updateData);
+      let compliance = member.memberId ? getSubcontractorCompliance(await storage.getUser(member.memberId)) : getSubcontractorCompliance(null);
+
+      if (hasComplianceUpdate) {
+        if (!member.memberId) {
+          return res.status(400).json({ error: 'Compliance details can be saved after the subcontractor accepts their invite.' });
+        }
+
+        const stringOrNull = (value: unknown) => typeof value === 'string' ? (value.trim() || null) : value === null ? null : undefined;
+        const dateOrNull = (value: unknown) => {
+          if (value === null || value === '') return null;
+          if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+          return value;
+        };
+        const complianceUpdate: Record<string, string | null> = {};
+        const licenseType = stringOrNull(req.body.licenseType);
+        const licenseNumber = stringOrNull(req.body.licenseNumber);
+        const insurancePolicyNumber = stringOrNull(req.body.insurancePolicyNumber);
+        const licenseExpiry = dateOrNull(req.body.licenseExpiry);
+        const insuranceExpiry = dateOrNull(req.body.insuranceExpiry);
+        if (licenseType !== undefined) complianceUpdate.licenseType = licenseType;
+        if (licenseNumber !== undefined) complianceUpdate.licenseNumber = licenseNumber;
+        if (insurancePolicyNumber !== undefined) complianceUpdate.insurancePolicyNumber = insurancePolicyNumber;
+        if (licenseExpiry !== undefined) complianceUpdate.licenseExpiry = licenseExpiry;
+        if (insuranceExpiry !== undefined) complianceUpdate.insuranceExpiry = insuranceExpiry;
+        if ((req.body.licenseExpiry !== undefined && licenseExpiry === undefined) || (req.body.insuranceExpiry !== undefined && insuranceExpiry === undefined)) {
+          return res.status(400).json({ error: 'Expiry dates must use YYYY-MM-DD.' });
+        }
+
+        const complianceUser = await storage.updateUser(member.memberId, complianceUpdate);
+        compliance = getSubcontractorCompliance(complianceUser);
+      }
       try {
         const { broadcastTeamMemberChange } = await import('./websocket');
         broadcastTeamMemberChange(effectiveUserId, 'updated', memberId);
       } catch (wsErr) {
         console.warn('[WS] Failed to broadcast team member update:', wsErr);
       }
-      res.json(updated);
+      res.json({ ...updated, compliance });
     } catch (error) {
       console.error('Error updating team member:', error);
       res.status(500).json({ error: 'Failed to update team member' });
@@ -32095,6 +32383,7 @@ Respond with JSON in this format:
           isActive: member.isActive,
           inviteStatus: member.inviteStatus,
           hourlyRate: member.hourlyRate,
+          compliance: getSubcontractorCompliance(memberUser),
           locationEnabledByOwner: member.locationEnabledByOwner ?? true,
           locationEnabledByUser: member.locationEnabledByOwner ?? true,
         },
@@ -39985,6 +40274,54 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     } catch (error: any) {
       console.error('Error getting team report:', error);
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Upcoming subcontractor licence and insurance renewals for the current month.
+  app.get("/api/reports/compliance-due", requireAuth, requirePaidTier(), createPermissionMiddleware(PERMISSIONS.READ_REPORTS), async (req: any, res) => {
+    try {
+      const ownerId = req.effectiveUserId || req.userId!;
+      const members = await storage.getTeamMembers(ownerId);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      endOfMonth.setHours(23, 59, 59, 999);
+
+      const due = (await Promise.all(members.map(async (member) => {
+        if (!member.memberId || member.inviteStatus !== 'accepted') return null;
+        const [role, subcontractor] = await Promise.all([
+          storage.getUserRole(member.roleId),
+          storage.getUser(member.memberId),
+        ]);
+        if (!role?.name?.toLowerCase().includes('subcontractor') || !subcontractor) return null;
+
+        const compliance = getSubcontractorCompliance(subcontractor);
+        const documents = [
+          { type: 'Licence', expiry: compliance.licenseExpiry },
+          { type: 'Insurance', expiry: compliance.insuranceExpiry },
+        ].filter((document) => {
+          if (!document.expiry) return false;
+          const expiry = new Date(`${document.expiry}T00:00:00`);
+          return !Number.isNaN(expiry.getTime()) && expiry >= today && expiry <= endOfMonth;
+        });
+        if (documents.length === 0) return null;
+
+        return {
+          memberId: member.id,
+          subcontractorId: subcontractor.id,
+          name: `${subcontractor.firstName || ''} ${subcontractor.lastName || ''}`.trim() || subcontractor.email || 'Subcontractor',
+          compliance,
+          documents,
+        };
+      }))).filter(Boolean).sort((a: any, b: any) => {
+        const firstExpiry = (item: any) => new Date(`${item.documents[0].expiry}T00:00:00`).getTime();
+        return firstExpiry(a) - firstExpiry(b);
+      });
+
+      res.json({ due, month: today.toLocaleString('en-AU', { month: 'long', year: 'numeric' }) });
+    } catch (error: any) {
+      console.error('[Compliance Report] Failed to load upcoming compliance:', error);
+      res.status(500).json({ error: 'Failed to load upcoming compliance' });
     }
   });
 
@@ -50002,6 +50339,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   // Funds go to the SUBCONTRACTOR's own Stripe Connect account (they must have
   // connected Stripe in their own workspace). Returns the payment token.
   async function createSubbieInvoicePaymentRequest(subbieUserId: string, inv: { id: string; invoiceNumber: string; totalAmount: string; gstAmount: string }): Promise<{ token: string } | { error: string }> {
+    const subcontractor = await storage.getUser(subbieUserId);
+    const compliance = getSubcontractorCompliance(subcontractor);
+    if (compliance.requiresPaymentConfirmation) {
+      return { error: 'A card payment link cannot be created while your licence or insurance has expired. Ask the business owner to review the compliance hold.' };
+    }
     const subSettings = await storage.getBusinessSettings(subbieUserId);
     if (!subSettings?.stripeConnectAccountId || !subSettings?.connectChargesEnabled) {
       return { error: 'Connect your own Stripe account (Settings > Integrations) before adding a card payment link.' };
@@ -50592,12 +50934,24 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       // Enrich with subcontractor names
       const subIds = [...new Set(invoicesList.map(i => i.subcontractorUserId))];
       const subUsers = subIds.length > 0
-        ? await db.select({ id: users.id, firstName: users.firstName, lastName: users.lastName, email: users.email })
+        ? await db.select({
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            email: users.email,
+            licenseType: users.licenseType,
+            licenseNumber: users.licenseNumber,
+            licenseExpiry: users.licenseExpiry,
+            insurancePolicyNumber: users.insurancePolicyNumber,
+            insuranceExpiry: users.insuranceExpiry,
+          })
             .from(users).where(inArray(users.id, subIds))
         : [];
       const subMap: Record<string, string> = {};
+      const complianceMap: Record<string, ReturnType<typeof getSubcontractorCompliance>> = {};
       subUsers.forEach(u => {
         subMap[u.id] = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || 'Unknown';
+        complianceMap[u.id] = getSubcontractorCompliance(u);
       });
 
       // Attach pending card-payment tokens (subbie opted into online payment)
@@ -50615,6 +50969,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       const enriched = invoicesList.map(inv => ({
         ...inv,
         subcontractorName: subMap[inv.subcontractorUserId] || 'Unknown',
+        compliance: complianceMap[inv.subcontractorUserId] || getSubcontractorCompliance(null),
         paymentToken: tokenMap[inv.id] || null,
       }));
 
@@ -50630,7 +50985,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       // Managers act on behalf of the business owner.
       const userId = req.effectiveUserId || req.userId;
-      const { status, paidMethod, paidAt, rejectionReason } = req.body;
+      const { status, paidMethod, paidAt, rejectionReason, complianceOverrideConfirmed } = req.body;
 
       if (!['approved', 'paid', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'Status must be approved, paid, or rejected' });
@@ -50643,6 +50998,56 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
       if (invoice.docType === 'quote' && status === 'paid') {
         return res.status(400).json({ error: 'Quotes cannot be marked paid' });
+      }
+      if (status !== 'approved') {
+        const recovery = await reconcileStaleSubcontractorPayment(invoice.id);
+        if (recovery === 'in_progress') {
+          return res.status(409).json({ error: 'A card payment is currently being processed for this invoice. Please wait before changing its status.' });
+        }
+        if (recovery === 'settled') {
+          return res.status(409).json({ error: 'This invoice was paid by the completed card payment.' });
+        }
+      }
+      if (status === 'paid') {
+        const ctx = await getUserContext(req.userId);
+        const compliance = getSubcontractorCompliance(await storage.getUser(invoice.subcontractorUserId));
+        if (compliance.requiresPaymentConfirmation) {
+          if (!ctx.isOwner) {
+            return res.status(403).json({
+              error: 'Only the business owner can override an expired subcontractor compliance hold.',
+              code: 'COMPLIANCE_OWNER_REQUIRED',
+              compliance,
+            });
+          }
+          if (complianceOverrideConfirmed !== true) {
+            return res.status(409).json({
+              error: 'Payment is on hold because the subcontractor has expired compliance documents.',
+              code: 'COMPLIANCE_CONFIRMATION_REQUIRED',
+              compliance,
+            });
+          }
+        }
+      }
+      if (status !== 'approved') {
+        // Compliance authorization is complete. Now claim any pending card
+        // links, which prevents a card capture and manual change both winning.
+        await db.update(paymentRequests)
+          .set({ status: 'cancelled', updatedAt: new Date() })
+          .where(and(eq(paymentRequests.subcontractorInvoiceId, invoice.id), eq(paymentRequests.status, 'pending')));
+        const conflictingCardPayment = await db.select({ id: paymentRequests.id })
+          .from(paymentRequests)
+          .where(and(
+            eq(paymentRequests.subcontractorInvoiceId, invoice.id),
+            or(
+              eq(paymentRequests.status, 'creating'),
+              eq(paymentRequests.status, 'processing'),
+              eq(paymentRequests.status, 'paid'),
+            ),
+          ))
+          .limit(1);
+        if (conflictingCardPayment.length > 0) {
+          return res.status(409).json({ error: 'A card payment is currently being processed or has completed for this invoice.' });
+        }
       }
 
       const updates: { status: string; paidAt?: Date; paidMethod?: string; approvedAt?: Date; rejectedAt?: Date; rejectionReason?: string } = { status };
@@ -50761,7 +51166,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       const ctx = await getUserContext(req.userId);
       const ownerId = ctx.effectiveUserId;
-      const { method, paidAt, reference, notes, sendRemittance } = req.body || {};
+      const { method, paidAt, reference, notes, sendRemittance, complianceOverrideConfirmed } = req.body || {};
 
       const invoice = await storage.getSubcontractorInvoiceWithItems(req.params.id);
       if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
@@ -50776,6 +51181,51 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
       if (invoice.status !== 'approved') {
         return res.status(400).json({ error: 'Only approved invoices can be paid' });
+      }
+      const recovery = await reconcileStaleSubcontractorPayment(invoice.id);
+      if (recovery === 'in_progress') {
+        return res.status(409).json({ error: 'A card payment is currently being processed for this invoice. Please wait before recording another payment.' });
+      }
+      if (recovery === 'settled') {
+        return res.status(409).json({ error: 'This invoice was paid by the completed card payment.' });
+      }
+      const subcontractor = await storage.getUser(invoice.subcontractorUserId);
+      const compliance = getSubcontractorCompliance(subcontractor);
+      if (compliance.requiresPaymentConfirmation) {
+        if (!ctx.isOwner) {
+          return res.status(403).json({
+            error: 'Only the business owner can override an expired subcontractor compliance hold.',
+            code: 'COMPLIANCE_OWNER_REQUIRED',
+            compliance,
+          });
+        }
+        if (complianceOverrideConfirmed !== true) {
+          return res.status(409).json({
+            error: 'Payment is on hold because the subcontractor has expired compliance documents.',
+            code: 'COMPLIANCE_CONFIRMATION_REQUIRED',
+            compliance,
+          });
+        }
+      }
+      // Only an authorized, confirmed manual override may cancel a pending
+      // card link. Checking after the cancellation also catches a card that
+      // completed between the initial invoice read and this mutation.
+      await db.update(paymentRequests)
+        .set({ status: 'cancelled', updatedAt: new Date() })
+        .where(and(eq(paymentRequests.subcontractorInvoiceId, invoice.id), eq(paymentRequests.status, 'pending')));
+      const conflictingCardPayment = await db.select({ id: paymentRequests.id })
+        .from(paymentRequests)
+        .where(and(
+          eq(paymentRequests.subcontractorInvoiceId, invoice.id),
+          or(
+            eq(paymentRequests.status, 'creating'),
+            eq(paymentRequests.status, 'processing'),
+            eq(paymentRequests.status, 'paid'),
+          ),
+        ))
+        .limit(1);
+      if (conflictingCardPayment.length > 0) {
+        return res.status(409).json({ error: 'A card payment is currently being processed or has completed for this invoice.' });
       }
 
       const updates: Record<string, unknown> = {

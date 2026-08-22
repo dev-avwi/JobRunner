@@ -61,7 +61,7 @@ interface TeamMember {
   email: string;
   phone?: string;
   hourlyRate?: string;
-  role: 'owner' | 'admin' | 'supervisor' | 'staff';
+  role: 'owner' | 'admin' | 'supervisor' | 'staff' | 'subcontractor';
   permissions: string[];
   inviteStatus: 'pending' | 'accepted' | 'rejected';
   useCustomPermissions?: boolean;
@@ -76,6 +76,15 @@ interface TeamMember {
     phone?: string;
   };
   createdAt: string;
+  compliance?: {
+    status: 'valid' | 'expiring_soon' | 'expired';
+    licenseType?: string | null;
+    licenseNumber?: string | null;
+    licenseExpiry?: string | null;
+    insurancePolicyNumber?: string | null;
+    insuranceExpiry?: string | null;
+    expiredDocuments?: string[];
+  };
 }
 
 interface PermissionItem {
@@ -260,6 +269,11 @@ interface MobileSubInvoice {
   createdAt: string | null;
   subcontractorName: string;
   businessName: string;
+  compliance?: {
+    status: 'valid' | 'expiring_soon' | 'expired';
+    expiredDocuments?: string[];
+    requiresPaymentConfirmation?: boolean;
+  };
 }
 
 const PAY_METHODS: { value: string; label: string }[] = [
@@ -279,7 +293,7 @@ interface WorkerPaymentDetails {
   payId?: string | null;
 }
 
-function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: ThemeColors; focusInvoiceId?: string }) {
+function SubcontractorInvoicesSection({ colors, focusInvoiceId, canOverrideComplianceHold }: { colors: ThemeColors; focusInvoiceId?: string; canOverrideComplianceHold: boolean }) {
   const [invoices, setInvoices] = useState<MobileSubInvoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -292,6 +306,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
   const [payReference, setPayReference] = useState('');
   const [payNotes, setPayNotes] = useState('');
   const [paySubmitting, setPaySubmitting] = useState(false);
+  const [complianceOverrideConfirmed, setComplianceOverrideConfirmed] = useState(false);
 
   // Payment details sheet state
   const [detailsInvoice, setDetailsInvoice] = useState<MobileSubInvoice | null>(null);
@@ -342,6 +357,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
     setPayDate(new Date().toISOString().slice(0, 10));
     setPayReference('');
     setPayNotes('');
+    setComplianceOverrideConfirmed(false);
   }, []);
 
   const submitPayment = useCallback(async () => {
@@ -354,6 +370,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
         reference: payReference.trim() || undefined,
         notes: payNotes.trim() || undefined,
         sendRemittance: true,
+        complianceOverrideConfirmed,
       });
       if (res.error) {
         showToast({ type: 'error', message: res.error });
@@ -368,7 +385,7 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
     } finally {
       setPaySubmitting(false);
     }
-  }, [payInvoice, payMethod, payDate, payReference, payNotes, loadInvoices]);
+  }, [payInvoice, payMethod, payDate, payReference, payNotes, complianceOverrideConfirmed, loadInvoices]);
 
   const openPaymentDetails = useCallback(async (inv: MobileSubInvoice) => {
     setDetailsInvoice(inv);
@@ -771,10 +788,35 @@ function SubcontractorInvoicesSection({ colors, focusInvoiceId }: { colors: Them
             multiline
           />
 
+          {payInvoice?.compliance?.status === 'expired' && (
+            <View style={{ backgroundColor: colors.destructive + '12', borderColor: colors.destructive + '40', borderWidth: 1, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                <Feather name="alert-triangle" size={18} color={colors.destructive} />
+                <Text style={{ flex: 1, fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.destructive }}>Payment on compliance hold</Text>
+              </View>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, lineHeight: 20 }}>
+                {payInvoice.compliance.expiredDocuments?.map((document) => document === 'licence' ? 'licence' : 'insurance').join(' and ') || 'Compliance documents'} expired. Only the business owner can confirm this payment.
+              </Text>
+              {canOverrideComplianceHold && (
+                <TouchableOpacity
+                  testID="toggle-compliance-payment-confirmation"
+                  onPress={() => setComplianceOverrideConfirmed((current) => !current)}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md }}
+                >
+                  <View style={{ width: 22, height: 22, borderWidth: 1, borderColor: complianceOverrideConfirmed ? colors.destructive : colors.border, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: complianceOverrideConfirmed ? colors.destructive : colors.background }}>
+                    {complianceOverrideConfirmed && <Feather name="check" size={15} color={colors.primaryForeground} />}
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.foreground }}>I am the owner and approve payment despite the expired documents.</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <SheetButton
             label="Record Payment & Send Remittance"
             onPress={submitPayment}
             loading={paySubmitting}
+            disabled={payInvoice?.compliance?.status === 'expired' && (!canOverrideComplianceHold || !complianceOverrideConfirmed)}
             fullWidth
           />
           <View style={{ height: spacing.md }} />
@@ -1950,6 +1992,11 @@ function TeamManagementScreenInner() {
   const [editLastName, setEditLastName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editHourlyRate, setEditHourlyRate] = useState('');
+  const [editLicenseType, setEditLicenseType] = useState('');
+  const [editLicenseNumber, setEditLicenseNumber] = useState('');
+  const [editLicenseExpiry, setEditLicenseExpiry] = useState('');
+  const [editInsurancePolicyNumber, setEditInsurancePolicyNumber] = useState('');
+  const [editInsuranceExpiry, setEditInsuranceExpiry] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   
   // Permissions modal state
@@ -2175,6 +2222,11 @@ function TeamManagementScreenInner() {
     setEditLastName(member.lastName || member.user?.lastName || '');
     setEditPhone(member.phone || member.user?.phone || '');
     setEditHourlyRate(member.hourlyRate || '');
+    setEditLicenseType(member.compliance?.licenseType || '');
+    setEditLicenseNumber(member.compliance?.licenseNumber || '');
+    setEditLicenseExpiry(member.compliance?.licenseExpiry?.slice(0, 10) || '');
+    setEditInsurancePolicyNumber(member.compliance?.insurancePolicyNumber || '');
+    setEditInsuranceExpiry(member.compliance?.insuranceExpiry?.slice(0, 10) || '');
     setShowEditModal(true);
   }, []);
 
@@ -2304,6 +2356,11 @@ function TeamManagementScreenInner() {
         lastName: editLastName,
         phone: editPhone,
         hourlyRate: editHourlyRate ? parseFloat(editHourlyRate) : undefined,
+        licenseType: editLicenseType,
+        licenseNumber: editLicenseNumber,
+        licenseExpiry: editLicenseExpiry,
+        insurancePolicyNumber: editInsurancePolicyNumber,
+        insuranceExpiry: editInsuranceExpiry,
       });
       
       setTeamMembers(prev => 
@@ -2314,6 +2371,14 @@ function TeamManagementScreenInner() {
               lastName: editLastName,
               phone: editPhone,
               hourlyRate: editHourlyRate,
+              compliance: {
+                status: selectedMember.compliance?.status || 'valid',
+                licenseType: editLicenseType || null,
+                licenseNumber: editLicenseNumber || null,
+                licenseExpiry: editLicenseExpiry || null,
+                insurancePolicyNumber: editInsurancePolicyNumber || null,
+                insuranceExpiry: editInsuranceExpiry || null,
+              },
             }
           : m
         )
@@ -2512,6 +2577,26 @@ function TeamManagementScreenInner() {
             )}
             <Text style={styles.roleDescription} numberOfLines={1}>{roleConfig.description}</Text>
           </View>
+          {member.role === 'subcontractor' && member.compliance && (
+            <View style={[styles.roleRow, { marginTop: spacing.sm }]}>
+              <View style={[styles.customBadge, {
+                backgroundColor: member.compliance.status === 'expired'
+                  ? colors.destructive + '15'
+                  : member.compliance.status === 'expiring_soon'
+                    ? colors.warning + '15'
+                    : colors.success + '15',
+              }]}>
+                <Feather
+                  name={member.compliance.status === 'expired' ? 'alert-triangle' : 'shield'}
+                  size={10}
+                  color={member.compliance.status === 'expired' ? colors.destructive : member.compliance.status === 'expiring_soon' ? colors.warning : colors.success}
+                />
+                <Text style={[styles.customBadgeText, { color: member.compliance.status === 'expired' ? colors.destructive : member.compliance.status === 'expiring_soon' ? colors.warning : colors.success }]}>
+                  {member.compliance.status === 'expired' ? 'Expired' : member.compliance.status === 'expiring_soon' ? 'Expiring Soon' : 'Valid'}
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Location toggle for accepted members */}
@@ -2924,7 +3009,7 @@ function TeamManagementScreenInner() {
           </TouchableOpacity>
 
           {/* Subcontractor Invoices Section - Owner or Manager */}
-          {currentUserCanManage && <SubcontractorInvoicesSection colors={colors} focusInvoiceId={focusInvoiceId} />}
+          {currentUserCanManage && <SubcontractorInvoicesSection colors={colors} focusInvoiceId={focusInvoiceId} canOverrideComplianceHold={currentUserIsOwner} />}
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Team Members</Text>
@@ -3522,6 +3607,59 @@ function TeamManagementScreenInner() {
                   keyboardType="decimal-pad"
                   placeholderTextColor={colors.mutedForeground}
                 />
+
+                {selectedMember?.role === 'subcontractor' && (
+                  <>
+                    <Text style={[styles.detailSectionTitle, { marginTop: spacing.lg }]}>Compliance</Text>
+                    <Text style={styles.inputLabel}>Licence Type</Text>
+                    <TextInput
+                      testID="input-edit-licence-type"
+                      style={styles.input}
+                      value={editLicenseType}
+                      onChangeText={setEditLicenseType}
+                      placeholder="e.g. Electrical contractor"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                    <Text style={styles.inputLabel}>Licence Number</Text>
+                    <TextInput
+                      testID="input-edit-licence-number"
+                      style={styles.input}
+                      value={editLicenseNumber}
+                      onChangeText={setEditLicenseNumber}
+                      placeholder="Licence number"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                    <Text style={styles.inputLabel}>Licence Expiry</Text>
+                    <TextInput
+                      testID="input-edit-licence-expiry"
+                      style={styles.input}
+                      value={editLicenseExpiry}
+                      onChangeText={setEditLicenseExpiry}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="none"
+                    />
+                    <Text style={styles.inputLabel}>Insurance Policy Number</Text>
+                    <TextInput
+                      testID="input-edit-insurance-policy-number"
+                      style={styles.input}
+                      value={editInsurancePolicyNumber}
+                      onChangeText={setEditInsurancePolicyNumber}
+                      placeholder="Policy number"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                    <Text style={styles.inputLabel}>Insurance Expiry</Text>
+                    <TextInput
+                      testID="input-edit-insurance-expiry"
+                      style={styles.input}
+                      value={editInsuranceExpiry}
+                      onChangeText={setEditInsuranceExpiry}
+                      placeholder="YYYY-MM-DD"
+                      placeholderTextColor={colors.mutedForeground}
+                      autoCapitalize="none"
+                    />
+                  </>
+                )}
               </View>
 
               <View style={styles.modalFooter}>

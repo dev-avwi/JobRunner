@@ -179,6 +179,17 @@ interface TeamReport {
   };
 }
 
+interface ComplianceDueReport {
+  month: string;
+  due: Array<{
+    memberId: string;
+    subcontractorId: string;
+    name: string;
+    compliance: { status: 'valid' | 'expiring_soon' | 'expired' };
+    documents: Array<{ type: 'Licence' | 'Insurance'; expiry: string }>;
+  }>;
+}
+
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
 const downloadCSV = (data: any[], filename: string): boolean => {
@@ -362,6 +373,22 @@ export default function Reports() {
       if (!res.ok) {
         if (res.status === 403) return null;
         throw new Error('Failed to fetch team report');
+      }
+      return res.json();
+    },
+    retry: 1,
+  });
+
+  const { data: complianceDue, isLoading: complianceDueLoading } = useQuery<ComplianceDueReport>({
+    queryKey: ['/api/reports/compliance-due'],
+    queryFn: async () => {
+      const res = await fetch('/api/reports/compliance-due', {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 403) return { month: '', due: [] };
+        throw new Error('Failed to fetch compliance due report');
       }
       return res.json();
     },
@@ -598,6 +625,41 @@ export default function Reports() {
             )}
           </div>
         )}
+
+        <div className="mt-5">
+          <SectionTitle>Compliance due this month</SectionTitle>
+          <Card className="mt-3">
+            <CardContent className="p-4">
+              {complianceDueLoading ? (
+                <Skeleton className="h-16 w-full" />
+              ) : (complianceDue?.due.length ?? 0) === 0 ? (
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-emerald-600" />
+                  <p className="text-sm text-muted-foreground">No subcontractor licence or insurance renewals are due in {complianceDue?.month}.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Renewals due in {complianceDue?.month}. Keep subcontractor documents current before payment.
+                  </p>
+                  {complianceDue?.due.map((item) => (
+                    <div key={item.memberId} className="flex items-center justify-between gap-3 border-t pt-3 first:border-t-0 first:pt-0">
+                      <div>
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.documents.map((document) => `${document.type}: ${format(new Date(`${document.expiry}T00:00:00`), 'd MMM')}`).join(' · ')}
+                        </p>
+                      </div>
+                      <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700 whitespace-nowrap">
+                        Expiring Soon
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         <div>
           <SectionTitle>Key Metrics</SectionTitle>

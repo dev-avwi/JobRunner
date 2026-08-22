@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye, CreditCard } from "lucide-react";
+import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye, CreditCard, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,6 +31,11 @@ interface SubInvoice {
   accountingBillId: string | null;
   accountingProvider: string | null;
   paymentToken?: string | null;
+  compliance?: {
+    status: 'valid' | 'expiring_soon' | 'expired';
+    expiredDocuments?: string[];
+    requiresPaymentConfirmation?: boolean;
+  };
 }
 
 interface SubInvoiceItem {
@@ -162,6 +167,7 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
   const [payDate, setPayDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [payReference, setPayReference] = useState('');
   const [payNotes, setPayNotes] = useState('');
+  const [complianceOverrideConfirmed, setComplianceOverrideConfirmed] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
   const listKey = statusFilter === 'all'
@@ -216,6 +222,7 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
         reference: payReference.trim() || undefined,
         notes: payNotes.trim() || undefined,
         sendRemittance: true,
+        complianceOverrideConfirmed,
       });
       return res.json();
     },
@@ -262,6 +269,7 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
     setPayDate(new Date().toISOString().slice(0, 10));
     setPayReference('');
     setPayNotes('');
+    setComplianceOverrideConfirmed(false);
   };
 
   const linkedJobCount = useMemo(() => {
@@ -340,7 +348,25 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
                             )}
                           </button>
                         </td>
-                        <td className="px-3 py-2.5 hidden sm:table-cell truncate max-w-[160px]">{inv.subcontractorName}</td>
+                        <td className="px-3 py-2.5 hidden sm:table-cell max-w-[190px]">
+                          <div className="flex items-center gap-1.5">
+                            <span className="truncate">{inv.subcontractorName}</span>
+                            {inv.compliance && (
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] whitespace-nowrap ${
+                                  inv.compliance.status === 'expired'
+                                    ? 'border-red-300 bg-red-50 text-red-700'
+                                    : inv.compliance.status === 'expiring_soon'
+                                      ? 'border-amber-300 bg-amber-50 text-amber-700'
+                                      : 'border-emerald-300 bg-emerald-50 text-emerald-700'
+                                }`}
+                              >
+                                {inv.compliance.status === 'expired' ? 'Expired' : inv.compliance.status === 'expiring_soon' ? 'Expiring Soon' : 'Valid'}
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
                         <td className="px-3 py-2.5 hidden md:table-cell text-muted-foreground">{fmtDate(inv.createdAt)}</td>
                         <td className="px-3 py-2.5 text-right tabular-nums hidden lg:table-cell text-muted-foreground">
                           {inv.gstEnabled ? fmtAud(inv.gstAmount) : '—'}
@@ -602,11 +628,36 @@ export default function SubcontractorInvoices({ embedded = false }: { embedded?:
               <Label htmlFor="payNotes" className="mb-1.5 block">Notes</Label>
               <Textarea id="payNotes" value={payNotes} onChange={(e) => setPayNotes(e.target.value)} placeholder="Optional notes" className="resize-none" rows={3} data-testid="input-pay-notes" />
             </div>
+            {payInvoice?.compliance?.status === 'expired' && (
+              <div className="rounded-md border border-red-300 bg-red-50 p-3 space-y-2 dark:bg-red-950/30">
+                <div className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                  <AlertTriangle className="h-4 w-4" />
+                  <p className="text-sm font-semibold">Payment on compliance hold</p>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {payInvoice.compliance.expiredDocuments?.map((document) => document === 'licence' ? 'licence' : 'insurance').join(' and ') || 'Compliance documents'} expired. An owner must explicitly approve this payment.
+                </p>
+                <label className="flex items-start gap-2 cursor-pointer text-sm">
+                  <input
+                    type="checkbox"
+                    checked={complianceOverrideConfirmed}
+                    onChange={(event) => setComplianceOverrideConfirmed(event.target.checked)}
+                    className="mt-1"
+                    data-testid="input-compliance-payment-confirmation"
+                  />
+                  <span>I am the business owner and approve payment despite the expired documents.</span>
+                </label>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPayInvoice(null)} disabled={payMutation.isPending}>Cancel</Button>
-            <Button onClick={() => payMutation.mutate()} disabled={payMutation.isPending} data-testid="button-submit-payment">
+            <Button
+              onClick={() => payMutation.mutate()}
+              disabled={payMutation.isPending || (payInvoice?.compliance?.status === 'expired' && !complianceOverrideConfirmed)}
+              data-testid="button-submit-payment"
+            >
               {payMutation.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
               Record & Send Remittance
             </Button>

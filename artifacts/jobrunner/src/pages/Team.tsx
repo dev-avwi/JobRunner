@@ -60,6 +60,9 @@ interface TeamMember {
   hoursThisWeek?: number;
   avatarUrl?: string | null;
   initials?: string;
+  compliance?: {
+    status: 'valid' | 'expiring_soon' | 'expired';
+  };
 }
 
 interface SubcontractorRow {
@@ -1080,6 +1083,17 @@ function MembersTable({
               }>
                 {status === "on" ? "Active" : status === "away" ? "On time off" : status === "pending" ? "Pending" : "Inactive"}
               </span>
+              {m.role?.toLowerCase().includes('subcontractor') && m.compliance && (
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  m.compliance.status === 'expired'
+                    ? 'bg-red-50 text-red-700'
+                    : m.compliance.status === 'expiring_soon'
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'bg-emerald-50 text-emerald-700'
+                }`}>
+                  {m.compliance.status === 'expired' ? 'Expired' : m.compliance.status === 'expiring_soon' ? 'Expiring Soon' : 'Valid'}
+                </span>
+              )}
             </div>
             <div className="text-[12.5px] text-muted-foreground tabular-nums">{timeAgo(m.lastActiveAt)}</div>
             <div className="text-[12.5px] tabular-nums font-medium">{m.hoursThisWeek ? `${m.hoursThisWeek}h` : "—"}</div>

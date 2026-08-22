@@ -133,6 +133,14 @@ export const users = pgTable("users", {
   hasDemoData: boolean("has_demo_data").default(false), // Whether demo data has been seeded for this user
   demoDataIds: jsonb("demo_data_ids"), // Stores IDs of demo records: { clients: [], jobs: [], quotes: [], invoices: [] }
   activeBusinessId: varchar("active_business_id"), // For multi-business subcontractors: which business they're currently viewing
+  // Subcontractor compliance details. These follow the subcontractor's account,
+  // so a business sees the same current documentation on profiles, assignments,
+  // and invoices.
+  licenseType: text("license_type"),
+  licenseNumber: text("license_number"),
+  licenseExpiry: date("license_expiry"),
+  insurancePolicyNumber: text("insurance_policy_number"),
+  insuranceExpiry: date("insurance_expiry"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lifecycleEmailsSent: jsonb("lifecycle_emails_sent").default({}),
