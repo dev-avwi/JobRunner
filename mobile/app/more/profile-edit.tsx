@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  InputAccessoryView,
+  Keyboard,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -113,6 +115,25 @@ export default function ProfileEditScreen() {
   
   const { user, checkAuth } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Keyboard focus chain refs — personal: firstName → lastName → email → phone
+  // payment: bankAccountName → bankBsb → bankAccountNumber → payId → abn
+  const firstNameRef = useRef<TextInput>(null);
+  const lastNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const bankAccountNameRef = useRef<TextInput>(null);
+  const bankBsbRef = useRef<TextInput>(null);
+  const bankAccountNumberRef = useRef<TextInput>(null);
+  const payIdRef = useRef<TextInput>(null);
+  const abnRef = useRef<TextInput>(null);
+
+  // Two fixed-label iOS InputAccessoryView toolbars — avoids stale mutable-ref label bugs.
+  // NEXT: mid-chain fields (phone → bankAccountName, bankBsb → bankAccountNumber, bankAccountNumber → payId).
+  // DONE: terminal field (abn).
+  const PROFILE_ACCESSORY_NEXT = 'profile-accessory-next';
+  const PROFILE_ACCESSORY_DONE = 'profile-accessory-done';
+  const profileNumericNextAction = useRef<(() => void) | null>(null);
   const [form, setForm] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -242,12 +263,16 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>First Name *</Text>
             </View>
             <TextInput
+              ref={firstNameRef}
               style={styles.input}
               value={form.firstName}
               onChangeText={(text) => setForm({ ...form, firstName: text })}
               placeholder="First name"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => lastNameRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -257,12 +282,16 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>Last Name *</Text>
             </View>
             <TextInput
+              ref={lastNameRef}
               style={styles.input}
               value={form.lastName}
               onChangeText={(text) => setForm({ ...form, lastName: text })}
               placeholder="Last name"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => emailRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -272,6 +301,7 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>Email</Text>
             </View>
             <TextInput
+              ref={emailRef}
               style={styles.input}
               value={form.email}
               onChangeText={(text) => setForm({ ...form, email: text.trim() })}
@@ -280,6 +310,9 @@ export default function ProfileEditScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
+              blurOnSubmit={false}
             />
             {form.email?.includes('privaterelay.appleid.com') && (
               <Text style={[styles.inputNote, { color: colors.warning || '#f59e0b' }]}>
@@ -294,12 +327,17 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>Phone</Text>
             </View>
             <TextInput
+              ref={phoneRef}
               style={styles.input}
               value={form.phone}
               onChangeText={(text) => setForm({ ...form, phone: text })}
               placeholder="04XX XXX XXX"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="phone-pad"
+              inputAccessoryViewID={Platform.OS === 'ios' ? PROFILE_ACCESSORY_NEXT : undefined}
+              onFocus={() => { profileNumericNextAction.current = () => bankAccountNameRef.current?.focus(); }}
+              returnKeyType="next"
+              onSubmitEditing={() => bankAccountNameRef.current?.focus()}
             />
           </View>
 
@@ -322,12 +360,16 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>Account Name</Text>
             </View>
             <TextInput
+              ref={bankAccountNameRef}
               style={styles.input}
               value={payment.bankAccountName}
               onChangeText={(text) => setPayment({ ...payment, bankAccountName: text })}
               placeholder="Name on the account"
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => bankBsbRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -337,12 +379,17 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>BSB</Text>
             </View>
             <TextInput
+              ref={bankBsbRef}
               style={styles.input}
               value={payment.bankBsb}
               onChangeText={(text) => setPayment({ ...payment, bankBsb: text })}
               placeholder="000-000"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="number-pad"
+              inputAccessoryViewID={Platform.OS === 'ios' ? PROFILE_ACCESSORY_NEXT : undefined}
+              onFocus={() => { profileNumericNextAction.current = () => bankAccountNumberRef.current?.focus(); }}
+              returnKeyType="next"
+              onSubmitEditing={() => bankAccountNumberRef.current?.focus()}
             />
           </View>
 
@@ -352,12 +399,17 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>Account Number</Text>
             </View>
             <TextInput
+              ref={bankAccountNumberRef}
               style={styles.input}
               value={payment.bankAccountNumber}
               onChangeText={(text) => setPayment({ ...payment, bankAccountNumber: text })}
               placeholder="Account number"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="number-pad"
+              inputAccessoryViewID={Platform.OS === 'ios' ? PROFILE_ACCESSORY_NEXT : undefined}
+              onFocus={() => { profileNumericNextAction.current = () => payIdRef.current?.focus(); }}
+              returnKeyType="next"
+              onSubmitEditing={() => payIdRef.current?.focus()}
             />
           </View>
 
@@ -367,6 +419,7 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>PayID (optional)</Text>
             </View>
             <TextInput
+              ref={payIdRef}
               style={styles.input}
               value={payment.payId}
               onChangeText={(text) => setPayment({ ...payment, payId: text })}
@@ -374,6 +427,9 @@ export default function ProfileEditScreen() {
               placeholderTextColor={colors.mutedForeground}
               autoCapitalize="none"
               autoCorrect={false}
+              returnKeyType="next"
+              onSubmitEditing={() => abnRef.current?.focus()}
+              blurOnSubmit={false}
             />
           </View>
 
@@ -383,12 +439,16 @@ export default function ProfileEditScreen() {
               <Text style={styles.inputLabelText}>ABN (optional)</Text>
             </View>
             <TextInput
+              ref={abnRef}
               style={styles.input}
               value={payment.abn}
               onChangeText={(text) => setPayment({ ...payment, abn: text })}
               placeholder="11 digit ABN"
               placeholderTextColor={colors.mutedForeground}
               keyboardType="number-pad"
+              inputAccessoryViewID={Platform.OS === 'ios' ? PROFILE_ACCESSORY_DONE : undefined}
+              returnKeyType="done"
+              blurOnSubmit={true}
             />
           </View>
 
@@ -405,6 +465,27 @@ export default function ProfileEditScreen() {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* iOS "Next" toolbar for mid-chain phone/number-pad fields */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={PROFILE_ACCESSORY_NEXT}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+            <TouchableOpacity onPress={() => profileNumericNextAction.current?.()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
+      {/* iOS "Done" toolbar for terminal number-pad field (abn) */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={PROFILE_ACCESSORY_DONE}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+            <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
     </>
   );
 }

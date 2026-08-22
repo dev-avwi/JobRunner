@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
   Platform,
   Animated,
   Image,
+  InputAccessoryView,
+  Keyboard,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
@@ -871,6 +873,27 @@ export default function NewQuoteScreen() {
 
   const selectedClient = clients.find(c => c.id === form.clientId);
 
+  // Keyboard focus chain refs
+  // Main form: title → description (terminal) | terms (terminal)
+  // Line item editor: description → quantity (accessory) → unitPrice (accessory, done)
+  const quoteTitleRef = useRef<TextInput>(null);
+  const quoteDescriptionRef = useRef<TextInput>(null);
+  const quoteTermsRef = useRef<TextInput>(null);
+  const lineItemDescRef = useRef<TextInput>(null);
+  const lineItemQtyRef = useRef<TextInput>(null);
+  const lineItemPriceRef = useRef<TextInput>(null);
+
+  // Two fixed-label iOS InputAccessoryView toolbars per modal context.
+  // Toolbars are rendered INSIDE their respective AppBottomSheet to work within that modal's view hierarchy.
+  // Main form: QUOTE_MAIN_DONE for the standalone deposit custom-amount field.
+  // Line item editor sheet: ITEM_NEXT (quantity→price) and ITEM_DONE (price terminal).
+  // Client picker sheet: CLIENT_DONE for quick-add phone (terminal).
+  const QUOTE_MAIN_ACCESSORY_DONE = 'quote-main-accessory-done';
+  const ITEM_ACCESSORY_NEXT = 'quote-item-accessory-next';
+  const ITEM_ACCESSORY_DONE = 'quote-item-accessory-done';
+  const CLIENT_ACCESSORY_DONE = 'quote-client-accessory-done';
+  const itemNumericNextAction = useRef<(() => void) | null>(null);
+
   // Auto-fill the quote title when a client is picked. Pattern:
   // "Quote for {client.name} – {DD Mon YYYY}". We remember the last
   // auto-generated string so we only overwrite it if the user hasn't typed
@@ -1461,17 +1484,22 @@ export default function NewQuoteScreen() {
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Title</Text>
                   <TextInput
+                    ref={quoteTitleRef}
                     style={styles.input}
                     value={form.title}
                     onChangeText={(text) => setForm({ ...form, title: text })}
                     placeholder="e.g., Bathroom Renovation"
                     placeholderTextColor={colors.mutedForeground}
+                    returnKeyType="next"
+                    onSubmitEditing={() => quoteDescriptionRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                 </View>
 
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Description (optional)</Text>
                   <TextInput
+                    ref={quoteDescriptionRef}
                     style={[styles.input, styles.textArea]}
                     value={form.description}
                     onChangeText={(text) => setForm({ ...form, description: text })}
@@ -1480,6 +1508,8 @@ export default function NewQuoteScreen() {
                     multiline
                     numberOfLines={3}
                     textAlignVertical="top"
+                    returnKeyType="done"
+                    blurOnSubmit={true}
                   />
                 </View>
 
@@ -1625,6 +1655,9 @@ export default function NewQuoteScreen() {
                           placeholder="0.00"
                           placeholderTextColor={colors.mutedForeground}
                           keyboardType="decimal-pad"
+                          inputAccessoryViewID={Platform.OS === 'ios' ? QUOTE_MAIN_ACCESSORY_DONE : undefined}
+                          returnKeyType="done"
+                          blurOnSubmit={true}
                         />
                       </View>
                     ) : null}
@@ -1645,6 +1678,7 @@ export default function NewQuoteScreen() {
                   <Text style={styles.cardHeaderText}>Terms & Conditions</Text>
                 </View>
                 <TextInput
+                  ref={quoteTermsRef}
                   style={[styles.input, styles.textArea]}
                   value={form.terms}
                   onChangeText={(text) => setForm({ ...form, terms: text })}
@@ -1653,6 +1687,8 @@ export default function NewQuoteScreen() {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                  returnKeyType="done"
+                  blurOnSubmit={true}
                 />
               </View>
 
@@ -1672,6 +1708,17 @@ export default function NewQuoteScreen() {
           </KeyboardAvoidingView>
         )}
       </View>
+
+      {/* iOS "Done" toolbar for deposit custom-amount field in the main (non-modal) form */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={QUOTE_MAIN_ACCESSORY_DONE}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+            <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
 
       {/* Client Picker Modal */}
       <AppBottomSheet
@@ -1727,6 +1774,9 @@ export default function NewQuoteScreen() {
                     placeholder="0400 000 000"
                     placeholderTextColor={colors.mutedForeground}
                     keyboardType="phone-pad"
+                    inputAccessoryViewID={Platform.OS === 'ios' ? CLIENT_ACCESSORY_DONE : undefined}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
                   />
                 </View>
                 <PressableRow style={[styles.saveItemButton, { opacity: isCreatingClient ? 0.6 : 1 }]} onPress={handleQuickAddClient} disabled={isCreatingClient} >
@@ -1737,6 +1787,16 @@ export default function NewQuoteScreen() {
                   )}
                 </PressableRow>
               </ScrollView>
+              {/* iOS "Done" toolbar for phone-pad field inside this sheet's modal hierarchy */}
+              {Platform.OS === 'ios' && (
+                <InputAccessoryView nativeID={CLIENT_ACCESSORY_DONE}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+                    <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                      <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                </InputAccessoryView>
+              )}
             </KeyboardAvoidingView>
           ) : (
             <ScrollView style={styles.modalContent}>
@@ -1810,11 +1870,15 @@ export default function NewQuoteScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Description</Text>
               <TextInput
+                ref={lineItemDescRef}
                 style={styles.input}
                 value={editForm.description}
                 onChangeText={(text) => setEditForm({ ...editForm, description: text })}
                 placeholder="What are you quoting for?"
                 placeholderTextColor={colors.mutedForeground}
+                returnKeyType="next"
+                onSubmitEditing={() => lineItemQtyRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -1822,23 +1886,33 @@ export default function NewQuoteScreen() {
               <View style={[styles.inputGroup, { flex: 1 }]}>
                 <Text style={styles.inputLabel}>Quantity</Text>
                 <TextInput
+                  ref={lineItemQtyRef}
                   style={styles.input}
                   value={editForm.quantity}
                   onChangeText={(text) => setEditForm({ ...editForm, quantity: text })}
                   placeholder="1"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
+                  inputAccessoryViewID={Platform.OS === 'ios' ? ITEM_ACCESSORY_NEXT : undefined}
+                  onFocus={() => { itemNumericNextAction.current = () => lineItemPriceRef.current?.focus(); }}
+                  returnKeyType="next"
+                  onSubmitEditing={() => lineItemPriceRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
               </View>
               <View style={[styles.inputGroup, { flex: 1, marginLeft: spacing.md }]}>
                 <Text style={styles.inputLabel}>Unit Price ($)</Text>
                 <TextInput
+                  ref={lineItemPriceRef}
                   style={styles.input}
                   value={editForm.unitPrice}
                   onChangeText={(text) => setEditForm({ ...editForm, unitPrice: text })}
                   placeholder="0.00"
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
+                  inputAccessoryViewID={Platform.OS === 'ios' ? ITEM_ACCESSORY_DONE : undefined}
+                  returnKeyType="done"
+                  blurOnSubmit={true}
                 />
               </View>
             </View>
@@ -1856,6 +1930,25 @@ export default function NewQuoteScreen() {
               </Text>
             </PressableRow>
           </View>
+          {/* iOS accessory toolbars rendered inside this sheet's modal hierarchy */}
+          {Platform.OS === 'ios' && (
+            <InputAccessoryView nativeID={ITEM_ACCESSORY_NEXT}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+                <TouchableOpacity onPress={() => itemNumericNextAction.current?.()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Next</Text>
+                </TouchableOpacity>
+              </View>
+            </InputAccessoryView>
+          )}
+          {Platform.OS === 'ios' && (
+            <InputAccessoryView nativeID={ITEM_ACCESSORY_DONE}>
+              <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+                <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                  <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+                </TouchableOpacity>
+              </View>
+            </InputAccessoryView>
+          )}
         </View>
       </AppBottomSheet>
 

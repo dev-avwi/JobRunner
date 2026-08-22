@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  InputAccessoryView,
+  Keyboard,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -585,6 +587,21 @@ export default function CreateJobScreen() {
   const isOnline = useOfflineStore((state) => state.isOnline);
   const clientGeneratedIdRef = useRef<string | null>(null);
   const creationRecoveryAttemptedRef = useRef(false);
+
+  // Keyboard focus chain refs: title → description (terminal) | address → estimatedDuration → notes (terminal)
+  const titleRef = useRef<TextInput>(null);
+  const descriptionRef = useRef<TextInput>(null);
+  const addressRef = useRef<TextInput>(null);
+  const estimatedDurationRef = useRef<TextInput>(null);
+  const notesRef = useRef<TextInput>(null);
+
+  // Two fixed-label iOS InputAccessoryView toolbars — avoids stale mutable-ref label bugs.
+  // NEXT: mid-chain decimal-pad fields (estimatedDuration).
+  // DONE: terminal phone-pad fields (quick-add client phone).
+  // Each toolbar is rendered inside its own view context (main form vs. quick-add sheet).
+  const CJ_MAIN_ACCESSORY_NEXT = 'cj-main-accessory-next';
+  const CJ_QUICK_ACCESSORY_DONE = 'cj-quick-accessory-done';
+  const numericNextAction = useRef<(() => void) | null>(null);
   const [prefillSuggestions, setPrefillSuggestions] = useState<any>(null);
   const [loadingPrefill, setLoadingPrefill] = useState(false);
   const [quickClientName, setQuickClientName] = useState('');
@@ -1509,11 +1526,15 @@ export default function CreateJobScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Job Title *</Text>
               <TextInput
+                ref={titleRef}
                 style={styles.input}
                 placeholder="e.g., Bathroom renovation"
                 placeholderTextColor={colors.mutedForeground}
                 value={title}
                 onChangeText={setTitle}
+                returnKeyType="next"
+                onSubmitEditing={() => descriptionRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -1521,6 +1542,7 @@ export default function CreateJobScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Description</Text>
               <TextInput
+                ref={descriptionRef}
                 style={[styles.input, styles.textArea]}
                 placeholder="Details about the job..."
                 placeholderTextColor={colors.mutedForeground}
@@ -1528,6 +1550,8 @@ export default function CreateJobScreen() {
                 onChangeText={setDescription}
                 multiline
                 numberOfLines={4}
+                returnKeyType="done"
+                blurOnSubmit={true}
               />
             </View>
 
@@ -1558,6 +1582,7 @@ export default function CreateJobScreen() {
               <View style={styles.addressInput}>
                 <Feather name="map-pin" size={18} color={colors.mutedForeground} style={styles.addressIcon} />
                 <TextInput
+                  ref={addressRef}
                   style={styles.addressField}
                   placeholder="Start typing an address..."
                   placeholderTextColor={colors.mutedForeground}
@@ -1566,6 +1591,9 @@ export default function CreateJobScreen() {
                   onBlur={() => {
                     setTimeout(() => setShowAddressSuggestions(false), 400);
                   }}
+                  returnKeyType="next"
+                  onSubmitEditing={() => estimatedDurationRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
                 {addressSearching && (
                   <ActivityIndicator size="small" color={colors.mutedForeground} style={{ marginRight: 10 }} />
@@ -1715,12 +1743,18 @@ export default function CreateJobScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Estimated Duration (Hours)</Text>
               <TextInput
+                ref={estimatedDurationRef}
                 style={styles.input}
                 placeholder="e.g., 4"
                 placeholderTextColor={colors.mutedForeground}
                 value={estimatedDuration}
                 onChangeText={setEstimatedDuration}
                 keyboardType="decimal-pad"
+                inputAccessoryViewID={Platform.OS === 'ios' ? CJ_MAIN_ACCESSORY_NEXT : undefined}
+                onFocus={() => { numericNextAction.current = () => notesRef.current?.focus(); }}
+                returnKeyType="next"
+                onSubmitEditing={() => notesRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -1728,6 +1762,7 @@ export default function CreateJobScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Internal Notes</Text>
               <TextInput
+                ref={notesRef}
                 style={[styles.input, styles.textArea]}
                 placeholder="Private notes (not visible to client)..."
                 placeholderTextColor={colors.mutedForeground}
@@ -1735,6 +1770,8 @@ export default function CreateJobScreen() {
                 onChangeText={setNotes}
                 multiline
                 numberOfLines={3}
+                returnKeyType="done"
+                blurOnSubmit={true}
               />
             </View>
 
@@ -1836,6 +1873,17 @@ export default function CreateJobScreen() {
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      {/* iOS InputAccessoryView — "Next" toolbar for mid-chain decimal-pad fields in the main form */}
+      {Platform.OS === 'ios' && (
+        <InputAccessoryView nativeID={CJ_MAIN_ACCESSORY_NEXT}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+            <TouchableOpacity onPress={() => numericNextAction.current?.()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+              <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Next</Text>
+            </TouchableOpacity>
+          </View>
+        </InputAccessoryView>
+      )}
 
       <ClientSelector
         clients={clients}
@@ -2068,6 +2116,9 @@ export default function CreateJobScreen() {
                     value={quickClientPhone}
                     onChangeText={setQuickClientPhone}
                     keyboardType="phone-pad"
+                    inputAccessoryViewID={Platform.OS === 'ios' ? CJ_QUICK_ACCESSORY_DONE : undefined}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
                     testID="input-quick-client-phone"
                   />
                 </View>
@@ -2086,6 +2137,16 @@ export default function CreateJobScreen() {
             </View>
           </View>
         </KeyboardAvoidingView>
+        {/* iOS "Done" toolbar for terminal phone-pad field inside this sheet */}
+        {Platform.OS === 'ios' && (
+          <InputAccessoryView nativeID={CJ_QUICK_ACCESSORY_DONE}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#f1f1f1', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: '#c8c8c8' }}>
+              <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+                <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          </InputAccessoryView>
+        )}
       </AppBottomSheet>
 
       {/* Recurrence Options Modal */}
