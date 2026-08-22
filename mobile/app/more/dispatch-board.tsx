@@ -37,7 +37,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { useIsTablet, useContentWidth } from '../../src/lib/device';
-import { format, isToday, parseISO, isBefore, startOfDay, isSameDay } from 'date-fns';
+import { format, isToday, parseISO, isBefore, startOfDay, isSameDay, startOfWeek } from 'date-fns';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { showToast } from '../../src/lib/toast';
@@ -52,12 +52,15 @@ const COLUMN_WIDTH = 140;
 const COLUMN_GAP = 6;
 const COLUMN_STRIDE = COLUMN_WIDTH + COLUMN_GAP;
 const COLUMN_HEADER_HEIGHT = 56;
+const WEEK_DAY_HEADER_HEIGHT = 36;
+const WEEK_BOARD_HEADER_HEIGHT = WEEK_DAY_HEADER_HEIGHT + COLUMN_HEADER_HEIGHT;
 const GHOST_CARD_HEIGHT = 52;
 const MIN_CARD_HEIGHT = 28;
 const SNAP_MINUTES = 15;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ViewMode = 'schedule' | 'kanban' | 'map';
+type ScheduleViewMode = 'day' | 'week';
 
 interface TeamMember {
   id: string;
@@ -193,6 +196,7 @@ function DispatchBoardScreenInner() {
 
   // ── View state ──────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<ViewMode>('schedule');
+  const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>('day');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -320,16 +324,16 @@ function DispatchBoardScreenInner() {
   }, [activeJobs, todayJobs, jobs]);
 
   const weekDays = useMemo(() => {
-    const anchor = new Date();
+    const anchor = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const days: Date[] = [];
-    for (let i = -2; i <= 4; i++) {
+    for (let i = 0; i < 7; i++) {
       const d = new Date(anchor);
       d.setDate(anchor.getDate() + i);
       d.setHours(0, 0, 0, 0);
       days.push(d);
     }
     return days;
-  }, []);
+  }, [selectedDate]);
 
   // Board columns: one per team member (all accepted)
   const boardColumns = useMemo((): BoardColumn[] => {
@@ -342,6 +346,11 @@ function DispatchBoardScreenInner() {
     cols.unshift({ id: 'unassigned', label: 'Unassigned' });
     return cols;
   }, [teamMembers]);
+
+  const weekBoardColumns = useMemo(
+    () => weekDays.flatMap(date => boardColumns.map(column => ({ date, column }))),
+    [weekDays, boardColumns],
+  );
 
   // Jobs scheduled on the selected date
   const scheduledJobs = useMemo(() => {
@@ -511,22 +520,25 @@ function DispatchBoardScreenInner() {
 
     const rect = boardRectRef.current;
     const relX = absX - rect.x - TIME_GUTTER_WIDTH + hScrollOffsetRef.current;
-    const relY = absY - rect.y - COLUMN_HEADER_HEIGHT;
+    const headerHeight = scheduleViewMode === 'week' ? WEEK_BOARD_HEADER_HEIGHT : COLUMN_HEADER_HEIGHT;
+    const relY = absY - rect.y - headerHeight;
 
     if (relX < 0 || relY < 0 || relY > BOARD_HEIGHT) return;
 
     const colIdx = Math.floor(relX / COLUMN_STRIDE);
-    if (colIdx < 0 || colIdx >= boardColumns.length) return;
+    const dropColumns = scheduleViewMode === 'week' ? weekBoardColumns : null;
+    if (scheduleViewMode === 'week' ? colIdx >= weekBoardColumns.length : colIdx >= boardColumns.length) return;
 
     const hourFraction = relY / HOUR_HEIGHT;
     const totalMinutes = (BOARD_START_HOUR + hourFraction) * 60;
     const snappedMinutes = Math.round(totalMinutes / SNAP_MINUTES) * SNAP_MINUTES;
     const clampedMinutes = Math.max(BOARD_START_HOUR * 60, Math.min((BOARD_END_HOUR - 0.25) * 60, snappedMinutes));
 
-    const newDate = new Date(selectedDate);
+    const targetDate = scheduleViewMode === 'week' ? weekBoardColumns[colIdx].date : selectedDate;
+    const newDate = new Date(targetDate);
     newDate.setHours(Math.floor(clampedMinutes / 60), clampedMinutes % 60, 0, 0);
 
-    const targetCol = boardColumns[colIdx];
+    const targetCol = dropColumns ? dropColumns[colIdx].column : boardColumns[colIdx];
     const newAssignedTo = targetCol.id === 'unassigned' ? undefined : targetCol.id;
 
     // Save original state for undo
@@ -662,9 +674,124 @@ function DispatchBoardScreenInner() {
 
   const renderScheduleView = () => {
     const hours = Array.from({ length: BOARD_END_HOUR - BOARD_START_HOUR + 1 }, (_, i) => BOARD_START_HOUR + i);
+    const weekGroupWidth = boardColumns.length * COLUMN_STRIDE;
+    const visibleScheduledJobs = scheduleViewMode === 'week'
+      ? jobs.filter(j => {
+        if (!j.scheduledAt) return false;
+        try {
+          return weekDays.some(d => isSameDay(parseISO(j.scheduledAt!), d));
+        } catch {
+          return false;
+        }
+      })
+      : scheduledJobs;
+
+    const renderColumnHeader = (col: BoardColumn) => (
+      <>
+        {col.member ? (
+          <TeamAvatar
+            firstName={col.member.firstName}
+            lastName={col.member.lastName}
+            userId={String(col.member.userId)}
+            themeColor={(col.member as any).themeColor}
+            size={28}
+          />
+        ) : (
+          <View style={[styles.unassignedAvatar, { backgroundColor: colors.muted }]}>
+            <Feather name="user" size={14} color={colors.mutedForeground} />
+          </View>
+        )}
+        <Text style={styles.columnHeaderName} numberOfLines={1}>
+          {col.member ? getMemberName(col.member).split(' ')[0] : 'Unassigned'}
+        </Text>
+      </>
+    );
+
+    const renderBoardCard = (job: JobData) => {
+      const topPx = jobTopOffset(job.scheduledAt!);
+      const heightPx = jobCardHeight(job.estimatedDuration);
+      const statusColor = getStatusColor(job.status, job.scheduledAt);
+      const isBeingDragged = draggingJob?.id === job.id;
+      const gesture = buildDragGesture(job);
+      return (
+        <GestureDetector key={job.id} gesture={gesture}>
+          <Animated.View
+            style={[
+              styles.boardCard,
+              { top: topPx, height: heightPx, borderLeftColor: statusColor, opacity: isBeingDragged ? 0.35 : 1 },
+            ]}
+          >
+            <PressableRow
+              style={{ flex: 1 }}
+              onPress={() => router.push(`/job/${job.id}` as any)}
+            >
+              <Text style={styles.boardCardTitle} numberOfLines={2}>{job.title}</Text>
+              {heightPx > 40 && (
+                <Text style={styles.boardCardTime} numberOfLines={1}>
+                  {formatTime(job.scheduledAt)}
+                </Text>
+              )}
+              {heightPx > 56 && job.clientName && (
+                <Text style={styles.boardCardClient} numberOfLines={1}>{job.clientName}</Text>
+              )}
+            </PressableRow>
+          </Animated.View>
+        </GestureDetector>
+      );
+    };
+
+    const renderBoardColumn = (col: BoardColumn, colIdx: number, columnJobs: JobData[], key: string) => (
+      <View
+        key={key}
+        style={[
+          styles.column,
+          colIdx < boardColumns.length - 1 && styles.columnBorderRight,
+        ]}
+      >
+        {hours.map(h => (
+          <View
+            key={h}
+            style={[styles.hourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT }]}
+          />
+        ))}
+        {hours.slice(0, -1).map(h => (
+          <View
+            key={`half-${h}`}
+            style={[styles.halfHourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }]}
+          />
+        ))}
+        {columnJobs.map(renderBoardCard)}
+      </View>
+    );
 
     return (
       <View>
+        {/* Day/week view toggle */}
+        <View style={styles.scheduleToolbar}>
+          <View style={styles.scheduleModeToggle}>
+            {(['day', 'week'] as ScheduleViewMode[]).map(mode => {
+              const active = scheduleViewMode === mode;
+              return (
+                <PressableRow
+                  key={mode}
+                  testID={`dispatch-schedule-${mode}-toggle`}
+                  style={[styles.scheduleModeButton, active && styles.scheduleModeButtonActive]}
+                  onPress={() => setScheduleViewMode(mode)}
+                >
+                  <Text style={[styles.scheduleModeText, { color: active ? (colors.primaryForeground || '#fff') : colors.mutedForeground }]}>
+                    {mode === 'day' ? 'Day' : 'Week'}
+                  </Text>
+                </PressableRow>
+              );
+            })}
+          </View>
+          <Text style={styles.scheduleRangeText}>
+            {scheduleViewMode === 'week'
+              ? `${format(weekDays[0], 'd MMM')} to ${format(weekDays[6], 'd MMM')}`
+              : format(selectedDate, 'EEE, d MMM')}
+          </Text>
+        </View>
+
         {/* Date strip */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekStripRow}>
           {weekDays.map(d => {
@@ -693,7 +820,7 @@ function DispatchBoardScreenInner() {
 
         {/* Notice for jobs that fall outside the 7am–7pm visible window */}
         {(() => {
-          const offHours = scheduledJobs.filter(j => j.scheduledAt && isOutsideBoardHours(j.scheduledAt));
+          const offHours = visibleScheduledJobs.filter(j => j.scheduledAt && isOutsideBoardHours(j.scheduledAt));
           if (offHours.length === 0) return null;
           return (
             <View style={[styles.offHoursBanner, { backgroundColor: `${colors.warning}18`, borderColor: `${colors.warning}40` }]}>
@@ -719,7 +846,15 @@ function DispatchBoardScreenInner() {
             {/* Fixed left gutter: header spacer + time labels */}
             <View style={styles.timeGutter}>
               {/* Spacer aligned with column header height */}
-              <View style={[styles.timeGutterHeaderSpacer, { borderBottomColor: colors.cardBorder }]} />
+              <View
+                style={[
+                  styles.timeGutterHeaderSpacer,
+                  {
+                    height: scheduleViewMode === 'week' ? WEEK_BOARD_HEADER_HEIGHT : COLUMN_HEADER_HEIGHT,
+                    borderBottomColor: colors.cardBorder,
+                  },
+                ]}
+              />
               {hours.map(h => (
                 <View key={h} style={styles.timeGutterCell}>
                   <Text style={styles.timeLabel}>
@@ -729,7 +864,7 @@ function DispatchBoardScreenInner() {
               ))}
             </View>
 
-            {/* Single horizontal ScrollView: column headers + grid in one scroll container */}
+            {/* Single horizontal ScrollView: headers + grid in one scroll container */}
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
@@ -737,94 +872,78 @@ function DispatchBoardScreenInner() {
               onScroll={e => { hScrollOffsetRef.current = e.nativeEvent.contentOffset.x; }}
               scrollEventThrottle={16}
             >
-              <View>
-                {/* Column headers */}
-                <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
-                  {boardColumns.map(col => (
-                    <View key={col.id} style={styles.columnHeader}>
-                      {col.member ? (
-                        <TeamAvatar
-                          firstName={col.member.firstName}
-                          lastName={col.member.lastName}
-                          userId={String(col.member.userId)}
-                          themeColor={(col.member as any).themeColor}
-                          size={28}
-                        />
-                      ) : (
-                        <View style={[styles.unassignedAvatar, { backgroundColor: colors.muted }]}>
-                          <Feather name="user" size={14} color={colors.mutedForeground} />
-                        </View>
-                      )}
-                      <Text style={styles.columnHeaderName} numberOfLines={1}>
-                        {col.member ? getMemberName(col.member).split(' ')[0] : 'Unassigned'}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Column grid rows */}
-                <View style={{ flexDirection: 'row', height: BOARD_HEIGHT }}>
-                  {boardColumns.map((col, colIdx) => {
-                    const colJobs = scheduledJobs.filter(j =>
-                      col.id === 'unassigned' ? !j.assignedTo : j.assignedTo === col.id,
-                    );
-                    return (
-                      <View
-                        key={col.id}
-                        style={[styles.column, colIdx < boardColumns.length - 1 && styles.columnBorderRight]}
-                      >
-                        {/* Hour grid lines */}
-                        {hours.map(h => (
-                          <View
-                            key={h}
-                            style={[styles.hourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT }]}
-                          />
-                        ))}
-                        {/* Half-hour guide lines */}
-                        {hours.slice(0, -1).map(h => (
-                          <View
-                            key={`half-${h}`}
-                            style={[styles.halfHourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }]}
-                          />
-                        ))}
-                        {/* Job card blocks */}
-                        {colJobs.map(job => {
-                          const topPx = jobTopOffset(job.scheduledAt!);
-                          const heightPx = jobCardHeight(job.estimatedDuration);
-                          const statusColor = getStatusColor(job.status, job.scheduledAt);
-                          const isBeingDragged = draggingJob?.id === job.id;
-                          const gesture = buildDragGesture(job);
-                          return (
-                            <GestureDetector key={job.id} gesture={gesture}>
-                              <Animated.View
-                                style={[
-                                  styles.boardCard,
-                                  { top: topPx, height: heightPx, borderLeftColor: statusColor, opacity: isBeingDragged ? 0.35 : 1 },
-                                ]}
-                              >
-                                <PressableRow
-                                  style={{ flex: 1 }}
-                                  onPress={() => router.push(`/job/${job.id}` as any)}
-                                >
-                                  <Text style={styles.boardCardTitle} numberOfLines={2}>{job.title}</Text>
-                                  {heightPx > 40 && (
-                                    <Text style={styles.boardCardTime} numberOfLines={1}>
-                                      {formatTime(job.scheduledAt)}
-                                    </Text>
-                                  )}
-                                  {heightPx > 56 && job.clientName && (
-                                    <Text style={styles.boardCardClient} numberOfLines={1}>{job.clientName}</Text>
-                                  )}
-                                </PressableRow>
-                              </Animated.View>
-                            </GestureDetector>
-                          );
-                        })}
+              {scheduleViewMode === 'day' ? (
+                <View>
+                  <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
+                    {boardColumns.map(col => (
+                      <View key={col.id} style={styles.columnHeader}>
+                        {renderColumnHeader(col)}
                       </View>
-                    );
-                  })}
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: 'row', height: BOARD_HEIGHT }}>
+                    {boardColumns.map((col, colIdx) => {
+                      const colJobs = scheduledJobs.filter(j =>
+                        col.id === 'unassigned' ? !j.assignedTo : j.assignedTo === col.id,
+                      );
+                      return renderBoardColumn(col, colIdx, colJobs, col.id);
+                    })}
+                  </View>
                 </View>
-              </View>
+              ) : (
+                <View>
+                  <View style={styles.weekDayHeaderRow}>
+                    {weekDays.map(day => {
+                      const dayJobs = visibleScheduledJobs.filter(j => isSameDay(parseISO(j.scheduledAt!), day));
+                      const today = isToday(day);
+                      return (
+                        <View
+                          key={day.toISOString()}
+                          style={[
+                            styles.weekDayHeader,
+                            { width: weekGroupWidth, borderRightColor: colors.cardBorder },
+                            today && { backgroundColor: `${colors.primary}18` },
+                          ]}
+                        >
+                          <Text style={[styles.weekDayHeaderText, { color: today ? colors.primary : colors.foreground }]}>
+                            {format(day, 'EEE').toUpperCase()}
+                          </Text>
+                          <Text style={styles.weekDayHeaderSubtext}>
+                            {format(day, 'd MMM')} · {dayJobs.length} {dayJobs.length === 1 ? 'job' : 'jobs'}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                  <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
+                    {weekBoardColumns.map(({ date, column }, index) => (
+                      <View
+                        key={`${date.toISOString()}-${column.id}`}
+                        style={[
+                          styles.columnHeader,
+                          index % boardColumns.length === 0 && styles.weekColumnHeaderStart,
+                        ]}
+                      >
+                        {renderColumnHeader(column)}
+                      </View>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: 'row', height: BOARD_HEIGHT }}>
+                    {weekBoardColumns.map(({ date, column }, index) => {
+                      const colJobs = visibleScheduledJobs.filter(j => {
+                        if (!j.scheduledAt || !isSameDay(parseISO(j.scheduledAt), date)) return false;
+                        return column.id === 'unassigned' ? !j.assignedTo : j.assignedTo === column.id;
+                      });
+                      return renderBoardColumn(
+                        column,
+                        index % boardColumns.length,
+                        colJobs,
+                        `${date.toISOString()}-${column.id}`,
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -1387,6 +1506,44 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     height: 4,
     borderRadius: 2,
   },
+  scheduleToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  scheduleModeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+    borderRadius: radius.pill,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+  },
+  scheduleModeButton: {
+    minWidth: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+  },
+  scheduleModeButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  scheduleModeText: {
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.bold,
+  },
+  scheduleRangeText: {
+    flex: 1,
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
+    color: colors.mutedForeground,
+    textAlign: 'right',
+  },
 
   dragHint: {
     fontSize: typography.captionSmall.fontSize,
@@ -1429,6 +1586,27 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     height: COLUMN_HEADER_HEIGHT,
     alignItems: 'center',
   },
+  weekDayHeaderRow: {
+    flexDirection: 'row',
+    height: WEEK_DAY_HEADER_HEIGHT,
+    backgroundColor: colors.muted,
+  },
+  weekDayHeader: {
+    height: WEEK_DAY_HEADER_HEIGHT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+  },
+  weekDayHeaderText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
+    letterSpacing: 0.5,
+  },
+  weekDayHeaderSubtext: {
+    fontSize: 9,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
   columnHeader: {
     width: COLUMN_WIDTH,
     marginRight: COLUMN_GAP,
@@ -1436,6 +1614,10 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     justifyContent: 'center',
     gap: 4,
     height: COLUMN_HEADER_HEIGHT,
+  },
+  weekColumnHeaderStart: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.cardBorder,
   },
   columnHeaderName: {
     fontSize: typography.sizes.xs,
