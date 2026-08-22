@@ -49763,8 +49763,15 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return dateA - dateB;
       });
 
-      // Pending requests (jobs with assignment_status = 'assigned' or 'invited' - not yet accepted)
-      const pendingRequests = enrichedJobs.filter(j => pendingStatuses.includes(j.assignmentStatus));
+      // Pending requests: assignment not yet responded to AND job not already live/confirmed.
+      // A job with status 'scheduled' or 'in_progress' is already committed — showing
+      // Decline/Accept buttons on it is confusing even if assignmentStatus is the default 'assigned'.
+      const pendingRequests = enrichedJobs.filter(j =>
+        pendingStatuses.includes(j.assignmentStatus) &&
+        j.status !== 'scheduled' &&
+        j.status !== 'in_progress' &&
+        j.status !== 'done'
+      );
 
       type EnrichedJob = (typeof enrichedJobs)[number];
       // Active job = what the subcontractor is CURRENTLY clocked into. ONLY a

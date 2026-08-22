@@ -861,6 +861,14 @@ export default function JobsScreen() {
 
   useEffect(() => { sortedJobsRef.current = sortedJobs; }, [sortedJobs]);
 
+  // In grid mode, pad to an even count so the last card never stretches full-width
+  const flatListData = useMemo(() => {
+    if (viewMode === 'grid' && sortedJobs.length % 2 !== 0) {
+      return [...sortedJobs, { id: '__grid_placeholder__', __isPlaceholder: true } as any];
+    }
+    return sortedJobs;
+  }, [sortedJobs, viewMode]);
+
   // Dynamic content container style for iPad-responsive padding
   const responsiveContentStyle = useMemo(() => ({
     paddingHorizontal: responsiveShell.paddingHorizontal,
@@ -1373,6 +1381,10 @@ export default function JobsScreen() {
     };
 
     if (viewMode === 'grid') {
+      // Invisible spacer to keep the last card from stretching full-width in odd lists
+      if ((job as any).__isPlaceholder) {
+        return <View style={{ flex: 1 }} />;
+      }
       return (
         <View style={{ flex: 1, position: 'relative' }}>
           {batchMode && isCompleted && (
@@ -1439,7 +1451,7 @@ export default function JobsScreen() {
       <FlatList
         ref={scrollRef}
         key={viewMode}
-        data={sortedJobs}
+        data={flatListData}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         numColumns={viewMode === 'grid' ? 2 : 1}

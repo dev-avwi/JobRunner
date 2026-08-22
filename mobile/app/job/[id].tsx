@@ -2269,13 +2269,15 @@ export default function JobDetailScreen() {
   const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
-  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] as string[] });
+  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] as string[] });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
   const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '', assignedUserIds: [] as string[] });
   const [showAddPhaseTeamPicker, setShowAddPhaseTeamPicker] = useState(false);
   const [showEditPhaseTeamPicker, setShowEditPhaseTeamPicker] = useState(false);
+  // Shared date-picker target for phase modals — only one open at a time
+  const [phaseDateTarget, setPhaseDateTarget] = useState<{ form: 'add' | 'edit'; field: 'start' | 'end' } | null>(null);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
@@ -2874,12 +2876,14 @@ export default function JobDetailScreen() {
         phaseCode,
         name: addPhaseForm.name.trim(),
         description: addPhaseForm.description.trim() || null,
+        scheduledStart: addPhaseForm.scheduledStart || null,
+        scheduledEnd: addPhaseForm.scheduledEnd || null,
         assignedUserId: addPhaseForm.assignedUserId || null,
         assignedUserIds: addPhaseForm.assignedUserIds,
       });
       await loadPhases();
       setShowAddPhaseModal(false);
-      setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] });
+      setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] });
       showToast({ type: 'success', message: 'Phase added' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
@@ -11341,13 +11345,13 @@ export default function JobDetailScreen() {
       {/* Add Phase Modal */}
       <AppBottomSheet
         visible={showAddPhaseModal}
-        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] }); }}
+        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); }}
         title="Add Phase"
         showCloseButton
         snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setAddPhaseForm({ phaseCode: '', name: '', description: '', assignedUserId: '', assignedUserIds: [] }); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
           </View>
         )}>
@@ -11380,6 +11384,52 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
+          {/* Date row */}
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            {(['start', 'end'] as const).map((field) => {
+              const iso = field === 'start' ? addPhaseForm.scheduledStart : addPhaseForm.scheduledEnd;
+              const isActive = phaseDateTarget?.form === 'add' && phaseDateTarget?.field === field;
+              return (
+                <View key={field} style={{ flex: 1 }}>
+                  <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>{field === 'start' ? 'Start Date' : 'End Date'}</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPhaseDateTarget(isActive ? null : { form: 'add', field })}
+                    style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderColor: isActive ? colors.primary : colors.cardBorder }]}
+                  >
+                    <Text style={{ fontSize: 14, color: iso ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
+                      {iso ? new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Set date'}
+                    </Text>
+                    <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
+                  </TouchableOpacity>
+                  {isActive && (
+                    <View style={{ marginTop: 4 }}>
+                      <DateTimePicker
+                        value={iso ? new Date(iso) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, date) => {
+                          if (Platform.OS !== 'ios') setPhaseDateTarget(null);
+                          if (event.type !== 'dismissed' && date) {
+                            setAddPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
+                          }
+                        }}
+                        themeVariant={isDark ? 'dark' : 'light'}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
+                          onPress={() => setPhaseDateTarget(null)}
+                        >
+                          <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
           <PhaseTeamPicker
             selectedIds={addPhaseForm.assignedUserIds}
             teamMembers={teamMembers}
@@ -11494,28 +11544,49 @@ export default function JobDetailScreen() {
             onChangeText={(t) => setEditPhaseForm(f => ({ ...f, name: t }))}
           />
           <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Start Date</Text>
-              <TextInput
-                style={styles.singleLineInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.mutedForeground}
-                value={editPhaseForm.scheduledStart}
-                onChangeText={(t) => setEditPhaseForm(f => ({ ...f, scheduledStart: t }))}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>End Date</Text>
-              <TextInput
-                style={styles.singleLineInput}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.mutedForeground}
-                value={editPhaseForm.scheduledEnd}
-                onChangeText={(t) => setEditPhaseForm(f => ({ ...f, scheduledEnd: t }))}
-                keyboardType="numbers-and-punctuation"
-              />
-            </View>
+            {(['start', 'end'] as const).map((field) => {
+              const iso = field === 'start' ? editPhaseForm.scheduledStart : editPhaseForm.scheduledEnd;
+              const isActive = phaseDateTarget?.form === 'edit' && phaseDateTarget?.field === field;
+              return (
+                <View key={field} style={{ flex: 1 }}>
+                  <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>{field === 'start' ? 'Start Date' : 'End Date'}</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPhaseDateTarget(isActive ? null : { form: 'edit', field })}
+                    style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderColor: isActive ? colors.primary : colors.cardBorder }]}
+                  >
+                    <Text style={{ fontSize: 14, color: iso ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
+                      {iso ? new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Set date'}
+                    </Text>
+                    <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
+                  </TouchableOpacity>
+                  {isActive && (
+                    <View style={{ marginTop: 4 }}>
+                      <DateTimePicker
+                        value={iso ? new Date(iso) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, date) => {
+                          if (Platform.OS !== 'ios') setPhaseDateTarget(null);
+                          if (event.type !== 'dismissed' && date) {
+                            setEditPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
+                          }
+                        }}
+                        themeVariant={isDark ? 'dark' : 'light'}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
+                          onPress={() => setPhaseDateTarget(null)}
+                        >
+                          <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Booked Hours</Text>
           <TextInput
