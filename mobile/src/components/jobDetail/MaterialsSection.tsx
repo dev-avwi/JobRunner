@@ -245,6 +245,16 @@ export function MaterialsSection(props: MaterialsSectionProps) {
 
     const unassigned = byPhase.get(null) ?? [];
 
+    // Only show a phase card if it has materials OR is the active/in-progress phase.
+    // This avoids rendering a screen full of empty chips when nothing has been added yet.
+    const activePh = sortedPhases.find(p => p.id === activePhaseId)
+      ?? sortedPhases.find(p => p.status === 'in_progress')
+      ?? sortedPhases.find(p => p.status === 'not_started');
+    const phasesToShow = sortedPhases.filter(ph => {
+      const hasMaterials = (byPhase.get(ph.id) ?? []).length > 0;
+      return hasMaterials || ph.id === activePh?.id;
+    });
+
     return (
       <>
         {/* Section header */}
@@ -266,7 +276,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
           </View>
         ) : (
           <>
-            {sortedPhases.map(phase => {
+            {phasesToShow.map(phase => {
               const phaseMaterials = byPhase.get(phase.id) ?? [];
               const phaseCost = phaseMaterials.reduce((s, m) => s + (Number(m.totalCost) || 0), 0);
               const sc = PHASE_STATUS_COLORS[phase.status] ?? PHASE_STATUS_COLORS.not_started;
