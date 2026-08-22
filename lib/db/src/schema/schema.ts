@@ -1823,6 +1823,7 @@ export const expenses = pgTable("expenses", {
   recurringFrequency: text("recurring_frequency"), // monthly, quarterly, yearly
   status: text("status").default('pending'), // pending, approved, rejected, reimbursed
   approvedBy: varchar("approved_by").references(() => users.id),
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1830,6 +1831,7 @@ export const expenses = pgTable("expenses", {
   index("idx_expenses_job_id").on(table.jobId),
   index("idx_expenses_category_id").on(table.categoryId),
   index("idx_expenses_approved_by").on(table.approvedBy),
+  index("idx_expenses_phase_id").on(table.phaseId),
 ]);
 
 // Team Management

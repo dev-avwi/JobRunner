@@ -84,6 +84,7 @@ import { SwmsSection } from '../../src/components/jobDetail/SwmsSection';
 import { isTapToPayAvailable } from '../../src/lib/stripe-terminal';
 import { ChatSection } from '../../src/components/jobDetail/ChatSection';
 import { MaterialsSection } from '../../src/components/jobDetail/MaterialsSection';
+import ExpensesSection from '../../src/components/jobDetail/ExpensesSection';
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
@@ -301,6 +302,7 @@ interface DigitalSignature {
 
 interface JobExpense {
   id: string;
+  jobId?: string | null;
   categoryId: string;
   categoryName?: string;
   amount: string;
@@ -309,6 +311,8 @@ interface JobExpense {
   vendor?: string;
   expenseDate: string;
   isBillable: boolean;
+  status?: string;
+  phaseId?: string | null;
 }
 
 interface JobDocument {
@@ -11282,6 +11286,24 @@ export default function JobDetailScreen() {
                     isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
                   />
                 </View>
+                {/* Expenses — phase-grouped for projects */}
+                {(isOwnerOrManager || isSoloOwner) && (() => {
+                  const activePhaseId = phases.find(p => p.status === 'in_progress')?.id ?? phases.find(p => p.status === 'not_started')?.id ?? null;
+                  return (
+                    <View style={{ paddingHorizontal: spacing.md, marginBottom: spacing.md }}>
+                      <ExpensesSection
+                        colors={colors}
+                        expenses={jobExpenses}
+                        isLoading={isLoadingExpenses}
+                        jobId={id as string}
+                        isOwnerOrManager={true}
+                        phases={phases}
+                        activePhaseId={activePhaseId}
+                        onRefresh={loadJobExpenses}
+                      />
+                    </View>
+                  );
+                })()}
                 <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
                   <ClaimsSection
                     colors={colors}

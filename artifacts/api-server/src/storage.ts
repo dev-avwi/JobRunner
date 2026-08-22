@@ -4772,6 +4772,7 @@ export class PostgresStorage implements IStorage {
       approvedBy: expenses.approvedBy,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
+      phaseId: expenses.phaseId,
       categoryName: expenseCategories.name,
       jobTitle: jobs.title
     }).from(expenses)

@@ -136,7 +136,7 @@ function ExpensesScreenInner() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
-  const { jobId: routeJobId } = useLocalSearchParams<{ jobId?: string }>();
+  const { jobId: routeJobId, phaseId: routePhaseId } = useLocalSearchParams<{ jobId?: string; phaseId?: string }>();
 
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [categories, setCategories] = useState<ExpenseCategory[]>([]);
@@ -154,6 +154,7 @@ function ExpensesScreenInner() {
 
   const [formCategoryId, setFormCategoryId] = useState('');
   const [formJobId, setFormJobId] = useState('');
+  const [formPhaseId, setFormPhaseId] = useState(routePhaseId || '');
   const [formAmount, setFormAmount] = useState('');
   const [formGst, setFormGst] = useState('');
   const [formDescription, setFormDescription] = useState('');
@@ -204,6 +205,7 @@ function ExpensesScreenInner() {
   const resetForm = () => {
     setFormCategoryId('');
     setFormJobId(routeJobId || '');
+    setFormPhaseId(routePhaseId || '');
     setFormAmount('');
     setFormGst('');
     setFormDescription('');
@@ -304,6 +306,7 @@ function ExpensesScreenInner() {
       await api.post('/api/expenses', {
         categoryId: formCategoryId,
         jobId: formJobId || undefined,
+        phaseId: formPhaseId || undefined,
         amount: formAmount,
         gstAmount: formGst || '0.00',
         description: formDescription.trim(),
