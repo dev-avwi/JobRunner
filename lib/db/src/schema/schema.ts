@@ -1823,7 +1823,7 @@ export const expenses = pgTable("expenses", {
   recurringFrequency: text("recurring_frequency"), // monthly, quarterly, yearly
   status: text("status").default('pending'), // pending, approved, rejected, reimbursed
   approvedBy: varchar("approved_by").references(() => users.id),
-  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
+  phaseId: varchar("phase_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

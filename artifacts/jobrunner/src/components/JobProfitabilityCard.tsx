@@ -44,6 +44,7 @@ interface PhaseCostData {
     labour: number;
     subcontractor: number;
     materials: number;
+    expenses: number;
     purchaseOrders: number;
     total: number;
   };
@@ -249,6 +250,12 @@ function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
                     <span className="text-xs text-muted-foreground">Materials</span>
                     <span className="text-xs">{formatCurrency(phase.costs.materials)}</span>
                   </div>
+                  {phase.costs.expenses > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">Expenses</span>
+                      <span className="text-xs">{formatCurrency(phase.costs.expenses)}</span>
+                    </div>
+                  )}
                   {phase.costs.purchaseOrders > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">Purchase orders</span>

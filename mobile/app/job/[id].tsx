@@ -2456,7 +2456,7 @@ export default function JobDetailScreen() {
       name: string;
       status: string | null;
       budgetedCost?: number | null;
-      costs: { labour: number; subcontractor: number; materials: number; purchaseOrders: number; total: number };
+      costs: { labour: number; subcontractor: number; materials: number; expenses: number; purchaseOrders: number; total: number };
       hours: number;
       variations: { approvedTotal: number; pendingTotal: number };
     }>;
@@ -5075,6 +5075,7 @@ export default function JobDetailScreen() {
               labour: n(phase.costs?.labour),
               subcontractor: n(phase.costs?.subcontractor),
               materials: n(phase.costs?.materials),
+              expenses: n(phase.costs?.expenses),
               purchaseOrders: n(phase.costs?.purchaseOrders),
               total: n(phase.costs?.total),
             },
@@ -14942,6 +14943,12 @@ export default function JobDetailScreen() {
                           <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Materials</Text>
                           <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.materials)}</Text>
                         </View>
+                        {ph.costs.expenses > 0 && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Expenses</Text>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground }}>{formatCurrency(ph.costs.expenses)}</Text>
+                          </View>
+                        )}
                         {ph.costs.purchaseOrders > 0 && (
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingLeft: spacing.md, paddingTop: spacing.xxs }}>
                             <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>Purchase orders</Text>

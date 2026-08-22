@@ -259,6 +259,7 @@ import { notifyOwnerViaSms, notifyOwnerViaEmail } from "../notificationService";
 
 import { logSystemEvent } from "../systemEventService";
 import { computeRetentionSummary } from "./retentionSummary";
+import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
 
   // Escape user-provided values before embedding them in HTML emails/templates.
@@ -7089,9 +7090,11 @@ import { computeRetentionSummary } from "./retentionSummary";
       // Phase-level cost breakdown for project jobs. Labour, materials and POs
       // don't carry a phaseId, so they are attributed to a phase when their
       // date falls inside the phase's scheduled window (first matching phase by
-      // sort order; end date inclusive to end-of-day). Anything that doesn't
-      // match a window lands in an "Unallocated" bucket. Variations attribute
-      // directly via their phaseId link.
+      // sort order; end date inclusive to end-of-day). Expenses do carry an
+      // explicit phaseId, so they are attributed only through that link.
+      // Anything that doesn't match a window or phase link lands in an
+      // "Unallocated" bucket. Variations attribute directly via their phaseId
+      // link.
       let phaseBreakdown: any[] = [];
       try {
         if ((job as any).jobType === 'project') {
@@ -7124,11 +7127,12 @@ import { computeRetentionSummary } from "./retentionSummary";
               labour: number;
               subcontractor: number;
               materials: number;
+              expenses: number;
               purchaseOrders: number;
               hours: number;
             };
             const emptyBucket = (): PhaseBucket => ({
-              labour: 0, subcontractor: 0, materials: 0, purchaseOrders: 0, hours: 0,
+              labour: 0, subcontractor: 0, materials: 0, expenses: 0, purchaseOrders: 0, hours: 0,
             });
             const buckets = new Map<string, PhaseBucket>();
             const unallocated = emptyBucket();
@@ -7154,9 +7158,11 @@ import { computeRetentionSummary } from "./retentionSummary";
             for (const m of jobMaterials) {
               bucketFor((m as any).createdAt, (m as any).phaseId).materials += parseFloat(m.totalCost?.toString() || '0');
             }
-            for (const e of materialExpenses) {
-              bucketFor((e as any).expenseDate || (e as any).createdAt).materials += parseFloat(e.amount || '0');
+            const expenseAllocation = allocateExpensesByPhase(expenses, buckets.keys());
+            for (const [phaseId, amount] of expenseAllocation.byPhaseId) {
+              buckets.get(phaseId)!.expenses += amount;
             }
+            unallocated.expenses += expenseAllocation.unallocated;
             for (const po of purchaseOrdersList) {
               bucketFor((po as any).orderDate || (po as any).createdAt, (po as any).phaseId).purchaseOrders +=
                 parseFloat(po.total?.toString() || '0');
@@ -7187,10 +7193,12 @@ import { computeRetentionSummary } from "./retentionSummary";
                   labour: r2(b.labour),
                   subcontractor: r2(b.subcontractor),
                   materials: r2(b.materials),
+                  expenses: r2(b.expenses),
                   purchaseOrders: r2(b.purchaseOrders),
                   // Consistent with the job-level total: POs are informational
-                  // and excluded to avoid double-counting with materials/expenses.
-                  total: r2(b.labour + b.subcontractor + b.materials),
+                  // and excluded to avoid double-counting with materials and
+                  // expenses.
+                  total: r2(b.labour + b.subcontractor + b.materials + b.expenses),
                 },
                 hours: Math.round(b.hours * 10) / 10,
                 variations: {
@@ -7205,7 +7213,8 @@ import { computeRetentionSummary } from "./retentionSummary";
             );
             const hasUnallocated =
               unallocated.labour > 0 || unallocated.subcontractor > 0 ||
-              unallocated.materials > 0 || unallocated.purchaseOrders > 0;
+              unallocated.materials > 0 || unallocated.expenses > 0 ||
+              unallocated.purchaseOrders > 0;
             if (hasUnallocated) {
               phaseBreakdown.push(toPhaseRow(null, null, 'Unallocated', null, unallocated));
             }
