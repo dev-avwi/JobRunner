@@ -48,6 +48,7 @@ import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import LiveActivity from '../../modules/LiveActivity/src';
 import { SkeletonDashboard, Skeleton } from '../../src/components/Skeleton';
+import { FirstRunWelcomeModal } from '../../src/components/FirstRunWelcomeModal';
 
 interface WeatherData {
   temperature: number;
@@ -2122,19 +2123,24 @@ function EmptyTodayState({ onCreateJob }: { onCreateJob: () => void }) {
   );
 }
 
-const CHECKLIST_DISMISS_PREFIX = 'jobrunner_setup_dismissed_';
+// v2 key — permanent dismiss (no TTL expiry). Old v1 key is simply ignored.
+const CHECKLIST_DISMISS_PREFIX = 'jobrunner_setup_dismissed_v2_';
 
 function GettingStartedChecklist() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { user, businessSettings } = useAuthStore();
-  const { clients } = useClientsStore();
   const [dismissed, setDismissed] = useState(false);
-  const [quotes, setQuotes] = useState<{ id: string }[]>([]);
-  const [integrationHealth, setIntegrationHealth] = useState<{
-    stripeConnect?: { connected?: boolean; chargesEnabled?: boolean; payoutsEnabled?: boolean };
+  const [checklistStatus, setChecklistStatus] = useState<{
+    businessDetails: boolean;
+    firstClient: boolean;
+    firstQuote: boolean;
+    invoicingSetup: boolean;
+    teamMember: boolean;
+    hasSampleData: boolean;
   } | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [isSeedingData, setIsSeedingData] = useState(false);
 
   const dismissKey = `${CHECKLIST_DISMISS_PREFIX}${user?.id || 'default'}`;
 
@@ -2152,53 +2158,59 @@ function GettingStartedChecklist() {
   const checkDismissed = async () => {
     try {
       const val = await AsyncStorage.getItem(dismissKey);
-      if (val) {
-        const dismissedAt = parseInt(val, 10);
-        const oneDayMs = 24 * 60 * 60 * 1000;
-        if (!isNaN(dismissedAt) && Date.now() - dismissedAt < oneDayMs) {
-          setDismissed(true);
-        } else {
-          await AsyncStorage.removeItem(dismissKey);
-        }
-      }
+      if (val === 'true') setDismissed(true);
     } catch {}
   };
 
   const handleDismiss = async () => {
     setDismissed(true);
     try {
-      await AsyncStorage.setItem(dismissKey, String(Date.now()));
+      await AsyncStorage.setItem(dismissKey, 'true');
     } catch {}
   };
 
   const fetchChecklistData = async () => {
     try {
-      const [quotesRes, healthRes] = await Promise.all([
-        api.get<{ id: string }[]>('/api/quotes').catch(() => ({ data: [] as { id: string }[] })),
-        api.get<{ stripeConnect?: { connected?: boolean; chargesEnabled?: boolean; payoutsEnabled?: boolean } }>('/api/integrations/health').catch(() => ({ data: null as { stripeConnect?: { connected?: boolean; chargesEnabled?: boolean; payoutsEnabled?: boolean } } | null })),
-      ]);
-      setQuotes(quotesRes.data || []);
-      setIntegrationHealth(healthRes.data ?? null);
+      const res = await api.get<{
+        businessDetails: boolean;
+        firstClient: boolean;
+        firstQuote: boolean;
+        invoicingSetup: boolean;
+        teamMember: boolean;
+        hasSampleData: boolean;
+      }>('/api/onboarding/checklist-status');
+      if (res.data) setChecklistStatus(res.data);
     } catch {} finally {
       setDataLoaded(true);
     }
   };
 
-  if (dismissed || !dataLoaded) return null;
+  const handleSeedSampleData = async () => {
+    setIsSeedingData(true);
+    try {
+      const tradeType = businessSettings?.tradeType || 'general';
+      const res = await api.post('/api/onboarding/seed-sample-data', { tradeType });
+      if (res.error) {
+        showToast({ type: 'error', message: 'Could not load sample data', description: String(res.error) });
+      } else {
+        showToast({ type: 'success', message: 'Sample data loaded', description: 'Explore with demo clients, jobs and quotes' });
+        fetchChecklistData();
+      }
+    } catch {
+      showToast({ type: 'error', message: 'Could not load sample data' });
+    } finally {
+      setIsSeedingData(false);
+    }
+  };
 
-  const hasBusinessProfile = !!(businessSettings?.businessName && businessSettings?.abn);
-  const stripeConnect = integrationHealth?.stripeConnect;
-  const stripeConnected = stripeConnect?.connected && stripeConnect?.chargesEnabled && stripeConnect?.payoutsEnabled;
-  const hasBranding = !!businessSettings?.logoUrl || !!businessSettings?.primaryColor;
-  const hasClient = Array.isArray(clients) && clients.length > 0;
-  const hasQuote = Array.isArray(quotes) && quotes.length > 0;
+  if (dismissed || !dataLoaded || !checklistStatus) return null;
 
   const checklistSteps = [
-    { id: 'business', title: 'Add business details', desc: 'Name, ABN & contact info', completed: hasBusinessProfile, icon: 'briefcase' as const, iconColor: colors.primary, route: '/more/settings' },
-    { id: 'stripe', title: 'Set up online payments', desc: 'Get paid directly to your bank', completed: stripeConnected || false, icon: 'credit-card' as const, iconColor: colors.info, route: '/more/settings' },
-    { id: 'branding', title: 'Add your logo', desc: 'Make quotes look professional', completed: hasBranding, icon: 'edit-3' as const, iconColor: colors.warning, route: '/more/branding' },
-    { id: 'client', title: 'Add your first client', desc: 'Save client details for quoting', completed: hasClient, icon: 'users' as const, iconColor: colors.success, route: '/more/clients' },
-    { id: 'quote', title: 'Send your first quote', desc: 'Win work with professional quotes', completed: hasQuote, icon: 'file-text' as const, iconColor: colors.mutedForeground, route: '/more/quotes' },
+    { id: 'business', title: 'Add your business details', desc: 'Name, phone and contact info', completed: checklistStatus.businessDetails, icon: 'briefcase' as const, iconColor: colors.primary, route: '/more/business-settings' },
+    { id: 'client', title: 'Create your first client', desc: 'Save client details for quoting', completed: checklistStatus.firstClient, icon: 'users' as const, iconColor: colors.info, route: '/more/client/new' },
+    { id: 'quote', title: 'Send your first quote', desc: 'Win work with professional quotes', completed: checklistStatus.firstQuote, icon: 'file-text' as const, iconColor: colors.warning, route: '/more/create-quote' },
+    { id: 'invoicing', title: 'Set up invoicing', desc: 'Add payment terms or bank details', completed: checklistStatus.invoicingSetup, icon: 'dollar-sign' as const, iconColor: colors.success, route: '/more/business-settings' },
+    { id: 'team', title: 'Invite a team member', desc: 'Add staff or subcontractors', completed: checklistStatus.teamMember, icon: 'user-plus' as const, iconColor: colors.mutedForeground, route: '/more/team-management' },
   ];
 
   const completedCount = checklistSteps.filter(s => s.completed).length;
@@ -2261,6 +2273,51 @@ function GettingStartedChecklist() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* Load sample data — only offered when none has been seeded yet */}
+        {!checklistStatus.hasSampleData && (
+          <View style={{
+            borderTopWidth: 1,
+            borderTopColor: colors.cardBorder,
+            marginHorizontal: spacing.lg,
+            paddingVertical: spacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+          }}>
+            <Feather name="database" size={16} color={colors.mutedForeground} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>Load sample data</Text>
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
+                Explore with demo clients, jobs and quotes
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleSeedSampleData}
+              disabled={isSeedingData}
+              style={{
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                borderRadius: radius.md,
+                backgroundColor: colorWithOpacity(colors.primary, 0.1),
+                borderWidth: 1,
+                borderColor: colorWithOpacity(colors.primary, 0.25),
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                minWidth: 60,
+                justifyContent: 'center',
+              }}
+              activeOpacity={0.7}
+            >
+              {isSeedingData ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>Load</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -2448,7 +2505,20 @@ function OwnerDashboardScreen() {
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const welcomeModalChecked = useRef(false);
   const smsLocked = useSmsLocked();
+
+  // Show the first-run welcome modal exactly once — when businessSettings first
+  // loads for an owner who has completed onboarding but hasn't seen the walkthrough.
+  useEffect(() => {
+    if (welcomeModalChecked.current) return;
+    if (!businessSettings) return;
+    welcomeModalChecked.current = true;
+    if (businessSettings.onboardingCompleted && !businessSettings.hasSeenWalkthrough) {
+      setShowWelcomeModal(true);
+    }
+  }, [businessSettings]);
 
   // Signal that the dashboard has finished its initial load so deferred UI
   // (e.g. the "What you missed" popup) only appears once content is visible.
@@ -4390,6 +4460,12 @@ function OwnerDashboardScreen() {
       {/* Bottom Spacing */}
       <View style={{ height: spacing.md }} />
     </ScrollView>
+
+    {/* First-run welcome modal — trade type + team size, shown once per new account */}
+    <FirstRunWelcomeModal
+      visible={showWelcomeModal}
+      onDone={() => setShowWelcomeModal(false)}
+    />
   </>
   );
 }

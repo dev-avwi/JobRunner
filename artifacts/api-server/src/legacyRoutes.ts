@@ -13200,6 +13200,54 @@ Be specific about materials, colors, and features that would be included.`
   });
 
   // ============================================
+  // Task #711: First-run setup checklist status
+  // GET /api/onboarding/checklist-status
+  // Returns the completion state of each of the 5 onboarding steps plus
+  // whether sample data has already been seeded.
+  // ============================================
+  app.get("/api/onboarding/checklist-status", requireAuth, ownerOnly(), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const [
+        settings,
+        [clientsRow],
+        [quotesRow],
+        [teamRow],
+        [sampleRow],
+      ] = await Promise.all([
+        storage.getBusinessSettings(userId),
+        db.select({ n: count() }).from(clients)
+          .where(and(eq(clients.userId, userId), or(isNull(clients.isSample), eq(clients.isSample, false)))),
+        db.select({ n: count() }).from(quotes)
+          .where(eq(quotes.userId, userId)),
+        db.select({ n: count() }).from(teamMembers)
+          .where(and(eq(teamMembers.businessOwnerId, userId), eq(teamMembers.isActive, true))),
+        db.select({ n: count() }).from(clients)
+          .where(and(eq(clients.userId, userId), eq(clients.isSample, true))),
+      ]);
+
+      const teamSize = (settings as any)?.teamSize;
+      res.json({
+        // Step 1: businessName + phone
+        businessDetails: !!(settings?.businessName && (settings as any)?.phone),
+        // Step 2: at least one real (non-sample) client
+        firstClient: (clientsRow?.n ?? 0) > 0,
+        // Step 3: at least one quote
+        firstQuote: (quotesRow?.n ?? 0) > 0,
+        // Step 4: payment instructions configured in business settings
+        invoicingSetup: !!(settings as any)?.paymentInstructions,
+        // Step 5: has active team members OR is a solo operator
+        teamMember: (teamRow?.n ?? 0) > 0 || teamSize === 'solo',
+        // Meta: whether sample data is already loaded
+        hasSampleData: (sampleRow?.n ?? 0) > 0,
+      });
+    } catch (error: any) {
+      console.error('[ChecklistStatus] error:', error);
+      res.status(500).json({ error: 'Failed to load checklist status' });
+    }
+  });
+
+  // ============================================
   // CSV IMPORT ENDPOINTS
   // ============================================
 

@@ -110,6 +110,7 @@ interface BusinessSettings {
   calloutFee?: number;
   onboardingCompleted?: boolean;
   onboardingUrl?: string;
+  hasSeenWalkthrough?: boolean;
   dedicatedPhoneNumber?: string;
   aiReceptionistEnabled?: boolean;
   aiReceptionistMode?: string;
