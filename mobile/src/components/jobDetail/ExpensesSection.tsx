@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,10 @@ import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../lib/design-tokens';
+import { api } from '../../lib/api';
+import { showToast } from '../../lib/toast';
+import AppBottomSheet from '../ui/AppBottomSheet';
+import PressableRow from '../ui/PressableRow';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,7 +48,7 @@ interface Props {
   isOwnerOrManager: boolean;
   phases?: PhaseStub[];
   activePhaseId?: string | null;
-  onRefresh?: () => void;
+  onRefresh?: () => void | Promise<void>;
 }
 
 // ── Phase status colours ───────────────────────────────────────────────────────
@@ -121,14 +125,193 @@ export default function ExpensesSection({
     router.push(`/more/expenses?${params.toString()}` as any);
   }, [jobId]);
 
+  const [editingExpense, setEditingExpense] = useState<SectionExpense | null>(null);
+  const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
+
+  const openEditExpense = useCallback((expense: SectionExpense) => {
+    setEditingExpense(expense);
+    setEditingPhaseId(expense.phaseId ?? null);
+  }, []);
+
+  const closeEditExpense = useCallback(() => {
+    if (isSavingExpense) return;
+    setEditingExpense(null);
+    setEditingPhaseId(null);
+  }, [isSavingExpense]);
+
+  const handleSaveExpense = useCallback(async () => {
+    if (!editingExpense || isSavingExpense) return;
+
+    setIsSavingExpense(true);
+    try {
+      const response = await api.put(`/api/expenses/${editingExpense.id}`, {
+        phaseId: editingPhaseId,
+      });
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setEditingExpense(null);
+      setEditingPhaseId(null);
+      await onRefresh?.();
+      showToast({ type: 'success', message: 'Expense updated', description: 'The expense phase was updated.' });
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: 'Could not update expense',
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setIsSavingExpense(false);
+    }
+  }, [editingExpense, editingPhaseId, isSavingExpense, onRefresh]);
+
+  const sortedPhases = phases ? [...phases].sort((a, b) => a.sortOrder - b.sortOrder) : [];
+  const selectedPhaseName = editingPhaseId
+    ? sortedPhases.find((phase) => phase.id === editingPhaseId)?.name ?? 'Unassigned'
+    : 'Unassigned';
+  const editSheet = (
+    <AppBottomSheet
+      visible={editingExpense !== null}
+      onDismiss={closeEditExpense}
+      title="Edit Expense"
+      showCloseButton
+      snapPoints={['62%']}
+      footer={(
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity
+            onPress={closeEditExpense}
+            disabled={isSavingExpense}
+            activeOpacity={0.7}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: colors.foreground }}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="expense-edit-save"
+            onPress={handleSaveExpense}
+            disabled={isSavingExpense}
+            activeOpacity={0.7}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              backgroundColor: isSavingExpense ? colors.muted : colors.primary,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: isSavingExpense ? colors.mutedForeground : colors.primaryForeground }}>
+              {isSavingExpense ? 'Saving...' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    >
+      {editingExpense && (
+        <View style={{ gap: spacing.md }}>
+          <View style={{
+            padding: spacing.md,
+            borderRadius: radius.lg,
+            backgroundColor: colors.muted,
+          }}>
+            <Text style={{ ...typography.bodySemibold, color: colors.foreground }} numberOfLines={2}>
+              {editingExpense.description}
+            </Text>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs }}>
+              -{fmt(editingExpense.amount)}
+              {editingExpense.vendor ? `  ·  ${editingExpense.vendor}` : ''}
+            </Text>
+          </View>
+
+          <Text style={{ ...typography.caption, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+            PHASE
+          </Text>
+          <View style={{ gap: spacing.xs }}>
+            <PressableRow
+              testID="expense-phase-option-unassigned"
+              onPress={() => setEditingPhaseId(null)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: spacing.md,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: editingPhaseId === null ? colors.primary : colors.cardBorder,
+                backgroundColor: editingPhaseId === null ? colors.primaryLight : colors.card,
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <Feather name="minus-circle" size={17} color={editingPhaseId === null ? colors.primary : colors.mutedForeground} />
+                <Text style={{ ...typography.body, color: colors.foreground }}>Unassigned</Text>
+              </View>
+              {editingPhaseId === null && <Feather name="check" size={18} color={colors.primary} />}
+            </PressableRow>
+
+            {sortedPhases.map((phase) => {
+              const isSelected = editingPhaseId === phase.id;
+              return (
+                <PressableRow
+                  key={phase.id}
+                  testID={`expense-phase-option-${phase.id}`}
+                  onPress={() => setEditingPhaseId(phase.id)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: spacing.md,
+                    borderRadius: radius.lg,
+                    borderWidth: 1,
+                    borderColor: isSelected ? colors.primary : colors.cardBorder,
+                    backgroundColor: isSelected ? colors.primaryLight : colors.card,
+                  }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isSelected ? colors.primary : colors.mutedForeground }} />
+                    <Text style={{ ...typography.body, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                      {phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}
+                    </Text>
+                  </View>
+                  {isSelected && <Feather name="check" size={18} color={colors.primary} />}
+                </PressableRow>
+              );
+            })}
+          </View>
+          <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+            Current phase: {selectedPhaseName}
+          </Text>
+        </View>
+      )}
+    </AppBottomSheet>
+  );
+
   const total = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
 
   // ── Expense row ─────────────────────────────────────────────────────────────
   const renderRow = useCallback((expense: SectionExpense) => (
     <TouchableOpacity
       key={expense.id}
+      testID={`expense-row-${expense.id}`}
       activeOpacity={0.7}
-      onPress={() => router.push(`/more/expenses?jobId=${jobId}` as any)}
+      onPress={() => {
+        if (isOwnerOrManager) {
+          openEditExpense(expense);
+        } else {
+          router.push(`/more/expenses?jobId=${jobId}` as any);
+        }
+      }}
       style={{
         flexDirection: 'row',
         alignItems: 'flex-start',
@@ -168,7 +351,7 @@ export default function ExpensesSection({
         -{fmt(expense.amount)}
       </Text>
     </TouchableOpacity>
-  ), [colors, jobId]);
+  ), [colors, isOwnerOrManager, jobId, openEditExpense]);
 
   // ── Section header row ──────────────────────────────────────────────────────
   const sectionHeader = (
@@ -195,6 +378,7 @@ export default function ExpensesSection({
     return (
       <>
         {sectionHeader}
+        {editSheet}
         <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
           <ActivityIndicator color={colors.primary} />
         </View>
@@ -228,6 +412,7 @@ export default function ExpensesSection({
     return (
       <>
         {sectionHeader}
+        {editSheet}
 
         {phasesToShow.map(phase => {
           const phaseExpenses = byPhase.get(phase.id) ?? [];
@@ -345,6 +530,7 @@ export default function ExpensesSection({
   return (
     <>
       {sectionHeader}
+      {editSheet}
       {expenses.length === 0 ? (
         <View style={{
           backgroundColor: colors.card,
