@@ -720,6 +720,55 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   quickActionsSection: {
     marginBottom: spacing.xl,
   },
+  // Section-jump chip bar
+  chipBar: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+    backgroundColor: colors.background,
+  },
+  chipBarContent: {
+    flexDirection: 'row' as const,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+    alignItems: 'center' as const,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radius.pill,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: typography.captionSmall.fontSize + 1,
+    fontWeight: fontWeights.semibold,
+    color: colors.mutedForeground,
+    letterSpacing: 0.2,
+  },
+  chipTextActive: {
+    color: colors.primaryForeground,
+  },
+  // Quick-action FAB — positioned above the persistent bottom nav
+  quickFAB: {
+    position: 'absolute' as const,
+    bottom: bottomNavHeight + spacing.lg,
+    right: spacing.lg,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.primary,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    ...shadows.lg,
+    elevation: 6,
+    zIndex: 100,
+  },
   sectionTitle: {
     fontSize: typography.captionSmall.fontSize,
     fontWeight: fontWeights.bold,
@@ -2071,7 +2120,9 @@ export default function JobDetailScreen() {
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
   const scrollRef = useRef<ScrollView | null>(null);
   const { onScroll: preserveOnScroll, scrollEventThrottle } = usePreserveScrollOnFold(scrollRef);
-  
+  const sectionOffsets = useRef<Record<string, number>>({});
+  const chipScrollRef = useRef<ScrollView | null>(null);
+
   const [job, setJob] = useState<Job | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
@@ -2253,6 +2304,7 @@ export default function JobDetailScreen() {
   // This eliminates duplicate API calls
   
   const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'chat' | 'manage'>('overview');
+  const [activeChip, setActiveChip] = useState<string>('status');
 
   // Job Phases
   const [phases, setPhases] = useState<JobPhase[]>([]);
@@ -7421,6 +7473,77 @@ export default function JobDetailScreen() {
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
   ];
 
+  // Chips shown in the Overview section-jump bar
+  const overviewChips = useMemo(() => {
+    const chips: Array<{ id: string; label: string }> = [
+      { id: 'status', label: 'Status' },
+    ];
+    if (isOwnerOrManager || isSoloOwner) chips.push({ id: 'pay', label: 'Pay' });
+    chips.push({ id: 'team', label: 'Team' });
+    chips.push({ id: 'activity', label: 'Activity' });
+    if (isOwnerOrManager || isSoloOwner) chips.push({ id: 'docs', label: 'Docs' });
+    return chips;
+  }, [isOwnerOrManager, isSoloOwner]);
+
+  const scrollToSection = useCallback((sectionId: string) => {
+    const offset = sectionOffsets.current[sectionId];
+    if (offset !== undefined && scrollRef.current) {
+      scrollRef.current.scrollTo({ y: Math.max(0, offset - 8), animated: true });
+      setActiveChip(sectionId);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
+  const handleScrollWithChips = useCallback((e: any) => {
+    preserveOnScroll(e);
+    if (activeTab !== 'overview') return;
+    const y = e.nativeEvent.contentOffset.y;
+    const offsets = sectionOffsets.current;
+    // Walk from bottom-most section upward; first one whose offset is <= y wins
+    const sections = ['docs', 'activity', 'team', 'pay', 'status'];
+    let newChip = 'status';
+    for (const id of sections) {
+      if (offsets[id] !== undefined && y >= offsets[id] - 100) {
+        newChip = id;
+        break;
+      }
+    }
+    setActiveChip(prev => prev === newChip ? prev : newChip);
+  }, [preserveOnScroll, activeTab]);
+
+  const handleQuickActionFAB = useCallback(() => {
+    if (!job) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const openNotes = () => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); };
+    const openInvoice = () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any);
+    const openProofPack = () => setShowProofPackModal(true);
+    type FABAction = { label: string; icon: string; onPress: () => void; style?: string };
+    let fabActions: FABAction[] = [];
+    if (job.status === 'pending') {
+      if (action) fabActions.push({ label: action.label, icon: action.icon, onPress: handleMainAction });
+      if (client?.phone) fabActions.push({ label: 'Message Client', icon: 'message-circle', onPress: () => Linking.openURL(`sms:${client.phone}`) });
+      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
+    } else if (job.status === 'scheduled') {
+      if (action) fabActions.push({ label: action.label, icon: action.icon, onPress: handleMainAction });
+      if (canCreateInvoices) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
+      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
+    } else if (job.status === 'in_progress') {
+      if (action) fabActions.push({ label: action.label, icon: action.icon, onPress: handleMainAction });
+      if (canCreateInvoices) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
+      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
+    } else if (job.status === 'done') {
+      if (canCreateInvoices) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
+      if (isOwnerOrManager || isSoloOwner) fabActions.push({ label: 'Proof Pack', icon: 'package', onPress: openProofPack });
+      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
+    } else {
+      if (isOwnerOrManager || isSoloOwner) fabActions.push({ label: 'Proof Pack', icon: 'package', onPress: openProofPack });
+      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
+      if (client?.phone) fabActions.push({ label: 'Message Client', icon: 'message-circle', onPress: () => Linking.openURL(`sms:${client.phone}`) });
+    }
+    fabActions.push({ label: 'Cancel', icon: 'x', onPress: () => {}, style: 'cancel' });
+    showActionSheet({ title: 'Quick Actions', actions: fabActions as any });
+  }, [job, action, client, canCreateInvoices, isOwnerOrManager, isSoloOwner, handleMainAction, showActionSheet]);
+
   const renderOverviewTab = () => (
     <>
       {jobConflictWarning && (
@@ -7733,6 +7856,9 @@ export default function JobDetailScreen() {
           <Feather name="chevron-right" size={18} color={colors.warning} />
         </TouchableOpacity>
       )}
+
+      {/* Section anchor: status */}
+      <View onLayout={(e) => { sectionOffsets.current['status'] = e.nativeEvent.layout.y; }} />
 
       {/* Main Action Button - Hero zone, first thing after status */}
       <View style={styles.actionButtonContainer}>
@@ -9539,6 +9665,11 @@ export default function JobDetailScreen() {
         </View>
       )}
 
+      {/* Section anchor: pay */}
+      {(isOwnerOrManager || isSoloOwner) && (
+        <View onLayout={(e) => { sectionOffsets.current['pay'] = e.nativeEvent.layout.y; }} />
+      )}
+
       {/* Financials Section Header */}
       {(isOwnerOrManager || isSoloOwner) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
@@ -9890,7 +10021,10 @@ export default function JobDetailScreen() {
       </View>}
 
       {/* Team & Operations Section Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
+      <View
+        onLayout={(e) => { sectionOffsets.current['team'] = e.nativeEvent.layout.y; }}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}
+      >
         <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Team & Operations</Text>
         <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
       </View>
@@ -10123,7 +10257,10 @@ export default function JobDetailScreen() {
       )}
 
       {/* Activity & History Section Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}>
+      <View
+        onLayout={(e) => { sectionOffsets.current['activity'] = e.nativeEvent.layout.y; }}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, marginTop: spacing.sm, gap: spacing.sm }}
+      >
         <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Activity & History</Text>
         <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
       </View>
@@ -10372,6 +10509,11 @@ export default function JobDetailScreen() {
           styles={styles}
           canUpload={!!(isOwnerOrManager || isSoloOwner)}
         />
+      )}
+
+      {/* Section anchor: docs */}
+      {(isOwnerOrManager || isSoloOwner) && (
+        <View onLayout={(e) => { sectionOffsets.current['docs'] = e.nativeEvent.layout.y; }} />
       )}
 
       {/* Uploaded Documents Section - owners/managers only */}
@@ -11118,12 +11260,37 @@ export default function JobDetailScreen() {
         })}
       </View>
 
+      {/* Section-jump chip bar — pinned between tab bar and scroll content */}
+      {activeTab === 'overview' && (
+        <ScrollView
+          ref={chipScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipBar}
+          contentContainerStyle={styles.chipBarContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {overviewChips.map((chip) => (
+            <TouchableOpacity
+              key={chip.id}
+              style={[styles.chip, activeChip === chip.id && styles.chipActive]}
+              onPress={() => scrollToSection(chip.id)}
+              activeOpacity={0.75}
+            >
+              <Text style={[styles.chipText, activeChip === chip.id && styles.chipTextActive]}>
+                {chip.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
+
       {/* Tab Content - Scrollable */}
       <ScrollView 
         ref={scrollRef}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={preserveOnScroll}
+        onScroll={handleScrollWithChips}
         scrollEventThrottle={scrollEventThrottle}
         refreshControl={
           <RefreshControl
@@ -11339,6 +11506,19 @@ export default function JobDetailScreen() {
           </>
         )}
       </ScrollView>
+
+      {/* Quick-action FAB — bottom-right, overview tab only */}
+      {activeTab === 'overview' && (
+        <TouchableOpacity
+          style={styles.quickFAB}
+          onPress={handleQuickActionFAB}
+          activeOpacity={0.85}
+          accessibilityLabel="Quick actions"
+          accessibilityRole="button"
+        >
+          <Feather name="zap" size={22} color={colors.primaryForeground} />
+        </TouchableOpacity>
+      )}
 
       </View>
 
