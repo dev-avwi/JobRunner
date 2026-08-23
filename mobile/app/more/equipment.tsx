@@ -145,6 +145,8 @@ export default function EquipmentScreen() {
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [isLoadingMaintenance, setIsLoadingMaintenance] = useState(false);
 
+  const [maintenanceError, setMaintenanceError] = useState<string | null>(null);
+
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [maintenanceForm, setMaintenanceForm] = useState(defaultMaintenanceForm);
   const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
@@ -309,21 +311,35 @@ export default function EquipmentScreen() {
     }
   };
 
-  const openDetail = async (item: Equipment) => {
-    setSelectedItem(item);
-    setShowDetailModal(true);
+  const fetchMaintenanceRecords = useCallback(async (item: Equipment) => {
     setIsLoadingMaintenance(true);
+    setMaintenanceError(null);
     try {
       const res = await api.get<MaintenanceRecord[]>(`/api/equipment/${item.id}/maintenance`);
-      if (!res.error) {
+      if (res.error) {
+        setMaintenanceError(res.error);
+      } else {
         setMaintenanceRecords(Array.isArray(res.data) ? res.data : []);
       }
     } catch (err) {
-      setMaintenanceRecords([]);
+      setMaintenanceError('Failed to load maintenance records');
     } finally {
       setIsLoadingMaintenance(false);
     }
+  }, []);
+
+  const openDetail = async (item: Equipment) => {
+    setSelectedItem(item);
+    setShowDetailModal(true);
+    setMaintenanceRecords([]);
+    fetchMaintenanceRecords(item);
   };
+
+  const retryMaintenance = useCallback(() => {
+    if (selectedItem) {
+      fetchMaintenanceRecords(selectedItem);
+    }
+  }, [selectedItem, fetchMaintenanceRecords]);
 
   const handleMaintenanceSubmit = async () => {
     if (!maintenanceForm.title.trim()) {
@@ -825,6 +841,14 @@ export default function EquipmentScreen() {
 
               {isLoadingMaintenance ? (
                 <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: 16 }} />
+              ) : maintenanceError ? (
+                <View style={styles.noMaintenanceContainer}>
+                  <Feather name="alert-circle" size={20} color="#ef4444" style={{ marginBottom: spacing.xs }} />
+                  <Text style={[styles.noMaintenanceText, { color: '#ef4444' }]}>{maintenanceError}</Text>
+                  <PressableRow style={styles.maintenanceRetryBtn} onPress={retryMaintenance} >
+                    <Text style={styles.maintenanceRetryBtnText}>Retry</Text>
+                  </PressableRow>
+                </View>
               ) : maintenanceRecords.length === 0 ? (
                 <View style={styles.noMaintenanceContainer}>
                   <Text style={styles.noMaintenanceText}>No maintenance records yet</Text>
@@ -1602,6 +1626,19 @@ const createStyles = (colors: any, bottomNavHeight: number = 0) => StyleSheet.cr
   noMaintenanceText: {
     ...typography.caption,
     color: colors.mutedForeground,
+  },
+  maintenanceRetryBtn: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#ef4444',
+  },
+  maintenanceRetryBtnText: {
+    ...typography.caption,
+    color: '#ef4444',
+    fontWeight: fontWeights.medium,
   },
   maintenanceCard: {
     backgroundColor: colors.card,
