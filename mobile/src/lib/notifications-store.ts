@@ -44,7 +44,7 @@ interface NotificationsState {
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   notifications: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   unreadCount: 0,
   pushToken: null,

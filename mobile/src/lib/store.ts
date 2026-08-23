@@ -962,7 +962,7 @@ interface JobsState {
 export const useJobsStore = create<JobsState>((set, get) => ({
   jobs: [],
   todaysJobs: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   isOfflineData: false,
 
@@ -1263,7 +1263,7 @@ interface ClientsState {
 
 export const useClientsStore = create<ClientsState>((set, get) => ({
   clients: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   isOfflineData: false,
   lastFetched: null,
@@ -1530,7 +1530,7 @@ interface QuotesState {
 
 export const useQuotesStore = create<QuotesState>((set, get) => ({
   quotes: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   isOfflineData: false,
 
@@ -1800,7 +1800,7 @@ interface InvoicesState {
 
 export const useInvoicesStore = create<InvoicesState>((set, get) => ({
   invoices: [],
-  isLoading: false,
+  isLoading: true,
   error: null,
   isOfflineData: false,
 
