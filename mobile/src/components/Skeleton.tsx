@@ -282,55 +282,79 @@ export function SkeletonJobDetailOverview() {
   const { colors } = useTheme();
   return (
     <View style={{ padding: spacing.md, gap: spacing.md }}>
-      {/* Status + action chips */}
+      {/* Status badge + action chip row */}
       <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
-        <Skeleton width={90} height={30} borderRadius={15} />
-        <Skeleton width={120} height={30} borderRadius={15} />
+        <Skeleton width={80} height={28} borderRadius={14} />
+        <Skeleton width={110} height={28} borderRadius={14} />
         <View style={{ flex: 1 }} />
-        <Skeleton width={44} height={44} borderRadius={22} />
+        <Skeleton width={36} height={36} borderRadius={18} />
       </View>
 
-      {/* Main info card */}
+      {/* Main info card — title, client, date, address */}
       <View style={{
         backgroundColor: colors.card,
         borderRadius: radius.xl,
         borderWidth: 1,
         borderColor: colors.border,
         padding: spacing.md,
-        gap: spacing.md,
+        gap: 10,
       }}>
-        <Skeleton width="70%" height={18} />
-        <Skeleton width="50%" height={14} />
-        <View style={{ height: 1, backgroundColor: colors.border }} />
+        <Skeleton width="75%" height={20} borderRadius={4} />
+        <Skeleton width="48%" height={13} borderRadius={4} />
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: 2 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Skeleton width={16} height={16} borderRadius={8} />
-          <Skeleton width="60%" height={14} />
+          <Skeleton width={14} height={14} borderRadius={7} />
+          <Skeleton width="55%" height={13} borderRadius={4} />
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <Skeleton width={16} height={16} borderRadius={8} />
-          <Skeleton width="45%" height={14} />
+          <Skeleton width={14} height={14} borderRadius={7} />
+          <Skeleton width="40%" height={13} borderRadius={4} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Skeleton width={14} height={14} borderRadius={7} />
+          <Skeleton width="65%" height={13} borderRadius={4} />
         </View>
       </View>
 
-      {/* Team row */}
+      {/* Team card */}
       <View style={{
         backgroundColor: colors.card,
         borderRadius: radius.xl,
         borderWidth: 1,
         borderColor: colors.border,
         padding: spacing.md,
-        gap: spacing.md,
+        gap: spacing.sm,
       }}>
-        <Skeleton width="35%" height={16} />
+        <Skeleton width="30%" height={13} borderRadius={4} />
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Skeleton width={40} height={40} borderRadius={20} />
-          <Skeleton width={40} height={40} borderRadius={20} />
-          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={36} height={36} borderRadius={18} />
+          <Skeleton width={36} height={36} borderRadius={18} />
+          <Skeleton width={36} height={36} borderRadius={18} />
         </View>
       </View>
 
-      {/* Financial summary stats */}
+      {/* Financial summary — 4 stat boxes */}
       <SkeletonStats />
+
+      {/* What's Next card */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Skeleton width={18} height={18} borderRadius={9} />
+          <Skeleton width="45%" height={16} borderRadius={4} />
+          <View style={{ flex: 1 }} />
+          <Skeleton width={60} height={22} borderRadius={11} />
+        </View>
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: colors.border }} />
+        <Skeleton width="90%" height={13} borderRadius={4} />
+        <Skeleton width="70%" height={13} borderRadius={4} />
+      </View>
     </View>
   );
 }

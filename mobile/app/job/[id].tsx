@@ -11283,30 +11283,7 @@ export default function JobDetailScreen() {
         })}
       </View>
 
-      {/* Section-jump chip bar — pinned between tab bar and scroll content */}
-      {activeTab === 'overview' && (
-        <ScrollView
-          ref={chipScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipBar}
-          contentContainerStyle={styles.chipBarContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          {overviewChips.map((chip) => (
-            <TouchableOpacity
-              key={chip.id}
-              style={[styles.chip, activeChip === chip.id && styles.chipActive]}
-              onPress={() => scrollToSection(chip.id)}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.chipText, activeChip === chip.id && styles.chipTextActive]}>
-                {chip.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
+      {/* Section-jump chip bar removed per user preference */}
 
       {/* Tab Content - Scrollable */}
       <ScrollView 

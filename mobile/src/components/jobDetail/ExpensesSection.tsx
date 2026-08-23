@@ -354,9 +354,18 @@ export default function ExpensesSection({
     </TouchableOpacity>
   ), [colors, isOwnerOrManager, jobId, openEditExpense]);
 
-  // ── Section header row ──────────────────────────────────────────────────────
-  const sectionHeader = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, paddingHorizontal: spacing.md }}>
+  // ── Card-style header — used inside cards so title sits on the same visual line
+  const cardHeader = (
+    <View style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    }}>
       <View>
         <Text style={styles.sectionTitle}>EXPENSES</Text>
         {expenses.length > 0 && (
@@ -374,14 +383,37 @@ export default function ExpensesSection({
     </View>
   );
 
+  // ── Section label header for phase-grouped view — sits above multiple cards
+  const sectionHeader = (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+      <Text style={styles.sectionTitle}>EXPENSES</Text>
+      {isOwnerOrManager && (
+        <TouchableOpacity onPress={() => navigateToAdd(activePhaseId)} activeOpacity={0.7} style={styles.addButton}>
+          <Feather name="plus" size={12} color={colors.primary} />
+          <Text style={styles.addButtonLabel}>Add</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   // ── Loading ──────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <>
-        {sectionHeader}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginBottom: spacing.md,
+        overflow: 'hidden',
+        ...shadows.sm,
+      }}>
+        {cardHeader}
         {editSheet}
-        <SkeletonSection rows={3} />
-      </>
+        <View style={{ padding: spacing.sm }}>
+          <SkeletonSection rows={3} />
+        </View>
+      </View>
     );
   }
 
@@ -525,53 +557,44 @@ export default function ExpensesSection({
     );
   }
 
-  // ── Flat view (service calls) ────────────────────────────────────────────────
+  // ── Flat view (service calls) ── title lives inside the card ─────────────────
   return (
     <>
-      {sectionHeader}
       {editSheet}
-      {expenses.length === 0 ? (
-        <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          padding: spacing.xl,
-          marginBottom: spacing.xl,
-          alignItems: 'center',
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          ...shadows.sm,
-        }}>
-          <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
-            <Feather name="file-text" size={24} color={colors.mutedForeground} />
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginBottom: spacing.md,
+        overflow: 'hidden',
+        ...shadows.sm,
+      }}>
+        {cardHeader}
+        {expenses.length === 0 ? (
+          <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+              <Feather name="file-text" size={24} color={colors.mutedForeground} />
+            </View>
+            <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>No expenses recorded</Text>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
+              Track receipts and site costs here
+            </Text>
+            {isOwnerOrManager && (
+              <TouchableOpacity
+                onPress={() => navigateToAdd(null)}
+                activeOpacity={0.7}
+                style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: `${colors.primary}25` }}
+              >
+                <Feather name="plus" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>Add Expense</Text>
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>No expenses recorded</Text>
-          <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
-            Track receipts and site costs here
-          </Text>
-          {isOwnerOrManager && (
-            <TouchableOpacity
-              onPress={() => navigateToAdd(null)}
-              activeOpacity={0.7}
-              style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: `${colors.primary}25` }}
-            >
-              <Feather name="plus" size={14} color={colors.primary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.primary }}>Add Expense</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      ) : (
-        <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          marginBottom: spacing.md,
-          overflow: 'hidden',
-          ...shadows.sm,
-        }}>
-          {expenses.map(renderRow)}
-        </View>
-      )}
+        ) : (
+          expenses.map(renderRow)
+        )}
+      </View>
     </>
   );
 }

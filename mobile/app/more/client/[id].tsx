@@ -646,8 +646,13 @@ export default function ClientDetailScreen() {
           {/* In-content header row — native stack header is hidden on this
               screen, so back/edit/delete live here. */}
           <View style={styles.topBar}>
-            <PressableRow onPress={() => router.back()} style={styles.headerButton} data-testid="button-back">
-              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            <PressableRow
+              onPress={() => router.back()}
+              style={[styles.headerButton, { flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm }]}
+              data-testid="button-back"
+            >
+              <Feather name="chevron-left" size={18} color={colors.primary} />
+              <Text style={{ fontSize: 15, color: colors.primary, marginLeft: -2 }}>Back</Text>
             </PressableRow>
             <View style={{ flex: 1 }} />
             <PressableRow onPress={handleEdit} style={styles.headerButton} data-testid="button-edit-client">
