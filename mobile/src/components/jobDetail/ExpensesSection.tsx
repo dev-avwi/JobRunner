@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ThemeColors } from '../../lib/theme';
@@ -379,9 +380,7 @@ export default function ExpensesSection({
       <>
         {sectionHeader}
         {editSheet}
-        <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <SkeletonSection rows={3} />
       </>
     );
   }

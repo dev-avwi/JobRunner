@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
+import { SkeletonSection } from '../Skeleton';
 
 interface Client {
   id: string;
@@ -169,9 +170,7 @@ export function ChatSection(props: ChatSectionProps) {
         overflow: 'hidden',
       }}>
         {isLoadingMessages ? (
-          <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
+          <SkeletonSection rows={3} />
         ) : jobMessages.length === 0 ? (
           <View style={{ alignItems: 'center', paddingVertical: spacing.lg, paddingHorizontal: spacing.md }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: `${colors.primary}08`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>

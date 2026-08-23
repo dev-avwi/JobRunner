@@ -17,6 +17,7 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet,
   ScrollView, TextInput, Platform, KeyboardAvoidingView, Linking,
 } from 'react-native';
+import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemeColors } from '../../lib/theme';
@@ -418,11 +419,7 @@ export function ClaimsSection({
         </View>
       )}
 
-      {isLoading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="small" color={colors.mutedForeground} />
-        </View>
-      )}
+      {isLoading && <SkeletonSection rows={2} />}
 
       {!isLoading && claims.length === 0 && (
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>

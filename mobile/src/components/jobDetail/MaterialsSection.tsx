@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
+import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, shadows, typography, fontWeights } from '../../lib/design-tokens';
@@ -271,9 +272,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
         </View>
 
         {isLoadingMaterials ? (
-          <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-            <ActivityIndicator color={colors.primary} />
-          </View>
+          <SkeletonSection rows={3} />
         ) : (
           <>
             {phasesToShow.map(phase => {
@@ -419,9 +418,7 @@ export function MaterialsSection(props: MaterialsSectionProps) {
       </View>
 
       {isLoadingMaterials ? (
-        <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+        <SkeletonSection rows={3} />
       ) : materials.length === 0 ? (
         <View style={{
           backgroundColor: colors.card,

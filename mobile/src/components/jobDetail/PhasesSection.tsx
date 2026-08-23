@@ -5,6 +5,7 @@
  */
 import { useState, useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated, ScrollView } from 'react-native';
+import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { ThemeColors } from '../../lib/theme';
@@ -411,10 +412,7 @@ export function PhasesSection({
       </View>
 
       {isLoading ? (
-        <View style={styles.loadingRow}>
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>Loading phases…</Text>
-        </View>
+        <SkeletonSection rows={3} />
       ) : sorted.length === 0 ? (
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
           No project phases yet. Add phases to break this project into billable milestones.

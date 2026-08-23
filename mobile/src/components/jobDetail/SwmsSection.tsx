@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, iconSizes } from '../../lib/design-tokens';
+import { SkeletonSection } from '../Skeleton';
 
 interface SwmsHazard {
   id: string;
@@ -106,10 +107,7 @@ export function SwmsSection(props: SwmsSectionProps) {
       </View>
 
       {isLoadingSwms ? (
-        <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
-          <ActivityIndicator color={colors.primary} />
-          <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: spacing.sm }}>Loading safety documents...</Text>
-        </View>
+        <SkeletonSection rows={2} />
       ) : swmsDocuments.length === 0 ? (
         <View style={{ paddingVertical: spacing.sm }}>
           <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>

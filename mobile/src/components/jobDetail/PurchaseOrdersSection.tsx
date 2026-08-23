@@ -14,6 +14,7 @@ import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, shadows, typography, fontWeights } from '../../lib/design-tokens';
 import api from '../../lib/api';
 import { showToast } from '../../lib/toast';
+import { SkeletonSection } from '../Skeleton';
 
 interface POItem {
   id: string;
@@ -222,7 +223,7 @@ export function PurchaseOrdersSection({
       </View>
 
       {isLoadingPOs ? (
-        <ActivityIndicator size="small" color={colors.primary} style={{ marginTop: spacing.md }} />
+        <SkeletonSection rows={3} />
       ) : purchaseOrders.length === 0 ? (
         <View style={{
           backgroundColor: colors.card,

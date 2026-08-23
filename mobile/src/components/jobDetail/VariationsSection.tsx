@@ -27,6 +27,7 @@ import { showToast } from '../../lib/toast';
 import { AppBottomSheet, BottomSheetScrollView } from '../ui/AppBottomSheet';
 import { SheetButton } from '../ui/SheetButton';
 import { useActionSheet } from '../ui/ActionSheet';
+import { SkeletonSection } from '../Skeleton';
 
 // ─── types ────────────────────────────────────────────────────────────────────
 
@@ -279,11 +280,7 @@ export function VariationsSection({
         </View>
       )}
 
-      {isLoading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="small" color={colors.mutedForeground} />
-        </View>
-      )}
+      {isLoading && <SkeletonSection rows={2} />}
 
       {!isLoading && variations.length === 0 && (
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>

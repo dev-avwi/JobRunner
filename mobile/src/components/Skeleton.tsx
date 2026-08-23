@@ -179,6 +179,95 @@ export function SkeletonDashboard() {
   );
 }
 
+/** Generic section list skeleton — use inside any detail section that loads a list. */
+export function SkeletonSection({ rows = 3 }: { rows?: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ gap: spacing.sm, paddingVertical: spacing.sm }}>
+      {Array.from({ length: rows }).map((_, i) => (
+        <View
+          key={i}
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.border,
+            padding: spacing.md,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+          }}
+        >
+          <Skeleton width={36} height={36} borderRadius={radius.md} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Skeleton width="60%" height={14} />
+            <Skeleton width="40%" height={11} />
+          </View>
+          <Skeleton width={60} height={22} borderRadius={11} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Full job-detail overview skeleton shown while the initial job record loads. */
+export function SkeletonJobDetailOverview() {
+  const { colors } = useTheme();
+  return (
+    <View style={{ padding: spacing.md, gap: spacing.md }}>
+      {/* Status + action chips */}
+      <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
+        <Skeleton width={90} height={30} borderRadius={15} />
+        <Skeleton width={120} height={30} borderRadius={15} />
+        <View style={{ flex: 1 }} />
+        <Skeleton width={44} height={44} borderRadius={22} />
+      </View>
+
+      {/* Main info card */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+        gap: spacing.md,
+      }}>
+        <Skeleton width="70%" height={18} />
+        <Skeleton width="50%" height={14} />
+        <View style={{ height: 1, backgroundColor: colors.border }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <Skeleton width="60%" height={14} />
+        </View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <Skeleton width={16} height={16} borderRadius={8} />
+          <Skeleton width="45%" height={14} />
+        </View>
+      </View>
+
+      {/* Team row */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+        gap: spacing.md,
+      }}>
+        <Skeleton width="35%" height={16} />
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={40} height={40} borderRadius={20} />
+          <Skeleton width={40} height={40} borderRadius={20} />
+        </View>
+      </View>
+
+      {/* Financial summary stats */}
+      <SkeletonStats />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     padding: spacing.md,

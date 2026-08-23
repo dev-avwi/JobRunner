@@ -18,6 +18,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
+import { SkeletonSection } from '../Skeleton';
 import * as DocumentPicker from 'expo-document-picker';
 import { api } from '../../lib/api';
 import { showToast } from '../../lib/toast';
@@ -710,7 +711,7 @@ export function DocumentRegisterSection({
         </View>
 
         {isLoadingDocs ? (
-          <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
+          <SkeletonSection rows={3} />
         ) : documents.length === 0 ? (
           <View style={s.empty}>
             <Feather name="file-plus" size={28} color={colors.mutedForeground} />
@@ -900,7 +901,7 @@ export function DocumentRegisterSection({
         </View>
 
         {isLoadingRfis ? (
-          <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
+          <SkeletonSection rows={2} />
         ) : rfis.length === 0 ? (
           <View style={s.empty}>
             <Feather name="help-circle" size={28} color={colors.mutedForeground} style={{ opacity: 0.4 }} />

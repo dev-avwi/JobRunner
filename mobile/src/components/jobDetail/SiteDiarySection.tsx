@@ -30,6 +30,7 @@ import api from '../../lib/api';
 import { showToast } from '../../lib/toast';
 import { useConfirmDialog } from '../ui/ConfirmDialog';
 import { spacing, radius, typography, fontWeights, iconSizes } from '../../lib/design-tokens';
+import { SkeletonSection } from '../Skeleton';
 import { format, parseISO, differenceInHours } from 'date-fns';
 
 const WEATHER_OPTIONS = [
@@ -379,9 +380,7 @@ export function SiteDiarySection({
         </TouchableOpacity>
       )}
 
-      {loading && (
-        <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
-      )}
+      {loading && <SkeletonSection rows={2} />}
 
       {loaded && entries.length === 0 && (
         <View style={s.emptyState}>

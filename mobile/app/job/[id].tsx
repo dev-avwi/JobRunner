@@ -95,6 +95,7 @@ import { VariationsSection } from '../../src/components/jobDetail/VariationsSect
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
 import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
 import { PendingProjectUploadsBanner } from '../../src/components/jobDetail/PendingProjectUploadsBanner';
+import { SkeletonJobDetailOverview, SkeletonSection } from '../../src/components/Skeleton';
 
 interface JobNoteItem {
   id: string;
@@ -7291,7 +7292,7 @@ export default function JobDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { justifyContent: 'flex-start' }]}>
         <Stack.Screen
           options={{
             // Centralized nested-header policy (iOS shows the nested native
@@ -7315,7 +7316,7 @@ export default function JobDetailScreen() {
             ),
           }}
         />
-        <ActivityIndicator size="large" color={colors.primary} />
+        <SkeletonJobDetailOverview />
       </View>
     );
   }
@@ -7732,7 +7733,7 @@ export default function JobDetailScreen() {
             </View>
 
             {isLoadingPhases ? (
-              <ActivityIndicator size="small" color={colors.primary} />
+              <SkeletonSection rows={1} />
             ) : nextPhase ? (
               /* Next / active phase */
               <View style={{ gap: spacing.xs }}>
@@ -9692,7 +9693,7 @@ export default function JobDetailScreen() {
                 </View>
                 <Text style={styles.costingTitle}>Profitability</Text>
               </View>
-              <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.md }} />
+              <SkeletonSection rows={2} />
             </View>
           );
         }
@@ -10121,7 +10122,7 @@ export default function JobDetailScreen() {
           </View>
 
           {isLoadingSubcontractors ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.md }} />
+            <SkeletonSection rows={2} />
           ) : (
             <>
               {subcontractorTokens.filter(t => t.status !== 'revoked').length > 0 ? (
@@ -10532,7 +10533,7 @@ export default function JobDetailScreen() {
           </View>
 
           {isLoadingDocuments ? (
-            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: spacing.lg }} />
+            <SkeletonSection rows={2} />
           ) : uploadedDocuments.length === 0 ? (
             <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
               <Feather name="file-plus" size={32} color={colors.mutedForeground} />
@@ -14166,9 +14167,7 @@ export default function JobDetailScreen() {
               </PressableRow>
 
               {isLoadingTemplates ? (
-                <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-                  <ActivityIndicator color={colors.primary} />
-                </View>
+                <SkeletonSection rows={2} />
               ) : (
                 swmsTemplates.map((template) => (
                   <PressableRow

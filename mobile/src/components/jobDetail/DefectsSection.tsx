@@ -13,6 +13,7 @@ import {
   Pressable,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { SkeletonSection } from '../Skeleton';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { useTheme, colorWithOpacity } from '../../lib/theme';
@@ -237,7 +238,7 @@ export function DefectsSection({ jobId, isTradie = false, items, loading = false
       {expanded && (
         <View style={s.body}>
           {loading ? (
-            <ActivityIndicator style={{ marginVertical: 24 }} color={colors.primary} />
+            <SkeletonSection rows={2} />
           ) : (
             <>
               {allCleared && (
