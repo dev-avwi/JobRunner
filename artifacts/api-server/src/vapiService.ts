@@ -2498,12 +2498,38 @@ async function sendCallPushNotification(
     if (intentLabel) body += ` — ${intentLabel}`;
     body += `. ${summarySnippet}`;
 
+    // callerName and callerIntent arrive from external LLM / webhook data and
+    // are not bounded upstream. Clamp the assembled body to the APNS best-practice
+    // per-field limit so the push gateway never silently truncates it.
+    const MAX_PUSH_BODY = 240;
+    if (body.length > MAX_PUSH_BODY) {
+      body = body.slice(0, MAX_PUSH_BODY - 1) + '\u2026';
+    }
+
+    // All three dynamic data fields arrive from untrusted external sources
+    // (Vapi webhook / LLM tool arguments / unrestricted DB columns). Clamp each
+    // one before embedding it in `data` so the full on-wire Expo/APNS JSON
+    // payload (body + data + metadata) stays inside the 4 KB gateway limit.
+    const MAX_INTENT_CHARS = 200;
+    const safeIntent =
+      callerIntent && callerIntent.length > MAX_INTENT_CHARS
+        ? callerIntent.slice(0, MAX_INTENT_CHARS - 1) + '\u2026'
+        : callerIntent;
+
+    // E.164 phone numbers are ≤ 15 digits plus a leading '+', but the value
+    // arrives verbatim from the Vapi webhook and could be arbitrarily large.
+    const MAX_PHONE_CHARS = 20;
+    const safePhone =
+      callerPhone && callerPhone.length > MAX_PHONE_CHARS
+        ? callerPhone.slice(0, MAX_PHONE_CHARS)
+        : callerPhone;
+
     await sendPushNotification({
       userId,
       type: 'ai_receptionist_call',
       title: 'AI Receptionist Call',
       body,
-      data: { callerPhone, callerIntent, relatedType: 'ai_call' },
+      data: { callerPhone: safePhone, callerIntent: safeIntent, relatedType: 'ai_call' },
       skipInAppNotification: true,
     });
     console.log(`[Vapi] Push notification sent to tradie ${userId} for AI call`);
