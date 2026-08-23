@@ -1195,24 +1195,14 @@ function DispatchBoardScreenInner() {
                 coordinate={{ latitude: lat, longitude: lng }}
                 onPress={() => setSelectedMapJob(job)}
               >
-                <View style={{ alignItems: 'center' }}>
-                  <View style={{
-                    width: 32, height: 32, borderRadius: 16,
-                    backgroundColor: c,
-                    alignItems: 'center', justifyContent: 'center',
-                    borderWidth: 2, borderColor: '#fff',
-                    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25, shadowRadius: 3, elevation: 5,
-                  }}>
-                    <Feather name="briefcase" size={14} color="#fff" />
-                  </View>
-                  <View style={{
-                    width: 0, height: 0,
-                    borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 7,
-                    borderLeftColor: 'transparent', borderRightColor: 'transparent',
-                    borderTopColor: c,
-                    marginTop: -1,
-                  }} />
+                <View style={{
+                  width: 32, height: 32, borderRadius: 16,
+                  backgroundColor: c,
+                  alignItems: 'center', justifyContent: 'center',
+                  borderWidth: 2, borderColor: colors.card,
+                  ...shadows.md,
+                }}>
+                  <Feather name="file-text" size={14} color="#fff" />
                 </View>
               </Marker>
             );

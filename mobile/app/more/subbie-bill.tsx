@@ -1027,18 +1027,17 @@ function createStyles(colors: ThemeColors) {
 
     addButtonsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
     addItemButton: {
-      flex: 1,
+      flex: 2,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: spacing.xs,
       paddingVertical: 12,
-      paddingHorizontal: spacing.sm,
+      paddingHorizontal: spacing.md,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.muted,
-      overflow: 'hidden',
     },
     addItemText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
     catalogButton: {
