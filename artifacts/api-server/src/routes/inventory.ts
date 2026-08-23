@@ -167,7 +167,9 @@ export function registerInventoryRoutes(app: Express): void {
         items: items.map((i: any) => ({
           description: i.description,
           quantity: i.quantity,
+          unitCost: i.unitCost ?? null,
           unitPrice: i.unitPrice,
+          markupPercent: i.markupPercent ?? null,
           lineTotal: i.lineTotal,
         })),
         supplier: supplier ? {
@@ -853,7 +855,9 @@ export function registerInventoryRoutes(app: Express): void {
           items: items.map(i => ({
             description: i.description,
             quantity: i.quantity,
+            unitCost: (i as any).unitCost ?? null,
             unitPrice: i.unitPrice,
+            markupPercent: (i as any).markupPercent ?? null,
             lineTotal: i.lineTotal,
           })),
           supplier: supplier ? { name: supplier.name, email: supplier.email, phone: supplier.phone, address: supplier.address } : null,

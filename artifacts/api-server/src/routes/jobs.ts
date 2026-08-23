@@ -4430,6 +4430,30 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             validationErrors
           });
         }
+
+        // PO reconciliation gate — block completion when unresolved POs exist,
+        // unless the caller explicitly passes ?force=true to override.
+        if (req.query.force !== 'true') {
+          try {
+            const jobPos = await storage.getPurchaseOrdersByJobId(req.params.id, effectiveUserId);
+            const unresolved = jobPos.filter((po: any) =>
+              po.status !== 'received' && po.status !== 'cancelled'
+            );
+            if (unresolved.length > 0) {
+              return res.status(400).json({
+                error: `${unresolved.length} purchase order${unresolved.length === 1 ? '' : 's'} still pending — please receive or cancel them before completing this job.`,
+                code: 'UNRESOLVED_PURCHASE_ORDERS',
+                unresolvedPurchaseOrders: unresolved.map((po: any) => ({
+                  id: po.id,
+                  poNumber: po.poNumber,
+                  supplier: po.supplierName || po.supplierId,
+                  total: po.total,
+                  status: po.status,
+                })),
+              });
+            }
+          } catch (_) { /* non-fatal — don't block completion if PO query fails */ }
+        }
       }
 
       // WHS gating: enforce pre-start safety + licence compliance when starting a job
@@ -7633,6 +7657,217 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     } catch (error) {
       console.error("Get job profitability error:", error);
       res.status(500).json({ error: "Failed to fetch job profitability" });
+    }
+  });
+
+  // ── GET /api/jobs/:id/po-reconciliation — PO status summary for a job ──────────
+  app.get("/api/jobs/:id/po-reconciliation", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { id: jobId } = req.params;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+      const pos = await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId);
+      const active = pos.filter((po: any) => po.status !== 'cancelled');
+      const received = active.filter((po: any) => po.status === 'received');
+      const unresolved = active.filter((po: any) => po.status !== 'received');
+      const totalValue = active.reduce((s: number, po: any) => s + parseFloat(po.total || '0'), 0);
+      const receivedValue = received.reduce((s: number, po: any) => s + parseFloat(po.total || '0'), 0);
+      res.json({
+        total: active.length,
+        received: received.length,
+        unresolved: unresolved.length,
+        totalValue: Math.round(totalValue * 100) / 100,
+        receivedValue: Math.round(receivedValue * 100) / 100,
+        pendingValue: Math.round((totalValue - receivedValue) * 100) / 100,
+        canComplete: unresolved.length === 0,
+        purchaseOrders: active.map((po: any) => ({
+          id: po.id,
+          poNumber: po.poNumber,
+          supplier: po.supplierName || po.supplierId,
+          total: parseFloat(po.total || '0'),
+          status: po.status,
+          phase: po.phaseName || null,
+          requiredDate: po.requiredDate,
+        })),
+      });
+    } catch (err: any) {
+      console.error('[po-reconciliation]', err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── GET /api/jobs/:id/government-report — Head-contractor / government body PDF ─
+  app.get("/api/jobs/:id/government-report", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { id: jobId } = req.params;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: 'Job not found' });
+
+      // Business details
+      const businessSettings = await storage.getBusinessSettings(effectiveUserId);
+
+      // Client details
+      let client: any = null;
+      if (job.clientId) {
+        try { client = await storage.getClientById(job.clientId); } catch (_) {}
+      }
+
+      // Phases with codes
+      let phases: any[] = [];
+      try { phases = await storage.getJobPhases(jobId, effectiveUserId); } catch (_) {}
+
+      // Progress claims (for retention schedule)
+      let claims: any[] = [];
+      try { claims = await storage.getClaims(jobId, effectiveUserId); } catch (_) {}
+
+      // Team members who worked on this job (subcontractors)
+      let teamMembers: any[] = [];
+      let subcontractors: any[] = [];
+      try {
+        teamMembers = await storage.getTeamMembers(effectiveUserId);
+        // Filter to subcontractor roles
+        for (const member of teamMembers) {
+          if (member.roleId) {
+            try {
+              const role = await storage.getUserRole(member.roleId);
+              if (role?.name?.toLowerCase().includes('subcontractor')) {
+                subcontractors.push(member);
+              }
+            } catch (_) {}
+          }
+        }
+      } catch (_) {}
+
+      // Time entries for subcontractor payment schedule
+      let timeEntries: any[] = [];
+      try {
+        const all = await storage.getTimeEntries(effectiveUserId, jobId);
+        timeEntries = all.filter((e: any) => e.endTime);
+      } catch (_) {}
+
+      // Purchase orders for subcontractor payments
+      let purchaseOrders: any[] = [];
+      try {
+        purchaseOrders = (await storage.getPurchaseOrdersByJobId(jobId, effectiveUserId))
+          .filter((po: any) => po.status !== 'cancelled');
+      } catch (_) {}
+
+      // Licences / compliance documents
+      let complianceDocs: any[] = [];
+      try {
+        const { db } = await import('../storage');
+        const { complianceDocuments } = await import('@workspace/db');
+        complianceDocs = await db.select().from(complianceDocuments)
+          .where((await import('drizzle-orm')).eq(complianceDocuments.businessOwnerId, effectiveUserId));
+      } catch (_) {}
+
+      // Retention summary
+      let retentionSummary: any = null;
+      try {
+        const { computeRetentionSummary } = await import('./retentionSummary');
+        retentionSummary = computeRetentionSummary(claims as any, {
+          practicalCompletionDate: (job as any).practicalCompletionDate || null,
+          defectsLiabilityMonths: (job as any).defectsLiabilityMonths ?? null,
+        });
+      } catch (_) {}
+
+      const { generateGovernmentReportPDF } = await import('../pdfService');
+      const html = generateGovernmentReportPDF({
+        business: {
+          businessName: businessSettings?.businessName || '',
+          abn: businessSettings?.abn || null,
+          address: businessSettings?.address || null,
+          phone: businessSettings?.phone || null,
+          email: businessSettings?.email || null,
+          logoUrl: businessSettings?.logoUrl || null,
+        },
+        job: {
+          id: job.id,
+          jobNumber: (job as any).jobNumber || job.id,
+          title: job.title || job.description || '',
+          address: (job as any).address || '',
+          status: job.status,
+          startDate: (job as any).startDate || (job as any).scheduledDate,
+          endDate: (job as any).endDate || (job as any).completedAt,
+          retentionPercent: (job as any).retentionPercent,
+          practicalCompletionDate: (job as any).practicalCompletionDate,
+          defectsLiabilityMonths: (job as any).defectsLiabilityMonths,
+        },
+        client: client ? {
+          name: client.name || client.firstName + ' ' + (client.lastName || ''),
+          abn: client.abn || null,
+          address: client.address || null,
+          email: client.email || null,
+        } : null,
+        phases: phases.map((p: any) => ({
+          phaseCode: p.phaseCode || '',
+          name: p.name || '',
+          status: p.status,
+          scheduledStart: p.scheduledStart,
+          scheduledEnd: p.scheduledEnd,
+          budgetedCost: parseFloat(p.budgetedCost || '0'),
+          bookedHours: parseFloat(p.bookedHours || '0'),
+        })),
+        claims: claims.map((c: any) => ({
+          claimNumber: c.claimNumber || c.id,
+          status: c.status,
+          submittedAt: c.submittedAt || c.createdAt,
+          totalAmount: parseFloat(c.totalAmount || c.total || '0'),
+          retentionAmount: parseFloat(c.retentionAmount || '0'),
+          netAmount: parseFloat(c.netAmount || c.totalAmount || c.total || '0'),
+        })),
+        subcontractors: subcontractors.map((s: any) => ({
+          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email,
+          abn: null, // populated from worker_payment_details if available
+          trade: s.tradeType || null,
+          totalHours: timeEntries
+            .filter((e: any) => e.userId === (s.memberId || s.id))
+            .reduce((sum: number, e: any) => {
+              return sum + (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / (1000 * 60 * 60);
+            }, 0),
+          totalPaid: timeEntries
+            .filter((e: any) => e.userId === (s.memberId || s.id))
+            .reduce((sum: number, e: any) => {
+              const hours = (new Date(e.endTime).getTime() - new Date(e.startTime).getTime()) / (1000 * 60 * 60);
+              return sum + hours * parseFloat(e.hourlyRate || '0');
+            }, 0),
+        })),
+        purchaseOrders: purchaseOrders.map((po: any) => ({
+          poNumber: po.poNumber,
+          supplier: po.supplierName || 'Unknown',
+          total: parseFloat(po.total || '0'),
+          status: po.status,
+          phase: po.phaseName || null,
+          orderDate: po.orderDate,
+          deliveryDate: po.deliveryDate,
+        })),
+        complianceDocs: complianceDocs.map((d: any) => ({
+          type: d.type,
+          title: d.title,
+          documentNumber: d.documentNumber,
+          holderName: d.holderName,
+          issuer: d.issuer,
+          expiryDate: d.expiryDate,
+        })),
+        retentionSummary,
+        generatedAt: new Date(),
+      });
+
+      const { generatePDFBuffer } = await import('../pdfService');
+      const pdfBuffer = await generatePDFBuffer(html);
+      const jobNum = ((job as any).jobNumber || job.id).replace(/[^a-z0-9-]/gi, '-');
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="government-report-${jobNum}.pdf"`,
+        'Content-Length': pdfBuffer.length,
+        'Cache-Control': 'no-store',
+      });
+      res.send(pdfBuffer);
+    } catch (err: any) {
+      console.error('[government-report]', err);
+      res.status(500).json({ error: err.message });
     }
   });
 

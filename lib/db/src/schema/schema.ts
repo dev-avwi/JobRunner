@@ -2658,7 +2658,12 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
   inventoryItemId: varchar("inventory_item_id").references(() => inventoryItems.id, { onDelete: 'cascade' }),
   description: text("description").notNull(),
   quantity: integer("quantity").notNull(),
+  // unitCost = what we actually paid per unit (buy price)
+  // unitPrice = what we charge the client per unit (sell price, cost + markup)
+  // markupPercent = markup applied: (unitPrice - unitCost) / unitCost * 100
+  unitCost: decimal("unit_cost", { precision: 10, scale: 2 }), // nullable — legacy rows won't have it
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
+  markupPercent: decimal("markup_percent", { precision: 5, scale: 2 }), // nullable — optional override
   lineTotal: decimal("line_total", { precision: 10, scale: 2 }).notNull(),
   receivedQuantity: integer("received_quantity").default(0),
   status: text("status").default('pending'), // 'pending', 'partial', 'received', 'cancelled'

@@ -6856,7 +6856,9 @@ export interface PurchaseOrderPDFData {
   items: Array<{
     description: string;
     quantity: number;
-    unitPrice: string;
+    unitCost?: string | null;   // buy price — what we paid the supplier
+    unitPrice: string;           // sell price — what we charge the client
+    markupPercent?: string | null;
     lineTotal: string;
   }>;
   supplier?: {
@@ -6901,13 +6903,25 @@ export function generatePurchaseOrderPDF(data: PurchaseOrderPDFData): string {
     ? `<img src="${esc(business.logoUrl)}" alt="${esc(business.businessName)}" style="max-height:64px;max-width:160px;object-fit:contain;" />`
     : '';
 
-  const itemRows = items.map(item => `
+  const showCostCols = items.some(i => i.unitCost && parseFloat(String(i.unitCost)) > 0);
+
+  const itemRows = items.map(item => {
+    const costCell = showCostCols
+      ? `<td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;">${item.unitCost ? fmtMoney(item.unitCost) : '—'}</td>`
+      : '';
+    const markupCell = showCostCols && item.markupPercent
+      ? `<td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:center;color:#059669;font-size:11px;">${parseFloat(String(item.markupPercent)).toFixed(0)}%</td>`
+      : showCostCols ? `<td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;"></td>` : '';
+    return `
     <tr>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;">${esc(item.description)}</td>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${item.quantity}</td>
+      ${costCell}
+      ${markupCell}
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.unitPrice)}</td>
       <td style="padding:9px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(item.lineTotal)}</td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   const gst = parseFloat(po.gstAmount ?? '0');
   const subtotal = parseFloat(po.subtotal ?? '0');
@@ -6992,21 +7006,31 @@ export function generatePurchaseOrderPDF(data: PurchaseOrderPDFData): string {
   <table>
     <thead>
       <tr>
-        <th style="width:52%;">Description</th>
-        <th class="center" style="width:12%;">Qty</th>
-        <th class="right" style="width:18%;">Unit Price</th>
-        <th class="right" style="width:18%;">Total</th>
+        <th style="width:${showCostCols ? '38' : '52'}%;">Description</th>
+        <th class="center" style="width:10%;">Qty</th>
+        ${showCostCols ? '<th class="right" style="width:14%;">Unit Cost</th><th class="center" style="width:9%;">Markup</th>' : ''}
+        <th class="right" style="width:${showCostCols ? '14' : '18'}%;">Unit Price</th>
+        <th class="right" style="width:${showCostCols ? '15' : '18'}%;">Total</th>
       </tr>
     </thead>
     <tbody>
-      ${itemRows || '<tr><td colspan="4" style="padding:12px;color:#9ca3af;font-style:italic;">No line items</td></tr>'}
+      ${itemRows || `<tr><td colspan="${showCostCols ? 6 : 4}" style="padding:12px;color:#9ca3af;font-style:italic;">No line items</td></tr>`}
     </tbody>
   </table>
 
   <div class="totals">
     <div class="totals-table">
+      ${showCostCols ? (() => {
+        const totalCost = items.reduce((s, i) => s + parseFloat(String(i.unitCost || 0)) * i.quantity, 0);
+        const totalSell = items.reduce((s, i) => s + parseFloat(String(i.unitPrice || 0)) * i.quantity, 0);
+        const markupRev = Math.max(0, totalSell - totalCost);
+        return `
+        <div class="totals-row" style="color:#6b7280;"><span>Total Cost (buy price)</span><span>${fmtMoney(totalCost)}</span></div>
+        <div class="totals-row" style="color:#059669;"><span>Markup Revenue</span><span>+${fmtMoney(markupRev)}</span></div>
+        `;
+      })() : ''}
       ${gst > 0 ? `
-      <div class="totals-row"><span>Subtotal</span><span>${fmtMoney(subtotal)}</span></div>
+      <div class="totals-row"><span>Subtotal (sell)</span><span>${fmtMoney(subtotal)}</span></div>
       <div class="totals-row"><span>GST (10%)</span><span>${fmtMoney(gst)}</span></div>
       ` : ''}
       <div class="totals-row grand"><span>Total</span><span>${fmtMoney(total)}</span></div>
@@ -7022,6 +7046,389 @@ export function generatePurchaseOrderPDF(data: PurchaseOrderPDFData): string {
   <div class="footer">
     This purchase order was issued by ${esc(business.businessName)} &bull; Generated ${new Date().toLocaleDateString('en-AU')}
   </div>
+</body>
+</html>`;
+}
+
+// ── Government / Head-Contractor Report PDF ────────────────────────────────────
+// Produces a formal compliance and payment declaration report suitable for
+// submission to government bodies, head contractors, and infrastructure clients.
+
+export interface GovernmentReportData {
+  business: {
+    businessName: string;
+    abn?: string | null;
+    address?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    logoUrl?: string | null;
+  };
+  job: {
+    id: string;
+    jobNumber: string;
+    title: string;
+    address?: string | null;
+    status: string;
+    startDate?: Date | string | null;
+    endDate?: Date | string | null;
+    retentionPercent?: number | null;
+    practicalCompletionDate?: Date | string | null;
+    defectsLiabilityMonths?: number | null;
+  };
+  client?: {
+    name?: string | null;
+    abn?: string | null;
+    address?: string | null;
+    email?: string | null;
+  } | null;
+  phases: Array<{
+    phaseCode: string;
+    name: string;
+    status: string;
+    scheduledStart?: Date | string | null;
+    scheduledEnd?: Date | string | null;
+    budgetedCost?: number;
+    bookedHours?: number;
+  }>;
+  claims: Array<{
+    claimNumber: string;
+    status: string;
+    submittedAt?: Date | string | null;
+    totalAmount: number;
+    retentionAmount: number;
+    netAmount: number;
+  }>;
+  subcontractors: Array<{
+    name: string;
+    abn?: string | null;
+    trade?: string | null;
+    totalHours: number;
+    totalPaid: number;
+  }>;
+  purchaseOrders: Array<{
+    poNumber: string;
+    supplier: string;
+    total: number;
+    status: string;
+    phase?: string | null;
+    orderDate?: Date | string | null;
+    deliveryDate?: Date | string | null;
+  }>;
+  complianceDocs: Array<{
+    type: string;
+    title: string;
+    documentNumber?: string | null;
+    holderName?: string | null;
+    issuer?: string | null;
+    expiryDate?: Date | string | null;
+  }>;
+  retentionSummary?: {
+    sumRetentionHeld?: number;
+    outstandingRetention?: number;
+    retentionStatus?: string;
+    practicalCompletionDate?: string | null;
+    releaseDate?: string | null;
+  } | null;
+  generatedAt: Date;
+}
+
+export function generateGovernmentReportPDF(data: GovernmentReportData): string {
+  const { business, job, client, phases, claims, subcontractors, purchaseOrders, complianceDocs, retentionSummary, generatedAt } = data;
+
+  const esc = (v: string | null | undefined) =>
+    String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const fmtDate = (d: Date | string | null | undefined) => {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('en-AU', { day: '2-digit', month: 'short', year: 'numeric' }); } catch { return '—'; }
+  };
+
+  const fmtMoney = (v: number | null | undefined) => {
+    if (v == null || isNaN(v)) return '$0.00';
+    return `$${v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  };
+
+  const accent = '#1e3a5f';
+  const accentLight = '#e8f0fe';
+
+  const totalRetentionHeld = retentionSummary?.sumRetentionHeld ?? claims.reduce((s, c) => s + c.retentionAmount, 0);
+  const totalClaimed = claims.reduce((s, c) => s + c.totalAmount, 0);
+  const totalNet = claims.reduce((s, c) => s + c.netAmount, 0);
+
+  const statusBadge = (s: string) => {
+    const col = s === 'received' || s === 'approved' || s === 'paid' ? '#059669'
+      : s === 'cancelled' ? '#dc2626'
+      : s === 'sent' ? '#2563eb'
+      : '#d97706';
+    return `<span style="background:${col}15;color:${col};border:1px solid ${col}40;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:700;text-transform:uppercase;">${esc(s)}</span>`;
+  };
+
+  const phaseRows = phases.map((p, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;color:${accent};">${esc(p.phaseCode) || '—'}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${esc(p.name)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${statusBadge(p.status)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:12px;">${fmtDate(p.scheduledStart)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:12px;">${fmtDate(p.scheduledEnd)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${p.budgetedCost ? fmtMoney(p.budgetedCost) : '—'}</td>
+    </tr>`).join('');
+
+  const claimRows = claims.map((c, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;">${esc(c.claimNumber)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${statusBadge(c.status)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:12px;">${fmtDate(c.submittedAt)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${fmtMoney(c.totalAmount)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#dc2626;">${fmtMoney(c.retentionAmount)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${fmtMoney(c.netAmount)}</td>
+    </tr>`).join('');
+
+  const subRows = subcontractors.filter(s => s.totalHours > 0 || s.totalPaid > 0).map((s, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">${esc(s.name)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${esc(s.abn || '—')}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${esc(s.trade || '—')}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;">${s.totalHours.toFixed(1)} hrs</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${fmtMoney(s.totalPaid)}</td>
+    </tr>`).join('');
+
+  const poRows = purchaseOrders.map((po, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:700;">${esc(po.poNumber)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${esc(po.supplier)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;">${esc(po.phase || '—')}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center;">${statusBadge(po.status)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:#6b7280;font-size:12px;">${fmtDate(po.orderDate)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${fmtMoney(po.total)}</td>
+    </tr>`).join('');
+
+  const compRows = complianceDocs.map((d, i) => `
+    <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-transform:capitalize;">${esc(d.type.replace(/_/g, ' '))}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;font-weight:600;">${esc(d.title)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${esc(d.holderName || '—')}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${esc(d.documentNumber || '—')}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;color:${d.expiryDate && new Date(d.expiryDate) < new Date() ? '#dc2626' : '#374151'};font-size:12px;">${fmtDate(d.expiryDate)}</td>
+    </tr>`).join('');
+
+  const section = (title: string, content: string) => `
+    <div style="margin-bottom:32px;">
+      <div style="background:${accent};color:#fff;padding:10px 16px;border-radius:4px 4px 0 0;font-size:13px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;">${title}</div>
+      <div style="border:1px solid #e5e7eb;border-top:none;border-radius:0 0 4px 4px;">${content}</div>
+    </div>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Head-Contractor Report — ${esc(job.jobNumber)}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #1f2937; background: #fff; padding: 32px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: ${accentLight}; color: ${accent}; padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid ${accent}30; }
+    thead th.right { text-align: right; }
+    thead th.center { text-align: center; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; padding: 16px; background: #f8fafc; }
+    .meta-item { }
+    .meta-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #9ca3af; margin-bottom: 3px; }
+    .meta-value { font-size: 13px; color: #111827; font-weight: 600; }
+    .stat-row { display: flex; gap: 0; border-bottom: 1px solid #e5e7eb; }
+    .stat-box { flex: 1; padding: 16px; text-align: center; border-right: 1px solid #e5e7eb; }
+    .stat-box:last-child { border-right: none; }
+    .stat-num { font-size: 22px; font-weight: 800; color: ${accent}; }
+    .stat-lbl { font-size: 11px; color: #6b7280; margin-top: 2px; }
+    .declaration { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 4px; padding: 16px; margin: 16px; font-size: 12px; line-height: 1.7; color: #374151; }
+    .sig-line { border-top: 1px solid #374151; width: 220px; margin-top: 32px; padding-top: 4px; font-size: 11px; color: #6b7280; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;">
+    <div>
+      ${business.logoUrl ? `<img src="${esc(business.logoUrl)}" alt="${esc(business.businessName)}" style="max-height:56px;max-width:140px;object-fit:contain;margin-bottom:8px;display:block;">` : ''}
+      <div style="font-size:20px;font-weight:800;color:${accent};">${esc(business.businessName)}</div>
+      ${business.abn ? `<div style="font-size:12px;color:#6b7280;">ABN: ${esc(business.abn)}</div>` : ''}
+      ${business.address ? `<div style="font-size:12px;color:#6b7280;">${esc(business.address)}</div>` : ''}
+      ${business.phone ? `<div style="font-size:12px;color:#6b7280;">${esc(business.phone)}</div>` : ''}
+      ${business.email ? `<div style="font-size:12px;color:#6b7280;">${esc(business.email)}</div>` : ''}
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px;font-weight:800;color:${accent};letter-spacing:-0.5px;">HEAD-CONTRACTOR REPORT</div>
+      <div style="font-size:14px;font-weight:700;color:#374151;margin-top:4px;">Job #${esc(job.jobNumber)}</div>
+      <div style="font-size:12px;color:#6b7280;margin-top:2px;">${esc(job.title)}</div>
+      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Generated: ${generatedAt.toLocaleDateString('en-AU', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+    </div>
+  </div>
+
+  <hr style="border:none;border-top:3px solid ${accent};margin-bottom:24px;">
+
+  <!-- Job summary stats -->
+  <div style="border:1px solid #e5e7eb;border-radius:4px;margin-bottom:24px;overflow:hidden;">
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-num">${claims.length}</div><div class="stat-lbl">Progress Claims</div></div>
+      <div class="stat-box"><div class="stat-num">${fmtMoney(totalClaimed)}</div><div class="stat-lbl">Total Claimed</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#dc2626;">${fmtMoney(totalRetentionHeld)}</div><div class="stat-lbl">Retention Held</div></div>
+      <div class="stat-box"><div class="stat-num" style="color:#059669;">${fmtMoney(totalNet)}</div><div class="stat-lbl">Net Payable</div></div>
+      <div class="stat-box"><div class="stat-num">${purchaseOrders.length}</div><div class="stat-lbl">Purchase Orders</div></div>
+      <div class="stat-box"><div class="stat-num">${subcontractors.filter(s => s.totalHours > 0).length}</div><div class="stat-lbl">Subcontractors</div></div>
+    </div>
+  </div>
+
+  <!-- Project Details -->
+  ${section('Project Details', `
+    <div class="meta-grid">
+      <div class="meta-item"><div class="meta-label">Job Number</div><div class="meta-value">${esc(job.jobNumber)}</div></div>
+      <div class="meta-item"><div class="meta-label">Project Title</div><div class="meta-value">${esc(job.title)}</div></div>
+      <div class="meta-item"><div class="meta-label">Status</div><div class="meta-value" style="text-transform:capitalize;">${esc(job.status)}</div></div>
+      ${job.address ? `<div class="meta-item"><div class="meta-label">Site Address</div><div class="meta-value">${esc(job.address)}</div></div>` : ''}
+      ${job.startDate ? `<div class="meta-item"><div class="meta-label">Start Date</div><div class="meta-value">${fmtDate(job.startDate)}</div></div>` : ''}
+      ${job.endDate ? `<div class="meta-item"><div class="meta-label">End Date</div><div class="meta-value">${fmtDate(job.endDate)}</div></div>` : ''}
+      ${job.practicalCompletionDate ? `<div class="meta-item"><div class="meta-label">Practical Completion</div><div class="meta-value">${fmtDate(job.practicalCompletionDate)}</div></div>` : ''}
+      ${job.defectsLiabilityMonths ? `<div class="meta-item"><div class="meta-label">DLP Period</div><div class="meta-value">${job.defectsLiabilityMonths} months</div></div>` : ''}
+      ${job.retentionPercent ? `<div class="meta-item"><div class="meta-label">Retention Rate</div><div class="meta-value">${job.retentionPercent}%</div></div>` : ''}
+      ${client?.name ? `<div class="meta-item"><div class="meta-label">Client / Principal</div><div class="meta-value">${esc(client.name)}</div></div>` : ''}
+      ${client?.abn ? `<div class="meta-item"><div class="meta-label">Client ABN</div><div class="meta-value">${esc(client.abn)}</div></div>` : ''}
+    </div>
+  `)}
+
+  <!-- Phase Schedule -->
+  ${phases.length > 0 ? section('Phase Schedule', `
+    <table>
+      <thead><tr>
+        <th style="width:12%;">Phase Code</th>
+        <th>Phase Name</th>
+        <th class="center" style="width:12%;">Status</th>
+        <th class="right" style="width:13%;">Start</th>
+        <th class="right" style="width:13%;">End</th>
+        <th class="right" style="width:13%;">Budget</th>
+      </tr></thead>
+      <tbody>${phaseRows || '<tr><td colspan="6" style="padding:12px;color:#9ca3af;font-style:italic;">No phases defined</td></tr>'}</tbody>
+    </table>
+  `) : ''}
+
+  <!-- Progress Claim Schedule -->
+  ${section('Progress Claim Schedule', `
+    <table>
+      <thead><tr>
+        <th style="width:14%;">Claim No.</th>
+        <th class="center" style="width:12%;">Status</th>
+        <th class="right" style="width:14%;">Submitted</th>
+        <th class="right" style="width:15%;">Gross Amount</th>
+        <th class="right" style="width:15%;">Retention</th>
+        <th class="right" style="width:15%;">Net Payable</th>
+      </tr></thead>
+      <tbody>${claimRows || '<tr><td colspan="6" style="padding:12px;color:#9ca3af;font-style:italic;">No claims submitted</td></tr>'}</tbody>
+      ${claims.length > 0 ? `
+      <tfoot>
+        <tr style="background:${accentLight};font-weight:700;">
+          <td colspan="3" style="padding:10px 12px;border-top:2px solid ${accent}30;">TOTALS</td>
+          <td style="padding:10px 12px;border-top:2px solid ${accent}30;text-align:right;">${fmtMoney(totalClaimed)}</td>
+          <td style="padding:10px 12px;border-top:2px solid ${accent}30;text-align:right;color:#dc2626;">${fmtMoney(totalRetentionHeld)}</td>
+          <td style="padding:10px 12px;border-top:2px solid ${accent}30;text-align:right;color:#059669;">${fmtMoney(totalNet)}</td>
+        </tr>
+      </tfoot>` : ''}
+    </table>
+    ${retentionSummary ? `
+    <div style="padding:12px 16px;background:#fef9f0;border-top:1px solid #fbbf24;font-size:12px;color:#374151;">
+      <strong>Retention Status:</strong> ${esc((retentionSummary.retentionStatus || '').replace(/_/g, ' '))}
+      ${retentionSummary.practicalCompletionDate ? ` &bull; PC Date: ${fmtDate(retentionSummary.practicalCompletionDate)}` : ''}
+      ${retentionSummary.releaseDate ? ` &bull; Release Date: ${fmtDate(retentionSummary.releaseDate)}` : ''}
+    </div>` : ''}
+  `)}
+
+  <!-- Subcontractor Payment Schedule -->
+  ${subcontractors.length > 0 ? section('Subcontractor Payment Schedule', `
+    <table>
+      <thead><tr>
+        <th>Subcontractor</th>
+        <th style="width:15%;">ABN</th>
+        <th style="width:15%;">Trade</th>
+        <th class="right" style="width:12%;">Hours</th>
+        <th class="right" style="width:15%;">Amount Paid</th>
+      </tr></thead>
+      <tbody>${subRows || '<tr><td colspan="5" style="padding:12px;color:#9ca3af;font-style:italic;">No subcontractors</td></tr>'}</tbody>
+    </table>
+    <div class="declaration">
+      <strong>Subcontractor Payment Declaration</strong><br>
+      I declare that all subcontractors listed above have been paid in accordance with their contracts, the Building and Construction Industry Security of Payment Act, and all applicable State and Territory legislation. All payments have been made within the required timeframes.
+    </div>
+  `) : ''}
+
+  <!-- Purchase Order Register -->
+  ${purchaseOrders.length > 0 ? section('Purchase Order Register', `
+    <table>
+      <thead><tr>
+        <th style="width:14%;">PO Number</th>
+        <th>Supplier</th>
+        <th style="width:14%;">Phase</th>
+        <th class="center" style="width:12%;">Status</th>
+        <th class="right" style="width:13%;">Order Date</th>
+        <th class="right" style="width:13%;">Amount</th>
+      </tr></thead>
+      <tbody>${poRows}</tbody>
+      <tfoot>
+        <tr style="background:${accentLight};font-weight:700;">
+          <td colspan="5" style="padding:10px 12px;border-top:2px solid ${accent}30;">TOTAL PURCHASE ORDERS</td>
+          <td style="padding:10px 12px;border-top:2px solid ${accent}30;text-align:right;">${fmtMoney(purchaseOrders.reduce((s, p) => s + p.total, 0))}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `) : ''}
+
+  <!-- Compliance Schedule -->
+  ${complianceDocs.length > 0 ? section('Compliance &amp; Licence Schedule', `
+    <table>
+      <thead><tr>
+        <th style="width:16%;">Type</th>
+        <th>Document</th>
+        <th style="width:15%;">Holder</th>
+        <th style="width:15%;">Ref / Number</th>
+        <th class="right" style="width:13%;">Expiry</th>
+      </tr></thead>
+      <tbody>${compRows}</tbody>
+    </table>
+  `) : ''}
+
+  <!-- Statutory Declaration -->
+  ${section('Statutory Declaration', `
+    <div style="padding:16px;">
+      <div class="declaration">
+        <strong>I, _______________________________, being the authorised representative of ${esc(business.businessName)}</strong>
+        (ABN: ${esc(business.abn || '________________')}), do solemnly and sincerely declare that:
+        <br><br>
+        1. All progress claims submitted for Job No. <strong>${esc(job.jobNumber)}</strong> — ${esc(job.title)} are accurate and reflect work genuinely performed.
+        <br><br>
+        2. All subcontractors and employees engaged on this project have been paid all amounts due and owing in respect of work performed on this project.
+        <br><br>
+        3. All required insurances, licences, and compliance documents are current and valid for the duration of the works.
+        <br><br>
+        4. No security of payment disputes are currently pending in relation to this project, unless noted in writing.
+        <br><br>
+        And I make this solemn declaration conscientiously believing the same to be true and by virtue of the provisions of the Oaths Act.
+      </div>
+      <div style="display:flex;gap:48px;margin-top:24px;padding:0 8px;">
+        <div>
+          <div class="sig-line">Signature</div>
+        </div>
+        <div>
+          <div class="sig-line">Print Name</div>
+        </div>
+        <div>
+          <div class="sig-line">Date</div>
+        </div>
+        <div>
+          <div class="sig-line">Position / Title</div>
+        </div>
+      </div>
+    </div>
+  `)}
+
+  <div style="margin-top:40px;padding-top:12px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center;">
+    ${esc(business.businessName)} &bull; Job #${esc(job.jobNumber)} &bull; Head-Contractor Report &bull; Generated ${generatedAt.toLocaleDateString('en-AU')}
+  </div>
+
 </body>
 </html>`;
 }
