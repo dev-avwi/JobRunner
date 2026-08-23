@@ -408,11 +408,14 @@ function getTimeElapsed(scheduledAt?: string, scheduledTime?: string): string | 
   } catch { return null; }
 }
 
+const TERMINAL_STATUSES = ['done', 'completed', 'invoiced', 'cancelled'];
+
 function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: DispatchJob[]; teamMembers?: TeamMember[] }) {
   const [kanbanFilter, setKanbanFilter] = useState<string>('all');
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
   const [kanbanDrag, setKanbanDrag] = useState<{ jobId: string; fromColumn: string } | null>(null);
   const [kanbanDragOver, setKanbanDragOver] = useState<string | null>(null);
+  const [showTerminal, setShowTerminal] = useState(false);
   const { toast } = useToast();
 
   const updateStatusMutation = useMutation({
@@ -441,15 +444,25 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
     });
   }, [dispatchJobs, kanbanFilter]);
 
+  const terminalCount = useMemo(() =>
+    filteredJobs.filter(job => TERMINAL_STATUSES.includes(job.status?.toLowerCase() || '')).length,
+    [filteredJobs],
+  );
+
+  const activeFilteredJobs = useMemo(() => {
+    if (showTerminal) return filteredJobs;
+    return filteredJobs.filter(job => !TERMINAL_STATUSES.includes(job.status?.toLowerCase() || ''));
+  }, [filteredJobs, showTerminal]);
+
   const columnJobs = useMemo(() => {
     const map: Record<string, DispatchJob[]> = {};
     KANBAN_COLUMNS.forEach(col => { map[col.key] = []; });
-    filteredJobs.forEach(job => {
+    activeFilteredJobs.forEach(job => {
       const col = getKanbanColumn(job);
       if (map[col]) map[col].push(job);
     });
     return map;
-  }, [filteredJobs]);
+  }, [activeFilteredJobs]);
 
   // Job status to set when dropping to a column.
   // en_route and arrived are worker-status sub-stages of "scheduled" — the job
@@ -534,6 +547,20 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
             Unassigned
           </Button>
         </div>
+        <Button
+          variant={showTerminal ? 'secondary' : 'ghost'}
+          size="sm"
+          onClick={() => setShowTerminal(v => !v)}
+          className="ml-auto shrink-0"
+        >
+          <Eye className="h-3.5 w-3.5 mr-1.5" />
+          {showTerminal ? 'Hide' : 'Show'} completed
+          {terminalCount > 0 && (
+            <Badge variant="secondary" className="ml-1.5 tabular-nums text-[10px] h-4 px-1">
+              {terminalCount}
+            </Badge>
+          )}
+        </Button>
       </div>
 
       <div className="overflow-x-auto pb-4">

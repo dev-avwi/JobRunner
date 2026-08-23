@@ -281,7 +281,12 @@ function DispatchBoardScreenInner() {
 
   // ── Derived data ─────────────────────────────────────────────────────────
   const activeJobs = useMemo(() =>
-    jobs.filter(j => j.status !== 'completed' && j.status !== 'cancelled' && j.status !== 'done'),
+    jobs.filter(j =>
+      j.status !== 'completed' &&
+      j.status !== 'cancelled' &&
+      j.status !== 'done' &&
+      j.status !== 'invoiced',
+    ),
     [jobs],
   );
 
