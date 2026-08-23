@@ -106,24 +106,32 @@ export function SkeletonListItem() {
 
 export function SkeletonJobCard() {
   const { colors } = useTheme();
-  
+
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <View style={styles.cardHeader}>
-        <View style={{ flex: 1 }}>
-          <Skeleton width="70%" height={18} />
-          <Skeleton width="40%" height={14} style={{ marginTop: 8 }} />
-        </View>
-        <Skeleton width={80} height={28} borderRadius={14} />
+      {/* Badge row: status + more button — matches real card's jobCardStatusRow */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+        <Skeleton width={54} height={20} borderRadius={10} />
+        <Skeleton width={18} height={18} borderRadius={9} />
       </View>
-      <View style={{ marginTop: spacing.md }}>
+      {/* Title — 2 lines matching jobTitle fontSize ~15-16 */}
+      <View style={{ marginBottom: spacing.sm }}>
+        <Skeleton width="85%" height={16} />
+        <Skeleton width="62%" height={16} style={{ marginTop: 5 }} />
+      </View>
+      {/* Detail rows: client, address, date */}
+      <View style={{ gap: spacing.xs }}>
         <View style={styles.row}>
-          <Skeleton width={16} height={16} borderRadius={8} />
-          <Skeleton width="60%" height={14} style={{ marginLeft: 8 }} />
+          <Skeleton width={13} height={13} borderRadius={4} />
+          <Skeleton width="68%" height={12} style={{ marginLeft: 6 }} />
         </View>
-        <View style={[styles.row, { marginTop: 8 }]}>
-          <Skeleton width={16} height={16} borderRadius={8} />
-          <Skeleton width="80%" height={14} style={{ marginLeft: 8 }} />
+        <View style={styles.row}>
+          <Skeleton width={13} height={13} borderRadius={4} />
+          <Skeleton width="78%" height={12} style={{ marginLeft: 6 }} />
+        </View>
+        <View style={styles.row}>
+          <Skeleton width={13} height={13} borderRadius={4} />
+          <Skeleton width="52%" height={12} style={{ marginLeft: 6 }} />
         </View>
       </View>
     </View>

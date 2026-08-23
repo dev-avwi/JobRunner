@@ -258,17 +258,42 @@ export function MaterialsSection(props: MaterialsSectionProps) {
 
     return (
       <>
-        {/* Section header */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, paddingHorizontal: spacing.md }}>
-          <View>
-            <Text style={styles.tabSectionTitle}>MATERIALS</Text>
+        {/* Section header — inside a card, matching Claims / Variations pattern */}
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          marginBottom: spacing.sm,
+          overflow: 'hidden',
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+            <Feather name="package" size={14} color={colors.mutedForeground} />
+            <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>
+              Materials
+            </Text>
             {materials.length > 0 && (
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
-                {materials.length} item{materials.length !== 1 ? 's' : ''} · Total ${totalCost.toFixed(2)}
+              <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                  {materials.length}
+                </Text>
+              </View>
+            )}
+            {materials.length > 0 && (
+              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                ${totalCost.toFixed(2)}
               </Text>
             )}
+            <TouchableOpacity
+              onPress={() => openAddForm(activePhaseId)}
+              style={{ marginLeft: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}
+              activeOpacity={0.7}
+            >
+              <Feather name="plus" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Add</Text>
+            </TouchableOpacity>
           </View>
-          {addButton(activePhaseId)}
         </View>
 
         {isLoadingMaterials ? (
@@ -399,22 +424,45 @@ export function MaterialsSection(props: MaterialsSectionProps) {
   }
 
   // ── Flat view (service calls / no phases) ──────────────────────────────
+  const flatHeaderHasCost = materials.some(m => Number(m.unitCost || 0) > 0);
   return (
     <>
-      {/* Materials Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm, paddingHorizontal: spacing.md }}>
-        <View>
-          <Text style={styles.tabSectionTitle}>JOB MATERIALS</Text>
-          {materials.length > 0 && (() => {
-            const headerHasCost = materials.some(m => Number(m.unitCost || 0) > 0);
-            return (
-              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
-                {materials.length} item{materials.length !== 1 ? 's' : ''} · Cost {headerHasCost ? `$${totalCost.toFixed(2)}` : 'Not set'}{hasPricing ? ` · Sell $${totalSellPrice.toFixed(2)}` : ''}
+      {/* Section header — inside a card, matching Claims / Variations pattern */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginBottom: spacing.sm,
+        overflow: 'hidden',
+        ...shadows.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
+          <Feather name="package" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>
+            Materials
+          </Text>
+          {materials.length > 0 && (
+            <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>
+              <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                {materials.length}
               </Text>
-            );
-          })()}
+            </View>
+          )}
+          {materials.length > 0 && (
+            <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+              {flatHeaderHasCost ? `$${totalCost.toFixed(2)}` : 'No cost set'}
+            </Text>
+          )}
+          <TouchableOpacity
+            onPress={() => openAddForm()}
+            style={{ marginLeft: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}
+            activeOpacity={0.7}
+          >
+            <Feather name="plus" size={13} color={colors.primary} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Add</Text>
+          </TouchableOpacity>
         </View>
-        {addButton()}
       </View>
 
       {isLoadingMaterials ? (

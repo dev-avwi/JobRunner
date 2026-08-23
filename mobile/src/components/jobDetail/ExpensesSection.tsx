@@ -793,30 +793,39 @@ export default function ExpensesSection({
     </TouchableOpacity>
   ), [colors, isOwnerOrManager, openEditExpense]);
 
-  // ── Card-style header — used inside cards so title sits on the same visual line
+  // ── Card-style header — matches Claims / Variations section header pattern
   const cardHeader = (
     <View style={{
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
+      gap: spacing.xs,
       paddingHorizontal: spacing.md,
-      paddingTop: spacing.md,
-      paddingBottom: spacing.sm,
+      paddingVertical: spacing.sm,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     }}>
-      <View>
-        <Text style={styles.sectionTitle}>EXPENSES</Text>
-        {expenses.length > 0 && (
-          <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
-            {expenses.length} item{expenses.length !== 1 ? 's' : ''}  ·  {fmt(total)}
+      <Feather name="credit-card" size={14} color={colors.mutedForeground} />
+      <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }}>
+        Expenses
+      </Text>
+      {expenses.length > 0 && (
+        <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>
+          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: colors.mutedForeground }}>
+            {expenses.length}
           </Text>
-        )}
-      </View>
+        </View>
+      )}
+      {expenses.length > 0 && (
+        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+          {fmt(total)}
+        </Text>
+      )}
       {isOwnerOrManager && (
-        <TouchableOpacity onPress={() => openAddSheet(activePhaseId)} activeOpacity={0.7} style={styles.addButton}>
-          <Feather name="plus" size={12} color={colors.primary} />
-          <Text style={styles.addButtonLabel}>Add</Text>
+        <TouchableOpacity onPress={() => openAddSheet(activePhaseId)} activeOpacity={0.7} style={{ marginLeft: spacing.xs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}>
+            <Feather name="plus" size={13} color={colors.primary} />
+            <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.primary }}>Add</Text>
+          </View>
         </TouchableOpacity>
       )}
     </View>
