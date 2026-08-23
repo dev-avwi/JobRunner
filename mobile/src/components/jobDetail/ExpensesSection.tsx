@@ -1,14 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  ActivityIndicator,
   StyleSheet,
+  TextInput,
+  Switch,
+  Platform,
+  ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../lib/design-tokens';
 import { api } from '../../lib/api';
@@ -39,6 +43,11 @@ export interface PhaseStub {
   phaseCode?: string | null;
   status: string;
   sortOrder: number;
+}
+
+interface ExpenseCategory {
+  id: string;
+  name: string;
 }
 
 interface Props {
@@ -82,6 +91,10 @@ function fmtDate(iso: string): string {
   }
 }
 
+function todayIso(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ExpensesSection({
@@ -118,13 +131,27 @@ export default function ExpensesSection({
       fontWeight: fontWeights.semibold as any,
       color: colors.primary,
     },
+    input: {
+      backgroundColor: colors.muted,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
+      fontSize: 15,
+      color: colors.foreground,
+      borderWidth: 1,
+      borderColor: colors.cardBorder,
+    },
+    fieldLabel: {
+      fontSize: 11,
+      fontWeight: fontWeights.semibold as any,
+      color: colors.mutedForeground,
+      letterSpacing: 0.6,
+      textTransform: 'uppercase',
+      marginBottom: spacing.xs,
+    },
   });
 
-  const navigateToAdd = useCallback((phaseId?: string | null) => {
-    const params = new URLSearchParams({ jobId });
-    if (phaseId) params.append('phaseId', phaseId);
-    router.push(`/more/expenses?${params.toString()}` as any);
-  }, [jobId]);
+  // ── Edit expense sheet state ─────────────────────────────────────────────────
 
   const [editingExpense, setEditingExpense] = useState<SectionExpense | null>(null);
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
@@ -168,10 +195,123 @@ export default function ExpensesSection({
     }
   }, [editingExpense, editingPhaseId, isSavingExpense, onRefresh]);
 
+  // ── Add expense sheet state ──────────────────────────────────────────────────
+
+  const [addSheetVisible, setAddSheetVisible] = useState(false);
+  const [addPhaseId, setAddPhaseId] = useState<string | null>(null);
+  const [addForm, setAddForm] = useState({
+    description: '',
+    amount: '',
+    vendor: '',
+    expenseDate: todayIso(),
+    isBillable: true,
+    categoryId: '',
+  });
+  const [addCategories, setAddCategories] = useState<ExpenseCategory[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+  const [isSavingAdd, setIsSavingAdd] = useState(false);
+
+  // Date picker
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState(new Date());
+
+  // Fetch categories whenever the add sheet opens
+  useEffect(() => {
+    if (!addSheetVisible) return;
+    setIsLoadingCategories(true);
+    api.get('/api/expense-categories').then((res: any) => {
+      const list: ExpenseCategory[] = Array.isArray(res) ? res : [];
+      setAddCategories(list);
+      // Auto-select first category if none chosen yet
+      if (list.length > 0) {
+        setAddForm(f => ({ ...f, categoryId: f.categoryId || list[0].id }));
+      }
+    }).finally(() => setIsLoadingCategories(false));
+  }, [addSheetVisible]);
+
+  const openAddSheet = useCallback((phaseId?: string | null) => {
+    const today = new Date();
+    setAddPhaseId(phaseId ?? null);
+    setAddForm({
+      description: '',
+      amount: '',
+      vendor: '',
+      expenseDate: todayIso(),
+      isBillable: true,
+      categoryId: '',
+    });
+    setDatePickerValue(today);
+    setShowDatePicker(false);
+    setAddSheetVisible(true);
+  }, []);
+
+  const closeAddSheet = useCallback(() => {
+    if (isSavingAdd) return;
+    setAddSheetVisible(false);
+  }, [isSavingAdd]);
+
+  const handleAddExpense = useCallback(async () => {
+    if (!addForm.description.trim()) {
+      showToast({ type: 'error', message: 'Description required' });
+      return;
+    }
+    if (!addForm.amount || isNaN(parseFloat(addForm.amount))) {
+      showToast({ type: 'error', message: 'Enter a valid amount' });
+      return;
+    }
+    if (!addForm.categoryId) {
+      showToast({ type: 'error', message: 'Select a category' });
+      return;
+    }
+
+    setIsSavingAdd(true);
+    try {
+      const body: Record<string, any> = {
+        jobId,
+        description: addForm.description.trim(),
+        amount: addForm.amount,
+        categoryId: addForm.categoryId,
+        expenseDate: addForm.expenseDate,
+        isBillable: addForm.isBillable,
+      };
+      if (addPhaseId) body.phaseId = addPhaseId;
+      if (addForm.vendor.trim()) body.vendor = addForm.vendor.trim();
+
+      const response = await api.post('/api/expenses', body);
+      if (response.error) throw new Error(response.error);
+
+      setAddSheetVisible(false);
+      await onRefresh?.();
+      showToast({ type: 'success', message: 'Expense added' });
+    } catch (error: any) {
+      showToast({
+        type: 'error',
+        message: 'Could not add expense',
+        description: error?.message || 'Please try again.',
+      });
+    } finally {
+      setIsSavingAdd(false);
+    }
+  }, [addForm, addPhaseId, jobId, onRefresh]);
+
+  const onDatePickerChange = useCallback((_event: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (selected) {
+      setDatePickerValue(selected);
+      setAddForm(f => ({ ...f, expenseDate: selected.toISOString().split('T')[0] }));
+    }
+  }, []);
+
+  // ── Shared sorted phases ─────────────────────────────────────────────────────
+
   const sortedPhases = phases ? [...phases].sort((a, b) => a.sortOrder - b.sortOrder) : [];
+
+  // ── Edit sheet ───────────────────────────────────────────────────────────────
+
   const selectedPhaseName = editingPhaseId
     ? sortedPhases.find((phase) => phase.id === editingPhaseId)?.name ?? 'Unassigned'
     : 'Unassigned';
+
   const editSheet = (
     <AppBottomSheet
       visible={editingExpense !== null}
@@ -298,6 +438,307 @@ export default function ExpensesSection({
     </AppBottomSheet>
   );
 
+  // ── Add sheet ────────────────────────────────────────────────────────────────
+
+  const selectedCategoryName = addCategories.find(c => c.id === addForm.categoryId)?.name ?? '';
+  const selectedAddPhaseName = addPhaseId
+    ? sortedPhases.find(p => p.id === addPhaseId)?.name ?? 'Unassigned'
+    : 'Unassigned';
+
+  const addSheet = (
+    <AppBottomSheet
+      visible={addSheetVisible}
+      onDismiss={closeAddSheet}
+      title="Add Expense"
+      showCloseButton
+      snapPoints={['85%']}
+      footer={(
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <TouchableOpacity
+            onPress={closeAddSheet}
+            disabled={isSavingAdd}
+            activeOpacity={0.7}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: colors.foreground }}>
+              Cancel
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleAddExpense}
+            disabled={isSavingAdd}
+            activeOpacity={0.7}
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingVertical: spacing.md,
+              borderRadius: radius.lg,
+              backgroundColor: isSavingAdd ? colors.muted : colors.primary,
+            }}
+          >
+            <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: isSavingAdd ? colors.mutedForeground : colors.primaryForeground }}>
+              {isSavingAdd ? 'Adding...' : 'Add Expense'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={{ gap: spacing.lg }}>
+
+            {/* Description */}
+            <View>
+              <Text style={styles.fieldLabel}>Description</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="What was this expense for?"
+                placeholderTextColor={colors.mutedForeground}
+                value={addForm.description}
+                onChangeText={t => setAddForm(f => ({ ...f, description: t }))}
+                returnKeyType="next"
+                autoCapitalize="sentences"
+              />
+            </View>
+
+            {/* Amount */}
+            <View>
+              <Text style={styles.fieldLabel}>Amount</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <View style={{
+                  backgroundColor: colors.muted,
+                  borderWidth: 1,
+                  borderRightWidth: 0,
+                  borderColor: colors.cardBorder,
+                  borderTopLeftRadius: radius.lg,
+                  borderBottomLeftRadius: radius.lg,
+                  paddingHorizontal: spacing.md,
+                  paddingVertical: spacing.sm + 2,
+                }}>
+                  <Text style={{ fontSize: 15, color: colors.mutedForeground, fontWeight: fontWeights.medium as any }}>$</Text>
+                </View>
+                <TextInput
+                  style={[styles.input, { flex: 1, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }]}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={addForm.amount}
+                  onChangeText={t => setAddForm(f => ({ ...f, amount: t.replace(/[^0-9.]/g, '') }))}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                />
+              </View>
+            </View>
+
+            {/* Category */}
+            <View>
+              <Text style={styles.fieldLabel}>Category</Text>
+              {isLoadingCategories ? (
+                <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                  {[80, 100, 70].map(w => (
+                    <View key={w} style={{ width: w, height: 34, borderRadius: radius.md, backgroundColor: colors.muted }} />
+                  ))}
+                </View>
+              ) : (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                    {addCategories.map(cat => {
+                      const isSelected = addForm.categoryId === cat.id;
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          onPress={() => setAddForm(f => ({ ...f, categoryId: cat.id }))}
+                          activeOpacity={0.7}
+                          style={{
+                            paddingHorizontal: spacing.md,
+                            paddingVertical: spacing.sm,
+                            borderRadius: radius.full ?? 999,
+                            borderWidth: 1,
+                            borderColor: isSelected ? colors.primary : colors.cardBorder,
+                            backgroundColor: isSelected ? colors.primaryLight : colors.muted,
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 13,
+                            fontWeight: (isSelected ? fontWeights.semibold : fontWeights.medium) as any,
+                            color: isSelected ? colors.primary : colors.mutedForeground,
+                          }}>
+                            {cat.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              )}
+            </View>
+
+            {/* Date */}
+            <View>
+              <Text style={styles.fieldLabel}>Date</Text>
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+                style={[styles.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              >
+                <Text style={{ fontSize: 15, color: colors.foreground }}>
+                  {fmtDate(addForm.expenseDate)}
+                </Text>
+                <Feather name="calendar" size={16} color={colors.mutedForeground} />
+              </TouchableOpacity>
+              {showDatePicker && (
+                <View style={{
+                  marginTop: spacing.xs,
+                  backgroundColor: colors.card,
+                  borderRadius: radius.lg,
+                  borderWidth: 1,
+                  borderColor: colors.cardBorder,
+                  overflow: 'hidden',
+                }}>
+                  <DateTimePicker
+                    value={datePickerValue}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onDatePickerChange}
+                    maximumDate={new Date()}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      onPress={() => setShowDatePicker(false)}
+                      style={{
+                        alignItems: 'center',
+                        paddingVertical: spacing.sm,
+                        borderTopWidth: StyleSheet.hairlineWidth,
+                        borderTopColor: colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: colors.primary }}>
+                        Done
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {/* Vendor (optional) */}
+            <View>
+              <Text style={styles.fieldLabel}>Vendor (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Supplier or vendor name"
+                placeholderTextColor={colors.mutedForeground}
+                value={addForm.vendor}
+                onChangeText={t => setAddForm(f => ({ ...f, vendor: t }))}
+                autoCapitalize="words"
+                returnKeyType="done"
+              />
+            </View>
+
+            {/* Phase — only shown on projects with phases */}
+            {sortedPhases.length > 0 && (
+              <View>
+                <Text style={styles.fieldLabel}>Phase</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                    {/* Unassigned pill */}
+                    <TouchableOpacity
+                      onPress={() => setAddPhaseId(null)}
+                      activeOpacity={0.7}
+                      style={{
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: spacing.sm,
+                        borderRadius: radius.full ?? 999,
+                        borderWidth: 1,
+                        borderColor: addPhaseId === null ? colors.primary : colors.cardBorder,
+                        backgroundColor: addPhaseId === null ? colors.primaryLight : colors.muted,
+                      }}
+                    >
+                      <Text style={{
+                        fontSize: 13,
+                        fontWeight: (addPhaseId === null ? fontWeights.semibold : fontWeights.medium) as any,
+                        color: addPhaseId === null ? colors.primary : colors.mutedForeground,
+                      }}>
+                        Unassigned
+                      </Text>
+                    </TouchableOpacity>
+
+                    {sortedPhases.map(phase => {
+                      const isSelected = addPhaseId === phase.id;
+                      return (
+                        <TouchableOpacity
+                          key={phase.id}
+                          onPress={() => setAddPhaseId(phase.id)}
+                          activeOpacity={0.7}
+                          style={{
+                            paddingHorizontal: spacing.md,
+                            paddingVertical: spacing.sm,
+                            borderRadius: radius.full ?? 999,
+                            borderWidth: 1,
+                            borderColor: isSelected ? colors.primary : colors.cardBorder,
+                            backgroundColor: isSelected ? colors.primaryLight : colors.muted,
+                          }}
+                        >
+                          <Text style={{
+                            fontSize: 13,
+                            fontWeight: (isSelected ? fontWeights.semibold : fontWeights.medium) as any,
+                            color: isSelected ? colors.primary : colors.mutedForeground,
+                          }} numberOfLines={1}>
+                            {phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Billable toggle */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: colors.muted,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.cardBorder,
+              paddingHorizontal: spacing.md,
+              paddingVertical: spacing.sm + 2,
+            }}>
+              <View>
+                <Text style={{ fontSize: 15, color: colors.foreground, fontWeight: fontWeights.medium as any }}>
+                  Billable to client
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>
+                  Include in client invoice
+                </Text>
+              </View>
+              <Switch
+                value={addForm.isBillable}
+                onValueChange={v => setAddForm(f => ({ ...f, isBillable: v }))}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={Platform.OS === 'android' ? (addForm.isBillable ? colors.primaryForeground : colors.mutedForeground) : undefined}
+              />
+            </View>
+
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </AppBottomSheet>
+  );
+
   const total = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
 
   // ── Expense row ─────────────────────────────────────────────────────────────
@@ -309,8 +750,6 @@ export default function ExpensesSection({
       onPress={() => {
         if (isOwnerOrManager) {
           openEditExpense(expense);
-        } else {
-          router.push(`/more/expenses?jobId=${jobId}` as any);
         }
       }}
       style={{
@@ -352,7 +791,7 @@ export default function ExpensesSection({
         -{fmt(expense.amount)}
       </Text>
     </TouchableOpacity>
-  ), [colors, isOwnerOrManager, jobId, openEditExpense]);
+  ), [colors, isOwnerOrManager, openEditExpense]);
 
   // ── Card-style header — used inside cards so title sits on the same visual line
   const cardHeader = (
@@ -375,20 +814,7 @@ export default function ExpensesSection({
         )}
       </View>
       {isOwnerOrManager && (
-        <TouchableOpacity onPress={() => navigateToAdd(activePhaseId)} activeOpacity={0.7} style={styles.addButton}>
-          <Feather name="plus" size={12} color={colors.primary} />
-          <Text style={styles.addButtonLabel}>Add</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  // ── Section label header for phase-grouped view — sits above multiple cards
-  const sectionHeader = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-      <Text style={styles.sectionTitle}>EXPENSES</Text>
-      {isOwnerOrManager && (
-        <TouchableOpacity onPress={() => navigateToAdd(activePhaseId)} activeOpacity={0.7} style={styles.addButton}>
+        <TouchableOpacity onPress={() => openAddSheet(activePhaseId)} activeOpacity={0.7} style={styles.addButton}>
           <Feather name="plus" size={12} color={colors.primary} />
           <Text style={styles.addButtonLabel}>Add</Text>
         </TouchableOpacity>
@@ -410,6 +836,7 @@ export default function ExpensesSection({
       }}>
         {cardHeader}
         {editSheet}
+        {addSheet}
         <View style={{ padding: spacing.sm }}>
           <SkeletonSection rows={3} />
         </View>
@@ -419,11 +846,11 @@ export default function ExpensesSection({
 
   // ── Phase-grouped view (projects) ────────────────────────────────────────────
   if (phases && phases.length > 0) {
-    const sortedPhases = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
+    const sortedPhasesLocal = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
 
     const byPhase = new Map<string | null, SectionExpense[]>();
     byPhase.set(null, []);
-    for (const ph of sortedPhases) byPhase.set(ph.id, []);
+    for (const ph of sortedPhasesLocal) byPhase.set(ph.id, []);
     for (const e of expenses) {
       const key = e.phaseId ?? null;
       (byPhase.get(byPhase.has(key) ? key : null)!).push(e);
@@ -431,18 +858,17 @@ export default function ExpensesSection({
 
     const unassigned = byPhase.get(null) ?? [];
 
-    // Only render a phase card if it has expenses OR is the active/in-progress phase
-    const activePh = sortedPhases.find(p => p.id === activePhaseId)
-      ?? sortedPhases.find(p => p.status === 'in_progress')
-      ?? sortedPhases.find(p => p.status === 'not_started');
-    const phasesToShow = sortedPhases.filter(ph => {
+    const activePh = sortedPhasesLocal.find(p => p.id === activePhaseId)
+      ?? sortedPhasesLocal.find(p => p.status === 'in_progress')
+      ?? sortedPhasesLocal.find(p => p.status === 'not_started');
+    const phasesToShow = sortedPhasesLocal.filter(ph => {
       const hasExpenses = (byPhase.get(ph.id) ?? []).length > 0;
       return hasExpenses || ph.id === activePh?.id;
     });
 
     return (
       <>
-        {/* Section header — rendered inside a card so the title sits on the same visual baseline as the phase cards */}
+        {/* Section header card */}
         <View style={{
           backgroundColor: colors.card,
           borderRadius: radius.xl,
@@ -455,6 +881,7 @@ export default function ExpensesSection({
           {cardHeader}
         </View>
         {editSheet}
+        {addSheet}
 
         {phasesToShow.map(phase => {
           const phaseExpenses = byPhase.get(phase.id) ?? [];
@@ -496,7 +923,7 @@ export default function ExpensesSection({
                   <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: sc.text }}>{label}</Text>
                 </View>
                 {isOwnerOrManager && (
-                  <TouchableOpacity onPress={() => navigateToAdd(phase.id)} activeOpacity={0.7} style={{ padding: 4 }}>
+                  <TouchableOpacity onPress={() => openAddSheet(phase.id)} activeOpacity={0.7} style={{ padding: 4 }}>
                     <Feather name="plus" size={14} color={colors.primary} />
                   </TouchableOpacity>
                 )}
@@ -568,10 +995,11 @@ export default function ExpensesSection({
     );
   }
 
-  // ── Flat view (service calls) ── title lives inside the card ─────────────────
+  // ── Flat view (service calls) ─────────────────────────────────────────────────
   return (
     <>
       {editSheet}
+      {addSheet}
       <View style={{
         backgroundColor: colors.card,
         borderRadius: radius.xl,
@@ -593,7 +1021,7 @@ export default function ExpensesSection({
             </Text>
             {isOwnerOrManager && (
               <TouchableOpacity
-                onPress={() => navigateToAdd(null)}
+                onPress={() => openAddSheet(null)}
                 activeOpacity={0.7}
                 style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: `${colors.primary}25` }}
               >
