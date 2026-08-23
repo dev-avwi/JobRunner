@@ -36,10 +36,29 @@ export function toGSM(text: string): string {
     .replace(/\u2013/g, '-')   // en dash
     .replace(/\u2026/g, '...')  // horizontal ellipsis
     .replace(/\u00A0/g, ' ')   // non-breaking space
-    // Replace any remaining characters outside the GSM-7 basic charset
-    // (printable ASCII + common European letters already in GSM-7 are kept).
-    // This regex matches anything that is NOT in the GSM-7 basic+extended set.
-    .replace(/[^\x20-\x7E\u00C0-\u00C6\u00E0-\u00E6\u00C8-\u00CA\u00E8-\u00EA\u00CB\u00EB\u00CC-\u00CF\u00EC-\u00EF\u00D2-\u00D6\u00F2-\u00F6\u00D9-\u00DC\u00F9-\u00FC\u00DF\u00C9\u00E9\u00C0\u00E0\u00D8\u00F8\u00C5\u00E5\u00C6\u00E6\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u000A\u000D]/g, '?');
+    // Replace any remaining characters outside the GSM-7 basic + extension charset.
+    //
+    // Allow-list: every Unicode code point that appears in ETSI TS 123 038
+    // (3GPP TS 23.038) Table 1 (basic) or Table 2 (extension), listed
+    // individually.  Broad ranges such as \u00C0-\u00C6 are intentionally
+    // avoided: they admit characters like À/Á/Â/Ã that are NOT in the
+    // standard and would cause Twilio to silently switch to UCS-2 encoding
+    // (70-char segments instead of 160).
+    //
+    // \x20-\x5F\x61-\x7E — printable ASCII EXCLUDING backtick (U+0060).
+    //   Position 0x60 in the GSM basic table maps to ¿, not `.
+    //   Extension characters ^, [, \, ], {, |, }, ~ cost 2 septets each.
+    //
+    // Non-ASCII GSM-7 characters (basic table, explicit list):
+    //   \u00A1 ¡  \u00A3 £  \u00A4 ¤  \u00A5 ¥  \u00A7 §  \u00BF ¿
+    //   \u00C4 Ä  \u00C5 Å  \u00C6 Æ  \u00C7 Ç  \u00C9 É  \u00D1 Ñ
+    //   \u00D6 Ö  \u00D8 Ø  \u00DC Ü  \u00DF ß  \u00E0 à  \u00E4 ä
+    //   \u00E5 å  \u00E6 æ  \u00E8 è  \u00E9 é  \u00EC ì  \u00F1 ñ
+    //   \u00F2 ò  \u00F6 ö  \u00F8 ø  \u00F9 ù  \u00FC ü
+    //   Greek: \u0393 Γ \u0394 Δ \u0398 Θ \u039B Λ \u039E Ξ
+    //          \u03A0 Π \u03A3 Σ \u03A6 Φ \u03A8 Ψ \u03A9 Ω
+    //   Extension table: \u20AC €
+    .replace(/[^\x20-\x5F\x61-\x7E\u000A\u000D\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u00C4\u00C5\u00C6\u00C7\u00C9\u00D1\u00D6\u00D8\u00DC\u00DF\u00E0\u00E4\u00E5\u00E6\u00E8\u00E9\u00EC\u00F1\u00F2\u00F6\u00F8\u00F9\u00FC\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u20AC]/g, '?');
 }
 
 let twilioClient: ReturnType<typeof twilio> | null = null;

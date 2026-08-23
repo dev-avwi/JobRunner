@@ -39,7 +39,7 @@ describe('toGSM()', () => {
     expect(toGSM('\uD83D\uDE00')).toBe('??'); // emoji 😀 (surrogate pair → 2 replacements)
     expect(toGSM('\u4E2D\u6587')).toBe('??'); // CJK characters (2 code points)
     expect(toGSM('\u0400')).toBe('?');          // Cyrillic (1 code point)
-    expect(toGSM('\u20AC')).toBe('?');          // Euro sign (not in GSM-7 basic)
+    expect(toGSM('\u20AC')).toBe('\u20AC');     // Euro sign — GSM-7 extension table (costs 2 septets, stays valid)
   });
 
   it('preserves plain ASCII text unchanged', () => {
