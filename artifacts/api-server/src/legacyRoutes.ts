@@ -37820,6 +37820,16 @@ Respond with JSON in this format:
       if (!clientPhone || !message) {
         return res.status(400).json({ error: 'Client phone and message are required' });
       }
+
+      // Server-side GSM-7 sanitisation — last-resort safety net so curly
+      // typographic chars from any client path never silently triple segment cost.
+      const sanitizedMessage = (message as string)
+        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+        .replace(/\u2014/g, '-')
+        .replace(/\u2013/g, '-')
+        .replace(/\u2026/g, '...')
+        .replace(/\u00A0/g, ' ');
       
       // Validate mediaUrls if provided
       let validatedMediaUrls: string[] = [];
@@ -37900,7 +37910,7 @@ Respond with JSON in this format:
         clientPhone,
         clientName,
         jobId,
-        message,
+        message: sanitizedMessage,
         senderUserId: userId,
         mediaUrls: validatedMediaUrls.length > 0 ? validatedMediaUrls : undefined,
       });

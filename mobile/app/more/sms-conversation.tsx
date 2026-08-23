@@ -54,19 +54,36 @@ interface SmsMessage {
   errorMessage?: string | null;
 }
 
+// Convert typographic / Unicode characters that fall outside the GSM-7 basic
+// charset into their plain ASCII equivalents.  A single curly apostrophe (U+2019)
+// is enough to flip an entire SMS into UCS-2 mode, tripling segment count and
+// cost.  Apply this to every string before it is sent or inserted into the
+// composer so the segment counter reflects the real on-wire encoding.
+export function toGSM(s: string): string {
+  return s
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")   // curly single quotes / apostrophes
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')   // curly double quotes
+    .replace(/\u2014/g, '-')   // em dash
+    .replace(/\u2013/g, '-')   // en dash
+    .replace(/\u2026/g, '...') // ellipsis
+    .replace(/\u00A0/g, ' ');  // non-breaking space
+}
+
 function buildQuickReplies(clientFirstName: string, senderName: string) {
   const hi = clientFirstName ? `Hi ${clientFirstName}` : "G'day";
   const from = senderName ? `, ${senderName}` : '';
+  // All strings use straight ASCII apostrophes to stay in GSM-7 and avoid
+  // the UCS-2 tripling that curly typographic quotes would cause.
   return [
-    { id: 'omw', label: "On my way", icon: 'navigation' as const, message: `${hi}, just letting you know I'm heading to you now${from}. I'll text you when I'm close.` },
-    { id: 'running-late', label: "Running late", icon: 'clock' as const, message: `${hi}, apologies — I'm running a bit behind today. I'll let you know my updated arrival time shortly${from}.` },
-    { id: 'arrived', label: "Arrived", icon: 'map-pin' as const, message: `${hi}, I've arrived at the property. Let me know if there's anything specific you'd like me to look at first.` },
-    { id: 'job-done', label: "Job done", icon: 'check' as const, message: `${hi}, the job's all done. Let me know if you have any questions or need anything else${from}.` },
-    { id: 'quote-sent', label: "Quote sent", icon: 'file-text' as const, message: `${hi}, I've sent through your quote. Have a look and let me know if you've got any questions or want to go ahead.` },
-    { id: 'invoice-sent', label: "Invoice sent", icon: 'dollar-sign' as const, message: `${hi}, your invoice has been sent through. Let me know if you have any questions about it.` },
-    { id: 'confirm', label: "Confirm appt", icon: 'calendar' as const, message: `${hi}, just confirming our upcoming appointment. Please reply to let me know you're still available, or give us a bell if you need to reschedule.` },
-    { id: 'thanks', label: "Thanks", icon: 'thumbs-up' as const, message: `${hi}, thanks for your business — really appreciate it. Don't hesitate to reach out if you need anything in the future.` },
-    { id: 'reschedule', label: "Reschedule", icon: 'refresh-cw' as const, message: `${hi}, unfortunately I need to reschedule our appointment. Could you let me know what other days/times work for you?` },
+    { id: 'omw', label: "On my way", icon: 'navigation' as const, message: toGSM(`${hi}, just letting you know I'm heading to you now${from}. I'll text you when I'm close.`) },
+    { id: 'running-late', label: "Running late", icon: 'clock' as const, message: toGSM(`${hi}, apologies - I'm running a bit behind today. I'll let you know my updated arrival time shortly${from}.`) },
+    { id: 'arrived', label: "Arrived", icon: 'map-pin' as const, message: toGSM(`${hi}, I've arrived at the property. Let me know if there's anything specific you'd like me to look at first.`) },
+    { id: 'job-done', label: "Job done", icon: 'check' as const, message: toGSM(`${hi}, the job's all done. Let me know if you have any questions or need anything else${from}.`) },
+    { id: 'quote-sent', label: "Quote sent", icon: 'file-text' as const, message: toGSM(`${hi}, I've sent through your quote. Have a look and let me know if you've got any questions or want to go ahead.`) },
+    { id: 'invoice-sent', label: "Invoice sent", icon: 'dollar-sign' as const, message: toGSM(`${hi}, your invoice has been sent through. Let me know if you have any questions about it.`) },
+    { id: 'confirm', label: "Confirm appt", icon: 'calendar' as const, message: toGSM(`${hi}, just confirming our upcoming appointment. Please reply to let me know you're still available, or give us a bell if you need to reschedule.`) },
+    { id: 'thanks', label: "Thanks", icon: 'thumbs-up' as const, message: toGSM(`${hi}, thanks for your business - really appreciate it. Don't hesitate to reach out if you need anything in the future.`) },
+    { id: 'reschedule', label: "Reschedule", icon: 'refresh-cw' as const, message: toGSM(`${hi}, unfortunately I need to reschedule our appointment. Could you let me know what other days/times work for you?`) },
   ];
 }
 
@@ -431,6 +448,8 @@ export default function SmsConversationScreen() {
       out = out
         .replace(/\{job_title\}/gi, jb.title || '')
         .replace(/\{job_address\}/gi, jb.address || '')
+        .replace(/\{site_address\}/gi, jb.address || '')   // alias used by some saved templates
+        .replace(/\{address\}/gi, jb.address || '')
         .replace(/\{job_date\}/gi, dateStr(jb.scheduledDate))
         .replace(/\{tracking_link\}/gi, jb.url || '')
         .replace(/\{job_link\}/gi, jb.url || '');
@@ -539,7 +558,9 @@ export default function SmsConversationScreen() {
     try {
       const response = await api.post('/api/sms/send', {
         clientPhone,
-        message: messageText.trim(),
+        // Sanitise to GSM-7 so curly quotes / typographic chars from templates
+        // or copy-paste don't silently flip the message into UCS-2 (3x segments).
+        message: toGSM(messageText.trim()),
         conversationId: id,
       });
       if (response.error) {
@@ -771,7 +792,7 @@ export default function SmsConversationScreen() {
             <View style={styles.quickRepliesRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRepliesScroll}>
                 {quickReplies.map((template) => (
-                  <PressableRow key={template.id} style={styles.quickChip} onPress={() => { setMessageText(template.message); setShowQuickReplies(false); }} onLongPress={() => { Alert.alert(template.label, template.message, [ { text: 'Edit first', onPress: () => { setMessageText(template.message); setShowQuickReplies(false); }}, { text: 'Send now', onPress: async () => { setShowQuickReplies(false); setMessageText(template.message); setIsSending(true); try { const quickRes = await api.post('/api/sms/send', { clientPhone, message: template.message, conversationId: id }); if (quickRes.error) { if (!handleDedicatedNumberError(quickRes)) Alert.alert('Error', 'Failed to send SMS.'); } else { setMessageText(''); await loadMessages(); scrollRef.current?.scrollToEnd({ animated: true }); } } catch { Alert.alert('Error', 'Failed to send SMS.'); } finally { setIsSending(false); } }}, { text: 'Cancel', style: 'cancel' }, ]); }} >
+                  <PressableRow key={template.id} style={styles.quickChip} onPress={() => { setMessageText(template.message); setShowQuickReplies(false); }} onLongPress={() => { Alert.alert(template.label, template.message, [ { text: 'Edit first', onPress: () => { setMessageText(template.message); setShowQuickReplies(false); }}, { text: 'Send now', onPress: async () => { setShowQuickReplies(false); setMessageText(template.message); setIsSending(true); try { const quickRes = await api.post('/api/sms/send', { clientPhone, message: toGSM(template.message), conversationId: id }); if (quickRes.error) { if (!handleDedicatedNumberError(quickRes)) Alert.alert('Error', 'Failed to send SMS.'); } else { setMessageText(''); await loadMessages(); scrollRef.current?.scrollToEnd({ animated: true }); } } catch { Alert.alert('Error', 'Failed to send SMS.'); } finally { setIsSending(false); } }}, { text: 'Cancel', style: 'cancel' }, ]); }} >
                     <Feather name={template.icon} size={12} color={colors.primary} />
                     <Text style={styles.quickChipText}>{template.label}</Text>
                   </PressableRow>

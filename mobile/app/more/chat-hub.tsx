@@ -149,10 +149,29 @@ interface ConversationItem {
   data: any;
 }
 
+// Mirror of toGSM in sms-conversation.tsx — keeps all outbound SMS in the
+// GSM-7 basic charset so curly typographic chars never silently force UCS-2
+// (which cuts a 160-char budget to 70 and triples segment cost).
+function toGSM(s: string): string {
+  return s
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+    .replace(/\u2014/g, '-')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00A0/g, ' ');
+}
+
+// All messages use straight ASCII apostrophes so they stay in GSM-7.
+// Link-based actions use {placeholder} syntax; handleQuickActionSend resolves
+// them from the live SMS context before sending.
 const SMS_QUICK_ACTIONS = [
-  { id: 'omw', label: 'On my way', icon: 'navigation' as const, message: "G'day! Just letting you know I'm on my way now. Should be there in about 20 minutes." },
-  { id: 'running-late', label: 'Running late', icon: 'clock' as const, message: "Apologies, I'm running a bit behind schedule. Will be there as soon as I can - should only be another 15-20 minutes." },
-  { id: 'job-done', label: 'Job done', icon: 'check-circle' as const, message: "All done! The job's been completed. Let me know if you have any questions or need anything else." },
+  { id: 'omw',          label: 'On my way',     icon: 'navigation'  as const, message: "G'day! Just letting you know I'm on my way now. Should be there in about 20 minutes.", needsContext: false },
+  { id: 'running-late', label: 'Running late',  icon: 'clock'       as const, message: "Apologies, I'm running a bit behind schedule. Will be there as soon as I can - should only be another 15-20 minutes.", needsContext: false },
+  { id: 'job-done',     label: 'Job done',      icon: 'check-circle'as const, message: "All done! The job's been completed. Let me know if you have any questions or need anything else.", needsContext: false },
+  { id: 'job-link',     label: 'Job link',      icon: 'link'        as const, message: "Hi {client_first_name}, here is the link to track your job:\n{job_link}", needsContext: true },
+  { id: 'quote-link',   label: 'Quote ready',   icon: 'file-text'   as const, message: "Hi {client_first_name}, your quote is ready to view and accept:\n{quote_link}", needsContext: true },
+  { id: 'invoice-link', label: 'Invoice ready', icon: 'dollar-sign' as const, message: "Hi {client_first_name}, your invoice is ready to view and pay:\n{invoice_link}", needsContext: true },
 ];
 
 type FilterType = 'jobs' | 'jobchats' | 'team';
@@ -967,16 +986,19 @@ export default function ChatHubScreen() {
     let phone: string | undefined;
     let clientId: string | undefined;
     let jobId: string | undefined;
+    let convId: string | undefined;
 
     if (item.type === 'job') {
       const linkedSms = item.data?.linkedSms as SmsConversation | null;
       phone = linkedSms?.clientPhone || (item.data?.clientId ? getClient(item.data.clientId)?.phone : undefined) || undefined;
       clientId = linkedSms?.clientId || item.data?.clientId || undefined;
       jobId = item.data?.id;
+      convId = linkedSms?.id;
     } else if (item.type === 'sms') {
       phone = item.phone || item.data?.clientPhone;
       clientId = item.data?.clientId || undefined;
       jobId = item.data?.jobId || undefined;
+      convId = item.data?.id;
     }
 
     if (!phone) {
@@ -984,10 +1006,66 @@ export default function ChatHubScreen() {
       return;
     }
 
+    // Resolve merge fields for this template.  Link-based actions always need
+    // the live SMS context (URLs, invoice/quote numbers, client name).  Simple
+    // status messages are sent as-is after a GSM-7 sanitise pass.
+    let message = toGSM(template.message);
+
+    if (template.needsContext && convId) {
+      try {
+        type SmsCtx = {
+          invoice?: { number?: string; total?: string; dueDate?: string; url?: string } | null;
+          quote?: { number?: string; total?: string; url?: string } | null;
+          job?: { title?: string; address?: string; scheduledDate?: string; url?: string | null } | null;
+        };
+        const ctxRes = await api.get<SmsCtx>(`/api/sms/conversations/${convId}/context`);
+        const ctx: SmsCtx = (!ctxRes.error && ctxRes.data) ? ctxRes.data : {};
+
+        const clientFirstName = item.title?.split(' ')[0] || 'there';
+        const money = (v?: string) => { const n = parseFloat(v || ''); return isNaN(n) ? '' : `$${n.toFixed(2)}`; };
+
+        message = message.replace(/\{client_first_name\}/gi, clientFirstName);
+
+        if (ctx.invoice) {
+          message = message
+            .replace(/\{invoice_number\}/gi, ctx.invoice.number || '')
+            .replace(/\{invoice_total\}/gi, money(ctx.invoice.total))
+            .replace(/\{invoice_link\}/gi, ctx.invoice.url || '');
+        }
+        if (ctx.quote) {
+          message = message
+            .replace(/\{quote_number\}/gi, ctx.quote.number || '')
+            .replace(/\{quote_total\}/gi, money(ctx.quote.total))
+            .replace(/\{quote_link\}/gi, ctx.quote.url || '');
+        }
+        if (ctx.job) {
+          message = message
+            .replace(/\{job_title\}/gi, ctx.job.title || '')
+            .replace(/\{job_address\}/gi, ctx.job.address || '')
+            .replace(/\{site_address\}/gi, ctx.job.address || '')
+            .replace(/\{job_link\}/gi, ctx.job.url || '')
+            .replace(/\{tracking_link\}/gi, ctx.job.url || '');
+        }
+
+        // Warn if a required link placeholder couldn't be resolved so the
+        // sender sees the problem before the client does.
+        if (/\{[a-z_]+\}/i.test(message)) {
+          Alert.alert(
+            'Missing Info',
+            `Some template fields couldn't be filled — make sure there is an active ${actionId.includes('quote') ? 'quote' : actionId.includes('invoice') ? 'invoice' : 'job'} linked to this conversation.`,
+          );
+          return;
+        }
+      } catch {
+        Alert.alert('Error', 'Could not load message details. Please try again.');
+        return;
+      }
+    }
+
     try {
       const response = await api.post('/api/sms/send', {
         clientPhone: phone,
-        message: template.message,
+        message,
         clientId,
         jobId,
       });
