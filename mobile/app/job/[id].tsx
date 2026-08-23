@@ -15271,7 +15271,7 @@ export default function JobDetailScreen() {
 
                 {/* Tap to see full breakdown in More tab */}
                 <TouchableOpacity
-                  onPress={() => { setShowJobCostingSheet(false); setActiveTab('manage'); }}
+                  onPress={() => { setShowJobCostingSheet(false); setTimeout(() => setActiveTab('manage'), 350); }}
                   activeOpacity={0.7}
                   style={{
                     marginTop: spacing.sm,
