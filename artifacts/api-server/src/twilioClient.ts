@@ -294,10 +294,18 @@ export function __setSmsTestInterceptor(fn: ((options: SendSMSOptions) => SMSRes
 }
 
 export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
+  // Sanitise to GSM-7 here — before the test interceptor — so that the interceptor
+  // always sees the same body that would be sent to Twilio.  This makes it impossible
+  // to bypass the sanitiser by calling sendSMS from any code path.
+  const sanitisedOptions: SendSMSOptions = {
+    ...options,
+    message: toGSM(options.message),
+  };
+
   if (smsTestInterceptor) {
-    return await smsTestInterceptor(options);
+    return await smsTestInterceptor(sanitisedOptions);
   }
-  const { to, message, mediaUrls, alphanumericSenderId } = options;
+  const { to, message, mediaUrls, alphanumericSenderId } = sanitisedOptions;
 
   // Format Australian phone number
   let formattedTo = to.replace(/\s+/g, '').replace(/^0/, '+61');
@@ -331,7 +339,7 @@ export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
       : (options.fromNumber || twilioPhoneNumber);
 
     const messageOptions: any = {
-      body: toGSM(message),
+      body: message,  // already sanitised to GSM-7 above
       from: fromValue,
       to: formattedTo
     };
