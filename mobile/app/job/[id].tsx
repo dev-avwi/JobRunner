@@ -9601,11 +9601,35 @@ export default function JobDetailScreen() {
           )}
 
           {portalEnabled && portalLinks.length === 0 && !isTogglingPortal && (
-            <View style={{ alignItems: 'center', paddingVertical: spacing.md }}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xs }}>
-                Setting up portal...
+            <View style={{ alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm }}>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center' }}>
+                No portal link yet. Generate one to share with your client.
               </Text>
+              <TouchableOpacity
+                onPress={handleGeneratePortalLink}
+                disabled={isGeneratingPortalLink}
+                activeOpacity={0.8}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.xs,
+                  backgroundColor: colors.primary,
+                  paddingVertical: spacing.sm + 2,
+                  paddingHorizontal: spacing.md,
+                  borderRadius: radius.lg,
+                  minHeight: 40,
+                  opacity: isGeneratingPortalLink ? 0.6 : 1,
+                }}
+              >
+                {isGeneratingPortalLink ? (
+                  <ActivityIndicator size="small" color={colors.primaryForeground} />
+                ) : (
+                  <Feather name="link" size={14} color={colors.primaryForeground} />
+                )}
+                <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: typography.sizes.sm }}>
+                  {isGeneratingPortalLink ? 'Generating...' : 'Generate Link'}
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -14585,24 +14609,28 @@ export default function JobDetailScreen() {
                     />
                   </View>
                   <View style={{ flex: 1, marginRight: spacing.sm }}>
-                    <Text style={{
-                      fontSize: typography.button.fontSize,
-                      fontWeight: fontWeights.semibold,
-                      color: proofPackSections[key] ? colors.foreground : colors.mutedForeground,
-                    }}>
-                      {label}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <Feather
-                        name={hasData ? 'check-circle' : 'minus-circle'}
-                        size={11}
-                        color={hasData ? colors.success : colors.mutedForeground}
-                      />
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: hasData ? colors.success : colors.mutedForeground }}>
-                        {hasData ? 'Data collected' : 'No data yet'}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+                      <Text style={{
+                        fontSize: typography.button.fontSize,
+                        fontWeight: fontWeights.semibold,
+                        color: proofPackSections[key] ? colors.foreground : colors.mutedForeground,
+                      }}>
+                        {label}
                       </Text>
-                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>· {desc}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Feather
+                          name={hasData ? 'check-circle' : 'minus-circle'}
+                          size={11}
+                          color={hasData ? colors.success : colors.mutedForeground}
+                        />
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: hasData ? colors.success : colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                          {hasData ? 'Data collected' : 'No data yet'}
+                        </Text>
+                      </View>
                     </View>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2 }}>
+                      {desc}
+                    </Text>
                   </View>
                   <Switch
                     value={proofPackSections[key]}
