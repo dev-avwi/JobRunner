@@ -47,7 +47,7 @@ import { Button } from '../../src/components/ui/Button';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import LiveActivity from '../../modules/LiveActivity/src';
-import { SkeletonDashboard, Skeleton } from '../../src/components/Skeleton';
+import { SkeletonDashboard, Skeleton, SkeletonKpiGrid } from '../../src/components/Skeleton';
 import { FirstRunWelcomeModal } from '../../src/components/FirstRunWelcomeModal';
 
 interface WeatherData {
@@ -3416,7 +3416,17 @@ function OwnerDashboardScreen() {
     return currentHour >= 16 || dailySummary.allJobsDone;
   }, [dailySummary]);
 
-  const isLoading = jobsLoading || statsLoading;
+  // isLoading gates the KPI skeleton — it must cover every KPI data source:
+  // - jobsLoading / statsLoading: the jobs and stats stores
+  // - !initialLoadComplete: ensures fetchToInvoiceCount and fetchAiCallsToday
+  //   (both called inside refreshData) have settled before showing values
+  // - isOwnerUser && isTeamDataLoading: ensures allJobs is ready for the
+  //   "Assigned" KPI which comes from fetchTeamData (independent of refreshData)
+  const isLoading =
+    jobsLoading ||
+    statsLoading ||
+    !initialLoadComplete ||
+    (isOwnerUser && isTeamDataLoading);
 
   // Dynamic content container style for iPad-responsive padding
   const responsiveContentStyle = useMemo(() => ({
@@ -3693,6 +3703,9 @@ function OwnerDashboardScreen() {
         <Text style={styles.sectionLabel}>
           {isStaffUser ? 'My Stats' : 'Overview'}
         </Text>
+        {isLoading ? (
+          <SkeletonKpiGrid />
+        ) : (
         <View style={styles.kpiGrid}>
           {isStaffUser ? (
             <>
@@ -3785,6 +3798,7 @@ function OwnerDashboardScreen() {
             </>
           )}
         </View>
+        )}
       </View>
 
       {/* Today's Schedule */}

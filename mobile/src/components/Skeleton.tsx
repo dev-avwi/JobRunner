@@ -165,6 +165,33 @@ export function SkeletonStats() {
   );
 }
 
+export function SkeletonKpiCard() {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        flexBasis: 0,
+        minWidth: 0,
+        backgroundColor: colors.card,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: 12,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
+      <Skeleton width={40} height={40} borderRadius={12} />
+      <View style={{ flex: 1, gap: 6 }}>
+        <Skeleton width="55%" height={22} borderRadius={4} />
+        <Skeleton width="70%" height={10} borderRadius={4} />
+      </View>
+    </View>
+  );
+}
 export function SkeletonDashboard() {
   return (
     <View style={{ padding: spacing.md, gap: spacing.md }}>
@@ -317,3 +344,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export function SkeletonKpiGrid() {
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <SkeletonKpiCard />
+        <SkeletonKpiCard />
+      </View>
+      <View style={{ flexDirection: 'row', gap: 12 }}>
+        <SkeletonKpiCard />
+        <SkeletonKpiCard />
+      </View>
+    </View>
+  );
+}
