@@ -6267,6 +6267,29 @@ export default function JobDetailScreen() {
     }
   };
 
+  const handleReopenJob = async () => {
+    if (!job) return;
+    const confirmed = await confirm({
+      title: 'Re-open Job',
+      message: 'This will move the job back to scheduled. The original completion date will be preserved in the activity log.',
+      confirmText: 'Re-open',
+    });
+    if (!confirmed) return;
+    try {
+      const response = await api.post(`/api/jobs/${job.id}/reopen`, {});
+      if (response.error) {
+        const msg = (response.error as any)?.response?.data?.error || (response.error as any)?.message || 'Failed to re-open job';
+        showToast({ type: 'error', message: msg });
+        return;
+      }
+      showToast({ type: 'success', message: 'Job re-opened and moved to scheduled.' });
+      loadJob();
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Failed to re-open job';
+      showToast({ type: 'error', message: msg });
+    }
+  };
+
   const handleStatusChange = async () => {
     if (!job) return;
     
@@ -7974,6 +7997,32 @@ export default function JobDetailScreen() {
           <Text style={styles.invoicedMessage}>This job has been invoiced</Text>
         )}
       </View>
+
+      {/* Re-open Job button — owner/manager only, on completed jobs */}
+      {job.status === 'done' && (isOwnerOrManager || isSoloOwner) && (
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.sm,
+            paddingVertical: spacing.md,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.buttonOutline,
+            backgroundColor: colors.card,
+            marginTop: spacing.sm,
+          }}
+          onPress={handleReopenJob}
+          activeOpacity={0.8}
+          data-testid="button-reopen-job"
+        >
+          <Feather name="rotate-ccw" size={18} color={colors.foreground} />
+          <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
+            Re-open Job
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Scheduled Date Card - right after action buttons */}
       {(job.scheduledAt || job.status === 'scheduled') && (

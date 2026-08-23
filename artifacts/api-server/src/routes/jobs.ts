@@ -1883,6 +1883,64 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  app.post("/api/jobs/:id/reopen", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userContext = req.userContext || await getUserContext(req.userId);
+      const effectiveUserId = userContext.effectiveUserId;
+
+      const existingJob = await storage.getJob(req.params.id, effectiveUserId);
+      if (!existingJob) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      if (existingJob.status !== 'done' && existingJob.status !== 'completed') {
+        return res.status(422).json({
+          error: "Only completed jobs can be re-opened.",
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+
+      // Preserve the completedAt timestamp in the audit trail before clearing it
+      const preservedCompletedAt = existingJob.completedAt;
+
+      const updatedJob = await storage.updateJob(req.params.id, effectiveUserId, {
+        status: 'scheduled',
+        completedAt: null,
+      });
+
+      if (!updatedJob) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      await logActivity(
+        effectiveUserId,
+        'job_status_changed',
+        `Re-opened job: ${existingJob.title}`,
+        `Job moved from completed back to scheduled. Original completion recorded at: ${preservedCompletedAt ? new Date(preservedCompletedAt).toISOString() : 'unknown'}.`,
+        'job',
+        existingJob.id,
+        { action: 'reopen', previousStatus: existingJob.status, preservedCompletedAt: preservedCompletedAt ? new Date(preservedCompletedAt).toISOString() : null },
+        req
+      );
+
+      try {
+        const { broadcastJobStatusChange } = await import('../websocket');
+        broadcastJobStatusChange(effectiveUserId, {
+          jobId: updatedJob.id,
+          status: 'scheduled',
+          title: updatedJob.title,
+        });
+      } catch (_broadcastErr) {
+        // Non-fatal
+      }
+
+      res.json(updatedJob);
+    } catch (error) {
+      console.error("Error re-opening job:", error);
+      res.status(500).json({ error: "Failed to re-open job" });
+    }
+  });
+
   app.post("/api/jobs/:id/clone", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

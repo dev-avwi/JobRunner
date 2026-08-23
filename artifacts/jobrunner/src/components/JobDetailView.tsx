@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers, BarChart2 } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers, BarChart2, RotateCcw } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -913,6 +913,34 @@ export default function JobDetailView({
         description,
         variant: "destructive",
       });
+    },
+  });
+
+  const reopenJobMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/jobs/${jobId}/reopen`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'activity'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activity-feed'] });
+      toast({
+        title: "Job Re-opened",
+        description: "The job has been moved back to scheduled. The original completion is preserved in the activity log.",
+      });
+    },
+    onError: (error: any) => {
+      let description = "Failed to re-open job";
+      const raw = typeof error?.message === 'string' ? error.message : '';
+      const jsonStart = raw.indexOf('{');
+      if (jsonStart !== -1) {
+        try {
+          const parsed = JSON.parse(raw.slice(jsonStart));
+          if (parsed?.error) description = parsed.error;
+        } catch {}
+      }
+      toast({ title: "Error", description, variant: "destructive" });
     },
   });
 
@@ -2569,6 +2597,20 @@ export default function JobDetailView({
                 <CheckCircle className="h-5 w-5" />
                 <span className="font-medium">Job Completed</span>
               </div>
+            )}
+
+            {/* Re-open Job button — owner/manager only, on completed jobs */}
+            {job.status === 'done' && !isTradie && (
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => reopenJobMutation.mutate()}
+                disabled={reopenJobMutation.isPending}
+                data-testid="button-reopen-job"
+              >
+                <RotateCcw className="h-4 w-4" />
+                {reopenJobMutation.isPending ? 'Re-opening...' : 'Re-open Job'}
+              </Button>
             )}
 
             {/* Quick actions row */}
