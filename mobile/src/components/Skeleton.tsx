@@ -193,15 +193,55 @@ export function SkeletonKpiCard() {
   );
 }
 export function SkeletonDashboard() {
+  const { colors } = useTheme();
   return (
     <View style={{ padding: spacing.md, gap: spacing.md }}>
-      <SkeletonStats />
-      <Skeleton width="40%" height={20} />
+      {/* Timer tracking widget */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.md,
+        gap: spacing.sm,
+      }}>
+        <Skeleton width="48%" height={13} />
+        <Skeleton width="65%" height={28} />
+        <Skeleton width="38%" height={12} />
+      </View>
+
+      {/* Weather widget */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.border,
+        padding: spacing.lg,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Skeleton width={48} height={48} borderRadius={24} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Skeleton width={38} height={24} />
+              <Skeleton width="45%" height={13} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Skeleton width={65} height={11} />
+              <Skeleton width={40} height={11} />
+              <Skeleton width={56} height={11} />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* Overview section label + KPI grid */}
+      <Skeleton width="33%" height={13} />
+      <SkeletonKpiGrid />
+
+      {/* Today section label + job cards */}
+      <Skeleton width="28%" height={13} />
       <SkeletonJobCard />
       <SkeletonJobCard />
-      <Skeleton width="40%" height={20} />
-      <SkeletonListItem />
-      <SkeletonListItem />
     </View>
   );
 }

@@ -231,7 +231,20 @@ function WeatherWidget() {
   if (isLoading) {
     return (
       <View style={styles.weatherWidget}>
-        <ActivityIndicator size="small" color={colors.mutedForeground} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Skeleton width={48} height={48} borderRadius={24} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Skeleton width={38} height={24} />
+              <Skeleton width="45%" height={13} />
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <Skeleton width={65} height={11} />
+              <Skeleton width={40} height={11} />
+              <Skeleton width={56} height={11} />
+            </View>
+          </View>
+        </View>
       </View>
     );
   }
