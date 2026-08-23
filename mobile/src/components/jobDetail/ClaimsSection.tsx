@@ -653,8 +653,8 @@ export function ClaimsSection({
                       <Text style={[styles.notes, { color: colors.mutedForeground }]}>{claim.notes}</Text>
                     ) : null}
 
-                    {/* Cost report PDF attached at submission — open via signed URL */}
-                    {claim.costReportUrl ? (
+                    {/* Cost report PDF — available for any submitted/approved/paid claim */}
+                    {(claim.status === 'submitted' || claim.status === 'approved' || claim.status === 'paid') ? (
                       <TouchableOpacity
                         style={[styles.costReportBtn, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}
                         onPress={async () => {

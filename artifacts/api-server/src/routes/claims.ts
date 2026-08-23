@@ -847,9 +847,8 @@ export function registerClaimsRoutes(app: Express): void {
   });
 
   // GET /api/jobs/:jobId/claims/:claimId/cost-report-pdf
-  // Returns a short-lived (10 min) signed URL for the cost report PDF stored at
-  // submission time. Requires auth + owner/manager role — callers never receive
-  // the raw object-storage path, only the time-limited signed URL.
+  // Always regenerates the cost report PDF fresh so it reflects current data and
+  // styling, then returns a short-lived signed URL. Requires auth + owner/manager.
   app.get("/api/jobs/:jobId/claims/:claimId/cost-report-pdf", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const { effectiveUserId } = await getUserContext(req.userId);
@@ -858,12 +857,17 @@ export function registerClaimsRoutes(app: Express): void {
       if (!claim || claim.jobId !== jobId) {
         return res.status(404).json({ error: "Claim not found" });
       }
-      const storedPath = (claim as any).costReportUrl as string | null | undefined;
-      if (!storedPath) {
-        return res.status(404).json({ error: "No cost report has been generated for this claim yet. Submit the claim first." });
-      }
+      // Regenerate fresh every time — ensures font/data is always current.
+      const reportData = await buildCostReportData(jobId, effectiveUserId);
+      const html = generateCostReportPDF(reportData);
+      const pdfBuffer = await generatePDFBuffer(html);
+      const claimNum = ((claim as any).claimNumber || claimId).replace(/[^a-z0-9-]/gi, '-');
+      const fileName = `claim-cost-reports/${effectiveUserId}/${jobId}/cost-report-${claimNum}.pdf`;
       const objectService = new ObjectStorageService();
-      const signedUrl = await objectService.getSignedDownloadURL(storedPath, 600);
+      const objectUrl = await objectService.uploadFile(fileName, pdfBuffer, 'application/pdf');
+      // Persist updated URL so the claim card stays in sync.
+      storage.updateClaim(claimId, effectiveUserId, { costReportUrl: objectUrl } as any).catch(() => {});
+      const signedUrl = await objectService.getSignedDownloadURL(objectUrl, 600);
       res.json({ url: signedUrl });
     } catch (err: any) {
       console.error("[claims] cost-report-pdf error:", err);
