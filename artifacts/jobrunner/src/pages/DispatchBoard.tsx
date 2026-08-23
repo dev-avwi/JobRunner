@@ -842,7 +842,7 @@ function DispatchMapView({ dispatchJobs }: { dispatchJobs: DispatchJob[] }) {
 function DispatchBoardSkeleton() {
   const cols = 4;
   return (
-    <div className="flex gap-3 overflow-x-auto pb-2">
+    <div data-testid="dispatch-board-skeleton" className="flex gap-3 overflow-x-auto pb-2">
       {Array.from({ length: cols }).map((_, ci) => (
         <div key={ci} className="flex-shrink-0 w-64 rounded-lg border bg-muted/20 p-3 space-y-3">
           {/* Column header */}
@@ -873,7 +873,7 @@ function DispatchBoardSkeleton() {
 
 function DispatchMapSkeleton() {
   return (
-    <div className="rounded-lg border overflow-hidden" style={{ height: 420 }}>
+    <div data-testid="dispatch-map-skeleton" className="rounded-lg border overflow-hidden" style={{ height: 420 }}>
       <Skeleton className="h-full w-full rounded-none" />
     </div>
   );
