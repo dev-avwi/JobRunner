@@ -70,6 +70,7 @@ import { VoiceRecorder, VoiceNotePlayer } from '../../src/components/VoiceRecord
 import { SignaturePad } from '../../src/components/SignaturePad';
 import { JobForms } from '../../src/components/FormRenderer';
 import { JobTasksSection } from '../../src/components/JobTasksSection';
+import { ChecklistSection } from '../../src/components/ChecklistSection';
 import SmartActionsPanel, { SmartAction, getJobSmartActions } from '../../src/components/SmartActionsPanel';
 import { JobProgressBar, LinkedDocumentsCard, NextActionCard, PaymentCollectionCard } from '../../src/components/JobWorkflowComponents';
 import { CollapsibleSection } from '../../src/components/ui/CollapsibleSection';
@@ -2304,7 +2305,8 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'chat' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'checklist' | 'chat' | 'manage'>('overview');
+  const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [activeChip, setActiveChip] = useState<string>('status');
 
   // Job Phases
@@ -2644,6 +2646,7 @@ export default function JobDetailScreen() {
     loadSwmsDocuments();
     loadUploadedDocuments();
     loadVariations();
+    loadChecklistCounts();
     // Forms data is loaded by JobForms component via callbacks
     
     // Auto-refresh when app comes to foreground
@@ -3209,6 +3212,16 @@ export default function JobDetailScreen() {
         : [...prev.permissions, perm],
     }));
   };
+
+  const loadChecklistCounts = useCallback(async () => {
+    if (!id) return;
+    const res = await api.get<Array<{ isCompleted: boolean }>>(`/api/jobs/${id}/checklist`);
+    if (!res.error && Array.isArray(res.data)) {
+      const total = res.data.length;
+      const completed = res.data.filter((i) => i.isCompleted).length;
+      setChecklistCounts({ completed, total });
+    }
+  }, [id]);
 
   const loadJobMessages = useCallback(async () => {
     if (!id) return;
@@ -7325,13 +7338,15 @@ export default function JobDetailScreen() {
   const tabBadgeCounts = useMemo(() => {
     const chatCount = jobMessages.length;
     const docsCount = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
+    const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
     return {
       overview: 0,
       documents: docsCount,
+      checklist: checklistIncomplete,
       chat: chatCount,
       manage: 0,
     };
-  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms]);
+  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts]);
 
   // ─── Hooks that were previously after early returns — must be declared here
   // so the hook count is stable across every render (Rules of Hooks).
@@ -7554,6 +7569,7 @@ export default function JobDetailScreen() {
 
   const TAB_CONFIG = [
     { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
+    { id: 'checklist' as const, label: 'Checklist', icon: 'check-square' as const },
     { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
     { id: 'chat' as const, label: 'Comms', icon: 'message-circle' as const },
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
@@ -11500,6 +11516,17 @@ export default function JobDetailScreen() {
         )}
 
         {activeTab === 'overview' && renderOverviewTab()}
+        {activeTab === 'checklist' && (
+          <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+            <ChecklistSection
+              jobId={job.id}
+              readOnly={job.status === 'invoiced'}
+              onCountsChange={(completed, total) =>
+                setChecklistCounts({ completed, total })
+              }
+            />
+          </View>
+        )}
         {activeTab === 'documents' && (
           <>
             {renderDocumentsTab()}
