@@ -825,9 +825,10 @@ export function generateDocumentRegisterPDF(data: {
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Document Register — ${esc(job.number || '')} ${esc(job.title || '')}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 2px solid #1e3a5f; }
   .header-left { flex: 1; }
   .logo { max-height: 60px; max-width: 200px; object-fit: contain; }
@@ -5387,11 +5388,21 @@ export const generatePDFBuffer = async (html: string): Promise<Buffer> => {
       
       console.log('[PDF] Setting page content...');
       await page.setContent(html, { 
-        waitUntil: 'domcontentloaded',
+        waitUntil: 'load',
         timeout: 30000,
       });
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Wait for web fonts (e.g. Google Fonts / Inter) to finish loading before
+      // capturing the PDF.  document.fonts.ready resolves once all @font-face
+      // sources have either loaded or failed, so we never render with the system
+      // fallback font when the real font was just slow.
+      try {
+        await page.evaluate(() => (document as any).fonts.ready);
+      } catch {
+        // Older Chromium builds may not support the Font Loading API — fall back
+        // to a brief pause so the font still has a chance to arrive.
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
       
       console.log('[PDF] Generating PDF buffer...');
       const pdfBuffer = await page.pdf({
