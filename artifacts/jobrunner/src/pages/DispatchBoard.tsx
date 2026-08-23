@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/UserAvatar";
@@ -838,12 +839,61 @@ function DispatchMapView({ dispatchJobs }: { dispatchJobs: DispatchJob[] }) {
   );
 }
 
-function OpsHealthBanner({ opsHealth }: { opsHealth?: OpsHealth }) {
+function DispatchBoardSkeleton() {
+  const cols = 4;
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-2">
+      {Array.from({ length: cols }).map((_, ci) => (
+        <div key={ci} className="flex-shrink-0 w-64 rounded-lg border bg-muted/20 p-3 space-y-3">
+          {/* Column header */}
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-7 w-7 rounded-full" />
+            <div className="flex-1 space-y-1">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-2 w-16" />
+            </div>
+          </div>
+          <Skeleton className="h-1.5 w-full rounded-full" />
+          {/* Job card placeholders */}
+          {Array.from({ length: ci === 0 ? 3 : ci === 1 ? 2 : ci === 2 ? 4 : 1 }).map((_, ji) => (
+            <div key={ji} className="rounded-md border bg-background p-2.5 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-4 w-10 rounded-full" />
+              </div>
+              <Skeleton className="h-2.5 w-32" />
+              <Skeleton className="h-2.5 w-24" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DispatchMapSkeleton() {
+  return (
+    <div className="rounded-lg border overflow-hidden" style={{ height: 420 }}>
+      <Skeleton className="h-full w-full rounded-none" />
+    </div>
+  );
+}
+
+function OpsHealthBanner({ opsHealth, opsHealthError }: { opsHealth?: OpsHealth; opsHealthError?: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: jobAgingData } = useQuery<{ totalAging: number; criticalCount: number; agingJobs: any[] }>({
     queryKey: ['/api/ops/job-aging'],
   });
+
+  if (opsHealthError) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 mb-3 text-xs text-destructive">
+        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+        <span>Ops health could not be loaded</span>
+      </div>
+    );
+  }
 
   if (!opsHealth) return null;
 
@@ -1106,11 +1156,11 @@ export default function DispatchBoard() {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  const { data: opsHealth } = useQuery<OpsHealth>({
+  const { data: opsHealth, isError: opsHealthError } = useQuery<OpsHealth>({
     queryKey: ['/api/ops/health'],
   });
 
-  const { data: dispatchResources } = useQuery<{
+  const { data: dispatchResources, isError: dispatchResourcesError } = useQuery<{
     deployedEquipment: Array<{assignmentId: string; equipmentId: string; equipmentName: string; category: string; categoryId?: string; serialNumber: string; model?: string; manufacturer?: string; jobId: string; jobTitle: string; jobStatus: string; notes?: string; assignedToName?: string | null}>;
     allEquipment: Array<{id: string; name: string; description: string; model: string; serialNumber: string; manufacturer: string; categoryId: string | null; categoryName: string; status: string; location: string; assignedTo: string | null; assignedToName: string | null; isDeployed: boolean; deployedJobTitle: string | null; deployedJobId: string | null; deployedJobStatus: string | null}>;
     categories: Array<{id: string; name: string}>;
@@ -1680,13 +1730,11 @@ export default function DispatchBoard() {
         </div>
       </div>
 
-      <OpsHealthBanner opsHealth={opsHealth} />
+      <OpsHealthBanner opsHealth={opsHealth} opsHealthError={opsHealthError} />
 
       {topView === 'board' && (
         dispatchLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <DispatchBoardSkeleton />
         ) : (
           <KanbanBoard dispatchJobs={dispatchJobs} teamMembers={teamMembers} />
         )
@@ -1694,9 +1742,7 @@ export default function DispatchBoard() {
 
       {topView === 'map' && (
         dispatchLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
+          <DispatchMapSkeleton />
         ) : (
           <DispatchMapView dispatchJobs={dispatchJobs} />
         )
@@ -2739,7 +2785,12 @@ export default function DispatchBoard() {
               <CardTitle className="text-base flex items-center gap-2 flex-wrap">
                 <Wrench className="h-4 w-4" />
                 Equipment
-                {dispatchResources?.totalEquipment ? (
+                {dispatchResourcesError ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-destructive/10 text-destructive">
+                    <AlertCircle className="h-3 w-3" />
+                    Failed to load
+                  </span>
+                ) : dispatchResources?.totalEquipment ? (
                   <span className="text-xs font-normal text-muted-foreground">
                     {dispatchResources.deployedEquipment.length} deployed / {dispatchResources.totalEquipment} total
                   </span>
