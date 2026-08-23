@@ -5220,7 +5220,12 @@ export default function JobDetailScreen() {
 
       if (downloadResult.status === 200) {
         await AsyncStorage.setItem('proof_pack_sections', JSON.stringify(proofPackSections));
+        // Close any open sheets first, then wait for the dismiss animation to finish
+        // before presenting the OS share sheet — iOS cancels a share sheet that opens
+        // while a bottom-sheet is still mid-animation.
         setShowProofPackModal(false);
+        setShowProofPackPreview(false);
+        await new Promise<void>(resolve => setTimeout(resolve, 500));
         const isSharingAvailable = await Sharing.isAvailableAsync();
         if (isSharingAvailable) {
           await Sharing.shareAsync(downloadResult.uri, {
@@ -5230,8 +5235,6 @@ export default function JobDetailScreen() {
         } else {
           showToast({ type: 'success', message: 'Proof Pack PDF downloaded successfully' });
         }
-        // Close the preview after sharing completes (not before, so user sees the loading state)
-        setShowProofPackPreview(false);
       } else {
         showToast({ type: 'error', message: 'Failed to generate Proof Pack PDF' });
       }
@@ -14541,19 +14544,19 @@ export default function JobDetailScreen() {
                 Choose which sections to include in your Proof Pack PDF. Toggle off any sections you don't need.
               </Text>
               {([
-                { key: 'timeline' as const, label: 'Job Timeline', icon: 'clock' as const, desc: 'Created, scheduled, started & completed dates' },
-                { key: 'attendance' as const, label: 'Worker Hours', icon: 'users' as const, desc: 'Time entries and duration per worker' },
-                { key: 'gpsProof' as const, label: 'GPS Verification', icon: 'map-pin' as const, desc: 'Clock-in/out locations and geofence alerts' },
-                { key: 'materials' as const, label: 'Materials & Costs', icon: 'package' as const, desc: 'Materials used with quantities and costs' },
-                { key: 'variations' as const, label: 'Variations', icon: 'edit' as const, desc: 'Approved and pending variation orders' },
-                { key: 'photos' as const, label: 'Photos', icon: 'camera' as const, desc: 'Before/after photos with GPS badges' },
-                { key: 'invoice' as const, label: 'Invoice Summary', icon: 'file-text' as const, desc: 'Invoice details and payment status' },
-                { key: 'retention' as const, label: 'Retention Schedule', icon: 'lock' as const, desc: 'Retention held, DLP period, and release date' },
-                { key: 'compliance' as const, label: 'Compliance & Licensing', icon: 'shield' as const, desc: 'Trade licences, insurance & certifications' },
-                { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'tool' as const, desc: 'Subcontractor invites and activity' },
-                { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & safety checklists' },
-                { key: 'forms' as const, label: 'Job Cards & Forms', icon: 'clipboard' as const, desc: 'Completed job cards and forms with who filled them in' },
-              ] as Array<{ key: keyof typeof proofPackSections; label: string; icon: React.ComponentProps<typeof Feather>['name']; desc: string }>).map(({ key, label, icon, desc }) => (
+                { key: 'timeline' as const, label: 'Job Timeline', icon: 'clock' as const, desc: 'Created, scheduled, started & completed dates', hasData: true },
+                { key: 'attendance' as const, label: 'Worker Hours', icon: 'users' as const, desc: 'Time entries and duration per worker', hasData: !!(job as any).timeEntries?.length || !!(job as any).laborHours || !!(job as any).totalHours },
+                { key: 'gpsProof' as const, label: 'GPS Verification', icon: 'map-pin' as const, desc: 'Clock-in/out locations and geofence alerts', hasData: true },
+                { key: 'materials' as const, label: 'Materials & Costs', icon: 'package' as const, desc: 'Materials used with quantities and costs', hasData: !!(job as any).materials?.length || !!(job as any).materialCount },
+                { key: 'variations' as const, label: 'Variations', icon: 'edit' as const, desc: 'Approved and pending variation orders', hasData: !!(job as any).variations?.length || !!(job as any).variationCount },
+                { key: 'photos' as const, label: 'Photos', icon: 'camera' as const, desc: 'Before/after photos with GPS badges', hasData: !!(job as any).photos?.length || !!(job as any).photoCount },
+                { key: 'invoice' as const, label: 'Invoice Summary', icon: 'file-text' as const, desc: 'Invoice details and payment status', hasData: job?.status === 'invoiced' || job?.status === 'done' },
+                { key: 'retention' as const, label: 'Retention Schedule', icon: 'lock' as const, desc: 'Retention held, DLP period, and release date', hasData: !!(job as any).retentionRate || !!(job as any).retentionAmount },
+                { key: 'compliance' as const, label: 'Compliance & Licensing', icon: 'shield' as const, desc: 'Trade licences, insurance & certifications', hasData: true },
+                { key: 'subcontractors' as const, label: 'Subcontractors', icon: 'tool' as const, desc: 'Subcontractor invites and activity', hasData: !!(job as any).subcontractors?.length || !!(job as any).subcontractorCount },
+                { key: 'swms' as const, label: 'Safety & SWMS', icon: 'alert-triangle' as const, desc: 'Safe Work Method Statements & safety checklists', hasData: !!(job as any).swmsDocuments?.length || !!(job as any).swmsCount },
+                { key: 'forms' as const, label: 'Job Cards & Forms', icon: 'clipboard' as const, desc: 'Completed job cards and forms with who filled them in', hasData: !!(job as any).forms?.length || !!(job as any).formCount },
+              ] as Array<{ key: keyof typeof proofPackSections; label: string; icon: React.ComponentProps<typeof Feather>['name']; desc: string; hasData: boolean }>).map(({ key, label, icon, desc, hasData }) => (
                 <TouchableOpacity
                   key={key}
                   activeOpacity={0.7}
@@ -14589,9 +14592,17 @@ export default function JobDetailScreen() {
                     }}>
                       {label}
                     </Text>
-                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }}>
-                      {desc}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <Feather
+                        name={hasData ? 'check-circle' : 'minus-circle'}
+                        size={11}
+                        color={hasData ? colors.success : colors.mutedForeground}
+                      />
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: hasData ? colors.success : colors.mutedForeground }}>
+                        {hasData ? 'Data collected' : 'No data yet'}
+                      </Text>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>· {desc}</Text>
+                    </View>
                   </View>
                   <Switch
                     value={proofPackSections[key]}
