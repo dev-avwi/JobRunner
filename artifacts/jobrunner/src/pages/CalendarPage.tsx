@@ -1,9 +1,10 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, User, Clock, CheckCircle2, Briefcase } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, MapPin, User, Clock, CheckCircle2, Briefcase, Plus } from "lucide-react";
 import {
   addDays,
   addWeeks,
@@ -39,6 +40,7 @@ type ViewMode = 'week' | 'month';
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>('week');
+  const [, navigate] = useLocation();
 
   // Fetch jobs
   const { data: jobs = [], isLoading } = useQuery<Job[]>({
@@ -244,17 +246,33 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Grid */}
-      {jobs.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No jobs scheduled</h3>
-            <p className="text-muted-foreground text-center">
-              Schedule jobs to see them on your calendar
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
+      {(() => {
+        const periodHasJobs = !isLoading && days.some(day => (jobsByDate[format(day, 'yyyy-MM-dd')] || []).length > 0);
+        const periodLabel = viewMode === 'week' ? 'this week' : 'this month';
+
+        if (!isLoading && !periodHasJobs) {
+          return (
+            <Card data-testid="calendar-empty-state">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <div className="rounded-full bg-muted p-5 mb-5">
+                  <CalendarIcon className="h-10 w-10 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">
+                  Nothing scheduled for {periodLabel}
+                </h3>
+                <p className="text-muted-foreground text-center mb-6">
+                  Create a job to get started
+                </p>
+                <Button onClick={() => navigate('/jobs/new')} data-testid="button-create-job-empty">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Job
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        }
+
+        return (
         <div className={`grid gap-3 ${viewMode === 'week' ? 'grid-cols-1 md:grid-cols-7' : 'grid-cols-1 md:grid-cols-7'}`}>
           {days.map((day) => {
             const dateKey = format(day, 'yyyy-MM-dd');
@@ -318,7 +336,8 @@ export default function CalendarPage() {
             );
           })}
         </div>
-      )}
+        );
+      })()}
     </PageShell>
   );
 }
