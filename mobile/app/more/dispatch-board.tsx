@@ -711,10 +711,11 @@ function DispatchBoardScreenInner() {
       </>
     );
 
-    const renderBoardCard = (job: JobData) => {
+    const renderBoardCard = (job: JobData, memberColor?: string) => {
       const topPx = jobTopOffset(job.scheduledAt!);
       const heightPx = jobCardHeight(job.estimatedDuration);
       const statusColor = getStatusColor(job.status, job.scheduledAt);
+      const accentColor = memberColor || statusColor;
       const isBeingDragged = draggingJob?.id === job.id;
       const gesture = buildDragGesture(job);
       return (
@@ -722,7 +723,15 @@ function DispatchBoardScreenInner() {
           <Animated.View
             style={[
               styles.boardCard,
-              { top: topPx, height: heightPx, borderLeftColor: statusColor, opacity: isBeingDragged ? 0.35 : 1 },
+              {
+                top: topPx,
+                height: heightPx,
+                borderLeftColor: accentColor,
+                backgroundColor: isDark
+                  ? `${accentColor}18`
+                  : `${accentColor}10`,
+                opacity: isBeingDragged ? 0.35 : 1,
+              },
             ]}
           >
             <PressableRow
@@ -744,29 +753,32 @@ function DispatchBoardScreenInner() {
       );
     };
 
-    const renderBoardColumn = (col: BoardColumn, colIdx: number, columnJobs: JobData[], key: string) => (
-      <View
-        key={key}
-        style={[
-          styles.column,
-          colIdx < boardColumns.length - 1 && styles.columnBorderRight,
-        ]}
-      >
-        {hours.map(h => (
-          <View
-            key={h}
-            style={[styles.hourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT }]}
-          />
-        ))}
-        {hours.slice(0, -1).map(h => (
-          <View
-            key={`half-${h}`}
-            style={[styles.halfHourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }]}
-          />
-        ))}
-        {columnJobs.map(renderBoardCard)}
-      </View>
-    );
+    const renderBoardColumn = (col: BoardColumn, colIdx: number, columnJobs: JobData[], key: string) => {
+      const memberColor = (col.member as any)?.themeColor as string | undefined;
+      return (
+        <View
+          key={key}
+          style={[
+            styles.column,
+            colIdx < boardColumns.length - 1 && styles.columnBorderRight,
+          ]}
+        >
+          {hours.map(h => (
+            <View
+              key={h}
+              style={[styles.hourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT }]}
+            />
+          ))}
+          {hours.slice(0, -1).map(h => (
+            <View
+              key={`half-${h}`}
+              style={[styles.halfHourLine, { top: (h - BOARD_START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }]}
+            />
+          ))}
+          {columnJobs.map(job => renderBoardCard(job, memberColor))}
+        </View>
+      );
+    };
 
     return (
       <View>
@@ -900,7 +912,15 @@ function DispatchBoardScreenInner() {
                 <View>
                   <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
                     {boardColumns.map(col => (
-                      <View key={col.id} style={styles.columnHeader}>
+                      <View
+                        key={col.id}
+                        style={[
+                          styles.columnHeader,
+                          col.member && (col.member as any).themeColor
+                            ? { borderTopWidth: 3, borderTopColor: (col.member as any).themeColor }
+                            : undefined,
+                        ]}
+                      >
                         {renderColumnHeader(col)}
                       </View>
                     ))}
@@ -946,6 +966,9 @@ function DispatchBoardScreenInner() {
                         style={[
                           styles.columnHeader,
                           index % boardColumns.length === 0 && styles.weekColumnHeaderStart,
+                          column.member && (column.member as any).themeColor
+                            ? { borderTopWidth: 3, borderTopColor: (column.member as any).themeColor }
+                            : undefined,
                         ]}
                       >
                         {renderColumnHeader(column)}
@@ -1834,13 +1857,15 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     flexDirection: 'row',
   },
   trayCard: {
-    width: 120,
+    width: 148,
     padding: spacing.sm,
     borderRadius: radius.lg,
     borderLeftWidth: 3,
     backgroundColor: colors.background,
     borderWidth: 1,
     borderColor: colors.cardBorder,
+    minHeight: 72,
+    justifyContent: 'space-between',
   },
   trayCardTitle: {
     fontSize: typography.sizes.xs,
@@ -1849,9 +1874,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     lineHeight: 14,
   },
   trayCardMeta: {
-    fontSize: 9,
+    fontSize: 10,
     color: colors.mutedForeground,
-    marginTop: 2,
+    marginTop: 3,
   },
   trayCardHint: {
     flexDirection: 'row',
