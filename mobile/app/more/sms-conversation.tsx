@@ -52,6 +52,45 @@ interface SmsMessage {
   senderUserId?: string | null;
   senderName?: string | null;
   errorMessage?: string | null;
+  errorCode?: string | null;
+}
+
+/**
+ * Extract the Twilio numeric error code from either a dedicated errorCode field
+ * or the legacy embedded format "Delivery failed (code 30003)".
+ */
+function parseTwilioErrorCode(
+  errorCode: string | null | undefined,
+  errorMessage: string | null | undefined,
+): string | null {
+  if (errorCode) return String(errorCode);
+  if (!errorMessage) return null;
+  const match = errorMessage.match(/\bcode\s+(\d+)/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * Map a Twilio error code to a plain-English label and an optional action.
+ * All other codes get a readable fallback without exposing the raw code.
+ */
+function getTwilioErrorDisplay(
+  errorCode: string | null | undefined,
+  errorMessage: string | null | undefined,
+): { label: string; action: 'call' | null } {
+  const code = parseTwilioErrorCode(errorCode, errorMessage);
+  switch (code) {
+    // 30003: Unreachable destination handset — switched off or temporarily unavailable.
+    case '30003':
+      return { label: 'Number is currently unreachable. The handset may be switched off or out of range.', action: null };
+    // 30006: Landline or unreachable carrier — number cannot receive SMS (often a landline).
+    case '30006':
+      return { label: 'This number may be a landline. Try calling instead.', action: 'call' };
+    // 30007: Carrier violation / content filtering.
+    case '30007':
+      return { label: 'Message blocked by the carrier. Try rephrasing or contact the client another way.', action: null };
+    default:
+      return { label: 'Message not delivered. Please try again.', action: null };
+  }
 }
 
 // Convert typographic / Unicode characters that fall outside the GSM-7 basic
@@ -774,11 +813,27 @@ export default function SmsConversationScreen() {
                           <Text style={{ textDecorationLine: 'underline', fontWeight: '600' }}>Get a business number</Text>
                         </Text>
                       </PressableRow>
-                    ) : (
-                      <Text style={{ fontSize: 11, color: colors.destructive, alignSelf: 'flex-end', marginTop: 2, maxWidth: '80%', textAlign: 'right' }}>
-                        Not sent — {msg.errorMessage}
-                      </Text>
-                    )
+                    ) : (() => {
+                      const errDisplay = getTwilioErrorDisplay(msg.errorCode, msg.errorMessage);
+                      return (
+                        <View style={{ alignSelf: 'flex-end', marginTop: 2, maxWidth: '80%', alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 11, color: colors.destructive, textAlign: 'right' }}>
+                            {errDisplay.label}
+                          </Text>
+                          {errDisplay.action === 'call' && clientPhone ? (
+                            <PressableRow
+                              onPress={() => Linking.openURL(`tel:${clientPhone}`)}
+                              style={{ marginTop: 3, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                            >
+                              <Feather name="phone" size={10} color={colors.primary} />
+                              <Text style={{ fontSize: 11, color: colors.primary, fontWeight: '600' }}>
+                                Call
+                              </Text>
+                            </PressableRow>
+                          ) : null}
+                        </View>
+                      );
+                    })()
                   )}
                 </View>
               );

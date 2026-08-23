@@ -38350,6 +38350,7 @@ Respond with JSON in this format:
         errorMessage: failed
           ? (ErrorMessage || `Delivery failed (code ${ErrorCode || 'unknown'})`)
           : message.errorMessage,
+        ...(failed && ErrorCode ? { errorCode: String(ErrorCode) } : {}),
       });
 
       // Alert the sender (or business owner) when a message can't be delivered
