@@ -879,6 +879,56 @@ function DispatchMapSkeleton() {
   );
 }
 
+function DispatchScheduleSkeleton() {
+  const cols = 4;
+  const rows = 8;
+  const hourHeight = 80;
+  return (
+    <div className="relative">
+      <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 240px)' }}>
+        <table className="border-collapse" style={{ minWidth: `${48 + cols * 140}px` }}>
+          <thead>
+            <tr className="bg-muted/30 sticky top-0 z-20">
+              <th className="sticky left-0 z-30 bg-muted/30 w-12 min-w-[48px] p-1 border-b border-r border-border" />
+              {Array.from({ length: cols }).map((_, ci) => (
+                <th key={ci} className="border-b border-l border-border p-2 text-left" style={{ minWidth: 140 }}>
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-7 w-7 rounded-full flex-shrink-0" />
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <Skeleton className="h-3 w-20" />
+                      <Skeleton className="h-2 w-14" />
+                    </div>
+                  </div>
+                  <Skeleton className="mt-1.5 h-1.5 w-full rounded-full" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }).map((_, ri) => (
+              <tr key={ri}>
+                <td
+                  className="sticky left-0 z-10 bg-background w-12 min-w-[48px] px-1.5 py-1 border-b border-r border-border align-top"
+                  style={{ height: hourHeight }}
+                >
+                  <Skeleton className="h-2.5 w-8 mt-0.5" />
+                </td>
+                {Array.from({ length: cols }).map((_, ci) => (
+                  <td
+                    key={ci}
+                    className="border-b border-l border-border"
+                    style={{ height: hourHeight, minWidth: 140 }}
+                  />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function OpsHealthBanner({ opsHealth, opsHealthError }: { opsHealth?: OpsHealth; opsHealthError?: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -1126,7 +1176,7 @@ export default function DispatchBoard() {
     queryKey: ['/api/clients'],
   });
 
-  const { data: teamMembers = [] } = useQuery<TeamMember[]>({
+  const { data: teamMembers = [], isLoading: teamMembersLoading } = useQuery<TeamMember[]>({
     queryKey: ['/api/team/members'],
   });
 
@@ -1946,7 +1996,9 @@ export default function DispatchBoard() {
             </CardHeader>
 
             <CardContent className="p-0">
-              {viewMode === 'week' ? (
+              {(jobsLoading || teamMembersLoading) ? (
+                <DispatchScheduleSkeleton />
+              ) : viewMode === 'week' ? (
                 <div className="relative">
                   <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 240px)' }}>
                     <table className="border-collapse" style={{ minWidth: `${48 + 7 * 130}px` }}>
