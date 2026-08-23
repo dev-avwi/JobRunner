@@ -551,17 +551,32 @@ export default function Insights({ onNavigate }: InsightsProps) {
     return res.json();
   };
 
-  const { data: profitRaw, isLoading: profitLoading } = useQuery<any>({
+  const {
+    data: profitRaw,
+    isLoading: profitLoading,
+    isError: profitError,
+    refetch: refetchProfit,
+  } = useQuery<any>({
     queryKey: ["/api/dashboard/profit-snapshot", period],
     queryFn: () => fetchJson(`/api/dashboard/profit-snapshot?${rangeQs}`),
   });
 
-  const { data: cashflowRaw, isLoading: cashflowLoading } = useQuery<any>({
+  const {
+    data: cashflowRaw,
+    isLoading: cashflowLoading,
+    isError: cashflowError,
+    refetch: refetchCashflow,
+  } = useQuery<any>({
     queryKey: ["/api/dashboard/cashflow", period],
     queryFn: () => fetchJson(`/api/dashboard/cashflow?${rangeQs}`),
   });
 
-  const { data: kpisRaw, isLoading: kpisLoading } = useQuery<any>({
+  const {
+    data: kpisRaw,
+    isLoading: kpisLoading,
+    isError: kpisError,
+    refetch: refetchKpis,
+  } = useQuery<any>({
     queryKey: ["/api/dashboard/kpis", "insights", period],
     queryFn: () => fetchJson(`/api/dashboard/kpis?${rangeQs}`),
   });
@@ -570,7 +585,11 @@ export default function Insights({ onNavigate }: InsightsProps) {
   const cashflow = cashflowRaw ? normalizeCashflow(cashflowRaw) : undefined;
   const kpis = kpisRaw ? normalizeKpis(kpisRaw) : undefined;
 
-  const { data: revenueData } = useQuery<MonthlyRevenue>({
+  const {
+    data: revenueData,
+    isLoading: revenueLoading,
+    isError: revenueError,
+  } = useQuery<MonthlyRevenue>({
     queryKey: ['/api/reports/revenue', new Date().getFullYear().toString()],
     queryFn: async () => {
       const res = await fetch(`/api/reports/revenue?year=${new Date().getFullYear()}`, { credentials: 'include', headers: getAuthHeaders() });
@@ -579,11 +598,22 @@ export default function Insights({ onNavigate }: InsightsProps) {
     },
   });
 
-  const { data: quotesData } = useQuery<any>({
+  const {
+    data: quotesData,
+    isLoading: quotesLoading,
+    isError: quotesError,
+  } = useQuery<any>({
     queryKey: ["/api/quotes"],
   });
 
   const isLoading = profitLoading || cashflowLoading || kpisLoading;
+  const isPrimaryError = profitError || cashflowError || kpisError;
+
+  function retryAll() {
+    if (profitError) refetchProfit();
+    if (cashflowError) refetchCashflow();
+    if (kpisError) refetchKpis();
+  }
 
   const collectionDiff = (cashflow?.thisMonthCollected ?? 0) - (cashflow?.lastMonthCollected ?? 0);
   const collectionUp = collectionDiff >= 0;
@@ -593,6 +623,7 @@ export default function Insights({ onNavigate }: InsightsProps) {
     : 0;
 
   const hasNoData = !isLoading
+    && !isPrimaryError
     && !profit?.revenueThisMonth
     && !kpis?.monthlyEarnings
     && !kpis?.weeklyEarnings
@@ -668,6 +699,28 @@ export default function Insights({ onNavigate }: InsightsProps) {
 
       {isLoading ? (
         <SkeletonGrid />
+      ) : isPrimaryError ? (
+        <div className="feed-card animate-fade-up">
+          <div className="py-12 text-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: "linear-gradient(135deg, hsl(0 84.2% 60.2% / 0.12), hsl(0 84.2% 60.2% / 0.06))" }}
+            >
+              <BarChart3 className="h-8 w-8" style={{ color: "hsl(0 84.2% 60.2%)" }} />
+            </div>
+            <p className="text-base font-semibold text-foreground mb-1">Couldn't load insights</p>
+            <p className="ios-caption max-w-xs mx-auto mb-4">There was a problem fetching your data. Check your connection and try again.</p>
+            <Button
+              size="sm"
+              className="text-white"
+              style={{ backgroundColor: "hsl(var(--trade))" }}
+              onClick={retryAll}
+              data-testid="button-retry-insights"
+            >
+              Try again
+            </Button>
+          </div>
+        </div>
       ) : hasNoData ? (
         <div className="feed-card animate-fade-up">
           <div className="py-16 text-center">
@@ -717,7 +770,17 @@ export default function Insights({ onNavigate }: InsightsProps) {
 
               <MarginArc margin={profit?.grossMargin ?? 0} />
 
-              {revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
+              {revenueLoading ? (
+                <div className="feed-card p-4 animate-fade-up stagger-delay-3" style={{ opacity: 0 }}>
+                  <p className="ios-label mb-3">REVENUE TREND (6 MONTHS)</p>
+                  <Skeleton className="h-[120px] w-full rounded-lg" />
+                </div>
+              ) : revenueError ? (
+                <EmptyChartHint
+                  label="REVENUE TREND (6 MONTHS)"
+                  hint="Couldn't load revenue data. Refresh the page to try again."
+                />
+              ) : revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
                 <RevenueChart months={revenueData.months} />
               ) : (
                 <EmptyChartHint
@@ -913,7 +976,17 @@ export default function Insights({ onNavigate }: InsightsProps) {
                 </div>
               </div>
 
-              {revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
+              {revenueLoading ? (
+                <div className="feed-card p-4 animate-fade-up stagger-delay-3" style={{ opacity: 0 }}>
+                  <p className="ios-label mb-3">REVENUE TREND (6 MONTHS)</p>
+                  <Skeleton className="h-[120px] w-full rounded-lg" />
+                </div>
+              ) : revenueError ? (
+                <EmptyChartHint
+                  label="REVENUE TREND (6 MONTHS)"
+                  hint="Couldn't load revenue data. Refresh the page to try again."
+                />
+              ) : revenueData?.months && revenueData.months.some(m => (m.revenue ?? 0) > 0) ? (
                 <RevenueChart months={revenueData.months} />
               ) : (
                 <EmptyChartHint
@@ -935,10 +1008,22 @@ export default function Insights({ onNavigate }: InsightsProps) {
                 animClass="animate-fade-up stagger-delay-1"
               />
 
-              <QuoteConversionDonut
-                awaiting={kpis?.quotesAwaiting ?? 0}
-                total={totalQuotesSent}
-              />
+              {quotesLoading ? (
+                <div className="feed-card p-4 animate-fade-up stagger-delay-3" style={{ opacity: 0 }}>
+                  <p className="ios-label mb-3">QUOTE PIPELINE</p>
+                  <Skeleton className="h-[90px] w-full rounded-lg" />
+                </div>
+              ) : quotesError ? (
+                <EmptyChartHint
+                  label="QUOTE PIPELINE"
+                  hint="Couldn't load quote data. Refresh the page to try again."
+                />
+              ) : (
+                <QuoteConversionDonut
+                  awaiting={kpis?.quotesAwaiting ?? 0}
+                  total={totalQuotesSent}
+                />
+              )}
 
               <div>
                 <p className="ios-label mb-3">RECEIVABLES</p>
