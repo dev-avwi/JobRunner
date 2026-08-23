@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import api from './api';
 import notificationService from './notifications';
+import { offlineStorage, useOfflineStore } from './offline-storage';
 
 // Unified notification interface matching web implementation
 interface UnifiedNotification {
@@ -25,6 +26,7 @@ interface UnifiedNotificationsResponse {
 interface NotificationsState {
   notifications: UnifiedNotification[];
   isLoading: boolean;
+  isOffline: boolean;
   error: string | null;
   unreadCount: number;
   pushToken: string | null;
@@ -40,11 +42,13 @@ interface NotificationsState {
   setPushPermission: (granted: boolean) => void;
   updateBadgeCount: () => Promise<void>;
   startPolling: () => () => void;
+  resetState: () => void;
 }
 
 export const useNotificationsStore = create<NotificationsState>((set, get) => ({
   notifications: [],
   isLoading: true,
+  isOffline: false,
   error: null,
   unreadCount: 0,
   pushToken: null,
@@ -57,17 +61,35 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     if (now - get().lastFetchTime < 5000 && get().notifications.length > 0) {
       return;
     }
+
+    const isOnline = useOfflineStore.getState().isOnline;
+
+    // When offline, serve from SQLite cache immediately and bail out
+    if (!isOnline) {
+      try {
+        const cached = await offlineStorage.getCachedNotifications();
+        const unreadCount = cached.filter(n => !n.read && !n.dismissed).length;
+        set({ notifications: cached, unreadCount, isLoading: false, isOffline: true });
+        get().updateBadgeCount();
+      } catch {
+        set({ isLoading: false, isOffline: true });
+      }
+      return;
+    }
     
-    set({ isLoading: true, error: null, lastFetchTime: now });
+    set({ isLoading: true, error: null, lastFetchTime: now, isOffline: false });
     try {
       // Use unified endpoint like web - includes system, SMS, and chat notifications
       const response = await api.get<UnifiedNotificationsResponse>('/api/notifications/unified');
       const data = response.data!;
+      const notifications = data.notifications || [];
       set({ 
-        notifications: data.notifications || [], 
+        notifications,
         unreadCount: data.unreadCount || 0,
         isLoading: false 
       });
+      // Persist to SQLite cache for offline use
+      offlineStorage.cacheNotifications(notifications).catch(() => {});
       // Update badge count
       get().updateBadgeCount();
     } catch (error: any) {
@@ -85,12 +107,21 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
           unreadCount,
           isLoading: false 
         });
+        offlineStorage.cacheNotifications(notifications).catch(() => {});
         get().updateBadgeCount();
       } catch (fallbackError) {
-        set({ 
-          error: error.message || 'Failed to fetch notifications',
-          isLoading: false 
-        });
+        // Both network paths failed — try the local cache as a last resort
+        try {
+          const cached = await offlineStorage.getCachedNotifications();
+          const unreadCount = cached.filter(n => !n.read && !n.dismissed).length;
+          set({ notifications: cached, unreadCount, isLoading: false });
+          get().updateBadgeCount();
+        } catch {
+          set({ 
+            error: error.message || 'Failed to fetch notifications',
+            isLoading: false 
+          });
+        }
       }
     }
   },
@@ -173,6 +204,17 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     } catch (error) {
       // Badge count update is non-critical
     }
+  },
+
+  resetState: () => {
+    set({
+      notifications: [],
+      isLoading: false,
+      isOffline: false,
+      error: null,
+      unreadCount: 0,
+      lastFetchTime: 0,
+    });
   },
 
   // Start polling for new notifications (returns cleanup function)

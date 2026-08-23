@@ -33,6 +33,7 @@ import { clearRoleCache } from './role-cache';
 import { useThemeStore, ThemeMode } from './theme-store';
 import locationTracking from './location-tracking';
 import notificationService from './notifications';
+import { useNotificationsStore } from './notifications-store';
 import LiveActivity from '../../modules/LiveActivity/src';
 import type { TemplateCustomization } from './document-templates';
 import { celebrate } from './celebrate';
@@ -503,6 +504,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       _clientsFetchGen += 1;
       _clientsFetchInFlight = null;
       useClientsStore.setState({ clients: [], lastFetched: null, isLoading: false, isOfflineData: false });
+      useNotificationsStore.getState().resetState();
     }
   },
 

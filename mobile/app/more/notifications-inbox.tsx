@@ -213,7 +213,8 @@ export default function NotificationsInboxScreen() {
   
   const { 
     notifications, 
-    isLoading, 
+    isLoading,
+    isOffline,
     unreadCount,
     fetchNotifications, 
     markAsRead, 
@@ -330,11 +331,15 @@ export default function NotificationsInboxScreen() {
           {activeNotifications.length === 0 ? (
             <View style={styles.emptyState}>
               <View style={styles.emptyIcon}>
-                <Feather name="bell-off" size={32} color={colors.mutedForeground} />
+                <Feather name={isOffline ? 'wifi-off' : 'bell-off'} size={32} color={colors.mutedForeground} />
               </View>
-              <Text style={styles.emptyTitle}>No notifications</Text>
+              <Text style={styles.emptyTitle}>
+                {isOffline ? 'You\'re offline' : 'No notifications'}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                When you receive job updates, payment alerts, or team messages, they'll appear here.
+                {isOffline
+                  ? 'Notifications will appear when reconnected.'
+                  : 'When you receive job updates, payment alerts, or team messages, they\'ll appear here.'}
               </Text>
             </View>
           ) : (

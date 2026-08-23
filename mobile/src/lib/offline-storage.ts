@@ -594,6 +594,23 @@ class OfflineStorageService {
           cached_at INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_geofence_events_pending ON geofence_events_local(pending_sync);
+
+        -- N1: Cached notifications for offline inbox
+        CREATE TABLE IF NOT EXISTS notifications (
+          id TEXT PRIMARY KEY,
+          type TEXT,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          related_id TEXT,
+          related_type TEXT,
+          read INTEGER DEFAULT 0,
+          dismissed INTEGER DEFAULT 0,
+          created_at TEXT,
+          notification_type TEXT DEFAULT 'system',
+          unread_count INTEGER,
+          cached_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
       `);
       
       // Run migrations to fix old schemas with NOT NULL constraints
@@ -1101,6 +1118,57 @@ class OfflineStorageService {
       syncAction: row.sync_action,
       localId: row.local_id,
     };
+  }
+
+  // ============ NOTIFICATIONS CACHE ============
+
+  async cacheNotifications(notifications: any[]): Promise<void> {
+    if (!this.db) return;
+
+    const now = Date.now();
+
+    // Replace the full cache on each successful fetch
+    await this.db.runAsync('DELETE FROM notifications');
+
+    for (const n of notifications) {
+      await this.db.runAsync(
+        `INSERT OR REPLACE INTO notifications
+         (id, type, title, message, related_id, related_type, read, dismissed, created_at, notification_type, unread_count, cached_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          n.id, n.type ?? null, n.title, n.message,
+          n.relatedId ?? null, n.relatedType ?? null,
+          n.read ? 1 : 0, n.dismissed ? 1 : 0,
+          n.createdAt ?? null, n.notificationType ?? 'system',
+          n.unreadCount ?? null, now,
+        ]
+      );
+    }
+
+    await this.setMetadata('last_notifications_sync', now.toString());
+    if (__DEV__) console.log(`[OfflineStorage] Cached ${notifications.length} notifications`);
+  }
+
+  async getCachedNotifications(): Promise<any[]> {
+    if (!this.db) return [];
+
+    const rows = await this.db.getAllAsync(
+      'SELECT * FROM notifications ORDER BY created_at DESC'
+    );
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      type: row.type,
+      title: row.title,
+      message: row.message,
+      relatedId: row.related_id,
+      relatedType: row.related_type,
+      read: row.read === 1,
+      dismissed: row.dismissed === 1,
+      createdAt: row.created_at,
+      notificationType: row.notification_type as 'system' | 'sms' | 'chat',
+      unreadCount: row.unread_count,
+    }));
   }
 
   async saveClientOffline(client: Partial<CachedClient>, action: 'create' | 'update'): Promise<CachedClient> {
@@ -3099,7 +3167,7 @@ class OfflineStorageService {
 
     // Account-scoped side tables — cleared separately so a missing table in an
     // older on-device schema can't abort the whole logout wipe above.
-    for (const table of ['subscription_cache', 'chat_messages', 'chat_unread', 'form_submissions_local', 'geofence_events_local', 'quote_line_items', 'invoice_line_items', 'conflicts', 'delta_sync', 'safety_form_templates']) {
+    for (const table of ['subscription_cache', 'chat_messages', 'chat_unread', 'form_submissions_local', 'geofence_events_local', 'quote_line_items', 'invoice_line_items', 'conflicts', 'delta_sync', 'safety_form_templates', 'notifications']) {
       try {
         await this.db.execAsync(`DELETE FROM ${table};`);
       } catch (e) {
