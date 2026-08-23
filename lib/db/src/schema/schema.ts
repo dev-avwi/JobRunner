@@ -3497,7 +3497,6 @@ export const smsMessages = pgTable("sms_messages", {
   status: text("status").default('pending'), // pending, sent, delivered, failed
   twilioSid: varchar("twilio_sid", { length: 50 }),
   errorMessage: text("error_message"),
-  errorCode: varchar("error_code", { length: 10 }),
   isQuickAction: boolean("is_quick_action").default(false),
   quickActionType: text("quick_action_type"), // on_my_way, job_finished, etc.
   // MMS support - array of media URLs (max 10 per Twilio MMS, each up to 5MB)
