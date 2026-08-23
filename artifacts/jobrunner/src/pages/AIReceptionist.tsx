@@ -93,9 +93,37 @@ interface ReceptionistConfig {
   knowledgeBank: KnowledgeBankContent | null;
   smsNotifications?: boolean;
   recordingEnabled?: boolean;
+  autoReplyEnabled?: boolean;
+  autoReplyMessage?: string | null;
   lastLatencyMs?: number | null;
   latencyStatus?: 'optimal' | 'amber' | 'warn' | null;
   lastLatencyCheckedAt?: string | null;
+}
+
+/**
+ * Client-side mirror of the server's toGSM() in artifacts/api-server/src/twilioClient.ts.
+ * Must stay in sync with that implementation so the in-form warning exactly predicts
+ * what Twilio will receive.
+ *
+ * Key points (matching the server):
+ *  - Printable ASCII allow-list is \x20-\x5F and \x61-\x7E — backtick (U+0060) is
+ *    excluded because position 0x60 in the GSM basic table maps to ¿, not `.
+ *  - Non-ASCII code points are enumerated individually from ETSI TS 123 038 (3GPP
+ *    TS 23.038) Tables 1 & 2 — broad Unicode ranges are intentionally avoided.
+ *  - € (U+20AC) is in the GSM-7 extension table and is therefore kept.
+ */
+function toGSMClient(text: string): string {
+  return text
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")  // curly single quotes / primes
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // curly double quotes / double primes
+    .replace(/\u2014/g, '-')   // em dash
+    .replace(/\u2013/g, '-')   // en dash
+    .replace(/\u2026/g, '...')  // horizontal ellipsis
+    .replace(/\u00A0/g, ' ')   // non-breaking space
+    // Exact GSM-7 allow-list — mirrors the server regex character for character.
+    // \x20-\x5F\x61-\x7E = printable ASCII excluding backtick (U+0060).
+    // Non-ASCII entries are individual code points from the GSM-7 basic + extension tables.
+    .replace(/[^\x20-\x5F\x61-\x7E\u000A\u000D\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u00C4\u00C5\u00C6\u00C7\u00C9\u00D1\u00D6\u00D8\u00DC\u00DF\u00E0\u00E4\u00E5\u00E6\u00E8\u00E9\u00EC\u00F1\u00F2\u00F6\u00F8\u00F9\u00FC\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u20AC]/g, '?');
 }
 
 interface TransferNumber {
@@ -416,6 +444,8 @@ export default function AIReceptionist() {
     businessHours: BusinessHours;
     smsNotifications: boolean;
     recordingEnabled: boolean;
+    autoReplyEnabled: boolean;
+    autoReplyMessage: string;
   } | null>(null);
 
   const initForm = () => {
@@ -432,6 +462,8 @@ export default function AIReceptionist() {
       },
       smsNotifications: config?.smsNotifications || false,
       recordingEnabled: config?.recordingEnabled || false,
+      autoReplyEnabled: config?.autoReplyEnabled ?? true,
+      autoReplyMessage: config?.autoReplyMessage || "",
     });
     setEditMode(true);
   };
@@ -444,6 +476,8 @@ export default function AIReceptionist() {
     businessHours?: BusinessHours;
     smsNotifications?: boolean;
     recordingEnabled?: boolean;
+    autoReplyEnabled?: boolean;
+    autoReplyMessage?: string;
   }
 
   const hasExistingConfig = !!config;
@@ -539,6 +573,8 @@ export default function AIReceptionist() {
       businessHours: formData.mode === "after_hours" ? formData.businessHours : undefined,
       smsNotifications: formData.smsNotifications,
       recordingEnabled: formData.recordingEnabled,
+      autoReplyEnabled: formData.autoReplyEnabled,
+      autoReplyMessage: formData.autoReplyMessage || undefined,
     });
   };
 
@@ -1198,6 +1234,61 @@ export default function AIReceptionist() {
                       />
                     </div>
                   </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" style={{ color: "hsl(var(--trade))" }} />
+                        Auto-reply SMS
+                      </CardTitle>
+                      <Switch
+                        checked={formData.autoReplyEnabled}
+                        onCheckedChange={(checked) => setFormData({ ...formData, autoReplyEnabled: checked })}
+                        data-testid="switch-auto-reply"
+                      />
+                    </div>
+                  </CardHeader>
+                  {formData.autoReplyEnabled && (
+                    <CardContent className="space-y-3 pt-0">
+                      <p className="text-xs text-muted-foreground">
+                        Sent to the caller as an SMS after the AI handles their call. Use <code className="bg-muted px-1 rounded">{"{{business_name}}"}</code> to insert your business name.
+                      </p>
+                      <Textarea
+                        value={formData.autoReplyMessage}
+                        onChange={(e) => setFormData({ ...formData, autoReplyMessage: e.target.value })}
+                        placeholder="Thanks for calling {{business_name}}. We got your message and will get back to you shortly."
+                        className="resize-none"
+                        rows={3}
+                        maxLength={500}
+                        data-testid="input-auto-reply-message"
+                      />
+                      <p className="text-xs text-muted-foreground text-right">
+                        {formData.autoReplyMessage.length}/500 characters
+                      </p>
+                      {(() => {
+                        const msg = formData.autoReplyMessage;
+                        if (!msg) return null;
+                        const sanitised = toGSMClient(msg);
+                        if (sanitised === msg) return null;
+                        return (
+                          <div className="space-y-2">
+                            <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-800 dark:text-amber-300">
+                              <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                              <span>
+                                Some characters (curly quotes, em dashes, ellipses) will be replaced with plain equivalents when this SMS is sent, to keep messages within the standard 160-character GSM limit.
+                              </span>
+                            </div>
+                            <div className="p-3 rounded-md bg-muted/50 text-sm">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Message as it will be delivered</p>
+                              <p className="italic">"{sanitised}"</p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </CardContent>
+                  )}
                 </Card>
 
                 <Card>
