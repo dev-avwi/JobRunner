@@ -3367,7 +3367,7 @@ export default function JobDetailScreen() {
     }
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'image/*'],
+        type: ['*/*'],
         copyToCacheDirectory: true,
       });
       if (result.canceled || !result.assets?.[0]) return;
@@ -3387,7 +3387,7 @@ export default function JobDetailScreen() {
       actions: [
         { label: 'Take Photo', icon: 'camera', onPress: pickDocumentFromCamera },
         { label: 'Choose Photo', icon: 'image', onPress: pickDocumentFromLibrary },
-        { label: 'Attach File (PDF)', icon: 'file-text', onPress: pickDocumentFile },
+        { label: 'Attach File', icon: 'file-text', onPress: pickDocumentFile },
         { label: 'Cancel', style: 'cancel' },
       ],
     });
@@ -3433,6 +3433,20 @@ export default function JobDetailScreen() {
     if (!mimeType) return 'file';
     if (mimeType.startsWith('image/')) return 'image';
     if (mimeType === 'application/pdf') return 'file-text';
+    if (
+      mimeType === 'application/msword' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) return 'file-text';
+    if (
+      mimeType === 'application/vnd.ms-excel' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mimeType === 'text/csv'
+    ) return 'grid';
+    if (
+      mimeType === 'application/vnd.ms-powerpoint' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ) return 'monitor';
+    if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed') return 'archive';
     return 'file';
   }, []);
 
@@ -3440,6 +3454,21 @@ export default function JobDetailScreen() {
     if (!mimeType) return 'FILE';
     if (mimeType.startsWith('image/')) return 'IMAGE';
     if (mimeType === 'application/pdf') return 'PDF';
+    if (
+      mimeType === 'application/msword' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) return 'WORD';
+    if (
+      mimeType === 'application/vnd.ms-excel' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ) return 'EXCEL';
+    if (mimeType === 'text/csv') return 'CSV';
+    if (
+      mimeType === 'application/vnd.ms-powerpoint' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ) return 'PPT';
+    if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed') return 'ZIP';
+    if (mimeType === 'text/plain') return 'TXT';
     return 'FILE';
   }, []);
 
@@ -10679,14 +10708,14 @@ export default function JobDetailScreen() {
         <View onLayout={(e) => { sectionOffsets.current['docs'] = e.nativeEvent.layout.y; }} />
       )}
 
-      {/* Uploaded Documents Section - owners/managers only */}
-      {(isOwnerOrManager || isSoloOwner) && (
+      {/* Uploaded Documents Section - visible to all staff (not subcontractors), delete restricted to owners/managers */}
+      {!isSubcontractorUser && (
         <View style={styles.photosCard}>
           <View style={styles.photosHeader}>
             <View style={[styles.photosIconContainer, { backgroundColor: `${colors.primary}15` }]}>
               <Feather name="folder" size={iconSizes.lg} color={colors.primary} />
             </View>
-            <Text style={styles.photosHeaderLabel}>Uploaded Documents</Text>
+            <Text style={styles.photosHeaderLabel}>Job Documents</Text>
             {uploadedDocuments.length > 0 && (
               <View style={styles.photosCountBadge}>
                 <Text style={styles.photosCountText}>{uploadedDocuments.length}</Text>
@@ -10756,13 +10785,15 @@ export default function JobDetailScreen() {
                       ) : null}
                     </View>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDeleteDocument(doc)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={{ padding: spacing.xs }}
-                  >
-                    <Feather name="trash-2" size={16} color={colors.destructive} />
-                  </TouchableOpacity>
+                  {(isOwnerOrManager || isSoloOwner) && (
+                    <TouchableOpacity
+                      onPress={() => handleDeleteDocument(doc)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ padding: spacing.xs }}
+                    >
+                      <Feather name="trash-2" size={16} color={colors.destructive} />
+                    </TouchableOpacity>
+                  )}
                   <Feather name="external-link" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
               ))}
@@ -10791,10 +10822,10 @@ export default function JobDetailScreen() {
             {isUploadingDocument ? (
               <ActivityIndicator size="small" color={colors.foreground} />
             ) : (
-              <Feather name="upload" size={16} color={colors.foreground} />
+              <Feather name="paperclip" size={16} color={colors.foreground} />
             )}
             <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-              {isUploadingDocument ? 'Uploading...' : 'Upload Document'}
+              {isUploadingDocument ? 'Uploading...' : 'Add Document'}
             </Text>
           </TouchableOpacity>
         </View>

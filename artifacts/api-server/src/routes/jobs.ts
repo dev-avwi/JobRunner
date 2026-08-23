@@ -10284,6 +10284,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const { jobId } = req.params;
       
       const userContext = await getUserContext(userId);
+
+      // Subcontractors may not list job documents
+      if (userContext.isSubcontractor) {
+        return res.status(403).json({ error: 'Subcontractors cannot access job documents.' });
+      }
       
       const job = await storage.getJob(jobId, userContext.effectiveUserId);
       if (!job) {
@@ -10317,6 +10322,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const file = req.file;
       
       const userContext = await getUserContext(userId);
+
+      // Subcontractors may not upload job documents
+      if (userContext.isSubcontractor) {
+        return res.status(403).json({ error: 'Subcontractors cannot upload job documents.' });
+      }
       
       const job = await storage.getJob(jobId, userContext.effectiveUserId);
       if (!job) {
@@ -10332,9 +10342,29 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         return res.status(400).json({ error: 'Title is required' });
       }
       
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.mimetype)) {
-        return res.status(400).json({ error: 'Invalid file type. Only PDF and images are allowed.' });
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain',
+        'text/csv',
+        'application/zip',
+        'application/x-zip-compressed',
+      ];
+      // For generic/absent MIME types (e.g. application/octet-stream from some mobile clients),
+      // fall back to extension matching. For any other declared MIME, reject if not allowlisted.
+      const ext = (file.originalname.split('.').pop() || '').toLowerCase();
+      const allowedExtensions = ['pdf','jpg','jpeg','png','gif','webp','doc','docx','xls','xlsx','ppt','pptx','txt','csv','zip'];
+      const isGenericMime = !file.mimetype || file.mimetype === 'application/octet-stream';
+      const mimeAllowed = allowedTypes.includes(file.mimetype) ||
+        (isGenericMime && allowedExtensions.includes(ext));
+      if (!mimeAllowed) {
+        return res.status(400).json({ error: 'Invalid file type. Allowed types: PDF, images, Word, Excel, PowerPoint, text, CSV, and zip files.' });
       }
       
       const objectStorage = new ObjectStorageService();
@@ -10379,6 +10409,13 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const { jobId, docId } = req.params;
       
       const userContext = await getUserContext(userId);
+
+      // Only owners and managers may delete job documents
+      const isOwnerOrManager = userContext.isOwner ||
+        userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM);
+      if (!isOwnerOrManager) {
+        return res.status(403).json({ error: 'Only owners and managers can delete job documents.' });
+      }
       
       const document = await storage.getJobDocument(docId, userContext.effectiveUserId);
       if (!document) {
@@ -10417,6 +10454,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const { jobId, docId } = req.params;
       
       const userContext = await getUserContext(userId);
+
+      // Subcontractors may not view job documents
+      if (userContext.isSubcontractor) {
+        return res.status(403).json({ error: 'Subcontractors cannot access job documents.' });
+      }
       
       const document = await storage.getJobDocument(docId, userContext.effectiveUserId);
       if (!document) {
