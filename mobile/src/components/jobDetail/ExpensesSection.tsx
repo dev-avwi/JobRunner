@@ -442,7 +442,18 @@ export default function ExpensesSection({
 
     return (
       <>
-        {sectionHeader}
+        {/* Section header — rendered inside a card so the title sits on the same visual baseline as the phase cards */}
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          marginBottom: spacing.sm,
+          overflow: 'hidden',
+          ...shadows.sm,
+        }}>
+          {cardHeader}
+        </View>
         {editSheet}
 
         {phasesToShow.map(phase => {

@@ -59,7 +59,7 @@ const MIN_CARD_HEIGHT = 28;
 const SNAP_MINUTES = 15;
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type ViewMode = 'kanban' | 'map';
+type ViewMode = 'schedule' | 'kanban' | 'map';
 type ScheduleViewMode = 'day' | 'week';
 
 interface TeamMember {
@@ -195,7 +195,7 @@ function DispatchBoardScreenInner() {
   );
 
   // ── View state ──────────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<ViewMode>('kanban');
+  const [viewMode, setViewMode] = useState<ViewMode>('schedule');
   const [scheduleViewMode, setScheduleViewMode] = useState<ScheduleViewMode>('day');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -619,6 +619,7 @@ function DispatchBoardScreenInner() {
 
   const renderTabs = () => {
     const tabs: { key: ViewMode; icon: keyof typeof Feather.glyphMap; label: string }[] = [
+      { key: 'schedule', icon: 'calendar', label: 'Schedule' },
       { key: 'kanban', icon: 'grid', label: 'Kanban' },
       { key: 'map', icon: 'map', label: 'Map' },
     ];
@@ -1361,6 +1362,7 @@ function DispatchBoardScreenInner() {
           {renderHero()}
           {renderTabs()}
           {renderOpsHealth()}
+          {viewMode === 'schedule' && renderScheduleView()}
           {viewMode === 'kanban' && renderKanbanView()}
           {viewMode === 'map' && renderMapView()}
         </ScrollView>
