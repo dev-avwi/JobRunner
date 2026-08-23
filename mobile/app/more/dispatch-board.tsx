@@ -37,7 +37,7 @@ import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { api } from '../../src/lib/api';
 import { useAuthStore } from '../../src/lib/store';
 import { useIsTablet, useContentWidth } from '../../src/lib/device';
-import { format, isToday, parseISO, isBefore, startOfDay, isSameDay, startOfWeek } from 'date-fns';
+import { format, isToday, parseISO, isBefore, startOfDay, isSameDay, startOfWeek, addWeeks } from 'date-fns';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { showToast } from '../../src/lib/toast';
@@ -475,6 +475,10 @@ function DispatchBoardScreenInner() {
     setShowAssignModal(true);
   };
 
+  const navigateWeek = (direction: -1 | 1) => {
+    setSelectedDate(prev => addWeeks(prev, direction));
+  };
+
   // ── Drag-drop logic ───────────────────────────────────────────────────────
   const startDrag = (job: JobData) => {
     draggingJobRef.current = job;
@@ -785,11 +789,31 @@ function DispatchBoardScreenInner() {
               );
             })}
           </View>
-          <Text style={styles.scheduleRangeText}>
-            {scheduleViewMode === 'week'
-              ? `${format(weekDays[0], 'd MMM')} to ${format(weekDays[6], 'd MMM')}`
-              : format(selectedDate, 'EEE, d MMM')}
-          </Text>
+          {scheduleViewMode === 'week' ? (
+            <View style={styles.weekNavRow}>
+              <PressableRow
+                testID="dispatch-prev-week"
+                style={styles.weekNavButton}
+                onPress={() => navigateWeek(-1)}
+              >
+                <Feather name="chevron-left" size={iconSizes.sm} color={colors.foreground} />
+              </PressableRow>
+              <Text style={styles.weekNavRangeText}>
+                {`${format(weekDays[0], 'd MMM')} – ${format(weekDays[6], 'd MMM yyyy')}`}
+              </Text>
+              <PressableRow
+                testID="dispatch-next-week"
+                style={styles.weekNavButton}
+                onPress={() => navigateWeek(1)}
+              >
+                <Feather name="chevron-right" size={iconSizes.sm} color={colors.foreground} />
+              </PressableRow>
+            </View>
+          ) : (
+            <Text style={styles.scheduleRangeText}>
+              {format(selectedDate, 'EEE, d MMM')}
+            </Text>
+          )}
         </View>
 
         {/* Date strip */}
@@ -1543,6 +1567,29 @@ const createStyles = (colors: ThemeColors, contentWidth: number, responsivePaddi
     fontWeight: fontWeights.semibold,
     color: colors.mutedForeground,
     textAlign: 'right',
+  },
+  weekNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  weekNavButton: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.md,
+    backgroundColor: colors.muted,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekNavRangeText: {
+    fontSize: typography.captionSmall.fontSize,
+    fontWeight: fontWeights.semibold,
+    color: colors.foreground,
+    textAlign: 'center',
   },
 
   dragHint: {
