@@ -47,6 +47,8 @@ export interface Claim {
   plannedPercentage?: string | null;
   notes: string | null;
   xeroInvoiceId: string | null;
+  xeroSyncedAt?: string | null;
+  xeroSyncError?: string | null;
   /** Object-storage URL for the cost report PDF generated at submission time */
   costReportUrl: string | null;
 }
@@ -137,6 +139,13 @@ export function ClaimsSection({
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // ── xero sync state ───────────────────────────────────────────────────────
+  const [xeroSyncingId, setXeroSyncingId] = useState<string | null>(null);
+  const [xeroLocalState, setXeroLocalState] = useState<Record<string, { invoiceId?: string; error?: string | null }>>({});
+
+  // ── attributed purchase orders per expanded claim ─────────────────────────
+  const [claimPOs, setClaimPOs] = useState<Record<string, { id: string; poNumber: string | null; total: number; status: string | null }[]>>({});
+
   // ── edit sheet state ──────────────────────────────────────────────────────
   const [editingClaim, setEditingClaim] = useState<Claim | null>(null);
   const [editForm, setEditForm] = useState({ claimDate: '', periodStart: '', periodEnd: '' });
@@ -187,16 +196,56 @@ export function ClaimsSection({
     setExpandedId(claimId);
     setLoadingDetail(true);
     try {
-      const res = await api.get<{ claim: Claim; lineItems: ClaimLineItem[]; scheduleOfValues: ScheduleOfValues }>(
-        `/api/jobs/${jobId}/claims/${claimId}`,
-      );
-      setDetail(res.data ? { lineItems: res.data.lineItems, scheduleOfValues: res.data.scheduleOfValues } : null);
+      const [detailRes, posRes] = await Promise.all([
+        api.get<{ claim: Claim; lineItems: ClaimLineItem[]; scheduleOfValues: ScheduleOfValues }>(
+          `/api/jobs/${jobId}/claims/${claimId}`,
+        ),
+        api.get<{ id: string; po_number: string | null; total: string; status: string | null }[]>(
+          `/api/jobs/${jobId}/claims/${claimId}/purchase-orders`,
+        ).catch(() => ({ data: [] })),
+      ]);
+      setDetail(detailRes.data ? { lineItems: detailRes.data.lineItems, scheduleOfValues: detailRes.data.scheduleOfValues } : null);
+      const poRows = (posRes as any).data ?? [];
+      setClaimPOs(prev => ({
+        ...prev,
+        [claimId]: poRows.map((r: any) => ({
+          id: r.id,
+          poNumber: r.po_number,
+          total: parseFloat(r.total ?? '0'),
+          status: r.status,
+        })),
+      }));
     } catch (e) {
       console.error('Error loading claim detail:', e);
     } finally {
       setLoadingDetail(false);
     }
   }, [expandedId, jobId]);
+
+  // ── xero push / retry ────────────────────────────────────────────────────
+  const handlePushXero = async (claimId: string) => {
+    setXeroSyncingId(claimId);
+    try {
+      const res = await api.post<{ success: boolean; xeroInvoiceId?: string; error?: string }>(
+        `/api/jobs/${jobId}/claims/${claimId}/push-xero`,
+      );
+      if (res.data?.success && res.data.xeroInvoiceId) {
+        setXeroLocalState(prev => ({ ...prev, [claimId]: { invoiceId: res.data!.xeroInvoiceId, error: null } }));
+        showToast({ type: 'success', message: 'Pushed to Xero successfully' });
+        onRefresh?.();
+      } else {
+        const err = res.data?.error ?? 'Xero sync failed';
+        setXeroLocalState(prev => ({ ...prev, [claimId]: { error: err } }));
+        showToast({ type: 'error', message: err });
+      }
+    } catch (e: any) {
+      const err = e?.response?.data?.error ?? e?.message ?? 'Xero sync failed';
+      setXeroLocalState(prev => ({ ...prev, [claimId]: { error: err } }));
+      showToast({ type: 'error', message: err });
+    } finally {
+      setXeroSyncingId(null);
+    }
+  };
 
   // ── action buttons ────────────────────────────────────────────────────────
   const handleAction = async (claimId: string, action: 'submit' | 'approve' | 'mark-paid') => {
@@ -469,11 +518,23 @@ export function ClaimsSection({
                       </Text>
                     </View>
                   )}
-                  {claim.xeroInvoiceId && (
-                    <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5' }]}>
-                      <Text style={[styles.statusText, { color: '#065F46' }]}>Xero ✓</Text>
-                    </View>
-                  )}
+                  {/* Xero sync status chip */}
+                  {(() => {
+                    const local = xeroLocalState[claim.id];
+                    const invoiceId = local?.invoiceId ?? claim.xeroInvoiceId;
+                    const syncError = local?.error !== undefined ? local.error : claim.xeroSyncError;
+                    const isSynced = !!invoiceId && !syncError;
+                    const isError = !!syncError;
+                    const showChip = isSynced || isError || (!invoiceId && (claim.status === 'approved' || claim.status === 'submitted'));
+                    if (!showChip) return null;
+                    return (
+                      <View style={[styles.statusBadge, { backgroundColor: isSynced ? '#D1FAE5' : isError ? '#FEE2E2' : '#F3F4F6' }]}>
+                        <Text style={[styles.statusText, { color: isSynced ? '#065F46' : isError ? '#991B1B' : '#6B7280' }]}>
+                          {isSynced ? 'Xero ✓' : isError ? 'Sync error' : 'Not synced'}
+                        </Text>
+                      </View>
+                    );
+                  })()}
                   {isDraft && isOwnerOrManager && (
                     <View style={[styles.statusBadge, { backgroundColor: colors.primaryLight }]}>
                       <Text style={[styles.statusText, { color: colors.primary }]}>Tap to edit</Text>
@@ -619,6 +680,39 @@ export function ClaimsSection({
                       </TouchableOpacity>
                     ) : null}
 
+                    {/* Variation line items included in this claim */}
+                    {detail.lineItems.filter(li => li.variationId).length > 0 && (
+                      <View style={{ marginTop: spacing.sm, padding: spacing.sm, backgroundColor: `${colors.primary}10`, borderRadius: radius.sm }}>
+                        <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.primary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.xxs }}>
+                          Variations in this claim
+                        </Text>
+                        {detail.lineItems.filter(li => li.variationId).map(li => (
+                          <Text key={li.id} style={{ fontSize: typography.sizes.sm, color: colors.foreground }} numberOfLines={1}>
+                            {li.description}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
+
+                    {/* Attributed purchase orders for this claim period */}
+                    {(claimPOs[claim.id] ?? []).length > 0 && (
+                      <View style={{ marginTop: spacing.sm, padding: spacing.sm, backgroundColor: `${colors.warning}10`, borderRadius: radius.sm }}>
+                        <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.warning, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.xxs }}>
+                          Purchase Orders in this period
+                        </Text>
+                        {(claimPOs[claim.id] ?? []).map(po => (
+                          <View key={po.id} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                              {po.poNumber ?? po.id.slice(0, 8)}
+                            </Text>
+                            <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                              {fmt(po.total)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+
                     {/* Action buttons */}
                     {isOwnerOrManager && (
                       <View style={styles.actions}>
@@ -635,13 +729,40 @@ export function ClaimsSection({
                             )}
                           </TouchableOpacity>
                         )}
-                        {isApproved && !claim.xeroInvoiceId && onCreateInvoice && (
+                        {/* Manual Xero push / retry — only shown when not yet synced or sync has failed */}
+                        {(claim.status === 'approved' || claim.status === 'submitted') && (() => {
+                          const local = xeroLocalState[claim.id];
+                          const invoiceId = local?.invoiceId ?? claim.xeroInvoiceId;
+                          const syncError = local?.error !== undefined ? local.error : claim.xeroSyncError;
+                          const isSyncing = xeroSyncingId === claim.id;
+                          // Hide button when already successfully synced (has invoiceId and no error)
+                          if (invoiceId && !syncError) return null;
+                          return (
+                            <TouchableOpacity
+                              style={[styles.actionBtn, { backgroundColor: syncError ? '#FEE2E2' : '#F0FDF4', borderColor: syncError ? '#FCA5A5' : '#6EE7B7' }]}
+                              onPress={() => handlePushXero(claim.id)}
+                              disabled={isSyncing}
+                            >
+                              {isSyncing ? (
+                                <ActivityIndicator size="small" color={syncError ? '#991B1B' : '#065F46'} />
+                              ) : (
+                                <>
+                                  <Feather name="upload-cloud" size={14} color={syncError ? '#991B1B' : '#065F46'} />
+                                  <Text style={[styles.actionBtnText, { color: syncError ? '#991B1B' : '#065F46' }]}>
+                                    {syncError ? 'Retry Xero sync' : 'Push to Xero'}
+                                  </Text>
+                                </>
+                              )}
+                            </TouchableOpacity>
+                          );
+                        })()}
+                        {isApproved && onCreateInvoice && (
                           <TouchableOpacity
-                            style={[styles.actionBtn, { backgroundColor: '#D1FAE5', borderColor: '#6EE7B7' }]}
+                            style={[styles.actionBtn, { backgroundColor: colors.primaryLight, borderColor: colors.primary }]}
                             onPress={() => onCreateInvoice(claim)}
                           >
-                            <Feather name="file-plus" size={14} color="#065F46" />
-                            <Text style={[styles.actionBtnText, { color: '#065F46' }]}>Create Invoice</Text>
+                            <Feather name="file-plus" size={14} color={colors.primary} />
+                            <Text style={[styles.actionBtnText, { color: colors.primary }]}>Create Invoice</Text>
                           </TouchableOpacity>
                         )}
                         {claim.status === 'approved' && (

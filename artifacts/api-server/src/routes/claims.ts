@@ -7,9 +7,10 @@
  */
 import type { Express } from "express";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { requireAuth } from "./middleware";
 import { getUserContext, ownerOrManagerOnly } from "../permissions";
-import { storage } from "../storage";
+import { storage, db } from "../storage";
 import * as xeroService from "../xeroService";
 import { generateProgressClaimPDF, generatePDFBuffer, generateCostReportPDF } from "../pdfService";
 import { computeRetentionSummary } from "./retentionSummary";
@@ -541,7 +542,7 @@ export function registerClaimsRoutes(app: Express): void {
           console.error("[claims] cost report generation error:", pdfErr?.message || pdfErr);
         }
 
-        // 2. Notify client via email if portal is configured
+        // 2. Notify client via email if portal is configured, attaching claim PDF
         try {
           const portalToken = await storage.getActiveJobPortalToken(jobId);
           if (!portalToken) return;
@@ -558,6 +559,33 @@ export function registerClaimsRoutes(app: Express): void {
 
           const baseUrl = getProductionBaseUrl();
           const portalUrl = `${baseUrl}/p/${portalToken.token}`;
+
+          // Generate progress claim PDF for direct attachment
+          let claimPdfBuffer: Buffer | undefined;
+          let claimPdfFilename: string | undefined;
+          try {
+            const freshClaim = await storage.getClaim(claimId, effectiveUserId);
+            const lineItems = await storage.getClaimLineItems(claimId);
+            const clients = await storage.getClients(effectiveUserId);
+            const clientForPdf = clients.find((c) => c.id === (job as any).clientId);
+            const gstEnabled = bizSettings?.gstEnabled ?? false;
+            const { rows, summary } = buildScheduleOfValues(lineItems, num(freshClaim?.retentionPercent), gstEnabled);
+            const claimHtml = generateProgressClaimPDF({
+              claim: freshClaim ?? claim,
+              job,
+              client: clientForPdf ?? null,
+              business: bizSettings,
+              lineItems: rows,
+              summary,
+              gstEnabled,
+            });
+            claimPdfBuffer = await generatePDFBuffer(claimHtml);
+            const claimRef = ((updated as any)?.claimNumber || claim.claimNumber || claimId).replace(/[^a-z0-9-]/gi, '-');
+            claimPdfFilename = `progress-claim-${claimRef}.pdf`;
+          } catch (pdfGenErr: any) {
+            console.error("[claims] claim PDF generation for email failed:", pdfGenErr?.message || pdfGenErr);
+            // Non-fatal — email still sends without attachment
+          }
 
           await sendProgressClaimSubmittedEmail({
             clientEmail: (client as any).email,
@@ -577,6 +605,8 @@ export function registerClaimsRoutes(app: Express): void {
             totalAmount: parseFloat((updated as any)?.total ?? claim.total ?? '0') || 0,
             portalUrl,
             jobTitle: (job as any).title || null,
+            pdfBuffer: claimPdfBuffer,
+            pdfFilename: claimPdfFilename,
           });
         } catch (emailErr: any) {
           console.error("[claims] submit email error:", emailErr?.message || emailErr);
@@ -603,15 +633,38 @@ export function registerClaimsRoutes(app: Express): void {
         approvedAt: new Date(),
       } as any);
 
-      // Push to Xero (best-effort — approval succeeds even if Xero fails)
+      // Push to Xero using the same atomic slot mechanism as the manual push-xero route.
+      // Approval succeeds even if Xero fails; failures are persisted so the sync chip shows retry.
       let xeroResult: { success: boolean; xeroInvoiceId?: string; error?: string } = { success: false };
       try {
-        xeroResult = await pushClaimToXero(claimId, effectiveUserId);
-        if (xeroResult.xeroInvoiceId) {
-          await storage.updateClaim(claimId, effectiveUserId, {
-            xeroInvoiceId: xeroResult.xeroInvoiceId,
-            xeroSyncedAt: new Date(),
-          } as any);
+        // Acquire sync slot atomically — skip if already synced or a manual push is in progress
+        const approvalSlot = await db.execute(sql`
+          UPDATE claims
+          SET xero_sync_error = '__SYNCING__'
+          WHERE id = ${claimId}
+            AND xero_invoice_id IS NULL
+            AND (xero_sync_error IS NULL OR xero_sync_error NOT IN ('__SYNCING__'))
+          RETURNING id
+        `);
+        if ((approvalSlot.rows ?? []).length === 0) {
+          // Already synced or manual push in progress — skip silently
+          xeroResult = { success: true };
+        } else {
+          // Slot acquired — always release in finally
+          try {
+            xeroResult = await pushClaimToXero(claimId, effectiveUserId);
+            if (xeroResult.xeroInvoiceId) {
+              await db.execute(sql`UPDATE claims SET xero_invoice_id = ${xeroResult.xeroInvoiceId}, xero_synced_at = NOW(), xero_sync_error = NULL WHERE id = ${claimId}`);
+            } else if (!xeroResult.success && xeroResult.error) {
+              await db.execute(sql`UPDATE claims SET xero_sync_error = ${xeroResult.error} WHERE id = ${claimId}`);
+            } else {
+              await db.execute(sql`UPDATE claims SET xero_sync_error = NULL WHERE id = ${claimId}`);
+            }
+          } catch (pushErr: any) {
+            const errMsg = String(pushErr?.message ?? pushErr);
+            xeroResult = { success: false, error: errMsg };
+            await db.execute(sql`UPDATE claims SET xero_sync_error = ${errMsg} WHERE id = ${claimId}`).catch(() => {});
+          }
         }
       } catch (xeroErr) {
         console.error("[claims] Xero push error (non-fatal):", xeroErr);
@@ -814,6 +867,218 @@ export function registerClaimsRoutes(app: Express): void {
       res.json({ url: signedUrl });
     } catch (err: any) {
       console.error("[claims] cost-report-pdf error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/jobs/:jobId/claims/:claimId/push-xero — manual Xero push / retry
+  app.post("/api/jobs/:jobId/claims/:claimId/push-xero", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId, claimId } = req.params;
+      const claim = await storage.getClaim(claimId, effectiveUserId);
+      if (!claim || claim.jobId !== jobId) {
+        return res.status(404).json({ error: "Claim not found" });
+      }
+      // Atomic concurrency guard: try to claim the sync slot by writing '__SYNCING__' only when
+      // xero_invoice_id is NULL and no concurrent sync is already running.
+      // Uses a single UPDATE statement so the check-and-set is atomic at the DB level.
+      const slotResult = await db.execute(sql`
+        UPDATE claims
+        SET xero_sync_error = '__SYNCING__'
+        WHERE id = ${claimId}
+          AND xero_invoice_id IS NULL
+          AND (xero_sync_error IS NULL OR xero_sync_error NOT IN ('__SYNCING__'))
+        RETURNING id
+      `);
+      if ((slotResult.rows ?? []).length === 0) {
+        // Either already synced or a concurrent push is running — re-fetch and return current state
+        const fresh = await storage.getClaim(claimId, effectiveUserId);
+        const freshRow = fresh as any;
+        if (freshRow?.xeroInvoiceId) {
+          return res.json({ success: true, xeroInvoiceId: freshRow.xeroInvoiceId, alreadySynced: true });
+        }
+        return res.status(409).json({ error: "Xero sync already in progress" });
+      }
+      // Slot claimed — push to Xero; always release the slot in finally so a crash / exception
+      // never leaves the claim stuck in __SYNCING__ indefinitely.
+      let result: { success: boolean; xeroInvoiceId?: string; error?: string } = { success: false };
+      let syncErr: string | null = null;
+      try {
+        result = await pushClaimToXero(claimId, effectiveUserId);
+        if (result.success && result.xeroInvoiceId) {
+          await db.execute(sql`UPDATE claims SET xero_invoice_id = ${result.xeroInvoiceId}, xero_synced_at = NOW(), xero_sync_error = NULL WHERE id = ${claimId}`);
+        } else if (!result.success) {
+          syncErr = result.error ?? "Xero sync failed";
+          await db.execute(sql`UPDATE claims SET xero_sync_error = ${syncErr} WHERE id = ${claimId}`);
+        } else {
+          // No Xero connection configured — clear the slot
+          await db.execute(sql`UPDATE claims SET xero_sync_error = NULL WHERE id = ${claimId}`);
+        }
+      } catch (pushErr: any) {
+        syncErr = String(pushErr?.message ?? pushErr);
+        await db.execute(sql`UPDATE claims SET xero_sync_error = ${syncErr} WHERE id = ${claimId}`).catch(() => {});
+        throw pushErr;
+      }
+      if (result.success && result.xeroInvoiceId) {
+        return res.json({ success: true, xeroInvoiceId: result.xeroInvoiceId });
+      } else if (syncErr) {
+        return res.status(422).json({ success: false, error: syncErr });
+      } else {
+        return res.json({ success: true, message: "No Xero connection configured" });
+      }
+    } catch (err: any) {
+      console.error("[claims] push-xero error:", err);
+      if (!res.headersSent) res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jobs/:jobId/claims/:claimId/purchase-orders — list POs attributed to a claim
+  app.get("/api/jobs/:jobId/claims/:claimId/purchase-orders", requireAuth, async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId, claimId } = req.params;
+      const claim = await storage.getClaim(claimId, effectiveUserId);
+      if (!claim || claim.jobId !== jobId) return res.status(404).json({ error: "Claim not found" });
+      const rows = await db.execute(sql`
+        SELECT po.id, po.po_number, po.total, po.status, po.order_date, po.supplier_id
+        FROM claim_purchase_orders cpo
+        JOIN purchase_orders po ON po.id = cpo.purchase_order_id
+        WHERE cpo.claim_id = ${claimId}
+        ORDER BY po.order_date ASC
+      `);
+      res.json(rows.rows ?? []);
+    } catch (err: any) {
+      console.error("[claims] get-claim-pos error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/jobs/:jobId/claims/:claimId/purchase-orders — replace attributed POs for a claim
+  app.put("/api/jobs/:jobId/claims/:claimId/purchase-orders", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId, claimId } = req.params;
+      const { purchaseOrderIds } = req.body;
+      const claim = await storage.getClaim(claimId, effectiveUserId);
+      if (!claim || claim.jobId !== jobId) return res.status(404).json({ error: "Claim not found" });
+
+      const ids: string[] = Array.isArray(purchaseOrderIds)
+        ? purchaseOrderIds.map((id) => String(id)).filter(Boolean)
+        : [];
+
+      if (ids.length > 0) {
+        // Validate that every submitted PO ID belongs to this user AND this specific job,
+        // preventing cross-tenant or cross-job data association.
+        const validationResult = await db.execute(sql`
+          SELECT id FROM purchase_orders
+          WHERE id = ANY(${ids}::varchar[])
+            AND job_id = ${jobId}
+            AND user_id = ${effectiveUserId}
+        `);
+        const validIds = new Set((validationResult.rows ?? []).map((r: any) => r.id));
+        const invalidIds = ids.filter((id) => !validIds.has(id));
+        if (invalidIds.length > 0) {
+          return res.status(422).json({
+            error: "One or more purchase order IDs are invalid or do not belong to this job",
+            invalidIds,
+          });
+        }
+      }
+
+      // Replace all attributed POs atomically using Drizzle's transaction callback,
+      // which guarantees all statements run on the same pooled connection.
+      await db.transaction(async (tx) => {
+        await tx.execute(sql`DELETE FROM claim_purchase_orders WHERE claim_id = ${claimId}`);
+        for (const poId of ids) {
+          await tx.execute(sql`
+            INSERT INTO claim_purchase_orders (claim_id, purchase_order_id)
+            VALUES (${claimId}, ${poId})
+            ON CONFLICT (claim_id, purchase_order_id) DO NOTHING
+          `);
+        }
+      });
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("[claims] put-claim-pos error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/jobs/:jobId/financial-chain — full document trail + reconciliation summary
+  app.get("/api/jobs/:jobId/financial-chain", requireAuth, async (req: any, res) => {
+    try {
+      const { effectiveUserId } = await getUserContext(req.userId);
+      const { jobId } = req.params;
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const [allVariations, allClaims, quotesResult, invoicesResult] = await Promise.all([
+        storage.getJobVariations(jobId, effectiveUserId),
+        storage.getClaims(jobId, effectiveUserId),
+        db.execute(sql`SELECT id, status, total, created_at FROM quotes WHERE job_id = ${jobId} AND user_id = ${effectiveUserId} ORDER BY created_at ASC`),
+        db.execute(sql`SELECT id, status, total, created_at FROM invoices WHERE job_id = ${jobId} AND user_id = ${effectiveUserId} ORDER BY created_at ASC`),
+      ]);
+
+      const quotes = (quotesResult.rows ?? []) as any[];
+      const invoices = (invoicesResult.rows ?? []) as any[];
+      const activeQuote = quotes.find((q: any) => q.status === "accepted") ?? quotes.find((q: any) => q.status === "sent") ?? quotes[0] ?? null;
+      const approvedVariations = allVariations.filter((v: any) => v.status === "approved");
+
+      // Batch-fetch attributed POs for all claims in this job (one query, avoids N+1)
+      const claimPosByClaimId = new Map<string, { id: string; poNumber: string; total: number; status: string }[]>();
+      if (allClaims.length > 0) {
+        const claimPosResult = await db.execute(sql`
+          SELECT cpo.claim_id, po.id, po.po_number, po.total, po.status
+          FROM claim_purchase_orders cpo
+          JOIN purchase_orders po ON po.id = cpo.purchase_order_id
+          JOIN claims c ON c.id = cpo.claim_id
+          WHERE c.job_id = ${jobId} AND c.user_id = ${effectiveUserId}
+          ORDER BY po.created_at ASC
+        `);
+        for (const row of (claimPosResult.rows ?? []) as any[]) {
+          if (!claimPosByClaimId.has(row.claim_id)) claimPosByClaimId.set(row.claim_id, []);
+          claimPosByClaimId.get(row.claim_id)!.push({
+            id: row.id,
+            poNumber: row.po_number,
+            total: parseFloat(row.total ?? "0"),
+            status: row.status,
+          });
+        }
+      }
+
+      const quoteTotal = activeQuote ? parseFloat(activeQuote.total ?? "0") : 0;
+      const variationsTotal = approvedVariations.reduce((s: number, v: any) => s + parseFloat(v.amount ?? "0"), 0);
+      const revisedContractTotal = quoteTotal + variationsTotal;
+      const totalClaimed = allClaims
+        .filter((c: any) => c.status !== "draft")
+        .reduce((s: number, c: any) => s + parseFloat(c.total ?? "0"), 0);
+      const outstandingBalance = revisedContractTotal - totalClaimed;
+
+      const chain: any[] = [];
+      if (activeQuote) {
+        chain.push({ type: "quote", id: activeQuote.id, status: activeQuote.status, total: parseFloat(activeQuote.total ?? "0"), date: activeQuote.created_at });
+      }
+      for (const v of approvedVariations) {
+        chain.push({ type: "variation", id: (v as any).id, variationNumber: (v as any).variationNumber, title: (v as any).title, amount: parseFloat((v as any).amount ?? "0"), status: v.status, date: (v as any).approvedAt ?? (v as any).createdAt });
+      }
+      for (const c of allClaims) {
+        chain.push({
+          type: "claim", id: c.id, claimNumber: c.claimNumber,
+          total: parseFloat(c.total ?? "0"), status: c.status,
+          date: (c as any).claimDate ?? (c as any).createdAt,
+          xeroInvoiceId: c.xeroInvoiceId, xeroSyncError: (c as any).xeroSyncError,
+          purchaseOrders: claimPosByClaimId.get(c.id) ?? [],
+        });
+      }
+      for (const inv of invoices) {
+        chain.push({ type: "invoice", id: inv.id, total: parseFloat(inv.total ?? "0"), status: inv.status, date: inv.created_at });
+      }
+
+      res.json({ chain, summary: { quoteTotal, approvedVariationsTotal: variationsTotal, revisedContractTotal, totalClaimed, outstandingBalance } });
+    } catch (err: any) {
+      console.error("[claims] financial-chain error:", err);
       res.status(500).json({ error: err.message });
     }
   });

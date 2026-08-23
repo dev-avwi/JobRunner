@@ -5581,6 +5581,7 @@ export const claims = pgTable("claims", {
   // Xero sync
   xeroInvoiceId: varchar("xero_invoice_id"),
   xeroSyncedAt: timestamp("xero_synced_at"),
+  xeroSyncError: text("xero_sync_error"),
   // Audit trail
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
@@ -5619,6 +5620,16 @@ export const claimLineItems = pgTable("claim_line_items", {
 ]);
 
 export const insertClaimLineItemSchema = createInsertSchema(claimLineItems).omit({ id: true, createdAt: true });
+
+export const claimPurchaseOrders = pgTable("claim_purchase_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  claimId: varchar("claim_id").notNull().references(() => claims.id, { onDelete: "cascade" }),
+  purchaseOrderId: varchar("purchase_order_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_cpo_claim_id").on(table.claimId),
+  unique("uq_cpo_claim_po").on(table.claimId, table.purchaseOrderId),
+]);
 export type InsertClaimLineItem = z.infer<typeof insertClaimLineItemSchema>;
 export type ClaimLineItem = typeof claimLineItems.$inferSelect;
 

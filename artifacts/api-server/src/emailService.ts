@@ -2971,6 +2971,9 @@ export async function sendProgressClaimSubmittedEmail(opts: {
   totalAmount: number;
   portalUrl: string;
   jobTitle: string | null;
+  /** Optional: attach the claim PDF directly to the email */
+  pdfBuffer?: Buffer;
+  pdfFilename?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const {
     clientEmail,
@@ -3052,7 +3055,23 @@ export async function sendProgressClaimSubmittedEmail(opts: {
   };
 
   try {
-    await sendSystemEmail(emailData);
+    if (opts.pdfBuffer) {
+      // Attach the claim PDF directly to the email
+      await sendEmailWithAttachment({
+        to: clientEmail,
+        subject: emailData.subject,
+        html: emailData.html,
+        fromName: opts.businessName || PLATFORM_FROM_NAME,
+        replyTo: PLATFORM_REPLY_TO_EMAIL,
+        attachments: [{
+          filename: opts.pdfFilename || `progress-claim-${opts.claimNumber || 'claim'}.pdf`,
+          content: opts.pdfBuffer,
+          contentType: 'application/pdf',
+        }],
+      });
+    } else {
+      await sendSystemEmail(emailData);
+    }
     console.log(`✅ Progress claim submitted email sent to: ${clientEmail}`);
     return { success: true };
   } catch (error: unknown) {

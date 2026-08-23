@@ -2315,6 +2315,8 @@ export default function JobDetailScreen() {
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
   const [isLoadingClaims, setIsLoadingClaims] = useState(false);
   const [claimedPhaseIds, setClaimedPhaseIds] = useState<Set<string>>(new Set());
+  // POs attributed to each claim (for Document Trail) — keyed by claim ID
+  const [chainClaimPOs, setChainClaimPOs] = useState<Record<string, { id: string; poNumber: string | null; total: number }[]>>({});
 
   const [materials, setMaterials] = useState<JobMaterial[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
@@ -2862,24 +2864,37 @@ export default function JobDetailScreen() {
       const res = await api.get<ProgressClaim[]>(`/api/jobs/${id}/claims`);
       const claims = Array.isArray(res.data) ? res.data : [];
       setProgressClaims(claims);
-      // Fetch line items for all claims in parallel to build the claimed-phase set
-      if (claims.length > 0) {
-        const detailResults = await Promise.all(
-          claims.map((c) =>
-            api.get<{ lineItems: Array<{ phaseId: string | null }> }>(`/api/jobs/${id}/claims/${c.id}`)
-              .catch(() => null),
-          ),
-        );
-        const phaseIds = new Set<string>();
-        for (const r of detailResults) {
-          for (const li of r?.data?.lineItems ?? []) {
-            if (li.phaseId) phaseIds.add(li.phaseId);
+      // Fetch line items for all claims in parallel to build the claimed-phase set,
+      // and fetch financial-chain to get POs attributed per claim (for Document Trail)
+      const [detailResults] = await Promise.all([
+        claims.length > 0
+          ? Promise.all(
+              claims.map((c) =>
+                api.get<{ lineItems: Array<{ phaseId: string | null }> }>(`/api/jobs/${id}/claims/${c.id}`)
+                  .catch(() => null),
+              ),
+            )
+          : Promise.resolve([]),
+        api.get<{ chain: Array<{ type: string; id: string; purchaseOrders?: Array<{ id: string; poNumber: string | null; total: number }> }> }>(
+          `/api/jobs/${id}/financial-chain`,
+        ).then(chainRes => {
+          const posByClaim: Record<string, { id: string; poNumber: string | null; total: number }[]> = {};
+          for (const entry of chainRes.data?.chain ?? []) {
+            if (entry.type === 'claim' && entry.purchaseOrders && entry.purchaseOrders.length > 0) {
+              posByClaim[entry.id] = entry.purchaseOrders;
+            }
           }
+          setChainClaimPOs(posByClaim);
+        }).catch(() => {}),
+      ]);
+      const phaseIds = new Set<string>();
+      for (const r of detailResults) {
+        for (const li of (r as any)?.data?.lineItems ?? []) {
+          if (li.phaseId) phaseIds.add(li.phaseId);
         }
-        setClaimedPhaseIds(phaseIds);
-      } else {
-        setClaimedPhaseIds(new Set());
       }
+      setClaimedPhaseIds(phaseIds);
+      if (claims.length === 0) setClaimedPhaseIds(new Set());
     } catch (e) {
       console.error('Error loading progress claims:', e);
     } finally {
@@ -9928,6 +9943,85 @@ export default function JobDetailScreen() {
                 A retention release claim is awaiting review.
               </Text>
             )}
+          </View>
+        );
+      })()}
+
+      {/* Document Trail — project jobs with claims or variations */}
+      {(isOwnerOrManager || isSoloOwner) && job.jobType === 'project' && (progressClaims.length > 0 || variations.filter((v: any) => v.status === 'approved').length > 0) && (() => {
+        const quotedAmount = profitabilityData?.quoted?.amount ?? 0;
+        const approvedVars = variations.filter((v: any) => v.status === 'approved');
+        const fmtAmt = (n: number) => formatCurrency(n);
+        const claimStatusColor: Record<string, string> = {
+          draft: '#9CA3AF', submitted: '#3B82F6', approved: '#10B981', paid: '#8B5CF6',
+        };
+        return (
+          <View style={[styles.costingCard, { marginBottom: spacing.md }]}>
+            <View style={styles.costingHeader}>
+              <View style={[styles.costingIconContainer, { backgroundColor: `${colors.primary}15` }]}>
+                <Feather name="link" size={iconSizes.lg} color={colors.primary} />
+              </View>
+              <Text style={styles.costingTitle}>Document Trail</Text>
+            </View>
+            <View style={{ gap: 2 }}>
+              {/* Original Quote */}
+              {quotedAmount > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+                  <Text style={{ flex: 1, fontSize: typography.button.fontSize, color: colors.foreground }}>Original Quote</Text>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{fmtAmt(quotedAmount)}</Text>
+                </View>
+              )}
+              {/* Approved Variations */}
+              {approvedVars.map((v: any, i: number) => (
+                <View key={v.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs, paddingLeft: spacing.lg }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.primary }} />
+                  <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: colors.mutedForeground }} numberOfLines={1}>
+                    {v.variationNumber ? `Var ${v.variationNumber}` : `Variation ${i + 1}`}{v.title ? `: ${v.title}` : ''}
+                  </Text>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.primary }}>+{fmtAmt(parseFloat(v.amount ?? '0'))}</Text>
+                </View>
+              ))}
+              {/* Divider before claims */}
+              {progressClaims.length > 0 && (quotedAmount > 0 || approvedVars.length > 0) && (
+                <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />
+              )}
+              {/* Progress Claims */}
+              {progressClaims.map((claim: any) => {
+                const dotColor = claimStatusColor[claim.status] ?? '#9CA3AF';
+                const attributedPOs = chainClaimPOs[claim.id] ?? [];
+                return (
+                  <View key={claim.id} style={{ paddingVertical: spacing.xs }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor }} />
+                      <Text style={{ flex: 1, fontSize: typography.button.fontSize, color: colors.foreground }}>{claim.claimNumber}</Text>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{fmtAmt(parseFloat(claim.total ?? '0'))}</Text>
+                      <View style={{ backgroundColor: `${dotColor}25`, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                        <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: dotColor, textTransform: 'capitalize' }}>{claim.status}</Text>
+                      </View>
+                    </View>
+                    {claim.xeroInvoiceId && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingLeft: spacing.lg + spacing.xs, marginTop: 2 }}>
+                        <Feather name="external-link" size={10} color={colors.success} />
+                        <Text style={{ fontSize: 10, color: colors.success }}>Xero: {claim.xeroInvoiceId}</Text>
+                      </View>
+                    )}
+                    {attributedPOs.length > 0 && (
+                      <View style={{ paddingLeft: spacing.lg + spacing.xs, marginTop: 2, gap: 1 }}>
+                        {attributedPOs.map((po: any) => (
+                          <View key={po.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Feather name="package" size={9} color={colors.mutedForeground} />
+                            <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                              PO {po.poNumber ?? po.id.slice(0, 8)}: {fmtAmt(po.total)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
           </View>
         );
       })()}

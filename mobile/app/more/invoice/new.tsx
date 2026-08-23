@@ -781,6 +781,13 @@ export default function NewInvoiceScreen() {
     materials: { markupCaptured: number; sellPriceTotal: number };
   } | null>(null);
   const [costCheckExpanded, setCostCheckExpanded] = useState(false);
+  const [projectRecon, setProjectRecon] = useState<{
+    quoteTotal: number;
+    approvedVariationsTotal: number;
+    revisedContractTotal: number;
+    totalClaimed: number;
+    outstandingBalance: number;
+  } | null>(null);
 
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
 
@@ -812,8 +819,10 @@ export default function NewInvoiceScreen() {
     setIsRecurring(false);
     setCostCheckData(null);
     setCostCheckExpanded(false);
+    setProjectRecon(null);
     fetchJobExpenses(params.jobId);
     fetchCostCheck(params.jobId);
+    fetchProjectRecon(params.jobId);
     if (params.claimId) {
       fetchClaimAndPrefill(params.jobId, params.claimId);
     } else {
@@ -837,6 +846,19 @@ export default function NewInvoiceScreen() {
       });
     } catch (_) {
       // non-fatal: cost check is advisory only
+    }
+  };
+
+  const fetchProjectRecon = async (jId: string) => {
+    try {
+      const res = await api.get<{
+        summary: { quoteTotal: number; approvedVariationsTotal: number; revisedContractTotal: number; totalClaimed: number; outstandingBalance: number };
+      }>(`/api/jobs/${jId}/financial-chain`);
+      if (res.data?.summary && res.data.summary.revisedContractTotal > 0) {
+        setProjectRecon(res.data.summary);
+      }
+    } catch (_) {
+      // non-fatal
     }
   };
 
@@ -1697,6 +1719,38 @@ export default function NewInvoiceScreen() {
                   </View>
                 )}
               </View>
+
+              {/* Project Reconciliation Panel — shown when creating invoice from a project claim */}
+              {jobId && params.claimId && projectRecon && projectRecon.revisedContractTotal > 0 && (
+                <View style={[styles.card, { borderColor: colors.primary }]}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="bar-chart-2" size={16} color={colors.primary} />
+                    <Text style={styles.cardHeaderText}>Reconciliation Summary</Text>
+                  </View>
+                  {[
+                    { label: 'Original Quote', value: projectRecon.quoteTotal, color: colors.foreground },
+                    { label: 'Approved Variations', value: projectRecon.approvedVariationsTotal, prefix: '+', color: colors.primary },
+                    { label: 'Revised Contract', value: projectRecon.revisedContractTotal, bold: true, color: colors.foreground, dividerAbove: true },
+                    { label: 'Total Claimed to Date', value: projectRecon.totalClaimed, color: colors.mutedForeground },
+                    { label: 'Outstanding Balance', value: projectRecon.outstandingBalance, bold: true, color: projectRecon.outstandingBalance > 0 ? colors.success : colors.destructive, dividerAbove: true },
+                  ].map(({ label, value, prefix, bold, color, dividerAbove }) => (
+                    <View key={label}>
+                      {dividerAbove && <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />}
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs }}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, flex: 1 }}>{label}</Text>
+                        <Text style={{ fontSize: typography.sizes.sm, fontWeight: bold ? fontWeights.bold : fontWeights.medium, color }}>
+                          {prefix}{formatCurrency(value)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))}
+                  <View style={{ marginTop: spacing.sm, padding: spacing.sm, backgroundColor: colors.muted, borderRadius: 8 }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
+                      This invoice is for {formatCurrency(total)} of the {formatCurrency(projectRecon.outstandingBalance)} outstanding balance
+                    </Text>
+                  </View>
+                </View>
+              )}
 
               {/* Line Items Card */}
               <View style={styles.card}>
