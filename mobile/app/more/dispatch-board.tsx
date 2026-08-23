@@ -48,7 +48,7 @@ const BOARD_END_HOUR = 19;
 const HOUR_HEIGHT = 64;
 const BOARD_HEIGHT = (BOARD_END_HOUR - BOARD_START_HOUR) * HOUR_HEIGHT; // 768px
 const TIME_GUTTER_WIDTH = 48;
-const COLUMN_WIDTH = 140;
+const COLUMN_WIDTH = 160;
 const COLUMN_GAP = 6;
 const COLUMN_STRIDE = COLUMN_WIDTH + COLUMN_GAP;
 const COLUMN_HEADER_HEIGHT = 56;
@@ -579,7 +579,7 @@ function DispatchBoardScreenInner() {
   // Build gesture for a draggable card
   const buildDragGesture = (job: JobData) =>
     Gesture.Pan()
-      .activateAfterLongPress(420)
+      .activateAfterLongPress(200)
       .onStart((e) => {
         ghostX.value = e.absoluteX;
         ghostY.value = e.absoluteY;
