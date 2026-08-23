@@ -219,7 +219,16 @@ function DispatchBoardScreenInner() {
   const hScrollOffsetRef = useRef(0);
   const containerRef = useRef<View>(null);
   const boardRef = useRef<View>(null);
+  // Week-agenda day card positions for drop-target detection
+  const weekDayViewsRef = useRef<Record<number, View | null>>({});
+  const weekDayRectsRef = useRef<Array<{ y: number; height: number; date: Date }>>([]);
+  // Stable ref so worklets can read the current mode without a shared value
+  const scheduleViewModeRef = useRef(scheduleViewMode);
   const mapRef = useRef<any>(null);
+
+  // Keep scheduleViewModeRef in sync so gesture onEnd can read it without a shared value
+  useEffect(() => { scheduleViewModeRef.current = scheduleViewMode; }, [scheduleViewMode]);
+
   const containerTopY = useSharedValue(0);
   const containerLeftX = useSharedValue(0);
   const ghostX = useSharedValue(0);
@@ -550,9 +559,11 @@ function DispatchBoardScreenInner() {
     const originalAssignedTo = job.assignedTo;
     const newScheduledAt = newDate.toISOString();
 
+    const newStatus = autoScheduleStatus(job.status);
+
     // Optimistic update
     setJobs(prev => prev.map(j => j.id === job.id
-      ? { ...j, scheduledAt: newScheduledAt, assignedTo: newAssignedTo }
+      ? { ...j, scheduledAt: newScheduledAt, assignedTo: newAssignedTo, status: newStatus }
       : j,
     ));
 
@@ -561,7 +572,7 @@ function DispatchBoardScreenInner() {
     setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo, timer });
 
     // Persist
-    api.patch(`/api/jobs/${job.id}`, { scheduledAt: newScheduledAt, assignedTo: newAssignedTo || null })
+    api.patch(`/api/jobs/${job.id}`, { scheduledAt: newScheduledAt, assignedTo: newAssignedTo || null, status: newStatus })
       .catch(() => {
         // Revert on error
         setJobs(prev => prev.map(j => j.id === job.id
@@ -580,6 +591,87 @@ function DispatchBoardScreenInner() {
     });
   };
 
+  const measureWeekDayRects = () => {
+    weekDays.forEach((day, idx) => {
+      const view = weekDayViewsRef.current[idx];
+      if (view) {
+        view.measureInWindow((_x, y, _w, h) => {
+          weekDayRectsRef.current[idx] = { y, height: h, date: day };
+        });
+      }
+    });
+  };
+
+  // Status to set when a job is dropped onto a scheduled slot
+  const autoScheduleStatus = (current: string) =>
+    ['pending', 'unassigned', 'assigned'].includes(current) ? 'scheduled' : current;
+
+  const handleWeekAgendaDrop = (absY: number) => {
+    const job = draggingJobRef.current;
+    clearDrag();
+    if (!job) return;
+
+    const rects = weekDayRectsRef.current;
+    // Find which day card the finger ended in; fall back to the nearest one
+    let targetDay: Date | null = null;
+    for (const rect of rects) {
+      if (absY >= rect.y && absY <= rect.y + rect.height) {
+        targetDay = rect.date;
+        break;
+      }
+    }
+    if (!targetDay && rects.length > 0) {
+      const nearest = [...rects].sort((a, b) =>
+        Math.abs(absY - (a.y + a.height / 2)) - Math.abs(absY - (b.y + b.height / 2)),
+      );
+      if (nearest[0]) targetDay = nearest[0].date;
+    }
+    if (!targetDay) return;
+
+    // Preserve the original time; default to 8 am if unscheduled
+    const originalScheduledAt = job.scheduledAt;
+    const originalTime = job.scheduledAt ? parseISO(job.scheduledAt) : null;
+    const newDate = new Date(targetDay);
+    if (originalTime) {
+      newDate.setHours(originalTime.getHours(), originalTime.getMinutes(), 0, 0);
+    } else {
+      newDate.setHours(8, 0, 0, 0);
+    }
+    const newScheduledAt = newDate.toISOString();
+
+    // Nothing to do if dropped on the same day
+    if (originalScheduledAt && isSameDay(parseISO(originalScheduledAt), targetDay)) return;
+
+    const newStatus = autoScheduleStatus(job.status);
+
+    setJobs(prev => prev.map(j => j.id === job.id
+      ? { ...j, scheduledAt: newScheduledAt, status: newStatus }
+      : j,
+    ));
+
+    const timer = setTimeout(dismissUndo, 5000);
+    setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo: job.assignedTo, timer });
+
+    api.patch(`/api/jobs/${job.id}`, { scheduledAt: newScheduledAt, status: newStatus })
+      .catch(() => {
+        setJobs(prev => prev.map(j => j.id === job.id
+          ? { ...j, scheduledAt: originalScheduledAt }
+          : j,
+        ));
+        dismissUndo();
+        showToast({ type: 'error', message: 'Failed to reschedule job' });
+      });
+  };
+
+  // Single entry-point so the worklet onEnd doesn't need to branch on mode
+  const handleAnyDrop = (absX: number, absY: number) => {
+    if (scheduleViewModeRef.current === 'week') {
+      handleWeekAgendaDrop(absY);
+    } else {
+      handleBoardDrop(absX, absY);
+    }
+  };
+
   // Build gesture for a draggable card
   const buildDragGesture = (job: JobData) =>
     Gesture.Pan()
@@ -591,13 +683,14 @@ function DispatchBoardScreenInner() {
         // Both calls must go through runOnJS — worklets cannot touch JS refs or bridge APIs
         runOnJS(startDrag)(job);
         runOnJS(measureBoardForDrop)();
+        runOnJS(measureWeekDayRects)();
       })
       .onUpdate((e) => {
         ghostX.value = e.absoluteX;
         ghostY.value = e.absoluteY;
       })
       .onEnd((e) => {
-        runOnJS(handleBoardDrop)(e.absoluteX, e.absoluteY);
+        runOnJS(handleAnyDrop)(e.absoluteX, e.absoluteY);
         isDraggingValue.value = false;
       })
       .onFinalize(() => {
@@ -890,8 +983,12 @@ function DispatchBoardScreenInner() {
                     return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
                   });
                 const todayDay = isToday(day);
+                const dayIdx = weekDays.indexOf(day);
                 return (
-                  <View key={day.toISOString()} style={{
+                  <View
+                    key={day.toISOString()}
+                    ref={v => { weekDayViewsRef.current[dayIdx] = v; }}
+                    style={{
                     marginBottom: spacing.sm,
                     borderRadius: radius.xl,
                     borderWidth: todayDay ? 2 : 1,
@@ -941,47 +1038,52 @@ function DispatchBoardScreenInner() {
                         const sc = getStatusColor(job.status, job.scheduledAt);
                         const assignedCol = job.assignedTo ? boardColumns.find(c => c.id === job.assignedTo) : null;
                         const assignedMember = assignedCol?.member;
+                        const isBeingDragged = draggingJob?.id === job.id;
+                        const gesture = buildDragGesture(job);
                         return (
-                          <PressableRow
-                            key={job.id}
-                            style={{
-                              flexDirection: 'row', alignItems: 'center',
-                              paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
-                              borderBottomWidth: idx < dayJobs.length - 1 ? StyleSheet.hairlineWidth : 0,
-                              borderBottomColor: colors.border,
-                              borderLeftWidth: 3, borderLeftColor: sc,
-                              gap: spacing.sm,
-                            }}
-                            onPress={() => router.push(`/job/${job.id}` as any)}
-                          >
-                            <View style={{ width: 54 }}>
-                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc }}>
-                                {job.scheduledAt ? formatTime(job.scheduledAt) : 'No time'}
-                              </Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-                                {job.title}
-                              </Text>
-                              {job.clientName ? (
-                                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }} numberOfLines={1}>{job.clientName}</Text>
-                              ) : null}
-                            </View>
-                            {assignedMember ? (
-                              <TeamAvatar
-                                firstName={assignedMember.firstName}
-                                lastName={assignedMember.lastName}
-                                userId={String(assignedMember.userId)}
-                                themeColor={(assignedMember as any).themeColor}
-                                size={24}
-                              />
-                            ) : (
-                              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }}>
-                                <Feather name="user" size={12} color={colors.mutedForeground} />
-                              </View>
-                            )}
-                            <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-                          </PressableRow>
+                          <GestureDetector key={job.id} gesture={gesture}>
+                            <Animated.View style={{ opacity: isBeingDragged ? 0.35 : 1 }}>
+                              <PressableRow
+                                style={{
+                                  flexDirection: 'row', alignItems: 'center',
+                                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
+                                  borderBottomWidth: idx < dayJobs.length - 1 ? StyleSheet.hairlineWidth : 0,
+                                  borderBottomColor: colors.border,
+                                  borderLeftWidth: 3, borderLeftColor: sc,
+                                  gap: spacing.sm,
+                                }}
+                                onPress={() => router.push(`/job/${job.id}` as any)}
+                              >
+                                <View style={{ width: 54 }}>
+                                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc }}>
+                                    {job.scheduledAt ? formatTime(job.scheduledAt) : 'No time'}
+                                  </Text>
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                                    {job.title}
+                                  </Text>
+                                  {job.clientName ? (
+                                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }} numberOfLines={1}>{job.clientName}</Text>
+                                  ) : null}
+                                </View>
+                                {assignedMember ? (
+                                  <TeamAvatar
+                                    firstName={assignedMember.firstName}
+                                    lastName={assignedMember.lastName}
+                                    userId={String(assignedMember.userId)}
+                                    themeColor={(assignedMember as any).themeColor}
+                                    size={24}
+                                  />
+                                ) : (
+                                  <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                                    <Feather name="user" size={12} color={colors.mutedForeground} />
+                                  </View>
+                                )}
+                                <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                              </PressableRow>
+                            </Animated.View>
+                          </GestureDetector>
                         );
                       })
                     )}

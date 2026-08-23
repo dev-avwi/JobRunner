@@ -2039,8 +2039,8 @@ export default function SettingsScreen() {
 
                   >
                     <Text style={styles.businessInfoLabel}>Active Number</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <Text style={[styles.businessInfoValue, { color: colors.success, fontWeight: fontWeights.semibold }]}>{businessSettings.dedicatedPhoneNumber}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 1 }}>
+                      <Text style={[styles.businessInfoValue, { color: colors.success, fontWeight: fontWeights.semibold }]} numberOfLines={1}>{businessSettings.dedicatedPhoneNumber}</Text>
                       <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                     </View>
                   </PressableRow>

@@ -2750,7 +2750,7 @@ export default function TemplatesScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={0}
           >
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
             <View style={[styles.modalHeader]}>
               <TouchableOpacity
                 onPress={() => {
