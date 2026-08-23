@@ -1,6 +1,7 @@
 import { storage } from './storage';
 import { sendEmail } from './emailService';
 import { sendSMS as sendSms } from './twilioClient';
+import { toGSM } from './services/smsService';
 import Stripe from 'stripe';
 import { PRICING } from '@workspace/db';
 import type { User, BusinessSettings } from '@workspace/db';
@@ -192,7 +193,7 @@ async function sendBillingReminderSms(
   try {
     const result = await sendSms({
       to: phone,
-      message,
+      message: toGSM(message),
       alphanumericSenderId: 'JobRunner',
     });
 
@@ -445,7 +446,7 @@ async function sendOverdueReminderSms(
   try {
     const result = await sendSms({
       to: phone,
-      message,
+      message: toGSM(message),
       alphanumericSenderId: 'JobRunner',
     });
     if (result.success) {

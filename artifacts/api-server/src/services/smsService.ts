@@ -41,6 +41,34 @@ interface QuickActionOptions {
 }
 
 /**
+ * Sanitise a message body to the GSM-7 character set so Twilio never
+ * silently switches to UCS-2 encoding (which triples segment cost).
+ *
+ * Replaces the most common typographic characters that arrive from
+ * copy-paste or template fields:
+ *   curly quotes  → straight quotes
+ *   em/en dashes  → hyphen
+ *   ellipsis      → three dots
+ *   non-breaking space → regular space
+ *
+ * Any remaining non-GSM-7 code points are replaced with '?' so the
+ * message always stays in the 160-char/segment GSM-7 range.
+ */
+export function toGSM(text: string): string {
+  return text
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")  // curly single quotes / primes
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')  // curly double quotes / double primes
+    .replace(/\u2014/g, '-')   // em dash
+    .replace(/\u2013/g, '-')   // en dash
+    .replace(/\u2026/g, '...')  // horizontal ellipsis
+    .replace(/\u00A0/g, ' ')   // non-breaking space
+    // Replace any remaining characters outside the GSM-7 basic charset
+    // (printable ASCII + common European letters already in GSM-7 are kept).
+    // This regex matches anything that is NOT in the GSM-7 basic+extended set.
+    .replace(/[^\x20-\x7E\u00C0-\u00C6\u00E0-\u00E6\u00C8-\u00CA\u00E8-\u00EA\u00CB\u00EB\u00CC-\u00CF\u00EC-\u00EF\u00D2-\u00D6\u00F2-\u00F6\u00D9-\u00DC\u00F9-\u00FC\u00DF\u00C9\u00E9\u00C0\u00E0\u00D8\u00F8\u00C5\u00E5\u00C6\u00E6\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u000A\u000D]/g, '?');
+}
+
+/**
  * Format Australian phone number to E.164 format
  */
 export function formatPhoneNumber(phone: string): string {
@@ -140,6 +168,9 @@ async function sendSmsPlatform(
   businessOwnerId?: string
 ): Promise<{ success: boolean; messageId?: string; error?: string; simulated?: boolean; notConfigured?: boolean }> {
   const formattedTo = formatPhoneNumber(to);
+  // Sanitise to GSM-7 so curly quotes / em-dashes from templates never
+  // silently flip the message into UCS-2 and triple the segment cost.
+  const sanitizedMessage = toGSM(message);
   const validMediaUrls = mediaUrls?.slice(0, 10) || [];
 
   // Business SMS must ALWAYS come from the business's own dedicated number.
@@ -179,7 +210,7 @@ async function sendSmsPlatform(
 
   return sendSMS({
     to: formattedTo,
-    message,
+    message: sanitizedMessage,
     mediaUrls: validMediaUrls.length > 0 ? validMediaUrls : undefined,
     fromNumber,
     alphanumericSenderId,
