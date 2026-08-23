@@ -1,7 +1,7 @@
 import { storage } from './storage';
 import type { BusinessSettings, InsertAiReceptionistCall, InsertAiReceptionistConfig, InsertNotification, AiReceptionistConfig } from '@workspace/db';
 import crypto from 'crypto';
-import { sendSMS } from './twilioClient';
+import { sendSMS, toGSM } from './twilioClient';
 import { analyzeCallSentiment } from './ai';
 import { getErrorMessage } from "./lib/errors";
 
@@ -604,10 +604,14 @@ const RECORDING_NOTICE = "Just so you know, this call may be recorded.";
 // the greeting doesn't already mention it. When recording is off, returns the
 // greeting unchanged (which also strips any previously-added notice, since we
 // only ever store the clean greeting).
+// toGSM() is applied so that characters which would be silently converted in
+// downstream SMS contexts (curly quotes, em dashes, ellipses, etc.) are
+// normalised before being sent to Vapi, matching the preview shown in the UI.
 function applyRecordingNotice(message: string, recordingEnabled?: boolean): string {
-  if (!recordingEnabled) return message;
-  if (/record/i.test(message)) return message;
-  return `${message} ${RECORDING_NOTICE}`;
+  const sanitised = toGSM(message);
+  if (!recordingEnabled) return sanitised;
+  if (/record/i.test(sanitised)) return sanitised;
+  return `${sanitised} ${RECORDING_NOTICE}`;
 }
 
 export async function createAssistant(config: VapiAssistantConfig): Promise<VapiResponse> {

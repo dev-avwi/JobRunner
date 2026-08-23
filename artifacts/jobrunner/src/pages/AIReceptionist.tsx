@@ -1152,12 +1152,36 @@ export default function AIReceptionist() {
                     </div>
                   );
                 })()}
-                {formData.greeting && (
-                  <div className="p-3 rounded-md bg-muted/50 text-sm">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">Preview</p>
-                    <p className="italic">"{formData.greeting}"</p>
-                  </div>
-                )}
+                {(() => {
+                  const greeting = formData.greeting;
+                  if (!greeting) return null;
+                  const sanitised = toGSMClient(greeting);
+                  if (sanitised === greeting) return null;
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40 p-3 text-xs text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          Some characters (curly quotes, em dashes, ellipses) will be replaced with plain equivalents when this greeting is sent, to keep messages within the standard 160-character GSM limit.
+                        </span>
+                      </div>
+                      <div className="p-3 rounded-md bg-muted/50 text-sm">
+                        <p className="text-xs font-medium text-muted-foreground mb-1">Greeting as it will be delivered</p>
+                        <p className="italic">"{sanitised}"</p>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {formData.greeting && (() => {
+                  const sanitised = toGSMClient(formData.greeting);
+                  if (sanitised !== formData.greeting) return null;
+                  return (
+                    <div className="p-3 rounded-md bg-muted/50 text-sm">
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Preview</p>
+                      <p className="italic">"{formData.greeting}"</p>
+                    </div>
+                  );
+                })()}
               </CardContent>
             </Card>
 
