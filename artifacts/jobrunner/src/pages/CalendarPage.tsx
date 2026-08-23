@@ -155,30 +155,40 @@ export default function CalendarPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <StatCard 
-          title="Today" 
-          value={stats.jobsToday.toString()} 
-          icon={Clock}
-          testId="kpi-jobs-today"
-        />
-        <StatCard 
-          title="This Week" 
-          value={stats.jobsThisWeek.toString()} 
-          icon={Briefcase}
-          testId="kpi-jobs-week"
-        />
-        <StatCard 
-          title="Upcoming" 
-          value={stats.upcoming.toString()} 
-          icon={CalendarIcon}
-          testId="kpi-upcoming-jobs"
-        />
-        <StatCard 
-          title="Completed" 
-          value={stats.completed.toString()} 
-          icon={CheckCircle2}
-          testId="kpi-completed-jobs"
-        />
+        {isLoading ? (
+          <>
+            {[0,1,2,3].map(i => (
+              <div key={i} className="h-20 rounded-lg bg-muted animate-pulse" />
+            ))}
+          </>
+        ) : (
+          <>
+            <StatCard 
+              title="Today" 
+              value={stats.jobsToday.toString()} 
+              icon={Clock}
+              testId="kpi-jobs-today"
+            />
+            <StatCard 
+              title="This Week" 
+              value={stats.jobsThisWeek.toString()} 
+              icon={Briefcase}
+              testId="kpi-jobs-week"
+            />
+            <StatCard 
+              title="Upcoming" 
+              value={stats.upcoming.toString()} 
+              icon={CalendarIcon}
+              testId="kpi-upcoming-jobs"
+            />
+            <StatCard 
+              title="Completed" 
+              value={stats.completed.toString()} 
+              icon={CheckCircle2}
+              testId="kpi-completed-jobs"
+            />
+          </>
+        )}
       </div>
 
       {/* Calendar Controls */}

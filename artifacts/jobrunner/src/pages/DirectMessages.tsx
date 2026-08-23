@@ -294,15 +294,29 @@ export default function DirectMessages() {
               </div>
             ) : (
               <>
-                {conversations
-                  .filter(conv => {
+                {(() => {
+                  const filteredConversations = conversations.filter(conv => {
                     if (!searchTerm) return true;
                     const displayName = getUserDisplayName(conv.otherUser).toLowerCase();
                     const email = (conv.otherUser.email || "").toLowerCase();
                     const term = searchTerm.toLowerCase();
                     return displayName.includes(term) || email.includes(term);
-                  })
-                  .map((conversation) => (
+                  });
+                  if (searchTerm && filteredConversations.length === 0 && availableNewContacts.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                        <Search className="h-10 w-10 text-muted-foreground mb-3" />
+                        <p className="font-medium text-muted-foreground">No results for &ldquo;{searchTerm}&rdquo;</p>
+                        <button
+                          className="mt-2 text-sm text-primary hover:underline"
+                          onClick={() => setSearchTerm("")}
+                        >
+                          Clear search
+                        </button>
+                      </div>
+                    );
+                  }
+                  return filteredConversations.map((conversation) => (
                     <div
                       key={conversation.otherUser.id}
                       className="flex items-center gap-3 p-4 hover-elevate cursor-pointer"
@@ -342,7 +356,8 @@ export default function DirectMessages() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ));
+                })()}
 
                 {availableNewContacts.length > 0 && (
                   <>

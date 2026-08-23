@@ -444,6 +444,7 @@ export default function EquipmentPage() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [formData, setFormData] = useState(defaultFormData);
+  const [nameError, setNameError] = useState("");
   const [maintenanceForm, setMaintenanceForm] = useState(defaultMaintenanceForm);
 
   const { data: equipmentList = [], isLoading } = useQuery<Equipment[]>({
@@ -594,9 +595,10 @@ export default function EquipmentPage() {
 
   function handleSubmit() {
     if (!formData.name.trim()) {
-      toast({ title: "Name is required", variant: "destructive" });
+      setNameError("Name is required");
       return;
     }
+    setNameError("");
     const payload: Record<string, unknown> = {
       name: formData.name.trim(),
       status: formData.status,
@@ -835,7 +837,7 @@ export default function EquipmentPage() {
         )}
       </div>
 
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+      <Dialog open={createDialogOpen} onOpenChange={(open) => { setCreateDialogOpen(open); if (!open) setNameError(""); }}>
         <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingItem ? "Edit Equipment" : "Add Equipment"}</DialogTitle>
@@ -845,9 +847,11 @@ export default function EquipmentPage() {
               <Label>Name *</Label>
               <Input
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) => { setFormData({ ...formData, name: e.target.value }); setNameError(""); }}
                 placeholder="e.g., Makita Impact Driver"
+                className={nameError ? "border-destructive" : ""}
               />
+              {nameError && <p className="text-sm text-destructive">{nameError}</p>}
             </div>
 
             <div className="space-y-2">
