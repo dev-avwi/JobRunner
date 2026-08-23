@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
   Linking,
@@ -21,6 +22,7 @@ import { useClientsStore, useJobsStore, useQuotesStore, useInvoicesStore } from 
 import { useTheme, ThemeColors } from '../../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, sizes, fontWeights } from '../../../src/lib/design-tokens';
 import api from '../../../src/lib/api';
+import { getNestedHeaderOptions } from '../../../src/lib/nested-header';
 import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../../src/lib/smsGate';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
@@ -659,34 +661,45 @@ export default function ClientDetailScreen() {
 
   return (
     <>
-      <Stack.Screen 
-        options={{ 
-          headerShown: false,
-          title: 'Client Details',
-        }} 
-      />
-      <ScrollView style={[styles.container, { paddingTop: insets.top }]} contentContainerStyle={{ paddingBottom: bottomNavHeight + 24 }}>
-        <View style={styles.content}>
-          {/* In-content header row — native stack header is hidden on this
-              screen, so back/edit/delete live here. */}
-          <View style={styles.topBar}>
-            <PressableRow
+      <Stack.Screen
+        options={{
+          ...getNestedHeaderOptions(),
+          title: '',
+          headerBackVisible: false,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerLeft: () => (
+            <Pressable
               onPress={() => router.back()}
-              style={[styles.headerButton, { flexDirection: 'row', alignItems: 'center', paddingRight: spacing.sm }]}
-              data-testid="button-back"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
             >
-              <Feather name="chevron-left" size={18} color={colors.primary} />
-              <Text style={{ fontSize: 15, color: colors.primary, marginLeft: -2 }}>Back</Text>
-            </PressableRow>
-            <View style={{ flex: 1 }} />
-            <PressableRow
-              onPress={showClientActionsMenu}
-              style={styles.headerButton}
-              data-testid="button-client-actions"
-            >
-              <Feather name="more-horizontal" size={22} color={colors.foreground} />
-            </PressableRow>
-          </View>
+              <Feather name="chevron-left" size={17} color={colors.primary} />
+              <Text style={{ fontSize: 15, color: colors.primary, marginLeft: -1 }}>Back</Text>
+            </Pressable>
+          ),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <Pressable
+                onPress={handleEdit}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Feather name="edit-2" size={18} color={colors.primary} />
+              </Pressable>
+              <Pressable
+                onPress={showClientActionsMenu}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Feather name="more-horizontal" size={18} color={colors.primary} />
+              </Pressable>
+            </View>
+          ),
+        }}
+      />
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: bottomNavHeight + 24 }}>
+        <View style={styles.content}>
           {/* Profile Header Card */}
           <View style={styles.profileCard}>
             <TeamAvatar
@@ -844,15 +857,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
   errorText: {
     ...typography.body,
     color: colors.mutedForeground,
-  },
-  headerButton: {
-    padding: spacing.sm,
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
   },
   profileCard: {
     alignItems: 'center',

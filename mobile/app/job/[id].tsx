@@ -7331,54 +7331,6 @@ export default function JobDetailScreen() {
 
   // FAB: compute action + permission inline so we're not ordering-dependent on
   // the post-early-return const block.
-  const handleQuickActionFAB = useCallback(() => {
-    if (!job) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const openNotes = () => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); };
-    const openInvoice = () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any);
-    const openProofPack = () => setShowProofPackModal(true);
-    const rawAct = STATUS_ACTIONS[job.status as keyof typeof STATUS_ACTIONS];
-    const fabCanInvoice = isOwnerOrManager || isSoloOwner || (typeof hasPermission === 'function' && hasPermission('create_invoices'));
-    const fabAct = (!fabCanInvoice && (rawAct as any)?.next === 'invoiced') ? null : rawAct as any;
-    const onMainAction = () => {
-      if (fabAct?.next === 'complete_my_part') {
-        setCompletionMode('worker');
-        api.get(`/api/jobs/${job.id}/site-attendance`).then((res: any) => { if (res.data && !res.error) setSiteAttendance(res.data); }).catch(() => {});
-        setShowCompletionModal(true);
-      } else if (fabAct?.next === 'clock_off') {
-        handleStopTimer();
-      } else {
-        handleStatusChange();
-      }
-    };
-    type FABAction = { label: string; icon: string; onPress: () => void; style?: string };
-    let fabActions: FABAction[] = [];
-    if (job.status === 'pending') {
-      if (fabAct) fabActions.push({ label: fabAct.label, icon: fabAct.icon, onPress: onMainAction });
-      if (client?.phone) fabActions.push({ label: 'Message Client', icon: 'message-circle', onPress: () => Linking.openURL(`sms:${client.phone}`) });
-      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
-    } else if (job.status === 'scheduled') {
-      if (fabAct) fabActions.push({ label: fabAct.label, icon: fabAct.icon, onPress: onMainAction });
-      if (fabCanInvoice) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
-      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
-    } else if (job.status === 'in_progress') {
-      if (fabAct) fabActions.push({ label: fabAct.label, icon: fabAct.icon, onPress: onMainAction });
-      if (fabCanInvoice) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
-      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
-    } else if (job.status === 'done') {
-      if (fabCanInvoice) fabActions.push({ label: 'Create Invoice', icon: 'file-text', onPress: openInvoice });
-      if (isOwnerOrManager || isSoloOwner) fabActions.push({ label: 'Proof Pack', icon: 'package', onPress: openProofPack });
-      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
-    } else {
-      if (isOwnerOrManager || isSoloOwner) fabActions.push({ label: 'Proof Pack', icon: 'package', onPress: openProofPack });
-      fabActions.push({ label: 'Add Note', icon: 'edit-2', onPress: openNotes });
-      if (client?.phone) fabActions.push({ label: 'Message Client', icon: 'message-circle', onPress: () => Linking.openURL(`sms:${client.phone}`) });
-    }
-    fabActions.push({ label: 'Cancel', icon: 'x', onPress: () => {}, style: 'cancel' });
-    showActionSheet({ title: 'Quick Actions', actions: fabActions as any });
-  }, [job, client, isOwnerOrManager, isSoloOwner, hasPermission, handleStopTimer, handleStatusChange,
-      setCompletionMode, setShowCompletionModal, setSiteAttendance, showActionSheet,
-      setEditingNote, setEditedNotes, setShowNotesModal, setShowProofPackModal]);
 
   if (isLoading) {
     return (
@@ -11507,18 +11459,7 @@ export default function JobDetailScreen() {
         )}
       </ScrollView>
 
-      {/* Quick-action FAB — bottom-right, overview tab only */}
-      {activeTab === 'overview' && (
-        <TouchableOpacity
-          style={styles.quickFAB}
-          onPress={handleQuickActionFAB}
-          activeOpacity={0.85}
-          accessibilityLabel="Quick actions"
-          accessibilityRole="button"
-        >
-          <Feather name="zap" size={22} color={colors.primaryForeground} />
-        </TouchableOpacity>
-      )}
+      {/* Quick-action FAB removed */}
 
       </View>
 

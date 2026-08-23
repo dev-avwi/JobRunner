@@ -281,7 +281,7 @@ export function SkeletonSection({ rows = 3 }: { rows?: number }) {
 export function SkeletonJobDetailOverview() {
   const { colors } = useTheme();
   return (
-    <View style={{ padding: spacing.md, gap: spacing.md }}>
+    <View style={{ padding: spacing.md, gap: spacing.md, alignSelf: 'stretch' }}>
       {/* Status badge + action chip row */}
       <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
         <Skeleton width={80} height={28} borderRadius={14} />
