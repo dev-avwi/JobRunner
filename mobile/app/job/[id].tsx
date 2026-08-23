@@ -2904,7 +2904,7 @@ export default function JobDetailScreen() {
     } catch (e: any) {
       console.error('Error loading approved claim variations:', e);
       setApprovedClaimVariations([]);
-      setClaimVariationLoadError(e?.message || 'Failed to load approved variations');
+      setClaimVariationLoadError('Failed to load approved variations. Please try again.');
     } finally {
       setIsLoadingClaimVariations(false);
     }
@@ -11414,7 +11414,7 @@ export default function JobDetailScreen() {
                 {(isOwnerOrManager || isSoloOwner) && (() => {
                   const activePhaseId = phases.find(p => p.status === 'in_progress')?.id ?? phases.find(p => p.status === 'not_started')?.id ?? null;
                   return (
-                    <View style={{ paddingHorizontal: spacing.md, marginBottom: spacing.md }}>
+                    <View style={{ marginBottom: spacing.md }}>
                       <ExpensesSection
                         colors={colors}
                         expenses={jobExpenses}

@@ -868,7 +868,7 @@ function DispatchBoardScreenInner() {
           );
         })()}
 
-        {/* Board — single horizontal ScrollView so headers and columns are always aligned */}
+        {/* Board — day: horizontal time-grid; week: vertical daily agenda */}
         <View
           ref={boardRef}
           style={styles.boardOuter}
@@ -878,37 +878,140 @@ function DispatchBoardScreenInner() {
             });
           }}
         >
-          <View style={{ flexDirection: 'row' }}>
-            {/* Fixed left gutter: header spacer + time labels */}
-            <View style={styles.timeGutter}>
-              {/* Spacer aligned with column header height */}
-              <View
-                style={[
-                  styles.timeGutterHeaderSpacer,
-                  {
-                    height: scheduleViewMode === 'week' ? WEEK_BOARD_HEADER_HEIGHT : COLUMN_HEADER_HEIGHT,
-                    borderBottomColor: colors.cardBorder,
-                  },
-                ]}
-              />
-              {hours.map(h => (
-                <View key={h} style={styles.timeGutterCell}>
-                  <Text style={styles.timeLabel}>
-                    {h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`}
-                  </Text>
-                </View>
-              ))}
-            </View>
+          {scheduleViewMode === 'week' ? (
+            /* ── Week mode: vertical daily agenda ─────────────────────────── */
+            <View style={{ paddingHorizontal: spacing.xs }}>
+              {weekDays.map(day => {
+                const dayJobs = visibleScheduledJobs
+                  .filter(j => j.scheduledAt && isSameDay(parseISO(j.scheduledAt), day))
+                  .sort((a, b) => {
+                    if (!a.scheduledAt) return 1;
+                    if (!b.scheduledAt) return -1;
+                    return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+                  });
+                const todayDay = isToday(day);
+                return (
+                  <View key={day.toISOString()} style={{
+                    marginBottom: spacing.sm,
+                    borderRadius: radius.xl,
+                    borderWidth: todayDay ? 2 : 1,
+                    borderColor: todayDay ? colors.primary : colors.cardBorder,
+                    backgroundColor: colors.card,
+                    overflow: 'hidden',
+                    ...shadows.sm,
+                  }}>
+                    {/* Day header */}
+                    <View style={{
+                      flexDirection: 'row', alignItems: 'center',
+                      paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
+                      backgroundColor: todayDay ? `${colors.primary}12` : colors.muted,
+                      borderBottomWidth: 1,
+                      borderBottomColor: todayDay ? `${colors.primary}30` : colors.border,
+                      gap: spacing.sm,
+                    }}>
+                      {todayDay && (
+                        <View style={{ backgroundColor: colors.primary, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primaryForeground }}>TODAY</Text>
+                        </View>
+                      )}
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: todayDay ? colors.primary : colors.foreground }}>
+                        {format(day, 'EEE')}
+                      </Text>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, flex: 1 }}>
+                        {format(day, 'd MMM')}
+                      </Text>
+                      <View style={{
+                        backgroundColor: dayJobs.length > 0 ? `${colors.primary}18` : colors.muted,
+                        borderRadius: radius.full ?? 999,
+                        paddingHorizontal: spacing.sm + 2, paddingVertical: 3,
+                      }}>
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: dayJobs.length > 0 ? colors.primary : colors.mutedForeground }}>
+                          {dayJobs.length} {dayJobs.length === 1 ? 'job' : 'jobs'}
+                        </Text>
+                      </View>
+                    </View>
 
-            {/* Single horizontal ScrollView: headers + grid in one scroll container */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              scrollEnabled={!isDraggingState}
-              onScroll={e => { hScrollOffsetRef.current = e.nativeEvent.contentOffset.x; }}
-              scrollEventThrottle={16}
-            >
-              {scheduleViewMode === 'day' ? (
+                    {/* Jobs list */}
+                    {dayJobs.length === 0 ? (
+                      <View style={{ paddingVertical: spacing.md, alignItems: 'center' }}>
+                        <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No jobs scheduled</Text>
+                      </View>
+                    ) : (
+                      dayJobs.map((job, idx) => {
+                        const sc = getStatusColor(job.status, job.scheduledAt);
+                        const assignedCol = job.assignedTo ? boardColumns.find(c => c.id === job.assignedTo) : null;
+                        const assignedMember = assignedCol?.member;
+                        return (
+                          <PressableRow
+                            key={job.id}
+                            style={{
+                              flexDirection: 'row', alignItems: 'center',
+                              paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
+                              borderBottomWidth: idx < dayJobs.length - 1 ? StyleSheet.hairlineWidth : 0,
+                              borderBottomColor: colors.border,
+                              borderLeftWidth: 3, borderLeftColor: sc,
+                              gap: spacing.sm,
+                            }}
+                            onPress={() => router.push(`/job/${job.id}` as any)}
+                          >
+                            <View style={{ width: 54 }}>
+                              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: sc }}>
+                                {job.scheduledAt ? formatTime(job.scheduledAt) : 'No time'}
+                              </Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                                {job.title}
+                              </Text>
+                              {job.clientName ? (
+                                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }} numberOfLines={1}>{job.clientName}</Text>
+                              ) : null}
+                            </View>
+                            {assignedMember ? (
+                              <TeamAvatar
+                                firstName={assignedMember.firstName}
+                                lastName={assignedMember.lastName}
+                                userId={String(assignedMember.userId)}
+                                themeColor={(assignedMember as any).themeColor}
+                                size={24}
+                              />
+                            ) : (
+                              <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                                <Feather name="user" size={12} color={colors.mutedForeground} />
+                              </View>
+                            )}
+                            <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                          </PressableRow>
+                        );
+                      })
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            /* ── Day mode: original time-grid ─────────────────────────────── */
+            <View style={{ flexDirection: 'row' }}>
+              {/* Fixed left gutter: header spacer + time labels */}
+              <View style={styles.timeGutter}>
+                <View style={[styles.timeGutterHeaderSpacer, { height: COLUMN_HEADER_HEIGHT, borderBottomColor: colors.cardBorder }]} />
+                {hours.map(h => (
+                  <View key={h} style={styles.timeGutterCell}>
+                    <Text style={styles.timeLabel}>
+                      {h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+
+              {/* Single horizontal ScrollView: headers + grid in one scroll container */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                scrollEnabled={!isDraggingState}
+                onScroll={e => { hScrollOffsetRef.current = e.nativeEvent.contentOffset.x; }}
+                scrollEventThrottle={16}
+              >
                 <View>
                   <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
                     {boardColumns.map(col => (
@@ -934,65 +1037,9 @@ function DispatchBoardScreenInner() {
                     })}
                   </View>
                 </View>
-              ) : (
-                <View>
-                  <View style={styles.weekDayHeaderRow}>
-                    {weekDays.map(day => {
-                      const dayJobs = visibleScheduledJobs.filter(j => isSameDay(parseISO(j.scheduledAt!), day));
-                      const today = isToday(day);
-                      return (
-                        <View
-                          key={day.toISOString()}
-                          style={[
-                            styles.weekDayHeader,
-                            { width: weekGroupWidth, borderRightColor: colors.cardBorder },
-                            today && { backgroundColor: `${colors.primary}18` },
-                          ]}
-                        >
-                          <Text style={[styles.weekDayHeaderText, { color: today ? colors.primary : colors.foreground }]}>
-                            {format(day, 'EEE').toUpperCase()}
-                          </Text>
-                          <Text style={styles.weekDayHeaderSubtext}>
-                            {format(day, 'd MMM')} · {dayJobs.length} {dayJobs.length === 1 ? 'job' : 'jobs'}
-                          </Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                  <View style={[styles.boardHeaderRow, { borderBottomColor: colors.cardBorder }]}>
-                    {weekBoardColumns.map(({ date, column }, index) => (
-                      <View
-                        key={`${date.toISOString()}-${column.id}`}
-                        style={[
-                          styles.columnHeader,
-                          index % boardColumns.length === 0 && styles.weekColumnHeaderStart,
-                          column.member && (column.member as any).themeColor
-                            ? { borderTopWidth: 3, borderTopColor: (column.member as any).themeColor }
-                            : undefined,
-                        ]}
-                      >
-                        {renderColumnHeader(column)}
-                      </View>
-                    ))}
-                  </View>
-                  <View style={{ flexDirection: 'row', height: BOARD_HEIGHT }}>
-                    {weekBoardColumns.map(({ date, column }, index) => {
-                      const colJobs = visibleScheduledJobs.filter(j => {
-                        if (!j.scheduledAt || !isSameDay(parseISO(j.scheduledAt), date)) return false;
-                        return column.id === 'unassigned' ? !j.assignedTo : j.assignedTo === column.id;
-                      });
-                      return renderBoardColumn(
-                        column,
-                        index % boardColumns.length,
-                        colJobs,
-                        `${date.toISOString()}-${column.id}`,
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
-            </ScrollView>
-          </View>
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {/* Unscheduled tray */}
@@ -1146,9 +1193,28 @@ function DispatchBoardScreenInner() {
               <Marker
                 key={`job-${job.id}`}
                 coordinate={{ latitude: lat, longitude: lng }}
-                pinColor={c}
                 onPress={() => setSelectedMapJob(job)}
-              />
+              >
+                <View style={{ alignItems: 'center' }}>
+                  <View style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    backgroundColor: c,
+                    alignItems: 'center', justifyContent: 'center',
+                    borderWidth: 2, borderColor: '#fff',
+                    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25, shadowRadius: 3, elevation: 5,
+                  }}>
+                    <Feather name="briefcase" size={14} color="#fff" />
+                  </View>
+                  <View style={{
+                    width: 0, height: 0,
+                    borderLeftWidth: 5, borderRightWidth: 5, borderTopWidth: 7,
+                    borderLeftColor: 'transparent', borderRightColor: 'transparent',
+                    borderTopColor: c,
+                    marginTop: -1,
+                  }} />
+                </View>
+              </Marker>
             );
           })}
         </MapView>

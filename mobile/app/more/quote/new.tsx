@@ -301,8 +301,10 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.background,
       borderRadius: 12,
       paddingVertical: 14,
+      paddingHorizontal: spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
+      overflow: 'hidden',
     },
     addItemText: {
       fontSize: typography.button.fontSize,
@@ -2398,13 +2400,25 @@ export default function NewQuoteScreen() {
                 );
               }
 
+              const myTradeType = ((user?.tradeType as string | undefined) ?? ((businessSettings as any)?.tradeType as string | undefined) ?? '').toLowerCase();
+
               const grouped: Record<string, any[]> = {};
               filtered.forEach(t => {
-                const trade = t.tradeType || 'general';
-                if (!grouped[trade]) grouped[trade] = [];
-                grouped[trade].push(t);
+                const key = !t.isDefault ? '__mine__' : (t.tradeType || 'general');
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(t);
               });
-              const tradeKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+              // Sort: My Templates first, then business trade type, then rest alphabetically
+              const tradeKeys = Object.keys(grouped).sort((a, b) => {
+                if (a === '__mine__') return -1;
+                if (b === '__mine__') return 1;
+                const aMatch = myTradeType && a.toLowerCase() === myTradeType;
+                const bMatch = myTradeType && b.toLowerCase() === myTradeType;
+                if (aMatch && !bMatch) return -1;
+                if (bMatch && !aMatch) return 1;
+                return a.localeCompare(b);
+              });
 
               return tradeKeys.map(trade => (
                 <View key={trade}>
@@ -2418,11 +2432,11 @@ export default function NewQuoteScreen() {
                     <Text style={{
                       fontSize: typography.captionSmall.fontSize,
                       fontWeight: fontWeights.semibold,
-                      color: colors.mutedForeground,
+                      color: trade === '__mine__' ? colors.primary : colors.mutedForeground,
                       textTransform: 'uppercase',
                       letterSpacing: 0.5,
                     }}>
-                      {trade}
+                      {trade === '__mine__' ? 'My Templates' : trade}
                     </Text>
                   </View>
                   {grouped[trade].map((template: any) => {

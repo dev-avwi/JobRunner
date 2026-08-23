@@ -1033,10 +1033,12 @@ function createStyles(colors: ThemeColors) {
       justifyContent: 'center',
       gap: spacing.xs,
       paddingVertical: 12,
+      paddingHorizontal: spacing.sm,
       borderRadius: radius.md,
       borderWidth: 1,
       borderColor: colors.border,
       backgroundColor: colors.muted,
+      overflow: 'hidden',
     },
     addItemText: { fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground },
     catalogButton: {

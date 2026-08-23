@@ -320,8 +320,10 @@ function createStyles(colors: ThemeColors) {
       backgroundColor: colors.background,
       borderRadius: 12,
       paddingVertical: 14,
+      paddingHorizontal: spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
+      overflow: 'hidden',
     },
     addItemText: {
       fontSize: typography.button.fontSize,

@@ -862,13 +862,14 @@ export default function CalendarScreen() {
                     <PressableRow key={index} style={[ styles.weekDay, isToday(date) && styles.weekDayToday, isSelected(date) && styles.weekDaySelected, ]} onPress={() => setSelectedDate(date)} >
                       <Text style={[
                         styles.weekDayName,
-                        (isToday(date) || isSelected(date)) && styles.weekDayTextActive
+                        isSelected(date) && styles.weekDayTextActive
                       ]}>
                         {DAYS[date.getDay()]}
                       </Text>
                       <Text style={[
                         styles.weekDayNumber,
-                        (isToday(date) || isSelected(date)) && styles.weekDayTextActive
+                        isToday(date) && !isSelected(date) && { color: colors.primary, fontWeight: fontWeights.bold as any },
+                        isSelected(date) && styles.weekDayTextActive
                       ]}>
                         {date.getDate()}
                       </Text>
