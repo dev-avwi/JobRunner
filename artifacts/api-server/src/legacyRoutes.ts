@@ -48030,7 +48030,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           smsNotifications: false,
           recordingEnabled: false,
           autoReplyEnabled: true,
-          autoReplyMessage: "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
+          autoReplyMessage: "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. - Sent via JobRunner",
         });
       }
       res.json({
@@ -48050,7 +48050,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         smsNotifications: config.smsNotifications || false,
         recordingEnabled: config.recordingEnabled || false,
         autoReplyEnabled: config.autoReplyEnabled ?? true,
-        autoReplyMessage: config.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
+        autoReplyMessage: config.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. - Sent via JobRunner",
         voiceStability: config.voiceStability ?? 0.5,
         voiceClarity: config.voiceClarity ?? 0.75,
         voiceSpeed: config.voiceSpeed ?? 1.0,
@@ -48315,7 +48315,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         smsNotifications: config?.smsNotifications || false,
         recordingEnabled: config?.recordingEnabled || false,
         autoReplyEnabled: config?.autoReplyEnabled ?? true,
-        autoReplyMessage: config?.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner",
+        autoReplyMessage: config?.autoReplyMessage || "Thanks for calling {{business_name}}. We got your message and will get back to you shortly. - Sent via JobRunner",
         voiceStability: config?.voiceStability ?? 0.5,
         voiceClarity: config?.voiceClarity ?? 0.75,
         voiceSpeed: config?.voiceSpeed ?? 1.0,

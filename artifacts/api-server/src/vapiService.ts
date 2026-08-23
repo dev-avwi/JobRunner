@@ -2466,7 +2466,7 @@ async function sendCallerAutoReply(
 
     const businessName = business.businessName || 'the business';
     const template = config.autoReplyMessage ||
-      'Thanks for calling {{business_name}}. We got your message and will get back to you shortly. — Sent via JobRunner';
+      'Thanks for calling {{business_name}}. We got your message and will get back to you shortly. - Sent via JobRunner';
     const smsBody = template.replace(/\{\{business_name\}\}/g, businessName);
 
     await sendSMS({

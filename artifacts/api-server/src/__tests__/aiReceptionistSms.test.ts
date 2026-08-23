@@ -237,6 +237,25 @@ describe('AI Receptionist — outbound SMS bodies are GSM-7 clean', () => {
     expect(bodyWithSummary).toContain(plainSummary);
   });
 
+  it('default auto-reply fallback (no autoReplyMessage set) contains no em dash', async () => {
+    // Simulate a config where the owner never customised the auto-reply message.
+    // The runtime fallback string in sendCallerAutoReply() must not contain an em dash.
+    const configWithNoMessage = { ...mockConfig, autoReplyMessage: undefined };
+    storage.getAiReceptionistConfig.mockResolvedValue(configWithNoMessage);
+
+    await processWebhookEvent(makeEndOfCallEvent());
+
+    const autoReply = capturedBodies.find((b) => b.includes('Thanks for calling'));
+    expect(autoReply).toBeDefined();
+
+    // Em dash must not appear in the fallback message
+    expect(autoReply).not.toMatch(/\u2014/); // em dash
+    expect(autoReply).not.toMatch(/\u2013/); // en dash
+
+    // The fallback should use a plain hyphen instead
+    expect(autoReply).toContain('- Sent via JobRunner');
+  });
+
   it('sends SMS to all configured transfer numbers and the owner', async () => {
     await processWebhookEvent(makeEndOfCallEvent());
 
