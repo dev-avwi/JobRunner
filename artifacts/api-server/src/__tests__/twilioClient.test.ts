@@ -134,6 +134,37 @@ describe('sendSMS() — interceptor receives sanitised body', () => {
     expect(result.simulated).toBe(true);
   });
 
+  it('sanitises the body and passes mediaUrls through unchanged for MMS sends', async () => {
+    let capturedOptions: { message: string; mediaUrls?: string[] } | null = null;
+
+    __setSmsTestInterceptor((opts) => {
+      capturedOptions = { message: opts.message, mediaUrls: opts.mediaUrls };
+      return { success: true, simulated: true };
+    });
+
+    const rawMessage =
+      '\u201CJob photo attached\u201D\u2014please review\u2026 don\u2019t hesitate to call\u00A0us!';
+    const expectedMessage =
+      '"Job photo attached"-please review... don\'t hesitate to call us!';
+    const mediaUrls = [
+      'https://example.com/photo1.jpg',
+      'https://example.com/photo2.jpg',
+    ];
+
+    const result = await sendSMS({
+      to: '+61400000003',
+      message: rawMessage,
+      mediaUrls,
+    });
+
+    expect(result.success).toBe(true);
+    expect(capturedOptions).not.toBeNull();
+    // Body must be GSM-7 sanitised even though this is an MMS send
+    expect(capturedOptions!.message).toBe(expectedMessage);
+    // Media URLs must be forwarded exactly as provided
+    expect(capturedOptions!.mediaUrls).toEqual(mediaUrls);
+  });
+
   it('does not invoke a previously registered interceptor after it is cleared', async () => {
     let called = false;
     __setSmsTestInterceptor(() => {
