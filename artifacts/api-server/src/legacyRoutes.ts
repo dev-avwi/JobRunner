@@ -3460,6 +3460,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
+  // PUBLIC: Get variation details JSON (for the portal app)
+  app.get("/api/public/variation/:token", portalIpRateLimiterMiddleware, async (req, res) => {
+    const { handleVariationPublicGet } = await import('./clientApprovalService');
+    return handleVariationPublicGet(req, res);
+  });
+
+  // PUBLIC: Approve confirmation page (GET) — linked from email button.
+  // Returns an HTML confirmation form; the actual mutation happens on POST below.
+  // Using a GET→confirm→POST pattern prevents link-scanner prefetches from
+  // accidentally triggering approvals.
+  app.get("/api/public/variation/:token/approve", portalIpRateLimiterMiddleware, async (req, res) => {
+    const { handleVariationApproveConfirmPage } = await import('./clientApprovalService');
+    return handleVariationApproveConfirmPage(req, res);
+  });
+
+  // PUBLIC: Decline confirmation page (GET) — linked from email button.
+  app.get("/api/public/variation/:token/decline", portalIpRateLimiterMiddleware, async (req, res) => {
+    const { handleVariationDeclineConfirmPage } = await import('./clientApprovalService');
+    return handleVariationDeclineConfirmPage(req, res);
+  });
+
+  // PUBLIC: Record client approval (POST from confirmation page form)
+  // Body is application/x-www-form-urlencoded (standard HTML form POST).
+  // express.urlencoded is already applied globally so no per-route middleware needed.
+  app.post("/api/public/variation/:token/approve", portalIpRateLimiterMiddleware, async (req, res) => {
+    const { handleVariationApprove } = await import('./clientApprovalService');
+    return handleVariationApprove(req, res);
+  });
+
+  // PUBLIC: Record client decline (POST from confirmation page form)
+  app.post("/api/public/variation/:token/decline", portalIpRateLimiterMiddleware, async (req, res) => {
+    const { handleVariationDecline } = await import('./clientApprovalService');
+    return handleVariationDecline(req, res);
+  });
+
   // PUBLIC: Decline a quote
   app.post("/api/public/quote/:token/decline", async (req, res) => {
     try {

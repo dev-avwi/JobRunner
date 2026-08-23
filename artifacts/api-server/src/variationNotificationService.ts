@@ -10,6 +10,8 @@
 import { storage } from './storage';
 import { sendSMS } from './twilioClient';
 import { sendSystemEmail } from './emailService';
+import { generateApprovalToken } from './clientApprovalService';
+import { getVariationApprovalUrl, getVariationDeclineUrl } from './urlHelper';
 
 function escapeHtml(str: string | null | undefined): string {
   if (str === null || str === undefined) return '';
@@ -92,6 +94,37 @@ export async function notifyClientVariationSent(opts: {
           ? `<p style="margin:12px 0 0 0;color:#475569;font-size:14px;">${escapeHtml(description)}</p>`
           : '';
 
+        // Generate a signed approval token for one-click approve/decline links
+        let approveUrl: string | null = null;
+        let declineUrl: string | null = null;
+        try {
+          const approvalToken = generateApprovalToken({
+            vid: variation.id,
+            uid: effectiveUserId,
+            doc: 'variation',
+          });
+          approveUrl = getVariationApprovalUrl(approvalToken);
+          declineUrl = getVariationDeclineUrl(approvalToken);
+        } catch (tokenErr) {
+          console.warn('[Variation] Could not generate approval token:', tokenErr);
+        }
+
+        const approvalButtonsHtml = approveUrl && declineUrl ? `
+          <tr><td style="padding:24px 32px 0 32px;">
+            <p style="margin:0 0 12px 0;color:#64748b;font-size:13px;">You can respond directly from this email:</p>
+            <table role="presentation" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding-right:12px;">
+                  <a href="${approveUrl}" style="display:inline-block;background-color:${brandColor};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:700;">Approve Variation</a>
+                </td>
+                <td>
+                  <a href="${declineUrl}" style="display:inline-block;background-color:#ffffff;color:#dc2626;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:15px;font-weight:700;border:2px solid #dc2626;">Decline</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:10px 0 0 0;color:#94a3b8;font-size:11px;">Or reply to this email to send us a message.</p>
+          </td></tr>` : '';
+
         const emailHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -123,6 +156,7 @@ export async function notifyClientVariationSent(opts: {
           <p style="margin:0;color:#475569;font-size:14px;">Please contact us to approve or raise any queries before work proceeds.</p>
           <p style="margin:24px 0 0 0;color:#475569;font-size:14px;">Kind regards,<br><strong style="color:#1e293b;">${escapeHtml(businessName)}</strong></p>
         </td></tr>
+        ${approvalButtonsHtml}
         <tr><td style="padding:16px 32px 32px;border-top:1px solid #f1f5f9;">
           <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;">Sent with <strong>JobRunner</strong> &mdash; built for Australian tradies</p>
         </td></tr>
@@ -132,9 +166,19 @@ export async function notifyClientVariationSent(opts: {
 </body>
 </html>`;
 
+        // Reply-To: use the SendGrid Inbound Parse address so client replies are
+        // routed to /api/webhooks/sendgrid/inbound.  Falls back to the business
+        // contact email so replies still reach someone even if inbound parse is
+        // not configured.
+        const inboundReplyAddress =
+          process.env.SENDGRID_INBOUND_REPLY_ADDRESS ||
+          (business as any)?.email ||
+          undefined;
+
         await sendSystemEmail({
           to: client.email,
           from: { email: 'noreply@jobrunner.com.au', name: businessName },
+          replyTo: inboundReplyAddress,
           subject: `Variation ${variationNumber} submitted for your approval — ${escapeHtml(businessName)}`,
           html: emailHtml,
           _meta: {

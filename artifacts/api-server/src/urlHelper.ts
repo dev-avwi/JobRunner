@@ -102,3 +102,28 @@ export function getReceiptPublicUrl(token: string, req?: { protocol: string; get
 export function getStripePaymentUrl(linkId: string): string {
   return `https://pay.stripe.com/c/${linkId}`;
 }
+
+/**
+ * Generate a public variation approval URL (no-login approval link for clients).
+ * The token is HMAC-signed and self-contained.
+ */
+export function getVariationApprovalUrl(approvalToken: string, req?: { protocol: string; get: (header: string) => string | undefined }): string {
+  const baseUrl = getProductionBaseUrl(req);
+  return `${baseUrl}/api/public/variation/${approvalToken}/approve`;
+}
+
+/**
+ * Generate a public variation decline URL (no-login decline link for clients).
+ */
+export function getVariationDeclineUrl(approvalToken: string, req?: { protocol: string; get: (header: string) => string | undefined }): string {
+  const baseUrl = getProductionBaseUrl(req);
+  return `${baseUrl}/api/public/variation/${approvalToken}/decline`;
+}
+
+/**
+ * Generate a variation portal view URL (shows document summary before action).
+ */
+export function getVariationPortalUrl(approvalToken: string, req?: { protocol: string; get: (header: string) => string | undefined }): string {
+  const baseUrl = getProductionBaseUrl(req);
+  return `${baseUrl}/api/public/variation/${approvalToken}`;
+}

@@ -123,6 +123,8 @@ function createRawMessage(options: {
   fromEmail: string;
   fromName?: string;
   replyTo?: string;
+  /** Pre-generated RFC Message-ID (without angle brackets) for reply correlation */
+  rfcMessageId?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer | string;
@@ -130,7 +132,7 @@ function createRawMessage(options: {
   }>;
 }): string {
   const boundary = `boundary_${Date.now()}`;
-  const { to, subject, html, text, fromEmail, fromName, replyTo, attachments } = options;
+  const { to, subject, html, text, fromEmail, fromName, replyTo, rfcMessageId, attachments } = options;
 
   const fromHeader = fromName 
     ? `=?UTF-8?B?${Buffer.from(fromName).toString('base64')}?= <${fromEmail}>` 
@@ -141,6 +143,12 @@ function createRawMessage(options: {
     `To: ${to}`,
     `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
   ];
+
+  // Inject a deterministic Message-ID so inbound reply correlation works
+  // regardless of whether SendGrid or Gmail is used as the delivery provider.
+  if (rfcMessageId) {
+    message.push(`Message-ID: <${rfcMessageId}>`);
+  }
   
   // Add Reply-To header so client replies go to tradie's business email
   if (replyTo) {
@@ -217,6 +225,8 @@ function createRawMessageWithoutFrom(options: {
   text?: string;
   fromName?: string;
   replyTo?: string;
+  /** Pre-generated RFC Message-ID (without angle brackets) for reply correlation */
+  rfcMessageId?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer | string;
@@ -224,7 +234,7 @@ function createRawMessageWithoutFrom(options: {
   }>;
 }): string {
   const boundary = `boundary_${Date.now()}`;
-  const { to, subject, html, text, fromName, replyTo, attachments } = options;
+  const { to, subject, html, text, fromName, replyTo, rfcMessageId, attachments } = options;
 
   // Build message headers - include From with display name if provided
   // Gmail API will merge the email address when sending
@@ -237,6 +247,12 @@ function createRawMessageWithoutFrom(options: {
     const encodedName = `=?UTF-8?B?${Buffer.from(fromName).toString('base64')}?=`;
     // Use 'me' as placeholder - Gmail API will replace with actual authenticated email
     message.push(`From: ${encodedName} <me>`);
+  }
+
+  // Inject a deterministic Message-ID so inbound reply correlation works
+  // regardless of whether SendGrid or Gmail is used as the delivery provider.
+  if (rfcMessageId) {
+    message.push(`Message-ID: <${rfcMessageId}>`);
   }
   
   // Add Reply-To header so client replies go to tradie's business email
@@ -337,12 +353,14 @@ export async function sendViaGmailAPI(options: {
   text?: string;
   fromName?: string;
   replyTo?: string;
+  /** Pre-generated RFC Message-ID (without angle brackets) for reply correlation */
+  rfcMessageId?: string;
   attachments?: Array<{
     filename: string;
     content: Buffer | string;
     contentType?: string;
   }>;
-}): Promise<{ success: boolean; messageId?: string; error?: string }> {
+}): Promise<{ success: boolean; messageId?: string; rfcMessageId?: string; error?: string }> {
   try {
     const gmail = await getGmailClient();
     
@@ -381,21 +399,20 @@ export async function sendViaGmailAPI(options: {
         text: options.text,
         fromName: options.fromName,
         replyTo: options.replyTo,
+        rfcMessageId: options.rfcMessageId,
         attachments: options.attachments,
       });
 
       const result = await gmail.users.messages.send({
         userId: 'me',
-        requestBody: {
-          raw
-        }
+        requestBody: { raw }
       });
 
       console.log(`✅ Email sent via Gmail (auto-from), messageId: ${result.data.id}`);
-      
       return {
         success: true,
-        messageId: result.data.id || undefined
+        messageId: result.data.id || undefined,
+        rfcMessageId: options.rfcMessageId,
       };
     }
 
@@ -407,21 +424,20 @@ export async function sendViaGmailAPI(options: {
       fromEmail,
       fromName: options.fromName,
       replyTo: options.replyTo,
+      rfcMessageId: options.rfcMessageId,
       attachments: options.attachments,
     });
 
     const result = await gmail.users.messages.send({
       userId: 'me',
-      requestBody: {
-        raw
-      }
+      requestBody: { raw }
     });
 
     console.log(`✅ Email sent via Gmail, messageId: ${result.data.id}`);
-    
     return {
       success: true,
-      messageId: result.data.id || undefined
+      messageId: result.data.id || undefined,
+      rfcMessageId: options.rfcMessageId,
     };
   } catch (error: unknown) {
     console.error('Gmail send error:', getErrorMessage(error) || 'Unknown error');

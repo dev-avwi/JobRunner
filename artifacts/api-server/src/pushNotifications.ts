@@ -71,7 +71,11 @@ export type NotificationType =
   | 'job_nudge_response'
   | 'overtime_warning'
   | 'ai_receptionist_call'
-  | 'team_join_blocked';
+  | 'team_join_blocked'
+  // Client interaction notifications
+  | 'client_document_approved'
+  | 'client_document_declined'
+  | 'client_email_reply';
 
 interface SendNotificationOptions {
   userId: string;
@@ -145,6 +149,10 @@ async function shouldSendNotification(userId: string, type: NotificationType): P
         return true;
       case 'team_join_blocked':
         return true;
+      case 'client_document_approved':
+      case 'client_document_declined':
+      case 'client_email_reply':
+        return settings.notifyQuoteResponses !== false;
       case 'trial_expiring':
       case 'automation':
       case 'general':
@@ -515,5 +523,57 @@ export async function notifyOvertimeWarning(userId: string, jobTitle: string, jo
     title: 'Running Over Time',
     body,
     data: { jobId, relatedType: 'job', action: 'overtime', elapsedHours, estimatedHours },
+  });
+}
+
+// ─── Client interaction notifications ─────────────────────────────────────────
+
+export async function notifyClientDocumentApproved(
+  userId: string,
+  clientName: string,
+  documentTitle: string,
+  jobId?: string,
+): Promise<void> {
+  await sendPushNotification({
+    userId,
+    type: 'client_document_approved',
+    title: 'Client Approved',
+    body: `${clientName} approved ${documentTitle}`,
+    data: { jobId, relatedType: 'job', action: 'document_approved' },
+  });
+}
+
+export async function notifyClientDocumentDeclined(
+  userId: string,
+  clientName: string,
+  documentTitle: string,
+  jobId?: string,
+  reason?: string,
+): Promise<void> {
+  const body = reason
+    ? `${clientName} declined ${documentTitle}: ${reason.slice(0, 100)}`
+    : `${clientName} declined ${documentTitle}`;
+  await sendPushNotification({
+    userId,
+    type: 'client_document_declined',
+    title: 'Client Declined',
+    body,
+    data: { jobId, relatedType: 'job', action: 'document_declined', reason },
+  });
+}
+
+export async function notifyClientEmailReply(
+  userId: string,
+  senderName: string,
+  subject: string,
+  relatedId?: string,
+  docType?: string,
+): Promise<void> {
+  await sendPushNotification({
+    userId,
+    type: 'client_email_reply',
+    title: 'Client Replied',
+    body: `${senderName}: ${subject.slice(0, 120)}`,
+    data: { relatedId, docType, action: 'client_email_reply' },
   });
 }

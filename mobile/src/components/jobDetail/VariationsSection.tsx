@@ -49,6 +49,7 @@ export interface JobVariation {
   createdAt?: string | null;
   approvedAt?: string | null;
   approvedByName?: string | null;
+  approvalMethod?: string | null;
   rejectedAt?: string | null;
   rejectionReason?: string | null;
 }
@@ -340,6 +341,13 @@ export function VariationsSection({
                     <View style={[styles.statusBadge, { backgroundColor: '#D1FAE5', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
                       <Feather name="check" size={9} color="#065F46" />
                       <Text style={[styles.statusText, { color: '#065F46' }]}>Added to contract</Text>
+                    </View>
+                  )}
+                  {/* "Approved by client" chip when approved via portal */}
+                  {isApproved && variation.approvalMethod === 'client_portal' && (
+                    <View style={[styles.statusBadge, { backgroundColor: '#DBEAFE', flexDirection: 'row', alignItems: 'center', gap: 3 }]}>
+                      <Feather name="user-check" size={9} color="#1D4ED8" />
+                      <Text style={[styles.statusText, { color: '#1D4ED8' }]}>Approved by client</Text>
                     </View>
                   )}
                   <Text

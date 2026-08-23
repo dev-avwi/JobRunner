@@ -128,6 +128,86 @@ if (process.env.DATABASE_URL) {
     }
   });
 
+  // SendGrid Inbound Parse — client email replies land here.
+  // SendGrid posts multipart/form-data; multer is used to extract text fields.
+  {
+    const multer = (await import('multer')).default;
+    const { timingSafeEqual } = await import('crypto');
+
+    // ── Step 1: Basic Auth middleware — runs BEFORE any body parsing so
+    //   unauthenticated callers never trigger memory allocation in multer.
+    const inboundAuth = (req: any, res: any, next: any) => {
+      const configuredAuth = process.env.SENDGRID_INBOUND_BASIC_AUTH;
+      if (configuredAuth) {
+        const authHeader = (req.headers['authorization'] ?? '') as string;
+        const match = authHeader.match(/^Basic\s+(.+)$/i);
+        const provided = match ? Buffer.from(match[1], 'base64').toString('utf8') : '';
+        const expected = Buffer.from(configuredAuth);
+        // Pad to same length before constant-time compare (timing-safe even on length mismatch)
+        const actual = Buffer.from(provided.padEnd(configuredAuth.length, '\0'));
+        const valid = expected.length === actual.length && timingSafeEqual(expected, actual);
+        if (!valid) {
+          logger.warn('[SendGrid Inbound] Rejected — invalid or missing Basic Auth credentials');
+          res.status(401).setHeader('WWW-Authenticate', 'Basic realm="SendGrid Inbound"').send('Unauthorized');
+          return;
+        }
+      } else if (process.env.NODE_ENV === 'production') {
+        // Fail closed: in production the credential MUST be configured.
+        logger.error('[SendGrid Inbound] SENDGRID_INBOUND_BASIC_AUTH is not set — rejecting in production');
+        res.status(503).send('Inbound webhook not configured');
+        return;
+      } else {
+        logger.warn('[SendGrid Inbound] SENDGRID_INBOUND_BASIC_AUTH not set — unauthenticated (dev only)');
+      }
+      next();
+    };
+
+    // ── Step 2: Body parser — runs only after successful auth.
+    // Uses multer().any() to accept text fields AND silently discard file
+    // attachments (multer.none() rejects multipart requests that include files,
+    // which is common when clients reply with photos or PDFs attached).
+    const inboundUpload = multer({
+      storage: multer.memoryStorage(),
+      limits: {
+        fileSize: 512 * 1024,  // accept but discard files ≤ 512 KB; larger are rejected by multer
+        files: 10,
+        fields: 20,
+        fieldSize: 64 * 1024,  // each text field ≤ 64 KB
+      },
+    });
+    const inboundParse = (req: any, res: any, next: any) => {
+      const ct = (req.headers['content-type'] ?? '') as string;
+      if (ct.includes('multipart/form-data')) {
+        // .any() accepts files and fields; files are buffered then discarded by the handler
+        inboundUpload.any()(req, res, next);
+      } else {
+        express.urlencoded({ extended: true, limit: '256kb' })(req, res, next);
+      }
+    };
+
+    app.post(
+      '/api/webhooks/sendgrid/inbound',
+      inboundAuth,   // auth FIRST
+      inboundParse,  // parse only after auth succeeds
+      async (req: any, res: any) => {
+        try {
+          // Respond immediately — SendGrid retries if we take > 20 s
+          res.status(200).send('OK');
+          // Extract only text fields; any buffered file parts from req.files are ignored
+          const fields: Record<string, string> = {};
+          for (const [key, val] of Object.entries(req.body ?? {})) {
+            if (typeof val === 'string') fields[key] = val;
+            else if (Array.isArray(val) && typeof val[0] === 'string') fields[key] = val[0];
+          }
+          const { processInboundEmail } = await import('./inboundEmailService');
+          processInboundEmail(fields).catch(err => logger.error({ err }, '[SendGrid Inbound] Processing error'));
+        } catch (error: unknown) {
+          logger.error({ err: error }, '[SendGrid Inbound] Error');
+        }
+      },
+    );
+  }
+
   const { webhookRateLimiter: xeroWebhookLimiter } = await import('./routes/middleware');
 
   app.post('/api/webhooks/xero', xeroWebhookLimiter as any, express.raw({ type: 'application/json' }), async (req: any, res: any) => {

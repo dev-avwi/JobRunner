@@ -1,4 +1,5 @@
 import sgMail from '@sendgrid/mail';
+import { randomUUID } from 'crypto';
 import { sendViaGmailAPI, isGmailConnected } from './gmailClient';
 import { logger } from './logger';
 import { getErrorMessage } from "./lib/errors";
@@ -208,10 +209,29 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
   let lastError: any = null;
   let permanentSendGrid = false;
 
+  // Generate a deterministic RFC Message-ID before sending so the delivery log
+  // stores a stable ID that inbound replies will reference in In-Reply-To /
+  // References regardless of which email provider (SendGrid or Gmail) delivers
+  // the message. Format: <uuid@mail.jobrunner.com.au>
+  const rfcMsgLocalPart = `${randomUUID()}@mail.jobrunner.com.au`;
+  const rfcMsgId = `<${rfcMsgLocalPart}>`;
+
+  // Inject the Message-ID header for SendGrid (it becomes the RFC Message-ID
+  // the client's email app will use when threading replies).
+  const emailDataWithMsgId = {
+    ...emailData,
+    headers: {
+      ...(emailData.headers ?? {}),
+      'Message-ID': rfcMsgId,
+    },
+  };
+
   try {
-    const sgResult = await sendViaSendGrid(emailData);
-    await logEmailDelivery(emailData, 'sent', 'sendgrid', null, false, sgResult.messageId);
-    return { messageId: sgResult.messageId, sentVia: 'sendgrid' };
+    const sgResult = await sendViaSendGrid(emailDataWithMsgId);
+    // Prefer our RFC Message-ID over the SendGrid X-Message-Id so the delivery
+    // log entry matches what clients will put in In-Reply-To when replying.
+    await logEmailDelivery(emailDataWithMsgId, 'sent', 'sendgrid', null, false, rfcMsgLocalPart);
+    return { messageId: rfcMsgLocalPart, sentVia: 'sendgrid' };
   } catch (sgError: unknown) {
     lastError = sgError;
     permanentSendGrid = isPermanentEmailFailure(sgError);
@@ -227,6 +247,9 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
         html: emailData.html,
         fromName: emailData.from?.name || PLATFORM_FROM_NAME,
         replyTo: emailData.replyTo || PLATFORM_REPLY_TO_EMAIL,
+        // Thread the same RFC Message-ID through to Gmail so inbound replies
+        // referencing it can be correlated regardless of provider.
+        rfcMessageId: rfcMsgLocalPart,
       };
       if (emailData.attachments && emailData.attachments.length > 0) {
         gmailOptions.attachments = emailData.attachments.map((att: any) => ({
@@ -239,8 +262,10 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
       const result = await sendViaGmailAPI(gmailOptions);
       if (result.success) {
         console.log(`✅ System email sent via Gmail fallback to ${emailData.to}`);
-        await logEmailDelivery(emailData, 'sent', 'gmail', null, false, result.messageId || null);
-        return { messageId: result.messageId || null, sentVia: 'gmail' };
+        // Store our RFC Message-ID (not Gmail's resource ID) so inbound reply
+        // correlation works consistently across providers.
+        await logEmailDelivery(emailData, 'sent', 'gmail', null, false, rfcMsgLocalPart);
+        return { messageId: rfcMsgLocalPart, sentVia: 'gmail' };
       }
       throw new Error(result.error || 'Gmail send failed');
     } catch (gmailError: unknown) {

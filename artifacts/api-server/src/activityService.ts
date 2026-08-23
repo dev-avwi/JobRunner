@@ -24,7 +24,12 @@ export type TeamActivityType =
   | 'message_sent'        // Team chat message
   | 'website_change_submitted'     // Website change request submitted
   | 'ai_receptionist_provisioned'  // AI receptionist provisioned (pending approval)
-  | 'impersonation_started';       // Admin started impersonation session
+  | 'impersonation_started'        // Admin started impersonation session
+  // Client interaction events
+  | 'document_viewed'     // Client viewed a document (quote/variation/claim) in the portal
+  | 'document_approved'   // Client approved a document via the approval link or portal
+  | 'document_declined'   // Client declined a document via the approval link or portal
+  | 'client_email_reply'; // Client replied to an outbound email
 
 interface LogActivityOptions {
   businessOwnerId: string;
