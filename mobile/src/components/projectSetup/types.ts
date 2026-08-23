@@ -8,6 +8,7 @@ export interface ProjectPhase {
   scheduledStart: string; // YYYY-MM-DD
   scheduledEnd: string;   // YYYY-MM-DD
   budgetedCost: string;
+  budgetedHours?: string;
   assignedUserId: string | null;
   assignedUserIds?: string[];
   sortOrder: number;
@@ -179,6 +180,9 @@ export function validateProjectSetup(data: ProjectSetupData): string | null {
     ) return `${phase.name} must end on or after its start date`;
     if (invalidMoney(phase.budgetedCost)) {
       return `Enter a non-negative budget with up to 2 decimal places for ${phase.name}`;
+    }
+    if (phase.budgetedHours && invalidNonNegativeNumber(phase.budgetedHours)) {
+      return `Enter a valid budgeted hours value for ${phase.name}`;
     }
   }
 

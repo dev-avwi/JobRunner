@@ -67,6 +67,8 @@ export interface JobPhase {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   bookedHours?: string | null;
+  budgetedHours?: string | null;
+  actualHours?: number | null;
   status: PhaseStatus;
   sortOrder: number;
   notes?: string | null;
@@ -89,6 +91,7 @@ const EMPTY_FORM = {
   scheduledStart: "",
   scheduledEnd: "",
   bookedHours: "",
+  budgetedHours: "",
   status: "not_started" as PhaseStatus,
   notes: "",
   assignedUserId: "",
@@ -238,6 +241,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       scheduledStart: phase.scheduledStart ? phase.scheduledStart.substring(0, 10) : "",
       scheduledEnd: phase.scheduledEnd ? phase.scheduledEnd.substring(0, 10) : "",
       bookedHours: phase.bookedHours ?? "",
+      budgetedHours: phase.budgetedHours ?? "",
       status: phase.status,
       notes: phase.notes ?? "",
       assignedUserId: phase.assignedUserId ?? "",
@@ -411,7 +415,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                     )}
                   </div>
 
-                  {(phase.scheduledStart || phase.scheduledEnd || phase.bookedHours) && (
+                  {(phase.scheduledStart || phase.scheduledEnd || phase.bookedHours || phase.budgetedHours) && (
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                       {(phase.scheduledStart || phase.scheduledEnd) && (
                         <span>
@@ -420,9 +424,24 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                           {fmtDate(phase.scheduledEnd) ?? "?"}
                         </span>
                       )}
-                      {phase.bookedHours && parseFloat(phase.bookedHours) > 0 && (
-                        <span>{parseFloat(phase.bookedHours).toFixed(1)} hrs booked</span>
-                      )}
+                      {(() => {
+                        const budgeted = phase.budgetedHours ? parseFloat(phase.budgetedHours) : 0;
+                        const actual = phase.actualHours ?? 0;
+                        if (budgeted > 0) {
+                          const pct = actual / budgeted;
+                          const color = pct >= 1 ? "text-red-600 dark:text-red-400" : pct >= 0.8 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400";
+                          return (
+                            <span className="flex items-center gap-1">
+                              <span className={color}>{actual.toFixed(1)} / {budgeted.toFixed(1)} hrs</span>
+                              <span className={`text-[10px] font-medium ${color}`}>({Math.round(pct * 100)}%)</span>
+                            </span>
+                          );
+                        }
+                        if (phase.bookedHours && parseFloat(phase.bookedHours) > 0) {
+                          return <span>{parseFloat(phase.bookedHours).toFixed(1)} hrs booked</span>;
+                        }
+                        return null;
+                      })()}
                     </div>
                   )}
 
@@ -529,7 +548,7 @@ function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, 
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-4 gap-2">
         <div className="space-y-1">
           <Label className="text-xs">Start Date</Label>
           <Input type="date" value={form.scheduledStart} onChange={set("scheduledStart")} className="h-8 text-sm" />
@@ -547,6 +566,20 @@ function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, 
             min="0"
             value={form.bookedHours}
             onChange={set("bookedHours")}
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs flex items-center gap-1">
+            <span>Budgeted Hours</span>
+          </Label>
+          <Input
+            placeholder="40"
+            type="number"
+            step="0.5"
+            min="0"
+            value={form.budgetedHours}
+            onChange={set("budgetedHours")}
             className="h-8 text-sm"
           />
         </div>

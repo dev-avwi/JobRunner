@@ -453,6 +453,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       scheduledStart: setupDateSchema.optional().nullable(),
       scheduledEnd: setupDateSchema.optional().nullable(),
       budgetedCost: setupMoneySchema.optional().nullable(),
+      budgetedHours: z.coerce.string().trim().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
       assignedUserId: z.string().optional().nullable(),
       assignedUserIds: z.array(z.string().min(1)).max(100).optional(),
       sortOrder: z.number().int().min(0).optional(),
@@ -3332,7 +3333,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
               await tx.execute(sql`
                 INSERT INTO job_phases (
                   id, job_id, user_id, phase_code, name, description,
-                  scheduled_start, scheduled_end, budgeted_cost, status,
+                  scheduled_start, scheduled_end, budgeted_cost, budgeted_hours, status,
                   sort_order, assigned_user_id
                 ) VALUES (
                   ${phaseId}, ${createdJob.id}, ${effectiveUserId},
@@ -3340,7 +3341,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
                   ${phase.description ?? null},
                   ${phase.scheduledStart ? new Date(phase.scheduledStart) : null},
                   ${phase.scheduledEnd ? new Date(phase.scheduledEnd) : null},
-                  ${phase.budgetedCost ?? null}, 'not_started',
+                  ${phase.budgetedCost ?? null}, ${(phase as any).budgetedHours ?? null}, 'not_started',
                   ${phase.sortOrder ?? index}, ${phaseAssignees.leadUserId}
                 )
               `);
@@ -7404,6 +7405,12 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
                     : parseFloat(phase.budgetedCost.toString()) || 0;
                   return id && budget > 0 ? r2(budget) : null;
                 })(),
+                budgetedHours: (() => {
+                  const bh = phase?.budgetedHours === null || phase?.budgetedHours === undefined
+                    ? 0
+                    : parseFloat(phase.budgetedHours.toString()) || 0;
+                  return id && bh > 0 ? r2(bh) : null;
+                })(),
                 costs: {
                   labour: r2(b.labour),
                   subcontractor: r2(b.subcontractor),
@@ -7904,6 +7911,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
               scheduledStart: p?.scheduledStart || null,
               scheduledEnd: p?.scheduledEnd || null,
               bookedHours: p?.bookedHours ? parseFloat(p.bookedHours.toString()) : null,
+              budgetedHours: p?.budgetedHours ? parseFloat(p.budgetedHours.toString()) : null,
               costs: {
                 labour: r2(b.labour),
                 subcontractor: r2(b.subcontractor),
@@ -9551,9 +9559,154 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       // so cross-business workers see the correct phases rather than an empty list from their own tenant.
       const phaseOwnerId = job.userId;
       const phases = await storage.getJobPhases(jobId, phaseOwnerId);
-      res.json(await enrichPhasesWithAssignees(phases));
+      const enriched = await enrichPhasesWithAssignees(phases);
+
+      // Attribute time entries to phases by date-window so each phase carries
+      // its actual logged hours. Same window logic as the profitability endpoint.
+      try {
+        const entries = await storage.getTimeEntriesForJob(jobId);
+        const completedEntries = entries.filter((e: any) => e.endTime && !e.isBreak);
+        const sortedPhases = [...phases].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        const windows = sortedPhases.map((p: any) => {
+          const start = p.scheduledStart ? new Date(p.scheduledStart).getTime() : null;
+          let end = p.scheduledEnd ? new Date(p.scheduledEnd).getTime() : null;
+          if (end !== null && !Number.isNaN(end)) end += 24 * 60 * 60 * 1000 - 1;
+          return { phaseId: p.id, start, end };
+        });
+        const findPhaseId = (dateVal: any, explicitPhaseId?: string | null): string | null => {
+          if (explicitPhaseId) {
+            const w = windows.find(w => w.phaseId === explicitPhaseId);
+            if (w) return explicitPhaseId;
+          }
+          if (!dateVal) return null;
+          const t = new Date(dateVal).getTime();
+          if (Number.isNaN(t)) return null;
+          for (const w of windows) {
+            if (w.start === null && w.end === null) continue;
+            if (w.start !== null && t < w.start) continue;
+            if (w.end !== null && t > w.end) continue;
+            return w.phaseId;
+          }
+          return null;
+        };
+
+        const actualHoursMap = new Map<string, number>();
+        for (const entry of completedEntries) {
+          const pid = findPhaseId(entry.startTime, (entry as any).phaseId);
+          if (!pid) continue;
+          const hrs = (new Date((entry as any).endTime).getTime() - new Date(entry.startTime).getTime()) / 3600000;
+          actualHoursMap.set(pid, (actualHoursMap.get(pid) ?? 0) + hrs);
+        }
+        for (const phase of enriched) {
+          const actual = actualHoursMap.get((phase as any).id);
+          if (actual !== undefined) (phase as any).actualHours = Math.round(actual * 100) / 100;
+        }
+      } catch (_) { /* actual hours are best-effort */ }
+
+      res.json(enriched);
     } catch (err: any) {
       console.error("Error fetching job phases:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // ── Phase hours CSV export ────────────────────────────────────────────────
+  app.get("/api/jobs/:jobId/phases/hours-export", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId } = req.params;
+      const effectiveUserId = req.effectiveUserId || userId;
+
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Owner-only: financial exports are sensitive
+      const userContext = req.userContext;
+      if (!userContext?.isOwner && !userContext?.permissions?.includes('view_all')) {
+        return res.status(403).json({ error: "Only owners and managers can export phase hours" });
+      }
+
+      const phaseOwnerId = (job as any).userId || effectiveUserId;
+      const phases = await storage.getJobPhases(jobId, phaseOwnerId);
+      const sortedPhases = [...phases].sort((a: any, b: any) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+
+      // Compute actual hours per phase
+      const entries = await storage.getTimeEntriesForJob(jobId);
+      const completedEntries = entries.filter((e: any) => e.endTime && !e.isBreak);
+      const windows = sortedPhases.map((p: any) => {
+        const start = p.scheduledStart ? new Date(p.scheduledStart).getTime() : null;
+        let end = p.scheduledEnd ? new Date(p.scheduledEnd).getTime() : null;
+        if (end !== null && !Number.isNaN(end)) end += 24 * 60 * 60 * 1000 - 1;
+        return { phaseId: p.id, start, end };
+      });
+      const findPhaseId = (dateVal: any, explicitPhaseId?: string | null): string | null => {
+        if (explicitPhaseId) {
+          if (windows.some(w => w.phaseId === explicitPhaseId)) return explicitPhaseId;
+        }
+        if (!dateVal) return null;
+        const t = new Date(dateVal).getTime();
+        if (Number.isNaN(t)) return null;
+        for (const w of windows) {
+          if (w.start === null && w.end === null) continue;
+          if (w.start !== null && t < w.start) continue;
+          if (w.end !== null && t > w.end) continue;
+          return w.phaseId;
+        }
+        return null;
+      };
+      const actualHoursMap = new Map<string, number>();
+      let unallocatedHours = 0;
+      for (const entry of completedEntries) {
+        const pid = findPhaseId(entry.startTime, (entry as any).phaseId);
+        const hrs = (new Date((entry as any).endTime).getTime() - new Date(entry.startTime).getTime()) / 3600000;
+        if (pid) actualHoursMap.set(pid, (actualHoursMap.get(pid) ?? 0) + hrs);
+        else unallocatedHours += hrs;
+      }
+
+      const fmtDate = (d: any): string => {
+        if (!d) return '';
+        try { return new Date(d).toISOString().substring(0, 10); } catch { return ''; }
+      };
+      const r2 = (n: number) => Math.round(n * 100) / 100;
+      // Prevent CSV formula injection: prefix any value that starts with a
+      // spreadsheet-formula trigger character with an apostrophe, then
+      // double-quote and escape internal quotes.
+      const csvText = (raw: string): string => {
+        const s = raw.replace(/_/g, ' ');
+        const safe = /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+        return `"${safe.replace(/"/g, '""')}"`;
+      };
+
+      const rows: string[] = [];
+      rows.push(['Phase Code', 'Phase Name', 'Status', 'Start Date', 'End Date', 'Budgeted Hours', 'Actual Hours', 'Variance (hrs)'].join(','));
+
+      for (const p of sortedPhases) {
+        const budgeted = (p as any).budgetedHours ? parseFloat((p as any).budgetedHours.toString()) : null;
+        const actual = actualHoursMap.get(p.id) ?? 0;
+        const variance = budgeted !== null ? r2(actual - budgeted) : '';
+        rows.push([
+          csvText(p.phaseCode ?? ''),
+          csvText(p.name ?? ''),
+          csvText(p.status ?? ''),
+          fmtDate(p.scheduledStart),
+          fmtDate(p.scheduledEnd),
+          budgeted !== null ? budgeted.toString() : '',
+          r2(actual).toString(),
+          variance.toString(),
+        ].join(','));
+      }
+
+      if (unallocatedHours > 0.01) {
+        rows.push([csvText('Unallocated'), csvText('Unallocated'), csvText(''), '', '', '', r2(unallocatedHours).toString(), ''].join(','));
+      }
+
+      const csv = rows.join('\r\n');
+      const filename = `phase-hours-${jobId}.csv`;
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csv);
+    } catch (err: any) {
+      console.error("Error generating phase hours export:", err);
       res.status(500).json({ error: err.message });
     }
   });
@@ -9566,7 +9719,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     for (const key of ['scheduledStart', 'scheduledEnd']) {
       if (out[key] === '') out[key] = null;  // blank string → null; explicit null stays null
     }
-    for (const key of ['bookedHours', 'budgetedCost']) {
+    for (const key of ['bookedHours', 'budgetedHours', 'budgetedCost']) {
       if (out[key] === '') out[key] = null;
     }
     if (out['assignedUserId'] === '') out['assignedUserId'] = null;
@@ -9588,6 +9741,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         scheduledStart: z.coerce.date().optional().nullable(),
         scheduledEnd: z.coerce.date().optional().nullable(),
         bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        budgetedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
         budgetedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a positive amount').optional().nullable(),
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).default("not_started"),
         sortOrder: z.number().int().optional(),
@@ -9618,11 +9772,12 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           scheduledEnd: parsed.scheduledEnd ?? null,
           bookedHours: parsed.bookedHours ?? null,
           budgetedCost: parsed.budgetedCost ?? null,
+          ...(((parsed as any).budgetedHours !== undefined) ? { budgetedHours: (parsed as any).budgetedHours ?? null } : {}),
           status: parsed.status,
           sortOrder,
           notes: parsed.notes ?? null,
           assignedUserId: phaseAssignees.leadUserId,
-        }).returning();
+        } as any).returning();
         await syncPhaseAssignments(tx, created.id, phaseAssignees.userIds, phaseAssignees.leadUserId);
         return created;
       });
@@ -9667,6 +9822,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         scheduledStart: z.coerce.date().optional().nullable(),
         scheduledEnd: z.coerce.date().optional().nullable(),
         bookedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
+        budgetedHours: z.string().regex(/^\d+(\.\d+)?$/, 'Must be a positive number').optional().nullable(),
         budgetedCost: z.string().regex(/^\d+(\.\d{1,2})?$/, 'Must be a positive amount').optional().nullable(),
         status: z.enum(["not_started", "in_progress", "complete", "invoiced"]).optional(),
         sortOrder: z.number().int().optional(),

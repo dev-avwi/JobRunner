@@ -1023,6 +1023,7 @@ export default function CreateJobScreen() {
               scheduledStart: ph.scheduledStart || null,
               scheduledEnd: ph.scheduledEnd || null,
               budgetedCost: ph.budgetedCost || null,
+              budgetedHours: ph.budgetedHours || null,
               assignedUserId: ph.assignedUserId || null,
               assignedUserIds: ph.assignedUserIds?.length ? ph.assignedUserIds : undefined,
               sortOrder: ph.sortOrder,

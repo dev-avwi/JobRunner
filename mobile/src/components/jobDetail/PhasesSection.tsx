@@ -24,6 +24,7 @@ export interface JobPhase {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   bookedHours?: string | null;
+  budgetedHours?: string | null;
   budgetedCost?: string | null;
   actualHours?: number | null;
   status: PhaseStatus;
@@ -337,16 +338,81 @@ export function PhasesSection({
           </View>
         )}
 
-        {/* Hours */}
-        {hoursNum > 0 && (
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-            <Text style={{ fontSize: 13, color: colors.mutedForeground, width: 72 }}>Hours</Text>
-            <View style={{ gap: 3 }}>
-              <Text style={{ fontSize: 13, color: colors.foreground }}>{hoursNum.toFixed(1)} hrs booked</Text>
-              <HoursComparison booked={hoursNum} actual={viewingPhase.actualHours} colors={colors} />
+        {/* Phase hours summary — budgeted vs actual with progress bar */}
+        {(() => {
+          const budgetedHrs = parseFloat(viewingPhase.budgetedHours ?? '0') || 0;
+          const actualHrs = viewingPhase.actualHours ?? 0;
+          const hasBudget = budgetedHrs > 0;
+          const hasActual = actualHrs > 0;
+          if (!hasBudget && !hasActual && hoursNum <= 0) return null;
+          const pct = hasBudget ? actualHrs / budgetedHrs : null;
+          const barColor = pct === null ? colors.primary : pct >= 1.0 ? '#DC2626' : pct >= 0.8 ? '#D97706' : '#16A34A';
+          const variance = hasBudget ? actualHrs - budgetedHrs : null;
+          // Burn rate & estimated remaining (requires dates)
+          let projectedCompletion: string | null = null;
+          if (hasBudget && hasActual && viewingPhase.scheduledStart && pct !== null && pct > 0 && pct < 10) {
+            const startTs = new Date(viewingPhase.scheduledStart).getTime();
+            const nowTs = Date.now();
+            const elapsedMs = nowTs - startTs;
+            if (elapsedMs > 0) {
+              const burnRateHrsPerMs = actualHrs / elapsedMs;
+              const remainingHrs = budgetedHrs - actualHrs;
+              if (remainingHrs > 0 && burnRateHrsPerMs > 0) {
+                const projMs = nowTs + remainingHrs / burnRateHrsPerMs;
+                const projDate = new Date(projMs);
+                projectedCompletion = projDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: '2-digit' });
+              }
+            }
+          }
+          return (
+            <View style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colors.muted, borderWidth: 1, borderColor: `${barColor}35` }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <Feather name="clock" size={12} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>Hours</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Budgeted</Text>
+                <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                  {hasBudget ? `${budgetedHrs.toFixed(1)} hrs` : 'Not set'}
+                </Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm }}>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Logged to date</Text>
+                <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                  {actualHrs.toFixed(1)} hrs
+                </Text>
+              </View>
+              {hasBudget && (
+                <>
+                  <View style={{ height: 6, borderRadius: 3, backgroundColor: `${barColor}30`, overflow: 'hidden', marginTop: 2 }}>
+                    <View style={{ height: '100%', width: `${Math.min((pct ?? 0) * 100, 100)}%`, borderRadius: 3, backgroundColor: barColor }} />
+                  </View>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                      {variance !== null ? `Variance: ${variance >= 0 ? '+' : ''}${variance.toFixed(1)} hrs` : ''}
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: barColor }} />
+                      <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: barColor }}>
+                        {pct !== null ? `${Math.round((pct ?? 0) * 100)}% used` : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  {projectedCompletion && (
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                      Est. completion: {projectedCompletion}
+                    </Text>
+                  )}
+                </>
+              )}
+              {hoursNum > 0 && (
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                  {hoursNum.toFixed(1)} hrs booked (scheduled)
+                </Text>
+              )}
             </View>
-          </View>
-        )}
+          );
+        })()}
 
         {/* Description */}
         {viewingPhase.description ? (
@@ -526,17 +592,38 @@ export function PhasesSection({
                       </View>
                     )}
 
-                    {/* Hours comparison */}
-                    {hoursNum > 0 && (
-                      <View style={styles.phaseMeta}>
-                        <View style={styles.metaItem}>
-                          <Feather name="clock" size={10} color={colors.mutedForeground} />
-                          <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
-                            {hoursNum.toFixed(1)} hrs est.
-                          </Text>
+                    {/* Hours summary — budgeted vs actual with mini progress bar */}
+                    {(() => {
+                      const budgetedHrs = parseFloat(phase.budgetedHours ?? '0') || 0;
+                      const actualHrs = phase.actualHours ?? 0;
+                      if (budgetedHrs <= 0 && actualHrs <= 0 && hoursNum <= 0) return null;
+                      const pct = budgetedHrs > 0 ? actualHrs / budgetedHrs : null;
+                      const barColor = pct === null ? colors.primary : pct >= 1.0 ? '#DC2626' : pct >= 0.8 ? '#D97706' : '#16A34A';
+                      return (
+                        <View style={styles.phaseMeta}>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, flex: 1 }}>
+                            <Feather name="clock" size={10} color={colors.mutedForeground} />
+                            <Text style={[styles.metaText, { color: colors.mutedForeground }]}>
+                              {budgetedHrs > 0
+                                ? `${actualHrs.toFixed(1)} / ${budgetedHrs.toFixed(1)} hrs`
+                                : actualHrs > 0
+                                  ? `${actualHrs.toFixed(1)} hrs logged`
+                                  : `${hoursNum.toFixed(1)} hrs est.`}
+                            </Text>
+                            {pct !== null && (
+                              <Text style={{ fontSize: 9, color: barColor, fontWeight: fontWeights.semibold }}>
+                                ({Math.round(pct * 100)}%)
+                              </Text>
+                            )}
+                          </View>
+                          {budgetedHrs > 0 && (
+                            <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: `${barColor}30`, overflow: 'hidden' }}>
+                              <View style={{ height: '100%', width: `${Math.min((pct ?? 0) * 100, 100)}%`, borderRadius: 2, backgroundColor: barColor }} />
+                            </View>
+                          )}
                         </View>
-                      </View>
-                    )}
+                      );
+                    })()}
 
                     {/* Budget/cost row — only shown when there's a budget set or actual spend */}
                     {(phaseBudget !== null || (actualCost !== undefined && actualCost > 0)) && (

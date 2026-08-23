@@ -40,6 +40,7 @@ interface PhaseCostData {
   name: string;
   status: string | null;
   budgetedCost: number | null;
+  budgetedHours: number | null;
   costs: {
     labour: number;
     subcontractor: number;
@@ -234,6 +235,37 @@ function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
                       <PhaseBudgetIndicator status={budgetStatus} />
                     </div>
                   </div>
+                  {/* Hours progress bar */}
+                  {phase.budgetedHours !== null && phase.budgetedHours > 0 && (
+                    <div className="rounded-sm bg-muted px-2 py-1.5 space-y-1 mb-1">
+                      <span className="text-[11px] font-medium text-muted-foreground">Hours</span>
+                      {(() => {
+                        const bh = phase.budgetedHours ?? 0;
+                        const ah = phase.hours;
+                        const pct = bh > 0 ? Math.min(ah / bh, 1) : 0;
+                        const barColor = ah >= bh ? "bg-red-500" : ah >= bh * 0.8 ? "bg-amber-500" : "bg-green-500";
+                        const textColor = ah >= bh ? "text-red-600 dark:text-red-400" : ah >= bh * 0.8 ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400";
+                        const variance = ah - bh;
+                        return (
+                          <>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs text-muted-foreground">Budgeted {bh.toFixed(1)} hrs</span>
+                              <span className={`text-xs font-medium ${textColor}`}>Logged {ah.toFixed(1)} hrs</span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-muted-foreground/20 overflow-hidden">
+                              <div className={`h-full rounded-full ${barColor}`} style={{ width: `${Math.round(pct * 100)}%` }} />
+                            </div>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className={`text-[10px] ${textColor}`}>
+                                Variance {variance >= 0 ? "+" : ""}{variance.toFixed(1)} hrs
+                              </span>
+                              <span className="text-[10px] text-muted-foreground">{Math.round(pct * 100)}% used</span>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
                       Labour{phase.hours > 0 ? ` (${phase.hours.toFixed(1)}hrs)` : ""}
@@ -290,6 +322,7 @@ function PhaseBreakdownSection({ phases }: { phases: PhaseCostData[] }) {
 
 export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isExportingHours, setIsExportingHours] = useState(false);
 
   const handleDownloadCostReport = async () => {
     setIsDownloading(true);
@@ -313,6 +346,31 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
       console.error("Cost report download failed:", err);
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleExportPhaseHours = async () => {
+    setIsExportingHours(true);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`/api/jobs/${jobId}/phases/hours-export`, {
+        credentials: "include",
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) throw new Error("Failed to export phase hours");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `phase-hours-${jobId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Phase hours export failed:", err);
+    } finally {
+      setIsExportingHours(false);
     }
   };
 
@@ -383,20 +441,39 @@ export default function JobProfitabilityCard({ jobId }: { jobId: string }) {
             <AlertTriangle className="h-3 w-3 mr-1" /> Loss
           </Badge>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-7 gap-1 text-xs"
-          onClick={handleDownloadCostReport}
-          disabled={isDownloading}
-        >
-          {isDownloading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <FileDown className="h-3 w-3" />
+        <div className="ml-auto flex items-center gap-1">
+          {(data?.phases?.length ?? 0) > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1 text-xs"
+              onClick={handleExportPhaseHours}
+              disabled={isExportingHours}
+              title="Export phase hours as CSV"
+            >
+              {isExportingHours ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <FileDown className="h-3 w-3" />
+              )}
+              Hours CSV
+            </Button>
           )}
-          Cost Report
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 text-xs"
+            onClick={handleDownloadCostReport}
+            disabled={isDownloading}
+          >
+            {isDownloading ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : (
+              <FileDown className="h-3 w-3" />
+            )}
+            Cost Report
+          </Button>
+        </div>
       </div>
     </CardHeader>
   );

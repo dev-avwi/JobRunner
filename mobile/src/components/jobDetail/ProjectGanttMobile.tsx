@@ -290,6 +290,28 @@ export function ProjectGanttMobile({
                         },
                       ]}
                     >
+                      {/* Hours-burn fill overlay */}
+                      {(() => {
+                        const budgeted = parseFloat((phase as any).budgetedHours ?? '0') || 0;
+                        const actual = (phase as any).actualHours ?? 0;
+                        if (budgeted <= 0 || actual <= 0) return null;
+                        const pct = Math.min(actual / budgeted, 1);
+                        const fillColor = actual >= budgeted ? '#DC2626' : actual >= budgeted * 0.8 ? '#D97706' : '#16A34A';
+                        return (
+                          <View
+                            pointerEvents="none"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              bottom: 0,
+                              left: 0,
+                              width: `${Math.round(pct * 100)}%` as any,
+                              backgroundColor: fillColor,
+                              borderRadius: 5,
+                            }}
+                          />
+                        );
+                      })()}
                       {bar.width > 44 && (
                         <Text
                           style={[styles.barLabel, { color: colorCfg.text, paddingRight: phase.assignedUserName ? 18 : 0 }]}

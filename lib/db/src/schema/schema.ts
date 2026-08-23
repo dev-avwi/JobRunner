@@ -800,6 +800,7 @@ export const jobPhases = pgTable("job_phases", {
   scheduledStart: timestamp("scheduled_start"),
   scheduledEnd: timestamp("scheduled_end"),
   bookedHours: decimal("booked_hours", { precision: 10, scale: 2 }),
+  budgetedHours: decimal("budgeted_hours", { precision: 10, scale: 2 }),
   budgetedCost: decimal("budgeted_cost", { precision: 12, scale: 2 }),
   status: text("status").notNull().default('not_started'), // not_started | in_progress | complete | invoiced
   sortOrder: integer("sort_order").default(0),

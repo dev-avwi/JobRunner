@@ -15,7 +15,7 @@ const newId = () => `phase_${Date.now()}_${++counter}`;
 type PhaseForm = Omit<ProjectPhase, 'assignedUserIds'> & { assignedUserIds: string[] };
 const emptyForm = (sortOrder: number): PhaseForm => ({
   clientId: newId(), phaseCode: '', name: '', description: '', scheduledStart: '',
-  scheduledEnd: '', budgetedCost: '', assignedUserId: null, assignedUserIds: [], sortOrder,
+  scheduledEnd: '', budgetedCost: '', budgetedHours: '', assignedUserId: null, assignedUserIds: [], sortOrder,
 });
 
 function validate(form: PhaseForm) {
@@ -24,6 +24,7 @@ function validate(form: PhaseForm) {
   if (form.scheduledEnd && !/^\d{4}-\d{2}-\d{2}$/.test(form.scheduledEnd)) return 'End date must be YYYY-MM-DD';
   if (form.scheduledStart && form.scheduledEnd && form.scheduledEnd < form.scheduledStart) return 'End date must be on or after start date';
   if (form.budgetedCost && (!Number.isFinite(Number(form.budgetedCost)) || Number(form.budgetedCost) < 0)) return 'Budget must be a non-negative number';
+  if (form.budgetedHours && (!Number.isFinite(Number(form.budgetedHours)) || Number(form.budgetedHours) < 0)) return 'Budgeted hours must be a non-negative number';
   return null;
 }
 
@@ -45,7 +46,7 @@ export function PhasesSection({ phases, teamMembers, onChange }: { phases: Proje
     const phase = phases[index];
     const ids = phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : [];
     setEditingIndex(index);
-    setForm({ ...phase, assignedUserId: ids[0] || null, assignedUserIds: ids });
+    setForm({ ...phase, budgetedHours: phase.budgetedHours ?? '', assignedUserId: ids[0] || null, assignedUserIds: ids });
     setVisible(true);
   };
   const dismiss = () => setVisible(false);
@@ -82,7 +83,7 @@ export function PhasesSection({ phases, teamMembers, onChange }: { phases: Proje
         const memberNames = (phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : []).map((id) => getTeamMemberName(teamMembers.find((member) => String(member.userId || member.memberId || member.id) === id))).filter(Boolean);
         return <TouchableOpacity key={phase.clientId} testID={`phase-${phase.clientId}`} onPress={() => openEdit(index)} style={{ padding: spacing.md, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.card, gap: spacing.xs }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}><View style={{ flex: 1 }}><Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>{phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}</Text>{memberNames.length > 0 && <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.xs }} numberOfLines={1}>{memberNames.join(', ')}</Text>}</View><TouchableOpacity testID={`phase-move-up-${index}`} disabled={index === 0} onPress={() => move(index, index - 1)} hitSlop={8}><Feather name="chevron-up" size={18} color={index === 0 ? colors.mutedForeground : colors.primary} /></TouchableOpacity><TouchableOpacity testID={`phase-move-down-${index}`} disabled={index === phases.length - 1} onPress={() => move(index, index + 1)} hitSlop={8}><Feather name="chevron-down" size={18} color={index === phases.length - 1 ? colors.mutedForeground : colors.primary} /></TouchableOpacity><TouchableOpacity testID={`phase-remove-${index}`} onPress={() => remove(index)} hitSlop={8}><Feather name="trash-2" size={17} color={colors.destructive} /></TouchableOpacity></View>
-          {(phase.scheduledStart || phase.scheduledEnd || phase.budgetedCost) && <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.xs }}>{[phase.scheduledStart && `Starts ${phase.scheduledStart}`, phase.scheduledEnd && `Ends ${phase.scheduledEnd}`, phase.budgetedCost && `$${phase.budgetedCost}`].filter(Boolean).join(' · ')}</Text>}
+          {(phase.scheduledStart || phase.scheduledEnd || phase.budgetedCost || phase.budgetedHours) && <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.xs }}>{[phase.scheduledStart && `Starts ${phase.scheduledStart}`, phase.scheduledEnd && `Ends ${phase.scheduledEnd}`, phase.budgetedHours && `${phase.budgetedHours}h budget`, phase.budgetedCost && `$${phase.budgetedCost}`].filter(Boolean).join(' · ')}</Text>}
         </TouchableOpacity>;
       })}
 
@@ -92,7 +93,19 @@ export function PhasesSection({ phases, teamMembers, onChange }: { phases: Proje
           <View><Text style={labelStyle}>Phase code</Text><TextInput testID="phase-code" value={form.phaseCode} onChangeText={(phaseCode) => setForm((value) => ({ ...value, phaseCode }))} placeholder="e.g. P1" placeholderTextColor={colors.mutedForeground} style={inputStyle} autoCapitalize="characters" /></View>
           <View><Text style={labelStyle}>Description</Text><TextInput testID="phase-description" value={form.description} onChangeText={(description) => setForm((value) => ({ ...value, description }))} placeholder="What does this phase cover?" placeholderTextColor={colors.mutedForeground} style={[inputStyle, { minHeight: 88, paddingTop: spacing.sm }]} multiline textAlignVertical="top" /></View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}><View style={{ flex: 1 }}><Text style={labelStyle}>Start date</Text><TextInput testID="phase-start" value={form.scheduledStart} onChangeText={(scheduledStart) => setForm((value) => ({ ...value, scheduledStart }))} placeholder="YYYY-MM-DD" placeholderTextColor={colors.mutedForeground} style={inputStyle} /></View><View style={{ flex: 1 }}><Text style={labelStyle}>End date</Text><TextInput testID="phase-end" value={form.scheduledEnd} onChangeText={(scheduledEnd) => setForm((value) => ({ ...value, scheduledEnd }))} placeholder="YYYY-MM-DD" placeholderTextColor={colors.mutedForeground} style={inputStyle} /></View></View>
-          <View><Text style={labelStyle}>Budget</Text><TextInput testID="phase-budget" value={form.budgetedCost} onChangeText={(budgetedCost) => setForm((value) => ({ ...value, budgetedCost }))} placeholder="0.00" placeholderTextColor={colors.mutedForeground} style={inputStyle} keyboardType="decimal-pad" /></View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flex: 1 }}>
+              <Text style={labelStyle}>Budget ($)</Text>
+              <TextInput testID="phase-budget" value={form.budgetedCost} onChangeText={(budgetedCost) => setForm((value) => ({ ...value, budgetedCost }))} placeholder="0.00" placeholderTextColor={colors.mutedForeground} style={inputStyle} keyboardType="decimal-pad" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: spacing.xs }}>
+                <Feather name="clock" size={11} color={colors.mutedForeground} />
+                <Text style={[labelStyle, { marginBottom: 0 }]}>Budgeted hours</Text>
+              </View>
+              <TextInput testID="phase-budgeted-hours" value={form.budgetedHours} onChangeText={(budgetedHours) => setForm((value) => ({ ...value, budgetedHours }))} placeholder="0" placeholderTextColor={colors.mutedForeground} style={inputStyle} keyboardType="decimal-pad" />
+            </View>
+          </View>
           <PhaseTeamPicker selectedIds={form.assignedUserIds} teamMembers={teamMembers} onChange={(assignedUserIds) => setForm((value) => ({ ...value, assignedUserIds, assignedUserId: assignedUserIds[0] || null }))} onManageTeam={() => { setVisible(false); router.push('/more/team-management'); }} />
         </View>
       </AppBottomSheet>
