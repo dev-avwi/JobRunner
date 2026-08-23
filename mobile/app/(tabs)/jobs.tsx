@@ -1370,9 +1370,18 @@ export default function JobsScreen() {
 
   const listEmptyComponent = useMemo(() => {
     if (isLoading) {
+      const skeletonPairs = [[1, 2], [3, 4], [5, 6]];
       return (
         <View style={{ padding: spacing.md }}>
-          {[1, 2, 3, 4, 5].map((i) => <SkeletonJobCard key={i} />)}
+          {viewMode === 'grid'
+            ? skeletonPairs.map(([a, b]) => (
+                <View key={a} style={styles.jobsGrid}>
+                  <View style={{ flex: 1 }}><SkeletonJobCard /></View>
+                  <View style={{ flex: 1 }}><SkeletonJobCard /></View>
+                </View>
+              ))
+            : [1, 2, 3, 4, 5].map((i) => <SkeletonJobCard key={i} />)
+          }
         </View>
       );
     }
@@ -1389,7 +1398,7 @@ export default function JobsScreen() {
         </Text>
       </View>
     );
-  }, [isLoading, searchQuery, activeFilter, hasAdvancedFilters, colors, styles]);
+  }, [isLoading, viewMode, searchQuery, activeFilter, hasAdvancedFilters, colors, styles]);
 
   const renderItem = useCallback(({ item: job }: { item: any }) => {
     const jobWithClient = { ...job, clientName: job.clientName || getClientName(job.clientId) };
