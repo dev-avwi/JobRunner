@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Linking,
   Image,
+  ActionSheetIOS,
+  Platform,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
@@ -238,6 +240,28 @@ export default function ClientDetailScreen() {
 
   const handleEdit = () => {
     router.push(`/more/client/new?clientId=${id}`);
+  };
+
+  const showClientActionsMenu = () => {
+    const options = ['Edit Client', 'Delete Client', 'Cancel'];
+    const destructiveIndex = 1;
+    const cancelIndex = 2;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, cancelButtonIndex: cancelIndex, destructiveButtonIndex: destructiveIndex, title: 'Client Actions' },
+        (buttonIndex) => {
+          if (buttonIndex === 0) handleEdit();
+          else if (buttonIndex === 1) handleDelete();
+        },
+      );
+    } else {
+      Alert.alert('Client Actions', undefined, [
+        { text: 'Edit Client', onPress: handleEdit },
+        { text: 'Delete Client', style: 'destructive', onPress: handleDelete },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+    }
   };
 
   const handleDelete = async () => {
@@ -655,11 +679,12 @@ export default function ClientDetailScreen() {
               <Text style={{ fontSize: 15, color: colors.primary, marginLeft: -2 }}>Back</Text>
             </PressableRow>
             <View style={{ flex: 1 }} />
-            <PressableRow onPress={handleEdit} style={styles.headerButton} data-testid="button-edit-client">
-              <Feather name="edit-2" size={20} color={colors.primary} />
-            </PressableRow>
-            <PressableRow onPress={handleDelete} style={styles.headerButton} data-testid="button-delete-client">
-              <Feather name="trash-2" size={20} color={colors.destructive} />
+            <PressableRow
+              onPress={showClientActionsMenu}
+              style={styles.headerButton}
+              data-testid="button-client-actions"
+            >
+              <Feather name="more-horizontal" size={22} color={colors.foreground} />
             </PressableRow>
           </View>
           {/* Profile Header Card */}
