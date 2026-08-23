@@ -5230,6 +5230,8 @@ export default function JobDetailScreen() {
         } else {
           showToast({ type: 'success', message: 'Proof Pack PDF downloaded successfully' });
         }
+        // Close the preview after sharing completes (not before, so user sees the loading state)
+        setShowProofPackPreview(false);
       } else {
         showToast({ type: 'error', message: 'Failed to generate Proof Pack PDF' });
       }
@@ -14660,7 +14662,6 @@ export default function JobDetailScreen() {
                 minHeight: 44,
               }}
               onPress={() => {
-                setShowProofPackPreview(false);
                 handleGenerateProofPack();
               }}
               activeOpacity={0.8}

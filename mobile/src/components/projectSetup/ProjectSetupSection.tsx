@@ -60,6 +60,7 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
     container: {
       marginTop: spacing.xl,
+      marginBottom: spacing.xl,
     },
     headerCard: {
       backgroundColor: colors.card,

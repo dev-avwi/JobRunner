@@ -329,9 +329,10 @@ export function generateCostReportPDF(data: CostReportData): string {
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Cost Report — ${esc(job.title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
+  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 12px; color: #1f2937; background: #fff; padding: 32px 40px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 6px; }
   th { text-align: left; }
   td { vertical-align: top; }
