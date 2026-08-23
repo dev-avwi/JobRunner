@@ -33,5 +33,13 @@ export default defineConfig({
       },
     },
   ],
-  // Do not start a dev server — the jobrunner workflow must already be running.
+  // Start the dev server when it isn't already running at the target port.
+  // reuseExistingServer: true means the normal workflow (running on a different
+  // port) is left undisturbed; only a fresh server is spawned if needed.
+  webServer: {
+    command: `PORT=${port} pnpm run dev`,
+    url: `http://localhost:${port}`,
+    reuseExistingServer: true,
+    timeout: 120_000,
+  },
 });

@@ -114,6 +114,7 @@ interface UndoState {
   jobId: string;
   originalScheduledAt?: string;
   originalAssignedTo?: string;
+  originalStatus?: string;
   timer: ReturnType<typeof setTimeout>;
 }
 
@@ -415,13 +416,15 @@ function DispatchBoardScreenInner() {
   const getStatusColor = (status: string, scheduledAt?: string): string => {
     if (scheduledAt) {
       try {
-        if (isBefore(parseISO(scheduledAt), startOfDay(new Date())) && status !== 'completed' && status !== 'done')
+        if (isBefore(parseISO(scheduledAt), startOfDay(new Date())) && status !== 'completed' && status !== 'done' && status !== 'cancelled')
           return colors.warning;
       } catch { /* ignore */ }
     }
     switch (status) {
       case 'in_progress': case 'working': return colors.success;
       case 'completed': case 'done': return colors.mutedForeground;
+      case 'invoiced': return colors.mutedForeground;
+      case 'cancelled': return colors.mutedForeground;
       case 'en_route': case 'on_my_way': return colors.info || colors.primary;
       case 'pending': return colors.warning;
       default: return colors.info || colors.primary;
@@ -435,6 +438,8 @@ function DispatchBoardScreenInner() {
       case 'en_route': case 'on_my_way': return 'En Route';
       case 'in_progress': case 'working': return 'In Progress';
       case 'completed': case 'done': return 'Complete';
+      case 'invoiced': return 'Invoiced';
+      case 'cancelled': return 'Cancelled';
       default: return status;
     }
   };
@@ -511,15 +516,18 @@ function DispatchBoardScreenInner() {
   const handleUndo = async () => {
     if (!undoState) return;
     clearTimeout(undoState.timer);
-    const { jobId, originalScheduledAt, originalAssignedTo } = undoState;
+    const { jobId, originalScheduledAt, originalAssignedTo, originalStatus } = undoState;
     setUndoState(null);
     try {
       await api.patch(`/api/jobs/${jobId}`, {
         scheduledAt: originalScheduledAt || null,
         assignedTo: originalAssignedTo || null,
+        ...(originalStatus ? { status: originalStatus } : {}),
       });
       setJobs(prev => prev.map(j =>
-        j.id === jobId ? { ...j, scheduledAt: originalScheduledAt, assignedTo: originalAssignedTo } : j,
+        j.id === jobId
+          ? { ...j, scheduledAt: originalScheduledAt, assignedTo: originalAssignedTo, ...(originalStatus ? { status: originalStatus } : {}) }
+          : j,
       ));
     } catch {
       showToast({ type: 'error', message: 'Could not undo' });
@@ -557,6 +565,7 @@ function DispatchBoardScreenInner() {
     // Save original state for undo
     const originalScheduledAt = job.scheduledAt;
     const originalAssignedTo = job.assignedTo;
+    const originalStatus = job.status;
     const newScheduledAt = newDate.toISOString();
 
     const newStatus = autoScheduleStatus(job.status);
@@ -569,14 +578,14 @@ function DispatchBoardScreenInner() {
 
     // Show undo banner
     const timer = setTimeout(dismissUndo, 5000);
-    setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo, timer });
+    setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo, originalStatus, timer });
 
     // Persist
     api.patch(`/api/jobs/${job.id}`, { scheduledAt: newScheduledAt, assignedTo: newAssignedTo || null, status: newStatus })
       .catch(() => {
-        // Revert on error
+        // Revert on error — restore status too, not just scheduling fields
         setJobs(prev => prev.map(j => j.id === job.id
-          ? { ...j, scheduledAt: originalScheduledAt, assignedTo: originalAssignedTo }
+          ? { ...j, scheduledAt: originalScheduledAt, assignedTo: originalAssignedTo, status: originalStatus }
           : j,
         ));
         dismissUndo();
@@ -630,6 +639,7 @@ function DispatchBoardScreenInner() {
 
     // Preserve the original time; default to 8 am if unscheduled
     const originalScheduledAt = job.scheduledAt;
+    const originalStatus = job.status;
     const originalTime = job.scheduledAt ? parseISO(job.scheduledAt) : null;
     const newDate = new Date(targetDay);
     if (originalTime) {
@@ -650,12 +660,13 @@ function DispatchBoardScreenInner() {
     ));
 
     const timer = setTimeout(dismissUndo, 5000);
-    setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo: job.assignedTo, timer });
+    setUndoState({ jobId: job.id, originalScheduledAt, originalAssignedTo: job.assignedTo, originalStatus, timer });
 
     api.patch(`/api/jobs/${job.id}`, { scheduledAt: newScheduledAt, status: newStatus })
       .catch(() => {
+        // Revert on error — restore status too, not just scheduledAt
         setJobs(prev => prev.map(j => j.id === job.id
-          ? { ...j, scheduledAt: originalScheduledAt }
+          ? { ...j, scheduledAt: originalScheduledAt, status: originalStatus }
           : j,
         ));
         dismissUndo();

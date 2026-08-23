@@ -348,18 +348,30 @@ function getKanbanColumn(job: DispatchJob): string {
   const workerStatus = job.workerStatus?.toLowerCase() || '';
   const assignments = job.assignments || [];
 
+  // Terminal job statuses take absolute priority — an invoiced, done, or
+  // cancelled job always renders in the Completed column, regardless of any
+  // workerStatus or assignment status that may have been set earlier.
+  if (['done', 'completed', 'invoiced', 'cancelled'].includes(status)) return 'completed';
+
+  // Terminal assignment states take next priority.
   if (assignments.some(a => a.assignmentStatus === 'done')) return 'completed';
   if (assignments.some(a => a.assignmentStatus === 'working')) return 'in_progress';
+
+  // En-route / arrived are set via workerStatus when dragged from the kanban
+  // (the assignment workflow status endpoint doesn't support these states from
+  // the board). Check workerStatus BEFORE non-terminal assignment statuses so
+  // a board drag persists correctly after the query refetches.
+  if (workerStatus === 'on_my_way') return 'en_route';
+  if (workerStatus === 'arrived') return 'arrived';
+
+  // Fall back to assignment statuses for non-terminal states.
   if (assignments.some(a => a.assignmentStatus === 'arrived')) return 'arrived';
   if (assignments.some(a => a.assignmentStatus === 'en_route')) return 'en_route';
   if (assignments.some(a => ['assigned', 'accepted', 'invited'].includes(a.assignmentStatus))) return 'assigned';
 
   if (workerStatus === 'completed') return 'completed';
   if (workerStatus === 'in_progress') return 'in_progress';
-  if (workerStatus === 'arrived') return 'arrived';
-  if (workerStatus === 'on_my_way') return 'en_route';
 
-  if (['done', 'completed', 'invoiced'].includes(status)) return 'completed';
   if (status === 'in_progress') return 'in_progress';
   if (['pending', 'scheduled'].includes(status)) return 'assigned';
 
@@ -404,8 +416,11 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
   const { toast } = useToast();
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ jobId, status, workerStatus }: { jobId: string; status: string; workerStatus?: string }) => {
-      return apiRequest('PATCH', `/api/jobs/${jobId}`, { status, ...(workerStatus ? { workerStatus } : {}) });
+    mutationFn: async ({ jobId, status, workerStatus }: { jobId: string; status?: string; workerStatus?: string }) => {
+      const payload: Record<string, string> = {};
+      if (status !== undefined) payload.status = status;
+      if (workerStatus !== undefined) payload.workerStatus = workerStatus;
+      return apiRequest('PATCH', `/api/jobs/${jobId}`, payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/dispatch/board'] });
@@ -436,10 +451,13 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
     return map;
   }, [filteredJobs]);
 
-  const statusForColumn: Record<string, string> = {
+  // Job status to set when dropping to a column.
+  // en_route and arrived are worker-status sub-stages of "scheduled" — the job
+  // status stays unchanged and only the workerStatus is updated.
+  const statusForColumn: Record<string, string | undefined> = {
     assigned: 'scheduled',
-    en_route: 'in_progress',
-    arrived: 'in_progress',
+    en_route: undefined,   // worker en-route — job stays at current status
+    arrived: undefined,    // worker on-site — job stays at current status
     in_progress: 'in_progress',
     completed: 'done',
   };
@@ -460,13 +478,13 @@ function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: 
     }
     const newStatus = statusForColumn[targetColumn];
     const newWorkerStatus = workerStatusForColumn[targetColumn];
-    if (newStatus) {
-      updateStatusMutation.mutate({
-        jobId: kanbanDrag.jobId,
-        status: newStatus,
-        workerStatus: newWorkerStatus,
-      });
-    }
+    // Always send at least workerStatus; only include job status when the column
+    // has an explicit target (en_route / arrived leave it unchanged).
+    updateStatusMutation.mutate({
+      jobId: kanbanDrag.jobId,
+      status: newStatus,
+      workerStatus: newWorkerStatus,
+    });
     setKanbanDrag(null);
     setKanbanDragOver(null);
   };

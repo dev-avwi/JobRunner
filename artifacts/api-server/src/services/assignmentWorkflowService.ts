@@ -284,6 +284,19 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
     return { success: false, error: 'Assignment does not belong to this job' };
   }
 
+  // Load the job BEFORE any writes to enforce terminal-state guards.
+  // This prevents the worker-status path from reopening a job that has
+  // already been completed, invoiced, or cancelled via the status endpoints.
+  const effectiveUserId = assignment.userId;
+  const job = await storage.getJob(jobId, effectiveUserId);
+  if (!job) {
+    return { success: false, error: 'Job not found' };
+  }
+  const terminalJobStatuses = ['done', 'completed', 'invoiced', 'cancelled'];
+  if (terminalJobStatuses.includes(job.status)) {
+    return { success: false, error: `Cannot update worker status on a ${job.status} job` };
+  }
+
   let statusSmsFailed = false;
   let statusSmsErrorCode: string | undefined;
 
@@ -302,7 +315,6 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
 
   await storage.updateJobAssignment(assignmentId, updateData);
 
-  const effectiveUserId = assignment.userId;
   const jobUpdateData: any = {
     workerStatus: status === 'arrived' ? 'arrived' : status,
     workerStatusUpdatedAt: new Date(),
@@ -315,10 +327,7 @@ export async function handleWorkerStatusChange(params: WorkerStatusParams): Prom
     jobUpdateData.completedAt = new Date();
   }
 
-  const job = await storage.getJob(jobId, effectiveUserId);
-  if (job) {
-    await storage.updateJob(jobId, effectiveUserId, jobUpdateData);
-  }
+  await storage.updateJob(jobId, effectiveUserId, jobUpdateData);
 
   try {
     const teamMembership = await storage.getTeamMembershipByMemberId(actorUserId);

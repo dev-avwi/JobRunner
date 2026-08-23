@@ -3589,36 +3589,49 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     try {
       const schema = z.object({
         ids: z.array(z.string().uuid()).min(1).max(100),
-        status: z.enum(['pending', 'scheduled', 'in_progress', 'done', 'invoiced']),
+        // 'completed' is accepted as a legacy alias for 'done'; 'cancelled' is owner/manager-only.
+        status: z.enum(['pending', 'scheduled', 'in_progress', 'done', 'completed', 'invoiced', 'cancelled']),
       });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: "Invalid request body", details: parsed.error.errors });
       }
-      const { ids, status } = parsed.data;
+      const { ids } = parsed.data;
+      // Normalize 'completed' to canonical 'done' so all timestamps/notifications fire correctly.
+      const status: string = parsed.data.status === 'completed' ? 'done' : parsed.data.status;
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
       const results = { updated: 0, failed: 0, errors: [] as string[] };
-      // Load business settings once for the WHS start gate (only relevant when starting jobs)
-      const bulkBusinessSettings = status === 'in_progress'
-        ? await storage.getBusinessSettings(effectiveUserId)
-        : null;
-      // Job completion is restricted to owner/manager/lead worker. Resolve the
-      // caller's owner/manager status once; lead-worker is checked per job.
-      let bulkIsOwner = false;
+
+      // Resolve caller's owner/manager status once — used for all per-job authorization checks.
+      const bulkBiz = await storage.getBusinessSettings(effectiveUserId);
+      let bulkIsOwner = !!bulkBiz && bulkBiz.userId === req.userId;
       let bulkIsManager = false;
-      if (status === 'done') {
-        const cbs = await storage.getBusinessSettings(effectiveUserId);
-        bulkIsOwner = !!cbs && cbs.userId === req.userId;
-        if (!bulkIsOwner) {
-          const tm = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
-          if (tm && tm.roleId) {
-            const role = await storage.getUserRole(tm.roleId);
-            bulkIsManager = role?.name?.toLowerCase().includes('manager') ||
-                            role?.name?.toLowerCase().includes('admin') || false;
-          }
+      if (!bulkIsOwner) {
+        const tm = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
+        if (tm && tm.roleId) {
+          const role = await storage.getUserRole(tm.roleId);
+          bulkIsManager = role?.name?.toLowerCase().includes('manager') ||
+                          role?.name?.toLowerCase().includes('admin') || false;
         }
       }
+
+      // Owner/manager-only operations — reject the entire request upfront.
+      if (status === 'invoiced' && !bulkIsOwner && !bulkIsManager) {
+        return res.status(403).json({
+          error: "Staff cannot mark jobs as invoiced. Only owners or managers can do this after creating an invoice.",
+          code: "PERMISSION_DENIED",
+        });
+      }
+      if (status === 'cancelled' && !bulkIsOwner && !bulkIsManager) {
+        return res.status(403).json({
+          error: "Only owners or managers can cancel jobs.",
+          code: "PERMISSION_DENIED",
+        });
+      }
+
+      // Load business settings once for the WHS start gate (only relevant when starting jobs)
+      const bulkBusinessSettings = status === 'in_progress' ? bulkBiz : null;
       for (const id of ids) {
         try {
           const existingJob = await storage.getJob(id, effectiveUserId);
@@ -3627,6 +3640,44 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             results.errors.push(`Job ${id} not found`);
             continue;
           }
+          // Workers with WRITE_JOBS may only mutate status on jobs assigned to them.
+          const bulkIsAssigned = existingJob.assignedTo === req.userId;
+          if (!bulkIsOwner && !bulkIsManager && !bulkIsAssigned) {
+            results.failed++;
+            results.errors.push(`Job ${id}: You can only update status on jobs assigned to you`);
+            continue;
+          }
+
+          // Terminal-state transition guards.
+          const currentStatus = existingJob.status;
+          if (currentStatus === 'invoiced' && status !== 'invoiced') {
+            results.failed++;
+            results.errors.push(`Job ${id}: An invoiced job cannot have its status changed`);
+            continue;
+          }
+          if ((currentStatus === 'done' || currentStatus === 'completed') &&
+              ['pending', 'scheduled', 'in_progress'].includes(status)) {
+            results.failed++;
+            results.errors.push(`Job ${id}: A completed job cannot be moved back to an active status`);
+            continue;
+          }
+          if (currentStatus === 'cancelled' && status !== 'cancelled') {
+            results.failed++;
+            results.errors.push(`Job ${id}: A cancelled job cannot be re-opened`);
+            continue;
+          }
+
+          // Invoice existence required to set invoiced.
+          if (status === 'invoiced' && currentStatus !== 'invoiced') {
+            const allInvoices = await storage.getInvoices(effectiveUserId);
+            const linkedInv = allInvoices.find((inv: any) => inv.jobId === id);
+            if (!linkedInv) {
+              results.failed++;
+              results.errors.push(`Job ${id}: Cannot mark as invoiced — create an invoice first`);
+              continue;
+            }
+          }
+
           // WHS gating: enforce pre-start safety + licence compliance when starting a job
           const startGate = await checkJobStartGate({
             job: existingJob,
@@ -3757,6 +3808,83 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         }
       }
 
+      // Validate status value if provided — only known statuses are accepted.
+      const fullPatchValidStatuses = ['pending', 'scheduled', 'in_progress', 'done', 'completed', 'invoiced', 'cancelled'];
+      if (data.status !== undefined && !fullPatchValidStatuses.includes(data.status)) {
+        return res.status(400).json({ error: "Invalid status value", code: "INVALID_STATUS" });
+      }
+      // Normalize 'completed' to canonical 'done' so all timestamps/notifications fire consistently.
+      if (data.status === 'completed') {
+        data.status = 'done';
+      }
+
+      // Authorization + transition guards for status mutations via full PATCH.
+      // These mirror the guards on the dedicated /status endpoint so the check
+      // cannot be bypassed by calling the full PATCH directly.
+      if (data.status !== undefined && existingJob && data.status !== existingJob.status) {
+        const currentStatus = existingJob.status;
+        const newStatus = data.status;
+
+        // Resolve caller's role once for all sub-checks below.
+        const statusBiz = await storage.getBusinessSettings(effectiveUserId);
+        const isStatusOwner = !!statusBiz && statusBiz.userId === req.userId;
+        let isStatusManager = false;
+        if (!isStatusOwner) {
+          const statusMemberInfo = await storage.getTeamMemberByUserIdAndBusiness(req.userId, effectiveUserId);
+          if (statusMemberInfo?.roleId) {
+            const statusRole = await storage.getUserRole(statusMemberInfo.roleId);
+            isStatusManager = statusRole?.name?.toLowerCase().includes('manager') ||
+                              statusRole?.name?.toLowerCase().includes('admin') || false;
+          }
+        }
+        const isStatusAssigned = existingJob.assignedTo === req.userId;
+
+        // Workers with WRITE_JOBS may only change status on jobs assigned to them.
+        if (!isStatusOwner && !isStatusManager && !isStatusAssigned) {
+          return res.status(403).json({
+            error: "You can only update the status on jobs assigned to you.",
+            code: "PERMISSION_DENIED",
+          });
+        }
+
+        // Terminal state guards.
+        if (currentStatus === 'invoiced' && newStatus !== 'invoiced') {
+          return res.status(422).json({
+            error: "An invoiced job cannot have its status changed. Void the invoice first.",
+            code: "STATUS_TRANSITION_FORBIDDEN",
+          });
+        }
+        if ((currentStatus === 'done' || currentStatus === 'completed') &&
+            ['pending', 'scheduled', 'in_progress'].includes(newStatus)) {
+          return res.status(422).json({
+            error: "A completed job cannot be moved back to an active status. Create a new job if the work needs to be re-done.",
+            code: "STATUS_TRANSITION_FORBIDDEN",
+          });
+        }
+        if (currentStatus === 'cancelled' && newStatus !== 'cancelled') {
+          return res.status(422).json({
+            error: "A cancelled job cannot be re-opened. Create a new job instead.",
+            code: "STATUS_TRANSITION_FORBIDDEN",
+          });
+        }
+
+        // Only owner/manager may cancel or invoice a job.
+        // These mirror the explicit restrictions on the dedicated /status endpoint
+        // and must be enforced here too so the full PATCH cannot bypass them.
+        if (newStatus === 'invoiced' && !isStatusOwner && !isStatusManager) {
+          return res.status(403).json({
+            error: "Staff cannot mark jobs as invoiced. Only owners or managers can do this after creating an invoice.",
+            code: "PERMISSION_DENIED",
+          });
+        }
+        if (newStatus === 'cancelled' && !isStatusOwner && !isStatusManager) {
+          return res.status(403).json({
+            error: "Only owners or managers can cancel a job.",
+            code: "PERMISSION_DENIED",
+          });
+        }
+      }
+
       // Restrict any jobType change (service/null → project) to owner/manager only.
       // WRITE_JOBS alone is insufficient — a worker with that permission could call
       // this endpoint directly and bypass the UI gate.
@@ -3852,6 +3980,22 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           return res.status(403).json({ 
             error: assignmentCheck.reason || "You don't have permission to assign this job to that team member",
             code: "ASSIGNMENT_NOT_ALLOWED"
+          });
+        }
+      }
+
+      // Block scheduling/assignment changes on terminal jobs. Without this guard,
+      // a mobile drag that sends { scheduledAt, assignedTo, status: 'done' }
+      // would skip the status transition check (status unchanged) and silently
+      // reschedule a completed/invoiced/cancelled job.
+      const terminalJobStatuses = ['done', 'completed', 'invoiced', 'cancelled'];
+      if (existingJob && terminalJobStatuses.includes(existingJob.status)) {
+        const changingScheduling = data.scheduledAt !== undefined && String(data.scheduledAt) !== String(existingJob.scheduledAt);
+        const changingAssignee = data.assignedTo !== undefined && data.assignedTo !== existingJob.assignedTo;
+        if (changingScheduling || changingAssignee) {
+          return res.status(422).json({
+            error: `A ${existingJob.status} job cannot be rescheduled or reassigned. Create a new job instead.`,
+            code: "STATUS_TRANSITION_FORBIDDEN",
           });
         }
       }
@@ -4116,25 +4260,20 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
   app.patch("/api/jobs/:id/status", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
-      const { status } = req.body;
+      const rawStatus = req.body.status;
       
-      if (!status) {
+      if (!rawStatus) {
         return res.status(400).json({ error: "status is required" });
       }
       
-      // Validate status value
-      const validStatuses = ['pending', 'scheduled', 'in_progress', 'done', 'invoiced'];
-      if (!validStatuses.includes(status)) {
+      // Validate status value — cancelled is accepted but restricted to owner/manager below.
+      // 'completed' is accepted as a legacy alias for 'done' (matching full PATCH vocabulary).
+      const validStatuses = ['pending', 'scheduled', 'in_progress', 'done', 'completed', 'invoiced', 'cancelled'];
+      if (!validStatuses.includes(rawStatus)) {
         return res.status(400).json({ error: "Invalid status value" });
       }
-      
-      // Prevent staff from setting status to "invoiced" - only owners/managers can do this after creating invoice
-      if (status === 'invoiced') {
-        return res.status(403).json({ 
-          error: "Staff cannot mark jobs as invoiced. Only owners or managers can do this after creating an invoice.",
-          code: "PERMISSION_DENIED"
-        });
-      }
+      // Normalize 'completed' to canonical 'done' so all timestamps/notifications fire correctly.
+      const status: string = rawStatus === 'completed' ? 'done' : rawStatus;
       
       const userContext = await getUserContext(req.userId);
       const effectiveUserId = userContext.effectiveUserId;
@@ -4165,7 +4304,56 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       if (!isOwner && !isManager && !isAssigned) {
         return res.status(403).json({ error: "You can only update status on jobs assigned to you" });
       }
-      
+
+      // Only owner/manager may invoice or cancel a job.
+      // These checks run AFTER role resolution so owners/managers are never blocked.
+      if (status === 'invoiced' && !isOwner && !isManager) {
+        return res.status(403).json({ 
+          error: "Staff cannot mark jobs as invoiced. Only owners or managers can do this after creating an invoice.",
+          code: "PERMISSION_DENIED",
+        });
+      }
+      // Invoice must exist before the job can be set to invoiced.
+      if (status === 'invoiced' && existingJob.status !== 'invoiced') {
+        const allInvoices = await storage.getInvoices(effectiveUserId);
+        const linkedInvoice = allInvoices.find((inv: any) => inv.jobId === req.params.id);
+        if (!linkedInvoice) {
+          return res.status(400).json({
+            error: "Cannot mark job as invoiced without creating an invoice first. Please create an invoice for this job.",
+            code: "INVOICE_REQUIRED",
+          });
+        }
+      }
+      if (status === 'cancelled' && !isOwner && !isManager) {
+        return res.status(403).json({
+          error: "Only owners or managers can cancel a job.",
+          code: "PERMISSION_DENIED",
+        });
+      }
+
+      // Guard backward transitions. Invoiced is terminal — no status can be set on it.
+      // Done/completed cannot go back to earlier active states; it can only advance to invoiced.
+      const currentStatus = existingJob.status;
+      if (currentStatus === 'invoiced' && status !== 'invoiced') {
+        return res.status(422).json({
+          error: "An invoiced job cannot have its status changed. Void the invoice first.",
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+      if ((currentStatus === 'done' || currentStatus === 'completed') &&
+          ['pending', 'scheduled', 'in_progress'].includes(status)) {
+        return res.status(422).json({
+          error: "A completed job cannot be moved back to an active status. Create a new job if the work needs to be re-done.",
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+      if (currentStatus === 'cancelled' && status !== 'cancelled') {
+        return res.status(422).json({
+          error: "A cancelled job cannot be re-opened. Create a new job instead.",
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+
       if (status === 'done' || status === 'completed') {
         // Only the lead worker (primary assignee) or an owner/manager may
         // complete the whole job. Other assigned workers clock off instead.
@@ -4428,11 +4616,28 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       if (!validAssignee && !isAssigningToOwner) {
         return res.status(400).json({ error: "Invalid team member for assignment" });
       }
+
+      // Load the existing job to honour terminal-state guards.
+      const existingJobForAssign = await storage.getJob(req.params.id, userContext.effectiveUserId);
+      if (!existingJobForAssign) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      const terminalStatuses = ['done', 'completed', 'invoiced', 'cancelled'];
+      if (terminalStatuses.includes(existingJobForAssign.status)) {
+        return res.status(422).json({
+          error: `Cannot assign a job that is already ${existingJobForAssign.status}. Create a new job or re-open this one first.`,
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+
+      // Auto-promote from pending → scheduled only when the job hasn't started.
+      // Jobs already at scheduled/in_progress keep their current status.
+      const assignStatusUpdate = existingJobForAssign.status === 'pending' ? { status: 'scheduled' } : {};
       
       // Update the job with the assignedTo field
       const job = await storage.updateJob(req.params.id, userContext.effectiveUserId, { 
         assignedTo,
-        status: 'scheduled' // Auto-schedule when assigned
+        ...assignStatusUpdate,
       });
       
       if (!job) {
@@ -6272,7 +6477,17 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         }
       }
 
-      // Fallback: legacy flow for jobs without assignments
+      // Fallback: legacy flow for jobs without assignments.
+      // Apply the same terminal-state guard as the assignment-based path so
+      // this path cannot reopen a job that was closed through the status endpoints.
+      const legacyTerminalStatuses = ['done', 'completed', 'invoiced', 'cancelled'];
+      if (legacyTerminalStatuses.includes(job.status)) {
+        return res.status(422).json({
+          error: `Cannot update worker status on a ${job.status} job`,
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+
       let legacySmsFailed = false;
       let legacySmsErrorCode: string | undefined;
       const updateData: any = { 
