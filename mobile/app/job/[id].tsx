@@ -9902,8 +9902,8 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Job Expenses Section - hidden for subcontractors */}
-      {!isSubcontractorUser && <View style={styles.costingCard}>
+      {/* Job Expenses Section - service calls only (projects use ExpensesSection in More tab) */}
+      {!isSubcontractorUser && isServiceCall && <View style={styles.costingCard}>
         <View style={styles.costingHeader}>
           <View style={[styles.costingIconContainer, { backgroundColor: `${colors.destructive}15` }]}>
             <Feather name="credit-card" size={iconSizes.lg} color={colors.destructive} />

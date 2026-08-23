@@ -257,47 +257,63 @@ export function MaterialsSection(props: MaterialsSectionProps) {
     });
 
     return (
-      <>
-        {/* Section header — inside a card, matching Claims / Variations pattern */}
+      /* One unified card — header + all phase rows connected, matching Claims/POs pattern */
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        marginBottom: spacing.md,
+        overflow: 'hidden',
+        ...shadows.sm,
+      }}>
+        {/* Section header row */}
         <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          marginBottom: spacing.sm,
-          overflow: 'hidden',
-          ...shadows.sm,
+          flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+          paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+          borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
         }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
-            <Feather name="package" size={14} color={colors.mutedForeground} />
-            <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>
-              Materials
-            </Text>
-            {materials.length > 0 && (
-              <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>
-                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
-                  {materials.length}
-                </Text>
-              </View>
-            )}
-            {materials.length > 0 && (
-              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-                ${totalCost.toFixed(2)}
+          <Feather name="package" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>
+            Materials
+          </Text>
+          {materials.length > 0 && (
+            <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>
+              <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                {materials.length}
               </Text>
-            )}
-            <TouchableOpacity
-              onPress={() => openAddForm(activePhaseId)}
-              style={{ marginLeft: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}
-              activeOpacity={0.7}
-            >
-              <Feather name="plus" size={13} color={colors.primary} />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Add</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          )}
+          {materials.length > 0 && (
+            <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+              ${totalCost.toFixed(2)}
+            </Text>
+          )}
+          <TouchableOpacity
+            onPress={() => openAddForm(activePhaseId)}
+            style={{ marginLeft: spacing.xs, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: 8 }}
+            activeOpacity={0.7}
+          >
+            <Feather name="plus" size={13} color={colors.primary} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.primary }}>Add</Text>
+          </TouchableOpacity>
         </View>
 
         {isLoadingMaterials ? (
-          <SkeletonSection rows={3} />
+          <View style={{ padding: spacing.sm }}><SkeletonSection rows={3} /></View>
+        ) : materials.length === 0 ? (
+          /* Empty state inside the card */
+          <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+              <Feather name="package" size={28} color={colors.mutedForeground} />
+            </View>
+            <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
+              No materials added yet
+            </Text>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.md }}>
+              Tap the phase + button or Add above to track materials
+            </Text>
+          </View>
         ) : (
           <>
             {phasesToShow.map(phase => {
@@ -307,24 +323,13 @@ export function MaterialsSection(props: MaterialsSectionProps) {
               const label = PHASE_STATUS_LABELS[phase.status] ?? phase.status;
 
               return (
-                <View key={phase.id} style={{
-                  backgroundColor: colors.card,
-                  borderRadius: radius.xl,
-                  borderWidth: 1,
-                  borderColor: colors.cardBorder,
-                  marginBottom: spacing.md,
-                  overflow: 'hidden',
-                  ...shadows.sm,
-                }}>
+                <View key={phase.id} style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
                   {/* Phase header row */}
                   <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: spacing.sm,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm + 2,
+                    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
                     backgroundColor: `${sc.dot}10`,
-                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomWidth: phaseMaterials.length > 0 ? StyleSheet.hairlineWidth : 0,
                     borderBottomColor: colors.border,
                   }}>
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: sc.dot }} />
@@ -339,16 +344,10 @@ export function MaterialsSection(props: MaterialsSectionProps) {
                     <View style={{ backgroundColor: sc.badge, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
                       <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: sc.text }}>{label}</Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => openAddForm(phase.id)}
-                      activeOpacity={0.7}
-                      style={{ padding: 4 }}
-                    >
+                    <TouchableOpacity onPress={() => openAddForm(phase.id)} activeOpacity={0.7} style={{ padding: 4 }}>
                       <Feather name="plus" size={14} color={colors.primary} />
                     </TouchableOpacity>
                   </View>
-
-                  {/* Materials for this phase — only shown when there are items */}
                   {phaseMaterials.length > 0 && (
                     <View style={{ padding: spacing.sm }}>
                       {phaseMaterials.map(renderMaterialRow)}
@@ -358,26 +357,14 @@ export function MaterialsSection(props: MaterialsSectionProps) {
               );
             })}
 
-            {/* Unassigned */}
+            {/* Unassigned bucket */}
             {unassigned.length > 0 && (
-              <View style={{
-                backgroundColor: colors.card,
-                borderRadius: radius.xl,
-                borderWidth: 1,
-                borderColor: colors.cardBorder,
-                marginBottom: spacing.md,
-                overflow: 'hidden',
-                ...shadows.sm,
-              }}>
+              <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
                 <View style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.sm,
-                  paddingHorizontal: spacing.md,
-                  paddingVertical: spacing.sm + 2,
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+                  paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2,
                   backgroundColor: colors.muted,
-                  borderBottomWidth: StyleSheet.hairlineWidth,
-                  borderBottomColor: colors.border,
+                  borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border,
                 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border }} />
                   <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.mutedForeground, flex: 1 }}>
@@ -392,34 +379,9 @@ export function MaterialsSection(props: MaterialsSectionProps) {
                 </View>
               </View>
             )}
-
-            {/* Empty state when no materials at all */}
-            {materials.length === 0 && (
-              <View style={{
-                backgroundColor: colors.card,
-                borderRadius: radius.xl,
-                padding: spacing.xl,
-                marginBottom: spacing.xl,
-                flexDirection: 'column',
-                alignItems: 'center',
-                borderWidth: 1,
-                borderColor: colors.cardBorder,
-                ...shadows.sm,
-              }}>
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
-                  <Feather name="package" size={28} color={colors.mutedForeground} />
-                </View>
-                <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
-                  No materials added yet
-                </Text>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.md }}>
-                  Tap the phase + button or Add above to track materials
-                </Text>
-              </View>
-            )}
           </>
         )}
-      </>
+      </View>
     );
   }
 

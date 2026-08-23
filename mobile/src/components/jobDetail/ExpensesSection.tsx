@@ -877,129 +877,104 @@ export default function ExpensesSection({
 
     return (
       <>
-        {/* Section header card */}
+        {editSheet}
+        {addSheet}
+        {/* One unified card — header + phase rows all connected, matching Claims/POs pattern */}
         <View style={{
           backgroundColor: colors.card,
           borderRadius: radius.xl,
           borderWidth: 1,
           borderColor: colors.cardBorder,
-          marginBottom: spacing.sm,
+          marginBottom: spacing.md,
           overflow: 'hidden',
           ...shadows.sm,
         }}>
           {cardHeader}
-        </View>
-        {editSheet}
-        {addSheet}
 
-        {phasesToShow.map(phase => {
-          const phaseExpenses = byPhase.get(phase.id) ?? [];
-          const phaseCost = phaseExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-          const sc = PHASE_STATUS_COLORS[phase.status] ?? PHASE_STATUS_COLORS.not_started;
-          const label = PHASE_STATUS_LABELS[phase.status] ?? phase.status;
-
-          return (
-            <View key={phase.id} style={{
-              backgroundColor: colors.card,
-              borderRadius: radius.xl,
-              borderWidth: 1,
-              borderColor: colors.cardBorder,
-              marginBottom: spacing.md,
-              overflow: 'hidden',
-              ...shadows.sm,
-            }}>
-              {/* Phase header */}
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.sm,
-                paddingHorizontal: spacing.md,
-                paddingVertical: spacing.sm + 2,
-                backgroundColor: `${sc.dot}10`,
-                borderBottomWidth: phaseExpenses.length > 0 ? StyleSheet.hairlineWidth : 0,
-                borderBottomColor: colors.border,
-              }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: sc.dot }} />
-                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }} numberOfLines={1}>
-                  {phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}
-                </Text>
-                {phaseCost > 0 && (
-                  <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
-                    -{fmt(phaseCost)}
-                  </Text>
-                )}
-                <View style={{ backgroundColor: sc.badge, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
-                  <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: sc.text }}>{label}</Text>
-                </View>
-                {isOwnerOrManager && (
-                  <TouchableOpacity onPress={() => openAddSheet(phase.id)} activeOpacity={0.7} style={{ padding: 4 }}>
-                    <Feather name="plus" size={14} color={colors.primary} />
-                  </TouchableOpacity>
-                )}
+          {expenses.length === 0 ? (
+            /* Empty state inside the card */
+            <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+              <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
+                <Feather name="file-text" size={24} color={colors.mutedForeground} />
               </View>
-
-              {/* Expenses for this phase */}
-              {phaseExpenses.map(renderRow)}
-            </View>
-          );
-        })}
-
-        {/* Unassigned */}
-        {unassigned.length > 0 && (
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: radius.xl,
-            borderWidth: 1,
-            borderColor: colors.cardBorder,
-            marginBottom: spacing.md,
-            overflow: 'hidden',
-            ...shadows.sm,
-          }}>
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.sm,
-              paddingHorizontal: spacing.md,
-              paddingVertical: spacing.sm + 2,
-              backgroundColor: colors.muted,
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: colors.border,
-            }}>
-              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border }} />
-              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.mutedForeground, flex: 1 }}>
-                Unassigned
+              <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
+                No expenses recorded
               </Text>
-              <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
-                -{fmt(unassigned.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0))}
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.md }}>
+                Track receipts and site costs against each phase
               </Text>
             </View>
-            {unassigned.map(renderRow)}
-          </View>
-        )}
+          ) : (
+            <>
+              {phasesToShow.map(phase => {
+                const phaseExpenses = byPhase.get(phase.id) ?? [];
+                const phaseCost = phaseExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                const sc = PHASE_STATUS_COLORS[phase.status] ?? PHASE_STATUS_COLORS.not_started;
+                const label = PHASE_STATUS_LABELS[phase.status] ?? phase.status;
 
-        {/* Empty state */}
-        {expenses.length === 0 && (
-          <View style={{
-            backgroundColor: colors.card,
-            borderRadius: radius.xl,
-            padding: spacing.xl,
-            marginBottom: spacing.xl,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: colors.cardBorder,
-            ...shadows.sm,
-          }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: `${colors.primary}10`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm }}>
-              <Feather name="file-text" size={24} color={colors.mutedForeground} />
-            </View>
-            <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
-              No expenses recorded
-            </Text>
-            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center', paddingHorizontal: spacing.md }}>
-              Track receipts and site costs against each phase
-            </Text>
-          </View>
-        )}
+                return (
+                  <View key={phase.id} style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
+                    {/* Phase header row */}
+                    <View style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing.sm,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: spacing.sm + 2,
+                      backgroundColor: `${sc.dot}10`,
+                      borderBottomWidth: phaseExpenses.length > 0 ? StyleSheet.hairlineWidth : 0,
+                      borderBottomColor: colors.border,
+                    }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: sc.dot }} />
+                      <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                        {phase.phaseCode ? `${phase.phaseCode} · ` : ''}{phase.name}
+                      </Text>
+                      {phaseCost > 0 && (
+                        <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
+                          -{fmt(phaseCost)}
+                        </Text>
+                      )}
+                      <View style={{ backgroundColor: sc.badge, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 }}>
+                        <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: sc.text }}>{label}</Text>
+                      </View>
+                      {isOwnerOrManager && (
+                        <TouchableOpacity onPress={() => openAddSheet(phase.id)} activeOpacity={0.7} style={{ padding: 4 }}>
+                          <Feather name="plus" size={14} color={colors.primary} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    {phaseExpenses.map(renderRow)}
+                  </View>
+                );
+              })}
+
+              {/* Unassigned bucket */}
+              {unassigned.length > 0 && (
+                <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm + 2,
+                    backgroundColor: colors.muted,
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: colors.border,
+                  }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border }} />
+                    <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.mutedForeground, flex: 1 }}>
+                      Unassigned
+                    </Text>
+                    <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
+                      -{fmt(unassigned.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0))}
+                    </Text>
+                  </View>
+                  {unassigned.map(renderRow)}
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </>
     );
   }
