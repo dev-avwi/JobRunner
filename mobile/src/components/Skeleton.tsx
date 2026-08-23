@@ -362,7 +362,7 @@ export function SkeletonJobDetailOverview() {
 const styles = StyleSheet.create({
   card: {
     padding: spacing.md,
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     borderWidth: 1,
     marginBottom: spacing.sm,
   },
