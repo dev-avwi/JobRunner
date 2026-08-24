@@ -338,7 +338,70 @@ test('shows template picker skeleton while /api/project-templates is loading', a
 });
 
 // ---------------------------------------------------------------------------
-// Test 6 — Ops health error banner on network failure
+// Test 6 — Template picker error state recovers after Retry
+// ---------------------------------------------------------------------------
+
+test('template picker error state recovers and shows templates after clicking Retry', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const TEMPLATE = {
+    id: 'tpl-retry-test',
+    name: 'Retry Recovery Template',
+    description: 'Template that appears after retry',
+    templateData: {
+      phases: [],
+      checklist: [],
+    },
+  };
+
+  // Track how many times /api/project-templates has been called.
+  let callCount = 0;
+
+  // The global queryClient retries 500s once automatically (failureCount 0→1,
+  // then failureCount >= 1 stops it). So we need the first TWO calls to fail
+  // before isError becomes true and the error state renders.
+  // Third call (triggered by the user clicking Retry) succeeds.
+  await page.route('**/api/project-templates', (route) => {
+    callCount += 1;
+    if (callCount <= 2) {
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'server error' }),
+      });
+    } else {
+      route.fulfill(json([TEMPLATE]));
+    }
+  });
+
+  await page.goto('/jobs/new', { waitUntil: 'networkidle' });
+
+  // The job type picker must be visible first.
+  const typePicker = page.locator('[data-testid="page-job-type-picker"]');
+  await expect(typePicker).toBeVisible({ timeout: 10000 });
+
+  // Select "Project" — this triggers the /api/project-templates fetch.
+  await page.click('[data-testid="card-job-type-project"]');
+
+  // The template picker page renders.
+  const templatePicker = page.locator('[data-testid="page-template-picker"]');
+  await expect(templatePicker).toBeVisible({ timeout: 10000 });
+
+  // The error state must be shown after the first (failing) fetch.
+  const errorState = page.locator('[data-testid="template-picker-error"]');
+  await expect(errorState).toBeVisible({ timeout: 10000 });
+
+  // Click Retry — this triggers the second fetch which succeeds.
+  await page.click('[data-testid="button-retry-templates"]');
+
+  // The error state must disappear and the template card must appear.
+  await expect(errorState).not.toBeVisible({ timeout: 10000 });
+  const templateBtn = page.locator(`[data-testid="button-use-template-${TEMPLATE.id}"]`);
+  await expect(templateBtn).toBeVisible({ timeout: 10000 });
+});
+
+// ---------------------------------------------------------------------------
+// Test 7 — Ops health error banner on network failure
 // ---------------------------------------------------------------------------
 
 test('shows ops health error banner when /api/ops/health fails', async ({ page }) => {

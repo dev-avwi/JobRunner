@@ -693,6 +693,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
               <span>Couldn't load saved templates.</span>
               <button
                 type="button"
+                data-testid="button-retry-templates"
                 onClick={() => refetchTemplates()}
                 className="text-primary hover:underline font-medium shrink-0"
               >
