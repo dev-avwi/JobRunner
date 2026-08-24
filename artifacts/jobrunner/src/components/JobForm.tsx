@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import AddressAutocomplete from "@/components/ui/address-autocomplete";
-import { useSearch } from "wouter";
+import { useSearch, Link } from "wouter";
 import { tradeCatalog } from "@shared/tradeCatalog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
@@ -698,6 +698,19 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
               >
                 Retry
               </button>
+            </div>
+          )}
+
+          {/* Empty state when no templates exist yet */}
+          {!templatesLoading && !templatesError && projectTemplates.length === 0 && (
+            <div data-testid="template-picker-empty" className="rounded-xl border-2 border-dashed border-border bg-card p-4 text-sm text-muted-foreground flex items-center justify-between gap-3">
+              <span>No saved templates yet.</span>
+              <Link
+                href="/templates?tab=project-templates"
+                className="text-primary hover:underline font-medium shrink-0"
+              >
+                Create one in Settings
+              </Link>
             </div>
           )}
 
