@@ -2307,7 +2307,7 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage' | 'documents'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
 
   type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
@@ -2426,6 +2426,7 @@ export default function JobDetailScreen() {
     hourlyRate: string;
     isCurrentUser: boolean;
   }>>([]);
+  const [teamTimeExpanded, setTeamTimeExpanded] = useState(false);
 
   // Owner/manager rate correction for a worker's running entry on this job
   const [editRateTimer, setEditRateTimer] = useState<{ id: string; workerName: string; hourlyRate: string } | null>(null);
@@ -3910,10 +3911,10 @@ export default function JobDetailScreen() {
       loadSwmsDocuments();
     }
     // Projects: load phases for the worker phase view in Tasks tab
-    if (activeTab === 'tasks' && id && isProject) {
+    if (activeTab === 'tasks' && id && job?.jobType === 'project') {
       loadPhases();
     }
-  }, [activeTab, id, isProject]);
+  }, [activeTab, id, job?.jobType]);
 
   const handleSendJobMessage = async () => {
     if (!newMessage.trim() || !id) return;
@@ -5099,6 +5100,64 @@ export default function JobDetailScreen() {
   };
   
   const totalTrackedHours = calculateTotalTrackedHours();
+
+  // Compute per-user time summary combining completed entries + active timers
+  const teamMemberSummaries = (() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const byUser = new Map<string, {
+      userId: string;
+      name: string;
+      themeColor?: string;
+      totalMinutes: number;
+      todayMinutes: number;
+      isActive: boolean;
+      isPaused: boolean;
+      isBreak: boolean;
+      isCurrentUser: boolean;
+    }>();
+
+    // Accumulate completed entries
+    timeEntries.forEach(entry => {
+      if (!entry.userId || !entry.startTime || !entry.endTime || entry.endTime === 'null' || entry.endTime === '') return;
+      try {
+        const start = new Date(entry.startTime);
+        const end = new Date(entry.endTime);
+        if (isNaN(start.getTime()) || isNaN(end.getTime()) || end <= start) return;
+        const mins = (end.getTime() - start.getTime()) / (1000 * 60);
+        const isToday = start >= todayStart;
+        if (!byUser.has(entry.userId)) {
+          byUser.set(entry.userId, { userId: entry.userId, name: entry.userName || 'Team Member', totalMinutes: 0, todayMinutes: 0, isActive: false, isPaused: false, isBreak: false, isCurrentUser: false });
+        }
+        const u = byUser.get(entry.userId)!;
+        u.totalMinutes += mins;
+        if (isToday) u.todayMinutes += mins;
+        if (entry.userName && u.name === 'Team Member') u.name = entry.userName;
+      } catch {}
+    });
+
+    // Merge active timers (always today)
+    teamTimers.forEach(timer => {
+      if (!byUser.has(timer.userId)) {
+        byUser.set(timer.userId, { userId: timer.userId, name: timer.workerName, themeColor: (timer as any).themeColor, totalMinutes: 0, todayMinutes: 0, isActive: true, isPaused: timer.isPaused, isBreak: timer.isBreak, isCurrentUser: timer.isCurrentUser });
+      }
+      const u = byUser.get(timer.userId)!;
+      if (timer.workerName) u.name = timer.workerName;
+      u.themeColor = (timer as any).themeColor ?? u.themeColor;
+      u.totalMinutes += timer.elapsedMinutes;
+      u.todayMinutes += timer.elapsedMinutes;
+      u.isActive = true;
+      u.isPaused = timer.isPaused;
+      u.isBreak = timer.isBreak;
+      u.isCurrentUser = timer.isCurrentUser;
+    });
+
+    return Array.from(byUser.values()).sort((a, b) => {
+      if (a.isCurrentUser && !b.isCurrentUser) return -1;
+      if (!a.isCurrentUser && b.isCurrentUser) return 1;
+      return a.name.localeCompare(b.name);
+    });
+  })();
 
   const loadActivityLog = async () => {
     // Note: Timeline endpoint may not exist yet - fail gracefully
@@ -9967,21 +10026,6 @@ export default function JobDetailScreen() {
                 borderRadius: 3 
               }} />
             </View>
-
-            {/* Link to task cost breakdown */}
-            {jobTasks.some(t => t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost) && (
-              <TouchableOpacity
-                onPress={() => setActiveTab('tasks')}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-                activeOpacity={0.7}
-              >
-                <Feather name="check-square" size={13} color={colors.primary} />
-                <Text style={{ fontSize: typography.button.fontSize, color: colors.primary, fontWeight: fontWeights.semibold }}>
-                  View task cost breakdown
-                </Text>
-                <Feather name="chevron-right" size={13} color={colors.primary} />
-              </TouchableOpacity>
-            )}
           </View>
         );
       })()}
@@ -11469,7 +11513,7 @@ export default function JobDetailScreen() {
                     position: 'absolute',
                     top: -4,
                     right: -8,
-                    backgroundColor: tab.id === 'documents' ? colors.warning : colors.primary,
+                    backgroundColor: (tab.id as string) === 'documents' ? colors.warning : colors.primary,
                     minWidth: 16,
                     height: 16,
                     borderRadius: 8,
@@ -11477,7 +11521,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: tab.id === 'documents' ? colors.white : colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: (tab.id as string) === 'documents' ? colors.white : colors.primaryForeground }}>
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Text>
                   </View>
@@ -11630,6 +11674,64 @@ export default function JobDetailScreen() {
               </View>
             </View>
 
+            {/* Team Time — collapsible per-member hours summary */}
+            {teamMemberSummaries.length > 0 && (
+              <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+                <TouchableOpacity
+                  onPress={() => setTeamTimeExpanded(v => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colorWithOpacity(colors.info, 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="users" size={18} color={colors.info} />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}·{' '}
+                        {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
+                      </Text>
+                    </View>
+                  </View>
+                  <Feather name={teamTimeExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                {teamTimeExpanded && (
+                  <View style={{ marginTop: spacing.md }}>
+                    {teamMemberSummaries.map(member => (
+                      <View
+                        key={member.userId}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm }}
+                      >
+                        <TeamAvatar name={member.name} userId={String(member.userId)} themeColor={member.themeColor} size={32} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
+                            {member.name}{member.isCurrentUser ? ' (You)' : ''}
+                          </Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            Today: {member.todayMinutes > 0 ? formatElapsedTime(Math.round(member.todayMinutes)) : '0m'}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, fontVariant: ['tabular-nums'] }}>
+                            {formatElapsedTime(Math.round(member.totalMinutes))}
+                          </Text>
+                          {member.isActive && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: member.isPaused || member.isBreak ? colorWithOpacity(colors.warning, 0.12) : colorWithOpacity(colors.success, 0.12), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: spacing.xxs }}>
+                              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: member.isPaused || member.isBreak ? colors.warning : colors.success }} />
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: member.isPaused || member.isBreak ? colors.warning : colors.success }}>
+                                {member.isPaused ? 'Paused' : member.isBreak ? 'Break' : 'Active'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Phase cards */}
             {isLoadingPhases ? (
               <View style={[styles.photosCard, { marginBottom: spacing.md }]}><SkeletonSection rows={3} /></View>
@@ -11732,7 +11834,74 @@ export default function JobDetailScreen() {
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               <ChecklistSection jobId={job.id} readOnly={job.status === 'invoiced'} onCountsChange={(completed, total) => setChecklistCounts({ completed, total })} />
             </View>
-            <JobTasksSection jobId={job.id} readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)} containerStyle={styles.photosCard} />
+            {/* Task cost summary row */}
+            {(() => {
+              if (jobTasks.length === 0) return null;
+              const tasksWithCost = jobTasks.filter(t =>
+                t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost
+              );
+              if (tasksWithCost.length === 0) return null;
+
+              const parseNum = (v: string | null | undefined) => { const n = parseFloat(v ?? ''); return isNaN(n) ? 0 : n; };
+              const totalEstH = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedHours), 0);
+              const totalActH = tasksWithCost.reduce((s, t) => s + parseNum(t.actualHours), 0);
+              const totalEstM = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedMaterialCost), 0);
+              const totalActM = tasksWithCost.reduce((s, t) => s + parseNum(t.actualMaterialCost), 0);
+              const overrunCount = tasksWithCost.filter(t => {
+                const hOver = parseNum(t.estimatedHours) > 0 && parseNum(t.actualHours) > parseNum(t.estimatedHours);
+                const mOver = parseNum(t.estimatedMaterialCost) > 0 && parseNum(t.actualMaterialCost) > parseNum(t.estimatedMaterialCost);
+                return hOver || mOver;
+              }).length;
+              const hoursOver = totalEstH > 0 && totalActH > totalEstH;
+              const materialsOver = totalEstM > 0 && totalActM > totalEstM;
+              const anyOver = hoursOver || materialsOver;
+
+              return (
+                <View style={[styles.photosCard, { marginBottom: spacing.md, borderColor: anyOver ? `${colors.destructive}60` : overrunCount > 0 ? `${colors.warning}60` : colors.cardBorder }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+                    <Feather name="bar-chart-2" size={iconSizes.md} color={anyOver ? colors.destructive : overrunCount > 0 ? colors.warning : colors.foreground} />
+                    <Text style={{ ...typography.subtitle, fontWeight: fontWeights.bold, color: colors.foreground }}>Task Cost Summary</Text>
+                    {overrunCount > 0 && (
+                      <View style={{ backgroundColor: anyOver ? `${colors.destructive}18` : `${colors.warning}18`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, marginLeft: 'auto' }}>
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: anyOver ? colors.destructive : colors.warning }}>
+                          {overrunCount} over budget
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  {(totalEstH > 0 || totalActH > 0) && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        {hoursOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
+                        <Text style={{ fontSize: typography.button.fontSize, color: hoursOver ? colors.destructive : colors.mutedForeground }}>Hours</Text>
+                      </View>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: hoursOver ? colors.destructive : colors.foreground }}>
+                        {totalActH > 0 ? `${totalActH.toFixed(1)}h` : '—'}
+                        {totalEstH > 0 ? ` / ${totalEstH.toFixed(1)}h est` : ''}
+                      </Text>
+                    </View>
+                  )}
+                  {(totalEstM > 0 || totalActM > 0) && (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        {materialsOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
+                        <Text style={{ fontSize: typography.button.fontSize, color: materialsOver ? colors.destructive : colors.mutedForeground }}>Materials</Text>
+                      </View>
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: materialsOver ? colors.destructive : colors.foreground }}>
+                        {totalActM > 0 ? formatCurrency(totalActM) : '—'}
+                        {totalEstM > 0 ? ` / ${formatCurrency(totalEstM)} est` : ''}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })()}
+            <JobTasksSection
+              jobId={job.id}
+              readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              containerStyle={styles.photosCard}
+              onTasksLoaded={setJobTasks}
+            />
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
@@ -11826,6 +11995,64 @@ export default function JobDetailScreen() {
               </View>
             </View>
 
+            {/* Team Time — collapsible per-member hours summary */}
+            {teamMemberSummaries.length > 0 && (
+              <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+                <TouchableOpacity
+                  onPress={() => setTeamTimeExpanded(v => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colorWithOpacity(colors.info, 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="users" size={18} color={colors.info} />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}·{' '}
+                        {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
+                      </Text>
+                    </View>
+                  </View>
+                  <Feather name={teamTimeExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                {teamTimeExpanded && (
+                  <View style={{ marginTop: spacing.md }}>
+                    {teamMemberSummaries.map(member => (
+                      <View
+                        key={member.userId}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm }}
+                      >
+                        <TeamAvatar name={member.name} userId={String(member.userId)} themeColor={member.themeColor} size={32} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
+                            {member.name}{member.isCurrentUser ? ' (You)' : ''}
+                          </Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            Today: {member.todayMinutes > 0 ? formatElapsedTime(Math.round(member.todayMinutes)) : '0m'}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, fontVariant: ['tabular-nums'] }}>
+                            {formatElapsedTime(Math.round(member.totalMinutes))}
+                          </Text>
+                          {member.isActive && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: member.isPaused || member.isBreak ? colorWithOpacity(colors.warning, 0.12) : colorWithOpacity(colors.success, 0.12), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: spacing.xxs }}>
+                              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: member.isPaused || member.isBreak ? colors.warning : colors.success }} />
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: member.isPaused || member.isBreak ? colors.warning : colors.success }}>
+                                {member.isPaused ? 'Paused' : member.isBreak ? 'Break' : 'Active'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* ── Quick log material used ── */}
             {job.status !== 'invoiced' && (
               <TouchableOpacity
@@ -11853,74 +12080,10 @@ export default function JobDetailScreen() {
                 }
               />
             </View>
-            {/* Task cost summary row */}
-            {(() => {
-              if (jobTasks.length === 0) return null;
-              const tasksWithCost = jobTasks.filter(t =>
-                t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost
-              );
-              if (tasksWithCost.length === 0) return null;
-
-              const parseNum = (v: string | null | undefined) => { const n = parseFloat(v ?? ''); return isNaN(n) ? 0 : n; };
-              const totalEstH = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedHours), 0);
-              const totalActH = tasksWithCost.reduce((s, t) => s + parseNum(t.actualHours), 0);
-              const totalEstM = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedMaterialCost), 0);
-              const totalActM = tasksWithCost.reduce((s, t) => s + parseNum(t.actualMaterialCost), 0);
-              const overrunCount = tasksWithCost.filter(t => {
-                const hOver = parseNum(t.estimatedHours) > 0 && parseNum(t.actualHours) > parseNum(t.estimatedHours);
-                const mOver = parseNum(t.estimatedMaterialCost) > 0 && parseNum(t.actualMaterialCost) > parseNum(t.estimatedMaterialCost);
-                return hOver || mOver;
-              }).length;
-              const hoursOver = totalEstH > 0 && totalActH > totalEstH;
-              const materialsOver = totalEstM > 0 && totalActM > totalEstM;
-              const anyOver = hoursOver || materialsOver;
-
-              return (
-                <View style={[styles.photosCard, { marginBottom: spacing.md, borderColor: anyOver ? `${colors.destructive}60` : overrunCount > 0 ? `${colors.warning}60` : colors.cardBorder }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
-                    <Feather name="bar-chart-2" size={iconSizes.md} color={anyOver ? colors.destructive : overrunCount > 0 ? colors.warning : colors.foreground} />
-                    <Text style={{ ...typography.subtitle, fontWeight: fontWeights.bold, color: colors.foreground }}>Task Cost Summary</Text>
-                    {overrunCount > 0 && (
-                      <View style={{ backgroundColor: anyOver ? `${colors.destructive}18` : `${colors.warning}18`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, marginLeft: 'auto' }}>
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: anyOver ? colors.destructive : colors.warning }}>
-                          {overrunCount} over budget
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  {(totalEstH > 0 || totalActH > 0) && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        {hoursOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
-                        <Text style={{ fontSize: typography.button.fontSize, color: hoursOver ? colors.destructive : colors.mutedForeground }}>Hours</Text>
-                      </View>
-                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: hoursOver ? colors.destructive : colors.foreground }}>
-                        {totalActH > 0 ? `${totalActH.toFixed(1)}h` : '—'}
-                        {totalEstH > 0 ? ` / ${totalEstH.toFixed(1)}h est` : ''}
-                      </Text>
-                    </View>
-                  )}
-                  {(totalEstM > 0 || totalActM > 0) && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        {materialsOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
-                        <Text style={{ fontSize: typography.button.fontSize, color: materialsOver ? colors.destructive : colors.mutedForeground }}>Materials</Text>
-                      </View>
-                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: materialsOver ? colors.destructive : colors.foreground }}>
-                        {totalActM > 0 ? formatCurrency(totalActM) : '—'}
-                        {totalEstM > 0 ? ` / ${formatCurrency(totalEstM)} est` : ''}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })()}
-
             <JobTasksSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
               containerStyle={styles.photosCard}
-              onTasksLoaded={setJobTasks}
             />
             <View style={styles.photosCard}>
               <JobForms
@@ -15867,6 +16030,21 @@ export default function JobDetailScreen() {
                 <Text style={{ fontSize: typography.captionSmall.fontSize, color: profitColor, marginTop: spacing.xs, fontWeight: fontWeights.semibold }}>
                   {pd.profit.margin.toFixed(1)}% gross margin
                 </Text>
+
+                {/* Link to task cost breakdown */}
+                {jobTasks.some(t => t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost) && (
+                  <TouchableOpacity
+                    onPress={() => setActiveTab('tasks')}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.md, paddingTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="check-square" size={13} color={colors.primary} />
+                    <Text style={{ fontSize: typography.button.fontSize, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                      View task cost breakdown
+                    </Text>
+                    <Feather name="chevron-right" size={13} color={colors.primary} />
+                  </TouchableOpacity>
+                )}
 
                 {/* Share Cost Report (owners/managers only) */}
                 {(isOwnerOrManager || isSoloOwner) && (
