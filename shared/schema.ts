@@ -2604,6 +2604,11 @@ export const tasks = pgTable("tasks", {
   sourceSubmissionId: varchar("source_submission_id").references(() => formSubmissions.id, { onDelete: 'set null' }),
   completedAt: timestamp("completed_at"),
   completedBy: varchar("completed_by").references(() => users.id, { onDelete: 'set null' }),
+  // Cost tracking fields
+  estimatedHours: decimal("estimated_hours", { precision: 8, scale: 2 }),
+  actualHours: decimal("actual_hours", { precision: 8, scale: 2 }),
+  estimatedMaterialCost: decimal("estimated_material_cost", { precision: 10, scale: 2 }),
+  actualMaterialCost: decimal("actual_material_cost", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

@@ -78,6 +78,13 @@
       "when": 1787451000000,
       "tag": "0017_claim_xero_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1787452000000,
+      "tag": "0018_task_cost_fields",
+      "breakpoints": true
     }
   ]
 }

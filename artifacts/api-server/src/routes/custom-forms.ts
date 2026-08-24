@@ -347,7 +347,7 @@ export function registerCustomFormsRoutes(app: Express): void {
   app.post("/api/tasks", ownerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const { title, description, jobId, assignedTo, dueAt } = req.body || {};
+      const { title, description, jobId, assignedTo, dueAt, estimatedHours, actualHours, estimatedMaterialCost, actualMaterialCost } = req.body || {};
       if (!title || !String(title).trim()) {
         return res.status(400).json({ error: "title is required" });
       }
@@ -364,6 +364,10 @@ export function registerCustomFormsRoutes(app: Express): void {
         assignedTo: assignedTo || null,
         dueAt: dueAt ? new Date(dueAt) : null,
         source: 'manual',
+        estimatedHours: estimatedHours != null ? String(estimatedHours) : null,
+        actualHours: actualHours != null ? String(actualHours) : null,
+        estimatedMaterialCost: estimatedMaterialCost != null ? String(estimatedMaterialCost) : null,
+        actualMaterialCost: actualMaterialCost != null ? String(actualMaterialCost) : null,
       } as any);
       res.status(201).json(task);
     } catch (error: any) {
@@ -372,7 +376,7 @@ export function registerCustomFormsRoutes(app: Express): void {
     }
   });
 
-  // Update a task (owner only) — title/description/status/assignedTo/dueAt
+  // Update a task (owner only) — title/description/status/assignedTo/dueAt/cost fields
   app.patch("/api/tasks/:id", ownerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
@@ -383,6 +387,10 @@ export function registerCustomFormsRoutes(app: Express): void {
       if ('description' in b) updates.description = b.description || null;
       if ('assignedTo' in b) updates.assignedTo = b.assignedTo || null;
       if ('dueAt' in b) updates.dueAt = b.dueAt ? new Date(b.dueAt) : null;
+      if ('estimatedHours' in b) updates.estimatedHours = b.estimatedHours != null ? String(b.estimatedHours) : null;
+      if ('actualHours' in b) updates.actualHours = b.actualHours != null ? String(b.actualHours) : null;
+      if ('estimatedMaterialCost' in b) updates.estimatedMaterialCost = b.estimatedMaterialCost != null ? String(b.estimatedMaterialCost) : null;
+      if ('actualMaterialCost' in b) updates.actualMaterialCost = b.actualMaterialCost != null ? String(b.actualMaterialCost) : null;
 
       if (b.status === 'done') {
         const done = await storage.completeTask(id, userContext.effectiveUserId, req.userId);
