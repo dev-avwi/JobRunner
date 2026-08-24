@@ -148,7 +148,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const [urlPrefillApplied, setUrlPrefillApplied] = useState(false);
 
   // Fetch project templates (for the template picker step)
-  const { data: projectTemplates = [] } = useQuery<Array<{
+  const { data: projectTemplates = [], isLoading: templatesLoading, isError: templatesError, refetch: refetchTemplates } = useQuery<Array<{
     id: string;
     name: string;
     description: string | null;
@@ -660,8 +660,49 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
             </div>
           </button>
 
+          {/* Loading skeleton while templates are in-flight */}
+          {templatesLoading && (
+            <div data-testid="template-picker-skeleton" aria-busy="true" aria-label="Loading templates" className="space-y-3">
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground px-2">or choose a saved template</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="w-full p-4 rounded-xl border-2 border-border bg-card animate-pulse"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-muted shrink-0">
+                      <div className="h-5 w-5 rounded bg-muted-foreground/20" />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 w-2/5 rounded bg-muted-foreground/20" />
+                      <div className="h-3 w-3/5 rounded bg-muted-foreground/15" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Error state with retry */}
+          {!templatesLoading && templatesError && (
+            <div data-testid="template-picker-error" className="rounded-xl border-2 border-border bg-card p-4 text-sm text-muted-foreground flex items-center justify-between gap-3">
+              <span>Couldn't load saved templates.</span>
+              <button
+                type="button"
+                onClick={() => refetchTemplates()}
+                className="text-primary hover:underline font-medium shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           {/* Saved templates */}
-          {projectTemplates.length > 0 && (
+          {!templatesLoading && !templatesError && projectTemplates.length > 0 && (
             <>
               <div className="flex items-center gap-2 pt-1">
                 <div className="flex-1 h-px bg-border" />

@@ -300,7 +300,45 @@ test('newly created template appears in job-creation picker without page reload'
 });
 
 // ---------------------------------------------------------------------------
-// Test 5 — Ops health error banner on network failure
+// Test 5 — Template picker skeleton while /api/project-templates is delayed
+// ---------------------------------------------------------------------------
+
+test('shows template picker skeleton while /api/project-templates is loading', async ({ page }) => {
+  await mockBaseApis(page);
+
+  // Hold the project-templates response indefinitely so the skeleton stays visible.
+  let resolveTemplates!: () => void;
+  const templatesHeld = new Promise<void>((res) => { resolveTemplates = res; });
+
+  await page.route('**/api/project-templates', async (route: Route) => {
+    await templatesHeld;
+    await route.fulfill(json([]));
+  });
+
+  await page.goto('/jobs/new', { waitUntil: 'networkidle' });
+
+  // The job type picker must be visible first.
+  const typePicker = page.locator('[data-testid="page-job-type-picker"]');
+  await expect(typePicker).toBeVisible({ timeout: 10000 });
+
+  // Click "Project" — this enables the /api/project-templates query.
+  await page.click('[data-testid="card-job-type-project"]');
+
+  // The template picker page renders.
+  const templatePicker = page.locator('[data-testid="page-template-picker"]');
+  await expect(templatePicker).toBeVisible({ timeout: 10000 });
+
+  // While the request is held, the loading skeleton must be visible.
+  const skeleton = page.locator('[data-testid="template-picker-skeleton"]');
+  await expect(skeleton).toBeVisible({ timeout: 5000 });
+
+  // Release the held request and verify the skeleton disappears.
+  resolveTemplates();
+  await expect(skeleton).not.toBeVisible({ timeout: 10000 });
+});
+
+// ---------------------------------------------------------------------------
+// Test 6 — Ops health error banner on network failure
 // ---------------------------------------------------------------------------
 
 test('shows ops health error banner when /api/ops/health fails', async ({ page }) => {
