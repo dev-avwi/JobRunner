@@ -623,7 +623,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => { setJobType(null); setProjectFlowStep('type-picker'); setPhases([]); }}
+            onClick={() => { setJobType(null); setProjectFlowStep('type-picker'); setPhases([]); setTemplateChecklistItems([]); }}
             className="text-muted-foreground hover:text-foreground transition-colors"
             title="Back to type picker"
           >
@@ -645,7 +645,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
           {/* Skip / start blank option */}
           <button
             type="button"
-            onClick={() => { setPhases([]); setProjectFlowStep('form'); setProjectFormStep('basic'); }}
+            onClick={() => { setPhases([]); setTemplateChecklistItems([]); setProjectFlowStep('form'); setProjectFormStep('basic'); }}
             data-testid="button-skip-template"
             className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
           >
