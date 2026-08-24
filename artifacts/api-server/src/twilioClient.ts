@@ -61,6 +61,27 @@ export function toGSM(text: string): string {
     .replace(/[^\x20-\x5F\x61-\x7E\u000A\u000D\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u00C4\u00C5\u00C6\u00C7\u00C9\u00D1\u00D6\u00D8\u00DC\u00DF\u00E0\u00E4\u00E5\u00E6\u00E8\u00E9\u00EC\u00F1\u00F2\u00F6\u00F8\u00F9\u00FC\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u20AC]/g, '?');
 }
 
+// GSM-7 extension-table characters cost 2 septets each; all others cost 1.
+const GSM7_EXTENSION_CHARS = new Set(['\f', '^', '{', '}', '\\', '[', '~', ']', '|', '€']);
+
+/**
+ * Count the number of GSM-7 septets in a string.
+ *
+ * Extension-table characters (^, {, }, [, ], ~, |, \, €, \f) cost 2 septets
+ * each; every other character costs 1.  Call toGSM() first so that non-GSM
+ * code points have already been replaced with '?' (1 septet).
+ *
+ * A single SMS segment is 160 septets.  Multi-segment messages use 153 septets
+ * per part and cost more per part — always keep reminder bodies at or below 160.
+ */
+export function gsmSeptetLength(text: string): number {
+  let count = 0;
+  for (const ch of text) {
+    count += GSM7_EXTENSION_CHARS.has(ch) ? 2 : 1;
+  }
+  return count;
+}
+
 let twilioClient: ReturnType<typeof twilio> | null = null;
 let twilioPhoneNumber: string | null = null;
 let isInitialized = false;

@@ -36,13 +36,9 @@ vi.mock('../storage', () => ({
   },
 }));
 
-vi.mock('../twilioClient', () => ({
-  sendSMS:              vi.fn(),
-  getTwilioPhoneNumber: vi.fn(),
-  isTwilioInitialized:  vi.fn().mockReturnValue(true),
-  smsTemplates:         {},
-  toGSM: (text: string) =>
-    text
+vi.mock('../twilioClient', () => {
+  function toGSM(text: string): string {
+    return text
       .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
       .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
       .replace(/\u2014/g, '-')
@@ -52,8 +48,23 @@ vi.mock('../twilioClient', () => ({
       .replace(
         /[^\x20-\x5F\x61-\x7E\u000A\u000D\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u00C4\u00C5\u00C6\u00C7\u00C9\u00D1\u00D6\u00D8\u00DC\u00DF\u00E0\u00E4\u00E5\u00E6\u00E8\u00E9\u00EC\u00F1\u00F2\u00F6\u00F8\u00F9\u00FC\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u20AC]/g,
         '?'
-      ),
-}));
+      );
+  }
+  const GSM7_EXT = new Set(['\f', '^', '{', '}', '\\', '[', '~', ']', '|', '€']);
+  function gsmSeptetLength(text: string): number {
+    let count = 0;
+    for (const ch of text) count += GSM7_EXT.has(ch) ? 2 : 1;
+    return count;
+  }
+  return {
+    sendSMS:              vi.fn(),
+    getTwilioPhoneNumber: vi.fn(),
+    isTwilioInitialized:  vi.fn().mockReturnValue(true),
+    smsTemplates:         {},
+    toGSM,
+    gsmSeptetLength,
+  };
+});
 
 vi.mock('../emailService', () => ({
   sendEmail:        vi.fn().mockResolvedValue({ success: false }),
@@ -106,7 +117,7 @@ vi.mock('../logger', () => ({
 }));
 
 // Import under test after all vi.mock() declarations
-import { REMINDER_TEMPLATES } from '../reminderService';
+import { REMINDER_TEMPLATES, clampSmsToSingleSegment } from '../reminderService';
 
 // ─── GSM-7 helpers (same as smsGsm7.test.ts) ─────────────────────────────────
 
@@ -410,5 +421,81 @@ describe('REMINDER_TEMPLATES — edge case: long payment link (minimal names)', 
       });
     }
   }
+});
+
+// =============================================================================
+// Section 3 — clampSmsToSingleSegment guard
+// =============================================================================
+
+/**
+ * clampSmsToSingleSegment must:
+ *   - Return bodies already within 160 septets unchanged.
+ *   - Strip the "\nPay here: <url>" suffix when it is what pushes the body
+ *     over 160 septets, so the resulting body is ≤ 160 septets.
+ *   - Return bodies that exceed 160 septets even without a payment link
+ *     unchanged (better to deliver a multi-segment message than silently
+ *     drop content).
+ */
+describe('clampSmsToSingleSegment', () => {
+  it('returns a body that already fits within 160 septets unchanged', () => {
+    const body = renderSms('professional', 14, STD);
+    // Verify it fits before clamping
+    expect(gsmSeptetLength(body)).toBeLessThanOrEqual(160);
+    expect(clampSmsToSingleSegment(body)).toBe(body);
+  });
+
+  it('strips the payment link when it pushes the body over 160 septets', () => {
+    // Build a body with a very long payment link that will exceed 160 septets.
+    // UUID-length token (36 chars) produces a ~81-char URL, well over the limit.
+    const longLink = 'https://app.jobrunner.com.au/portal/invoice/3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+    const body = renderSms('professional', 14, { ...STD, paymentLink: longLink });
+
+    // Confirm the raw body is over the limit
+    expect(gsmSeptetLength(body)).toBeGreaterThan(160);
+
+    const clamped = clampSmsToSingleSegment(body);
+
+    // Payment link line must be gone
+    expect(clamped).not.toContain(longLink);
+    expect(clamped).not.toContain('\nPay here:');
+
+    // Core content must still be present
+    expect(clamped).toContain(STD.invoiceNumber);
+    expect(clamped).toContain(STD.amount);
+    expect(clamped).toContain(STD.businessName);
+
+    // Result must fit in one segment
+    expect(gsmSeptetLength(clamped)).toBeLessThanOrEqual(160);
+  });
+
+  it('strips the payment link for all 9 tone/day combinations when the link is UUID-length', () => {
+    const longLink = 'https://app.jobrunner.com.au/portal/invoice/3f2504e0-4f89-11d3-9a0c-0305e82c3301';
+    const inputs = { ...STD, paymentLink: longLink };
+
+    for (const tone of ['friendly', 'professional', 'firm'] as const) {
+      for (const day of [7, 14, 30] as const) {
+        const body = renderSms(tone, day, inputs);
+        const clamped = clampSmsToSingleSegment(body);
+
+        // If the raw body was over 160, the clamped version must be within limit
+        // and must not contain the link.
+        if (gsmSeptetLength(body) > 160) {
+          expect(clamped).not.toContain(longLink);
+          expect(gsmSeptetLength(clamped)).toBeLessThanOrEqual(160);
+        } else {
+          // Already fit — returned unchanged
+          expect(clamped).toBe(body);
+        }
+      }
+    }
+  });
+
+  it('returns the body unchanged when it exceeds 160 septets with no payment link present', () => {
+    // Craft a body that is over 160 septets without any "\nPay here:" suffix.
+    // 161 ASCII characters, all GSM-7 basic-table chars.
+    const overLimitBody = 'A'.repeat(161);
+    const result = clampSmsToSingleSegment(overLimitBody);
+    expect(result).toBe(overLimitBody);
+  });
 });
 

@@ -2,7 +2,7 @@ import { storage } from './storage';
 import { sendSystemEmail, sendInvoiceEmail } from './emailService';
 import { notifyInvoiceOverdue } from './pushNotifications';
 import { notifyInvoiceOverdue as notifyInvoiceOverdueDB } from './notifications';
-import { sendSMS } from './twilioClient';
+import { sendSMS, toGSM, gsmSeptetLength } from './twilioClient';
 import { sendCustomerReply } from './services/smsService';
 import { getProductionBaseUrl } from './urlHelper';
 import { getErrorMessage } from "./lib/errors";
@@ -35,6 +35,44 @@ function formatPhoneForSMS(phone: string): string | null {
     return '+' + cleaned;
   }
   return null;
+}
+
+/**
+ * Guard an SMS reminder body against exceeding the 160-septet single-segment
+ * GSM-7 limit.  When the sanitised body is over budget:
+ *   1. Strip the trailing "\nPay here: <url>" line (the link is also in the email).
+ *   2. Emit a warning so operators know trimming occurred.
+ *
+ * If the body is still over 160 after stripping the link (very long business /
+ * invoice names), it is logged as a warning and returned unchanged so the
+ * message is still delivered rather than silently dropped.
+ *
+ * @param body   Raw smsBody string as produced by a REMINDER_TEMPLATE builder.
+ * @returns      The (possibly trimmed) body, ready to hand to sendSMS.
+ */
+export function clampSmsToSingleSegment(body: string): string {
+  const sanitised = toGSM(body);
+  if (gsmSeptetLength(sanitised) <= 160) return body;
+
+  const PAY_PREFIX = '\nPay here: ';
+  const payIdx = body.indexOf(PAY_PREFIX);
+  if (payIdx !== -1) {
+    const stripped = body.slice(0, payIdx);
+    console.warn(
+      '[SMS] Payment link omitted from reminder SMS to stay within the ' +
+      '160-septet single-segment GSM-7 limit. The payment link is included ' +
+      'in the email reminder.'
+    );
+    return stripped;
+  }
+
+  // No payment link to strip — warn and let it send multi-segment.
+  console.warn(
+    `[SMS] Reminder SMS is ${gsmSeptetLength(sanitised)} GSM-7 septets, ` +
+    'which exceeds the 160-septet single-segment limit. The message will ' +
+    'be sent as a multi-segment SMS and will incur additional charges.'
+  );
+  return body;
 }
 
 export const REMINDER_TEMPLATES = {
@@ -161,7 +199,7 @@ export async function processOverdueReminders(): Promise<ReminderResult[]> {
           const formattedPhone = formatPhoneForSMS(client.phone);
           if (formattedPhone) {
             try {
-              await sendCustomerReply(formattedPhone, content.smsBody, user.id);
+              await sendCustomerReply(formattedPhone, clampSmsToSingleSegment(content.smsBody), user.id);
               smsSent = true;
             } catch (e: unknown) {
               if (!error) error = getErrorMessage(e);
@@ -316,7 +354,7 @@ export async function sendManualReminder(
       const formattedPhone = formatPhoneForSMS(client.phone);
       if (formattedPhone) {
         try {
-          await sendCustomerReply(formattedPhone, content.smsBody, userId);
+          await sendCustomerReply(formattedPhone, clampSmsToSingleSegment(content.smsBody), userId);
           smsSent = true;
         } catch (e: unknown) {
           if (!error) error = getErrorMessage(e);
