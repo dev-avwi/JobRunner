@@ -2531,6 +2531,15 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({ id: true, creat
 export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 
+export const taskTimeEntries = pgTable("task_time_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taskId: varchar("task_id").notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  timeEntryId: varchar("time_entry_id").notNull().references(() => timeEntries.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_task_time_entries").on(table.taskId, table.timeEntryId),
+  index("idx_task_time_entries_task_id").on(table.taskId),
+]);
 export const digitalSignatures = pgTable("digital_signatures", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   formSubmissionId: varchar("form_submission_id").references(() => formSubmissions.id, { onDelete: 'cascade' }),
@@ -5876,3 +5885,13 @@ export const insertSiteDiaryEntrySchema = createInsertSchema(siteDiaryEntries).o
 });
 
 export type SiteDiaryEntry = typeof siteDiaryEntries.$inferSelect;
+
+export const taskMaterials = pgTable("task_materials", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  taskId: varchar("task_id").notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  jobMaterialId: varchar("job_material_id").notNull().references(() => jobMaterials.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_task_materials").on(table.taskId, table.jobMaterialId),
+  index("idx_task_materials_task_id").on(table.taskId),
+]);

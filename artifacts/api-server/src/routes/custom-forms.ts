@@ -5,7 +5,7 @@ import { storage, db } from "../storage";
 import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
 import { requireAuth, visionPerUserLimiter } from "./middleware";
 import { extractFormFromImages, extractFormFromText } from "../ai";
-import { ownerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
+import { ownerOnly, createPermissionMiddleware, PERMISSIONS, getUserContext, isUserAssignedToJob } from "../permissions";
 import { evaluateTaskRules } from "../taskRules";
 import { parseFormSpreadsheet } from "../spreadsheetIsolation";
 import {
@@ -245,12 +245,23 @@ export function registerCustomFormsRoutes(app: Express): void {
     }
   });
 
-  // Tasks for a specific job
+  // Tasks for a specific job — enriched with per-task work-log totals
   app.get("/api/jobs/:jobId/tasks", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const { jobId } = req.params;
-      const list = await storage.getTasks(userContext.effectiveUserId, jobId);
+
+      // Verify the job exists in this tenant scope
+      const job = await storage.getJob(jobId, userContext.effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Team members must be assigned to the job to see its task data
+      if (!userContext.isOwner) {
+        const assigned = await isUserAssignedToJob(req.userId, jobId, userContext.effectiveUserId, userContext.teamMemberId);
+        if (!assigned) return res.status(403).json({ error: "You are not assigned to this job" });
+      }
+
+      const list = await storage.getJobTasksWithTotals(userContext.effectiveUserId, jobId);
       res.json(list);
     } catch (error: any) {
       console.error("Error listing job tasks:", error);
@@ -422,6 +433,140 @@ export function registerCustomFormsRoutes(app: Express): void {
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error deleting task:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Get work log for a task (hours + materials + totals)
+  app.get("/api/tasks/:id/work-log", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { id } = req.params;
+      const task = await storage.getTaskByIdForJob(id, userContext.effectiveUserId);
+      if (!task) return res.status(404).json({ error: "Task not found" });
+
+      // Team members must be assigned to the job to view its work-log cost data
+      if (!userContext.isOwner && task.jobId) {
+        const assigned = await isUserAssignedToJob(req.userId, task.jobId, userContext.effectiveUserId, userContext.teamMemberId);
+        if (!assigned) return res.status(403).json({ error: "You are not assigned to this job" });
+      }
+
+      const log = await storage.getTaskWorkLog(id, userContext.effectiveUserId);
+      res.json(log);
+    } catch (error: any) {
+      console.error("Error fetching task work log:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  const logHoursSchema = z.object({
+    durationMinutes: z.number().int().positive().max(1440, 'durationMinutes cannot exceed 1440 (24 hours)').finite(),
+    description: z.string().max(500).optional(),
+    // hourlyRate is intentionally NOT accepted from clients — resolved server-side
+    // Owners may pass it as an override via the separate ownerHourlyRate field
+    ownerHourlyRateOverride: z.number().nonnegative().max(100_000).finite().optional(),
+  });
+
+  const logMaterialsSchema = z.object({
+    name: z.string().min(1).max(200),
+    quantity: z.number().positive().max(1_000_000).finite(),
+    unit: z.string().max(50).optional(),
+    unitCost: z.number().nonnegative().max(10_000_000).finite(),
+  });
+
+  // Shared helper: resolve task + job access for work-log write endpoints
+  async function resolveTaskJobForLogging(
+    taskId: string,
+    callerId: string,
+    userContext: Awaited<ReturnType<typeof getUserContext>>,
+    res: any
+  ): Promise<{ task: any; job: any } | null> {
+    const task = await storage.getTaskByIdForJob(taskId, userContext.effectiveUserId);
+    if (!task) { res.status(404).json({ error: "Task not found" }); return null; }
+    if (!task.jobId) { res.status(400).json({ error: "Task is not linked to a job" }); return null; }
+
+    const job = await storage.getJob(task.jobId, userContext.effectiveUserId);
+    if (!job) { res.status(404).json({ error: "Job not found" }); return null; }
+    if (job.status === 'invoiced') {
+      res.status(403).json({ error: "Cannot log work on an invoiced job" }); return null;
+    }
+
+    if (!userContext.isOwner) {
+      const assigned = await isUserAssignedToJob(callerId, task.jobId, userContext.effectiveUserId, userContext.teamMemberId);
+      if (!assigned) { res.status(403).json({ error: "You are not assigned to this job" }); return null; }
+    }
+    return { task, job };
+  }
+
+  // Log hours to a task — accessible to the business owner or any team member assigned to the job
+  app.post("/api/tasks/:id/log-hours", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { id } = req.params;
+
+      const parsed = logHoursSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message ?? "Invalid input" });
+      }
+
+      const ctx = await resolveTaskJobForLogging(id, req.userId, userContext, res);
+      if (!ctx) return;
+
+      // Resolve hourly rate server-side — never trust client-provided rate from non-owners
+      let hourlyRate: number | undefined;
+      if (userContext.isOwner) {
+        // Owners may supply an explicit override (already validated above as nonnegative)
+        hourlyRate = parsed.data.ownerHourlyRateOverride;
+      } else {
+        // For team members: assignment override → team-member rate → undefined
+        const assignment = await storage.getJobAssignmentForUser(ctx.task.jobId, req.userId);
+        if (assignment?.hourlyRateOverride != null) {
+          hourlyRate = parseFloat(assignment.hourlyRateOverride);
+        } else {
+          const member = await storage.getTeamMemberByUserIdAndBusiness(req.userId, userContext.effectiveUserId);
+          if (member?.hourlyRate != null) {
+            hourlyRate = parseFloat(String(member.hourlyRate));
+          }
+        }
+      }
+
+      const result = await storage.logTaskHours(id, req.userId, userContext.effectiveUserId, {
+        jobId: ctx.task.jobId,
+        durationMinutes: parsed.data.durationMinutes,
+        description: parsed.data.description,
+        hourlyRate,
+      });
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error("Error logging task hours:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Log a material to a task — accessible to the business owner or any team member assigned to the job
+  app.post("/api/tasks/:id/log-materials", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { id } = req.params;
+
+      const parsed = logMaterialsSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message ?? "Invalid input" });
+      }
+
+      const ctx = await resolveTaskJobForLogging(id, req.userId, userContext, res);
+      if (!ctx) return;
+
+      const result = await storage.logTaskMaterial(id, userContext.effectiveUserId, {
+        jobId: ctx.task.jobId,
+        name: parsed.data.name,
+        quantity: parsed.data.quantity,
+        unit: parsed.data.unit,
+        unitCost: parsed.data.unitCost,
+      });
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error("Error logging task material:", error);
       res.status(500).json({ error: error.message });
     }
   });

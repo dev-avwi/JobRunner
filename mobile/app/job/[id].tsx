@@ -11960,6 +11960,7 @@ export default function JobDetailScreen() {
             <JobTasksSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              canLogWork={job.status !== 'invoiced'}
               containerStyle={styles.photosCard}
               onTasksLoaded={setJobTasks}
             />
@@ -12162,6 +12163,7 @@ export default function JobDetailScreen() {
             <JobTasksSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              canLogWork={job.status !== 'invoiced'}
               containerStyle={styles.photosCard}
             />
             <View style={styles.photosCard}>

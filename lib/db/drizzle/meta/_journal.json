@@ -85,6 +85,13 @@
       "when": 1787452000000,
       "tag": "0018_task_cost_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1787572800000,
+      "tag": "0018_task_work_log",
+      "breakpoints": true
     }
   ]
 }

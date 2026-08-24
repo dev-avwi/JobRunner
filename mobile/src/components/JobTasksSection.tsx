@@ -18,13 +18,29 @@ interface JobTask {
   actualHours?: string | null;
   estimatedMaterialCost?: string | null;
   actualMaterialCost?: string | null;
+  totalHours?: number;
+  totalMaterialsCost?: number;
 }
 
 interface JobTasksSectionProps {
   containerStyle?: any;
   jobId: string;
   readOnly?: boolean;
+  canLogWork?: boolean; // team members can log even when readOnly (owner actions locked)
   onTasksLoaded?: (tasks: JobTask[]) => void;
+}
+
+interface LogSheet {
+  taskId: string;
+  taskTitle: string;
+  mode: 'hours' | 'materials';
+}
+
+interface CostEditForm {
+  estimatedHours: string;
+  actualHours: string;
+  estimatedMaterialCost: string;
+  actualMaterialCost: string;
 }
 
 function parseNum(val: string | null | undefined): number {
@@ -51,7 +67,6 @@ function isTaskOverrun(task: JobTask): boolean {
 
 function isTaskAtRisk(task: JobTask): boolean {
   if (isTaskOverrun(task)) return false;
-  // Amber warning: within 10% of budget
   const estH = parseNum(task.estimatedHours);
   const actH = parseNum(task.actualHours);
   const estM = parseNum(task.estimatedMaterialCost);
@@ -61,22 +76,41 @@ function isTaskAtRisk(task: JobTask): boolean {
   return false;
 }
 
-interface CostEditForm {
-  estimatedHours: string;
-  actualHours: string;
-  estimatedMaterialCost: string;
-  actualMaterialCost: string;
+function formatHours(h: number): string {
+  if (h <= 0) return '';
+  if (h < 1) return `${Math.round(h * 60)}m`;
+  const whole = Math.floor(h);
+  const mins = Math.round((h - whole) * 60);
+  return mins > 0 ? `${whole}h ${mins}m` : `${whole}h`;
 }
 
-export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded }: JobTasksSectionProps) {
+function formatCost(c: number): string {
+  if (c <= 0) return '';
+  return `$${c.toFixed(0)}`;
+}
+
+export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, onTasksLoaded }: JobTasksSectionProps) {
   const { colors } = useTheme();
   const [tasks, setTasks] = useState<JobTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [adding, setAdding] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  // Cost edit state (owner)
   const [editingCostTask, setEditingCostTask] = useState<JobTask | null>(null);
   const [costForm, setCostForm] = useState<CostEditForm>({ estimatedHours: '', actualHours: '', estimatedMaterialCost: '', actualMaterialCost: '' });
   const [savingCost, setSavingCost] = useState(false);
+
+  // Log-work modal state (team members)
+  const [logSheet, setLogSheet] = useState<LogSheet | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [hoursInput, setHoursInput] = useState('');
+  const [hoursDesc, setHoursDesc] = useState('');
+  const [matName, setMatName] = useState('');
+  const [matQty, setMatQty] = useState('1');
+  const [matUnit, setMatUnit] = useState('');
+  const [matUnitCost, setMatUnitCost] = useState('');
 
   const load = useCallback(async () => {
     const res = await api.get<JobTask[]>(`/api/jobs/${jobId}/tasks`);
@@ -106,11 +140,11 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
   const remove = async (task: JobTask) => {
     const filtered = tasks.filter((t) => t.id !== task.id);
     setTasks(filtered);
-    onTasksLoaded?.(filtered); // keep parent summary in sync immediately
+    onTasksLoaded?.(filtered);
     const res = await api.delete(`/api/tasks/${task.id}`);
     if (res.error) {
       showToast({ type: 'error', message: 'Could not delete task' });
-      load(); // load() calls onTasksLoaded on success, restoring the correct list
+      load();
     }
   };
 
@@ -128,6 +162,11 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
     load();
   };
 
+  const toggleExpand = (taskId: string) => {
+    setExpanded((prev) => ({ ...prev, [taskId]: !prev[taskId] }));
+  };
+
+  // Cost edit (owner)
   const openCostEdit = (task: JobTask) => {
     setCostForm({
       estimatedHours: task.estimatedHours ?? '',
@@ -157,10 +196,81 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
     load();
   };
 
+  // Log work (team members)
+  const openLogSheet = (task: JobTask, mode: 'hours' | 'materials') => {
+    setHoursInput('');
+    setHoursDesc('');
+    setMatName('');
+    setMatQty('1');
+    setMatUnit('');
+    setMatUnitCost('');
+    setLogSheet({ taskId: task.id, taskTitle: task.title, mode });
+  };
+
+  const closeLogSheet = () => setLogSheet(null);
+
+  const submitLogHours = async () => {
+    if (!logSheet) return;
+    const parsed = parseFloat(hoursInput.replace(',', '.'));
+    if (isNaN(parsed) || parsed <= 0) {
+      showToast({ type: 'error', message: 'Enter a valid duration in hours' });
+      return;
+    }
+    const durationMinutes = Math.round(parsed * 60);
+    setSubmitting(true);
+    const res = await api.post(`/api/tasks/${logSheet.taskId}/log-hours`, {
+      durationMinutes,
+      description: hoursDesc.trim() || undefined,
+    });
+    setSubmitting(false);
+    if (res.error) {
+      showToast({ type: 'error', message: 'Could not log hours' });
+      return;
+    }
+    showToast({ type: 'success', message: `${formatHours(parsed)} logged` });
+    closeLogSheet();
+    load();
+  };
+
+  const submitLogMaterial = async () => {
+    if (!logSheet) return;
+    const name = matName.trim();
+    if (!name) {
+      showToast({ type: 'error', message: 'Enter a material name' });
+      return;
+    }
+    const qty = parseFloat(matQty.replace(',', '.'));
+    const cost = parseFloat(matUnitCost.replace(',', '.'));
+    if (isNaN(qty) || qty <= 0) {
+      showToast({ type: 'error', message: 'Enter a valid quantity' });
+      return;
+    }
+    if (isNaN(cost) || cost < 0) {
+      showToast({ type: 'error', message: 'Enter a valid unit cost' });
+      return;
+    }
+    setSubmitting(true);
+    const res = await api.post(`/api/tasks/${logSheet.taskId}/log-materials`, {
+      name,
+      quantity: qty,
+      unit: matUnit.trim() || undefined,
+      unitCost: cost,
+    });
+    setSubmitting(false);
+    if (res.error) {
+      showToast({ type: 'error', message: 'Could not log material' });
+      return;
+    }
+    showToast({ type: 'success', message: `${name} logged` });
+    closeLogSheet();
+    load();
+  };
+
   if (loading) return null;
-  if (tasks.length === 0 && readOnly) return null;
+  if (tasks.length === 0 && readOnly && !canLogWork) return null;
 
   const openCount = tasks.filter((t) => t.status !== 'done').length;
+  const showLogWork = canLogWork || !readOnly;
 
   const styles = StyleSheet.create({
     header: {
@@ -179,7 +289,6 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
     },
     badgeText: { fontSize: 12, color: colors.secondaryText, fontWeight: '600' },
     row: {
-      paddingVertical: 10,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
@@ -187,6 +296,7 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
       flexDirection: 'row',
       alignItems: 'flex-start',
       gap: 12,
+      paddingVertical: 10,
     },
     check: {
       width: 22,
@@ -197,34 +307,49 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
       justifyContent: 'center',
       marginTop: 1,
     },
+    taskContent: { flex: 1 },
     taskTitle: { fontSize: 14, color: colors.foreground },
     taskTitleDone: { textDecorationLine: 'line-through', color: colors.secondaryText },
     taskDesc: { fontSize: 12, color: colors.secondaryText, marginTop: 2 },
-    addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-    input: {
-      flex: 1,
+    taskTotals: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 4,
+      flexWrap: 'wrap',
+    },
+    totalChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.muted,
+      borderRadius: 5,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+    },
+    totalChipText: { fontSize: 11, color: colors.secondaryText, fontWeight: '500' },
+    rowActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    expandBtn: { padding: 4 },
+    expandPanel: {
+      paddingBottom: 10,
+      paddingLeft: 34,
+      gap: 6,
+    },
+    logBtnRow: { flexDirection: 'row', gap: 8 },
+    logBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: 8,
+      borderRadius: 7,
       paddingHorizontal: 12,
-      paddingVertical: 10,
-      color: colors.foreground,
-      fontSize: 14,
-      letterSpacing: 0,
-      textAlign: 'left',
+      paddingVertical: 7,
     },
-    addBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: 8,
-      backgroundColor: colors.primary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+    logBtnText: { fontSize: 13, color: colors.foreground, fontWeight: '500' },
     costRow: {
       flexDirection: 'row',
       gap: 8,
-      marginTop: 6,
+      marginTop: 4,
       marginLeft: 34,
       flexWrap: 'wrap',
     },
@@ -253,9 +378,30 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
       fontWeight: fontWeights.semibold,
     },
     editCostBtn: {
-      marginLeft: 4,
-      padding: 2,
+      padding: 4,
     },
+    addRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
+    input: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: colors.foreground,
+      fontSize: 14,
+      letterSpacing: 0,
+      textAlign: 'left',
+    },
+    addBtn: {
+      width: 44,
+      height: 44,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Cost edit modal
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.45)',
@@ -304,11 +450,53 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
       borderRadius: radius.md,
       alignItems: 'center',
     },
+    // Log work bottom sheet
+    overlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: colors.card ?? colors.background,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      padding: 20,
+      paddingBottom: Platform.OS === 'ios' ? 36 : 20,
+      gap: 14,
+    },
+    sheetHandle: {
+      width: 36,
+      height: 4,
+      backgroundColor: colors.border,
+      borderRadius: 2,
+      alignSelf: 'center',
+      marginBottom: 4,
+    },
+    sheetTitle: { fontSize: 16, fontWeight: '600', color: colors.foreground },
+    sheetSubtitle: { fontSize: 13, color: colors.secondaryText, marginTop: -8 },
+    fieldLabel: { fontSize: 13, fontWeight: '500', color: colors.secondaryText, marginBottom: 4 },
+    fieldInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      color: colors.foreground,
+      fontSize: 14,
+    },
+    fieldRow: { flexDirection: 'row', gap: 10 },
+    fieldCol: { flex: 1 },
+    submitBtn: {
+      backgroundColor: colors.primary,
+      borderRadius: 10,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    submitBtnText: { color: colors.primaryForeground ?? '#fff', fontWeight: '600', fontSize: 15 },
+    cancelBtn: { alignItems: 'center', paddingVertical: 8 },
+    cancelBtnText: { color: colors.secondaryText, fontSize: 14 },
   });
-
-  const hasCostDataOnAny = tasks.some(t =>
-    t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost
-  );
 
   return (
     <View style={containerStyle}>
@@ -317,10 +505,8 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
           <Feather name="check-square" size={18} color={colors.foreground} />
           <Text style={styles.title}>Follow-up Tasks</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{openCount} open</Text>
-          </View>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{openCount} open</Text>
         </View>
       </View>
 
@@ -329,6 +515,7 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
         const overrun = isTaskOverrun(task);
         const atRisk = !overrun && isTaskAtRisk(task);
         const statusColor = overrun ? colors.destructive : atRisk ? colors.warning : undefined;
+        const isExpanded = !!expanded[task.id];
 
         const estH = parseNum(task.estimatedHours);
         const actH = parseNum(task.actualHours);
@@ -336,11 +523,22 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
         const actM = parseNum(task.actualMaterialCost);
         const hasCostData = estH > 0 || actH > 0 || estM > 0 || actM > 0;
 
+        const hasHours = (task.totalHours ?? 0) > 0;
+        const hasMaterials = (task.totalMaterialsCost ?? 0) > 0;
+
         return (
-          <View key={task.id} style={[
-            styles.row,
-            (overrun || atRisk) ? { backgroundColor: overrun ? `${colors.destructive}0D` : `${colors.warning}0D`, borderRadius: 8, paddingHorizontal: 6, marginHorizontal: -6 } : {},
-          ]}>
+          <View
+            key={task.id}
+            style={[
+              styles.row,
+              (overrun || atRisk) ? {
+                backgroundColor: overrun ? `${colors.destructive}0D` : `${colors.warning}0D`,
+                borderRadius: 8,
+                paddingHorizontal: 6,
+                marginHorizontal: -6,
+              } : {},
+            ]}
+          >
             <View style={styles.rowMain}>
               <TouchableOpacity
                 onPress={() => !readOnly && toggle(task)}
@@ -350,13 +548,41 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
                   { borderColor: done ? colors.success : (statusColor ?? colors.border), backgroundColor: done ? colors.success : 'transparent' },
                 ]}
               >
-                {done && <Feather name="check" size={14} color={colors.primaryForeground} />}
+                {done && <Feather name="check" size={14} color={colors.primaryForeground ?? '#fff'} />}
               </TouchableOpacity>
-              <View style={{ flex: 1 }}>
+
+              <View style={styles.taskContent}>
                 <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
                 {!!task.description && <Text style={styles.taskDesc}>{task.description}</Text>}
+                {/* Totals from work-log entries */}
+                {(hasHours || hasMaterials) && (
+                  <View style={styles.taskTotals}>
+                    {hasHours && (
+                      <View style={styles.totalChip}>
+                        <Feather name="clock" size={11} color={colors.secondaryText} />
+                        <Text style={styles.totalChipText}>{formatHours(task.totalHours!)}</Text>
+                      </View>
+                    )}
+                    {hasMaterials && (
+                      <View style={styles.totalChip}>
+                        <Feather name="package" size={11} color={colors.secondaryText} />
+                        <Text style={styles.totalChipText}>{formatCost(task.totalMaterialsCost!)}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+
+              <View style={styles.rowActions}>
+                {showLogWork && (
+                  <TouchableOpacity onPress={() => toggleExpand(task.id)} style={styles.expandBtn} hitSlop={8}>
+                    <Feather
+                      name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                      size={18}
+                      color={colors.secondaryText}
+                    />
+                  </TouchableOpacity>
+                )}
                 {!readOnly && (
                   <TouchableOpacity onPress={() => openCostEdit(task)} hitSlop={8} style={styles.editCostBtn}>
                     <Feather name="dollar-sign" size={15} color={hasCostData ? (statusColor ?? colors.primary) : colors.secondaryText} />
@@ -370,10 +596,11 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
               </View>
             </View>
 
+            {/* Budget cost chips (estimated vs actual) */}
             {hasCostData && (
               <View style={styles.costRow}>
                 {(estH > 0 || actH > 0) && (
-                  <View style={[styles.costChip, isHoursOverrun(task) ? { backgroundColor: `${colors.destructive}18` } : atRisk && isHoursOverrun(task) === false && actH / estH >= 0.9 ? { backgroundColor: `${colors.warning}18` } : {}]}>
+                  <View style={[styles.costChip, isHoursOverrun(task) ? { backgroundColor: `${colors.destructive}18` } : {}]}>
                     <Feather name="clock" size={11} color={isHoursOverrun(task) ? colors.destructive : colors.secondaryText} />
                     <Text style={[styles.costChipText, { color: isHoursOverrun(task) ? colors.destructive : colors.secondaryText }]}>
                       {actH > 0 ? `${actH.toFixed(1)}h` : '—'}
@@ -401,6 +628,22 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
                 </Text>
               </View>
             )}
+
+            {/* Log work expand panel */}
+            {isExpanded && showLogWork && (
+              <View style={styles.expandPanel}>
+                <View style={styles.logBtnRow}>
+                  <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'hours')}>
+                    <Feather name="clock" size={14} color={colors.foreground} />
+                    <Text style={styles.logBtnText}>Log hours</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'materials')}>
+                    <Feather name="package" size={14} color={colors.foreground} />
+                    <Text style={styles.logBtnText}>Log materials</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
         );
       })}
@@ -418,15 +661,15 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
           />
           <TouchableOpacity style={styles.addBtn} onPress={add} disabled={adding || !newTitle.trim()}>
             {adding ? (
-              <ActivityIndicator size="small" color={colors.primaryForeground} />
+              <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
             ) : (
-              <Feather name="plus" size={20} color={colors.primaryForeground} />
+              <Feather name="plus" size={20} color={colors.primaryForeground ?? '#fff'} />
             )}
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Cost edit bottom sheet */}
+      {/* Cost edit bottom sheet (owner) */}
       <Modal
         visible={!!editingCostTask}
         animationType="slide"
@@ -495,15 +738,151 @@ export function JobTasksSection({ jobId, readOnly, containerStyle, onTasksLoaded
                     disabled={savingCost}
                   >
                     {savingCost ? (
-                      <ActivityIndicator size="small" color={colors.primaryForeground} />
+                      <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
                     ) : (
-                      <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Save</Text>
+                      <Text style={{ color: colors.primaryForeground ?? '#fff', fontWeight: fontWeights.semibold }}>Save</Text>
                     )}
                   </TouchableOpacity>
                 </View>
               </ScrollView>
             </TouchableOpacity>
           </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Log work bottom sheet (team members) */}
+      <Modal
+        visible={!!logSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={closeLogSheet}
+      >
+        <KeyboardAvoidingView
+          style={styles.overlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeLogSheet} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            {logSheet?.mode === 'hours' ? (
+              <>
+                <Text style={styles.sheetTitle}>Log hours</Text>
+                <Text style={styles.sheetSubtitle} numberOfLines={1}>{logSheet.taskTitle}</Text>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Duration (hours)</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={hoursInput}
+                    onChangeText={setHoursInput}
+                    placeholder="e.g. 2.5"
+                    placeholderTextColor={colors.secondaryText}
+                    keyboardType="decimal-pad"
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Description (optional)</Text>
+                  <TextInput
+                    style={[styles.fieldInput, { height: 72, textAlignVertical: 'top' }]}
+                    value={hoursDesc}
+                    onChangeText={setHoursDesc}
+                    placeholder="What was done?"
+                    placeholderTextColor={colors.secondaryText}
+                    multiline
+                    returnKeyType="done"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.submitBtn, (!hoursInput.trim() || submitting) && { opacity: 0.5 }]}
+                  onPress={submitLogHours}
+                  disabled={!hoursInput.trim() || submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Save hours</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelBtn} onPress={closeLogSheet}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={styles.sheetTitle}>Log materials</Text>
+                <Text style={styles.sheetSubtitle} numberOfLines={1}>{logSheet?.taskTitle}</Text>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Material name</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={matName}
+                    onChangeText={setMatName}
+                    placeholder="e.g. Copper pipe 15mm"
+                    placeholderTextColor={colors.secondaryText}
+                    returnKeyType="next"
+                  />
+                </View>
+
+                <View style={styles.fieldRow}>
+                  <View style={styles.fieldCol}>
+                    <Text style={styles.fieldLabel}>Quantity</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={matQty}
+                      onChangeText={setMatQty}
+                      placeholder="1"
+                      placeholderTextColor={colors.secondaryText}
+                      keyboardType="decimal-pad"
+                      returnKeyType="next"
+                    />
+                  </View>
+                  <View style={styles.fieldCol}>
+                    <Text style={styles.fieldLabel}>Unit (optional)</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={matUnit}
+                      onChangeText={setMatUnit}
+                      placeholder="m, kg, pc"
+                      placeholderTextColor={colors.secondaryText}
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+
+                <View>
+                  <Text style={styles.fieldLabel}>Unit cost ($)</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={matUnitCost}
+                    onChangeText={setMatUnitCost}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.secondaryText}
+                    keyboardType="decimal-pad"
+                    returnKeyType="done"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.submitBtn, (!matName.trim() || submitting) && { opacity: 0.5 }]}
+                  onPress={submitLogMaterial}
+                  disabled={!matName.trim() || submitting}
+                >
+                  {submitting ? (
+                    <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                  ) : (
+                    <Text style={styles.submitBtnText}>Save material</Text>
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.cancelBtn} onPress={closeLogSheet}>
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
         </KeyboardAvoidingView>
       </Modal>
     </View>

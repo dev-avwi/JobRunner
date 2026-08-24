@@ -159,6 +159,8 @@ import {
   tasks,
   type Task,
   type InsertTask,
+  taskTimeEntries,
+  taskMaterials,
   smsConversations,
   smsMessages,
   smsTemplates,
@@ -1007,6 +1009,11 @@ export interface IStorage {
   updateTask(id: string, userId: string, updates: Partial<InsertTask>): Promise<Task | undefined>;
   completeTask(id: string, userId: string, completedBy: string): Promise<Task | undefined>;
   deleteTask(id: string, userId: string): Promise<boolean>;
+  getTaskByIdForJob(taskId: string, effectiveUserId: string): Promise<Task | undefined>;
+  logTaskHours(taskId: string, callerUserId: string, effectiveUserId: string, data: { jobId: string; durationMinutes: number; description?: string; hourlyRate?: number }): Promise<{ timeEntry: TimeEntry; linkId: string }>;
+  logTaskMaterial(taskId: string, effectiveUserId: string, data: { jobId: string; name: string; quantity: number; unit?: string; unitCost: number }): Promise<{ material: JobMaterial; linkId: string }>;
+  getTaskWorkLog(taskId: string, effectiveUserId: string): Promise<{ timeEntries: TimeEntry[]; materials: JobMaterial[]; totalHours: number; totalMaterialsCost: number }>;
+  getJobTasksWithTotals(userId: string, jobId: string): Promise<Array<Task & { totalHours: number; totalMaterialsCost: number }>>;
 
   // SMS Conversations
   getSmsConversation(id: string): Promise<SmsConversation | undefined>;
@@ -6524,6 +6531,132 @@ export class PostgresStorage implements IStorage {
       .where(eq(tasks.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  // Find a task by ID scoped to a business owner (for team-member access)
+  async getTaskByIdForJob(taskId: string, effectiveUserId: string): Promise<Task | undefined> {
+    const [result] = await db.select().from(tasks)
+      .where(and(eq(tasks.id, taskId), eq(tasks.userId, effectiveUserId)));
+    return result;
+  }
+
+  // Log hours to a task: creates a time entry and links it via task_time_entries
+  async logTaskHours(taskId: string, callerUserId: string, effectiveUserId: string, data: { jobId: string; durationMinutes: number; description?: string; hourlyRate?: number }): Promise<{ timeEntry: TimeEntry; linkId: string }> {
+    const now = new Date();
+    const startTime = new Date(now.getTime() - data.durationMinutes * 60 * 1000);
+    return await db.transaction(async (tx) => {
+      const [timeEntry] = await tx.insert(timeEntries).values({
+        userId: callerUserId,
+        jobId: data.jobId,
+        startTime,
+        endTime: now,
+        duration: data.durationMinutes,
+        hourlyRate: data.hourlyRate != null ? String(data.hourlyRate) : null,
+        description: data.description ?? null,
+        isBreak: false,
+        isOvertime: false,
+        isBillable: true,
+      } as any).returning();
+      const [link] = await tx.insert(taskTimeEntries).values({
+        taskId,
+        timeEntryId: timeEntry.id,
+      }).returning();
+      // Invalidate dashboard cache outside transaction (best-effort)
+      const { invalidateAggregateDashboard } = await import('./cache');
+      invalidateAggregateDashboard(callerUserId);
+      return { timeEntry: timeEntry as TimeEntry, linkId: link.id };
+    });
+  }
+
+  // Log a material to a task: creates a job material and links it via task_materials
+  async logTaskMaterial(taskId: string, effectiveUserId: string, data: { jobId: string; name: string; quantity: number; unit?: string; unitCost: number }): Promise<{ material: JobMaterial; linkId: string }> {
+    const totalCost = data.quantity * data.unitCost;
+    return await db.transaction(async (tx) => {
+      const [material] = await tx.insert(jobMaterials).values({
+        id: randomUUID(),
+        jobId: data.jobId,
+        userId: effectiveUserId,
+        name: data.name,
+        quantity: String(data.quantity),
+        unit: data.unit ?? 'unit',
+        unitCost: String(data.unitCost),
+        totalCost: String(totalCost),
+      } as any).returning();
+      const [link] = await tx.insert(taskMaterials).values({
+        taskId,
+        jobMaterialId: material.id,
+      }).returning();
+      return { material: material as JobMaterial, linkId: link.id };
+    });
+  }
+
+  // Get all work logged against a task with totals
+  async getTaskWorkLog(taskId: string, effectiveUserId: string): Promise<{ timeEntries: TimeEntry[]; materials: JobMaterial[]; totalHours: number; totalMaterialsCost: number }> {
+    // Fetch linked time entries
+    const teLinks = await db.select({ timeEntryId: taskTimeEntries.timeEntryId })
+      .from(taskTimeEntries)
+      .where(eq(taskTimeEntries.taskId, taskId));
+    const teIds = teLinks.map((r) => r.timeEntryId);
+    const linkedTimeEntries: TimeEntry[] = teIds.length > 0
+      ? await db.select().from(timeEntries).where(inArray(timeEntries.id, teIds))
+      : [];
+
+    // Fetch linked materials
+    const matLinks = await db.select({ jobMaterialId: taskMaterials.jobMaterialId })
+      .from(taskMaterials)
+      .where(eq(taskMaterials.taskId, taskId));
+    const matIds = matLinks.map((r) => r.jobMaterialId);
+    const linkedMaterials: JobMaterial[] = matIds.length > 0
+      ? await db.select().from(jobMaterials).where(inArray(jobMaterials.id, matIds))
+      : [];
+
+    const totalHours = linkedTimeEntries.reduce((sum, te) => sum + (te.duration ?? 0), 0) / 60;
+    const totalMaterialsCost = linkedMaterials.reduce((sum, m) => sum + parseFloat(String(m.totalCost ?? '0')), 0);
+
+    return { timeEntries: linkedTimeEntries, materials: linkedMaterials, totalHours, totalMaterialsCost };
+  }
+
+  // Get tasks for a job enriched with work-log totals
+  async getJobTasksWithTotals(userId: string, jobId: string): Promise<Array<Task & { totalHours: number; totalMaterialsCost: number }>> {
+    const jobTasks = await this.getTasks(userId, jobId);
+    if (jobTasks.length === 0) return [];
+
+    const taskIds = jobTasks.map((t) => t.id);
+
+    // Sum duration per task via junction
+    const teRows = await db
+      .select({
+        taskId: taskTimeEntries.taskId,
+        duration: timeEntries.duration,
+      })
+      .from(taskTimeEntries)
+      .innerJoin(timeEntries, eq(timeEntries.id, taskTimeEntries.timeEntryId))
+      .where(inArray(taskTimeEntries.taskId, taskIds));
+
+    // Sum material costs per task via junction
+    const matRows = await db
+      .select({
+        taskId: taskMaterials.taskId,
+        totalCost: jobMaterials.totalCost,
+      })
+      .from(taskMaterials)
+      .innerJoin(jobMaterials, eq(jobMaterials.id, taskMaterials.jobMaterialId))
+      .where(inArray(taskMaterials.taskId, taskIds));
+
+    const hoursByTask: Record<string, number> = {};
+    for (const row of teRows) {
+      hoursByTask[row.taskId] = (hoursByTask[row.taskId] ?? 0) + (row.duration ?? 0);
+    }
+    const costByTask: Record<string, number> = {};
+    for (const row of matRows) {
+      costByTask[row.taskId] = (costByTask[row.taskId] ?? 0) + parseFloat(String(row.totalCost ?? '0'));
+    }
+
+    return jobTasks.map((t) => ({
+      ...t,
+      totalHours: (hoursByTask[t.id] ?? 0) / 60,
+      totalMaterialsCost: costByTask[t.id] ?? 0,
+    }));
   }
 
   // SMS Conversations
