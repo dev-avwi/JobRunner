@@ -61,4 +61,11 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 
+// Expose queryClient for Playwright e2e tests (dev only — tree-shaken in prod builds).
+if (import.meta.env.DEV) {
+  import("@/lib/queryClient").then(({ queryClient }) => {
+    (window as any).__testQueryClient = queryClient;
+  });
+}
+
 createRoot(document.getElementById("root")!).render(<App />);

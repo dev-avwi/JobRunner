@@ -172,7 +172,72 @@ test('shows map skeleton while /api/dispatch/board is loading on Map tab', async
 });
 
 // ---------------------------------------------------------------------------
-// Test 3 — Ops health error banner on network failure
+// Test 3 — Deleted template absent from job-creation picker without reload
+// ---------------------------------------------------------------------------
+
+test('deleted template is absent from job-creation picker without page reload', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const TEMPLATE = {
+    id: 'tpl-del-test',
+    name: 'House Build',
+    description: 'Standard house build template',
+    templateData: {
+      phases: [
+        { phaseCode: 'FOUND', name: 'Foundation' },
+        { phaseCode: 'FRAME', name: 'Framing' },
+      ],
+      checklistItems: [],
+    },
+    createdAt: new Date().toISOString(),
+  };
+
+  // Stateful flag: starts false, flipped to true to simulate deletion.
+  // The mock returns the template before deletion and an empty list after.
+  let deleted = false;
+  await page.route('**/api/project-templates', (route) => {
+    route.fulfill(json(deleted ? [] : [TEMPLATE]));
+  });
+
+  // Navigate to the job creation form.
+  await page.goto('/jobs/new', { waitUntil: 'networkidle' });
+
+  // The job type picker must be visible.
+  const typePicker = page.locator('[data-testid="page-job-type-picker"]');
+  await expect(typePicker).toBeVisible({ timeout: 10000 });
+
+  // Select "Project" — this enables the /api/project-templates query.
+  await page.click('[data-testid="card-job-type-project"]');
+
+  // Template picker renders and the saved template is shown.
+  const templatePicker = page.locator('[data-testid="page-template-picker"]');
+  await expect(templatePicker).toBeVisible({ timeout: 10000 });
+
+  const templateBtn = page.locator('[data-testid="button-use-template-tpl-del-test"]');
+  await expect(templateBtn).toBeVisible({ timeout: 5000 });
+
+  // Simulate what ProjectTemplatesSettings' delete mutation does:
+  //   1. Switch the mock so the next GET /api/project-templates returns [].
+  //   2. Call queryClient.invalidateQueries with the same key used by onSuccess —
+  //      this is the exact mechanism that keeps the picker in sync after deletion.
+  // No page reload is involved: queryClient lives in the same document.
+  deleted = true;
+  await page.evaluate(async () => {
+    // __testQueryClient is exposed by main.tsx in DEV mode.
+    const qc = (window as any).__testQueryClient;
+    if (!qc) throw new Error('__testQueryClient not found on window');
+    await qc.invalidateQueries({ queryKey: ['/api/project-templates'] });
+  });
+
+  // After the invalidation-triggered refetch the deleted template must be gone.
+  await expect(templateBtn).not.toBeVisible({ timeout: 10000 });
+
+  // The "Start blank" fallback must still be available.
+  await expect(page.locator('[data-testid="button-skip-template"]')).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// Test 4 — Ops health error banner on network failure
 // ---------------------------------------------------------------------------
 
 test('shows ops health error banner when /api/ops/health fails', async ({ page }) => {
