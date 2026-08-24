@@ -258,6 +258,91 @@ export function registerCustomFormsRoutes(app: Express): void {
     }
   });
 
+  // Generate quote/invoice line items from a job's tasks.
+  // Each task becomes a labour line item using the assignee's job-assignment
+  // hourly rate override, falling back to rate-card then business default.
+  // Job materials are returned separately so the caller can include them too.
+  app.get("/api/jobs/:jobId/generate-from-tasks", requireAuth, createPermissionMiddleware([PERMISSIONS.WRITE_QUOTES, PERMISSIONS.WRITE_INVOICES]), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { jobId } = req.params;
+
+      const job = await storage.getJob(jobId, userContext.effectiveUserId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      const [tasks, bizSettings, assignments, rateCards, materials] = await Promise.all([
+        storage.getTasks(userContext.effectiveUserId, jobId),
+        storage.getBusinessSettings(userContext.effectiveUserId),
+        storage.getJobAssignments(jobId),
+        storage.getRateCards(userContext.effectiveUserId),
+        storage.getJobMaterials(jobId, userContext.effectiveUserId),
+      ]);
+
+      // Determine a sensible default hourly rate.
+      // Priority: job-assignment override (per task) > rate card > business default.
+      const defaultRateCard = (rateCards as any[]).find(
+        (r: any) => r?.tradeType === (bizSettings as any)?.tradeType,
+      ) || (rateCards as any[])[0];
+      // businessSettings stores the business default as `defaultHourlyRate` (not `hourlyRate`)
+      const bizHourlyRate = parseFloat((bizSettings as any)?.defaultHourlyRate ?? "0") || 0;
+      const cardHourlyRate = parseFloat((defaultRateCard as any)?.hourlyRate ?? "0") || 0;
+      // Business default takes precedence over the rate-card fallback
+      const fallbackRate = bizHourlyRate > 0 ? bizHourlyRate : cardHourlyRate;
+
+      // Index job assignments by userId for O(1) lookup
+      const assignmentByUserId = new Map(
+        (assignments as any[]).map((a: any) => [a.userId, a]),
+      );
+
+      // One labour line item per task
+      const taskItems = tasks.map((task: any) => {
+        let rate = fallbackRate;
+        if (task.assignedTo) {
+          const asgn = assignmentByUserId.get(task.assignedTo);
+          if (asgn?.hourlyRateOverride) {
+            const override = parseFloat(String(asgn.hourlyRateOverride));
+            if (Number.isFinite(override) && override > 0) rate = override;
+          }
+        }
+        return {
+          description: task.title,
+          quantity: "1",
+          unitPrice: String(Math.round(rate * 100) / 100),
+          taskId: task.id,
+          taskStatus: task.status,
+        };
+      });
+
+      // Material line items using the same sell-price priority as the invoice editor
+      const cardMarkup = parseFloat((defaultRateCard as any)?.materialMarkupPct ?? "");
+      const fallbackMarkup = Number.isFinite(cardMarkup) ? cardMarkup : 20;
+
+      const materialItems: { description: string; quantity: string; unitPrice: string }[] = [];
+      for (const m of materials as any[]) {
+        const qty = parseFloat(m.quantity ?? "1") || 0;
+        const explicitPrice = parseFloat(m.unitPrice ?? "0") || 0;
+        const cost = parseFloat(m.unitCost ?? "0") || 0;
+        const ownMarkup = parseFloat(m.markupPercent ?? "");
+        const markupPct = Number.isFinite(ownMarkup) ? ownMarkup : fallbackMarkup;
+        let price = 0;
+        if (explicitPrice > 0) price = explicitPrice;
+        else if (cost > 0) price = Math.round(cost * (1 + markupPct / 100) * 100) / 100;
+        if (qty <= 0 || price <= 0) continue;
+        const unitLabel = m.unit && m.unit !== "each" ? ` (${m.unit})` : "";
+        materialItems.push({
+          description: `${m.name}${unitLabel}`,
+          quantity: String(qty),
+          unitPrice: String(price),
+        });
+      }
+
+      res.json({ taskItems, materialItems, taskCount: tasks.length });
+    } catch (error: any) {
+      console.error("Error generating from tasks:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Create a task manually (owner only)
   app.post("/api/tasks", ownerOnly(), async (req: any, res) => {
     try {

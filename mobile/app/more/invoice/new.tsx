@@ -716,6 +716,7 @@ export default function NewInvoiceScreen() {
   const [showQuickAddClient, setShowQuickAddClient] = useState(false);
   const [quickAddForm, setQuickAddForm] = useState({ name: '', email: '', phone: '' });
   const [isCreatingClient, setIsCreatingClient] = useState(false);
+  const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [jobId, setJobId] = useState<string | null>(params.jobId || null);
@@ -1124,6 +1125,44 @@ export default function NewInvoiceScreen() {
     setLineItems([...lineItems, ...newItems]);
     setJobExpenses([]);
     Alert.alert('Expenses Added', `${newItems.length} expense(s) added as line items`);
+  };
+
+  const handleGenerateFromTasks = async () => {
+    if (!jobId) return;
+    setIsGeneratingFromTasks(true);
+    try {
+      const res = await api.get<{
+        taskItems: Array<{ description: string; quantity: string; unitPrice: string; taskId: string }>;
+        materialItems: Array<{ description: string; quantity: string; unitPrice: string }>;
+        taskCount: number;
+      }>(`/api/jobs/${jobId}/generate-from-tasks`);
+      if (!res.data) throw new Error('No data returned');
+      const taskItems = (res.data.taskItems || []).map(t => ({
+        id: `task-${t.taskId}-${Date.now()}`,
+        description: t.description,
+        quantity: t.quantity,
+        unitPrice: t.unitPrice,
+      }));
+      const materialItems = (res.data.materialItems || []).map((m, i) => ({
+        id: `mat-${i}-${Date.now()}`,
+        description: m.description,
+        quantity: m.quantity,
+        unitPrice: m.unitPrice,
+      }));
+      const allItems = [...taskItems, ...materialItems];
+      if (allItems.length === 0) {
+        Alert.alert('No tasks found', 'This job has no tasks yet. Add tasks to the job first.');
+        return;
+      }
+      // Append to any existing line items so nothing already entered is lost
+      setLineItems(prev => [...prev, ...allItems]);
+      const matNote = materialItems.length > 0 ? ` + ${materialItems.length} material${materialItems.length !== 1 ? 's' : ''}` : '';
+      Alert.alert('Tasks added', `${res.data.taskCount} task${res.data.taskCount !== 1 ? 's' : ''}${matNote} added as line items. Review and adjust before sending.`);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error || err.message || 'Could not generate from tasks');
+    } finally {
+      setIsGeneratingFromTasks(false);
+    }
   };
 
   const handleAddLineItem = () => {
@@ -1805,6 +1844,15 @@ export default function NewInvoiceScreen() {
                   <PressableRow style={[styles.catalogButton, { backgroundColor: colors.primaryLight }]} onPress={handleOpenPriceList} >
                     <Feather name="tag" size={16} color={colors.primary} />
                   </PressableRow>
+                  {jobId && (
+                    <PressableRow
+                      style={[styles.catalogButton, { backgroundColor: colors.primaryLight, opacity: isGeneratingFromTasks ? 0.6 : 1 }]}
+                      onPress={handleGenerateFromTasks}
+                      disabled={isGeneratingFromTasks}
+                    >
+                      <Feather name="list" size={16} color={isGeneratingFromTasks ? colors.mutedForeground : colors.primary} />
+                    </PressableRow>
+                  )}
                 </View>
 
                 {jobId && jobExpenses.length > 0 && (

@@ -667,6 +667,7 @@ export default function NewQuoteScreen() {
   const [quoteTemplates, setQuoteTemplates] = useState<any[]>([]);
   const [isLoadingQuoteTemplates, setIsLoadingQuoteTemplates] = useState(false);
   const [quoteTemplateSearch, setQuoteTemplateSearch] = useState('');
+  const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [jobId, setJobId] = useState<string | null>(params.jobId || null);
@@ -769,6 +770,44 @@ export default function NewQuoteScreen() {
       }
     }
   }, [form.clientId, clients, form.clientName]);
+
+  const handleGenerateFromTasks = async () => {
+    if (!jobId) return;
+    setIsGeneratingFromTasks(true);
+    try {
+      const res = await api.get<{
+        taskItems: Array<{ description: string; quantity: string; unitPrice: string; taskId: string }>;
+        materialItems: Array<{ description: string; quantity: string; unitPrice: string }>;
+        taskCount: number;
+      }>(`/api/jobs/${jobId}/generate-from-tasks`);
+      if (!res.data) throw new Error('No data returned');
+      const taskItems = (res.data.taskItems || []).map(t => ({
+        id: `task-${t.taskId}-${Date.now()}`,
+        description: t.description,
+        quantity: t.quantity,
+        unitPrice: t.unitPrice,
+      }));
+      const materialItems = (res.data.materialItems || []).map((m, i) => ({
+        id: `mat-${i}-${Date.now()}`,
+        description: m.description,
+        quantity: m.quantity,
+        unitPrice: m.unitPrice,
+      }));
+      const allItems = [...taskItems, ...materialItems];
+      if (allItems.length === 0) {
+        showToast({ type: 'info', message: 'No tasks found', description: 'This job has no tasks yet. Add tasks to the job first.' });
+        return;
+      }
+      // Append to any existing line items so nothing already entered is lost
+      setLineItems(prev => [...prev, ...allItems]);
+      const matNote = materialItems.length > 0 ? ` + ${materialItems.length} material${materialItems.length !== 1 ? 's' : ''}` : '';
+      showToast({ type: 'success', message: `Added ${res.data.taskCount} task${res.data.taskCount !== 1 ? 's' : ''}${matNote} as line items`, description: 'Review and adjust before sending.' });
+    } catch (err: any) {
+      showToast({ type: 'error', message: err.response?.data?.error || err.message || 'Could not generate from tasks' });
+    } finally {
+      setIsGeneratingFromTasks(false);
+    }
+  };
 
   const handleAddLineItem = () => {
     setEditForm({ description: '', quantity: '1', unitPrice: '' });
@@ -1577,6 +1616,15 @@ export default function NewQuoteScreen() {
                   <PressableRow style={[styles.catalogButton, { backgroundColor: colors.primaryLight }]} onPress={() => setShowAIGenerator(true)} >
                     <Feather name="zap" size={16} color={colors.primary} />
                   </PressableRow>
+                  {jobId && (
+                    <PressableRow
+                      style={[styles.catalogButton, { backgroundColor: colors.primaryLight, opacity: isGeneratingFromTasks ? 0.6 : 1 }]}
+                      onPress={handleGenerateFromTasks}
+                      disabled={isGeneratingFromTasks}
+                    >
+                      <Feather name="list" size={16} color={isGeneratingFromTasks ? colors.mutedForeground : colors.primary} />
+                    </PressableRow>
+                  )}
                 </View>
 
                 <PressableRow style={styles.templateButton} onPress={handleOpenQuoteTemplates} >

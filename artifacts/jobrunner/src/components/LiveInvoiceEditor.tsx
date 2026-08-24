@@ -55,6 +55,7 @@ import {
   ChevronDown,
   ShoppingCart,
   GitMerge,
+  ClipboardList,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -104,6 +105,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [priceListOpen, setPriceListOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
+  const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [sourceQuoteId, setSourceQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(urlJobId || undefined);
@@ -690,6 +692,59 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     });
   };
 
+  const handleGenerateFromTasks = async () => {
+    const jobId = selectedJobId || urlJobId;
+    if (!jobId) return;
+    setIsGeneratingFromTasks(true);
+    try {
+      const token = getSessionToken();
+      const res = await fetch(`/api/jobs/${jobId}/generate-from-tasks`, {
+        credentials: 'include',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to generate from tasks');
+      }
+      const data = await res.json();
+      const allItems = [
+        ...(data.taskItems || []).map((t: any) => ({
+          itemCode: '',
+          description: t.description,
+          quantity: t.quantity,
+          unitPrice: t.unitPrice,
+        })),
+        ...(data.materialItems || []).map((m: any) => ({
+          itemCode: '',
+          description: m.description,
+          quantity: m.quantity,
+          unitPrice: m.unitPrice,
+        })),
+      ];
+      if (allItems.length === 0) {
+        toast({
+          title: 'No tasks found',
+          description: 'This job has no tasks yet. Add tasks to the job first.',
+        });
+        return;
+      }
+      // Append to any existing line items so nothing already entered is lost
+      replace([...fields, ...allItems]);
+      toast({
+        title: 'Tasks added',
+        description: `${data.taskCount} task${data.taskCount !== 1 ? 's' : ''}${data.materialItems?.length > 0 ? ` + ${data.materialItems.length} material${data.materialItems.length !== 1 ? 's' : ''}` : ''} added as line items. Review and adjust before sending.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Could not generate from tasks',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingFromTasks(false);
+    }
+  };
+
   const handleAddLineItem = () => {
     setEditForm({ itemCode: "", description: "", quantity: "1", unitPrice: "" });
     setEditingLineIndex(-1);
@@ -1222,6 +1277,24 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                     <Plus className="h-4 w-4" />
                     Add Item
                   </Button>
+                  {(selectedJobId || urlJobId) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateFromTasks}
+                    disabled={isGeneratingFromTasks}
+                    className="h-12 px-3 rounded-xl press-scale gap-2 text-primary border-primary/30 hover:bg-primary/5"
+                    data-testid="button-generate-from-tasks"
+                    title="Generate line items from job tasks"
+                  >
+                    {isGeneratingFromTasks ? (
+                      <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+                    ) : (
+                      <ClipboardList className="h-4 w-4" />
+                    )}
+                    Tasks
+                  </Button>
+                  )}
                   <Button
                     type="button"
                     variant="outline"
