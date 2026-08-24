@@ -194,6 +194,34 @@ describe('sendSMS() — interceptor receives sanitised body', () => {
     expect(capturedFrom).not.toBe('JobRunner');
   });
 
+  it('uses the alphanumericSenderId as "from" for plain SMS when no mediaUrls are attached', async () => {
+    // Twilio accepts alphanumeric sender IDs for plain SMS (no media). This test
+    // pins that branch so a refactor cannot accidentally fall back to the phone
+    // number when it should be using the alphanumeric ID.
+    let capturedFrom = '';
+    let capturedAlphanumericSenderId: string | undefined;
+
+    __setSmsTestInterceptor((payload) => {
+      capturedFrom = payload.resolvedFrom;
+      capturedAlphanumericSenderId = payload.alphanumericSenderId;
+      return { success: true, simulated: true };
+    });
+
+    await sendSMS({
+      to: '+61400000005',
+      message: 'Job update: your technician is on the way.',
+      alphanumericSenderId: 'JobRunner',
+      fromNumber: '+61400000099',
+      // no mediaUrls — plain SMS path
+    });
+
+    // The alphanumeric sender ID must be passed through in the options.
+    expect(capturedAlphanumericSenderId).toBe('JobRunner');
+    // For plain SMS, resolvedFrom must be the alphanumeric ID, not the phone number.
+    expect(capturedFrom).toBe('JobRunner');
+    expect(capturedFrom).not.toBe('+61400000099');
+  });
+
   it('does not invoke a previously registered interceptor after it is cleared', async () => {
     let called = false;
     __setSmsTestInterceptor(() => {
