@@ -253,6 +253,14 @@ export async function sendPushNotificationToUsers(
 }
 
 /**
+ * Send batch of push messages to Expo.
+ * Exported so integration tests can exercise the real HTTP pipeline directly.
+ */
+export async function sendExpoPushNotifications(messages: PushMessage[]): Promise<PushTicket[]> {
+  return sendPushMessages(messages);
+}
+
+/**
  * Send batch of push messages to Expo
  */
 async function sendPushMessages(messages: PushMessage[]): Promise<PushTicket[]> {
