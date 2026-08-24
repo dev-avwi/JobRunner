@@ -225,9 +225,10 @@ import {
   claimLineItems,
   tasks,
   idempotencyKeys,
+  jobDocuments,
 } from "@workspace/db";
 import { db } from "../storage";
-import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne } from "drizzle-orm";
+import { eq, sql, desc, asc, and, gte, lte, lt, isNotNull, isNull, inArray, or, count, sum, ne, aliasedTable } from "drizzle-orm";
 import { logger } from "../logger";
 import { 
   ObjectStorageService, 
@@ -10298,16 +10299,41 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         return res.status(404).json({ error: 'Job not found or access denied' });
       }
       
-      const documents = await storage.getJobDocuments(jobId, userContext.effectiveUserId);
-      
+      // Fetch documents with uploader name via left join
+      const uploaderAlias = aliasedTable(users, 'uploader');
+      const rawDocuments = await db
+        .select({
+          id: jobDocuments.id,
+          userId: jobDocuments.userId,
+          jobId: jobDocuments.jobId,
+          title: jobDocuments.title,
+          documentType: jobDocuments.documentType,
+          fileName: jobDocuments.fileName,
+          objectStorageKey: jobDocuments.objectStorageKey,
+          fileSize: jobDocuments.fileSize,
+          mimeType: jobDocuments.mimeType,
+          uploadedBy: jobDocuments.uploadedBy,
+          createdAt: jobDocuments.createdAt,
+          uploaderFirstName: uploaderAlias.firstName,
+          uploaderLastName: uploaderAlias.lastName,
+        })
+        .from(jobDocuments)
+        .leftJoin(uploaderAlias, eq(jobDocuments.uploadedBy, uploaderAlias.id))
+        .where(and(eq(jobDocuments.jobId, jobId), eq(jobDocuments.userId, userContext.effectiveUserId)))
+        .orderBy(desc(jobDocuments.createdAt));
+
       const objectStorage = new ObjectStorageService();
-      const documentsWithUrls = await Promise.all(documents.map(async (doc) => {
+      const documentsWithUrls = await Promise.all(rawDocuments.map(async (doc) => {
+        const { uploaderFirstName, uploaderLastName, ...rest } = doc;
+        const uploadedByName = uploaderFirstName || uploaderLastName
+          ? [uploaderFirstName, uploaderLastName].filter(Boolean).join(' ')
+          : null;
         try {
           const signedUrl = await objectStorage.getSignedReadURLFromKey(doc.objectStorageKey, 3600);
-          return { ...doc, fileUrl: signedUrl };
+          return { ...rest, uploadedByName, fileUrl: signedUrl };
         } catch (error) {
           console.error('Error getting signed URL for document:', error);
-          return { ...doc, fileUrl: null };
+          return { ...rest, uploadedByName, fileUrl: null };
         }
       }));
       

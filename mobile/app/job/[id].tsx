@@ -328,6 +328,8 @@ interface JobDocument {
   fileUrl?: string | null;
   createdAt?: string;
   objectStorageKey: string;
+  uploadedBy?: string | null;
+  uploadedByName?: string | null;
 }
 
 interface SubcontractorToken {
@@ -10784,6 +10786,14 @@ export default function JobDetailScreen() {
                         </Text>
                       ) : null}
                     </View>
+                    {doc.uploadedByName ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xxs }}>
+                        <Feather name="user" size={10} color={colors.mutedForeground} />
+                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                          {doc.uploadedByName}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
                   {(isOwnerOrManager || isSoloOwner) && (
                     <TouchableOpacity
