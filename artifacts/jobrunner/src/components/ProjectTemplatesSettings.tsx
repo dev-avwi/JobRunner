@@ -35,6 +35,10 @@ import {
   ChevronDown,
   GripVertical,
   X,
+  ChevronDown,
+  ChevronRight,
+  Percent,
+  DollarSign,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +63,11 @@ interface TemplateFormState {
   description: string;
   phases: PhaseRow[];
   checklistItems: ChecklistRow[];
+  // Markup / budget defaults (all optional; stored as string to match templateData.settings shape)
+  materialMarkupPct: string;
+  equipmentMarkupPct: string;
+  subcontractorMarkupPct: string;
+  budgetedCost: string;
   /** Preserved from an existing template so edit never silently drops settings the form doesn't expose */
   preservedSettings?: Record<string, string | undefined>;
 }
@@ -82,9 +91,19 @@ const EMPTY_FORM: TemplateFormState = {
   description: "",
   phases: [{ phaseCode: "1", name: "" }],
   checklistItems: [],
+  materialMarkupPct: "",
+  equipmentMarkupPct: "",
+  subcontractorMarkupPct: "",
+  budgetedCost: "",
 };
 
 function templateToForm(t: ProjectTemplate): TemplateFormState {
+  const s = (t.templateData.settings ?? {}) as Record<string, string | undefined>;
+
+  // Strip the four fields we now manage explicitly so preservedSettings only holds unknowns
+  const { materialMarkupPct, equipmentMarkupPct, subcontractorMarkupPct, budgetedCost, ...rest } =
+    s;
+
   return {
     name: t.name,
     description: t.description ?? "",
@@ -99,8 +118,13 @@ function templateToForm(t: ProjectTemplate): TemplateFormState {
           }))
         : [{ phaseCode: "1", name: "" }],
     checklistItems: (t.templateData.checklistItems ?? []).map((c) => ({ text: c.text })),
-    // Preserve settings the form doesn't expose so edits don't silently drop them
-    preservedSettings: t.templateData.settings as Record<string, string | undefined> | undefined,
+    // Explicit default fields
+    materialMarkupPct: materialMarkupPct ?? "",
+    equipmentMarkupPct: equipmentMarkupPct ?? "",
+    subcontractorMarkupPct: subcontractorMarkupPct ?? "",
+    budgetedCost: budgetedCost ?? "",
+    // Preserve any other settings the form doesn't expose so edits don't silently drop them
+    preservedSettings: Object.keys(rest).length > 0 ? rest : undefined,
   };
 }
 
@@ -121,6 +145,19 @@ function formToPayload(form: TemplateFormState) {
 
   const trimmedDescription = form.description.trim();
 
+  // Build settings: start with preserved unknowns, then layer in explicit UI fields
+  const settings: Record<string, string> = Object.fromEntries(
+    Object.entries(form.preservedSettings ?? {}).filter((e): e is [string, string] => e[1] !== undefined),
+  );
+  if (form.materialMarkupPct.trim()) settings.materialMarkupPct = form.materialMarkupPct.trim();
+  else delete settings.materialMarkupPct;
+  if (form.equipmentMarkupPct.trim()) settings.equipmentMarkupPct = form.equipmentMarkupPct.trim();
+  else delete settings.equipmentMarkupPct;
+  if (form.subcontractorMarkupPct.trim()) settings.subcontractorMarkupPct = form.subcontractorMarkupPct.trim();
+  else delete settings.subcontractorMarkupPct;
+  if (form.budgetedCost.trim()) settings.budgetedCost = form.budgetedCost.trim();
+  else delete settings.budgetedCost;
+
   return {
     name: form.name.trim(),
     // Send null explicitly so PATCH can clear a previously set description;
@@ -129,8 +166,7 @@ function formToPayload(form: TemplateFormState) {
     description: trimmedDescription.length > 0 ? trimmedDescription : null,
     templateData: {
       phases,
-      // Carry forward any settings the form doesn't expose (markups, budget, etc.)
-      ...(form.preservedSettings ? { settings: form.preservedSettings } : {}),
+      ...(Object.keys(settings).length > 0 ? { settings } : {}),
       ...(checklistItems.length > 0 ? { checklistItems } : {}),
     },
   };
@@ -184,6 +220,15 @@ function TemplateFormDialog({
   });
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Auto-expand defaults section when editing a template that already has values set
+  const hasExistingDefaults = !!(
+    form.materialMarkupPct ||
+    form.equipmentMarkupPct ||
+    form.subcontractorMarkupPct ||
+    form.budgetedCost
+  );
+  const [defaultsOpen, setDefaultsOpen] = useState(hasExistingDefaults);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -434,6 +479,135 @@ function TemplateFormDialog({
             </div>
           </div>
 
+          <Separator />
+
+          {/* Markup and budget defaults — collapsible */}
+          <div className="space-y-3">
+            <button
+              type="button"
+              className="flex items-center gap-2 w-full text-left group"
+              onClick={() => setDefaultsOpen((v) => !v)}
+              aria-expanded={defaultsOpen}
+              data-testid="btn-toggle-defaults"
+            >
+              {defaultsOpen ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="font-medium text-sm">Default rates and budget (optional)</p>
+                {!defaultsOpen && (
+                  <p className="text-xs text-muted-foreground">
+                    Pre-fill markup percentages and a budget when this template is applied
+                  </p>
+                )}
+              </div>
+            </button>
+
+            {defaultsOpen && (
+              <div className="space-y-4 pl-6">
+                <p className="text-xs text-muted-foreground">
+                  These values are pre-filled when creating a job from this template. They can be
+                  changed at any time on the individual job.
+                </p>
+
+                {/* Markup percentages */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="markup-material" className="text-xs">
+                      Material markup
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="markup-material"
+                        type="number"
+                        min={0}
+                        max={999}
+                        step={0.1}
+                        placeholder="e.g. 15"
+                        value={form.materialMarkupPct}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, materialMarkupPct: e.target.value }))
+                        }
+                        className="pr-7"
+                        data-testid="input-material-markup"
+                      />
+                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="markup-equipment" className="text-xs">
+                      Equipment markup
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="markup-equipment"
+                        type="number"
+                        min={0}
+                        max={999}
+                        step={0.1}
+                        placeholder="e.g. 10"
+                        value={form.equipmentMarkupPct}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, equipmentMarkupPct: e.target.value }))
+                        }
+                        className="pr-7"
+                        data-testid="input-equipment-markup"
+                      />
+                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="markup-sub" className="text-xs">
+                      Subcontractor markup
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="markup-sub"
+                        type="number"
+                        min={0}
+                        max={999}
+                        step={0.1}
+                        placeholder="e.g. 5"
+                        value={form.subcontractorMarkupPct}
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, subcontractorMarkupPct: e.target.value }))
+                        }
+                        className="pr-7"
+                        data-testid="input-sub-markup"
+                      />
+                      <Percent className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Budgeted cost */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="budgeted-cost" className="text-xs">
+                    Budgeted cost
+                  </Label>
+                  <div className="relative max-w-[200px]">
+                    <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                    <Input
+                      id="budgeted-cost"
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="e.g. 50000"
+                      value={form.budgetedCost}
+                      onChange={(e) => setForm((f) => ({ ...f, budgetedCost: e.target.value }))}
+                      className="pl-7"
+                      data-testid="input-budgeted-cost"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
               Cancel
@@ -562,6 +736,15 @@ export function ProjectTemplatesSettings() {
                       <Badge variant="secondary" className="text-xs gap-1 font-normal">
                         <CheckSquare className="w-3 h-3" />
                         {checklistCount} checklist {checklistCount === 1 ? "item" : "items"}
+                      </Badge>
+                    )}
+                    {(t.templateData.settings?.materialMarkupPct ||
+                      t.templateData.settings?.equipmentMarkupPct ||
+                      t.templateData.settings?.subcontractorMarkupPct ||
+                      t.templateData.settings?.budgetedCost) && (
+                      <Badge variant="secondary" className="text-xs gap-1 font-normal">
+                        <Percent className="w-3 h-3" />
+                        Default rates
                       </Badge>
                     )}
                   </div>
