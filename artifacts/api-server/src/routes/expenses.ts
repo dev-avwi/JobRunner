@@ -150,12 +150,11 @@ export function registerExpenseRoutes(app: Express) {
     }
   });
 
-  app.get("/api/expenses", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_EXPENSES), async (req: any, res) => {
+  app.get("/api/expenses", requireAuth, async (req: any, res) => {
     try {
-      const rawUserId = req.userId!;
-      const { effectiveUserId } = await getUserContext(rawUserId);
+      const userId = req.userId!;
       const { jobId, categoryId, startDate, endDate } = req.query;
-      const expenses = await storage.getExpenses(effectiveUserId, {
+      const expenses = await storage.getExpenses(userId, {
         jobId: jobId as string,
         categoryId: categoryId as string,
         startDate: startDate as string,
