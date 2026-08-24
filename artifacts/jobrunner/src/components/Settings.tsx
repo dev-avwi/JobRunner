@@ -77,7 +77,8 @@ import {
   Copy,
   CalendarPlus,
   Plus,
-  Settings2
+  Settings2,
+  Layers,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,6 +113,7 @@ import {
 import { ClearSampleDataCard, ImportDataCard, TimezoneField } from "./SettingsImportCards";
 import { ImportHistoryCard } from "./ImportHistoryCard";
 import { SheetSyncCard } from "./SheetSyncCard";
+import { ProjectTemplatesSettings } from "./ProjectTemplatesSettings";
 
 // Types for MyAccount tab
 interface ColorOption {
@@ -2263,6 +2265,23 @@ export default function Settings({
 
         {/* ── Workflow ── safety gates, location tracking, AI, simple mode ── */}
         <TabsContent value="workflow" className="space-y-6">
+
+          {(isOwner || isManager) && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Layers className="w-5 h-5" style={{ color: 'hsl(var(--trade))' }} />
+                  <CardTitle>Project Templates</CardTitle>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Build a library of standard project types with phases and checklist items. Templates appear in the job-creation flow for quick setup.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <ProjectTemplatesSettings />
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

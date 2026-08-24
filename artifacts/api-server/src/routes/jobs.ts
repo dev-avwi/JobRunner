@@ -11535,7 +11535,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const effectiveUserId = req.effectiveUserId || req.userId;
       const bodySchema = z.object({
         name: z.string().min(1, "Template name is required").max(200),
-        description: z.string().max(1000).optional(),
+        description: z.string().max(1000).nullable().optional(),
         templateData: z.object({
           phases: z.array(z.object({
             phaseCode: z.string().min(1).max(20),
@@ -11567,6 +11567,48 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         return res.status(400).json({ error: "Invalid template data", details: error.errors });
       }
       console.error("Error creating project template:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.patch("/api/project-templates/:id", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const { id } = req.params;
+      const bodySchema = z.object({
+        name: z.string().min(1, "Template name is required").max(200).optional(),
+        description: z.string().max(1000).nullable().optional(),
+        templateData: z.object({
+          phases: z.array(z.object({
+            phaseCode: z.string().min(1).max(20),
+            name: z.string().min(1),
+            description: z.string().optional(),
+            bookedHours: z.string().optional(),
+          })),
+          settings: z.object({
+            materialMarkupPct: z.string().optional(),
+            equipmentMarkupPct: z.string().optional(),
+            subcontractorMarkupPct: z.string().optional(),
+            budgetedCost: z.string().optional(),
+            description: z.string().optional(),
+          }).optional(),
+          checklistItems: z.array(z.object({
+            text: z.string().min(1).max(500),
+            sortOrder: z.number().int().min(0),
+          })).optional(),
+        }).optional(),
+      });
+      const parsed = bodySchema.parse(req.body);
+      const updated = await storage.updateProjectTemplate(id, effectiveUserId, parsed);
+      if (!updated) {
+        return res.status(404).json({ error: "Template not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid template data", details: error.errors });
+      }
+      console.error("Error updating project template:", error);
       res.status(500).json({ error: error.message });
     }
   });

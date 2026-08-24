@@ -10469,6 +10469,19 @@ Thank you for your prompt attention to this matter.`,
     return result;
   }
 
+  async updateProjectTemplate(
+    id: string,
+    userId: string,
+    patch: { name?: string; description?: string | null; templateData?: any },
+  ): Promise<ProjectTemplate | null> {
+    const [result] = await db
+      .update(projectTemplates)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(and(eq(projectTemplates.id, id), eq(projectTemplates.userId, userId)))
+      .returning();
+    return result ?? null;
+  }
+
   async deleteProjectTemplate(id: string, userId: string): Promise<boolean> {
     const result = await db
       .delete(projectTemplates)
