@@ -18,7 +18,15 @@ const mockStorage = vi.hoisted(() => ({
 
 vi.mock("../../storage", () => ({ storage: mockStorage }));
 
-// getUserContext is used only by the new worker expense route
+// Hoisted so tests can control whether a given permission check passes or blocks.
+// Default behaviour: pass every check through (simulates a caller that holds all
+// required permissions).  A test that wants to simulate a missing permission should
+// call mockCreatePermissionMiddleware.mockReturnValueOnce((_req, res) =>
+//   res.status(403).json({ error: "Forbidden" })) *before* calling buildApp().
+const mockCreatePermissionMiddleware = vi.hoisted(() =>
+  vi.fn(() => (_req: any, _res: any, next: any) => next()),
+);
+
 const mockGetUserContext = vi.fn().mockResolvedValue({
   userId: WORKER_USER_ID,
   effectiveUserId: OWNER_USER_ID,
@@ -28,8 +36,8 @@ const mockGetUserContext = vi.fn().mockResolvedValue({
 });
 
 vi.mock("../../permissions", () => ({
-  createPermissionMiddleware: () => (_req: any, _res: any, next: any) => next(),
-  PERMISSIONS: { WRITE_EXPENSES: "write_expenses" },
+  createPermissionMiddleware: (...args: any[]) => mockCreatePermissionMiddleware(...args),
+  PERMISSIONS: { WRITE_EXPENSES: "write_expenses", READ_EXPENSES: "read_expenses" },
   getUserContext: (...args: any[]) => mockGetUserContext(...args),
 }));
 
@@ -101,12 +109,50 @@ describe("expense phase attribution", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([{ id: EXPENSE_ID, ...expenseBody }]);
-    expect(mockStorage.getExpenses).toHaveBeenCalledWith(WORKER_USER_ID, {
+    // getExpenses must be called with the effective (owner) userId so that
+    // worker-submitted expenses stored under the owner's userId are visible.
+    expect(mockStorage.getExpenses).toHaveBeenCalledWith(OWNER_USER_ID, {
       jobId: JOB_ID,
       categoryId: undefined,
       startDate: undefined,
       endDate: undefined,
     });
+  });
+
+  it("manager with READ_EXPENSES sees worker-submitted expenses queried under the owner's scope", async () => {
+    const workerExpense = {
+      id: EXPENSE_ID,
+      ...expenseBody,
+      userId: OWNER_USER_ID, // stored under owner's userId (worker expense pattern)
+      status: "pending",
+    };
+    mockStorage.getExpenses.mockResolvedValue([workerExpense]);
+
+    // Default mockGetUserContext resolves WORKER_USER_ID -> OWNER_USER_ID (manager context).
+    // Default mockCreatePermissionMiddleware passes the check (caller holds READ_EXPENSES).
+    const response = await request(buildApp())
+      .get(`/api/expenses?jobId=${JOB_ID}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(1);
+    expect(response.body[0].id).toBe(EXPENSE_ID);
+    // Storage must be queried under the effective owner scope, not the manager's own userId.
+    expect(mockStorage.getExpenses).toHaveBeenCalledWith(OWNER_USER_ID, expect.objectContaining({ jobId: JOB_ID }));
+  });
+
+  it("caller without READ_EXPENSES receives 403 and storage is never queried", async () => {
+    // Simulate a role (e.g. Worker, Subcontractor) that lacks READ_EXPENSES.
+    // The spy must be configured before buildApp() because the middleware is
+    // registered at route-setup time.
+    mockCreatePermissionMiddleware.mockReturnValueOnce((_req: any, res: any) =>
+      res.status(403).json({ error: "Forbidden" }),
+    );
+
+    const response = await request(buildApp())
+      .get(`/api/expenses?jobId=${JOB_ID}`);
+
+    expect(response.status).toBe(403);
+    expect(mockStorage.getExpenses).not.toHaveBeenCalled();
   });
 
   it("creates an expense with a phase belonging to its job", async () => {
