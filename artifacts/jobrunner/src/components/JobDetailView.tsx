@@ -1273,22 +1273,33 @@ export default function JobDetailView({
 
   const saveTemplateMutation = useMutation({
     mutationFn: async ({ name }: { name: string }) => {
-      // Fetch the current phases for this job — fail loudly if the request fails
+      // Fetch the current phases and checklist items for this job in parallel
       const token = getSessionToken();
-      const phasesRes = await fetch(`/api/jobs/${jobId}/phases`, {
-        credentials: 'include',
-        headers: token ? { 'Authorization': `Bearer ${token}` } : undefined,
-      });
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : undefined;
+      const [phasesRes, checklistRes] = await Promise.all([
+        fetch(`/api/jobs/${jobId}/phases`, { credentials: 'include', headers }),
+        fetch(`/api/jobs/${jobId}/checklist`, { credentials: 'include', headers }),
+      ]);
       if (!phasesRes.ok) {
         throw new Error(`Failed to fetch phases (${phasesRes.status})`);
       }
+      if (!checklistRes.ok) {
+        throw new Error(`Failed to fetch checklist (${checklistRes.status})`);
+      }
       const phases: any[] = await phasesRes.json();
+      const checklist: any[] = await checklistRes.json();
       const templatePhases = phases.map((p: any) => ({
         phaseCode: p.phaseCode,
         name: p.name,
         description: p.description || undefined,
         bookedHours: p.bookedHours ? String(p.bookedHours) : undefined,
       }));
+      const templateChecklistItems = checklist
+        .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+        .map((item: any, i: number) => ({
+          text: item.text,
+          sortOrder: item.sortOrder ?? i,
+        }));
       const res = await apiRequest("POST", "/api/project-templates", {
         name,
         templateData: {
@@ -1296,6 +1307,7 @@ export default function JobDetailView({
           settings: {
             description: (job as any)?.description || undefined,
           },
+          ...(templateChecklistItems.length > 0 ? { checklistItems: templateChecklistItems } : {}),
         },
       });
       if (!res.ok) {
@@ -5440,7 +5452,7 @@ export default function JobDetailView({
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
-              This will save the current phases and project description as a reusable template. You can apply it when creating new projects.
+              This will save the current phases, checklist items, and project description as a reusable template. You can apply it when creating new projects.
             </p>
             <div className="space-y-1.5">
               <Label htmlFor="template-name">Template name</Label>

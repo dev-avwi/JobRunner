@@ -42,6 +42,11 @@ interface ProjectPhase {
   bookedHours?: string;
 }
 
+interface TemplateChecklistItem {
+  localId: string;
+  text: string;
+}
+
 const PROJECT_STEPS: { id: ProjectFormStep; label: string }[] = [
   { id: 'basic', label: 'Basic' },
   { id: 'phases', label: 'Phases' },
@@ -110,6 +115,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
   const [projectFlowStep, setProjectFlowStep] = useState<ProjectFlowStep>('type-picker');
   const [projectFormStep, setProjectFormStep] = useState<ProjectFormStep>('basic');
   const [phases, setPhases] = useState<ProjectPhase[]>([]);
+  const [templateChecklistItems, setTemplateChecklistItems] = useState<TemplateChecklistItem[]>([]);
   const [retentionPercent, setRetentionPercent] = useState('5');
   const [practicalCompletionDate, setPracticalCompletionDate] = useState('');
   const [defectsLiabilityMonths, setDefectsLiabilityMonths] = useState('12');
@@ -149,6 +155,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
     templateData: {
       phases: Array<{ phaseCode: string; name: string; description?: string; bookedHours?: string }>;
       settings?: { materialMarkupPct?: string; equipmentMarkupPct?: string; subcontractorMarkupPct?: string; budgetedCost?: string; description?: string };
+      checklistItems?: Array<{ text: string; sortOrder: number }>;
     };
     createdAt: string;
   }>>({
@@ -543,6 +550,38 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
         }
       }
 
+      // After job is created, seed checklist items from template
+      if (result.id && templateChecklistItems.length > 0) {
+        const authToken = getSessionToken();
+        let checklistErrors = 0;
+        for (let i = 0; i < templateChecklistItems.length; i++) {
+          const item = templateChecklistItems[i];
+          if (!item.text.trim()) continue;
+          try {
+            const chkRes = await fetch(`/api/jobs/${result.id}/checklist`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}) },
+              credentials: 'include',
+              body: JSON.stringify({ text: item.text.trim(), sortOrder: i }),
+            });
+            if (!chkRes.ok) {
+              checklistErrors++;
+              console.error(`Failed to create checklist item "${item.text}" (${chkRes.status})`);
+            }
+          } catch (e) {
+            checklistErrors++;
+            console.error('Failed to create checklist item from template:', e);
+          }
+        }
+        if (checklistErrors > 0) {
+          toast({
+            title: `Project created — ${checklistErrors} checklist item${checklistErrors > 1 ? 's' : ''} couldn't be added`,
+            description: 'You can add them manually from the job checklist.',
+            variant: 'destructive',
+          });
+        }
+      }
+
       // After job is created, update the quote to link to this job
       if (urlQuoteId && result.id) {
         try {
@@ -636,6 +675,7 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                   type="button"
                   onClick={() => {
                     setPhases(tpl.templateData.phases.map((p, i) => ({ ...p, localId: `tpl-${i}` })));
+                    setTemplateChecklistItems((tpl.templateData.checklistItems ?? []).map((item, i) => ({ text: item.text, localId: `tpl-chk-${i}` })));
                     // Pre-fill description from template settings if present
                     if (tpl.templateData.settings?.description) {
                       form.setValue('description', tpl.templateData.settings.description);
@@ -647,7 +687,8 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                     if (tpl.templateData.settings?.budgetedCost) setBudgetedCost(tpl.templateData.settings.budgetedCost);
                     setProjectFlowStep('form');
                     setProjectFormStep('basic');
-                    toast({ title: `Template applied`, description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} loaded — review and adjust below` });
+                    const checklistCount = tpl.templateData.checklistItems?.length ?? 0;
+                    toast({ title: `Template applied`, description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''}${checklistCount > 0 ? `, ${checklistCount} checklist item${checklistCount !== 1 ? 's' : ''}` : ''} loaded — review and adjust below` });
                   }}
                   data-testid={`button-use-template-${tpl.id}`}
                   className="group w-full text-left p-4 rounded-xl border-2 border-border hover:border-primary hover:shadow-md transition-all bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
@@ -662,6 +703,9 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                         {tpl.templateData.phases.length} phase{tpl.templateData.phases.length !== 1 ? 's' : ''}
                         {tpl.templateData.phases.length > 0 && (
                           <span className="ml-1">— {tpl.templateData.phases.slice(0, 3).map(p => p.name).join(', ')}{tpl.templateData.phases.length > 3 ? '…' : ''}</span>
+                        )}
+                        {(tpl.templateData.checklistItems?.length ?? 0) > 0 && (
+                          <span className="ml-1">&middot; {tpl.templateData.checklistItems!.length} checklist item{tpl.templateData.checklistItems!.length !== 1 ? 's' : ''}</span>
                         )}
                       </p>
                     </div>
@@ -1082,6 +1126,57 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
             </Button>
           )}
 
+          {/* Pre-start checklist items */}
+          <div className="pt-4 border-t">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Pre-start Checklist</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Items seeded onto the job when it is created, all unchecked.</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTemplateChecklistItems(prev => [...prev, { localId: `chk-${Date.now()}`, text: '' }])}
+                className="gap-1.5 shrink-0"
+                data-testid="button-add-checklist-item"
+              >
+                <Plus className="h-4 w-4" />Add Item
+              </Button>
+            </div>
+            {templateChecklistItems.length === 0 ? (
+              <div className="rounded-lg border-2 border-dashed border-muted p-5 text-center">
+                <CheckCircle2 className="h-6 w-6 mx-auto mb-1.5 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">No checklist items yet — optional.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {templateChecklistItems.map((item, idx) => (
+                  <div key={item.localId} className="flex items-center gap-2" data-testid={`checklist-item-row-${idx}`}>
+                    <CheckCircle2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Input
+                      value={item.text}
+                      onChange={(e) => setTemplateChecklistItems(prev => prev.map(ci => ci.localId === item.localId ? { ...ci, text: e.target.value } : ci))}
+                      placeholder="e.g. Confirm site access with client"
+                      className="flex-1 text-sm"
+                      data-testid={`checklist-item-text-${idx}`}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 text-muted-foreground hover:text-destructive"
+                      onClick={() => setTemplateChecklistItems(prev => prev.filter(ci => ci.localId !== item.localId))}
+                      data-testid={`button-remove-checklist-item-${idx}`}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Load from template */}
           {projectTemplates.length > 0 && (
             <div className="pt-2">
@@ -1097,11 +1192,13 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                     type="button"
                     onClick={() => {
                       setPhases(tpl.templateData.phases.map((p, i) => ({ ...p, localId: `tpl-${tpl.id}-${i}` })));
+                      setTemplateChecklistItems((tpl.templateData.checklistItems ?? []).map((item, i) => ({ text: item.text, localId: `tpl-${tpl.id}-chk-${i}` })));
                       if (tpl.templateData.settings?.materialMarkupPct) setMaterialMarkupPct(tpl.templateData.settings.materialMarkupPct);
                       if (tpl.templateData.settings?.equipmentMarkupPct) setEquipmentMarkupPct(tpl.templateData.settings.equipmentMarkupPct);
                       if (tpl.templateData.settings?.subcontractorMarkupPct) setSubcontractorMarkupPct(tpl.templateData.settings.subcontractorMarkupPct);
                       if (tpl.templateData.settings?.budgetedCost) setBudgetedCost(tpl.templateData.settings.budgetedCost);
-                      toast({ title: 'Template loaded', description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''} added from "${tpl.name}"` });
+                      const loadedChecklistCount = tpl.templateData.checklistItems?.length ?? 0;
+                      toast({ title: 'Template loaded', description: `${tpl.templateData.phases.length} phase${tpl.templateData.phases.length !== 1 ? 's' : ''}${loadedChecklistCount > 0 ? `, ${loadedChecklistCount} checklist item${loadedChecklistCount !== 1 ? 's' : ''}` : ''} added from "${tpl.name}"` });
                     }}
                     data-testid={`button-load-template-${tpl.id}`}
                     className="w-full text-left p-3 rounded-lg border hover:border-primary hover:bg-muted/30 transition-colors flex items-center gap-3"
@@ -1109,7 +1206,10 @@ export default function JobForm({ onSubmit, onCancel }: JobFormProps) {
                     <div className="p-1.5 rounded-md bg-muted shrink-0"><Layers className="h-4 w-4 text-muted-foreground" /></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{tpl.name}</p>
-                      <p className="text-xs text-muted-foreground">{tpl.templateData.phases.length} phase{tpl.templateData.phases.length !== 1 ? 's' : ''}{tpl.templateData.phases.length > 0 ? ` — ${tpl.templateData.phases.slice(0, 3).map(p => p.name).join(', ')}${tpl.templateData.phases.length > 3 ? '…' : ''}` : ''}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {tpl.templateData.phases.length} phase{tpl.templateData.phases.length !== 1 ? 's' : ''}{tpl.templateData.phases.length > 0 ? ` — ${tpl.templateData.phases.slice(0, 3).map(p => p.name).join(', ')}${tpl.templateData.phases.length > 3 ? '…' : ''}` : ''}
+                        {(tpl.templateData.checklistItems?.length ?? 0) > 0 && <span className="ml-1">&middot; {tpl.templateData.checklistItems!.length} checklist item{tpl.templateData.checklistItems!.length !== 1 ? 's' : ''}</span>}
+                      </p>
                     </div>
                   </button>
                 ))}

@@ -11550,6 +11550,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             budgetedCost: z.string().optional(),
             description: z.string().optional(),
           }).optional(),
+          checklistItems: z.array(z.object({
+            text: z.string().min(1).max(500),
+            sortOrder: z.number().int().min(0),
+          })).optional(),
         }),
       });
       const parsed = bodySchema.parse(req.body);

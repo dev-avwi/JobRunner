@@ -5659,7 +5659,8 @@ export const projectTemplates = pgTable("project_templates", {
   // templateData stores:
   // {
   //   phases: { phaseCode, name, description, bookedHours }[],
-  //   settings: { materialMarkupPct?, equipmentMarkupPct?, subcontractorMarkupPct?, budgetedCost? }
+  //   settings: { materialMarkupPct?, equipmentMarkupPct?, subcontractorMarkupPct?, budgetedCost? },
+  //   checklistItems: { text, sortOrder }[]  (optional — seeded onto new jobs with isCompleted: false)
   // }
   templateData: jsonb("template_data").notNull().$type<{
     phases: Array<{
@@ -5675,6 +5676,10 @@ export const projectTemplates = pgTable("project_templates", {
       budgetedCost?: string;
       description?: string;
     };
+    checklistItems?: Array<{
+      text: string;
+      sortOrder: number;
+    }>;
   }>(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
