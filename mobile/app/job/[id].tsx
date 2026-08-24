@@ -2366,6 +2366,13 @@ export default function JobDetailScreen() {
   const [costPromptValue, setCostPromptValue] = useState('');
   const [showCostPromptModal, setShowCostPromptModal] = useState(false);
 
+  // Log Expense / Receipt modal
+  const [showLogExpenseModal, setShowLogExpenseModal] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', phaseId: '' });
+  const [expenseReceiptUri, setExpenseReceiptUri] = useState<string | null>(null);
+  const [isUploadingExpenseReceipt, setIsUploadingExpenseReceipt] = useState(false);
+  const [isSavingExpense, setIsSavingExpense] = useState(false);
+
   const [isLoadingSwms, setIsLoadingSwms] = useState(false);
   const [expandedSwmsId, setExpandedSwmsId] = useState<string | null>(null);
   const [showCreateSwmsModal, setShowCreateSwmsModal] = useState(false);
@@ -3968,6 +3975,44 @@ export default function JobDetailScreen() {
       showToast({ type: 'error', message: 'Failed to save material' });
     } finally {
       setIsSavingMaterial(false);
+    }
+  };
+
+  const handleLogExpense = async () => {
+    if (!id) return;
+    const parsedAmount = parseFloat(expenseForm.amount);
+    if (!expenseForm.description.trim()) {
+      showToast({ type: 'error', message: 'Description required' });
+      return;
+    }
+    if (!expenseForm.amount || isNaN(parsedAmount) || parsedAmount <= 0) {
+      showToast({ type: 'error', message: 'Enter a valid amount greater than $0' });
+      return;
+    }
+    setIsSavingExpense(true);
+    try {
+      const body: Record<string, any> = {
+        description: expenseForm.description.trim(),
+        amount: String(parsedAmount),
+        expenseDate: new Date().toISOString().split('T')[0],
+        isBillable: true,
+        // Use a generic fallback category id — the server will use the first available if missing
+        categoryId: '_worker_receipt_',
+      };
+      if (expenseForm.phaseId) body.phaseId = expenseForm.phaseId;
+      if (expenseReceiptUri) body.receiptUrl = expenseReceiptUri;
+
+      const res = await api.post(`/api/jobs/${id}/expenses`, body);
+      if (res.error) throw new Error(res.error);
+
+      setShowLogExpenseModal(false);
+      setExpenseForm({ amount: '', description: '', phaseId: '' });
+      setExpenseReceiptUri(null);
+      showToast({ type: 'success', message: 'Expense logged', description: 'The owner has been notified for approval.' });
+    } catch (err: any) {
+      showToast({ type: 'error', message: 'Could not log expense', description: err?.message || 'Please try again.' });
+    } finally {
+      setIsSavingExpense(false);
     }
   };
 
@@ -11831,6 +11876,22 @@ export default function JobDetailScreen() {
                 <Feather name="plus" size={20} color={colors.primary} />
               </TouchableOpacity>
             )}
+            {job.status !== 'invoiced' && (
+              <TouchableOpacity
+                style={[styles.photosCard, { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }]}
+                onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="camera" size={18} color={colors.success} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Expense / Receipt</Text>
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Photograph a receipt for reimbursement</Text>
+                </View>
+                <Feather name="plus" size={20} color={colors.success} />
+              </TouchableOpacity>
+            )}
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               <ChecklistSection jobId={job.id} readOnly={job.status === 'invoiced'} onCountsChange={(completed, total) => setChecklistCounts({ completed, total })} />
             </View>
@@ -12068,6 +12129,24 @@ export default function JobDetailScreen() {
                   <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Record parts, supplies, or materials</Text>
                 </View>
                 <Feather name="plus" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+
+            {/* ── Quick log expense / receipt ── */}
+            {job.status !== 'invoiced' && (
+              <TouchableOpacity
+                style={[styles.photosCard, { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }]}
+                onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="camera" size={18} color={colors.success} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Expense / Receipt</Text>
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Photograph a receipt for reimbursement</Text>
+                </View>
+                <Feather name="plus" size={20} color={colors.success} />
               </TouchableOpacity>
             )}
 
@@ -13185,6 +13264,155 @@ export default function JobDetailScreen() {
                     </View>
                   </View>
                 )}
+        </View>
+      </AppBottomSheet>
+
+      {/* Log Expense / Receipt Modal */}
+      <AppBottomSheet
+        visible={showLogExpenseModal}
+        onDismiss={() => { if (!isSavingExpense) { setShowLogExpenseModal(false); setExpenseReceiptUri(null); } }}
+        title="Log Expense / Receipt"
+        showCloseButton
+        snapPoints={['80%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton
+              variant="outline"
+              label="Cancel"
+              onPress={() => { setShowLogExpenseModal(false); setExpenseReceiptUri(null); }}
+              style={{ flex: 1 }}
+              disabled={isSavingExpense}
+            />
+            <SheetButton
+              label="Log Expense"
+              onPress={handleLogExpense}
+              loading={isSavingExpense}
+              disabled={isSavingExpense || !expenseForm.description.trim() || !expenseForm.amount || parseFloat(expenseForm.amount) <= 0}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
+      >
+        <View>
+          {/* Receipt photo */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Receipt Photo <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(optional)</Text></Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExpenseReceipt ? 0.6 : 1 }}
+              activeOpacity={0.7}
+              disabled={isUploadingExpenseReceipt}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+                const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingExpenseReceipt(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'expense-receipt');
+                  const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await uploadRes.json();
+                  if (json.url) setExpenseReceiptUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingExpenseReceipt(false); }
+              }}
+            >
+              {isUploadingExpenseReceipt
+                ? <ActivityIndicator size="small" color={colors.primary} />
+                : <><Feather name="camera" size={14} color={colors.primary} /><Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Take Photo</Text></>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExpenseReceipt ? 0.6 : 1 }}
+              activeOpacity={0.7}
+              disabled={isUploadingExpenseReceipt}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+                const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingExpenseReceipt(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'expense-receipt');
+                  const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await uploadRes.json();
+                  if (json.url) setExpenseReceiptUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingExpenseReceipt(false); }
+              }}
+            >
+              <Feather name="image" size={14} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+          {expenseReceiptUri && (
+            <View style={{ marginBottom: spacing.md }}>
+              <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 140, borderRadius: radius.md, resizeMode: 'cover' }} />
+              <TouchableOpacity onPress={() => setExpenseReceiptUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                <Feather name="x" size={14} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Amount */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Amount ($) *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.md }]}
+            value={expenseForm.amount}
+            onChangeText={v => setExpenseForm(f => ({ ...f, amount: v }))}
+            keyboardType="decimal-pad"
+            placeholder="0.00"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          {/* Description */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.md }]}
+            value={expenseForm.description}
+            onChangeText={v => setExpenseForm(f => ({ ...f, description: v }))}
+            placeholder="e.g. Electrical fittings from Bunnings"
+            placeholderTextColor={colors.mutedForeground}
+          />
+
+          {/* Phase picker (projects only) */}
+          {job.jobType === 'project' && phases.length > 0 && (
+            <View style={{ marginBottom: spacing.md }}>
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(optional)</Text></Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                <TouchableOpacity
+                  onPress={() => setExpenseForm(f => ({ ...f, phaseId: '' }))}
+                  style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: !expenseForm.phaseId ? colors.primary : colors.border, backgroundColor: !expenseForm.phaseId ? `${colors.primary}15` : 'transparent' }}
+                >
+                  <Text style={{ fontSize: typography.sizes.sm, color: !expenseForm.phaseId ? colors.primary : colors.mutedForeground }}>None</Text>
+                </TouchableOpacity>
+                {phases.map(p => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => setExpenseForm(f => ({ ...f, phaseId: p.id }))}
+                    style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: expenseForm.phaseId === p.id ? colors.primary : colors.border, backgroundColor: expenseForm.phaseId === p.id ? `${colors.primary}15` : 'transparent' }}
+                  >
+                    <Text style={{ fontSize: typography.sizes.sm, color: expenseForm.phaseId === p.id ? colors.primary : colors.mutedForeground }}>
+                      {p.phaseCode ? `${p.phaseCode} ` : ''}{p.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
+          <View style={{ backgroundColor: `${colors.warning}15`, borderRadius: radius.md, padding: spacing.md, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+            <Feather name="info" size={14} color={colors.warning} style={{ marginTop: 1 }} />
+            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, flex: 1 }}>
+              This expense will be sent to the owner for review and approval.
+            </Text>
+          </View>
         </View>
       </AppBottomSheet>
 
