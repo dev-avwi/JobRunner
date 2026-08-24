@@ -31,6 +31,8 @@ import {
   Loader2,
   Layers,
   CheckSquare,
+  ChevronUp,
+  ChevronDown,
   GripVertical,
   X,
 } from "lucide-react";
@@ -223,6 +225,16 @@ function TemplateFormDialog({
     });
   }
 
+  function movePhase(idx: number, direction: "up" | "down") {
+    setForm((f) => {
+      const phases = [...f.phases];
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= phases.length) return f;
+      [phases[idx], phases[swapIdx]] = [phases[swapIdx], phases[idx]];
+      return { ...f, phases };
+    });
+  }
+
   // ─── Checklist helpers ──────────────────────────────────────────────────────
 
   function addChecklist() {
@@ -304,7 +316,33 @@ function TemplateFormDialog({
             <div className="space-y-2">
               {form.phases.map((phase, idx) => (
                 <div key={idx} className="flex items-center gap-2 group">
-                  <GripVertical className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-40" />
+                  {/* Move up / move down */}
+                  <div className="flex flex-col flex-shrink-0">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-muted-foreground hover:text-foreground disabled:opacity-20"
+                      onClick={() => movePhase(idx, "up")}
+                      disabled={idx === 0}
+                      aria-label="Move phase up"
+                      data-testid={`btn-phase-up-${idx}`}
+                    >
+                      <ChevronUp className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-5 w-5 text-muted-foreground hover:text-foreground disabled:opacity-20"
+                      onClick={() => movePhase(idx, "down")}
+                      disabled={idx === form.phases.length - 1}
+                      aria-label="Move phase down"
+                      data-testid={`btn-phase-down-${idx}`}
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                   <Input
                     placeholder="Code"
                     value={phase.phaseCode}
