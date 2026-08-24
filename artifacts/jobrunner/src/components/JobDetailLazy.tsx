@@ -132,3 +132,8 @@ export const DefectsSection = lazyWithSuspense(
   () => import("./DefectsSection").then((m) => ({ default: m.DefectsSection })),
   sectionFallback,
 );
+
+export const JobChecklistSection = lazyWithSuspense(
+  () => import("./JobChecklistSection").then((m) => ({ default: m.JobChecklistSection })),
+  sectionFallback,
+);

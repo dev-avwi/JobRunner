@@ -45,6 +45,7 @@ import {
   ProjectDocumentRegister,
   DefectsSection,
   SiteDiarySection,
+  JobChecklistSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -4479,6 +4480,12 @@ export default function JobDetailView({
 
           {/* Follow-up Tasks - spawned by form task rules, plus manual */}
           <JobTasksSection jobId={jobId} />
+
+          {/* Checklist - simple tick-off items visible to office staff */}
+          <JobChecklistSection
+            jobId={jobId}
+            readOnly={job.status === 'invoiced'}
+          />
 
           <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
 
