@@ -3893,7 +3893,6 @@ export default function JobDetailScreen() {
   useEffect(() => {
     if (activeTab === 'comms' && id) {
       loadJobMessages();
-      loadSwmsDocuments();
     }
     if (activeTab === 'manage' && id) {
       loadMaterials();
@@ -3904,6 +3903,7 @@ export default function JobDetailScreen() {
     }
     if (activeTab === 'files' && id) {
       loadUploadedDocuments();
+      loadSwmsDocuments();
     }
   }, [activeTab, id]);
 
@@ -7392,10 +7392,10 @@ export default function JobDetailScreen() {
       overview: 0,
       // Tasks: incomplete checklist items
       tasks: checklistIncomplete,
-      // Files: no count badge needed
-      files: 0,
-      // Comms: unread chat messages + pending safety/SWMS issues
-      comms: chatCount + safetyIssues,
+      // Files: pending SWMS / safety issues
+      files: safetyIssues,
+      // Comms: unread messages only
+      comms: chatCount,
       manage: 0,
     };
   }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts]);
@@ -11550,7 +11550,7 @@ export default function JobDetailScreen() {
 
         {activeTab === 'overview' && renderOverviewTab()}
 
-        {/* ── Tasks: checklist, follow-up tasks, job forms, site diary ── */}
+        {/* ── Tasks: checklist, follow-up tasks, job forms, site diary, photos, notes ── */}
         {activeTab === 'tasks' && (
           <>
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
@@ -11582,27 +11582,23 @@ export default function JobDetailScreen() {
               isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
               currentUserId={user?.id}
             />
-          </>
-        )}
-
-        {/* ── Files: linked docs, uploaded files, photos, notes ── */}
-        {activeTab === 'files' && (
-          <>
-            {renderDocumentsTab()}
             {renderPhotosTab()}
             {renderNotesTab()}
           </>
         )}
 
-        {/* ── Comms: chat + SWMS / safety ── */}
-        {activeTab === 'comms' && (
+        {/* ── Files: linked docs, SWMS/safety, uploaded files ── */}
+        {activeTab === 'files' && (
           <>
-            {renderChatTab()}
+            {renderDocumentsTab()}
             <View style={styles.photosCard}>
               {renderSafetyTab()}
             </View>
           </>
         )}
+
+        {/* ── Comms: chat only ── */}
+        {activeTab === 'comms' && renderChatTab()}
         {activeTab === 'manage' && (
           <>
             {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
