@@ -165,6 +165,35 @@ describe('sendSMS() — interceptor receives sanitised body', () => {
     expect(capturedOptions!.mediaUrls).toEqual(mediaUrls);
   });
 
+  it('uses the phone number as "from" for MMS even when alphanumericSenderId is set', async () => {
+    // Twilio rejects alphanumeric sender IDs for MMS sends — the guard must
+    // fall back to a real phone number. This test exercises that branch so a
+    // future refactor cannot accidentally remove it.
+    let capturedFrom = '';
+    let capturedAlphanumericSenderId: string | undefined;
+
+    __setSmsTestInterceptor((payload) => {
+      capturedFrom = payload.resolvedFrom;
+      capturedAlphanumericSenderId = payload.alphanumericSenderId;
+      return { success: true, simulated: true };
+    });
+
+    await sendSMS({
+      to: '+61400000004',
+      message: 'Job photo attached',
+      mediaUrls: ['https://example.com/photo.jpg'],
+      alphanumericSenderId: 'JobRunner',
+      fromNumber: '+61400000099',
+    });
+
+    // The alphanumeric sender ID must be preserved in the options so callers
+    // can inspect it — but it must NOT be used as the Twilio `from` value.
+    expect(capturedAlphanumericSenderId).toBe('JobRunner');
+    // Must fall back to the real phone number for MMS compatibility.
+    expect(capturedFrom).toBe('+61400000099');
+    expect(capturedFrom).not.toBe('JobRunner');
+  });
+
   it('does not invoke a previously registered interceptor after it is cleared', async () => {
     let called = false;
     __setSmsTestInterceptor(() => {

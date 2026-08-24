@@ -303,11 +303,39 @@ interface SMSResult {
   notConfigured?: boolean;
 }
 
+/**
+ * Resolve the Twilio `from` value for a given set of SMS options and the
+ * currently-configured Twilio phone number.
+ *
+ * Twilio rejects alphanumeric sender IDs when the message includes media
+ * (MMS). In that case the function falls back to fromNumber → twilioPhone.
+ * This is the single canonical implementation of that guard; both the live
+ * send path and the test interceptor use this function so they can never
+ * diverge.
+ */
+export function resolveFromValue(
+  opts: Pick<SendSMSOptions, 'mediaUrls' | 'alphanumericSenderId' | 'fromNumber'>,
+  twilioPhone: string | null,
+): string {
+  const isMMS = (opts.mediaUrls?.length ?? 0) > 0;
+  // Alphanumeric sender IDs are one-way only — Twilio rejects them for MMS.
+  return (!isMMS && opts.alphanumericSenderId)
+    ? opts.alphanumericSenderId
+    : (opts.fromNumber || twilioPhone || '');
+}
+
 // Test-only transport interceptor: lets server tests capture the exact
-// options (esp. fromNumber) that would be handed to Twilio without sending
+// options (esp. resolvedFrom) that would be handed to Twilio without sending
 // a real SMS. Never active in production.
-let smsTestInterceptor: ((options: SendSMSOptions) => SMSResult | Promise<SMSResult>) | null = null;
-export function __setSmsTestInterceptor(fn: ((options: SendSMSOptions) => SMSResult | Promise<SMSResult>) | null) {
+//
+// resolvedFrom is produced by resolveFromValue() — the same function used in
+// the live send path — so the test is guarding the real guard code.
+interface SmsInterceptorPayload extends SendSMSOptions {
+  /** Resolved Twilio `from` value, produced by resolveFromValue() */
+  resolvedFrom: string;
+}
+let smsTestInterceptor: ((payload: SmsInterceptorPayload) => SMSResult | Promise<SMSResult>) | null = null;
+export function __setSmsTestInterceptor(fn: ((payload: SmsInterceptorPayload) => SMSResult | Promise<SMSResult>) | null) {
   if (process.env.NODE_ENV === 'production') return;
   smsTestInterceptor = fn;
 }
@@ -321,10 +349,15 @@ export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
     message: toGSM(options.message),
   };
 
+  // Resolve the sender before the test interceptor so the interceptor can
+  // assert the exact `from` value Twilio would receive. resolveFromValue() is
+  // the canonical implementation shared with the live send path below.
+  const resolvedFrom = resolveFromValue(sanitisedOptions, twilioPhoneNumber);
+
   if (smsTestInterceptor) {
-    return await smsTestInterceptor(sanitisedOptions);
+    return await smsTestInterceptor({ ...sanitisedOptions, resolvedFrom });
   }
-  const { to, message, mediaUrls, alphanumericSenderId } = sanitisedOptions;
+  const { to, message, mediaUrls } = sanitisedOptions;
 
   // Format Australian phone number
   let formattedTo = to.replace(/\s+/g, '').replace(/^0/, '+61');
@@ -352,10 +385,8 @@ export async function sendSMS(options: SendSMSOptions): Promise<SMSResult> {
   }
 
   try {
-    // Use alphanumeric sender ID for one-way SMS (no MMS support), dedicated number, or platform number
-    const fromValue = (!isMMS && options.alphanumericSenderId) 
-      ? options.alphanumericSenderId 
-      : (options.fromNumber || twilioPhoneNumber);
+    // Use the same canonical resolver so live path and test path are identical.
+    const fromValue = resolveFromValue(sanitisedOptions, twilioPhoneNumber);
 
     const messageOptions: any = {
       body: message,  // already sanitised to GSM-7 above
