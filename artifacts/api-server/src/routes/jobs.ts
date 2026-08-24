@@ -10135,6 +10135,119 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  // ── Worker phase status advancement ─────────────────────────────────────────
+  // Workers (READ_JOBS permission) may advance a phase forward through the
+  // sequence not_started → in_progress → complete. Regression is blocked for
+  // non-owner/manager callers. Owners and managers retain full control via the
+  // full PATCH endpoint below.
+  app.post("/api/jobs/:jobId/phases/:phaseId/advance-status", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, phaseId } = req.params;
+      const userContext = req.userContext;
+      const effectiveUserId = req.effectiveUserId || userId;
+
+      // Resolve the job — support cross-business subcontractor assignments
+      let job = await storage.getJob(jobId, effectiveUserId);
+      let jobOwnerId = effectiveUserId;
+      let crossBusinessAssigned = false;
+      if (!job) {
+        const ja = await storage.getJobAssignmentForUser(jobId, userId);
+        if (ja) {
+          job = await storage.getJobPublic(jobId);
+          if (job) {
+            crossBusinessAssigned = true;
+            jobOwnerId = (job as any).userId || effectiveUserId;
+          }
+        }
+      }
+      if (!job) return res.status(404).json({ error: "Job not found" });
+
+      // Staff workers must be assigned to this job
+      const isOwnerOrManager = userContext?.isOwner || userContext?.permissions?.includes('view_all');
+      if (!isOwnerOrManager && !crossBusinessAssigned) {
+        const assignIds = [userContext?.teamMemberId, userId].filter(Boolean);
+        let isAssigned = assignIds.includes((job as any).assignedTo) ||
+                         assignIds.includes((job as any).assignedTeamMemberId);
+        if (!isAssigned) {
+          const ja = await storage.getJobAssignmentForUser(job.id, userId);
+          isAssigned = !!ja;
+        }
+        if (!isAssigned) return res.status(403).json({ error: "You can only update phases on your assigned jobs" });
+      }
+
+      // Fetch the current phase (always scoped to the job owner's tenant)
+      const phases = await storage.getJobPhases(jobId, jobOwnerId);
+      const phase = phases.find((p: any) => p.id === phaseId);
+      if (!phase) return res.status(404).json({ error: "Phase not found" });
+
+      // Determine the next status in the advancement sequence
+      const advanceMap: Record<string, string> = {
+        not_started: 'in_progress',
+        in_progress: 'complete',
+      };
+      const nextStatus = advanceMap[phase.status as string];
+      if (!nextStatus) {
+        return res.status(422).json({
+          error: phase.status === 'complete'
+            ? "This phase is already complete"
+            : "This phase cannot be advanced further",
+          code: "STATUS_TRANSITION_FORBIDDEN",
+        });
+      }
+
+      // Persist the status update — phases are always owned by the job owner
+      const [updated] = await db
+        .update(jobPhases)
+        .set({ status: nextStatus as any, updatedAt: new Date() })
+        .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId)))
+        .returning();
+
+      if (!updated) return res.status(404).json({ error: "Phase not found" });
+
+      // Fire-and-forget push notification to the job owner
+      try {
+        const actor = await storage.getUser(userId);
+        const actorName = actor?.firstName || actor?.username || 'A team member';
+        const statusLabel = nextStatus === 'in_progress' ? 'In Progress' : 'Complete';
+
+        // Only notify the owner when a worker (not the owner themselves) made the change
+        if (userId !== jobOwnerId) {
+          const { sendPushNotification } = await import('../pushNotifications');
+          sendPushNotification({
+            userId: jobOwnerId,
+            type: 'general',
+            title: `Phase ${statusLabel}`,
+            body: `${actorName} marked "${phase.name}" as ${statusLabel} on "${(job as any).title}"`,
+            data: { jobId: job.id, phaseId, relatedType: 'job' },
+            skipInAppNotification: true,
+          }).catch((e: any) => console.error('[Phase advance] Push notification failed:', e));
+        }
+
+        // Also create an in-app notification
+        await storage.createNotification({
+          userId: jobOwnerId,
+          type: 'job_status_changed',
+          title: `Phase ${statusLabel}`,
+          message: `${actorName} marked "${phase.name}" as ${statusLabel} on "${(job as any).title}"`,
+          priority: 'normal',
+          actionUrl: `/jobs/${job.id}`,
+          actionLabel: 'View Job',
+          relatedId: job.id,
+          relatedType: 'job',
+        }).catch((e: any) => console.error('[Phase advance] In-app notification failed:', e));
+      } catch (notifyErr) {
+        console.error('[Phase advance] Notification error:', notifyErr);
+      }
+
+      const enriched = await enrichPhasesWithAssignees([updated]);
+      res.json(enriched[0]);
+    } catch (err: any) {
+      console.error("Error advancing phase status:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.patch("/api/jobs/:jobId/phases/:phaseId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;

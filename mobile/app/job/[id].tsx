@@ -2307,16 +2307,18 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage' | 'documents'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
-
-  type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
-  const [jobTasks, setJobTasks] = useState<JobTaskCost[]>([]);
   const [activeChip, setActiveChip] = useState<string>('status');
 
   // Job Phases
   const [phases, setPhases] = useState<JobPhase[]>([]);
   const [isLoadingPhases, setIsLoadingPhases] = useState(false);
+  const [phaseStatusLoading, setPhaseStatusLoading] = useState<Set<string>>(new Set());
+
+  // Job task cost data — pre-loaded at job scope so the profitability card can link to the Tasks tab
+  type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
+  const [jobTasks, setJobTasks] = useState<JobTaskCost[]>([]);
 
   // Progress Claims
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
@@ -2872,6 +2874,37 @@ export default function JobDetailScreen() {
       console.error('Error loading job phases:', e);
     } finally {
       setIsLoadingPhases(false);
+    }
+  }, [id]);
+
+  const handleAdvancePhaseStatus = useCallback(async (phaseId: string, currentStatus: string) => {
+    if (!id) return;
+    setPhaseStatusLoading(prev => new Set(prev).add(phaseId));
+    try {
+      const res = await api.post<any>(`/api/jobs/${id}/phases/${phaseId}/advance-status`, {});
+      if (!res.error && res.data?.status) {
+        setPhases(prev => prev.map(p => p.id === phaseId ? { ...p, status: res.data.status } : p));
+      } else if (res.error) {
+        const msg = (res.data as any)?.error || res.error || 'Failed to update phase status';
+        Alert.alert('Error', msg);
+      }
+    } catch (e: any) {
+      const msg = e?.response?.data?.error || 'Failed to update phase status';
+      Alert.alert('Error', msg);
+    } finally {
+      setPhaseStatusLoading(prev => { const next = new Set(prev); next.delete(phaseId); return next; });
+    }
+  }, [id]);
+
+  const loadJobTasks = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await api.get<JobTaskCost[]>(`/api/jobs/${id}/tasks`);
+      if (!res.error && Array.isArray(res.data)) {
+        setJobTasks(res.data);
+      }
+    } catch {
+      // non-fatal — Tasks tab will load its own copy
     }
   }, [id]);
 
@@ -5270,18 +5303,6 @@ export default function JobDetailScreen() {
     setRefreshing(false);
   };
 
-  const loadJobTasks = useCallback(async () => {
-    if (!id) return;
-    try {
-      const res = await api.get<JobTaskCost[]>(`/api/jobs/${id}/tasks`);
-      if (!res.error && Array.isArray(res.data)) {
-        setJobTasks(res.data);
-      }
-    } catch {
-      // non-fatal — Tasks tab will load its own copy
-    }
-  }, [id]);
-
   const loadProfitability = useCallback(async () => {
     if (!id) return;
     setIsLoadingProfitability(true);
@@ -6387,7 +6408,7 @@ export default function JobDetailScreen() {
         'Safety Check Required',
         'Safety documentation is incomplete. Starting the timer will transition this job to "In Progress". Complete safety docs first?',
         [
-          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('documents') },
+          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('files') },
           { text: 'Start Anyway', style: 'secondary', onPress: () => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId)) },
           { text: 'Cancel', style: 'plain' },
         ],
@@ -6510,7 +6531,7 @@ export default function JobDetailScreen() {
           title: 'Before Photo Required',
           message: 'A "Before" photo is required before starting this job. Please take a photo to document the work site and mark it as "Before".',
           confirmText: 'Take Photo',
-        }).then((ok) => { if (ok) setActiveTab('documents'); });
+        }).then((ok) => { if (ok) setActiveTab('files'); });
         return;
       }
     }
@@ -6525,7 +6546,7 @@ export default function JobDetailScreen() {
             title: 'After Photo Required',
             message: 'An "After" photo is required before completing this job. Please take a photo to document the completed work and mark it as "After".',
             confirmText: 'Take Photo',
-          }).then((ok) => { if (ok) setActiveTab('documents'); });
+          }).then((ok) => { if (ok) setActiveTab('files'); });
           return;
         }
       }
@@ -6566,7 +6587,7 @@ export default function JobDetailScreen() {
         'Safety Check Required',
         `${warningMsg}.\n\nSWMS documents are legally required for high-risk construction work. Complete safety documentation before starting work?`,
         [
-          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('documents') },
+          { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('files') },
           {
             text: 'Start Anyway',
             style: 'secondary',
@@ -8298,7 +8319,7 @@ export default function JobDetailScreen() {
             </Text>
           </View>
           <TouchableOpacity 
-            onPress={() => setActiveTab('documents')}
+            onPress={() => setActiveTab('files')}
             style={{ padding: spacing.sm }}
           >
             <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
@@ -11592,7 +11613,7 @@ export default function JobDetailScreen() {
                     position: 'absolute',
                     top: -4,
                     right: -8,
-                    backgroundColor: (tab.id as string) === 'documents' ? colors.warning : colors.primary,
+                    backgroundColor: tab.id === 'files' ? colors.warning : colors.primary,
                     minWidth: 16,
                     height: 16,
                     borderRadius: 8,
@@ -11600,7 +11621,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: (tab.id as string) === 'documents' ? colors.white : colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: tab.id === 'files' ? colors.white : colors.primaryForeground }}>
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Text>
                   </View>
@@ -11768,7 +11789,7 @@ export default function JobDetailScreen() {
                     <View>
                       <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
                       <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}·{' '}
+                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}&middot;{' '}
                         {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
                       </Text>
                     </View>
@@ -11887,6 +11908,27 @@ export default function JobDetailScreen() {
                       </Text>
                     </TouchableOpacity>
                   )}
+
+                  {/* Phase status advance — workers tap to move forward; hidden once complete */}
+                  {(phase.status === 'not_started' || phase.status === 'in_progress') && (() => {
+                    const isAdvancing = phaseStatusLoading.has(phase.id);
+                    const nextLabel = phase.status === 'not_started' ? 'Mark In Progress' : 'Mark Complete';
+                    const nextIcon: any = phase.status === 'not_started' ? 'arrow-right-circle' : 'check-circle';
+                    const btnColor = phase.status === 'not_started' ? colors.primary : colors.success;
+                    return (
+                      <TouchableOpacity
+                        onPress={() => handleAdvancePhaseStatus(phase.id, phase.status)}
+                        disabled={isAdvancing}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: `${btnColor}40`, backgroundColor: `${btnColor}08`, opacity: isAdvancing ? 0.6 : 1 }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name={isAdvancing ? 'loader' : nextIcon} size={14} color={btnColor} />
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: btnColor }}>
+                          {isAdvancing ? 'Updating...' : nextLabel}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
                 </View>
               );
             }) : (
@@ -11929,75 +11971,7 @@ export default function JobDetailScreen() {
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               <ChecklistSection jobId={job.id} readOnly={job.status === 'invoiced'} onCountsChange={(completed, total) => setChecklistCounts({ completed, total })} />
             </View>
-            {/* Task cost summary row */}
-            {(() => {
-              if (jobTasks.length === 0) return null;
-              const tasksWithCost = jobTasks.filter(t =>
-                t.estimatedHours || t.actualHours || t.estimatedMaterialCost || t.actualMaterialCost
-              );
-              if (tasksWithCost.length === 0) return null;
-
-              const parseNum = (v: string | null | undefined) => { const n = parseFloat(v ?? ''); return isNaN(n) ? 0 : n; };
-              const totalEstH = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedHours), 0);
-              const totalActH = tasksWithCost.reduce((s, t) => s + parseNum(t.actualHours), 0);
-              const totalEstM = tasksWithCost.reduce((s, t) => s + parseNum(t.estimatedMaterialCost), 0);
-              const totalActM = tasksWithCost.reduce((s, t) => s + parseNum(t.actualMaterialCost), 0);
-              const overrunCount = tasksWithCost.filter(t => {
-                const hOver = parseNum(t.estimatedHours) > 0 && parseNum(t.actualHours) > parseNum(t.estimatedHours);
-                const mOver = parseNum(t.estimatedMaterialCost) > 0 && parseNum(t.actualMaterialCost) > parseNum(t.estimatedMaterialCost);
-                return hOver || mOver;
-              }).length;
-              const hoursOver = totalEstH > 0 && totalActH > totalEstH;
-              const materialsOver = totalEstM > 0 && totalActM > totalEstM;
-              const anyOver = hoursOver || materialsOver;
-
-              return (
-                <View style={[styles.photosCard, { marginBottom: spacing.md, borderColor: anyOver ? `${colors.destructive}60` : overrunCount > 0 ? `${colors.warning}60` : colors.cardBorder }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
-                    <Feather name="bar-chart-2" size={iconSizes.md} color={anyOver ? colors.destructive : overrunCount > 0 ? colors.warning : colors.foreground} />
-                    <Text style={{ ...typography.subtitle, fontWeight: fontWeights.bold, color: colors.foreground }}>Task Cost Summary</Text>
-                    {overrunCount > 0 && (
-                      <View style={{ backgroundColor: anyOver ? `${colors.destructive}18` : `${colors.warning}18`, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: radius.sm, marginLeft: 'auto' }}>
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: anyOver ? colors.destructive : colors.warning }}>
-                          {overrunCount} over budget
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  {(totalEstH > 0 || totalActH > 0) && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        {hoursOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
-                        <Text style={{ fontSize: typography.button.fontSize, color: hoursOver ? colors.destructive : colors.mutedForeground }}>Hours</Text>
-                      </View>
-                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: hoursOver ? colors.destructive : colors.foreground }}>
-                        {totalActH > 0 ? `${totalActH.toFixed(1)}h` : '—'}
-                        {totalEstH > 0 ? ` / ${totalEstH.toFixed(1)}h est` : ''}
-                      </Text>
-                    </View>
-                  )}
-                  {(totalEstM > 0 || totalActM > 0) && (
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.xs }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        {materialsOver && <Feather name="alert-triangle" size={12} color={colors.destructive} />}
-                        <Text style={{ fontSize: typography.button.fontSize, color: materialsOver ? colors.destructive : colors.mutedForeground }}>Materials</Text>
-                      </View>
-                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: materialsOver ? colors.destructive : colors.foreground }}>
-                        {totalActM > 0 ? formatCurrency(totalActM) : '—'}
-                        {totalEstM > 0 ? ` / ${formatCurrency(totalEstM)} est` : ''}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              );
-            })()}
-            <JobTasksSection
-              jobId={job.id}
-              readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
-              canLogWork={job.status !== 'invoiced'}
-              containerStyle={styles.photosCard}
-              onTasksLoaded={setJobTasks}
-            />
+            <JobTasksSection jobId={job.id} readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)} canLogWork={job.status !== 'invoiced'} containerStyle={styles.photosCard} />
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
@@ -12106,7 +12080,7 @@ export default function JobDetailScreen() {
                     <View>
                       <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
                       <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}·{' '}
+                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}&middot;{' '}
                         {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
                       </Text>
                     </View>
@@ -12194,6 +12168,7 @@ export default function JobDetailScreen() {
                 }
               />
             </View>
+
             <JobTasksSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
