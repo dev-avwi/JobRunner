@@ -7533,6 +7533,9 @@ export default function JobDetailScreen() {
     const chatCount = jobMessages.length;
     const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
     const safetyIssues = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
+    const pendingExpenseCount = (isOwnerOrManager || isSoloOwner)
+      ? jobExpenses.filter(e => e.status === 'pending').length
+      : 0;
     return {
       overview: 0,
       // Tasks: incomplete checklist items
@@ -7541,9 +7544,10 @@ export default function JobDetailScreen() {
       files: safetyIssues,
       // Comms: unread messages only
       comms: chatCount,
-      manage: 0,
+      // Manage: pending worker expenses awaiting owner approval
+      manage: pendingExpenseCount,
     };
-  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts]);
+  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts, jobExpenses, isOwnerOrManager, isSoloOwner]);
 
   // ─── Hooks that were previously after early returns — must be declared here
   // so the hook count is stable across every render (Rules of Hooks).
@@ -11613,7 +11617,7 @@ export default function JobDetailScreen() {
                     position: 'absolute',
                     top: -4,
                     right: -8,
-                    backgroundColor: tab.id === 'files' ? colors.warning : colors.primary,
+                    backgroundColor: (tab.id === 'files' || tab.id === 'manage') ? colors.warning : colors.primary,
                     minWidth: 16,
                     height: 16,
                     borderRadius: 8,
@@ -11621,7 +11625,7 @@ export default function JobDetailScreen() {
                     justifyContent: 'center',
                     paddingHorizontal: 3,
                   }}>
-                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: tab.id === 'files' ? colors.white : colors.primaryForeground }}>
+                    <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: (tab.id === 'files' || tab.id === 'manage') ? colors.white : colors.primaryForeground }}>
                       {badgeCount > 99 ? '99+' : badgeCount}
                     </Text>
                   </View>
@@ -12209,6 +12213,31 @@ export default function JobDetailScreen() {
         {activeTab === 'comms' && renderChatTab()}
         {activeTab === 'manage' && (
           <>
+            {/* Pending expenses callout — owners/managers only */}
+            {(isOwnerOrManager || isSoloOwner) && jobExpenses.filter(e => e.status === 'pending').length > 0 && (() => {
+              const pendingCount = jobExpenses.filter(e => e.status === 'pending').length;
+              return (
+                <View style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  backgroundColor: `${colors.warning}18`,
+                  borderRadius: radius.md,
+                  padding: spacing.md,
+                  marginBottom: spacing.md,
+                  borderWidth: 1,
+                  borderColor: colors.warning,
+                  gap: spacing.sm,
+                }}>
+                  <Feather name="alert-circle" size={18} color={colors.warning} />
+                  <Text style={{ flex: 1, ...typography.caption, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                    {pendingCount === 1
+                      ? '1 worker expense needs your approval before invoicing'
+                      : `${pendingCount} worker expenses need your approval before invoicing`}
+                  </Text>
+                </View>
+              );
+            })()}
+
             {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
             {isProject && (
               <>
