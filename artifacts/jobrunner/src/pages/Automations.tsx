@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -55,8 +55,85 @@ import {
   Loader2,
   Eye,
   Send,
-  Calendar
+  Calendar,
+  AlertTriangle
 } from "lucide-react";
+
+// ── GSM-7 helpers ────────────────────────────────────────────────────────────
+// Mirrors server-side toGSM() in twilioClient.ts and the gsmSeptetLength()
+// helper in smsGsm7.test.ts so the front-end preview count stays in sync.
+
+/** Extension characters each cost 2 septets (ESC + encoded char). */
+const GSM7_EXTENSION_CHARS = new Set(['\f', '^', '{', '}', '\\', '[', '~', ']', '|', '€']);
+
+/** Replace non-GSM-7 codepoints with safe equivalents (matches server toGSM). */
+function sanitiseToGSM(text: string): string {
+  return text
+    .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+    .replace(/\u2014/g, '-')
+    .replace(/\u2013/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\u00A0/g, ' ')
+    .replace(/[^\x20-\x5F\x61-\x7E\u000A\u000D\u00A1\u00A3\u00A4\u00A5\u00A7\u00BF\u00C4\u00C5\u00C6\u00C7\u00C9\u00D1\u00D6\u00D8\u00DC\u00DF\u00E0\u00E4\u00E5\u00E6\u00E8\u00E9\u00EC\u00F1\u00F2\u00F6\u00F8\u00F9\u00FC\u0393\u0394\u0398\u039B\u039E\u03A0\u03A3\u03A6\u03A8\u03A9\u20AC]/g, '?');
+}
+
+/** Count GSM-7 septets: extension chars = 2, basic chars = 1. */
+function gsmSeptets(text: string): number {
+  let n = 0;
+  for (const ch of text) {
+    n += GSM7_EXTENSION_CHARS.has(ch) ? 2 : 1;
+  }
+  return n;
+}
+
+type ReminderTone = 'friendly' | 'professional' | 'firm';
+
+// Representative placeholder values that mirror what the reminder service sends.
+const PREVIEW_CLIENT   = 'Jane Smith';
+const PREVIEW_INVOICE  = 'INV-XXXX';
+const PREVIEW_AMOUNT   = '1,234.56';
+const PREVIEW_BUSINESS = 'Your Business';
+// Matches URL shape: ${baseUrl}/portal/invoice/${uuid}/pay/${uuid}
+const PREVIEW_PAY_URL  =
+  'https://app.jobrunner.com.au/portal/invoice/' +
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx/pay/' +
+  'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+
+/** Build a representative SMS body using the same template strings as the server. */
+function buildPreviewSmsBody(
+  tone: ReminderTone,
+  daysOverdue: number,
+  includePayLink: boolean,
+): string {
+  const c = PREVIEW_CLIENT;
+  const inv = PREVIEW_INVOICE;
+  const amt = PREVIEW_AMOUNT;
+  const biz = PREVIEW_BUSINESS;
+  const lnk = includePayLink ? `\nPay here: ${PREVIEW_PAY_URL}` : '';
+  // Map the configured overdue days to the nearest template bucket.
+  const day: 7 | 14 | 30 = daysOverdue >= 30 ? 30 : daysOverdue >= 14 ? 14 : 7;
+
+  const bodies: Record<ReminderTone, Record<7 | 14 | 30, string>> = {
+    friendly: {
+      7:  `Hi ${c}, friendly reminder that invoice ${inv} for $${amt} is now overdue. Thanks! - ${biz}${lnk}`,
+      14: `Hi ${c}, invoice ${inv} for $${amt} is 2 weeks overdue. Please arrange payment. Thanks - ${biz}${lnk}`,
+      30: `URGENT: Invoice ${inv} for $${amt} is 30 days overdue. Please contact us immediately. - ${biz}${lnk}`,
+    },
+    professional: {
+      7:  `Payment reminder: Invoice ${inv} for $${amt} is 7 days overdue. - ${biz}${lnk}`,
+      14: `Second notice: Invoice ${inv} for $${amt} is 14 days overdue. Immediate payment requested. - ${biz}${lnk}`,
+      30: `FINAL NOTICE: Invoice ${inv} for $${amt} is 30 days overdue. Immediate payment required. - ${biz}${lnk}`,
+    },
+    firm: {
+      7:  `Invoice ${inv} for $${amt} is overdue. Payment required. - ${biz}${lnk}`,
+      14: `Invoice ${inv} - $${amt} - 14 days overdue. Pay immediately. - ${biz}${lnk}`,
+      30: `FINAL DEMAND: Invoice ${inv} - $${amt} - 30 days overdue. Collection action pending. - ${biz}${lnk}`,
+    },
+  };
+  return bodies[tone][day];
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface AutomationRule {
   id: string;
@@ -311,7 +388,12 @@ export default function Automations() {
     queryKey: ['/api/automation-settings'],
   });
 
+  const { data: bizSettings } = useQuery<{ reminderTone?: string }>({
+    queryKey: ['/api/business-settings'],
+  });
+
   const [settingsForm, setSettingsForm] = useState<Partial<AutomationSettings>>({});
+  const [reminderTone, setReminderTone] = useState<ReminderTone>('friendly');
 
   // Sync settings form when data loads
   useEffect(() => {
@@ -319,6 +401,13 @@ export default function Automations() {
       setSettingsForm(settings);
     }
   }, [settings]);
+
+  // Sync reminder tone from business settings
+  useEffect(() => {
+    if (bizSettings?.reminderTone) {
+      setReminderTone(bizSettings.reminderTone as ReminderTone);
+    }
+  }, [bizSettings]);
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: Partial<AutomationSettings>) => {
@@ -337,6 +426,15 @@ export default function Automations() {
         description: "Failed to save settings",
         variant: "destructive",
       });
+    },
+  });
+
+  const updateToneMutation = useMutation({
+    mutationFn: async (tone: ReminderTone) => {
+      return apiRequest('PATCH', '/api/business-settings', { reminderTone: tone });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] });
     },
   });
 
@@ -379,6 +477,23 @@ export default function Automations() {
       });
     },
   });
+
+  // SMS preview and GSM-7 septet count for the Invoice Reminders settings
+  const invoiceSmsSelected = ['sms', 'both'].includes(settingsForm.invoiceReminderType ?? 'email');
+
+  const previewSmsBody = useMemo(() => {
+    if (!invoiceSmsSelected) return '';
+    return buildPreviewSmsBody(
+      reminderTone,
+      settingsForm.invoiceOverdueReminderDays ?? 7,
+      true, // payment link is always appended when the invoice has a payment token
+    );
+  }, [reminderTone, settingsForm.invoiceOverdueReminderDays, invoiceSmsSelected]);
+
+  const previewSmsSeptets = useMemo(() => {
+    if (!previewSmsBody) return 0;
+    return gsmSeptets(sanitiseToGSM(previewSmsBody));
+  }, [previewSmsBody]);
 
   // Daily Summary state and mutations
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -1102,6 +1217,70 @@ export default function Automations() {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Reminder tone */}
+                      <div>
+                        <Label>Reminder tone</Label>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Sets the language used in all automated invoice reminders
+                        </p>
+                        <div className="flex gap-2 flex-wrap">
+                          {(['friendly', 'professional', 'firm'] as const).map((t) => (
+                            <Button
+                              key={t}
+                              type="button"
+                              size="sm"
+                              variant={reminderTone === t ? 'default' : 'outline'}
+                              onClick={() => setReminderTone(t)}
+                              data-testid={`btn-reminder-tone-${t}`}
+                            >
+                              {t.charAt(0).toUpperCase() + t.slice(1)}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Live GSM-7 septet counter — only when SMS is enabled */}
+                      {invoiceSmsSelected && (
+                        <div
+                          className={`rounded-md p-3 text-sm space-y-2 border ${
+                            previewSmsSeptets > 160
+                              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+                              : 'bg-muted border-transparent'
+                          }`}
+                          data-testid="sms-segment-counter"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              SMS preview (overdue, with payment link)
+                            </span>
+                            <span
+                              className={`font-mono text-xs font-semibold tabular-nums ${
+                                previewSmsSeptets > 160
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                              data-testid="sms-septet-count"
+                            >
+                              {previewSmsSeptets} / 160 septets
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono leading-relaxed break-all whitespace-pre-wrap">
+                            {sanitiseToGSM(previewSmsBody)}
+                          </p>
+                          {previewSmsSeptets > 160 && (
+                            <div className="flex items-start gap-2 text-amber-700 dark:text-amber-400">
+                              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                              <span className="text-xs">
+                                This message will be split into{' '}
+                                {Math.ceil(previewSmsSeptets / 153)} segments and charged
+                                separately. To stay under 160 septets, try a shorter business name or
+                                switch to a tone without the payment link.
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -1353,8 +1532,9 @@ export default function Automations() {
                   onClick={() => {
                     const { id, userId, createdAt, updatedAt, dailySummaryLastSent, ...settingsToSave } = settingsForm as any;
                     updateSettingsMutation.mutate(settingsToSave);
+                    updateToneMutation.mutate(reminderTone);
                   }}
-                  disabled={updateSettingsMutation.isPending}
+                  disabled={updateSettingsMutation.isPending || updateToneMutation.isPending}
                   data-testid="button-save-settings"
                 >
                   {updateSettingsMutation.isPending ? (
