@@ -11553,6 +11553,105 @@ export default function JobDetailScreen() {
         {/* ── Tasks: checklist, follow-up tasks, job forms, site diary, photos, notes ── */}
         {activeTab === 'tasks' && (
           <>
+            {/* ── Time tracking + estimated hours card ── */}
+            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+              {/* Quoted vs tracked hours row */}
+              {(job.estimatedDuration || totalTrackedHours > 0) && (
+                <View style={{ flexDirection: 'row', gap: spacing.lg, paddingBottom: spacing.md, marginBottom: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  {!!job.estimatedDuration && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Quoted</Text>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                        {(job.estimatedDuration / 60).toFixed(1)} hrs
+                      </Text>
+                    </View>
+                  )}
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Tracked</Text>
+                    <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: totalTrackedHours > 0 ? colors.foreground : colors.mutedForeground }}>
+                      {totalTrackedHours > 0 ? formatTrackedHours(totalTrackedHours) : '0 hrs'}
+                    </Text>
+                  </View>
+                  {!!job.estimatedDuration && totalTrackedHours > 0 && (
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>Status</Text>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: (totalTrackedHours * 60) > (job.estimatedDuration ?? 0) ? colors.destructive : colors.success }}>
+                        {(totalTrackedHours * 60) > (job.estimatedDuration ?? 0) ? 'Over estimate' : 'On track'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              {/* Compact timer controls */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                  <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isTimerForThisJob ? `${colors.success}20` : `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name={isTimerForThisJob && isOnBreak() ? 'coffee' : 'clock'} size={18} color={isTimerForThisJob ? colors.success : colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                      {isTimerForThisJob ? (isOnBreak() ? 'On Break' : 'Timer Running') : 'Time Tracking'}
+                    </Text>
+                    {isTimerForThisJob ? (
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: isOnBreak() ? colors.warning : colors.success }}>
+                        {formatElapsedTime(elapsedTime)}
+                      </Text>
+                    ) : activeTimer ? (
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Timer on another job</Text>
+                    ) : (
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Not started</Text>
+                    )}
+                  </View>
+                </View>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  {isTimerForThisJob && (
+                    <TouchableOpacity
+                      onPress={isOnBreak() ? handleResumeWork : handleTakeBreak}
+                      style={{ width: 38, height: 38, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name={isOnBreak() ? 'play' : 'coffee'} size={14} color={colors.foreground} />
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    onPress={isTimerForThisJob ? handleStopTimer : handleStartTimer}
+                    disabled={timerLoading}
+                    style={{ paddingHorizontal: spacing.md, height: 38, borderRadius: radius.md, backgroundColor: isTimerForThisJob ? colors.destructive : colors.primary, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs, opacity: timerLoading ? 0.6 : 1 }}
+                    activeOpacity={0.7}
+                  >
+                    {timerLoading ? (
+                      <ActivityIndicator size="small" color={colors.primaryForeground} />
+                    ) : (
+                      <>
+                        <Feather name={isTimerForThisJob ? 'square' : 'play'} size={13} color={colors.primaryForeground} />
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
+                          {isTimerForThisJob ? 'Stop' : 'Start Timer'}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            {/* ── Quick log material used ── */}
+            {job.status !== 'invoiced' && (
+              <TouchableOpacity
+                style={[styles.photosCard, { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }]}
+                onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="package" size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Material Used</Text>
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Record parts, supplies, or materials</Text>
+                </View>
+                <Feather name="plus" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               <ChecklistSection
                 jobId={job.id}

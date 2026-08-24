@@ -18749,6 +18749,28 @@ Be specific about materials, colors, and features that would be included.`
         return res.status(404).json({ error: "Checklist item not found" });
       }
       res.json(item);
+
+      // Notify the job owner when a team member marks an item complete
+      if (updates.isCompleted === true && item.jobId) {
+        try {
+          const job = await storage.getJob(item.jobId, userContext.effectiveUserId);
+          if (job && job.userId && job.userId !== userContext.effectiveUserId) {
+            await storage.createNotification({
+              userId: job.userId,
+              title: 'Task completed',
+              message: `"${(item as any).title}" was marked complete on ${job.title}`,
+              type: 'job_update',
+              relatedId: item.jobId,
+              action: `/job/${item.jobId}`,
+              priority: 'info',
+            });
+            await notifyJobUpdate(job.userId, job.title, item.jobId, `Checklist: "${(item as any).title}" marked complete`);
+          }
+        } catch (notifErr) {
+          // Non-fatal — notification failure must not break the response
+          console.error('Checklist completion notification failed:', notifErr);
+        }
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid checklist item data", details: error.errors });
