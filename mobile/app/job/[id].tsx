@@ -10028,12 +10028,34 @@ export default function JobDetailScreen() {
                   <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Materials</Text>
                   <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.materials)}</Text>
                 </View>
-                {(pd.costs.expenses ?? 0) > 0 && (
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Expenses</Text>
-                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.expenses ?? 0)}</Text>
-                  </View>
-                )}
+                {(pd.costs.expenses ?? 0) > 0 && (() => {
+                  const pendingExpenses = jobExpenses.filter(e => e.status === 'pending');
+                  const pendingTotal = pendingExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                  return (
+                    <>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Expenses</Text>
+                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.expenses ?? 0)}</Text>
+                      </View>
+                      {pendingExpenses.length > 0 && (
+                        <View style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 5,
+                          backgroundColor: '#fef3c7', borderRadius: 6,
+                          paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+                          marginTop: 2,
+                        }}>
+                          <Feather name="clock" size={11} color="#92400e" />
+                          <Text style={{ fontSize: 11, color: '#92400e', flex: 1 }}>
+                            {pendingExpenses.length} pending approval
+                          </Text>
+                          <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold as any, color: '#92400e' }}>
+                            {formatCurrency(pendingTotal)}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
               </View>
             </View>
 
@@ -10285,7 +10307,9 @@ export default function JobDetailScreen() {
         {jobExpenses.length > 0 ? (
           <>
             <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
-              {jobExpenses.slice(0, 3).map((expense) => (
+              {jobExpenses.slice(0, 3).map((expense) => {
+                const isPending = expense.status === 'pending';
+                return (
                 <TouchableOpacity 
                   key={expense.id} 
                   onPress={() => router.push(`/more/expenses?jobId=${job.id}`)}
@@ -10297,12 +10321,21 @@ export default function JobDetailScreen() {
                     paddingVertical: spacing.sm,
                     borderBottomWidth: 1,
                     borderBottomColor: colors.border,
+                    backgroundColor: isPending ? '#fef3c710' : undefined,
                   }}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>
-                      {expense.description}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                      <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>
+                        {expense.description}
+                      </Text>
+                      {isPending && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#fef3c7', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6 }}>
+                          <Feather name="clock" size={9} color="#92400e" />
+                          <Text style={{ fontSize: 10, color: '#92400e', fontWeight: '600' }}>Pending</Text>
+                        </View>
+                      )}
+                    </View>
                     <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
                       {expense.categoryName || 'Expense'} • {new Date(expense.expenseDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
                     </Text>
@@ -10314,7 +10347,8 @@ export default function JobDetailScreen() {
                     <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                   </View>
                 </TouchableOpacity>
-              ))}
+                );
+              })}
             </View>
             {jobExpenses.length > 3 && (
               <TouchableOpacity onPress={() => router.push(`/more/expenses?jobId=${job.id}`)}>
@@ -16066,12 +16100,32 @@ export default function JobDetailScreen() {
                 )}
 
                 {/* Other */}
-                {pd.costs.otherExpenses > 0 && (
-                  <>
-                    <SectionHeader label="Other Expenses" />
-                    <Row label="Other costs" value={formatCurrency(pd.costs.otherExpenses)} />
-                  </>
-                )}
+                {pd.costs.otherExpenses > 0 && (() => {
+                  const pendingExpenses = jobExpenses.filter(e => e.status === 'pending');
+                  const pendingTotal = pendingExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+                  return (
+                    <>
+                      <SectionHeader label="Other Expenses" />
+                      <Row label="Other costs" value={formatCurrency(pd.costs.otherExpenses)} />
+                      {pendingExpenses.length > 0 && (
+                        <View style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 5,
+                          backgroundColor: '#fef3c7', borderRadius: 6,
+                          paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
+                          marginTop: 4,
+                        }}>
+                          <Feather name="clock" size={11} color="#92400e" />
+                          <Text style={{ fontSize: 11, color: '#92400e', flex: 1 }}>
+                            {pendingExpenses.length} pending approval
+                          </Text>
+                          <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold as any, color: '#92400e' }}>
+                            {formatCurrency(pendingTotal)}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Phase-level breakdown (project jobs with phases) */}
                 {((pd.phases?.length ?? 0) > 0 || phases.length > 0) && (

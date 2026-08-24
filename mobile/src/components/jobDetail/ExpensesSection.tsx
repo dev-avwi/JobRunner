@@ -742,56 +742,75 @@ export default function ExpensesSection({
   const total = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
 
   // ── Expense row ─────────────────────────────────────────────────────────────
-  const renderRow = useCallback((expense: SectionExpense) => (
-    <TouchableOpacity
-      key={expense.id}
-      testID={`expense-row-${expense.id}`}
-      activeOpacity={0.7}
-      onPress={() => {
-        if (isOwnerOrManager) {
-          openEditExpense(expense);
-        }
-      }}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderTopWidth: StyleSheet.hairlineWidth,
-        borderTopColor: colors.border,
-        gap: spacing.sm,
-      }}
-    >
-      {/* Category badge + description */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        {expense.categoryName ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3 }}>
-            <View style={{
-              flexDirection: 'row', alignItems: 'center', gap: 3,
-              backgroundColor: colors.primaryLight, paddingHorizontal: 6,
-              paddingVertical: 2, borderRadius: 8,
-            }}>
-              <Feather name="tag" size={9} color={colors.primary} />
-              <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: colors.primary }}>
-                {expense.categoryName}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-        <Text style={{ fontSize: 13, fontWeight: fontWeights.medium as any, color: colors.foreground }} numberOfLines={1}>
-          {expense.description}
-        </Text>
-        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
-          {[expense.vendor, fmtDate(expense.expenseDate)].filter(Boolean).join('  ·  ')}
-        </Text>
-      </View>
+  const renderRow = useCallback((expense: SectionExpense) => {
+    const isPending = expense.status === 'pending';
+    // Worker-submitted expenses are prefixed with "[Logged by …]"
+    const isWorkerSubmitted = isPending && /^\[Logged by /i.test(expense.description);
 
-      {/* Amount */}
-      <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.destructive, marginTop: 1 }}>
-        -{fmt(expense.amount)}
-      </Text>
-    </TouchableOpacity>
-  ), [colors, isOwnerOrManager, openEditExpense]);
+    return (
+      <TouchableOpacity
+        key={expense.id}
+        testID={`expense-row-${expense.id}`}
+        activeOpacity={0.7}
+        onPress={() => {
+          if (isOwnerOrManager) {
+            openEditExpense(expense);
+          }
+        }}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          borderTopColor: colors.border,
+          gap: spacing.sm,
+          backgroundColor: isPending ? `#f59e0b08` : undefined,
+        }}
+      >
+        {/* Category badge + description */}
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 3, flexWrap: 'wrap' }}>
+            {expense.categoryName ? (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: colors.primaryLight, paddingHorizontal: 6,
+                paddingVertical: 2, borderRadius: 8,
+              }}>
+                <Feather name="tag" size={9} color={colors.primary} />
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: colors.primary }}>
+                  {expense.categoryName}
+                </Text>
+              </View>
+            ) : null}
+            {isPending && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: '#fef3c7', paddingHorizontal: 6,
+                paddingVertical: 2, borderRadius: 8,
+              }}>
+                <Feather name="clock" size={9} color="#92400e" />
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: '#92400e' }}>
+                  {isWorkerSubmitted ? 'Worker submitted' : 'Pending approval'}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Text style={{ fontSize: 13, fontWeight: fontWeights.medium as any, color: colors.foreground }} numberOfLines={1}>
+            {expense.description}
+          </Text>
+          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
+            {[expense.vendor, fmtDate(expense.expenseDate)].filter(Boolean).join('  ·  ')}
+          </Text>
+        </View>
+
+        {/* Amount */}
+        <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.destructive, marginTop: 1 }}>
+          -{fmt(expense.amount)}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [colors, isOwnerOrManager, openEditExpense]);
 
   // ── Card-style header — matches Claims / Variations section header pattern
   const cardHeader = (
