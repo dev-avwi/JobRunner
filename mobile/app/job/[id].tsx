@@ -2307,7 +2307,7 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'chat' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [activeChip, setActiveChip] = useState<string>('status');
 
@@ -3891,8 +3891,9 @@ export default function JobDetailScreen() {
   }, [colors]);
 
   useEffect(() => {
-    if (activeTab === 'chat' && id) {
+    if (activeTab === 'comms' && id) {
       loadJobMessages();
+      loadSwmsDocuments();
     }
     if (activeTab === 'manage' && id) {
       loadMaterials();
@@ -3901,8 +3902,7 @@ export default function JobDetailScreen() {
       loadClaims();
       loadVariations();
     }
-    if (activeTab === 'documents' && id) {
-      loadSwmsDocuments();
+    if (activeTab === 'files' && id) {
       loadUploadedDocuments();
     }
   }, [activeTab, id]);
@@ -7387,12 +7387,15 @@ export default function JobDetailScreen() {
   const tabBadgeCounts = useMemo(() => {
     const chatCount = jobMessages.length;
     const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
-    // Docs & Notes tab badge = incomplete safety forms + unresolved SWMS + incomplete checklist items
-    const docsCount = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0) + checklistIncomplete;
+    const safetyIssues = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
     return {
       overview: 0,
-      documents: docsCount,
-      chat: chatCount,
+      // Tasks: incomplete checklist items
+      tasks: checklistIncomplete,
+      // Files: no count badge needed
+      files: 0,
+      // Comms: unread chat messages + pending safety/SWMS issues
+      comms: chatCount + safetyIssues,
       manage: 0,
     };
   }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts]);
@@ -7618,9 +7621,10 @@ export default function JobDetailScreen() {
 
   const TAB_CONFIG = [
     { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
-    { id: 'documents' as const, label: 'Docs & Notes', icon: 'file-text' as const },
-    { id: 'chat' as const, label: 'Comms', icon: 'message-circle' as const },
-    ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
+    { id: 'tasks' as const, label: 'Tasks', icon: 'check-square' as const },
+    { id: 'files' as const, label: 'Files', icon: 'file-text' as const },
+    { id: 'comms' as const, label: 'Comms', icon: 'message-circle' as const },
+    ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'Manage', icon: 'settings' as const }] : []),
   ];
 
   // overviewChips, scrollToSection, handleScrollWithChips, handleQuickActionFAB
@@ -10681,36 +10685,7 @@ export default function JobDetailScreen() {
       />
       )}
 
-      {/* Follow-up Tasks - spawned by form task rules, plus manual (owner-managed) */}
-      <JobTasksSection
-        jobId={job.id}
-        readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
-        containerStyle={styles.photosCard}
-      />
-
-      {/* Job Checklist Section - available for all job statuses */}
-      <View style={styles.photosCard}>
-        <JobForms 
-          jobId={job.id} 
-          readOnly={job.status === 'invoiced'} 
-          onSubmissionsChange={setFormSubmissions}
-          onFormsChange={setAvailableForms}
-        />
-      </View>
-
-      {/* SWMS / Safety Section */}
-      <View style={styles.photosCard}>
-        {renderSafetyTab()}
-      </View>
-
-      {/* Site Diary — daily record of who was on site, work done, and issues */}
-      <SiteDiarySection
-        jobId={job.id}
-        colors={colors}
-        styles={styles}
-        isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-        currentUserId={user?.id}
-      />
+      {/* Section anchor: docs */}
 
       {/* Project Document Register — drawings, specs, RFIs (project jobs only) */}
       {isProject && (
@@ -11574,10 +11549,10 @@ export default function JobDetailScreen() {
         )}
 
         {activeTab === 'overview' && renderOverviewTab()}
-        {activeTab === 'documents' && (
+
+        {/* ── Tasks: checklist, follow-up tasks, job forms, site diary ── */}
+        {activeTab === 'tasks' && (
           <>
-            {renderDocumentsTab()}
-            {renderPhotosTab()}
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               <ChecklistSection
                 jobId={job.id}
@@ -11587,10 +11562,47 @@ export default function JobDetailScreen() {
                 }
               />
             </View>
+            <JobTasksSection
+              jobId={job.id}
+              readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              containerStyle={styles.photosCard}
+            />
+            <View style={styles.photosCard}>
+              <JobForms
+                jobId={job.id}
+                readOnly={job.status === 'invoiced'}
+                onSubmissionsChange={setFormSubmissions}
+                onFormsChange={setAvailableForms}
+              />
+            </View>
+            <SiteDiarySection
+              jobId={job.id}
+              colors={colors}
+              styles={styles}
+              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+              currentUserId={user?.id}
+            />
+          </>
+        )}
+
+        {/* ── Files: linked docs, uploaded files, photos, notes ── */}
+        {activeTab === 'files' && (
+          <>
+            {renderDocumentsTab()}
+            {renderPhotosTab()}
             {renderNotesTab()}
           </>
         )}
-        {activeTab === 'chat' && renderChatTab()}
+
+        {/* ── Comms: chat + SWMS / safety ── */}
+        {activeTab === 'comms' && (
+          <>
+            {renderChatTab()}
+            <View style={styles.photosCard}>
+              {renderSafetyTab()}
+            </View>
+          </>
+        )}
         {activeTab === 'manage' && (
           <>
             {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
