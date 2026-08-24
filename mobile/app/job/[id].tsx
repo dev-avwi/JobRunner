@@ -2307,7 +2307,7 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'checklist' | 'chat' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'documents' | 'chat' | 'manage'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [activeChip, setActiveChip] = useState<string>('status');
 
@@ -7386,12 +7386,12 @@ export default function JobDetailScreen() {
 
   const tabBadgeCounts = useMemo(() => {
     const chatCount = jobMessages.length;
-    const docsCount = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
     const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
+    // Docs & Notes tab badge = incomplete safety forms + unresolved SWMS + incomplete checklist items
+    const docsCount = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0) + checklistIncomplete;
     return {
       overview: 0,
       documents: docsCount,
-      checklist: checklistIncomplete,
       chat: chatCount,
       manage: 0,
     };
@@ -7618,8 +7618,7 @@ export default function JobDetailScreen() {
 
   const TAB_CONFIG = [
     { id: 'overview' as const, label: 'Overview', icon: 'briefcase' as const },
-    { id: 'checklist' as const, label: 'Checklist', icon: 'check-square' as const },
-    { id: 'documents' as const, label: 'Docs', icon: 'file-text' as const },
+    { id: 'documents' as const, label: 'Docs & Notes', icon: 'file-text' as const },
     { id: 'chat' as const, label: 'Comms', icon: 'message-circle' as const },
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'More', icon: 'settings' as const }] : []),
   ];
@@ -11575,21 +11574,19 @@ export default function JobDetailScreen() {
         )}
 
         {activeTab === 'overview' && renderOverviewTab()}
-        {activeTab === 'checklist' && (
-          <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
-            <ChecklistSection
-              jobId={job.id}
-              readOnly={job.status === 'invoiced'}
-              onCountsChange={(completed, total) =>
-                setChecklistCounts({ completed, total })
-              }
-            />
-          </View>
-        )}
         {activeTab === 'documents' && (
           <>
             {renderDocumentsTab()}
             {renderPhotosTab()}
+            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+              <ChecklistSection
+                jobId={job.id}
+                readOnly={job.status === 'invoiced'}
+                onCountsChange={(completed, total) =>
+                  setChecklistCounts({ completed, total })
+                }
+              />
+            </View>
             {renderNotesTab()}
           </>
         )}

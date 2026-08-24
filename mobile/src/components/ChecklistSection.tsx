@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -257,12 +257,18 @@ export function ChecklistSection({ jobId, readOnly, onCountsChange }: ChecklistS
     }, [load])
   );
 
+  // Keep a stable ref so we can call the latest callback without it being
+  // a useEffect dependency — an inline arrow prop changes reference on every
+  // parent re-render, which would cause an infinite setState → re-render loop.
+  const onCountsChangeRef = useRef(onCountsChange);
+  onCountsChangeRef.current = onCountsChange;
+
   useEffect(() => {
-    if (onCountsChange) {
+    if (onCountsChangeRef.current) {
       const completed = items.filter((i) => i.isCompleted).length;
-      onCountsChange(completed, items.length);
+      onCountsChangeRef.current(completed, items.length);
     }
-  }, [items, onCountsChange]);
+  }, [items]); // deliberately omit onCountsChange — use ref above instead
 
   const toggle = async (item: ChecklistItem) => {
     const next = !item.isCompleted;
