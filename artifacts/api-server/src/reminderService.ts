@@ -37,7 +37,7 @@ function formatPhoneForSMS(phone: string): string | null {
   return null;
 }
 
-const REMINDER_TEMPLATES = {
+export const REMINDER_TEMPLATES = {
   friendly: {
     7: (clientName: string, invoiceNumber: string, amount: string, businessName: string, paymentLink: string) => ({
       subject: `Friendly Reminder: Invoice ${invoiceNumber} from ${businessName}`,
