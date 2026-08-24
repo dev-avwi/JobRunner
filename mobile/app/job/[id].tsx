@@ -3905,7 +3905,11 @@ export default function JobDetailScreen() {
       loadUploadedDocuments();
       loadSwmsDocuments();
     }
-  }, [activeTab, id]);
+    // Projects: load phases for the worker phase view in Tasks tab
+    if (activeTab === 'tasks' && id && isProject) {
+      loadPhases();
+    }
+  }, [activeTab, id, isProject]);
 
   const handleSendJobMessage = async () => {
     if (!newMessage.trim() || !id) return;
@@ -11550,8 +11554,165 @@ export default function JobDetailScreen() {
 
         {activeTab === 'overview' && renderOverviewTab()}
 
-        {/* ── Tasks: checklist, follow-up tasks, job forms, site diary, photos, notes ── */}
-        {activeTab === 'tasks' && (
+        {/* ── Tasks tab: phase-centric for projects, flat for service calls ── */}
+        {activeTab === 'tasks' && (isProject ? (
+          /* ═══════════════════════════════════════════════
+             PROJECT VIEW — phases are the primary organiser
+          ═══════════════════════════════════════════════ */
+          <>
+            {/* Global timer status — shows which phase is running */}
+            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
+                  <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isTimerForThisJob ? `${colors.success}20` : `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name={isTimerForThisJob && isOnBreak() ? 'coffee' : 'clock'} size={18} color={isTimerForThisJob ? colors.success : colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                      {isTimerForThisJob ? (isOnBreak() ? 'On Break' : 'Timer Running') : 'Time Tracking'}
+                    </Text>
+                    {isTimerForThisJob ? (
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: isOnBreak() ? colors.warning : colors.success }}>
+                        {formatElapsedTime(elapsedTime)}
+                        {(() => { const ph = phases.find(p => p.id === (activeTimer as any)?.phaseId); return ph ? ` · ${ph.name}` : ''; })()}
+                      </Text>
+                    ) : activeTimer ? (
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Timer on another job</Text>
+                    ) : (
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                        {totalTrackedHours > 0 ? `${formatTrackedHours(totalTrackedHours)} tracked` : 'Tap a phase below to start'}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+                {isTimerForThisJob && (
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <TouchableOpacity onPress={isOnBreak() ? handleResumeWork : handleTakeBreak} style={{ width: 38, height: 38, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
+                      <Feather name={isOnBreak() ? 'play' : 'coffee'} size={14} color={colors.foreground} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleStopTimer} disabled={timerLoading} style={{ paddingHorizontal: spacing.md, height: 38, borderRadius: radius.md, backgroundColor: colors.destructive, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs, opacity: timerLoading ? 0.6 : 1 }} activeOpacity={0.7}>
+                      <Feather name="square" size={13} color={colors.primaryForeground} />
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Stop</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Phase cards */}
+            {isLoadingPhases ? (
+              <View style={[styles.photosCard, { marginBottom: spacing.md }]}><SkeletonSection rows={3} /></View>
+            ) : phases.length > 0 ? phases.map(phase => {
+              const activePhaseId = (activeTimer as any)?.phaseId;
+              const isActivePhase = isTimerForThisJob && activePhaseId === phase.id;
+              const phaseOtherActive = isTimerForThisJob && !isActivePhase;
+              const otherJobTimer = !!(activeTimer && !isTimerForThisJob);
+              const statusMap: Record<string, { bg: string; border: string; text: string; label: string }> = {
+                not_started: { bg: `${colors.mutedForeground}15`, border: `${colors.mutedForeground}30`, text: colors.mutedForeground, label: 'Not Started' },
+                in_progress:  { bg: `${colors.primary}15`,         border: `${colors.primary}30`,         text: colors.primary,         label: 'In Progress' },
+                complete:     { bg: `${colors.success}15`,          border: `${colors.success}30`,          text: colors.success,          label: 'Complete' },
+                on_hold:      { bg: `${colors.warning}15`,          border: `${colors.warning}30`,          text: colors.warning,          label: 'On Hold' },
+              };
+              const st = statusMap[phase.status] ?? statusMap.not_started;
+              return (
+                <View key={phase.id} style={[styles.photosCard, { marginBottom: spacing.md, borderWidth: isActivePhase ? 2 : 1, borderColor: isActivePhase ? colors.success : colors.cardBorder }]}>
+                  {/* Phase header row */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                        {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
+                      </Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 3 }}>
+                        {(phase.scheduledStart || phase.scheduledEnd) && (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
+                            {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
+                          </Text>
+                        )}
+                        {phase.bookedHours ? (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>{st.label}</Text>
+                    </View>
+                  </View>
+
+                  {phase.description ? (
+                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>{phase.description}</Text>
+                  ) : null}
+
+                  {/* Per-phase timer control */}
+                  {isActivePhase ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: `${colors.success}10`, borderRadius: radius.md, padding: spacing.sm }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                        <Feather name={isOnBreak() ? 'coffee' : 'clock'} size={15} color={colors.success} />
+                        <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.success }}>
+                          {isOnBreak() ? 'Break: ' : ''}{formatElapsedTime(elapsedTime)}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+                        <TouchableOpacity onPress={isOnBreak() ? handleResumeWork : handleTakeBreak} style={{ width: 34, height: 34, borderRadius: radius.md, backgroundColor: colors.muted, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
+                          <Feather name={isOnBreak() ? 'play' : 'coffee'} size={13} color={colors.foreground} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleStopTimer} disabled={timerLoading} style={{ paddingHorizontal: spacing.md, height: 34, borderRadius: radius.md, backgroundColor: colors.destructive, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.xs, opacity: timerLoading ? 0.6 : 1 }} activeOpacity={0.7}>
+                          <Feather name="square" size={13} color={colors.primaryForeground} />
+                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Stop</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => proceedWithTimerStart(false, phase.id)}
+                      disabled={timerLoading || otherJobTimer || phase.status === 'complete'}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: phase.status === 'complete' ? colors.border : phaseOtherActive ? colors.border : `${colors.primary}40`, backgroundColor: phase.status === 'complete' ? colors.muted : phaseOtherActive ? colors.muted : `${colors.primary}08`, opacity: (otherJobTimer || phase.status === 'complete') ? 0.4 : 1 }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="play" size={14} color={phase.status === 'complete' || phaseOtherActive ? colors.mutedForeground : colors.primary} />
+                      <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: phase.status === 'complete' || phaseOtherActive ? colors.mutedForeground : colors.primary }}>
+                        {phase.status === 'complete' ? 'Phase complete' : phaseOtherActive ? 'Switch to this phase' : 'Start timer for this phase'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              );
+            }) : (
+              <View style={[styles.photosCard, { alignItems: 'center', paddingVertical: spacing.xl, marginBottom: spacing.md }]}>
+                <Feather name="layers" size={32} color={colors.mutedForeground} />
+                <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, marginTop: spacing.sm, textAlign: 'center' }}>No phases set up yet</Text>
+                {(isOwnerOrManager || isSoloOwner) && (
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginTop: 4, textAlign: 'center' }}>Add phases from the Manage tab</Text>
+                )}
+              </View>
+            )}
+
+            {/* Log material, checklist, forms, diary, photos, notes — same as service call */}
+            {job.status !== 'invoiced' && (
+              <TouchableOpacity style={[styles.photosCard, { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }]} onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }} activeOpacity={0.7}>
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}><Feather name="package" size={18} color={colors.primary} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Material Used</Text>
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Record parts, supplies, or materials</Text>
+                </View>
+                <Feather name="plus" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            )}
+            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+              <ChecklistSection jobId={job.id} readOnly={job.status === 'invoiced'} onCountsChange={(completed, total) => setChecklistCounts({ completed, total })} />
+            </View>
+            <JobTasksSection jobId={job.id} readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)} containerStyle={styles.photosCard} />
+            <View style={styles.photosCard}>
+              <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
+            </View>
+            <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+            {renderPhotosTab()}
+            {renderNotesTab()}
+          </>
+        ) : (
+          /* ═══════════════════════════════════════════════
+             SERVICE CALL VIEW — flat, quick, on-site focus
+          ═══════════════════════════════════════════════ */
           <>
             {/* ── Time tracking + estimated hours card ── */}
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
@@ -11684,7 +11845,7 @@ export default function JobDetailScreen() {
             {renderPhotosTab()}
             {renderNotesTab()}
           </>
-        )}
+        ))}
 
         {/* ── Files: linked docs, SWMS/safety, uploaded files ── */}
         {activeTab === 'files' && (
