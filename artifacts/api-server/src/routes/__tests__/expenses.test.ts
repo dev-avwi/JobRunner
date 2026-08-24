@@ -51,6 +51,7 @@ vi.mock("../middleware", () => ({
 import express from "express";
 import request from "supertest";
 import { registerExpenseRoutes } from "../expenses";
+import { createNotification } from "../../notifications";
 
 const JOB_ID = "job-1";
 const PHASE_ID = "phase-1";
@@ -366,5 +367,24 @@ describe("worker job expense creation", () => {
 
     expect(response.status).toBe(201);
     expect(mockStorage.getJobAssignmentForUser).not.toHaveBeenCalled();
+  });
+
+  it("notifies the business owner after a worker successfully logs an expense", async () => {
+    setupWorkerExpenseDefaults();
+
+    const response = await request(buildApp())
+      .post(`/api/jobs/${JOB_ID}/expenses`)
+      .send(workerExpenseBody);
+
+    expect(response.status).toBe(201);
+    expect(createNotification).toHaveBeenCalledWith(
+      expect.anything(), // storage
+      expect.objectContaining({
+        userId: OWNER_USER_ID,
+        type: "expense_logged",
+        relatedType: "job",
+        relatedId: JOB_ID,
+      }),
+    );
   });
 });
