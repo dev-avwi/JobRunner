@@ -622,6 +622,7 @@ export interface IStorage {
   createChecklistItem(item: InsertChecklistItem, userId: string): Promise<ChecklistItem>;
   updateChecklistItem(id: string, userId: string, item: Partial<Omit<InsertChecklistItem, 'jobId'>>): Promise<ChecklistItem | undefined>;
   deleteChecklistItem(id: string, userId: string): Promise<boolean>;
+  cloneChecklistItems(sourceJobId: string, targetJobId: string, userId: string): Promise<ChecklistItem[]>;
 
   // Job Check-ins (Location Tracking)
   getJobCheckins(jobId: string, userId: string): Promise<JobCheckin[]>;
@@ -3359,6 +3360,32 @@ export class PostgresStorage implements IStorage {
     
     const result = await db.delete(checklistItems).where(eq(checklistItems.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async cloneChecklistItems(sourceJobId: string, targetJobId: string, userId: string): Promise<ChecklistItem[]> {
+    // Verify access to both jobs before copying
+    const [sourceJob, targetJob] = await Promise.all([
+      this.getJob(sourceJobId, userId),
+      this.getJob(targetJobId, userId),
+    ]);
+    if (!sourceJob || !targetJob) return [];
+
+    const sourceItems = await db
+      .select()
+      .from(checklistItems)
+      .where(eq(checklistItems.jobId, sourceJobId))
+      .orderBy(asc(checklistItems.sortOrder), asc(checklistItems.createdAt));
+
+    if (sourceItems.length === 0) return [];
+
+    const newItems = sourceItems.map((item) => ({
+      jobId: targetJobId,
+      text: item.text,
+      isCompleted: false,
+      sortOrder: item.sortOrder,
+    }));
+
+    return await db.insert(checklistItems).values(newItems).returning();
   }
 
   // Job Check-ins (Location Tracking)

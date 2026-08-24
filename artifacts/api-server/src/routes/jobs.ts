@@ -1975,6 +1975,9 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       // Note: job number is auto-generated inside storage.createJob when a prefix is configured.
       await FreemiumService.incrementJobCount(effectiveUserId);
 
+      // Copy checklist items from source job; completion state is always reset to false.
+      await storage.cloneChecklistItems(sourceJob.id, clonedJob.id, effectiveUserId);
+
       await logActivity(
         effectiveUserId,
         'job_created',
