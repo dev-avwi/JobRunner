@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, Upload, Plus, Loader2, Trash2, Download, Eye, File, FileImage } from 'lucide-react';
+import { FileText, Upload, Plus, Loader2, Trash2, Download, Eye, File, FileImage, FileSpreadsheet, FileArchive } from 'lucide-react';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -50,9 +50,10 @@ interface JobDocument {
 interface JobDocumentsProps {
   jobId: string;
   canUpload?: boolean;
+  canDelete?: boolean;
 }
 
-export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
+export function JobDocuments({ jobId, canUpload = true, canDelete = false }: JobDocumentsProps) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -139,11 +140,25 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
+      const allowedTypes = [
+        'application/pdf',
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/plain', 'text/csv',
+        'application/zip', 'application/x-zip-compressed',
+        'application/octet-stream',
+      ];
+      const allowedExtensions = ['.pdf','.jpg','.jpeg','.png','.gif','.webp','.doc','.docx','.xls','.xlsx','.ppt','.pptx','.txt','.csv','.zip'];
+      const ext = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(ext)) {
         toast({
           title: 'Invalid file type',
-          description: 'Please upload a PDF or image file.',
+          description: 'Supported types: PDF, images, Word, Excel, PowerPoint, text, CSV, ZIP.',
           variant: 'destructive',
         });
         return;
@@ -182,12 +197,26 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
     setDocumentType('other');
   };
 
-  const getDocumentIcon = (mimeType: string) => {
+  const getDocumentIcon = (mimeType: string, fileName?: string) => {
     if (mimeType === 'application/pdf') {
       return <FileText className="h-5 w-5 text-red-500" />;
     }
     if (mimeType.startsWith('image/')) {
       return <FileImage className="h-5 w-5 text-blue-500" />;
+    }
+    if (
+      mimeType === 'application/vnd.ms-excel' ||
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      fileName?.match(/\.(xls|xlsx|csv)$/i)
+    ) {
+      return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
+    }
+    if (
+      mimeType === 'application/zip' ||
+      mimeType === 'application/x-zip-compressed' ||
+      fileName?.match(/\.zip$/i)
+    ) {
+      return <FileArchive className="h-5 w-5 text-yellow-600" />;
     }
     return <File className="h-5 w-5 text-muted-foreground" />;
   };
@@ -245,7 +274,7 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
                   data-testid={`document-item-${doc.id}`}
                 >
                   <div className="flex-shrink-0">
-                    {getDocumentIcon(doc.mimeType)}
+                    {getDocumentIcon(doc.mimeType, doc.fileName)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -286,7 +315,7 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
                         </Button>
                       </>
                     )}
-                    {canUpload && (
+                    {canDelete && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -324,7 +353,7 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
                 id="file"
                 ref={fileInputRef}
                 onChange={handleFileSelect}
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
                 className="hidden"
                 data-testid="input-file-upload"
               />
@@ -345,7 +374,7 @@ export function JobDocuments({ jobId, canUpload = true }: JobDocumentsProps) {
                   <div className="text-muted-foreground">
                     <Upload className="h-8 w-8 mx-auto mb-2" />
                     <p className="text-sm">Click to select a file</p>
-                    <p className="text-xs mt-1">PDF or images up to 100MB</p>
+                    <p className="text-xs mt-1">PDF, images, Word, Excel, PowerPoint, CSV, ZIP up to 100MB</p>
                   </div>
                 )}
               </div>

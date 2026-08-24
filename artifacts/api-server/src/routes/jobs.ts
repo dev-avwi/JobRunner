@@ -759,6 +759,37 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       },
     });
 
+    // Dedicated Multer instance for job attachment uploads (/api/jobs/:jobId/documents).
+    // Accepts the same types the route validates, plus octet-stream as a fallback for
+    // clients that omit or misreport the MIME type. 100 MB matches the UI limit.
+    const JOB_DOCUMENT_ALLOWED_MIMES = new Set([
+      'application/pdf',
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv',
+      'application/zip',
+      'application/x-zip-compressed',
+      // Generic fallback — extension-based check in the route handler narrows this further
+      'application/octet-stream',
+    ]);
+    const jobDocumentUpload = multer({
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 100 * 1024 * 1024 }, // 100 MB
+      fileFilter: (_req, file, cb) => {
+        if (JOB_DOCUMENT_ALLOWED_MIMES.has(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new Error(`Unsupported file type: ${file.mimetype}. Allowed: PDF, images, Word, Excel, PowerPoint, text, CSV, ZIP.`));
+        }
+      },
+    });
+
     app.post("/api/jobs/:jobId/subcontractor-token", requireAuth, ownerOnly(), async (req: any, res) => {
     try {
       const userId = req.userId!;
@@ -10344,7 +10375,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
-  app.post("/api/jobs/:jobId/documents", requireAuth, upload.single('file'), async (req: any, res) => {
+  app.post("/api/jobs/:jobId/documents", requireAuth, jobDocumentUpload.single('file'), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId } = req.params;

@@ -4501,8 +4501,8 @@ export default function JobDetailView({
             <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />
           )}
 
-          {/* Uploaded Documents - external quotes, invoices, PDFs */}
-          <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} />
+          {/* Uploaded Documents - external quotes, invoices, PDFs, Word docs, etc. */}
+          <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
 
           {/* Job Timeline */}
           <Card data-testid="job-activity-feed">
