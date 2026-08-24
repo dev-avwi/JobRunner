@@ -237,7 +237,70 @@ test('deleted template is absent from job-creation picker without page reload', 
 });
 
 // ---------------------------------------------------------------------------
-// Test 4 — Ops health error banner on network failure
+// Test 4 — Newly created template appears in job-creation picker without reload
+// ---------------------------------------------------------------------------
+
+test('newly created template appears in job-creation picker without page reload', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const TEMPLATE = {
+    id: 'tpl-create-test',
+    name: 'Renovation Build',
+    description: 'Standard renovation template',
+    templateData: {
+      phases: [
+        { phaseCode: 'DEMO', name: 'Demolition' },
+        { phaseCode: 'FIT', name: 'Fit-out' },
+      ],
+      checklistItems: [],
+    },
+    createdAt: new Date().toISOString(),
+  };
+
+  // Stateful flag: starts false (no saved templates), flipped to true to simulate creation.
+  let created = false;
+  await page.route('**/api/project-templates', (route) => {
+    route.fulfill(json(created ? [TEMPLATE] : []));
+  });
+
+  // Navigate to the job creation form.
+  await page.goto('/jobs/new', { waitUntil: 'networkidle' });
+
+  // The job type picker must be visible.
+  const typePicker = page.locator('[data-testid="page-job-type-picker"]');
+  await expect(typePicker).toBeVisible({ timeout: 10000 });
+
+  // Select "Project" — this enables the /api/project-templates query.
+  await page.click('[data-testid="card-job-type-project"]');
+
+  // Template picker renders — no saved templates yet, so only "Start blank" is visible.
+  const templatePicker = page.locator('[data-testid="page-template-picker"]');
+  await expect(templatePicker).toBeVisible({ timeout: 10000 });
+
+  const templateBtn = page.locator('[data-testid="button-use-template-tpl-create-test"]');
+  await expect(templateBtn).not.toBeVisible();
+
+  // Simulate what ProjectTemplatesSettings' POST mutation does in its onSuccess:
+  //   1. Switch the mock so the next GET /api/project-templates returns the new template.
+  //   2. Call queryClient.invalidateQueries with the same key used by onSuccess —
+  //      this is the exact mechanism that keeps the picker in sync after creation.
+  // No page reload is involved: queryClient lives in the same document.
+  created = true;
+  await page.evaluate(async () => {
+    const qc = (window as any).__testQueryClient;
+    if (!qc) throw new Error('__testQueryClient not found on window');
+    await qc.invalidateQueries({ queryKey: ['/api/project-templates'] });
+  });
+
+  // After the invalidation-triggered refetch the new template must appear.
+  await expect(templateBtn).toBeVisible({ timeout: 10000 });
+
+  // The "Start blank" fallback must still be available.
+  await expect(page.locator('[data-testid="button-skip-template"]')).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// Test 5 — Ops health error banner on network failure
 // ---------------------------------------------------------------------------
 
 test('shows ops health error banner when /api/ops/health fails', async ({ page }) => {
