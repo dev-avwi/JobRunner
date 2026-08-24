@@ -2453,6 +2453,7 @@ export default function JobDetailScreen() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [sendModalDefaultTab, setSendModalDefaultTab] = useState<'email' | 'sms'>('email');
   const smsLocked = useSmsLocked();
+  const [previewImageDoc, setPreviewImageDoc] = useState<JobDocument | null>(null);
 
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
   const [isExportingProofPackTsv, setIsExportingProofPackTsv] = useState(false);
@@ -3416,13 +3417,30 @@ export default function JobDetailScreen() {
     });
   }, [id, confirm]);
 
-  const handleOpenDocument = useCallback((doc: JobDocument) => {
+  const isImageDocument = useCallback((doc: JobDocument): boolean => {
+    if (doc.mimeType && doc.mimeType.startsWith('image/')) return true;
+    // Fall back to extension when MIME is generic or absent (e.g. application/octet-stream)
+    const IMAGE_EXTS = /\.(jpe?g|png|gif|webp|bmp|heic|heif|tiff?)$/i;
+    if (doc.fileName && IMAGE_EXTS.test(doc.fileName)) return true;
     if (doc.fileUrl) {
-      Linking.openURL(doc.fileUrl);
-    } else {
-      showToast({ type: 'error', message: 'Document URL not available' });
+      // Strip query string before checking extension
+      const path = doc.fileUrl.split('?')[0];
+      if (IMAGE_EXTS.test(path)) return true;
     }
+    return false;
   }, []);
+
+  const handleOpenDocument = useCallback((doc: JobDocument) => {
+    if (!doc.fileUrl) {
+      showToast({ type: 'error', message: 'Document URL not available' });
+      return;
+    }
+    if (isImageDocument(doc)) {
+      setPreviewImageDoc(doc);
+    } else {
+      Linking.openURL(doc.fileUrl);
+    }
+  }, [isImageDocument]);
 
   const formatFileSize = useCallback((bytes?: number) => {
     if (!bytes) return '';
@@ -15546,6 +15564,62 @@ export default function JobDetailScreen() {
           })()}
         </BottomSheetScrollView>
       </AppBottomSheet>
+
+      {/* In-app image lightbox for document attachments */}
+      <Modal
+        visible={!!previewImageDoc}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setPreviewImageDoc(null)}
+        statusBarTranslucent
+      >
+        <View style={styles.photoPreviewModal}>
+          {previewImageDoc && (
+            <>
+              <Image
+                source={{ uri: previewImageDoc.fileUrl ?? '' }}
+                style={styles.fullPhoto}
+                resizeMode="contain"
+              />
+
+              {/* Title bar at the top */}
+              <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                paddingTop: insets.top + spacing.sm,
+                paddingBottom: spacing.md,
+                paddingHorizontal: spacing.lg,
+                backgroundColor: 'rgba(0,0,0,0.55)',
+                flexDirection: 'row',
+                alignItems: 'center',
+              }}>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    flex: 1,
+                    color: '#fff',
+                    fontSize: typography.sizes.md,
+                    fontWeight: fontWeights.semibold,
+                  }}
+                >
+                  {previewImageDoc.title}
+                </Text>
+              </View>
+
+              {/* Close button */}
+              <TouchableOpacity
+                style={styles.closePhotoButton}
+                onPress={() => setPreviewImageDoc(null)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </Modal>
     </>
   );
 }
