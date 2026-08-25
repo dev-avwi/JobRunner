@@ -2294,7 +2294,7 @@ export default function JobDetailView({
           const completedCount = jobPhasesForPicker.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
           const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
           return (
-            <div className="mt-3">
+            <div className="mt-3" data-testid="phase-progress-bar">
               <div className="flex items-center justify-between text-xs mb-1.5">
                 <span className="flex items-center gap-1.5 text-muted-foreground"><Layers className="h-3 w-3" />Phase progress</span>
                 <span className="font-medium">{completedCount} / {total} complete ({pct}%)</span>
@@ -2398,11 +2398,12 @@ export default function JobDetailView({
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         {/* Sticky tab strip */}
         <div className="sticky top-0 z-20 -mx-4 sm:-mx-5 md:-mx-6 lg:-mx-8 px-4 sm:px-5 md:px-6 lg:px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
-          <TabsList className="h-auto bg-transparent rounded-none p-0 w-full justify-start gap-0 flex overflow-x-auto">
+          <TabsList data-testid="tab-strip" className="h-auto bg-transparent rounded-none p-0 w-full justify-start gap-0 flex overflow-x-auto">
             {tabConfig.map((tab) => (
               <TabsTrigger
                 key={tab.id}
                 value={tab.id}
+                data-testid={`tab-${tab.id}`}
                 className="relative flex items-center gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
               >
                 {tab.icon}
@@ -3219,7 +3220,7 @@ export default function JobDetailView({
 
               {/* Client card */}
               {(client || job.address) && (
-                <Card>
+                <Card data-testid="sidebar-client-card">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                       <User className="h-3.5 w-3.5" />Client
@@ -3245,7 +3246,7 @@ export default function JobDetailView({
               )}
 
               {/* At a glance */}
-              <Card>
+              <Card data-testid="sidebar-at-a-glance">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                     <Briefcase className="h-3.5 w-3.5" />At a Glance
@@ -3290,7 +3291,7 @@ export default function JobDetailView({
 
               {/* Quick links */}
               {!isTradie && (
-                <Card>
+                <Card data-testid="sidebar-quick-links">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
                       <Link2 className="h-3.5 w-3.5" />Quick Links
