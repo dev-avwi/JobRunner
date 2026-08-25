@@ -308,6 +308,17 @@ interface ClientData {
   name: string;
 }
 
+// Redirect from the retired /dispatch-board route to the unified /dispatch page,
+// preserving any query parameters (e.g. ?date=YYYY-MM-DD) so deep links still work.
+function DispatchBoardRedirect() {
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    const search = window.location.search;
+    setLocation("/dispatch" + search, { replace: true } as any);
+  }, [setLocation]);
+  return null;
+}
+
 // Short URL redirects for quote/invoice links sent via email/SMS
 function QuoteShortRedirect({ token }: { token: string }) {
   const [, setLocation] = useLocation();
@@ -753,11 +764,11 @@ function Router({
         <Redirect to="/schedule" />
       </Route>
 
-      <Route path="/dispatch-board" component={() => (
-        <FeatureGate requiredTier="team" featureName="Dispatch Board" description="Visually schedule and dispatch jobs to team members with drag-and-drop.">
-          <DispatchBoard />
-        </FeatureGate>
-      )} />
+      {/* /dispatch-board is retired; preserve ?date= and other query params so
+          bookmarks / deep links open the correct day in AdvancedDispatch */}
+      <Route path="/dispatch-board">
+        <DispatchBoardRedirect />
+      </Route>
 
       <Route path="/dispatch" component={() => (
         <FeatureGate requiredTier="team" featureName="Dispatch" description="Advanced dispatch board combining workers, equipment, and materials in one view.">

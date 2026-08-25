@@ -44,13 +44,30 @@ import {
   Truck,
   HardHat,
   AlertCircle,
+  AlertTriangle,
   Filter,
   LayoutGrid,
   CalendarDays,
   Columns3,
   Loader2,
   X,
+  Zap,
+  Timer,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   format,
   addDays,
@@ -61,6 +78,7 @@ import {
   subWeeks,
   isSameDay,
   parseISO,
+  isValid,
   differenceInMinutes,
   isToday,
   startOfDay,
@@ -161,6 +179,28 @@ interface DispatchResources {
   materialsNeeded: MaterialItem[];
   totalEquipment: number;
   availableEquipment: number;
+}
+
+interface OpsHealth {
+  todayJobCount: number;
+  unassignedJobs: number;
+  overdueJobs: number;
+  overCapacityWorkers: number;
+  conflictCount: number;
+  conflicts: Array<{ memberId: string; memberName: string; jobs: Array<{ id: string; title: string; time: string }> }>;
+  overdueInvoices: number;
+  unpaidInvoiceTotal: number;
+  activeWorkers: number;
+  totalSeverity: number;
+}
+
+interface WorkerState {
+  /** The team member's user ID — matches the `userId` field returned by /api/team/worker-states */
+  userId: string;
+  state: string; // 'available' | 'on_job' | 'travelling' | 'break' | 'delayed' | 'help'
+  jobId?: string | null;
+  jobTitle?: string | null;
+  updatedAt?: string | null;
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -267,6 +307,357 @@ function primaryAssignment(job: DispatchJob): DispatchAssignment | undefined {
   return job.assignments?.find(a => a.isActive) ?? job.assignments?.[0];
 }
 
+// ─── Ops Alert Bar ───────────────────────────────────────────────────────────
+
+const WORKER_STATE_LABELS: Record<string, { label: string; color: string }> = {
+  available:  { label: "Available",  color: "bg-green-500" },
+  on_job:     { label: "On Job",     color: "bg-blue-500" },
+  travelling: { label: "Travelling", color: "bg-amber-500" },
+  break:      { label: "Break",      color: "bg-purple-500" },
+  delayed:    { label: "Delayed",    color: "bg-orange-500" },
+  help:       { label: "Help",       color: "bg-red-500" },
+};
+
+function OpsAlertBar() {
+  const [expanded, setExpanded] = useState(false);
+
+  const { data: opsHealth, isError: opsHealthError } = useQuery<OpsHealth>({ queryKey: ["/api/ops/health"] });
+  const { data: jobAgingData } = useQuery<{ totalAging: number; criticalCount: number; agingJobs: any[] }>({
+    queryKey: ["/api/ops/job-aging"],
+  });
+
+  if (opsHealthError) {
+    return (
+      <div className="border-b flex-shrink-0 px-4 py-1.5 bg-destructive/5">
+        <div className="flex items-center gap-1.5 text-xs text-destructive">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          Ops health could not be loaded
+        </div>
+      </div>
+    );
+  }
+
+  if (!opsHealth) return null;
+
+  const agingCount = jobAgingData?.totalAging ?? 0;
+  const hasIssues =
+    opsHealth.conflictCount > 0 ||
+    opsHealth.overdueJobs > 0 ||
+    opsHealth.unassignedJobs > 0 ||
+    opsHealth.overCapacityWorkers > 0 ||
+    opsHealth.overdueInvoices > 0 ||
+    agingCount > 0;
+
+  if (!hasIssues) return null;
+
+  const severity =
+    opsHealth.conflictCount > 0 ? "critical" :
+    opsHealth.overdueJobs > 0 || opsHealth.overCapacityWorkers > 0 || (jobAgingData?.criticalCount ?? 0) > 0
+      ? "warning" : "info";
+
+  return (
+    <div
+      className={`border-b flex-shrink-0 px-4 py-1.5 ${
+        severity === "critical"
+          ? "bg-destructive/5 border-destructive/20"
+          : severity === "warning"
+          ? "bg-amber-500/5 border-amber-500/20"
+          : "bg-muted/30"
+      }`}
+    >
+      <div
+        className="flex items-center gap-2 cursor-pointer flex-wrap"
+        onClick={() => setExpanded(v => !v)}
+      >
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {severity === "critical" ? (
+            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+          ) : (
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+          )}
+          <span className={`text-xs font-semibold ${severity === "critical" ? "text-destructive" : "text-amber-600 dark:text-amber-400"}`}>
+            Ops Alert
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          {opsHealth.overdueJobs > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Clock className="h-2.5 w-2.5" />
+              {opsHealth.overdueJobs} Overdue
+            </span>
+          )}
+          {opsHealth.unassignedJobs > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Briefcase className="h-2.5 w-2.5" />
+              {opsHealth.unassignedJobs} Unassigned
+            </span>
+          )}
+          {opsHealth.overCapacityWorkers > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <Users className="h-2.5 w-2.5" />
+              {opsHealth.overCapacityWorkers} Over Capacity
+            </span>
+          )}
+          {opsHealth.overdueInvoices > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400">
+              <AlertCircle className="h-2.5 w-2.5" />
+              {opsHealth.overdueInvoices} Overdue Invoices
+            </span>
+          )}
+          {opsHealth.conflictCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-destructive/10 text-destructive">
+              <Zap className="h-2.5 w-2.5" />
+              {opsHealth.conflictCount} Conflicts
+            </span>
+          )}
+          {agingCount > 0 && (
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+              style={{
+                backgroundColor: (jobAgingData?.criticalCount ?? 0) > 0 ? "hsl(var(--destructive)/0.1)" : "hsl(45 100% 50%/0.15)",
+                color: (jobAgingData?.criticalCount ?? 0) > 0 ? "hsl(var(--destructive))" : "hsl(45 80% 35%)",
+              }}
+            >
+              <AlertTriangle className="h-2.5 w-2.5" />
+              {agingCount} Stale
+            </span>
+          )}
+        </div>
+
+        <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform flex-shrink-0 ${expanded ? "rotate-180" : ""}`} />
+      </div>
+
+      {expanded && (
+        <div className="pt-1.5 space-y-1">
+          {opsHealth.conflicts.map((conflict, i) => (
+            <div key={i} className="flex items-start gap-1.5 text-xs">
+              <AlertCircle className="h-3 w-3 text-destructive mt-0.5 flex-shrink-0" />
+              <span>
+                <span className="font-medium">{conflict.memberName}</span>
+                <span className="text-muted-foreground"> has overlapping jobs: </span>
+                {conflict.jobs.map((j, k) => (
+                  <span key={j.id}>
+                    {k > 0 && ", "}
+                    <span className="font-medium">{j.title}</span>
+                    <span className="text-muted-foreground"> ({j.time})</span>
+                  </span>
+                ))}
+              </span>
+            </div>
+          ))}
+          {(jobAgingData?.agingJobs ?? []).slice(0, 4).map((j: any) => (
+            <div key={j.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" style={{ color: j.severity === "critical" ? "hsl(var(--destructive))" : "hsl(45 80% 35%)" }} />
+              <span className="font-medium">{j.title}</span>
+              <Badge variant="outline" className="text-[10px] h-4 px-1">{j.status}</Badge>
+              <span>{j.daysInStatus}d in status</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Unscheduled Queue Panel ──────────────────────────────────────────────────
+
+function UnscheduledQueuePanel({
+  jobs,
+  workers,
+  allDayJobs,
+  onJobClick,
+  onAssign,
+}: {
+  jobs: DispatchJob[];            // unscheduled jobs
+  workers: TeamMember[];
+  allDayJobs: DispatchJob[];      // all jobs on the selected date (for load calc)
+  onJobClick: (id: string) => void;
+  onAssign: (jobId: string, workerId: string, hour: number) => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [assigningJob, setAssigningJob] = useState<DispatchJob | null>(null);
+  const [assignWorkerId, setAssignWorkerId] = useState("");
+  const [assignHour, setAssignHour] = useState("9");
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  // Compute load per worker (minutes scheduled today)
+  const workerLoadMap = useMemo(() => {
+    const map = new Map<string, number>();
+    workers.forEach(w => map.set(w.memberId || w.id, 0));
+    allDayJobs.forEach(j => {
+      const wid = j.assignedTo ?? primaryAssignment(j)?.memberId;
+      if (wid && map.has(wid)) {
+        map.set(wid, (map.get(wid) ?? 0) + (j.estimatedDuration ?? 60));
+      }
+    });
+    return map;
+  }, [workers, allDayJobs]);
+
+  const bestFitWorker = useMemo(() => {
+    if (workers.length === 0) return null;
+    return workers.reduce((best, curr) => {
+      const currLoad = workerLoadMap.get(curr.memberId || curr.id) ?? 0;
+      const bestLoad = workerLoadMap.get(best.memberId || best.id) ?? 0;
+      return currLoad < bestLoad ? curr : best;
+    });
+  }, [workers, workerLoadMap]);
+
+  const openAssign = (job: DispatchJob) => {
+    setAssigningJob(job);
+    setAssignWorkerId(bestFitWorker ? (bestFitWorker.memberId || bestFitWorker.id) : (workers[0] ? (workers[0].memberId || workers[0].id) : ""));
+    setAssignHour("9");
+  };
+
+  const handleAssignConfirm = () => {
+    if (!assigningJob || !assignWorkerId) return;
+    onAssign(assigningJob.id, assignWorkerId, parseInt(assignHour, 10));
+    setAssigningJob(null);
+  };
+
+  return (
+    <div className="border-b flex-shrink-0 bg-card">
+      {/* Header */}
+      <button
+        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/30 transition-colors"
+        onClick={() => setCollapsed(v => !v)}
+      >
+        <Timer className="h-3.5 w-3.5 text-amber-500" />
+        <span className="text-xs font-semibold flex-1 text-left">
+          Unscheduled
+          {jobs.length > 0 && (
+            <Badge variant="secondary" className="ml-1.5 text-[10px] h-4 px-1">{jobs.length}</Badge>
+          )}
+        </span>
+        <ChevronDown className={`h-3 w-3 text-muted-foreground transition-transform ${collapsed ? "" : "rotate-180"}`} />
+      </button>
+
+      {!collapsed && (
+        <div className="overflow-y-auto max-h-64">
+          {jobs.length === 0 ? (
+            <div className="px-3 pb-3 text-xs text-muted-foreground text-center py-4">
+              All jobs are scheduled
+            </div>
+          ) : (
+            <div className="p-2 space-y-1.5">
+              {jobs.map(job => {
+                const sc = getStatusColor(job.status);
+                const fit = bestFitWorker;
+                return (
+                  <div
+                    key={job.id}
+                    draggable
+                    onDragStart={e => {
+                      e.dataTransfer.setData("jobId", job.id);
+                      e.dataTransfer.setData("offsetY", "0");
+                      e.dataTransfer.setData("fromQueue", "true");
+                      setDraggingId(job.id);
+                    }}
+                    onDragEnd={() => setDraggingId(null)}
+                    className={`rounded border-l-[3px] ${sc.bg} ${sc.border} p-2 cursor-grab active:cursor-grabbing
+                      ${draggingId === job.id ? "opacity-40" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-1 mb-0.5">
+                      <button
+                        className="text-[11px] font-medium truncate text-left flex-1 hover:underline"
+                        onClick={() => onJobClick(job.id)}
+                      >
+                        {job.title}
+                      </button>
+                    </div>
+                    {job.client?.name && (
+                      <p className="text-[10px] text-muted-foreground truncate">{job.client.name}</p>
+                    )}
+                    {job.address && (
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <MapPin className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                        <p className="text-[10px] text-muted-foreground truncate">{job.address}</p>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">No time set</span>
+                      {fit && (
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+                          Best: {memberName(fit)}
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full h-5 text-[10px] mt-1.5"
+                      onClick={() => openAssign(job)}
+                    >
+                      Assign
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Quick assign dialog */}
+      <Dialog open={!!assigningJob} onOpenChange={open => { if (!open) setAssigningJob(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Assign Job</DialogTitle>
+          </DialogHeader>
+          {assigningJob && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium">{assigningJob.title}</p>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Worker</label>
+                <Select value={assignWorkerId} onValueChange={setAssignWorkerId}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select worker" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workers.map(w => {
+                      const wid = w.memberId || w.id;
+                      const loadMin = workerLoadMap.get(wid) ?? 0;
+                      const loadH = Math.round(loadMin / 60 * 10) / 10;
+                      return (
+                        <SelectItem key={wid} value={wid} className="text-xs">
+                          {memberName(w)} ({loadH}h booked)
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Start time</label>
+                <Select value={assignHour} onValueChange={setAssignHour}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 14 }, (_, i) => i + 6).map(h => {
+                      const ampm = h >= 12 ? "PM" : "AM";
+                      const display = h > 12 ? h - 12 : h === 0 ? 12 : h;
+                      return (
+                        <SelectItem key={h} value={String(h)} className="text-xs">
+                          {display}:00 {ampm}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" size="sm" onClick={() => setAssigningJob(null)}>Cancel</Button>
+            <Button size="sm" onClick={handleAssignConfirm}>Assign</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 // ─── Day View ────────────────────────────────────────────────────────────────
 
 function DayView({
@@ -275,6 +666,7 @@ function DayView({
   workers,
   resources,
   selectedWorkerIds,
+  overCapacityWorkerIds,
   onJobClick,
   onCreateJob,
   onReschedule,
@@ -285,6 +677,7 @@ function DayView({
   workers: TeamMember[];
   resources?: DispatchResources;
   selectedWorkerIds: string[];
+  overCapacityWorkerIds?: Set<string>;
   onJobClick: (id: string) => void;
   onCreateJob: (memberId?: string, hour?: number) => void;
   onReschedule: (jobId: string, memberId: string, hour: number, minute: number) => void;
@@ -372,10 +765,11 @@ function DayView({
               {filteredWorkers.map(worker => {
                 const wid = worker.memberId || worker.id;
                 const workerJobs = jobsByMember.get(wid) ?? [];
+                const isOverCapacity = overCapacityWorkerIds?.has(wid) ?? false;
                 return (
-                  <div key={wid} className="flex-1 min-w-[140px] border-r last:border-r-0">
+                  <div key={wid} className={`flex-1 min-w-[140px] border-r last:border-r-0 ${isOverCapacity ? "ring-1 ring-inset ring-red-500/40" : ""}`}>
                     {/* Worker header */}
-                    <div className="h-6 flex items-center gap-1.5 px-2 border-b bg-muted/30 sticky top-0 z-10">
+                    <div className={`h-6 flex items-center gap-1.5 px-2 border-b sticky top-0 z-10 ${isOverCapacity ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
                       <UserAvatar
                         user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
                         className="h-4 w-4 text-[8px]"
@@ -863,23 +1257,49 @@ function ResourceSidebar({
   selectedWorkerIds,
   onWorkerToggle,
   onClose,
+  allDayJobs,
+  workerStates,
+  embedded,
 }: {
   workers: TeamMember[];
   resources?: DispatchResources;
   selectedWorkerIds: string[];
   onWorkerToggle: (id: string) => void;
   onClose: () => void;
+  allDayJobs?: DispatchJob[];
+  workerStates?: WorkerState[];
+  /** When true, suppresses the outer border/width/bg so the parent controls layout */
+  embedded?: boolean;
 }) {
-  const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials">("workers");
+  const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">("workers");
+
+  const workerStateMap = useMemo(() => {
+    const m = new Map<string, WorkerState>();
+    (workerStates ?? []).forEach(ws => m.set(ws.userId, ws));
+    return m;
+  }, [workerStates]);
+
+  const workerLoadMap = useMemo(() => {
+    const m = new Map<string, number>();
+    workers.forEach(w => m.set(w.memberId || w.id, 0));
+    (allDayJobs ?? []).forEach(j => {
+      const wid = j.assignedTo ?? primaryAssignment(j)?.memberId;
+      if (wid && m.has(wid)) {
+        m.set(wid, (m.get(wid) ?? 0) + (j.estimatedDuration ?? 60));
+      }
+    });
+    return m;
+  }, [workers, allDayJobs]);
 
   const tabs = [
     { key: "workers" as const,   label: "Workers",   icon: Users },
     { key: "equipment" as const, label: "Equipment", icon: Wrench },
     { key: "materials" as const, label: "Materials", icon: Package },
+    { key: "capacity" as const,  label: "Capacity",  icon: Timer },
   ];
 
   return (
-    <div className="w-64 border-l flex flex-col flex-shrink-0 bg-card">
+    <div className={embedded ? "flex flex-col flex-1 overflow-hidden" : "w-64 border-l flex flex-col flex-shrink-0 bg-card"}>
       {/* Tab bar */}
       <div className="flex items-center border-b px-1 pt-1">
         {tabs.map(tab => {
@@ -1009,6 +1429,70 @@ function ResourceSidebar({
             )}
           </div>
         )}
+
+        {/* Capacity tab */}
+        {activeTab === "capacity" && (
+          <div className="p-2 space-y-2">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-1">
+              Team capacity today
+            </p>
+            {workers.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-muted-foreground">
+                <Users className="h-7 w-7 mb-2 opacity-30" />
+                <p className="text-xs">No workers</p>
+              </div>
+            ) : (
+              workers.map(worker => {
+                const wid = worker.memberId || worker.id;
+                const loadMin = workerLoadMap.get(wid) ?? 0;
+                const loadH = Math.round(loadMin / 60 * 10) / 10;
+                const capacityH = 8;
+                const pct = Math.min((loadH / capacityH) * 100, 100);
+                const isOver = loadH > capacityH;
+                const jobCount = (allDayJobs ?? []).filter(j => {
+                  const assignee = j.assignedTo ?? primaryAssignment(j)?.memberId;
+                  return assignee === wid;
+                }).length;
+                const ws = workerStateMap.get(wid);
+                const stateCfg = ws ? (WORKER_STATE_LABELS[ws.state] ?? { label: ws.state, color: "bg-muted-foreground" }) : null;
+
+                return (
+                  <div
+                    key={wid}
+                    className={`px-2 py-2 rounded border ${isOver ? "border-red-400/50 bg-red-50 dark:bg-red-950/20" : "border-transparent hover:bg-muted/30"}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <UserAvatar
+                        user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
+                        className="h-5 w-5 text-[9px] flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-medium truncate">{memberName(worker)}</p>
+                      </div>
+                      {stateCfg && (
+                        <span className={`flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium text-white ${stateCfg.color}`}>
+                          {stateCfg.label}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] text-muted-foreground">{jobCount} job{jobCount !== 1 ? "s" : ""}</span>
+                      <span className={`text-[10px] font-medium ${isOver ? "text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                        {loadH}h / {capacityH}h
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${isOver ? "bg-red-500" : pct > 75 ? "bg-amber-500" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );
@@ -1022,9 +1506,20 @@ export default function AdvancedDispatch() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // View state
+  // View state — initialise date from ?date=YYYY-MM-DD so legacy /dispatch-board?date=…
+  // deep links and bookmarks continue to work after the route consolidation.
   const [view, setView] = useState<ViewMode>("day");
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const dp = params.get("date");
+      if (dp) {
+        const parsed = parseISO(dp);
+        if (isValid(parsed)) return parsed;
+      }
+    } catch { /* ignore */ }
+    return new Date();
+  });
   const [showSidebar, setShowSidebar] = useState(true);
   const [showMaterials, setShowMaterials] = useState(true);
 
@@ -1062,6 +1557,11 @@ export default function AdvancedDispatch() {
   const { data: resources, isLoading: resourcesLoading } = useQuery<DispatchResources>({
     queryKey: ["/api/dispatch/resources"],
     refetchInterval: 60_000,
+  });
+
+  const { data: workerStates = [] } = useQuery<WorkerState[]>({
+    queryKey: ["/api/team/worker-states"],
+    refetchInterval: 30_000,
   });
 
   // ── Mutations ─────────────────────────────────────────────────
@@ -1179,6 +1679,45 @@ export default function AdvancedDispatch() {
     return "All jobs";
   }, [view, currentDate, weekStart]);
 
+  // ── Unscheduled jobs + capacity computations ───────────────────
+  const unscheduledJobs = useMemo(() =>
+    dispatchJobs.filter(j =>
+      !j.scheduledAt && ["pending", "scheduled"].includes(j.status?.toLowerCase() ?? "")
+    ),
+    [dispatchJobs],
+  );
+
+  const allDayJobs = useMemo(() => {
+    const dateStr = format(currentDate, "yyyy-MM-dd");
+    return dispatchJobs.filter(j => {
+      if (!j.scheduledAt) return false;
+      try { return format(parseISO(j.scheduledAt), "yyyy-MM-dd") === dateStr; }
+      catch { return false; }
+    });
+  }, [dispatchJobs, currentDate]);
+
+  const overCapacityWorkerIds = useMemo(() => {
+    const capacityH = 8;
+    const loadMap = new Map<string, number>();
+    workers.forEach(w => loadMap.set(w.memberId || w.id, 0));
+    allDayJobs.forEach(j => {
+      const wid = j.assignedTo ?? primaryAssignment(j)?.memberId;
+      if (wid && loadMap.has(wid)) {
+        loadMap.set(wid, (loadMap.get(wid) ?? 0) + (j.estimatedDuration ?? 60));
+      }
+    });
+    const over = new Set<string>();
+    loadMap.forEach((min, wid) => { if (min / 60 > capacityH) over.add(wid); });
+    return over;
+  }, [workers, allDayJobs]);
+
+  // ── Handle assign from unscheduled queue ──────────────────────
+  const handleQueueAssign = useCallback((jobId: string, workerId: string, hour: number) => {
+    const dateStr = format(currentDate, "yyyy-MM-dd");
+    const timeStr = `${hour.toString().padStart(2, "0")}:00`;
+    updateJobMutation.mutate({ jobId, scheduledAt: dateStr, scheduledTime: timeStr, assignedTo: workerId });
+  }, [currentDate, updateJobMutation]);
+
   const isLoading = jobsLoading || workersLoading;
 
   const VIEW_BUTTONS: { key: ViewMode; label: string; icon: React.ElementType }[] = [
@@ -1188,7 +1727,7 @@ export default function AdvancedDispatch() {
   ];
 
   return (
-    <PageShell className="flex flex-col h-screen overflow-hidden">
+    <PageShell className="flex flex-col h-screen overflow-hidden" data-testid="dispatch-board">
       {/* ── Top bar ── */}
       <div className="border-b flex-shrink-0 px-4 py-2 flex items-center gap-3 flex-wrap">
         <h1 className="text-xl font-bold tracking-tight flex-shrink-0">Dispatch</h1>
@@ -1356,10 +1895,13 @@ export default function AdvancedDispatch() {
         </div>
       </div>
 
+      {/* ── Ops alert bar (only when there are issues) ── */}
+      <OpsAlertBar />
+
       {/* ── Main content area ── */}
       <div className="flex flex-1 overflow-hidden">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center" data-testid="dispatch-loading">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : view === "day" ? (
@@ -1369,6 +1911,7 @@ export default function AdvancedDispatch() {
             workers={workers}
             resources={resources}
             selectedWorkerIds={selectedWorkerIds}
+            overCapacityWorkerIds={overCapacityWorkerIds}
             onJobClick={handleJobClick}
             onCreateJob={handleCreateJob}
             onReschedule={handleReschedule}
@@ -1396,14 +1939,44 @@ export default function AdvancedDispatch() {
           />
         )}
 
-        {/* Resource sidebar */}
-        {showSidebar && (
+        {/* Unscheduled queue panel (day view, right side) */}
+        {view === "day" && (
+          <div className="w-64 flex-shrink-0 border-l flex flex-col bg-card overflow-hidden">
+            <UnscheduledQueuePanel
+              jobs={unscheduledJobs}
+              workers={workers}
+              allDayJobs={allDayJobs}
+              onJobClick={handleJobClick}
+              onAssign={handleQueueAssign}
+            />
+            {/* Resource sidebar content embedded in the same column */}
+            {showSidebar && (
+              <div className="flex-1 overflow-hidden flex flex-col border-t">
+                <ResourceSidebar
+                  workers={workers}
+                  resources={resources}
+                  selectedWorkerIds={selectedWorkerIds}
+                  onWorkerToggle={handleWorkerToggle}
+                  onClose={() => setShowSidebar(false)}
+                  allDayJobs={allDayJobs}
+                  workerStates={workerStates}
+                  embedded
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Sidebar for week / kanban views */}
+        {showSidebar && view !== "day" && (
           <ResourceSidebar
             workers={workers}
             resources={resources}
             selectedWorkerIds={selectedWorkerIds}
             onWorkerToggle={handleWorkerToggle}
             onClose={() => setShowSidebar(false)}
+            allDayJobs={allDayJobs}
+            workerStates={workerStates}
           />
         )}
       </div>

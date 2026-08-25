@@ -102,8 +102,7 @@ async function mockBaseApis(page: Page) {
 test('shows board skeleton while /api/dispatch/board is loading', async ({ page }) => {
   await mockBaseApis(page);
 
-  // Override dispatch/board with a delayed response (registered AFTER mockBaseApis
-  // so LIFO ordering means this handler takes precedence).
+  // Hold the board response so the loading state stays visible long enough to assert.
   let resolveBoard!: () => void;
   const boardHeld = new Promise<void>((res) => { resolveBoard = res; });
 
@@ -112,63 +111,44 @@ test('shows board skeleton while /api/dispatch/board is loading', async ({ page 
     await route.fulfill(json([]));
   });
 
-  // Navigate directly to the dispatch board page.
-  // NOTE: /dispatch redirects to /schedule — the board lives at /dispatch-board.
-  // Wait for networkidle: the board query is disabled while topView==='schedule',
-  // so all initial requests resolve and the app settles without touching boardHeld.
-  await page.goto('/dispatch-board', { waitUntil: 'networkidle' });
+  // /dispatch-board now redirects to the unified /dispatch page.
+  await page.goto('/dispatch', { waitUntil: 'domcontentloaded' });
 
-  // Click the Board tab. Scope to the dispatch board container to avoid
-  // ambiguity with any sidebar navigation buttons sharing similar names.
+  // The unified Dispatch page container must be visible.
   const dispatchBoard = page.locator('[data-testid="dispatch-board"]');
   await expect(dispatchBoard).toBeVisible({ timeout: 10000 });
-  const boardTab = dispatchBoard.getByRole('button', { name: /^board$/i });
-  await expect(boardTab).toBeVisible({ timeout: 5000 });
-  await boardTab.click();
 
-  // While the board request is held, DispatchBoardSkeleton should render.
-  const boardSkeleton = page.locator('[data-testid="dispatch-board-skeleton"]');
-  await expect(boardSkeleton).toBeVisible({ timeout: 5000 });
+  // While the board request is held, a loading spinner is shown.
+  const loadingSpinner = page.locator('[data-testid="dispatch-loading"]');
+  await expect(loadingSpinner).toBeVisible({ timeout: 8000 });
 
-  // Confirm the 4 skeleton columns are inside it.
-  await expect(boardSkeleton.locator('> div')).toHaveCount(4);
-
-  // Release the held request and verify the skeleton disappears.
+  // Release the held request and verify the spinner disappears.
   resolveBoard();
-  await expect(boardSkeleton).not.toBeVisible({ timeout: 10000 });
+  await expect(loadingSpinner).not.toBeVisible({ timeout: 10000 });
 });
 
 // ---------------------------------------------------------------------------
 // Test 2 — Map skeleton while /api/dispatch/board is delayed
 // ---------------------------------------------------------------------------
 
-test('shows map skeleton while /api/dispatch/board is loading on Map tab', async ({ page }) => {
+test('kanban view renders job columns after board data loads', async ({ page }) => {
+  // The old DispatchBoard had a Map tab with its own skeleton. The unified /dispatch
+  // page does not have a map tab (map is a separate feature). This test replaces the
+  // map-skeleton assertion with a sanity check that Kanban view renders correctly.
   await mockBaseApis(page);
 
-  let resolveBoard!: () => void;
-  const boardHeld = new Promise<void>((res) => { resolveBoard = res; });
+  await page.goto('/dispatch', { waitUntil: 'networkidle' });
 
-  await page.route('**/api/dispatch/board', async (route: Route) => {
-    await boardHeld;
-    await route.fulfill(json([]));
-  });
-
-  await page.goto('/dispatch-board', { waitUntil: 'networkidle' });
-
-  // Click the Map tab. Scope to the dispatch board container to avoid
-  // ambiguity with any sidebar navigation buttons sharing similar names.
   const dispatchBoard = page.locator('[data-testid="dispatch-board"]');
   await expect(dispatchBoard).toBeVisible({ timeout: 10000 });
-  const mapTab = dispatchBoard.getByRole('button', { name: /^map$/i });
-  await expect(mapTab).toBeVisible({ timeout: 5000 });
-  await mapTab.click();
 
-  // DispatchMapSkeleton renders while the board request is pending.
-  const mapSkeleton = page.locator('[data-testid="dispatch-map-skeleton"]');
-  await expect(mapSkeleton).toBeVisible({ timeout: 5000 });
+  // Switch to Kanban view.
+  const kanbanBtn = dispatchBoard.getByRole('button', { name: /^kanban$/i });
+  await expect(kanbanBtn).toBeVisible({ timeout: 5000 });
+  await kanbanBtn.click();
 
-  resolveBoard();
-  await expect(mapSkeleton).not.toBeVisible({ timeout: 10000 });
+  // Kanban renders status columns. At least the "Assigned" column should appear.
+  await expect(dispatchBoard.getByText('Assigned')).toBeVisible({ timeout: 8000 });
 });
 
 // ---------------------------------------------------------------------------
@@ -401,6 +381,109 @@ test('template picker error state recovers and shows templates after clicking Re
 });
 
 // ---------------------------------------------------------------------------
+// Test 7a — Unscheduled queue panel surfaces jobs with no scheduled time
+// ---------------------------------------------------------------------------
+
+test('unscheduled queue panel shows a job with no scheduledAt in day view', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const UNSCHEDULED_JOB = {
+    id: 'job-unscheduled-1',
+    title: 'Fix Roof Leak',
+    status: 'pending',
+    clientName: 'Alice Smith',
+    address: '12 Oak St',
+    scheduledAt: null,
+    scheduledTime: null,
+    assignedTo: null,
+    jobType: 'service',
+    estimatedDuration: 60,
+    assignments: [],
+  };
+
+  await page.route('**/api/dispatch/board', (r) => r.fulfill(json([UNSCHEDULED_JOB])));
+
+  await page.goto('/dispatch', { waitUntil: 'networkidle' });
+
+  const dispatchBoard = page.locator('[data-testid="dispatch-board"]');
+  await expect(dispatchBoard).toBeVisible({ timeout: 10000 });
+
+  // The unscheduled queue panel is always visible in day view.
+  // The job card must surface the job title.
+  await expect(page.getByText('Fix Roof Leak')).toBeVisible({ timeout: 8000 });
+  // The "no time set" indicator must be present.
+  await expect(page.getByText('No time set')).toBeVisible({ timeout: 5000 });
+});
+
+// ---------------------------------------------------------------------------
+// Test 7b — Quick-assign dialog opens from the unscheduled queue
+// ---------------------------------------------------------------------------
+
+test('quick-assign dialog opens when Assign is clicked on an unscheduled job', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const UNSCHEDULED_JOB = {
+    id: 'job-assign-dialog-1',
+    title: 'Install Hot Water System',
+    status: 'pending',
+    clientName: 'Bob Jones',
+    address: '99 Pine Ave',
+    scheduledAt: null,
+    scheduledTime: null,
+    assignedTo: null,
+    jobType: 'service',
+    estimatedDuration: 90,
+    assignments: [],
+  };
+
+  const WORKER = {
+    id: 'w1',
+    memberId: 'w1',
+    userId: 'w1',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    role: 'worker',
+  };
+
+  await page.route('**/api/dispatch/board', (r) => r.fulfill(json([UNSCHEDULED_JOB])));
+  await page.route('**/api/team/members', (r) => r.fulfill(json([WORKER])));
+
+  await page.goto('/dispatch', { waitUntil: 'networkidle' });
+
+  // Wait for the job card to appear in the queue.
+  await expect(page.getByText('Install Hot Water System')).toBeVisible({ timeout: 8000 });
+
+  // Click the Assign button on the card.
+  await page.getByRole('button', { name: /^assign$/i }).first().click();
+
+  // The quick-assign dialog must open.
+  await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+  // Dialog contains the job title.
+  await expect(page.getByRole('dialog').getByText('Install Hot Water System')).toBeVisible({ timeout: 3000 });
+});
+
+// ---------------------------------------------------------------------------
+// Test 7c — /dispatch-board?date=YYYY-MM-DD deep link initialises correct day
+// ---------------------------------------------------------------------------
+
+test('/dispatch-board?date= deep link initialises dispatch to the specified date', async ({ page }) => {
+  await mockBaseApis(page);
+
+  const TARGET_DATE = '2026-03-15'; // a known Saturday
+
+  // Navigate via the retired /dispatch-board route with a date param.
+  await page.goto(`/dispatch-board?date=${TARGET_DATE}`, { waitUntil: 'networkidle' });
+
+  // Verify we landed on the unified /dispatch page.
+  const dispatchBoard = page.locator('[data-testid="dispatch-board"]');
+  await expect(dispatchBoard).toBeVisible({ timeout: 10000 });
+
+  // The date in the top-bar navigation label must reflect the target date.
+  // AdvancedDispatch renders the day view by default: "Saturday, 15 March 2026"
+  await expect(page.getByText(/15 March 2026/)).toBeVisible({ timeout: 8000 });
+});
+
+// ---------------------------------------------------------------------------
 // Test 7 — Ops health error banner on network failure
 // ---------------------------------------------------------------------------
 
@@ -416,7 +499,7 @@ test('shows ops health error banner when /api/ops/health fails', async ({ page }
     route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'server error' }) })
   );
 
-  await page.goto('/dispatch-board', { waitUntil: 'networkidle' });
+  await page.goto('/dispatch', { waitUntil: 'networkidle' });
 
   // OpsHealthBanner renders this string when opsHealthError is true.
   const errorBanner = page.getByText('Ops health could not be loaded');
