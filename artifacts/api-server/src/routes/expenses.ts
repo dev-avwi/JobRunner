@@ -257,12 +257,39 @@ export function registerExpenseRoutes(app: Express) {
         }
 
         // Notify the worker who submitted the expense (submittedByUserId already declared above)
-        if (submittedByUserId) {
+        // For legacy expenses without submittedByUserId, attempt a name-based lookup.
+        let resolvedSubmitterUserId: string | null = submittedByUserId;
+        if (!resolvedSubmitterUserId && isLegacyWorkerExpense && existing.jobId) {
+          try {
+            const nameMatch = (existing.description ?? "").match(/^\[Logged by ([^\]]+)\]/i);
+            const loggedByName = nameMatch ? nameMatch[1].trim().toLowerCase() : null;
+            if (loggedByName) {
+              const assignments = await storage.getJobAssignments(existing.jobId);
+              for (const assignment of assignments) {
+                const assignedUser = await storage.getUser(assignment.userId);
+                if (!assignedUser) continue;
+                const candidateName = (
+                  assignedUser.firstName ||
+                  assignedUser.username ||
+                  ""
+                ).trim().toLowerCase();
+                if (candidateName && candidateName === loggedByName) {
+                  resolvedSubmitterUserId = assignment.userId;
+                  break;
+                }
+              }
+            }
+          } catch (_lookupErr) {
+            // Non-fatal — fall through without a resolved submitter
+          }
+        }
+
+        if (resolvedSubmitterUserId) {
           try {
             const amountFmt = `$${parseFloat(String(existing.amount)).toFixed(2)}`;
             if (status === "approved") {
               await createNotification(storage, {
-                userId: submittedByUserId,
+                userId: resolvedSubmitterUserId,
                 type: "expense_approved",
                 title: "Expense approved",
                 message: `Your ${amountFmt} expense has been approved.`,
@@ -275,7 +302,7 @@ export function registerExpenseRoutes(app: Express) {
             } else {
               const reasonSuffix = updates.rejectionReason ? `: ${updates.rejectionReason}` : ".";
               await createNotification(storage, {
-                userId: submittedByUserId,
+                userId: resolvedSubmitterUserId,
                 type: "expense_rejected",
                 title: "Expense rejected",
                 message: `Your ${amountFmt} expense was not approved${reasonSuffix}`,
