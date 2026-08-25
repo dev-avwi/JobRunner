@@ -54,6 +54,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { PageShell } from "@/components/ui/page-shell";
 import {
@@ -107,6 +108,24 @@ import type {
   JobDetailViewProps,
   User as JdvUser,
 } from "./JobDetailView.types";
+
+// ── Shared helper components ──────────────────────────────────────────────────
+function TabEmptyState({ icon, title, description, action }: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-muted/50 mb-4">{icon}</div>
+      <p className="text-sm font-medium mb-1">{title}</p>
+      <p className="text-xs text-muted-foreground mb-4 max-w-[240px]">{description}</p>
+      {action}
+    </div>
+  );
+}
+
 export default function JobDetailView({
   jobId,
   onBack,
@@ -1796,6 +1815,23 @@ export default function JobDetailView({
     });
   };
 
+  // ── Tab navigation ────────────────────────────────────────────────────────
+  const activeTab = useMemo(() => {
+    const isProjectLocal = (job as any)?.jobType === 'project';
+    const params = new URLSearchParams(searchString || '');
+    const tab = params.get('tab');
+    if (tab === 'claims') return isProjectLocal ? 'phases' : 'overview';
+    const valid = isProjectLocal
+      ? ['overview', 'phases', 'activity', 'financials', 'docs', 'chat']
+      : ['overview', 'activity', 'financials', 'docs', 'chat'];
+    return valid.includes(tab || '') ? tab! : 'overview';
+  }, [searchString, job]);
+
+  const handleTabChange = useCallback((tab: string) => {
+    if (tab === 'chat') { navigate(`/chat?job=${jobId}`); return; }
+    navigate(`/jobs/${jobId}?tab=${tab}`);
+  }, [navigate, jobId]);
+
   if (isLoading) {
     return (
       <PageShell data-testid="job-detail-loading">
@@ -2062,2563 +2098,1393 @@ export default function JobDetailView({
     );
   }
 
+
   const isProject = job.jobType === 'project';
-  const isServiceCall = !isProject; // service_call or unset
+  const isServiceCall = !isProject;
+
+  const SERVICE_STEPS = [
+    { status: 'scheduled' as const, label: 'Scheduled' },
+    { status: 'in_progress' as const, label: 'In Progress' },
+    { status: 'done' as const, label: 'Complete' },
+    { status: 'invoiced' as const, label: 'Invoiced' },
+  ];
+  const STATUS_ORDER: Record<string, number> = { pending: -1, scheduled: 0, in_progress: 1, done: 2, invoiced: 3 };
+  const currentStatusOrder = STATUS_ORDER[job.status] ?? -1;
+
+  const tabConfig = isProject ? [
+    { id: 'overview', label: 'Overview', icon: <Briefcase className="h-4 w-4" /> },
+    { id: 'phases', label: 'Phases', icon: <Layers className="h-4 w-4" />, badge: jobPhasesForPicker.length > 0 ? String(jobPhasesForPicker.length) : undefined },
+    { id: 'activity', label: 'Activity', icon: <Camera className="h-4 w-4" /> },
+    { id: 'financials', label: 'Financials', icon: <DollarSign className="h-4 w-4" /> },
+    { id: 'docs', label: 'Docs & Safety', icon: <Shield className="h-4 w-4" /> },
+    { id: 'chat', label: 'Chat', icon: <MessageSquare className="h-4 w-4" /> },
+  ] : [
+    { id: 'overview', label: 'Overview', icon: <Briefcase className="h-4 w-4" /> },
+    { id: 'activity', label: 'Activity', icon: <Camera className="h-4 w-4" /> },
+    { id: 'financials', label: 'Financials', icon: <DollarSign className="h-4 w-4" /> },
+    { id: 'docs', label: 'Docs & Safety', icon: <Shield className="h-4 w-4" /> },
+    { id: 'chat', label: 'Chat', icon: <MessageSquare className="h-4 w-4" /> },
+  ];
 
   return (
     <PageShell data-testid="job-detail-view">
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-start gap-1">
-          <Button variant="ghost" size="icon" className="-ml-2 shrink-0 mt-0.5" onClick={onBack} data-testid="button-back">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0 flex flex-col gap-1">
-            <div 
-              className="flex items-center gap-2 group cursor-pointer"
-              onClick={handleOpenRenameDialog}
-              title="Click to rename job"
-            >
-              <h1 className="text-2xl font-bold tracking-tight text-foreground truncate">{job.title}</h1>
-              <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+
+      {/* ─── HEADER ─── */}
+      <div className="mb-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-1 min-w-0">
+            <Button variant="ghost" size="icon" className="-ml-2 shrink-0 mt-0.5" onClick={onBack} data-testid="button-back">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 group cursor-pointer" onClick={handleOpenRenameDialog} title="Click to rename">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">{job.title}</h1>
+                <Edit className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap mt-0.5">
+                {/* Status badge */}
+                {(() => {
+                  const statusLabels: Record<string, string> = { pending: 'Pending', scheduled: 'Scheduled', in_progress: 'In Progress', done: 'Complete', invoiced: 'Invoiced' };
+                  const statusColors: Record<string, string> = {
+                    pending: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                    scheduled: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                    in_progress: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+                    done: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                    invoiced: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
+                  };
+                  return (
+                    <span className={`inline-flex text-xs font-semibold px-2 py-0.5 rounded-full ${statusColors[job.status] || statusColors.pending}`}>
+                      {statusLabels[job.status] || job.status}
+                    </span>
+                  );
+                })()}
+                {/* Type badge */}
+                {isProject ? (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800" data-testid="badge-job-type-project">Project</span>
+                ) : (
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800" data-testid="badge-job-type-service-call">Service Call</span>
+                )}
+                {/* Client name */}
+                {client?.name && (
+                  <span
+                    className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors"
+                    onClick={(e) => { e.stopPropagation(); job.clientId && onViewClient?.(job.clientId); }}
+                    data-testid="link-client"
+                  >{client.name}</span>
+                )}
+                {/* Job number */}
+                {(job as any).jobNumber && (
+                  <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border select-all">
+                    {(job as any).jobNumber}
+                  </span>
+                )}
+                <PresenceIndicator editors={collaboration.otherEditors} />
+                <ImportOriginBadge importRunId={(job as any).importRunId} rowNumber={(job as any).importRowNumber} />
+              </div>
             </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              {client?.name && (
-                <span 
-                  className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline cursor-pointer transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    job.clientId && onViewClient?.(job.clientId);
-                  }}
-                  data-testid="link-client"
-                >
-                  {client.name}
-                </span>
-              )}
-              {(job as any).jobNumber && (
-                <span className="text-xs font-mono font-semibold px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border select-all">
-                  {(job as any).jobNumber}
-                </span>
-              )}
-              {!isTradie && (isProject ? (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
-                  style={{ backgroundColor: 'hsl(221 83% 95%)', color: 'hsl(221 83% 35%)', borderColor: 'hsl(221 83% 80%)' }}
-                  data-testid="badge-job-type-project"
-                >
-                  Project
-                </span>
+          </div>
+
+          {/* Right: action buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            {onEditJob && (
+              <Button variant="outline" size="sm" className="gap-1.5 hidden sm:flex" onClick={() => onEditJob(jobId)} data-testid="button-edit-job">
+                <Edit className="h-4 w-4" />Edit
+              </Button>
+            )}
+            {onEditJob && (
+              <Button variant="outline" size="icon" className="h-9 w-9 sm:hidden" onClick={() => onEditJob(jobId)}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {!isTradie && (
+              linkedInvoice ? (
+                <Button size="sm" className="gap-1.5 hidden sm:flex" onClick={() => navigate(`/invoices/${linkedInvoice.id}`)}>
+                  <Receipt className="h-4 w-4" />Invoice
+                </Button>
+              ) : (job.status === 'done' || job.status === 'invoiced') ? (
+                <Button size="sm" className="gap-1.5 hidden sm:flex" onClick={() => onCreateInvoice?.(jobId)}>
+                  <Receipt className="h-4 w-4" />Invoice
+                </Button>
+              ) : linkedQuote ? (
+                <Button size="sm" variant="outline" className="gap-1.5 hidden sm:flex" onClick={() => navigate(`/quotes/${linkedQuote.id}`)}>
+                  <FileText className="h-4 w-4" />Quote
+                </Button>
               ) : (
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full border"
-                  style={{ backgroundColor: 'hsl(38 92% 94%)', color: 'hsl(38 92% 30%)', borderColor: 'hsl(38 92% 75%)' }}
-                  data-testid="badge-job-type-service-call"
-                >
-                  Service Call
-                </span>
-              ))}
-              <PresenceIndicator editors={collaboration.otherEditors} />
-              <ImportOriginBadge importRunId={(job as any).importRunId} rowNumber={(job as any).importRowNumber} />
-            </div>
+                <Button size="sm" variant="outline" className="gap-1.5 hidden sm:flex" onClick={() => onCreateQuote?.(jobId)}>
+                  <FileText className="h-4 w-4" />Quote
+                </Button>
+              )
+            )}
+            {!isTradie && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9" data-testid="button-job-actions-menu">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleOpenInviteModal} data-testid="button-invite">
+                    <UserPlus className="h-4 w-4 mr-2" />Invite Subcontractor
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => cloneJobMutation.mutate()} disabled={cloneJobMutation.isPending} data-testid="button-duplicate-job">
+                    {cloneJobMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Copy className="h-4 w-4 mr-2" />}
+                    Duplicate Job
+                  </DropdownMenuItem>
+                  {isProject && (
+                    <DropdownMenuItem onClick={() => { setSaveTemplateName(job?.title || ''); setShowSaveTemplateDialog(true); }} data-testid="button-save-project-template">
+                      <Layers className="h-4 w-4 mr-2" />Save as Project Template
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={() => setProofPackPreviewOpen(true)} data-testid="button-proof-pack">
+                    <FileDown className="h-4 w-4 mr-2" />Proof Pack
+                  </DropdownMenuItem>
+                  {canUseAIFeatures && job && client && (
+                    <DropdownMenuItem onClick={initializeSmartActions}>
+                      <Sparkles className="h-4 w-4 mr-2" />Smart Actions
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onClick={handleDeleteJob} disabled={deleteJobMutation.isPending} className="text-destructive focus:text-destructive" data-testid="button-delete-job">
+                    {deleteJobMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
+                    Delete Job
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0 ml-4">
-          {!isTradie && (
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={handleOpenInviteModal} data-testid="button-invite">
-              <UserPlus className="h-4 w-4" />
-            </Button>
-          )}
-          {onEditJob && (
-            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => onEditJob(jobId)} data-testid="button-edit-job">
-              <Edit className="h-4 w-4" />
-            </Button>
-          )}
-          {!isTradie && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9" data-testid="button-job-actions-menu">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => cloneJobMutation.mutate()}
-                  disabled={cloneJobMutation.isPending}
-                  data-testid="button-duplicate-job"
-                >
-                  {cloneJobMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Copy className="h-4 w-4 mr-2" />
-                  )}
-                  Duplicate Job
-                </DropdownMenuItem>
-                {job?.jobType === 'project' && (
-                  <DropdownMenuItem
+        {/* Status stepper (service calls, non-tradie, non-pending) */}
+        {isServiceCall && job.status !== 'pending' && !isTradie && (
+          <div className="flex items-center mt-3 overflow-x-auto" data-testid="status-stepper">
+            {SERVICE_STEPS.map((step, idx) => {
+              const stepOrder = STATUS_ORDER[step.status] ?? 0;
+              const isCompleted = stepOrder < currentStatusOrder;
+              const isActive = step.status === job.status;
+              return (
+                <div key={step.status} className="flex items-center flex-1 last:flex-none min-w-0">
+                  <button
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
+                      isActive ? 'text-white' : isCompleted ? 'text-green-600 dark:text-green-400 hover:text-green-700' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    style={isActive ? { backgroundColor: 'hsl(var(--trade))' } : undefined}
                     onClick={() => {
-                      setSaveTemplateName(job?.title || '');
-                      setShowSaveTemplateDialog(true);
+                      if (isActive) return;
+                      if (isCompleted) { setRollbackTargetStatus(step.status); setShowRollbackConfirm(true); }
+                      else if (step.status === 'in_progress') setShowSafetyCheck(true);
+                      else if (step.status === 'done') handleCompleteJob();
+                      else if (step.status === 'invoiced') onCreateInvoice?.(jobId);
+                      else updateJobMutation.mutate({ status: step.status });
                     }}
-                    data-testid="button-save-project-template"
                   >
-                    <Layers className="h-4 w-4 mr-2" />
-                    Save as Project Template
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={handleDeleteJob}
-                  disabled={deleteJobMutation.isPending}
-                  className="text-destructive focus:text-destructive"
-                  data-testid="button-delete-job"
-                >
-                  {deleteJobMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    {isCompleted ? <CheckCircle2 className="h-3 w-3 shrink-0" /> : isActive ? <div className="h-2 w-2 rounded-full bg-white shrink-0" /> : <Circle className="h-3 w-3 shrink-0" />}
+                    <span className="ml-1">{step.label}</span>
+                  </button>
+                  {idx < SERVICE_STEPS.length - 1 && (
+                    <div className={`flex-1 h-0.5 mx-1 ${stepOrder < currentStatusOrder ? 'bg-green-400' : 'bg-border'}`} />
                   )}
-                  Delete Job
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Project phase progress bar */}
+        {isProject && jobPhasesForPicker.length > 0 && (() => {
+          const total = jobPhasesForPicker.length;
+          const completedCount = jobPhasesForPicker.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
+          const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+          return (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <span className="flex items-center gap-1.5 text-muted-foreground"><Layers className="h-3 w-3" />Phase progress</span>
+                <span className="font-medium">{completedCount} / {total} complete ({pct}%)</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: 'hsl(var(--trade))' }} />
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
-      {/* Full-width banners */}
-      <div className="space-y-4">
-        {/* Loss warning banner — visible to owners/managers when job is at a loss */}
+      {/* ─── BANNERS ─── */}
+      <div className="space-y-3 mb-4">
+        {/* Loss warning */}
         {!isTradie && jobProfitabilityData?.profit?.isNegative && (
           <div className="rounded-xl p-4 border border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-950/30">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/50 shrink-0">
-                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-red-700 dark:text-red-300">This job is currently running at a loss</p>
-                <p className="text-sm text-red-600/80 dark:text-red-400/80">
-                  Margin: {jobProfitabilityData.profit.margin.toFixed(1)}% — review labour hours and costs in the Financials section.
-                </p>
+              <div className="p-2 rounded-full bg-red-100 dark:bg-red-900/50 shrink-0"><AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" /></div>
+              <div>
+                <p className="font-semibold text-red-700 dark:text-red-300">Job running at a loss</p>
+                <p className="text-sm text-red-600/80 dark:text-red-400/80">Margin: {jobProfitabilityData.profit.margin.toFixed(1)}% — review costs in the Financials tab.</p>
               </div>
             </div>
           </div>
         )}
-
-        {/* Labour overrun warning — amber, shown while job is in progress and hours exceed estimate by >20% */}
+        {/* Labour overrun */}
         {!isTradie && jobProfitabilityData?.labourOverrun && (
           <div className="rounded-xl p-4 border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50 shrink-0">
-                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-amber-700 dark:text-amber-300">Labour hours are tracking over estimate</p>
-                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">
-                  {jobProfitabilityData.hours.total.toFixed(1)} hrs logged vs {jobProfitabilityData.hours.estimated?.toFixed(1) ?? '—'} hrs estimated — check the Job Costing section.
-                </p>
+              <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/50 shrink-0"><AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" /></div>
+              <div>
+                <p className="font-semibold text-amber-700 dark:text-amber-300">Labour hours over estimate</p>
+                <p className="text-sm text-amber-600/80 dark:text-amber-400/80">{jobProfitabilityData.hours.total.toFixed(1)} hrs logged vs {jobProfitabilityData.hours.estimated?.toFixed(1) ?? '—'} hrs estimated.</p>
               </div>
             </div>
           </div>
         )}
-
-        {/* Urgency Banner for scheduled jobs */}
+        {/* Urgency */}
         {job.status === 'scheduled' && jobUrgency && !activeTimerForThisJob && (
-          <div 
-            className={`rounded-xl p-4 border ${jobUrgency.bgColor} ${jobUrgency.animate ? 'animate-pulse' : ''}`}
-            data-testid="banner-job-urgency"
-          >
+          <div className={`rounded-xl p-4 border ${jobUrgency.bgColor} ${jobUrgency.animate ? 'animate-pulse' : ''}`} data-testid="banner-job-urgency">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${jobUrgency.level === 'overdue' ? 'bg-red-200 dark:bg-red-800' : jobUrgency.level === 'starting_soon' ? 'bg-orange-200 dark:bg-orange-800' : 'bg-blue-200 dark:bg-blue-800'}`}>
+                <div className={`p-2 rounded-full ${jobUrgency.level === 'overdue' ? 'bg-red-200 dark:bg-red-800' : 'bg-orange-200 dark:bg-orange-800'}`}>
                   <Clock className={`h-5 w-5 ${jobUrgency.color}`} />
                 </div>
                 <div>
                   <p className={`font-semibold ${jobUrgency.color}`}>{jobUrgency.label}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {jobUrgency.level === 'overdue' ? 'This job is past its scheduled time' : 'Ready to start?'}
-                  </p>
+                  <p className="text-sm text-muted-foreground">{jobUrgency.level === 'overdue' ? 'This job is past its scheduled time' : 'Ready to start?'}</p>
                 </div>
               </div>
-              <Button
-                onClick={() => setShowSafetyCheck(true)}
-                disabled={updateJobMutation.isPending}
-                className="text-white shrink-0"
-                style={{ backgroundColor: 'hsl(var(--trade))' }}
-                data-testid="button-quick-start"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                Start Now
+              <Button onClick={() => setShowSafetyCheck(true)} disabled={updateJobMutation.isPending} className="text-white shrink-0" style={{ backgroundColor: 'hsl(var(--trade))' }} data-testid="button-quick-start">
+                <Play className="h-4 w-4 mr-2" />Start Now
               </Button>
             </div>
           </div>
         )}
-
-        {/* Prominent Active Timer Banner for in_progress jobs */}
+        {/* Active timer banner */}
         {job.status === 'in_progress' && activeTimerForThisJob && (
-          <div 
-            className="rounded-xl overflow-hidden relative"
-            style={{ backgroundColor: 'hsl(var(--trade) / 0.15)' }}
-            data-testid="banner-active-timer"
-          >
-            <div 
-              className="absolute inset-0 rounded-xl"
-              style={{ 
-                border: '2px solid hsl(var(--trade))',
-                animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-              }}
-            />
-            <div className="relative p-4">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4 flex-1">
-                  <div 
-                    className="p-3 rounded-full animate-pulse"
-                    style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}
-                  >
-                    <Timer className="h-6 w-6" style={{ color: 'hsl(var(--trade))' }} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div 
-                        className="w-2 h-2 rounded-full animate-pulse" 
-                        style={{ backgroundColor: 'hsl(var(--trade))' }}
-                      />
-                      <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--trade))' }}>
-                        Timer Running
-                      </span>
-                    </div>
-                    <div 
-                      className="text-3xl font-mono font-bold tracking-wider" 
-                      style={{ color: 'hsl(var(--trade))' }}
-                      data-testid="text-live-timer"
-                    >
-                      {getElapsedTime(activeTimerForThisJob.startTime)}
-                    </div>
-                  </div>
+          <div className="rounded-xl overflow-hidden relative" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)' }} data-testid="banner-active-timer">
+            <div className="absolute inset-0 rounded-xl" style={{ border: '2px solid hsl(var(--trade))', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            <div className="relative p-4 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="p-3 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(var(--trade) / 0.2)' }}>
+                  <Timer className="h-6 w-6" style={{ color: 'hsl(var(--trade))' }} />
                 </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => stopTimerMutation.mutate(activeTimerForThisJob.id)}
-                  disabled={stopTimerMutation.isPending}
-                  className="h-12 px-6"
-                  data-testid="button-stop-timer-banner"
-                >
-                  <Square className="h-4 w-4 mr-2" />
-                  {stopTimerMutation.isPending ? 'Saving...' : 'Clock Out'}
-                </Button>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'hsl(var(--trade))' }} />
+                    <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--trade))' }}>Timer Running</span>
+                  </div>
+                  <div className="text-3xl font-mono font-bold tracking-wider" style={{ color: 'hsl(var(--trade))' }} data-testid="text-live-timer">{getElapsedTime(activeTimerForThisJob.startTime)}</div>
+                </div>
               </div>
+              <Button variant="destructive" onClick={() => stopTimerMutation.mutate(activeTimerForThisJob.id)} disabled={stopTimerMutation.isPending} className="h-12 px-6" data-testid="button-stop-timer-banner">
+                <Square className="h-4 w-4 mr-2" />{stopTimerMutation.isPending ? 'Saving...' : 'Clock Out'}
+              </Button>
             </div>
           </div>
         )}
-
-        {/* In Progress without active timer - prompt to start */}
+        {/* No-timer prompt */}
         {job.status === 'in_progress' && !activeTimerForThisJob && !globalActiveTimer && (
-          <div 
-            className="rounded-xl p-4 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30"
-            data-testid="banner-no-timer"
-          >
+          <div className="rounded-xl p-4 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30" data-testid="banner-no-timer">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-amber-200 dark:bg-amber-800">
-                  <Timer className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                </div>
+                <div className="p-2 rounded-full bg-amber-200 dark:bg-amber-800"><Timer className="h-5 w-5 text-amber-600 dark:text-amber-400" /></div>
                 <div>
                   <p className="font-semibold text-amber-700 dark:text-amber-300">Timer not running</p>
                   <p className="text-sm text-muted-foreground">Start tracking time for this job</p>
                 </div>
               </div>
-              <Button
-                onClick={() => {
-                  setPendingTimerStart(true);
-                  setShowBeforePhotoPrompt(true);
-                }}
-                disabled={startTimerMutation.isPending}
-                className="text-white shrink-0"
-                style={{ backgroundColor: 'hsl(var(--trade))' }}
-                data-testid="button-start-timer-banner"
-              >
-                <Play className="h-4 w-4 mr-2" />
-                {startTimerMutation.isPending ? 'Starting...' : 'Start Timer'}
+              <Button onClick={() => { setPendingTimerStart(true); setShowBeforePhotoPrompt(true); }} disabled={startTimerMutation.isPending} className="text-white shrink-0" style={{ backgroundColor: 'hsl(var(--trade))' }} data-testid="button-start-timer-banner">
+                <Play className="h-4 w-4 mr-2" />{startTimerMutation.isPending ? 'Starting...' : 'Start Timer'}
               </Button>
             </div>
           </div>
         )}
+      </div>
 
-        {/* Worker Dispatch Status Controls */}
-        {(job.status === 'scheduled' || job.status === 'in_progress' || job.status === 'pending') && job.clientId && (
-          <div className="rounded-xl border border-border bg-card overflow-visible" data-testid="worker-status-controls">
-            {/* Progress Timeline */}
-            <div className="px-4 pt-4 pb-3">
-              {(() => {
-                const steps = [
-                  { key: 'assigned', label: 'Assigned' },
-                  { key: 'on_my_way', label: 'On My Way' },
-                  { key: 'arrived', label: 'Arrived' },
-                  { key: 'in_progress', label: 'Working' },
-                  { key: 'completed', label: 'Done' },
-                ];
-                const statusOrder = ['assigned', 'on_my_way', 'arrived', 'in_progress', 'completed'];
-                const currentIdx = statusOrder.indexOf(job.workerStatus || 'assigned');
-                return (
-                  <div className="flex items-center w-full">
-                    {steps.map((step, idx) => {
-                      const isCompleted = idx < currentIdx;
-                      const isActive = idx === currentIdx;
+      {/* ─── TABS ─── */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        {/* Sticky tab strip */}
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-5 md:-mx-6 lg:-mx-8 px-4 sm:px-5 md:px-6 lg:px-8 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border">
+          <TabsList className="h-auto bg-transparent rounded-none p-0 w-full justify-start gap-0 flex overflow-x-auto">
+            {tabConfig.map((tab) => (
+              <TabsTrigger
+                key={tab.id}
+                value={tab.id}
+                className="relative flex items-center gap-1.5 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-3 text-xs sm:text-sm font-medium whitespace-nowrap shrink-0"
+              >
+                {tab.icon}
+                <span>{tab.label}</span>
+                {'badge' in tab && tab.badge && (
+                  <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 ml-0.5">{tab.badge}</Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        {/* ─── Two-column grid: main content + persistent sidebar ─── */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8 mt-6 space-y-6 lg:space-y-0">
+
+          {/* ═══ MAIN CONTENT COLUMN ═══ */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+
+            {/* ── OVERVIEW TAB ── */}
+            <TabsContent value="overview" className="mt-0 space-y-6">
+
+              {/* Worker dispatch status timeline */}
+              {(job.status === 'scheduled' || job.status === 'in_progress' || job.status === 'pending') && job.clientId && (
+                <div className="rounded-xl border border-border bg-card" data-testid="worker-status-controls">
+                  <div className="px-4 pt-4 pb-3">
+                    {(() => {
+                      const steps = [{ key: 'assigned', label: 'Assigned' }, { key: 'on_my_way', label: 'On My Way' }, { key: 'arrived', label: 'Arrived' }, { key: 'in_progress', label: 'Working' }, { key: 'completed', label: 'Done' }];
+                      const statusOrder = ['assigned', 'on_my_way', 'arrived', 'in_progress', 'completed'];
+                      const currentIdx = statusOrder.indexOf(job.workerStatus || 'assigned');
                       return (
-                        <div key={step.key} className="flex items-center flex-1 last:flex-none">
-                          <div className="flex flex-col items-center gap-1">
-                            <div className={`h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center ${
-                              isCompleted ? 'bg-green-500 border-green-500' :
-                              isActive ? 'border-[hsl(var(--trade))] bg-[hsl(var(--trade))] animate-pulse' :
-                              'border-muted-foreground/30 bg-transparent'
-                            }`}>
-                              {isCompleted && (
-                                <Check className="h-2.5 w-2.5 text-white" />
-                              )}
-                            </div>
-                            <span className={`text-[10px] leading-tight text-center whitespace-nowrap ${
-                              isCompleted ? 'text-green-600 dark:text-green-400 font-medium' :
-                              isActive ? 'font-semibold' :
-                              'text-muted-foreground/50'
-                            }`}>{step.label}</span>
-                          </div>
-                          {idx < steps.length - 1 && (
-                            <div className={`h-0.5 flex-1 mx-1 mt-[-14px] ${
-                              idx < currentIdx ? 'bg-green-500' : 'bg-muted-foreground/15'
-                            }`} />
-                          )}
+                        <div className="flex items-center w-full">
+                          {steps.map((step, idx) => {
+                            const isCompleted = idx < currentIdx;
+                            const isActive = idx === currentIdx;
+                            return (
+                              <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className={`h-4 w-4 rounded-full border-2 shrink-0 flex items-center justify-center ${isCompleted ? 'bg-green-500 border-green-500' : isActive ? 'border-[hsl(var(--trade))] bg-[hsl(var(--trade))] animate-pulse' : 'border-muted-foreground/30 bg-transparent'}`}>
+                                    {isCompleted && <Check className="h-2.5 w-2.5 text-white" />}
+                                  </div>
+                                  <span className={`text-[10px] leading-tight text-center whitespace-nowrap ${isCompleted ? 'text-green-600 dark:text-green-400 font-medium' : isActive ? 'font-semibold' : 'text-muted-foreground/50'}`}>{step.label}</span>
+                                </div>
+                                {idx < steps.length - 1 && <div className={`h-0.5 flex-1 mx-1 mt-[-14px] ${idx < currentIdx ? 'bg-green-500' : 'bg-muted-foreground/15'}`} />}
+                              </div>
+                            );
+                          })}
                         </div>
                       );
-                    })}
+                    })()}
                   </div>
-                );
-              })()}
-            </div>
-
-            {/* Client & Address Info */}
-            {(client || job.address) && (
-              <div className="px-4 pb-3 flex items-center gap-2 flex-wrap text-sm">
-                {client && (
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <User className="h-3.5 w-3.5" />
-                    <span className="font-medium text-foreground">{client.name}</span>
-                  </span>
-                )}
-                {client && job.address && <span className="text-muted-foreground/40">|</span>}
-                {job.address && (
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-muted-foreground hover-elevate active-elevate-2 rounded px-1 -mx-1"
-                  >
-                    <MapPin className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate max-w-[200px]">{job.address}</span>
-                    <ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Assigned Worker Display */}
-            {job.assignedTo && (() => {
-              const assignedMember = teamMembers.find(m => m.memberId === job.assignedTo);
-              if (!assignedMember) return null;
-              return (
-                <div className="px-4 pb-3 flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-semibold text-primary">
-                      {(assignedMember.firstName?.[0] || '').toUpperCase()}{(assignedMember.lastName?.[0] || '').toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="min-w-0">
-                    <span className="text-sm font-medium">{getWorkerDisplayName(assignedMember)}</span>
-                    <span className="text-xs text-muted-foreground ml-1.5">({assignedMember.roleName})</span>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Scheduled Time Context */}
-            {job.scheduledAt && (
-              <div className="px-4 pb-3">
-                <div className="flex items-center gap-2 text-xs">
-                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">
-                    Scheduled: {format(new Date(job.scheduledAt), 'MMM d, h:mm a')}
-                  </span>
-                  {(() => {
-                    const scheduled = new Date(job.scheduledAt);
-                    const now = new Date();
-                    const diffMins = Math.round((now.getTime() - scheduled.getTime()) / 60000);
-                    if (diffMins > 15) {
-                      return <Badge variant="destructive" className="text-[10px]">{diffMins > 60 ? `${Math.floor(diffMins / 60)}h ${diffMins % 60}m late` : `${diffMins}m late`}</Badge>;
-                    } else if (diffMins > -5) {
-                      return <Badge variant="secondary" className="text-[10px]">On time</Badge>;
-                    } else {
-                      return <Badge variant="secondary" className="text-[10px]">{Math.abs(diffMins)}m early</Badge>;
-                    }
-                  })()}
-                </div>
-              </div>
-            )}
-
-            {/* Status Line + CTA - Compact dispatch card */}
-            <div className="px-4 pb-3">
-              {(!job.workerStatus || job.workerStatus === 'assigned') && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                    <span className="text-sm font-medium">Ready to dispatch</span>
-                    {isJobOverdue() && <Badge variant="destructive" className="text-[10px]">Overdue</Badge>}
-                  </div>
-                  <Button
-                    onClick={() => onMyWayMutation.mutate()}
-                    disabled={onMyWayMutation.isPending}
-                    className="w-full gap-2 text-white"
-                    style={{ backgroundColor: 'hsl(var(--trade))' }}
-                    data-testid="button-on-my-way"
-                  >
-                    {onMyWayMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-                    <div className="flex flex-col items-start">
-                      <span>On My Way</span>
-                      <span className="text-[10px] opacity-80 font-normal">Notify client you're heading out</span>
-                    </div>
-                  </Button>
-                </div>
-              )}
-
-              {job.workerStatus === 'on_my_way' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-                      <span className="text-sm font-medium">En route</span>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {elapsedTime && (
-                        <Badge variant="secondary" className="text-xs gap-1 font-mono">
-                          <Clock className="h-3 w-3" />
-                          {elapsedTime} ago
-                        </Badge>
-                      )}
-                      {job.workerEta && <Badge variant="secondary" className="text-xs">ETA: {job.workerEta}</Badge>}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={() => arrivedMutation.mutate()}
-                    disabled={arrivedMutation.isPending}
-                    className="w-full gap-2 text-white"
-                    style={{ backgroundColor: 'hsl(var(--trade))' }}
-                    data-testid="button-arrived"
-                  >
-                    {arrivedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
-                    <div className="flex flex-col items-start">
-                      <span>Arrived</span>
-                      <span className="text-[10px] opacity-80 font-normal">Mark arrival on site</span>
-                    </div>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-xs text-muted-foreground gap-1"
-                    onClick={() => runningLateMutation.mutate()}
-                    disabled={runningLateMutation.isPending}
-                    data-testid="button-running-late"
-                  >
-                    {runningLateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertTriangle className="h-3 w-3" />}
-                    Notify client I'm running late
-                  </Button>
-                </div>
-              )}
-
-              {job.workerStatus === 'arrived' && (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-green-500" />
-                      <span className="text-sm font-medium">On site</span>
-                    </div>
-                    {elapsedTime && (
-                      <Badge variant="secondary" className="text-xs gap-1 font-mono">
-                        <Clock className="h-3 w-3" />
-                        {elapsedTime} on site
-                      </Badge>
+                  <div className="px-4 pb-2 flex items-center gap-2 flex-wrap text-sm">
+                    {client && <span className="flex items-center gap-1 text-muted-foreground"><User className="h-3.5 w-3.5" /><span className="font-medium text-foreground">{client.name}</span></span>}
+                    {client && job.address && <span className="text-muted-foreground/40">|</span>}
+                    {job.address && (
+                      <a href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(job.address)}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-muted-foreground hover:text-foreground rounded px-1 -mx-1">
+                        <MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate max-w-[200px]">{job.address}</span><ExternalLink className="h-3 w-3 shrink-0 opacity-50" />
+                      </a>
                     )}
                   </div>
-                  {!activeTimerForThisJob && (
-                    <div className="flex items-center gap-2 rounded-md border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 px-3 py-2">
-                      <Timer className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                      <span className="text-xs text-amber-700 dark:text-amber-300">Timer not running. Start tracking time for this job.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {job.workerStatus === 'in_progress' && (
-                <div className="flex items-center justify-between gap-2 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                    <span className="text-sm font-medium">Work in Progress</span>
-                  </div>
-                  {activeTimerForThisJob && (
-                    <Badge variant="secondary" className="text-xs gap-1 font-mono">
-                      <Timer className="h-3 w-3" />
-                      {getElapsedTime(activeTimerForThisJob.startTime)}
-                    </Badge>
-                  )}
-                </div>
-              )}
-
-              {job.workerStatus === 'completed' && (
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-600" />
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400">Job completed</span>
-                </div>
-              )}
-            </div>
-
-          </div>
-        )}
-      </div>
-
-      {/* Job Card - primary view, opens the focused Job Card popup */}
-      <div className="mt-4">
-        <JobCardSection jobId={jobId} />
-      </div>
-
-      {/* Two-column layout on desktop, single column on mobile */}
-      <div className="lg:grid lg:grid-cols-12 lg:gap-8 space-y-6 lg:space-y-0 mt-6">
-        {/* Left column - Primary content */}
-        <div className="flex flex-col gap-6 lg:col-span-7 xl:col-span-7">
-          {/* Action Buttons - follows 5-stage workflow: pending → scheduled → in_progress → done → invoiced */}
-          <div className="flex flex-col gap-2 pb-2">
-            {/* Pending → Schedule */}
-            {job.status === 'pending' && (
-              <Button
-                onClick={() => updateJobMutation.mutate({ status: 'scheduled' })}
-                disabled={updateJobMutation.isPending}
-                data-testid="button-schedule-job"
-                className="w-full text-white"
-                style={{ backgroundColor: 'hsl(var(--trade))' }}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                {updateJobMutation.isPending ? 'Scheduling...' : 'Schedule Job'}
-              </Button>
-            )}
-
-
-            {/* Done status badge */}
-            {job.status === 'done' && (
-              <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">Job Completed</span>
-              </div>
-            )}
-
-            {/* Re-open Job button — owner/manager only, on completed jobs */}
-            {job.status === 'done' && !isTradie && (
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => reopenJobMutation.mutate()}
-                disabled={reopenJobMutation.isPending}
-                data-testid="button-reopen-job"
-              >
-                <RotateCcw className="h-4 w-4" />
-                {reopenJobMutation.isPending ? 'Re-opening...' : 'Re-open Job'}
-              </Button>
-            )}
-
-            {/* Quick actions row */}
-            <div className="flex flex-wrap gap-2 [&>button]:flex-1 [&>div]:flex-1">
-              {currentUser && !isSolo && (
-                <div ref={chatSectionRef} data-testid="section-job-chat" className="min-w-[70px]">
-                  <Button
-                    variant="outline"
-                    className="w-full gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent"
-                    onClick={() => navigate(`/chat?job=${jobId}`)}
-                  >
-                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate hidden sm:inline-block">Chat</span>
-                  </Button>
-                </div>
-              )}
-              {client?.email && (
-                <Button
-                  variant="outline"
-                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
-                  onClick={() => { setUnifiedSendDefaultTab('email'); setShowUnifiedSendModal(true); }}
-                  data-testid="button-email-client"
-                >
-                  <Mail className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate hidden sm:inline-block">Email</span>
-                </Button>
-              )}
-              {client?.phone && (
-                <Button
-                  variant="outline"
-                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
-                  onClick={() => { setUnifiedSendDefaultTab('sms'); setShowUnifiedSendModal(true); }}
-                  data-testid="button-sms-client"
-                >
-                  <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate hidden sm:inline-block">SMS</span>
-                </Button>
-              )}
-              {job.status !== 'invoiced' && job.status !== 'pending' && (
-                <Button
-                  variant="outline"
-                  className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
-                  onClick={() => setShowSiteUpdateDialog(true)}
-                  data-testid="button-log-site-update"
-                >
-                  <PenLine className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span className="truncate hidden sm:inline-block">Update</span>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]"
-                onClick={() => setProofPackPreviewOpen(true)}
-                data-testid="button-proof-pack"
-              >
-                <FileDown className="h-3.5 w-3.5 flex-shrink-0" />
-                <span className="truncate hidden sm:inline-block">Proof</span>
-              </Button>
-            </div>
-          </div>
-
-          <JobFlowWizard
-            status={job.status}
-            hasQuote={!!linkedQuote}
-            hasInvoice={!!linkedInvoice}
-            invoicePaid={linkedInvoice?.status === 'paid'}
-            timestamps={{
-              scheduledAt: job.scheduledAt,
-              startedAt: job.startedAt,
-              completedAt: job.completedAt,
-              invoicedAt: job.invoicedAt,
-            }}
-            timerRunning={!!activeTimerForThisJob}
-            onCreateQuote={() => onCreateQuote?.(jobId)}
-            onViewQuote={() => linkedQuote && navigate(`/quotes/${linkedQuote.id}`)}
-            onSchedule={() => onEditJob?.(jobId)}
-            onStart={() => updateJobMutation.mutate({ status: 'in_progress' })}
-            onComplete={onCompleteJob ? () => onCompleteJob(jobId) : handleCompleteJob}
-            onCreateInvoice={!isTradie ? () => onCreateInvoice?.(jobId) : undefined}
-            onViewInvoice={() => linkedInvoice && navigate(`/invoices/${linkedInvoice.id}`)}
-            onStatusChange={(newStatus) => {
-              setRollbackTargetStatus(newStatus);
-              setShowRollbackConfirm(true);
-            }}
-            data-testid="job-flow-wizard"
-          />
-
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Briefcase className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                Job Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {job.description && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
-                  <p className="text-sm">{job.description}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {client?.name && (
-                  <div>
-                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1">
-                      <User className="h-3 w-3" />
-                      Client
-                    </div>
-                    <p 
-                      className="font-medium hover:underline cursor-pointer"
-                      onClick={() => job.clientId && onViewClient?.(job.clientId)}
-                      data-testid="client-name"
-                    >
-                      {client.name}
-                    </p>
-                  </div>
-                )}
-
-                {job.address && (
-                  <div>
-                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1">
-                      <MapPin className="h-3 w-3" />
-                      Address
-                    </div>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium hover:underline inline-flex items-center gap-1"
-                    >
-                      {job.address}
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                    </a>
-                  </div>
-                )}
-
-                {job.scheduledAt && (
-                  <div>
-                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1">
-                      <Calendar className="h-3 w-3" />
-                      Scheduled
-                    </div>
-                    <Popover open={rescheduleOpen} onOpenChange={(open) => {
-                      setRescheduleOpen(open);
-                      if (open && job.scheduledAt) {
-                        const d = new Date(job.scheduledAt);
-                        setRescheduleDate(d);
-                        setRescheduleTime(format(d, 'HH:mm'));
-                      }
-                    }}>
-                      <PopoverTrigger asChild>
-                        <button className="text-left hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors group">
-                          <p className="font-medium group-hover:text-primary">
-                            {format(new Date(job.scheduledAt), 'MMM d, yyyy')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(job.scheduledAt), 'h:mm a')}
-                            <span className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity text-primary">
-                              (tap to reschedule)
-                            </span>
-                          </p>
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <div className="p-3 border-b">
-                          <p className="font-medium text-sm">Reschedule Job</p>
-                          <p className="text-xs text-muted-foreground">Pick a new date and time</p>
+                  <div className="px-4 pb-3">
+                    {(!job.workerStatus || job.workerStatus === 'assigned') && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
+                          <span className="text-sm font-medium">Ready to dispatch</span>
+                          {isJobOverdue() && <Badge variant="destructive" className="text-[10px]">Overdue</Badge>}
                         </div>
-                        <CalendarWidget
-                          mode="single"
-                          selected={rescheduleDate}
-                          onSelect={setRescheduleDate}
-                          initialFocus
-                        />
-                        <div className="p-3 border-t space-y-3">
+                        <Button onClick={() => onMyWayMutation.mutate()} disabled={onMyWayMutation.isPending} className="w-full gap-2 text-white" style={{ backgroundColor: 'hsl(var(--trade))' }} data-testid="button-on-my-way">
+                          {onMyWayMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
+                          <div className="flex flex-col items-start"><span>On My Way</span><span className="text-[10px] opacity-80 font-normal">Notify client you're heading out</span></div>
+                        </Button>
+                      </div>
+                    )}
+                    {job.workerStatus === 'on_my_way' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <Input
-                              type="time"
-                              value={rescheduleTime}
-                              onChange={(e) => setRescheduleTime(e.target.value)}
-                              className="flex-1"
-                            />
+                            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                            <span className="text-sm font-medium">En route</span>
                           </div>
-                          <Button
-                            className="w-full"
-                            disabled={!rescheduleDate || updateJobMutation.isPending}
-                            onClick={() => {
-                              if (!rescheduleDate) return;
-                              const [hours, minutes] = rescheduleTime.split(':').map(Number);
-                              const newDate = new Date(rescheduleDate);
-                              newDate.setHours(hours, minutes, 0, 0);
-                              updateJobMutation.mutate(
-                                { scheduledAt: newDate.toISOString() },
-                                { onSuccess: () => setRescheduleOpen(false) }
-                              );
-                            }}
-                          >
-                            {updateJobMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                              <Calendar className="h-4 w-4 mr-2" />
-                            )}
-                            Confirm Reschedule
-                          </Button>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {elapsedTime && <Badge variant="secondary" className="text-xs gap-1 font-mono"><Clock className="h-3 w-3" />{elapsedTime} ago</Badge>}
+                            {job.workerEta && <Badge variant="secondary" className="text-xs">ETA: {job.workerEta}</Badge>}
+                          </div>
                         </div>
-                      </PopoverContent>
-                    </Popover>
+                        <Button onClick={() => arrivedMutation.mutate()} disabled={arrivedMutation.isPending} className="w-full gap-2 text-white" style={{ backgroundColor: 'hsl(var(--trade))' }} data-testid="button-arrived">
+                          {arrivedMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                          <div className="flex flex-col items-start"><span>Arrived</span><span className="text-[10px] opacity-80 font-normal">Mark arrival on site</span></div>
+                        </Button>
+                        <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground gap-1" onClick={() => runningLateMutation.mutate()} disabled={runningLateMutation.isPending} data-testid="button-running-late">
+                          {runningLateMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <AlertTriangle className="h-3 w-3" />}Notify client I'm running late
+                        </Button>
+                      </div>
+                    )}
+                    {job.workerStatus === 'arrived' && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="h-2 w-2 rounded-full bg-green-500" />
+                        <span className="text-sm font-medium">On site</span>
+                        {elapsedTime && <Badge variant="secondary" className="text-xs gap-1 font-mono"><Clock className="h-3 w-3" />{elapsedTime} on site</Badge>}
+                      </div>
+                    )}
+                    {job.workerStatus === 'completed' && (
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-2 rounded-full bg-green-600" />
+                        <span className="text-sm font-medium text-green-700 dark:text-green-400">Job completed by worker</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* JobCardSection */}
+              <div><JobCardSection jobId={jobId} /></div>
+
+              {/* Workflow action buttons */}
+              <div className="flex flex-col gap-2">
+                {job.status === 'pending' && (
+                  <Button onClick={() => updateJobMutation.mutate({ status: 'scheduled' })} disabled={updateJobMutation.isPending} className="w-full text-white" style={{ backgroundColor: 'hsl(var(--trade))' }} data-testid="button-schedule-job">
+                    <Calendar className="h-4 w-4 mr-2" />{updateJobMutation.isPending ? 'Scheduling...' : 'Schedule Job'}
+                  </Button>
+                )}
+                {job.status === 'done' && (
+                  <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
+                    <CheckCircle className="h-5 w-5" /><span className="font-medium">Job Completed</span>
                   </div>
                 )}
-
+                {job.status === 'done' && !isTradie && (
+                  <Button variant="outline" className="w-full gap-2" onClick={() => reopenJobMutation.mutate()} disabled={reopenJobMutation.isPending} data-testid="button-reopen-job">
+                    <RotateCcw className="h-4 w-4" />{reopenJobMutation.isPending ? 'Re-opening...' : 'Re-open Job'}
+                  </Button>
+                )}
+                <div className="flex flex-wrap gap-2 [&>button]:flex-1 [&>div]:flex-1">
+                  {currentUser && !isSolo && (
+                    <div ref={chatSectionRef} data-testid="section-job-chat" className="min-w-[70px]">
+                      <Button variant="outline" className="w-full gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent" onClick={() => navigate(`/chat?job=${jobId}`)}>
+                        <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" /><span className="truncate">Chat</span>
+                      </Button>
+                    </div>
+                  )}
+                  {client?.email && (
+                    <Button variant="outline" className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]" onClick={() => { setUnifiedSendDefaultTab('email'); setShowUnifiedSendModal(true); }} data-testid="button-email-client">
+                      <Mail className="h-3.5 w-3.5 flex-shrink-0" /><span className="truncate">Email</span>
+                    </Button>
+                  )}
+                  {client?.phone && (
+                    <Button variant="outline" className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]" onClick={() => { setUnifiedSendDefaultTab('sms'); setShowUnifiedSendModal(true); }} data-testid="button-sms-client">
+                      <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" /><span className="truncate">SMS</span>
+                    </Button>
+                  )}
+                  {job.status !== 'invoiced' && job.status !== 'pending' && (
+                    <Button variant="outline" className="gap-1.5 px-2 text-xs h-9 bg-card hover:bg-accent min-w-[70px]" onClick={() => setShowSiteUpdateDialog(true)} data-testid="button-log-site-update">
+                      <PenLine className="h-3.5 w-3.5 flex-shrink-0" /><span className="truncate">Update</span>
+                    </Button>
+                  )}
+                </div>
               </div>
 
-              {/* Assign Worker - Only for team owners/managers */}
-              {!isTradie && !isSolo && teamMembers.length > 0 && (
-                <div className="pt-4 border-t">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold tracking-tight">Assign Workers</span>
+              {/* JobFlowWizard */}
+              <JobFlowWizard
+                status={job.status}
+                hasQuote={!!linkedQuote}
+                hasInvoice={!!linkedInvoice}
+                invoicePaid={linkedInvoice?.status === 'paid'}
+                timestamps={{ scheduledAt: job.scheduledAt, startedAt: job.startedAt, completedAt: job.completedAt, invoicedAt: job.invoicedAt }}
+                timerRunning={!!activeTimerForThisJob}
+                onCreateQuote={() => onCreateQuote?.(jobId)}
+                onViewQuote={() => linkedQuote && navigate(`/quotes/${linkedQuote.id}`)}
+                onSchedule={() => onEditJob?.(jobId)}
+                onStart={() => updateJobMutation.mutate({ status: 'in_progress' })}
+                onComplete={onCompleteJob ? () => onCompleteJob(jobId) : handleCompleteJob}
+                onCreateInvoice={!isTradie ? () => onCreateInvoice?.(jobId) : undefined}
+                onViewInvoice={() => linkedInvoice && navigate(`/invoices/${linkedInvoice.id}`)}
+                onStatusChange={(newStatus) => { setRollbackTargetStatus(newStatus); setShowRollbackConfirm(true); }}
+              />
+
+              {/* Job Details card */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />Job Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {job.description && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">Description</p>
+                      <p className="text-sm whitespace-pre-wrap">{job.description}</p>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    {client?.name && (
+                      <div>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1"><User className="h-3 w-3" />Client</div>
+                        <p className="font-medium hover:underline cursor-pointer" onClick={() => job.clientId && onViewClient?.(job.clientId)} data-testid="client-name">{client.name}</p>
+                      </div>
+                    )}
+                    {job.address && (
+                      <div>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1"><MapPin className="h-3 w-3" />Address</div>
+                        <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`} target="_blank" rel="noopener noreferrer" className="font-medium hover:underline inline-flex items-center gap-1">
+                          {job.address}<ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      </div>
+                    )}
+                    {job.scheduledAt && (
+                      <div>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs mb-1"><Calendar className="h-3 w-3" />Scheduled</div>
+                        <Popover open={rescheduleOpen} onOpenChange={(open) => {
+                          setRescheduleOpen(open);
+                          if (open && job.scheduledAt) { const d = new Date(job.scheduledAt); setRescheduleDate(d); setRescheduleTime(format(d, 'HH:mm')); }
+                        }}>
+                          <PopoverTrigger asChild>
+                            <button className="text-left hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors group">
+                              <p className="font-medium group-hover:text-primary">{format(new Date(job.scheduledAt), 'MMM d, yyyy')}</p>
+                              <p className="text-xs text-muted-foreground">{format(new Date(job.scheduledAt), 'h:mm a')}</p>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarWidget mode="single" selected={rescheduleDate} onSelect={setRescheduleDate} initialFocus />
+                            <div className="p-3 border-t space-y-3">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 text-muted-foreground" />
+                                <Input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} className="flex-1" />
+                              </div>
+                              <Button className="w-full" disabled={!rescheduleDate || updateJobMutation.isPending} onClick={() => {
+                                if (!rescheduleDate) return;
+                                const [hours, minutes] = rescheduleTime.split(':').map(Number);
+                                const newDate = new Date(rescheduleDate);
+                                newDate.setHours(hours, minutes, 0, 0);
+                                updateJobMutation.mutate({ scheduledAt: newDate.toISOString() }, { onSuccess: () => setRescheduleOpen(false) });
+                              }}>
+                                {updateJobMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Calendar className="h-4 w-4 mr-2" />}Confirm Reschedule
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    )}
                   </div>
-                  <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={workerPopoverOpen}
-                        className="w-full justify-between font-normal h-auto min-h-9 py-2 text-left"
-                        disabled={assignBusy}
-                        data-testid="select-assign-worker"
-                      >
-                        {(() => {
-                          const assigned = teamMembers.filter(m => isMemberAssigned(m.memberId));
-                          if (assigned.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
-                          if (assigned.length <= 2) return <span className="truncate">{assigned.map((m) => getWorkerDisplayName(m)).join(', ')}</span>;
-                          return <span>{assigned.length} workers assigned</span>;
-                        })()}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="Search workers..." />
-                        <CommandEmpty>No worker found.</CommandEmpty>
-                        <CommandList>
-                          <CommandGroup>
-                            {teamMembers.filter(m => m.isActive && m.roleName?.toLowerCase() !== 'administrator').map((member) => {
-                              const onOtherJob = isWorkerOnOtherJob(member.memberId);
-                              const checked = isMemberAssigned(member.memberId);
-                              return (
-                                <CommandItem
-                                  key={member.memberId}
-                                  value={`${getWorkerDisplayName(member)} ${member.roleName}`}
-                                  onSelect={() => {
-                                    if (assignBusy || !member.memberId) return;
-                                    if (checked) {
-                                      removeWorkerMutation.mutate(member.memberId);
-                                    } else {
-                                      addWorkersMutation.mutate([member.memberId]);
-                                    }
-                                  }}
-                                  data-testid={`option-worker-${member.memberId}`}
-                                >
-                                  <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
-                                  <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
-                                  {onOtherJob ? (
-                                    <Badge variant="outline" className="text-xs text-amber-600 dark:text-amber-400 border-amber-300 dark:border-amber-700 ml-2">On a job</Badge>
-                                  ) : (
-                                    <Badge variant="outline" className="text-xs text-green-600 dark:text-green-400 border-green-300 dark:border-green-700 ml-2">Available</Badge>
-                                  )}
-                                </CommandItem>
-                              );
-                            })}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                  {activeAssignments.length > 0 && (
-                    <div className="mt-3">
-                      {activeAssignments.length > 1 && (() => {
-                        const done = activeAssignments.filter(a => a.completedAt).length;
-                        const total = activeAssignments.length;
-                        const allDone = done === total;
-                        return (
-                          <div className={`flex items-center gap-2 mb-2 text-sm font-medium ${allDone ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`}>
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>{done}/{total} workers completed</span>
-                          </div>
-                        );
-                      })()}
-                      <div className="space-y-1">
-                        {activeAssignments.map((assignment) => {
-                          const member = teamMembers.find(m => m.memberId === assignment.userId);
-                          const name = assignment.workerDisplayNameSnapshot || (member ? getWorkerDisplayName(member) : (assignment.displayName || 'Worker'));
-                          return (
-                            <div key={`assigned-${assignment.id}`} className="flex items-center gap-2 py-1.5 px-2 rounded-md border" data-testid={`row-assignment-${assignment.userId}`}>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-sm font-medium truncate">{name}</span>
-                                  {assignment.isPrimary && (
-                                    <Badge variant="outline" className="text-xs no-default-hover-elevate no-default-active-elevate">Lead</Badge>
-                                  )}
+
+                  {/* Assign Workers */}
+                  {!isTradie && !isSolo && teamMembers.length > 0 && (
+                    <div className="pt-4 border-t">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-semibold">Assign Workers</span>
+                      </div>
+                      <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" role="combobox" aria-expanded={workerPopoverOpen} className="w-full justify-between font-normal h-auto min-h-9 py-2 text-left" disabled={assignBusy} data-testid="select-assign-worker">
+                            {(() => {
+                              const assigned = teamMembers.filter(m => isMemberAssigned(m.memberId));
+                              if (assigned.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
+                              if (assigned.length <= 2) return <span className="truncate">{assigned.map(m => getWorkerDisplayName(m)).join(', ')}</span>;
+                              return <span>{assigned.length} workers assigned</span>;
+                            })()}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                          <Command>
+                            <CommandInput placeholder="Search workers..." />
+                            <CommandEmpty>No worker found.</CommandEmpty>
+                            <CommandList>
+                              <CommandGroup>
+                                {teamMembers.filter(m => m.isActive && m.roleName?.toLowerCase() !== 'administrator').map((member) => {
+                                  const onOtherJob = isWorkerOnOtherJob(member.memberId);
+                                  const checked = isMemberAssigned(member.memberId);
+                                  return (
+                                    <CommandItem key={member.memberId} value={`${getWorkerDisplayName(member)} ${member.roleName}`}
+                                      onSelect={() => { if (assignBusy || !member.memberId) return; if (checked) removeWorkerMutation.mutate(member.memberId); else addWorkersMutation.mutate([member.memberId]); }}
+                                      data-testid={`option-worker-${member.memberId}`}
+                                    >
+                                      <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                                      <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
+                                      {onOtherJob
+                                        ? <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 ml-2">On a job</Badge>
+                                        : <Badge variant="outline" className="text-xs text-green-600 border-green-300 ml-2">Available</Badge>}
+                                    </CommandItem>
+                                  );
+                                })}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                      {activeAssignments.length > 0 && (
+                        <div className="mt-3 space-y-1">
+                          {activeAssignments.map((assignment) => {
+                            const member = teamMembers.find(m => m.memberId === assignment.userId);
+                            const name = assignment.workerDisplayNameSnapshot || (member ? getWorkerDisplayName(member) : (assignment.displayName || 'Worker'));
+                            return (
+                              <div key={`assigned-${assignment.id}`} className="flex items-center gap-2 py-1.5 px-2 rounded-md border" data-testid={`row-assignment-${assignment.userId}`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="text-sm font-medium truncate">{name}</span>
+                                    {assignment.isPrimary && <Badge variant="outline" className="text-xs">Lead</Badge>}
+                                  </div>
+                                  {assignment.completedAt
+                                    ? <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" />Done · {new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
+                                    : <span className="text-xs text-muted-foreground">In progress</span>}
                                 </div>
-                                {assignment.completedAt ? (
-                                  <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
-                                    <CheckCircle2 className="h-3 w-3" />
-                                    Part done · {new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })} {new Date(assignment.completedAt).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">In progress</span>
+                                {!assignment.isPrimary && activeAssignments.length > 1 && (
+                                  <Button variant="ghost" size="sm" className="h-8" disabled={makeLeadMutation.isPending} onClick={() => makeLeadMutation.mutate(assignment.id)} data-testid={`button-make-lead-${assignment.userId}`}>
+                                    <Star className="h-3.5 w-3.5 mr-1" />Make lead
+                                  </Button>
                                 )}
                               </div>
-                              {!assignment.isPrimary && activeAssignments.length > 1 && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8"
-                                  disabled={makeLeadMutation.isPending}
-                                  onClick={() => makeLeadMutation.mutate(assignment.id)}
-                                  data-testid={`button-make-lead-${assignment.userId}`}
-                                >
-                                  <Star className="h-3.5 w-3.5 mr-1" />
-                                  Make lead
-                                </Button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {jobAssignments.filter(a => a.isActive && a.acceptanceSignatureData).length > 0 && (
-                    <div className="mt-3 space-y-2">
-                      {jobAssignments.filter(a => a.isActive && a.acceptanceSignatureData).map((assignment) => (
-                        <div key={assignment.id} className="mt-2 pt-2 border-t">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Shield className="w-3 h-3 text-green-600" />
-                            <Badge variant="outline" className="text-xs text-green-700 border-green-300 bg-green-50 dark:bg-green-950 dark:text-green-400 dark:border-green-800 no-default-hover-elevate no-default-active-elevate">Signed</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              Accepted by {assignment.acceptedByName || assignment.displayName || 'Worker'}
-                              {assignment.acceptedAt && ` on ${new Date(assignment.acceptedAt).toLocaleDateString('en-AU')}`}
-                            </span>
-                          </div>
-                          <SignatureDisplay
-                            signatureDataUrl={assignment.acceptanceSignatureData!}
-                            label="Acceptance Signature"
-                            className="max-w-[200px]"
-                          />
-                          {assignment.confidentialityAgreed && (
-                            <div className="flex items-center gap-1 mt-1">
-                              <Lock className="w-3 h-3 text-blue-600" />
-                              <span className="text-xs text-blue-600">Confidentiality agreed</span>
-                            </div>
-                          )}
+                            );
+                          })}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* Subcontractors & Invites - Only for owners/managers */}
-              {!isTradie && (
-                <div className="pt-3 border-t">
-                  <div className="flex items-center gap-2 mb-2">
-                    <UserPlus className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Subcontractors</span>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-xs text-muted-foreground">
-                      Invite subcontractors via SMS or email — they'll get a restricted portal view for this job only
-                    </p>
-
-                    {subTokens && subTokens.filter(t => t.status === 'pending' || t.status === 'accepted').length > 0 && (
-                      <div className="space-y-2">
-                        {subTokens.filter(t => t.status === 'pending' || t.status === 'accepted').map((tk) => (
-                          <div key={tk.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {tk.status === 'accepted' ? (
-                                <Check className="h-4 w-4 text-green-600 shrink-0" />
-                              ) : (
-                                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                              )}
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <Badge variant={tk.status === 'accepted' ? 'default' : 'secondary'} className="text-xs">
-                                    {tk.status === 'accepted' ? 'Accepted' : 'Pending'}
-                                  </Badge>
-                                  {tk.contactName && (
-                                    <span className="text-xs font-medium">{tk.contactName}</span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 mt-1 flex-wrap">
-                                  {tk.contactPhone && (
-                                    <span className="text-xs text-muted-foreground">{tk.contactPhone}</span>
-                                  )}
-                                  {tk.contactEmail && (
-                                    <span className="text-xs text-muted-foreground">{tk.contactEmail}</span>
-                                  )}
-                                  {!tk.contactName && !tk.contactPhone && !tk.contactEmail && (
-                                    <span className="text-xs text-muted-foreground">Link only</span>
-                                  )}
+                  {/* Subcontractors */}
+                  {!isTradie && (
+                    <div className="pt-3 border-t">
+                      <div className="flex items-center gap-2 mb-2">
+                        <UserPlus className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Subcontractors</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">Invite subcontractors via SMS or email — restricted view of this job only</p>
+                      {subTokens && subTokens.filter(t => t.status === 'pending' || t.status === 'accepted').length > 0 && (
+                        <div className="space-y-2 mb-3">
+                          {subTokens.filter(t => t.status === 'pending' || t.status === 'accepted').map((tk) => (
+                            <div key={tk.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm">
+                              <div className="flex items-center gap-2 min-w-0">
+                                {tk.status === 'accepted' ? <Check className="h-4 w-4 text-green-600 shrink-0" /> : <Clock className="h-4 w-4 text-muted-foreground shrink-0" />}
+                                <div>
+                                  <Badge variant={tk.status === 'accepted' ? 'default' : 'secondary'} className="text-xs">{tk.status === 'accepted' ? 'Accepted' : 'Pending'}</Badge>
+                                  {tk.contactName && <span className="text-xs font-medium ml-2">{tk.contactName}</span>}
                                 </div>
                               </div>
+                              {tk.status === 'pending' && <Button variant="ghost" size="icon" onClick={() => revokeInviteMutation.mutate(tk.id)} disabled={revokeInviteMutation.isPending}><X className="h-4 w-4" /></Button>}
                             </div>
-                            {tk.status === 'pending' && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => revokeInviteMutation.mutate(tk.id)}
-                                disabled={revokeInviteMutation.isPending}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
+                          ))}
+                        </div>
+                      )}
+                      <Button variant="outline" size="sm" className="w-full" onClick={handleOpenInviteModal}>
+                        <UserPlus className="h-4 w-4 mr-2" />Invite Subcontractor
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Job Brief (projects: quote scope + approved variations) */}
+              {isProject && ((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.filter((v: any) => v.status === 'approved').length > 0) && (
+                <Card data-testid="card-job-brief">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+                      <CardTitle className="text-sm font-medium">Job Brief</CardTitle>
+                      {linkedQuote && <p className="text-xs text-muted-foreground ml-auto">From {linkedQuote.number ? `Quote #${linkedQuote.number}` : 'linked quote'}</p>}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    {linkedQuote?.lineItems && linkedQuote.lineItems.length > 0 && (
+                      <div className="space-y-1.5">
+                        {linkedQuote.description && <p className="text-sm text-muted-foreground">{linkedQuote.description}</p>}
+                        {linkedQuote.lineItems.map((item) => (
+                          <div key={item.id} className="flex items-start gap-2">
+                            <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/50" />
+                            <span className="text-sm flex-1">{item.description}</span>
+                            {!isTradie && item.total && <span className="text-sm text-muted-foreground shrink-0">${parseFloat(item.total).toFixed(2)}</span>}
                           </div>
                         ))}
                       </div>
                     )}
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={handleOpenInviteModal}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Invite Subcontractor
-                    </Button>
-                  </div>
-                </div>
+                    {jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t">
+                        <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Approved Variations</span>
+                        {jobVariations.filter((v: any) => v.status === 'approved').map((variation: any) => (
+                          <div key={variation.id} className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 rounded-md p-2">
+                            <Plus className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm font-medium">{variation.title}</span>
+                              {variation.description && <p className="text-xs text-muted-foreground mt-0.5">{variation.description}</p>}
+                            </div>
+                            {!isTradie && variation.totalAmount && <span className="text-sm font-medium text-amber-700 dark:text-amber-400 shrink-0">+${parseFloat(variation.totalAmount).toFixed(2)}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {!isTradie && linkedQuote?.total && (
+                      <div className="pt-2 border-t space-y-1">
+                        <div className="flex items-center justify-between text-sm"><span className="text-muted-foreground">Original Quote</span><span>${parseFloat(linkedQuote.total).toFixed(2)}</span></div>
+                        {jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
+                          <div className="flex items-center justify-between text-sm font-semibold pt-1 border-t">
+                            <span>Revised Total</span>
+                            <span>${(parseFloat(linkedQuote.total) + jobVariations.filter((v: any) => v.status === 'approved').reduce((sum: number, v: any) => sum + (parseFloat(v.totalAmount) || 0), 0)).toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
 
-              {/* Job Costing Section - Shows estimated vs actual hours */}
-              {(job.estimatedHours || actualHoursData.hasData) && (
-                <div className="pt-2 border-t">
-                  <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2">
-                    <DollarSign className="h-3 w-3" />
-                    Job Costing
-                  </div>
-                  <div className="space-y-2">
-                    {job.estimatedHours && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Estimated</span>
-                        <span className="text-sm font-medium">{job.estimatedHours} hrs</span>
-                      </div>
-                    )}
-                    {actualHoursData.hasData && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Actual</span>
-                        <span className="text-sm font-medium">{actualHoursData.actualHours} hrs</span>
-                      </div>
-                    )}
-                    {job.estimatedHours && actualHoursData.hasData && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Variance</span>
-                        {(() => {
-                          const variance = actualHoursData.actualHours - job.estimatedHours;
-                          const isOver = variance > 0;
-                          const isUnder = variance < 0;
-                          return (
-                            <span className={`text-sm font-medium ${isOver ? 'text-red-600 dark:text-red-400' : isUnder ? 'text-green-600 dark:text-green-400' : ''}`}>
-                              {isOver ? '+' : ''}{variance.toFixed(2)} hrs
-                            </span>
-                          );
-                        })()}
-                      </div>
-                    )}
-                    {actualHoursData.hasData && actualHoursData.laborCost > 0 && (
-                      <div className="flex items-center justify-between pt-1 border-t">
-                        <span className="text-sm text-muted-foreground">Labor Cost</span>
-                        <span className="text-sm font-medium">${actualHoursData.laborCost.toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {job.estimatedCost && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground mb-1">Estimated Cost</p>
-                  <p className="text-sm">${(Number(job.estimatedCost) / 100).toFixed(2)}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {!isTradie && (
-            <JobProfitabilityCard jobId={jobId} />
-          )}
-
-          {/* ── Retention Ledger (project-type jobs only, owners/managers) ── */}
-          {retentionCard}
-
-          {/* ── Defects & Punch List (project-type jobs only) ── */}
-          {(job as any)?.jobType === 'project' && (
-            <DefectsSection
-              jobId={jobId}
-              isTradie={isTradie}
-              teamMembers={teamMembers}
-            />
-          )}
-
-          {((linkedQuote?.lineItems?.length ?? 0) > 0 || jobVariations.length > 0 || (isProject && jobMaterials.length > 0)) && (
-            <Card data-testid="card-job-brief">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <ClipboardList className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                  <CardTitle className="text-sm font-medium">Job Brief</CardTitle>
-                </div>
-                {linkedQuote && (
-                  <p className="text-xs text-muted-foreground">
-                    Scope of work from {linkedQuote.number || linkedQuote.quoteNumber ? `Quote #${linkedQuote.number || linkedQuote.quoteNumber}` : "Linked Quote"}
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="pt-0 space-y-4">
-                {linkedQuote?.lineItems && linkedQuote.lineItems.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Original Scope</span>
-                    </div>
-                    {linkedQuote.description && (
-                      <p className="text-sm text-muted-foreground">{linkedQuote.description}</p>
-                    )}
-                    <div className="space-y-1.5">
-                      {linkedQuote.lineItems.map((item) => (
-                        <div key={item.id} className="flex items-start gap-2">
-                          <Circle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground/50" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm">{item.description}</span>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 text-sm text-muted-foreground">
-                            {parseFloat(item.quantity) !== 1 && (
-                              <span>x{item.quantity}</span>
-                            )}
-                            {!isTradie && item.total && !isNaN(parseFloat(item.total)) && (
-                              <span className="text-right w-20">${parseFloat(item.total).toFixed(2)}</span>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isProject && jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <FileEdit className="h-3.5 w-3.5 text-amber-600" />
-                      <span className="text-xs font-medium text-amber-700 dark:text-amber-400 uppercase tracking-wide">Variations</span>
-                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-                        {jobVariations.filter((v: any) => v.status === 'approved').length}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1.5 pl-0.5">
-                      {jobVariations.filter((v: any) => v.status === 'approved').map((variation: any) => (
-                        <div key={variation.id} className="flex items-start gap-2 bg-amber-50 dark:bg-amber-950/20 rounded-md p-2">
-                          <Plus className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-600" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium">{variation.title}</span>
-                            {variation.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5">{variation.description}</p>
-                            )}
-                          </div>
-                          {!isTradie && variation.totalAmount && (
-                            <span className="text-sm font-medium text-amber-700 dark:text-amber-400 shrink-0">
-                              +${parseFloat(variation.totalAmount).toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isProject && !isTradie && jobVariations.filter((v: any) => v.status === 'sent' || v.status === 'draft').length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pending Variations</span>
-                      <Badge variant="outline" className="text-xs">
-                        {jobVariations.filter((v: any) => v.status === 'sent' || v.status === 'draft').length}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1.5 pl-0.5">
-                      {jobVariations.filter((v: any) => v.status === 'sent' || v.status === 'draft').map((variation: any) => (
-                        <div key={variation.id} className="flex items-start gap-2 opacity-70">
-                          <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
-                          <div className="flex-1 min-w-0">
-                            <span className="text-sm">{variation.title}</span>
-                          </div>
-                          <Badge variant="outline" className="text-xs shrink-0">
-                            {variation.status}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {isProject && jobMaterials.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Package className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Materials</span>
-                      <Badge variant="secondary" className="text-xs">{jobMaterials.length}</Badge>
-                    </div>
-                    <div className="space-y-1.5">
-                      {jobMaterials.slice(0, 5).map((material) => (
-                        <div key={material.id} className="flex items-center gap-2 text-sm">
-                          <span className="flex-1 min-w-0 truncate">{material.name}</span>
-                          <span className="text-muted-foreground shrink-0">{material.quantity} {material.unit}</span>
-                          <Badge variant="outline" className="text-xs shrink-0 capitalize">
-                            {material.status}
-                          </Badge>
-                        </div>
-                      ))}
-                      {jobMaterials.length > 5 && (
-                        <p className="text-xs text-muted-foreground">+{jobMaterials.length - 5} more materials</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {isProject && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                      <Wrench className="h-3.5 w-3.5" />
-                      Equipment
-                      <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground/60">optional</span>
+              {/* Notes card */}
+              <Card className="cursor-pointer hover:border-primary/50 transition-colors" onClick={handleOpenNotesModal} data-testid="card-job-notes">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />Notes
+                      {jobNotesData.length > 0 && <Badge variant="secondary" className="text-xs">{jobNotesData.length}</Badge>}
                     </span>
-                    <Button variant="ghost" size="sm" onClick={() => setShowAssignEquipment(true)}>
-                      <Plus className="h-3 w-3 mr-1" />
-                      Add
+                    <Plus className="h-4 w-4 text-muted-foreground" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {jobNotesData.length > 0 ? (
+                    <div className="space-y-3">
+                      {jobNotesData.slice(0, 3).map((note) => (
+                        <div key={note.id} className="p-3 rounded-lg bg-muted/50 border border-border">
+                          <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" /><span>{formatHistoryDate(note.createdAt)}</span>
+                            {note.createdByName && <><span>•</span><span>{note.createdByName}</span></>}
+                          </div>
+                        </div>
+                      ))}
+                      {jobNotesData.length > 3 && <p className="text-xs text-muted-foreground text-center">+{jobNotesData.length - 3} more notes</p>}
+                    </div>
+                  ) : job.notes ? (
+                    <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                      <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground"><Clock className="h-3 w-3" /><span>Legacy note</span></div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">Tap to add a note...</p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Project extras: Variations + Retention */}
+              {isProject && <JobVariations jobId={jobId} canEdit={job.status !== 'invoiced' && !isTradie} />}
+              {isProject && retentionCard}
+
+              {/* Voice Notes */}
+              <JobVoiceNotes jobId={jobId} canUpload={job.status !== 'invoiced'} existingNotes={job.notes} />
+
+              {/* Linked Jobs */}
+              <LinkedJobsCard jobId={jobId} clientId={job.clientId ?? null} clientName={client?.name || 'Client'} />
+
+              {/* Inspection prompts */}
+              {job.requiresInspection && !job.inspectionCompletedAt && !isTradie && (
+                <Card className="border-2" style={{ borderColor: 'hsl(45 93% 47% / 0.5)' }} data-testid="card-inspection-required">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(45 93% 47% / 0.15)' }}>
+                        <Search className="h-5 w-5" style={{ color: 'hsl(45 93% 47%)' }} />
+                      </div>
+                      <div><p className="font-semibold text-sm">Inspection Required</p><p className="text-xs text-muted-foreground">Complete the site inspection, then create a quote</p></div>
+                    </div>
+                    <div className="space-y-2">
+                      <Textarea placeholder="Inspection notes (optional)..." value={inspectionNotesInput} onChange={(e) => setInspectionNotesInput(e.target.value)} className="text-sm" data-testid="textarea-inspection-notes" />
+                      <Button className="w-full" style={{ backgroundColor: 'hsl(45 93% 47%)', color: 'white' }} onClick={() => completeInspectionMutation.mutate(inspectionNotesInput)} disabled={completeInspectionMutation.isPending} data-testid="button-complete-inspection">
+                        {completeInspectionMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle className="h-4 w-4 mr-2" />}Mark Inspection Complete
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {job.requiresInspection && job.inspectionCompletedAt && !linkedQuote && !isTradie && (
+                <Card className="border-2" style={{ borderColor: 'hsl(221.2 83.2% 53.3% / 0.5)' }} data-testid="card-inspection-done-quote">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(221.2 83.2% 53.3% / 0.15)' }}>
+                        <FileText className="h-5 w-5" style={{ color: 'hsl(221.2 83.2% 53.3%)' }} />
+                      </div>
+                      <div><p className="font-semibold text-sm">Inspection Done — Create Quote</p><p className="text-xs text-muted-foreground">Inspection completed {job.inspectionCompletedAt ? new Date(job.inspectionCompletedAt).toLocaleDateString() : ''}.</p></div>
+                    </div>
+                    {job.inspectionNotes && <p className="text-xs text-muted-foreground mb-3 italic">Notes: {job.inspectionNotes}</p>}
+                    <Button className="w-full" style={{ backgroundColor: 'hsl(221.2 83.2% 53.3%)', color: 'white' }} onClick={() => onCreateQuote?.(jobId)} data-testid="button-create-quote-after-inspection">
+                      <FileText className="h-4 w-4 mr-2" />Create Quote
                     </Button>
+                  </CardContent>
+                </Card>
+              )}
+              {job.status === 'done' && !linkedInvoice && !isTradie && (
+                <Card className="border-2" style={{ borderColor: 'hsl(142.1 76.2% 36.3% / 0.5)' }} data-testid="card-create-invoice-prompt">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }}>
+                        <Receipt className="h-5 w-5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
+                      </div>
+                      <div><p className="font-semibold text-sm">Job Complete — Get Paid</p><p className="text-xs text-muted-foreground">Create and send an invoice to your client</p></div>
+                    </div>
+                    <Button className="w-full" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3%)', color: 'white' }} onClick={() => onCreateInvoice?.(jobId)} data-testid="button-create-invoice-prompt">
+                      <Receipt className="h-4 w-4 mr-2" />Create Invoice
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* ── PHASES TAB (project only) ── */}
+            {isProject && (
+              <TabsContent value="phases" className="mt-0 space-y-6">
+                <JobPhasesSection
+                  jobId={jobId}
+                  isTradie={isTradie}
+                  onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
+                />
+                <ProjectGanttView jobId={jobId} isTradie={isTradie} />
+                <ClaimsSection
+                  jobId={jobId}
+                  isTradie={isTradie}
+                  retentionPercent={(job as any)?.retentionPercent ?? '0'}
+                  openNewClaimForPhase={pendingClaimPhase}
+                  onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
+                />
+              </TabsContent>
+            )}
+
+            {/* ── ACTIVITY TAB ── */}
+            <TabsContent value="activity" className="mt-0 space-y-6">
+              {(job.status === 'pending' || job.status === 'scheduled') && jobPhotos.length === 0 && (
+                <Card className="border-2 border-dashed" data-testid="card-before-photos-prompt">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10"><Camera className="h-5 w-5 text-primary" /></div>
+                      <div><p className="font-semibold text-sm">Take Before Photos</p><p className="text-xs text-muted-foreground">Capture the site before work begins</p></div>
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={() => setShowBeforePhotoPrompt(true)} data-testid="button-add-before-photos">
+                      <Camera className="h-4 w-4 mr-2" />Add Before Photos
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+              <JobChecklistSection jobId={jobId} readOnly={job.status === 'invoiced'} />
+              <JobTasksSection jobId={jobId} />
+              <JobForms jobId={jobId} />
+              <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
+              {canUseAIFeatures && jobPhotos.length > 0 && (
+                <AIPhotoAnalysis jobId={jobId} photoCount={jobPhotos.length} existingNotes={jobNotesData.length > 0 ? jobNotesData.map(n => n.content).join('\n') : job.notes} />
+              )}
+              <SiteDiarySection jobId={jobId} canEdit={!isTradie || job.status !== 'invoiced'} currentUserId={currentUser?.id} />
+            </TabsContent>
+
+            {/* ── FINANCIALS TAB ── */}
+            <TabsContent value="financials" className="mt-0 space-y-6">
+              {/* Time Tracking widget */}
+              {job.status === 'in_progress' && (
+                <Card className="border-2" style={{ borderColor: 'hsl(var(--trade) / 0.3)' }} data-testid="card-time-tracking">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--trade))' }}>
+                      <Timer className="h-5 w-5" />Time Tracking
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent><TimerWidget jobId={jobId} jobTitle={job.title} /></CardContent>
+                </Card>
+              )}
+              {!isTradie && (
+                <GeofenceSettingsCard
+                  jobId={jobId}
+                  hasLocation={!!(job.latitude && job.longitude)}
+                  geofenceEnabled={job.geofenceEnabled}
+                  geofenceRadius={job.geofenceRadius}
+                  geofenceAutoClockIn={job.geofenceAutoClockIn}
+                  geofenceAutoClockOut={job.geofenceAutoClockOut}
+                  assignedTo={job.assignedTo}
+                />
+              )}
+              {/* Worker time summaries */}
+              {workerSummaries.length > 0 && (
+                <Card data-testid="card-worker-attendance">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base font-semibold flex items-center justify-between gap-2 flex-wrap">
+                      <span className="flex items-center gap-2"><Clock className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />Time & Attendance</span>
+                      {actualHoursData.hasData && <span className="text-sm font-normal text-muted-foreground">{actualHoursData.actualHours}h total{actualHoursData.laborCost > 0 && ` · $${actualHoursData.laborCost.toFixed(2)}`}</span>}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {workerSummaries.map((worker) => (
+                        <div key={worker.userId} className="rounded-md border p-3">
+                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-semibold" style={{ background: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}>
+                                {worker.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <span className="text-sm font-semibold">{worker.name}</span>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <span>{worker.totalHours}h worked</span>
+                                  {worker.breakMinutes > 0 && <span>· {Math.round(worker.breakMinutes / 6) / 10}h break</span>}
+                                  {worker.entries.length > 1 && <span>· {worker.entries.length} sessions</span>}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              {worker.hourlyRate > 0 && <div className="text-xs text-muted-foreground">${worker.hourlyRate}/hr</div>}
+                              {worker.laborCost > 0 && <div className="text-sm font-semibold">${worker.laborCost.toFixed(2)}</div>}
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            {worker.entries.map((entry) => {
+                              const hasGps = !!(entry.clockInLatitude || entry.clockOutLatitude);
+                              const isGeofence = entry.origin === 'geofence';
+                              const verified = hasGps || isGeofence;
+                              const startDate = new Date(entry.startTime);
+                              const endDate = entry.endTime ? new Date(entry.endTime) : null;
+                              const durationMins = endDate ? (entry.duration || Math.floor((endDate.getTime() - startDate.getTime()) / 60000)) : Math.floor((Date.now() - startDate.getTime()) / 60000);
+                              const hours = Math.round(durationMins / 60 * 10) / 10;
+                              return (
+                                <div key={entry.id} className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground py-1.5 px-2 rounded bg-muted/30">
+                                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${verified ? 'bg-green-500' : 'bg-amber-400'}`} />
+                                  <span className="font-medium text-foreground">{startDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
+                                  <span>{startDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}{endDate ? ` — ${endDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}` : ''}</span>
+                                  {!endDate && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">Active</Badge>}
+                                  {hours > 0 && <span className="font-medium text-foreground">{hours}h</span>}
+                                  {verified && <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1 py-0.5 rounded"><CheckCircle className="h-2.5 w-2.5" />GPS</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {(() => {
+                      const CAT_LABELS: Record<string, string> = { work: '🔨 Site Work', travel: '🚗 Driving', materials: '🛒 Supplies', admin: '🖥️ Admin', meeting: '📋 Meeting', training: '🎓 Training', other: '⚙️ Other' };
+                      const CAT_COLORS: Record<string, string> = { work: '#2563EB', travel: '#7C3AED', materials: '#D97706', admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280' };
+                      const catMap: Record<string, number> = {};
+                      timeEntries.filter(e => !e.isBreak && e.endTime).forEach(e => {
+                        const cat = (e as any).timeCategory || 'work';
+                        const mins = (e as any).duration || Math.floor((new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / 60000);
+                        catMap[cat] = (catMap[cat] || 0) + mins;
+                      });
+                      const cats = Object.entries(catMap).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a);
+                      if (cats.length <= 1) return null;
+                      return (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Hours by Category</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {cats.map(([cat, mins]) => (
+                              <span key={cat} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: (CAT_COLORS[cat] ?? '#6B7280') + '18', color: CAT_COLORS[cat] ?? '#6B7280' }}>
+                                {CAT_LABELS[cat] ?? cat} {Math.round(mins / 6) / 10}h
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+              {/* Profitability */}
+              {!isTradie && <JobProfitabilityCard jobId={jobId} />}
+              {/* Job costing */}
+              {(job.estimatedHours || actualHoursData.hasData) && (
+                <Card>
+                  <CardContent className="pt-4 space-y-2">
+                    <div className="flex items-center gap-1 text-muted-foreground text-xs mb-2"><DollarSign className="h-3 w-3" />Job Costing</div>
+                    {job.estimatedHours && <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Estimated</span><span className="text-sm font-medium">{job.estimatedHours} hrs</span></div>}
+                    {actualHoursData.hasData && <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Actual</span><span className="text-sm font-medium">{actualHoursData.actualHours} hrs</span></div>}
+                    {job.estimatedHours && actualHoursData.hasData && (() => {
+                      const variance = actualHoursData.actualHours - job.estimatedHours;
+                      return <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Variance</span><span className={`text-sm font-medium ${variance > 0 ? 'text-red-600 dark:text-red-400' : variance < 0 ? 'text-green-600 dark:text-green-400' : ''}`}>{variance > 0 ? '+' : ''}{variance.toFixed(2)} hrs</span></div>;
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+              {/* Materials */}
+              <Card data-testid="card-materials">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Package className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+                      <CardTitle className="text-sm font-medium">Materials & Parts</CardTitle>
+                      {jobMaterials.length > 0 && <Badge variant="secondary" className="text-xs">{jobMaterials.length}</Badge>}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setShowAddMaterial(!showAddMaterial)}><Plus className="h-4 w-4 mr-1" />Add</Button>
+                      {isProject && <Button size="sm" variant="ghost" onClick={() => setShowAssignEquipment(true)}><Wrench className="h-4 w-4 mr-1" />Equipment</Button>}
+                    </div>
                   </div>
-                  {jobEquipmentList.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {jobEquipmentList.map((assignment) => {
-                        const eq = allEquipment.find((e: any) => e.id === assignment.equipmentId);
+                </CardHeader>
+                <CardContent className="pt-0 space-y-3">
+                  {showAddMaterial && (
+                    <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
+                      <Input placeholder="Material name (e.g., 25mm copper pipe)" value={materialName} onChange={(e) => setMaterialName(e.target.value)} />
+                      <div className="grid grid-cols-3 gap-2">
+                        <Input placeholder="Qty" type="number" value={materialQty} onChange={(e) => setMaterialQty(e.target.value)} />
+                        <Select value={materialUnit} onValueChange={setMaterialUnit}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{['each', 'metre', 'sqm', 'litre', 'kg', 'box', 'pack', 'roll'].map(u => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent>
+                        </Select>
+                        {!isTradie && <Input placeholder="$ Cost" type="number" step="0.01" value={materialUnitCost} onChange={(e) => setMaterialUnitCost(e.target.value)} />}
+                      </div>
+                      {!isTradie && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <Input placeholder="$ Sell Price" type="number" step="0.01" value={materialUnitPrice} onChange={(e) => setMaterialUnitPrice(e.target.value)} />
+                          <div className="flex items-center text-xs text-muted-foreground px-2">
+                            {materialUnitCost && materialUnitPrice && parseFloat(materialUnitPrice) > 0
+                              ? <span className={parseFloat(materialUnitPrice) > parseFloat(materialUnitCost) ? 'text-green-600' : 'text-red-600'}>Margin: {(((parseFloat(materialUnitPrice) - parseFloat(materialUnitCost)) / parseFloat(materialUnitPrice)) * 100).toFixed(1)}%</span>
+                              : null}
+                          </div>
+                        </div>
+                      )}
+                      <Input placeholder="Supplier (optional)" value={materialSupplier} onChange={(e) => setMaterialSupplier(e.target.value)} />
+                      {isProject && jobPhasesForPicker.length > 0 && (
+                        <Select value={materialPhaseId} onValueChange={setMaterialPhaseId}>
+                          <SelectTrigger><SelectValue placeholder="Phase (optional)" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="__none__">No phase</SelectItem>
+                            {jobPhasesForPicker.map(p => <SelectItem key={p.id} value={p.id}>{p.phaseCode} {p.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                      <div className="flex gap-2">
+                        <Button size="sm" disabled={!materialName.trim() || addMaterialMutation.isPending}
+                          onClick={() => addMaterialMutation.mutate({ name: materialName.trim(), quantity: materialQty || '1', unit: materialUnit, unitCost: materialUnitCost || '0', unitPrice: materialUnitPrice || '0', supplier: materialSupplier || undefined, markupPercent: materialMarkupPercent || undefined, phaseId: materialPhaseId === '__none__' ? undefined : (materialPhaseId || undefined) })}
+                          style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}>
+                          {addMaterialMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Material'}
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setShowAddMaterial(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  )}
+                  {jobMaterials.length === 0 && !showAddMaterial && (
+                    <TabEmptyState icon={<Package className="h-6 w-6 text-muted-foreground/50" />} title="No materials tracked yet" description="Add parts and materials used on this job." action={<Button size="sm" variant="outline" onClick={() => setShowAddMaterial(true)}><Plus className="h-4 w-4 mr-1" />Add Material</Button>} />
+                  )}
+                  {jobMaterials.length > 0 && (
+                    <div className="space-y-2">
+                      {jobMaterials.map((mat) => {
+                        const statusColors: Record<string, string> = {
+                          needed: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+                          ordered: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+                          shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+                          received: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                          installed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+                        };
                         return (
-                          <div key={assignment.id} className="flex items-center gap-2 text-sm group">
-                            <Wrench className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                            <span className="flex-1 min-w-0 truncate">{eq?.name || 'Unknown'}</span>
-                            {eq?.serialNumber && (
-                              <span className="text-xs text-muted-foreground flex-shrink-0">SN: {eq.serialNumber}</span>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="invisible group-hover:visible flex-shrink-0"
-                              onClick={(e) => { e.stopPropagation(); unassignEquipmentMutation.mutate(assignment.id); }}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
+                          <div key={mat.id} className="p-3 rounded-lg border bg-background space-y-2">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium">{mat.name}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[mat.status] || statusColors.needed}`}>{mat.status}</span>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                                <span>{mat.quantity} {mat.unit}</span>
+                                {mat.supplier && <span>from {mat.supplier}</span>}
+                                {!isTradie && mat.totalCost && parseFloat(mat.totalCost) > 0 && <span className="font-medium">Cost: ${parseFloat(mat.totalCost).toFixed(2)}</span>}
+                                {!isTradie && mat.unitPrice && parseFloat(mat.unitPrice) > 0 && <span className="font-medium text-green-700 dark:text-green-400">Price: ${(parseFloat(mat.unitPrice) * parseFloat(mat.quantity || '1')).toFixed(2)}</span>}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Button size="sm" variant={mat.receiptPhotoUrl ? "ghost" : "outline"} onClick={() => handleMaterialReceiptUpload(mat.id)} disabled={uploadingMaterialId === mat.id}>
+                                {uploadingMaterialId === mat.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5 mr-1" />}
+                                {mat.receiptPhotoUrl ? '' : 'Receipt'}
+                              </Button>
+                              <Select value={mat.status} onValueChange={(val) => handleMaterialStatusChange(mat, val)}>
+                                <SelectTrigger className="h-7 w-[90px] text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {['needed', 'ordered', 'shipped', 'received', 'installed'].map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              {!isTradie && <Button size="icon" variant="ghost" onClick={() => deleteMaterialMutation.mutate(mat.id)}><Trash2 className="h-4 w-4 text-muted-foreground" /></Button>}
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">No equipment assigned yet</p>
                   )}
-                </div>
-                )}
-
-                {!isTradie && linkedQuote?.total && (
-                  <div className="pt-2 border-t space-y-1">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Original Quote</span>
-                      <span>${parseFloat(linkedQuote.total).toFixed(2)}</span>
-                    </div>
-                    {isProject && jobVariations.filter((v: any) => v.status === 'approved').length > 0 && (
-                      <>
-                        <div className="flex items-center justify-between text-sm text-amber-700 dark:text-amber-400">
-                          <span>Approved Variations</span>
-                          <span>+${jobVariations.filter((v: any) => v.status === 'approved').reduce((sum: number, v: any) => sum + (parseFloat(v.totalAmount) || 0), 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-sm font-semibold pt-1 border-t">
-                          <span>Revised Total</span>
-                          <span>${(parseFloat(linkedQuote.total) + jobVariations.filter((v: any) => v.status === 'approved').reduce((sum: number, v: any) => sum + (parseFloat(v.totalAmount) || 0), 0)).toFixed(2)}</span>
-                        </div>
-                      </>
-                    )}
-                    {(!isProject || jobVariations.filter((v: any) => v.status === 'approved').length === 0) && (
-                      <div className="flex items-center justify-between text-sm font-semibold">
-                        <span>Total</span>
-                        <span>${parseFloat(linkedQuote.total).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Editable Notes Card - Always visible like mobile app */}
-          <Card 
-            className="cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={handleOpenNotesModal}
-            data-testid="card-job-notes"
-          >
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                  Notes
-                  {jobNotesData.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">{jobNotesData.length}</Badge>
-                  )}
-                </span>
-                <Plus className="h-4 w-4 text-muted-foreground" />
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {jobNotesData.length > 0 ? (
-                <div className="space-y-3">
-                  {jobNotesData.slice(0, 3).map((note) => (
-                    <div key={note.id} className="p-3 rounded-lg bg-muted/50 border border-border">
-                      <p className="text-sm whitespace-pre-wrap">{note.content}</p>
-                      <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>{formatHistoryDate(note.createdAt)}</span>
-                        {note.createdByName && (
-                          <>
-                            <span>•</span>
-                            <span>{note.createdByName}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                  {jobNotesData.length > 3 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      +{jobNotesData.length - 3} more notes
-                    </p>
-                  )}
-                </div>
-              ) : job.notes ? (
-                <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                  <p className="text-sm whitespace-pre-wrap">{job.notes}</p>
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>Legacy note</span>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Tap to add a note tied to this moment...
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Job Variations / Change Orders - project only */}
-          {isProject && (
-            <JobVariations jobId={jobId} canEdit={job.status !== 'invoiced' && !isTradie} />
-          )}
-
-          {/* Client Signature - show for in_progress (for capturing before completion), done and invoiced jobs */}
-          {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && (
-            <JobSignature jobId={jobId} />
-          )}
-
-          {/* Voice Notes - show for ALL job statuses so team sync works */}
-          <JobVoiceNotes 
-            jobId={jobId} 
-            canUpload={job.status !== 'invoiced'} 
-            existingNotes={job.notes}
-          />
-
-          {/* Linked Jobs - Client history with photo copy */}
-          <LinkedJobsCard
-            jobId={jobId}
-            clientId={job.clientId ?? null}
-            clientName={client?.name || 'Client'}
-          />
-
-          {/* Safety Forms Section - grows to fill remaining space */}
-          <SafetyFormsSection 
-            jobId={jobId} 
-            jobStatus={job.status}
-            jobTitle={job.title}
-            jobAddress={job.address}
-            className="flex-grow"
-          />
-
-        </div>
-
-        {/* Right column - Secondary/supporting content */}
-        <div className="flex flex-col gap-6 lg:col-span-5 xl:col-span-5">
-          {job.requiresInspection && !job.inspectionCompletedAt && !isTradie && (
-            <Card className="border-2" style={{ borderColor: 'hsl(45 93% 47% / 0.5)' }} data-testid="card-inspection-required">
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(45 93% 47% / 0.15)' }}>
-                    <Search className="h-5 w-5" style={{ color: 'hsl(45 93% 47%)' }} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Inspection Required</p>
-                    <p className="text-xs text-muted-foreground">Complete the site inspection, then create a quote for the work</p>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Textarea
-                    placeholder="Inspection notes (optional)..."
-                    value={inspectionNotesInput}
-                    onChange={(e) => setInspectionNotesInput(e.target.value)}
-                    className="text-sm"
-                    data-testid="textarea-inspection-notes"
-                  />
-                  <Button
-                    className="w-full"
-                    style={{ backgroundColor: 'hsl(45 93% 47%)', color: 'white' }}
-                    onClick={() => completeInspectionMutation.mutate(inspectionNotesInput)}
-                    disabled={completeInspectionMutation.isPending}
-                    data-testid="button-complete-inspection"
-                  >
-                    {completeInspectionMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                    )}
-                    Mark Inspection Complete
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {job.requiresInspection && job.inspectionCompletedAt && !linkedQuote && !isTradie && (
-            <Card className="border-2" style={{ borderColor: 'hsl(221.2 83.2% 53.3% / 0.5)' }} data-testid="card-inspection-done-quote">
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(221.2 83.2% 53.3% / 0.15)' }}>
-                    <FileText className="h-5 w-5" style={{ color: 'hsl(221.2 83.2% 53.3%)' }} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Inspection Done — Create Quote</p>
-                    <p className="text-xs text-muted-foreground">
-                      Inspection completed {job.inspectionCompletedAt ? new Date(job.inspectionCompletedAt).toLocaleDateString() : ''}. Ready to quote the work.
-                    </p>
-                  </div>
-                </div>
-                {job.inspectionNotes && (
-                  <p className="text-xs text-muted-foreground mb-3 pl-1 italic">Notes: {job.inspectionNotes}</p>
-                )}
-                <Button
-                  className="w-full"
-                  style={{ backgroundColor: 'hsl(221.2 83.2% 53.3%)', color: 'white' }}
-                  onClick={() => onCreateQuote?.(jobId)}
-                  data-testid="button-create-quote-after-inspection"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Create Quote
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-
-          {job.status === 'done' && !linkedInvoice && !isTradie && (
-            <Card className="border-2" style={{ borderColor: 'hsl(142.1 76.2% 36.3% / 0.5)' }} data-testid="card-create-invoice-prompt">
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }}>
-                    <Receipt className="h-5 w-5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Job Complete — Get Paid</p>
-                    <p className="text-xs text-muted-foreground">Create and send an invoice to your client</p>
-                  </div>
-                </div>
-                {actualHoursData.hasData && (
-                  <div className="mb-3 p-2.5 rounded-md bg-muted/50">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-muted-foreground flex items-center gap-1.5">
-                        <Clock className="h-3 w-3" />
-                        Time tracked
-                      </span>
-                      <span className="font-semibold">{actualHoursData.actualHours}h</span>
-                    </div>
-                    {actualHoursData.laborCost > 0 && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">Labour cost</span>
-                        <span className="font-semibold">${actualHoursData.laborCost.toFixed(2)}</span>
-                      </div>
-                    )}
-                    {workerSummaries.length > 1 && (
-                      <div className="flex items-center justify-between text-xs mt-0.5">
-                        <span className="text-muted-foreground">Workers</span>
-                        <span className="font-medium">{workerSummaries.map(w => w.name.split(' ')[0]).join(', ')}</span>
-                      </div>
-                    )}
-                    <p className="text-[10px] text-muted-foreground mt-1.5">Labour lines will be added to the invoice automatically</p>
-                  </div>
-                )}
-                <Button
-                  className="w-full"
-                  style={{ backgroundColor: 'hsl(142.1 76.2% 36.3%)', color: 'white' }}
-                  onClick={() => onCreateInvoice?.(jobId)}
-                  data-testid="button-create-invoice-prompt"
-                >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Create Invoice
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          {!isTradie && (
-            <LinkedDocumentsCard
-              linkedQuote={linkedQuote}
-              linkedInvoice={linkedInvoice}
-              linkedReceipts={linkedReceipts}
-              jobStatus={job.status}
-              onViewQuote={(id) => navigate(`/quotes/${id}`)}
-              onViewInvoice={(id) => navigate(`/invoices/${id}`)}
-              onViewReceipt={(id) => navigate(`/receipts/${id}`)}
-              onCreateQuote={() => onCreateQuote?.(jobId)}
-              onCreateInvoice={() => onCreateInvoice?.(jobId)}
-            />
-          )}
-
-          {job.clientId && (
-            <Card data-testid="card-client-portal">
-              <CardContent className="py-3">
-                {portalUrl ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <Globe className="h-3.5 w-3.5" />
-                        Client Portal
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setShowPortalControls(!showPortalControls)}
-                          title="Portal visibility settings"
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => window.open(portalUrl, '_blank')}
-                          title="Preview as client"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    <div 
-                      className="flex items-center gap-1.5 p-2 rounded-md bg-muted/50 border border-border cursor-pointer group"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(portalUrl);
-                          toast({ title: "Copied", description: "Portal link copied to clipboard" });
-                        } catch {
-                          const textArea = document.createElement('textarea');
-                          textArea.value = portalUrl;
-                          textArea.style.position = 'fixed';
-                          textArea.style.opacity = '0';
-                          document.body.appendChild(textArea);
-                          textArea.select();
-                          document.execCommand('copy');
-                          document.body.removeChild(textArea);
-                          toast({ title: "Copied", description: "Portal link copied to clipboard" });
-                        }
-                      }}
-                    >
-                      <span className="text-xs text-muted-foreground truncate flex-1 select-all">{portalUrl}</span>
-                      <Copy className="h-3 w-3 text-muted-foreground shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(portalUrl);
-                            toast({ title: "Copied", description: "Portal link copied to clipboard" });
-                          } catch {
-                            const textArea = document.createElement('textarea');
-                            textArea.value = portalUrl;
-                            textArea.style.position = 'fixed';
-                            textArea.style.opacity = '0';
-                            document.body.appendChild(textArea);
-                            textArea.select();
-                            document.execCommand('copy');
-                            document.body.removeChild(textArea);
-                            toast({ title: "Copied", description: "Portal link copied to clipboard" });
-                          }
-                        }}
-                      >
-                        <Copy className="h-3 w-3" />
-                        Copy
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={async () => {
-                          try {
-                            await apiRequest("POST", `/api/jobs/${jobId}/share-portal-sms`);
-                            toast({ title: "SMS Sent", description: "Tracking link sent to client" });
-                          } catch (err: any) {
-                            toast({ title: "SMS Failed", description: err.message || "Could not send SMS", variant: "destructive" });
-                          }
-                        }}
-                        disabled={!client?.phone}
-                      >
-                        <Phone className="h-3 w-3" />
-                        SMS
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={async () => {
-                          try {
-                            await apiRequest("POST", `/api/jobs/${jobId}/share-portal-email`);
-                            toast({ title: "Email Sent", description: "Tracking link sent to client" });
-                          } catch (err: any) {
-                            toast({ title: "Email Failed", description: err.message || "Could not send email", variant: "destructive" });
-                          }
-                        }}
-                        disabled={!client?.email}
-                      >
-                        <Mail className="h-3 w-3" />
-                        Email
-                      </Button>
-                    </div>
-
-                    {showPortalControls && (
-                      <div className="space-y-3 pt-2 border-t">
-                        <span className="text-xs font-medium text-muted-foreground">Client can see:</span>
-                        <div className="space-y-2">
-                          {[
-                            { key: 'showTimeline' as const, label: 'Progress Timeline', icon: Clock },
-                            { key: 'showPhotos' as const, label: 'Job Photos', icon: Image },
-                            { key: 'showChecklist' as const, label: 'Checklist Progress', icon: ListChecks },
-                            { key: 'showActivityFeed' as const, label: 'Activity Feed', icon: Activity },
-                            { key: 'showFinancialsOnPortal' as const, label: 'Schedule of Values & Claims', icon: DollarSign },
-                            { key: 'showProgrammeOnPortal' as const, label: 'Project Programme (Phase Timeline)', icon: BarChart2 },
-                          ].map(({ key, label, icon: Icon }) => (
-                            <div key={key} className="flex items-center justify-between gap-2">
-                              <label className="text-xs flex items-center gap-1.5 cursor-pointer">
-                                <Icon className="h-3 w-3 text-muted-foreground" />
-                                {label}
-                              </label>
-                              <Switch
-                                checked={portalSettings[key]}
-                                onCheckedChange={(checked) => {
-                                  setPortalSettings(prev => ({ ...prev, [key]: checked }));
-                                  portalSettingsMutation.mutate({ [key]: checked });
-                                }}
-                                disabled={portalSettingsMutation.isPending}
-                              />
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label className="text-xs font-medium text-muted-foreground">Message to client</label>
-                          <Textarea
-                            value={portalMessageDraft}
-                            onChange={(e) => setPortalMessageDraft(e.target.value)}
-                            placeholder="e.g. Running a bit behind, should be there by 2pm"
-                            className="text-xs resize-none"
-                            rows={2}
-                          />
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-xs gap-1"
-                            disabled={portalSettingsMutation.isPending || portalMessageDraft === portalSettings.clientMessage}
-                            onClick={() => {
-                              portalSettingsMutation.mutate({ clientMessage: portalMessageDraft || '' });
-                            }}
-                          >
-                            {portalSettingsMutation.isPending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Check className="h-3 w-3" />
-                            )}
-                            {portalMessageDraft ? 'Save Message' : 'Clear Message'}
-                          </Button>
-                        </div>
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs gap-1"
-                          onClick={() => window.open(portalUrl, '_blank')}
-                        >
-                          <Eye className="h-3 w-3" />
-                          Preview as Client
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2 text-xs"
-                    onClick={() => portalLinkMutation.mutate()}
-                    disabled={portalLinkMutation.isPending}
-                  >
-                    {portalLinkMutation.isPending ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Globe className="h-3.5 w-3.5" />
-                    )}
-                    Share Client Portal
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Collect Payment - Shows when job is done/in_progress with accepted quote but no invoice yet */}
-          {(job.status === 'done' || job.status === 'in_progress') && linkedQuote && linkedQuote.status === 'accepted' && !linkedInvoice && (
-            <Card data-testid="card-quick-collect">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                    Collect Payment Now
-                  </CardTitle>
-                  <Badge variant="secondary" className="text-xs">Based on quote</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Collect payment immediately using the accepted quote amount. An invoice and receipt will be created automatically.
-                </p>
-                <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-background border">
-                  <span className="text-sm text-muted-foreground">Quote total</span>
-                  <span className="text-lg font-bold" style={{ color: 'hsl(var(--trade))' }}>
-                    ${parseFloat(linkedQuote.total as string || '0').toFixed(2)}
-                  </span>
-                </div>
-                <Button
-                  className="w-full"
-                  style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}
-                  onClick={() => setShowQuickCollect(true)}
-                  data-testid="button-quick-collect-open"
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Quick Collect Payment
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Collect Payment Section - Shows when invoice is unpaid */}
-          {linkedInvoice && !isTradie && (linkedInvoice.status === 'sent' || linkedInvoice.status === 'overdue' || linkedInvoice.status === 'partial') && (
-            <Card data-testid="card-collect-payment">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <CreditCard className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                    Collect Payment
-                  </CardTitle>
-                  <Badge variant="outline" className="text-xs">
-                    ${parseFloat(linkedInvoice.total as string || '0').toFixed(2)} outstanding
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Invoice {linkedInvoice.invoiceNumber} is ready for payment
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="default"
-                    className="flex items-center justify-center gap-2"
-                    style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}
-                    onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}`)}
-                    data-testid="button-tap-to-pay-job"
-                  >
-                    <Smartphone className="h-4 w-4" />
-                    Tap to Pay
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center gap-2"
-                    onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}&method=qr`)}
-                    data-testid="button-qr-code-job"
-                  >
-                    <QrCode className="h-4 w-4" />
-                    QR Code
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center gap-2"
-                    onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}&method=link`)}
-                    data-testid="button-send-link-job"
-                  >
-                    <Link2 className="h-4 w-4" />
-                    Send Link
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex items-center justify-center gap-2"
-                    onClick={() => navigate(`/invoices/${linkedInvoice.id}?action=recordPayment`)}
-                    data-testid="button-record-cash-job"
-                  >
-                    <DollarSign className="h-4 w-4" />
-                    Record Cash
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-
-          {/* Job Phases — project only */}
-          {isProject && (
-            <JobPhasesSection
-              jobId={jobId}
-              isTradie={isTradie}
-              onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
-            />
-          )}
-
-          {/* Project Timeline (Gantt) — project only */}
-          {isProject && (
-            <ProjectGanttView jobId={jobId} isTradie={isTradie} />
-          )}
-
-          {/* Progress Claims — project only */}
-          {isProject && (
-            <ClaimsSection
-              jobId={jobId}
-              isTradie={isTradie}
-              retentionPercent={(job as any)?.retentionPercent ?? '0'}
-              openNewClaimForPhase={pendingClaimPhase}
-              onNewClaimForPhaseConsumed={() => setPendingClaimPhase(null)}
-            />
-          )}
-
-          {/* Materials Tracking — project only */}
-          {isProject && <Card data-testid="card-materials">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Package className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                  <CardTitle className="text-sm font-medium">Materials & Parts</CardTitle>
-                  {jobMaterials.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">{jobMaterials.length}</Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => setShowAddMaterial(!showAddMaterial)}>
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setShowAssignEquipment(true)}>
-                    <Wrench className="h-4 w-4 mr-1" />
-                    Equipment
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0 space-y-3">
-              {showAddMaterial && (
-                <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
-                  <Input
-                    placeholder="Material name (e.g., 25mm copper pipe)"
-                    value={materialName}
-                    onChange={(e) => setMaterialName(e.target.value)}
-                  />
-                  <div className="grid grid-cols-3 gap-2">
-                    <Input
-                      placeholder="Qty"
-                      type="number"
-                      value={materialQty}
-                      onChange={(e) => setMaterialQty(e.target.value)}
-                    />
-                    <Select value={materialUnit} onValueChange={setMaterialUnit}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="each">each</SelectItem>
-                        <SelectItem value="metre">metre</SelectItem>
-                        <SelectItem value="sqm">sqm</SelectItem>
-                        <SelectItem value="litre">litre</SelectItem>
-                        <SelectItem value="kg">kg</SelectItem>
-                        <SelectItem value="box">box</SelectItem>
-                        <SelectItem value="pack">pack</SelectItem>
-                        <SelectItem value="roll">roll</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {!isTradie && (
-                      <Input
-                        placeholder="$ Cost (internal)"
-                        type="number"
-                        step="0.01"
-                        value={materialUnitCost}
-                        onChange={(e) => setMaterialUnitCost(e.target.value)}
-                      />
-                    )}
-                  </div>
-                  {!isTradie && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input
-                        placeholder="$ Sell Price (client)"
-                        type="number"
-                        step="0.01"
-                        value={materialUnitPrice}
-                        onChange={(e) => setMaterialUnitPrice(e.target.value)}
-                      />
-                      <div className="flex items-center text-xs text-muted-foreground px-2">
-                        {materialUnitCost && materialUnitPrice && parseFloat(materialUnitPrice) > 0 ? (
-                          <span className={parseFloat(materialUnitPrice) > parseFloat(materialUnitCost) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                            Margin: {(((parseFloat(materialUnitPrice) - parseFloat(materialUnitCost)) / parseFloat(materialUnitPrice)) * 100).toFixed(1)}%
-                          </span>
-                        ) : materialUnitCost && !materialUnitPrice ? (
-                          <span>Enter sell price to see margin</span>
-                        ) : null}
-                      </div>
-                    </div>
-                  )}
-                  <Input
-                    placeholder="Supplier (optional)"
-                    value={materialSupplier}
-                    onChange={(e) => setMaterialSupplier(e.target.value)}
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      placeholder="Tracking # (optional)"
-                      value={materialTrackingNumber}
-                      onChange={(e) => setMaterialTrackingNumber(e.target.value)}
-                    />
-                    <Select value={materialTrackingCarrier} onValueChange={setMaterialTrackingCarrier}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Carrier" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="auspost">Australia Post</SelectItem>
-                        <SelectItem value="startrack">StarTrack</SelectItem>
-                        <SelectItem value="tnt">TNT</SelectItem>
-                        <SelectItem value="toll">Toll</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Input
-                    placeholder="Notes (optional)"
-                    value={materialNotes}
-                    onChange={(e) => setMaterialNotes(e.target.value)}
-                  />
-                  {jobPhasesForPicker.length > 0 && (
-                    <Select value={materialPhaseId} onValueChange={setMaterialPhaseId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Phase (optional)" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">No phase</SelectItem>
-                        {jobPhasesForPicker.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.phaseCode} — {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  {!isTradie && (
-                    <div className="relative">
-                      <Input
-                        placeholder="Markup %"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={materialMarkupPercent}
-                        onChange={(e) => setMaterialMarkupPercent(e.target.value)}
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-                    </div>
-                  )}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      disabled={!materialName.trim() || addMaterialMutation.isPending}
-                      onClick={() => {
-                        addMaterialMutation.mutate({
-                          name: materialName.trim(),
-                          quantity: materialQty || '1',
-                          unit: materialUnit,
-                          unitCost: materialUnitCost || '0',
-                          unitPrice: materialUnitPrice || '0',
-                          supplier: materialSupplier || undefined,
-                          trackingNumber: materialTrackingNumber || undefined,
-                          trackingCarrier: materialTrackingCarrier || undefined,
-                          trackingUrl: materialTrackingUrl || undefined,
-                          notes: materialNotes || undefined,
-                          markupPercent: materialMarkupPercent || undefined,
-                          phaseId: materialPhaseId === '__none__' ? undefined : (materialPhaseId || undefined),
-                        });
-                      }}
-                      style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}
-                    >
-                      {addMaterialMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Add Material'}
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setShowAddMaterial(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {jobMaterials.length === 0 && !showAddMaterial && jobEquipmentList.length === 0 && (
-                <p className="text-sm text-muted-foreground py-2">No materials or equipment tracked yet. Tap Add for parts, or Equipment to assign tools and assets.</p>
-              )}
-
-              {jobMaterials.length > 0 && (
-                <div className="space-y-2">
-                  {jobMaterials.map((mat) => {
-                    const statusColors: Record<string, string> = {
-                      needed: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-                      ordered: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-                      shipped: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-                      received: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-                      installed: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
-                    };
+                  {!isTradie && jobMaterials.length > 0 && (() => {
+                    const totalCost = jobMaterials.reduce((sum, m) => sum + (parseFloat(m.totalCost) || 0), 0);
+                    const totalPrice = jobMaterials.reduce((sum, m) => { const up = parseFloat(m.unitPrice || '0'); const qty = parseFloat(m.quantity || '1'); return sum + (up > 0 ? up * qty : 0); }, 0);
+                    const profit = totalPrice - totalCost;
+                    const hasCostData = jobMaterials.some(m => parseFloat(m.unitCost || '0') > 0);
                     return (
-                      <div key={mat.id} className="p-3 rounded-lg border bg-background space-y-2">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium">{mat.name}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${statusColors[mat.status] || statusColors.needed}`}>
-                              {mat.status}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                            <span>{mat.quantity} {mat.unit}</span>
-                            {mat.supplier && <span>from {mat.supplier}</span>}
-                            {!isTradie && mat.totalCost && parseFloat(mat.totalCost) > 0 && (
-                              <span className="font-medium">Cost: ${parseFloat(mat.totalCost).toFixed(2)}</span>
-                            )}
-                            {!isTradie && mat.unitPrice && parseFloat(mat.unitPrice) > 0 && (
-                              <span className="font-medium text-green-700 dark:text-green-400">
-                                Price: ${(parseFloat(mat.unitPrice) * parseFloat(mat.quantity || '1')).toFixed(2)}
-                              </span>
-                            )}
-                            {!isTradie && mat.unitPrice && parseFloat(mat.unitPrice) > 0 && mat.unitCost && parseFloat(mat.unitCost) > 0 && (
-                              <span className={parseFloat(mat.unitPrice) > parseFloat(mat.unitCost) ? 'text-green-600 dark:text-green-400 font-medium' : 'text-red-600 dark:text-red-400 font-medium'}>
-                                {(((parseFloat(mat.unitPrice) - parseFloat(mat.unitCost)) / parseFloat(mat.unitPrice)) * 100).toFixed(0)}% margin
-                              </span>
-                            )}
-                            {!isTradie && (!mat.unitPrice || parseFloat(mat.unitPrice) === 0) && mat.markupPercent && parseFloat(mat.markupPercent) > 0 && (
-                              <span className="text-muted-foreground">+{parseFloat(mat.markupPercent).toFixed(0)}% markup</span>
-                            )}
-                          </div>
-                          {mat.trackingNumber && (() => {
-                            const trackingUrls: Record<string, string> = {
-                              auspost: `https://auspost.com.au/mypost/track/#/details/${mat.trackingNumber}`,
-                              startrack: `https://startrack.com.au/track/#/details/${mat.trackingNumber}`,
-                              tnt: `https://www.tnt.com/express/en_au/site/tracking.html?searchType=con&cons=${mat.trackingNumber}`,
-                              toll: `https://www.toll.com.au/tracking/search?q=${mat.trackingNumber}`,
-                            };
-                            const carrierLabel = mat.trackingCarrier === 'auspost' ? 'AusPost' : mat.trackingCarrier === 'startrack' ? 'StarTrack' : mat.trackingCarrier?.toUpperCase() || '';
-                            const url = mat.trackingCarrier ? trackingUrls[mat.trackingCarrier as keyof typeof trackingUrls] : null;
-                            return (
-                              <div className="flex items-center gap-1 mt-1 text-xs">
-                                <Truck className="h-3 w-3 text-muted-foreground" />
-                                {url ? (
-                                  <a
-                                    href={url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline flex items-center gap-1"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {carrierLabel} {mat.trackingNumber}
-                                    <ExternalLink className="h-2.5 w-2.5" />
-                                  </a>
-                                ) : (
-                                  <span className="text-muted-foreground">
-                                    {carrierLabel} <span className="font-mono">{mat.trackingNumber}</span>
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
-                          {mat.trackingUrl && (
-                            <div className="flex items-center gap-1 mt-1 text-xs">
-                              <Link2 className="h-3 w-3 text-muted-foreground" />
-                              <a
-                                href={mat.trackingUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline flex items-center gap-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                Tracking Link
-                                <ExternalLink className="h-2.5 w-2.5" />
-                              </a>
-                            </div>
-                          )}
-                          {mat.receiptPhotoUrl && (
-                            <div className="flex items-center gap-1 mt-1 text-xs">
-                              <Receipt className="h-3 w-3 text-muted-foreground" />
-                              {mat.receiptPhotoUrl.startsWith('/objects/') ? (
-                                <a
-                                  href={mat.receiptPhotoUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-green-600 dark:text-green-400 font-medium hover:underline flex items-center gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  View Receipt
-                                  <Eye className="h-2.5 w-2.5" />
-                                </a>
-                              ) : /^https?:\/\//i.test(mat.receiptPhotoUrl) ? (
-                                <a
-                                  href={mat.receiptPhotoUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:underline flex items-center gap-1"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  View Receipt
-                                  <ExternalLink className="h-2.5 w-2.5" />
-                                </a>
-                              ) : (
-                                <span className="text-green-600 dark:text-green-400 font-medium">Receipt attached</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <Button
-                            size="sm"
-                            variant={mat.receiptPhotoUrl ? "ghost" : "outline"}
-                            onClick={() => handleMaterialReceiptUpload(mat.id)}
-                            disabled={uploadingMaterialId === mat.id}
-                          >
-                            {uploadingMaterialId === mat.id ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Camera className="h-3.5 w-3.5 mr-1" />
-                            )}
-                            {mat.receiptPhotoUrl ? '' : 'Receipt'}
-                          </Button>
-                          <Select
-                            value={mat.status}
-                            onValueChange={(val) => handleMaterialStatusChange(mat, val)}
-                          >
-                            <SelectTrigger className="h-7 w-[90px] text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="needed">Needed</SelectItem>
-                              <SelectItem value="ordered">Ordered</SelectItem>
-                              <SelectItem value="shipped">Shipped</SelectItem>
-                              <SelectItem value="received">Received</SelectItem>
-                              <SelectItem value="installed">Installed</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {!isTradie && (
-                            <Button size="icon" variant="ghost" onClick={() => deleteMaterialMutation.mutate(mat.id)}>
-                              <Trash2 className="text-muted-foreground" />
-                            </Button>
-                          )}
-                        </div>
+                      <div className="flex items-center justify-between pt-2 border-t gap-3 flex-wrap">
+                        <span className={`text-sm font-medium ${!hasCostData ? 'text-muted-foreground' : ''}`}>Cost: {hasCostData ? `$${totalCost.toFixed(2)}` : 'Not set'}</span>
+                        {totalPrice > 0 && <span className="text-sm font-medium text-green-700 dark:text-green-400">Revenue: ${totalPrice.toFixed(2)}</span>}
+                        {totalPrice > 0 && hasCostData && <span className={`text-sm font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>Profit: ${profit.toFixed(2)} ({totalPrice > 0 ? ((profit / totalPrice) * 100).toFixed(0) : 0}%)</span>}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {!isTradie && jobMaterials.length > 0 && (() => {
-                const totalCost = jobMaterials.reduce((sum, m) => sum + (parseFloat(m.totalCost) || 0), 0);
-                const totalPrice = jobMaterials.reduce((sum, m) => {
-                  const up = parseFloat(m.unitPrice || '0');
-                  const qty = parseFloat(m.quantity || '1');
-                  return sum + (up > 0 ? up * qty : 0);
-                }, 0);
-                const profit = totalPrice - totalCost;
-                const hasCostData = jobMaterials.some(m => parseFloat(m.unitCost || '0') > 0);
-                return (
-                  <div className="flex items-center justify-between pt-2 border-t gap-3 flex-wrap">
-                    <span className={`text-sm font-medium ${!hasCostData ? 'text-muted-foreground' : ''}`}>
-                      Cost: {hasCostData ? `$${totalCost.toFixed(2)}` : 'Not set'}
-                    </span>
-                    {totalPrice > 0 && (
-                      <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                        Revenue: ${totalPrice.toFixed(2)}
-                      </span>
-                    )}
-                    {totalPrice > 0 && hasCostData && (
-                      <span className={`text-sm font-semibold ${profit >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                        Profit: ${profit.toFixed(2)} ({totalPrice > 0 ? ((profit / totalPrice) * 100).toFixed(0) : 0}%)
-                      </span>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {jobEquipmentList.length > 0 && (
-                <div className="pt-3 border-t space-y-2">
-                  <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
-                    <Wrench className="h-3.5 w-3.5" />
-                    Assigned Equipment
-                  </span>
-                  <div className="space-y-1.5">
-                    {jobEquipmentList.map((assignment) => {
-                      const eq = allEquipment.find((e: any) => e.id === assignment.equipmentId);
-                      return (
-                        <div key={assignment.id} className="flex items-center gap-2 text-sm group">
-                          <Wrench className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                          <span className="flex-1 min-w-0 truncate">{eq?.name || 'Unknown'}</span>
-                          {eq?.serialNumber && (
-                            <span className="text-xs text-muted-foreground flex-shrink-0">SN: {eq.serialNumber}</span>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="invisible group-hover:visible flex-shrink-0"
-                            onClick={(e) => { e.stopPropagation(); unassignEquipmentMutation.mutate(assignment.id); }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>}
-
-          {/* Time Tracking Widget - Show only for in_progress jobs */}
-          {job.status === 'in_progress' && (
-            <Card 
-              className="border-2"
-              style={{ borderColor: 'hsl(var(--trade) / 0.3)' }}
-              data-testid="card-time-tracking"
-            >
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--trade))' }}>
-                  <Timer className="h-5 w-5" />
-                  Time Tracking
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TimerWidget 
-                  jobId={jobId} 
-                  jobTitle={job.title}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Geofence Time Tracking Settings - Only show for owners/managers */}
-          {!isTradie && (
-            <GeofenceSettingsCard
-              jobId={jobId}
-              hasLocation={!!(job.latitude && job.longitude)}
-              geofenceEnabled={job.geofenceEnabled}
-              geofenceRadius={job.geofenceRadius}
-              geofenceAutoClockIn={job.geofenceAutoClockIn}
-              geofenceAutoClockOut={job.geofenceAutoClockOut}
-              assignedTo={job.assignedTo}
-            />
-          )}
-
-          {/* Worker Time Tracking — Per-worker breakdown with hours, rates, costs */}
-          {workerSummaries.length > 0 && (
-            <Card data-testid="card-worker-attendance">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-semibold flex items-center justify-between gap-2 flex-wrap">
-                  <span className="flex items-center gap-2">
-                    <Clock className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
-                    Time Tracking
-                  </span>
-                  {actualHoursData.hasData && (
-                    <span className="text-sm font-normal text-muted-foreground">
-                      {actualHoursData.actualHours}h total
-                      {actualHoursData.laborCost > 0 && ` · $${actualHoursData.laborCost.toFixed(2)}`}
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {workerSummaries.map((worker) => (
-                    <div key={worker.userId} className="rounded-md border p-3">
-                      <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-semibold" style={{ background: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}>
-                            {worker.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="text-sm font-semibold">{worker.name}</span>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <span>{worker.totalHours}h worked</span>
-                              {worker.breakMinutes > 0 && (
-                                <span>· {Math.round(worker.breakMinutes / 6) / 10}h break</span>
-                              )}
-                              {worker.entries.length > 1 && (
-                                <span>· {worker.entries.length} sessions</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {worker.hourlyRate > 0 && (
-                            <div className="text-xs text-muted-foreground">${worker.hourlyRate}/hr</div>
-                          )}
-                          {worker.laborCost > 0 && (
-                            <div className="text-sm font-semibold">${worker.laborCost.toFixed(2)}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        {worker.entries.map((entry) => {
-                          const hasGps = !!(entry.clockInLatitude || entry.clockOutLatitude);
-                          const isGeofence = entry.origin === 'geofence';
-                          const verified = hasGps || isGeofence;
-                          const startDate = new Date(entry.startTime);
-                          const endDate = entry.endTime ? new Date(entry.endTime) : null;
-                          const durationMins = endDate
-                            ? (entry.duration || Math.floor((endDate.getTime() - startDate.getTime()) / 60000))
-                            : Math.floor((Date.now() - startDate.getTime()) / 60000);
-                          const hours = Math.round(durationMins / 60 * 10) / 10;
-
-                          return (
-                            <div key={entry.id} className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground py-1.5 px-2 rounded bg-muted/30">
-                              <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${verified ? 'bg-green-500' : 'bg-amber-400'}`} />
-                              <span className="font-medium text-foreground">
-                                {startDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
-                              </span>
-                              <span>
-                                {startDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
-                                {endDate ? ` — ${endDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}` : ''}
-                              </span>
-                              {!endDate && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">Active</Badge>
-                              )}
-                              {hours > 0 && <span className="font-medium text-foreground">{hours}h</span>}
-                              {verified && (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1 py-0.5 rounded">
-                                  <CheckCircle className="h-2.5 w-2.5" />
-                                  GPS
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {(() => {
-                  // Category breakdown across all work entries for this job
-                  const catMap: Record<string, number> = {};
-                  const CAT_LABELS: Record<string, string> = {
-                    work: '🔨 Site Work', travel: '🚗 Driving', materials: '🛒 Supplies',
-                    admin: '🖥️ Admin', meeting: '📋 Meeting', training: '🎓 Training', other: '⚙️ Other',
-                  };
-                  const CAT_COLORS: Record<string, string> = {
-                    work: '#2563EB', travel: '#7C3AED', materials: '#D97706',
-                    admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280',
-                  };
-                  timeEntries.filter(e => !e.isBreak && e.endTime).forEach(e => {
-                    const cat = (e as any).timeCategory || 'work';
-                    const mins = (e as any).duration || Math.floor((new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / 60000);
-                    catMap[cat] = (catMap[cat] || 0) + mins;
-                  });
-                  const cats = Object.entries(catMap).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a);
-                  if (cats.length <= 1) return null;
-                  return (
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-xs font-medium text-muted-foreground mb-2">Hours by Category</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {cats.map(([cat, mins]) => (
-                          <span
-                            key={cat}
-                            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: (CAT_COLORS[cat] ?? '#6B7280') + '18', color: CAT_COLORS[cat] ?? '#6B7280' }}
-                          >
-                            {CAT_LABELS[cat] ?? cat} {Math.round(mins / 6) / 10}h
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-                {actualHoursData.laborCost > 0 && (
-                  <div className="mt-3 pt-3 border-t">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Total Labour Cost</span>
-                      <span className="text-sm font-bold">${actualHoursData.laborCost.toFixed(2)}</span>
-                    </div>
-                    {job.status === 'done' && !linkedInvoice && !isTradie && onCreateInvoice && (
-                      <Button
-                        className="w-full mt-2"
-                        variant="default"
-                        onClick={() => onCreateInvoice(jobId)}
-                        data-testid="button-invoice-from-time"
-                      >
-                        <Receipt className="h-4 w-4 mr-2" />
-                        Create Invoice from Time Tracking
-                      </Button>
-                    )}
-                    {job.status === 'in_progress' && !isTradie && actualHoursData.laborCost > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Labour lines will be added automatically when you create an invoice after the job is completed.
-                      </p>
-                    )}
-                  </div>
-                )}
-                {timeEntries.some(e => e.clockInLatitude || e.origin === 'geofence') && (
-                  <div className="mt-3 pt-2 border-t flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
-                    <Shield className="h-3.5 w-3.5" />
-                    GPS-verified attendance recorded
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* AI Photo Analysis - Show when photos exist and user has AI access */}
-          {canUseAIFeatures && jobPhotos.length > 0 && (
-            <AIPhotoAnalysis
-              jobId={jobId}
-              photoCount={jobPhotos.length}
-              existingNotes={jobNotesData.length > 0 ? jobNotesData.map(n => n.content).join('\n') : job.notes}
-            />
-          )}
-
-          {(job.status === 'pending' || job.status === 'scheduled') && jobPhotos.length === 0 && (
-            <Card className="border-2 border-dashed" data-testid="card-before-photos-prompt">
-              <CardContent className="py-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10">
-                    <Camera className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Take Before Photos</p>
-                    <p className="text-xs text-muted-foreground">Capture the site before starting — these will appear on your quote and invoice</p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowBeforePhotoPrompt(true)}
-                  data-testid="button-add-before-photos"
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Add Before Photos
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Follow-up Tasks - spawned by form task rules, plus manual */}
-          <JobTasksSection jobId={jobId} />
-
-          {/* Checklist - simple tick-off items visible to office staff */}
-          <JobChecklistSection
-            jobId={jobId}
-            readOnly={job.status === 'invoiced'}
-          />
-
-          <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
-
-          {/* Site Diary — daily record of who was on site, work done, and issues */}
-          <SiteDiarySection
-            jobId={jobId}
-            canEdit={!isTradie || job.status !== 'invoiced'}
-            currentUserId={currentUser?.id}
-          />
-
-          {/* Project Document Register — drawings, specs, RFIs, revision tracking — project only */}
-          {isProject && (
-            <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />
-          )}
-
-          {/* Uploaded Documents - external quotes, invoices, PDFs, Word docs, etc. */}
-          <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
-
-          {/* Job Timeline */}
-          <Card data-testid="job-activity-feed">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <History className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                Job Timeline
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {activitiesLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : jobActivities.length === 0 ? (
-                <div className="text-center py-6">
-                  <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
-                    style={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
-                  >
-                    <History className="h-6 w-6 text-muted-foreground/40" />
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-1">No activity yet</p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Status changes, emails sent, and other events will appear here
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  {(() => {
-                    const displayedActivities = showAllActivities ? jobActivities : jobActivities.slice(0, 6);
-                    const dateGroups = groupActivitiesByDate(displayedActivities);
-                    return (
-                      <>
-                        <div className="relative">
-                          <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border" />
-
-                          {dateGroups.map((group, groupIndex) => (
-                            <div key={group.date}>
-                              <div className={`relative flex items-center gap-3 mb-3 ${groupIndex > 0 ? 'mt-4' : ''}`}>
-                                <div className="w-8 h-5 bg-card z-10 flex items-center justify-center">
-                                  <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
-                                </div>
-                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                  {group.label}
-                                </span>
-                              </div>
-
-                              {group.activities.map((activity) => {
-                                const Icon = activityIcons[activity.type] || Briefcase;
-                                const colors = activityColors[activity.type] || { bg: 'hsl(var(--muted) / 0.5)', icon: 'hsl(var(--muted-foreground))' };
-
-                                return (
-                                  <div
-                                    key={activity.id}
-                                    className="relative flex gap-3 pb-4 last:pb-0"
-                                    data-testid={`activity-item-${activity.id}`}
-                                  >
-                                    <div className="relative z-10 shrink-0">
-                                      <div
-                                        className="w-8 h-8 rounded-full flex items-center justify-center bg-card border-2"
-                                        style={{ borderColor: colors.bg }}
-                                      >
-                                        <Icon className="h-3.5 w-3.5" style={{ color: colors.icon }} />
-                                      </div>
-                                    </div>
-
-                                    <div className="flex-1 min-w-0 pt-1">
-                                      <p className="text-sm font-medium">{activity.title}</p>
-                                      {activity.description && (
-                                        <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
-                                      )}
-                                      <p className="text-[11px] text-muted-foreground/70 mt-1">
-                                        {formatHistoryDate(activity.timestamp)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ))}
-                        </div>
-                        {jobActivities.length > 6 && (
-                          <div className="pt-2">
-                            <Button
-                              variant="ghost"
-                              className="w-full text-xs"
-                              onClick={() => setShowAllActivities(!showAllActivities)}
-                            >
-                              {showAllActivities ? 'Show less' : `View all (${jobActivities.length})`}
-                            </Button>
-                          </div>
-                        )}
-                      </>
                     );
                   })()}
+                </CardContent>
+              </Card>
+              {/* Defects (project only) */}
+              {isProject && <DefectsSection jobId={jobId} isTradie={isTradie} teamMembers={teamMembers} />}
+            </TabsContent>
+
+            {/* ── DOCS & SAFETY TAB ── */}
+            <TabsContent value="docs" className="mt-0 space-y-6">
+              {isProject && <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />}
+              <SafetyFormsSection jobId={jobId} jobStatus={job.status} jobTitle={job.title} jobAddress={job.address} />
+              <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
+              {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && <JobSignature jobId={jobId} />}
+            </TabsContent>
+
+            {/* ── CHAT TAB ── */}
+            <TabsContent value="chat" className="mt-0">
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: 'hsl(var(--trade) / 0.1)' }}>
+                  <MessageSquare className="h-8 w-8" style={{ color: 'hsl(var(--trade))' }} />
                 </div>
+                <p className="text-base font-semibold mb-2">Job Chat</p>
+                <p className="text-sm text-muted-foreground mb-6 max-w-[280px]">Discuss this job with your team in real time.</p>
+                <Button onClick={() => navigate(`/chat?job=${jobId}`)} style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}>
+                  <MessageSquare className="h-4 w-4 mr-2" />Open Chat
+                </Button>
+              </div>
+            </TabsContent>
+
+          </div>{/* end main column */}
+
+          {/* ═══ PERSISTENT SIDEBAR ═══ */}
+          <div className="lg:col-span-4">
+            <div className="space-y-4 lg:sticky lg:top-20">
+
+              {/* Client card */}
+              {(client || job.address) && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <User className="h-3.5 w-3.5" />Client
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-3">
+                    {client && (
+                      <div>
+                        <button className="text-sm font-semibold hover:underline text-left" onClick={() => job.clientId && onViewClient?.(job.clientId)}>{client.name}</button>
+                        <div className="flex flex-col gap-1 mt-2">
+                          {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"><Phone className="h-3 w-3" />{client.phone}</a>}
+                          {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"><Mail className="h-3 w-3" />{client.email}</a>}
+                        </div>
+                      </div>
+                    )}
+                    {job.address && (
+                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{job.address}</span>
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
 
-        </div>
-      </div>
+              {/* At a glance */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                    <Briefcase className="h-3.5 w-3.5" />At a Glance
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-2">
+                  {job.scheduledAt && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Scheduled</span>
+                      <span className="font-medium">{format(new Date(job.scheduledAt), 'MMM d, h:mm a')}</span>
+                    </div>
+                  )}
+                  {activeAssignments.length > 0 && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Team</span>
+                      <div className="flex items-center gap-1">
+                        {activeAssignments.slice(0, 3).map((a) => {
+                          const name = a.workerDisplayNameSnapshot || a.displayName || 'W';
+                          const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                          return <div key={a.id} className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--trade))' }} title={name}>{initials}</div>;
+                        })}
+                        {activeAssignments.length > 3 && <span className="text-xs text-muted-foreground ml-1">+{activeAssignments.length - 3}</span>}
+                      </div>
+                    </div>
+                  )}
+                  {!isTradie && actualHoursData.hasData && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />Time</span>
+                      <span className="font-medium">{actualHoursData.actualHours}h tracked</span>
+                    </div>
+                  )}
+                  {!isTradie && linkedInvoice && (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground flex items-center gap-1.5"><Receipt className="h-3.5 w-3.5" />Invoice</span>
+                      <span className={`font-semibold ${(linkedInvoice.status === 'sent' || linkedInvoice.status === 'overdue') ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
+                        ${parseFloat(linkedInvoice.total as string || '0').toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
+              {/* Quick links */}
+              {!isTradie && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Link2 className="h-3.5 w-3.5" />Quick Links
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+                    {job.clientId && (
+                      <Button variant="outline" size="sm" className="w-full justify-start gap-2" onClick={() => onViewClient?.(job.clientId!)}>
+                        <User className="h-4 w-4 text-muted-foreground" /><span className="flex-1 text-left truncate">{client?.name || 'View Client'}</span><ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
+                      </Button>
+                    )}
+                    <LinkedDocumentsCard
+                      linkedQuote={linkedQuote}
+                      linkedInvoice={linkedInvoice}
+                      linkedReceipts={linkedReceipts}
+                      jobStatus={job.status}
+                      onViewQuote={(id) => navigate(`/quotes/${id}`)}
+                      onViewInvoice={(id) => navigate(`/invoices/${id}`)}
+                      onViewReceipt={(id) => navigate(`/receipts/${id}`)}
+                      onCreateQuote={() => onCreateQuote?.(jobId)}
+                      onCreateInvoice={() => onCreateInvoice?.(jobId)}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Client portal */}
+              {job.clientId && (
+                <Card data-testid="card-client-portal">
+                  <CardContent className="py-3">
+                    {portalUrl ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5"><Globe className="h-3.5 w-3.5" />Client Portal</span>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => setShowPortalControls(!showPortalControls)} title="Portal settings"><Eye className="h-3.5 w-3.5" /></Button>
+                            <Button variant="ghost" size="icon" onClick={() => window.open(portalUrl, '_blank')} title="Preview as client"><ExternalLink className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 p-2 rounded-md bg-muted/50 border cursor-pointer group" onClick={async () => { try { await navigator.clipboard.writeText(portalUrl); toast({ title: "Copied", description: "Portal link copied to clipboard" }); } catch { toast({ title: "Copied" }); } }}>
+                          <span className="text-xs text-muted-foreground truncate flex-1 select-all">{portalUrl}</span>
+                          <Copy className="h-3 w-3 text-muted-foreground shrink-0 opacity-50 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={async () => { try { await navigator.clipboard.writeText(portalUrl); toast({ title: "Copied" }); } catch {} }}><Copy className="h-3 w-3" />Copy</Button>
+                          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={async () => { try { await apiRequest("POST", `/api/jobs/${jobId}/share-portal-sms`); toast({ title: "SMS Sent" }); } catch (err: any) { toast({ title: "SMS Failed", description: err.message, variant: "destructive" }); } }} disabled={!client?.phone}><Phone className="h-3 w-3" />SMS</Button>
+                          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={async () => { try { await apiRequest("POST", `/api/jobs/${jobId}/share-portal-email`); toast({ title: "Email Sent" }); } catch (err: any) { toast({ title: "Email Failed", description: err.message, variant: "destructive" }); } }} disabled={!client?.email}><Mail className="h-3 w-3" />Email</Button>
+                        </div>
+                        {showPortalControls && (
+                          <div className="space-y-3 pt-2 border-t">
+                            <span className="text-xs font-medium text-muted-foreground">Client can see:</span>
+                            <div className="space-y-2">
+                              {([
+                                { key: 'showTimeline' as const, label: 'Progress Timeline', icon: Clock },
+                                { key: 'showPhotos' as const, label: 'Job Photos', icon: Camera },
+                                { key: 'showChecklist' as const, label: 'Checklist', icon: ListChecks },
+                                { key: 'showActivityFeed' as const, label: 'Activity Feed', icon: Activity },
+                                { key: 'showFinancialsOnPortal' as const, label: 'Schedule of Values', icon: DollarSign },
+                                { key: 'showProgrammeOnPortal' as const, label: 'Project Programme', icon: BarChart2 },
+                              ] as const).map(({ key, label, icon: Icon }) => (
+                                <div key={key} className="flex items-center justify-between gap-2">
+                                  <label className="text-xs flex items-center gap-1.5 cursor-pointer"><Icon className="h-3 w-3 text-muted-foreground" />{label}</label>
+                                  <Switch checked={portalSettings[key]} onCheckedChange={(checked) => { setPortalSettings(prev => ({ ...prev, [key]: checked })); portalSettingsMutation.mutate({ [key]: checked }); }} disabled={portalSettingsMutation.isPending} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Button variant="outline" size="sm" className="w-full gap-2 text-xs" onClick={() => portalLinkMutation.mutate()} disabled={portalLinkMutation.isPending}>
+                        {portalLinkMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Globe className="h-3.5 w-3.5" />}Share Client Portal
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Payment collection */}
+              {linkedInvoice && !isTradie && (linkedInvoice.status === 'sent' || linkedInvoice.status === 'overdue' || linkedInvoice.status === 'partial') && (
+                <Card data-testid="card-collect-payment">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />Collect Payment
+                      </CardTitle>
+                      <Badge variant="outline" className="text-xs">${parseFloat(linkedInvoice.total as string || '0').toFixed(2)} outstanding</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground mb-4">Invoice {linkedInvoice.invoiceNumber} is awaiting payment</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="default" className="flex items-center justify-center gap-2" style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }} onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}`)} data-testid="button-tap-to-pay-job"><Smartphone className="h-4 w-4" />Tap to Pay</Button>
+                      <Button variant="outline" className="flex items-center justify-center gap-2" onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}&method=qr`)} data-testid="button-qr-code-job"><QrCode className="h-4 w-4" />QR Code</Button>
+                      <Button variant="outline" className="flex items-center justify-center gap-2" onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}&jobId=${jobId}&method=link`)} data-testid="button-send-link-job"><Link2 className="h-4 w-4" />Send Link</Button>
+                      <Button variant="outline" className="flex items-center justify-center gap-2" onClick={() => navigate(`/invoices/${linkedInvoice.id}?action=recordPayment`)} data-testid="button-record-cash-job"><DollarSign className="h-4 w-4" />Record Cash</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              {(job.status === 'done' || job.status === 'in_progress') && linkedQuote && linkedQuote.status === 'accepted' && !linkedInvoice && (
+                <Card data-testid="card-quick-collect">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2"><CreditCard className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />Collect Payment Now</CardTitle>
+                      <Badge variant="secondary" className="text-xs">Based on quote</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-center justify-between mb-4 p-3 rounded-lg bg-background border">
+                      <span className="text-sm text-muted-foreground">Quote total</span>
+                      <span className="text-lg font-bold" style={{ color: 'hsl(var(--trade))' }}>${parseFloat(linkedQuote.total as string || '0').toFixed(2)}</span>
+                    </div>
+                    <Button className="w-full" style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }} onClick={() => setShowQuickCollect(true)} data-testid="button-quick-collect-open">
+                      <CreditCard className="h-4 w-4 mr-2" />Quick Collect Payment
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Activity feed */}
+              <Card data-testid="job-activity-feed">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <History className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />Activity
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {activitiesLoading ? (
+                    <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+                  ) : jobActivities.length === 0 ? (
+                    <div className="text-center py-4">
+                      <History className="h-6 w-6 text-muted-foreground/40 mx-auto mb-2" />
+                      <p className="text-xs text-muted-foreground">No activity yet</p>
+                      <p className="text-xs text-muted-foreground/70">Status changes and events appear here</p>
+                    </div>
+                  ) : (
+                    <div>
+                      {(() => {
+                        const displayedActivities = showAllActivities ? jobActivities : jobActivities.slice(0, 6);
+                        const dateGroups = groupActivitiesByDate(displayedActivities);
+                        return (
+                          <>
+                            <div className="relative">
+                              <div className="absolute left-[15px] top-0 bottom-0 w-px bg-border" />
+                              {dateGroups.map((group, groupIndex) => (
+                                <div key={group.date}>
+                                  <div className={`relative flex items-center gap-3 mb-3 ${groupIndex > 0 ? 'mt-4' : ''}`}>
+                                    <div className="w-8 h-5 bg-card z-10 flex items-center justify-center">
+                                      <div className="w-2 h-2 rounded-full bg-muted-foreground/30" />
+                                    </div>
+                                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{group.label}</span>
+                                  </div>
+                                  {group.activities.map((activity) => {
+                                    const Icon = activityIcons[activity.type] || Briefcase;
+                                    const colors = activityColors[activity.type] || { bg: 'hsl(var(--muted) / 0.5)', icon: 'hsl(var(--muted-foreground))' };
+                                    return (
+                                      <div key={activity.id} className="relative flex gap-3 pb-4 last:pb-0" data-testid={`activity-item-${activity.id}`}>
+                                        <div className="relative z-10 shrink-0">
+                                          <div className="w-8 h-8 rounded-full flex items-center justify-center bg-card border-2" style={{ borderColor: colors.bg }}>
+                                            <Icon className="h-3.5 w-3.5" style={{ color: colors.icon }} />
+                                          </div>
+                                        </div>
+                                        <div className="flex-1 min-w-0 pt-1">
+                                          <p className="text-sm font-medium">{activity.title}</p>
+                                          {activity.description && <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>}
+                                          <p className="text-[11px] text-muted-foreground/70 mt-1">{formatHistoryDate(activity.timestamp)}</p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                            {jobActivities.length > 6 && (
+                              <div className="pt-2">
+                                <Button variant="ghost" className="w-full text-xs" onClick={() => setShowAllActivities(!showAllActivities)}>
+                                  {showAllActivities ? 'Show less' : `View all (${jobActivities.length})`}
+                                </Button>
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+            </div>
+          </div>{/* end sidebar */}
+
+        </div>{/* end grid */}
+      </Tabs>
 
       {/* Email Template Editor Dialog */}
       {editingAction && (

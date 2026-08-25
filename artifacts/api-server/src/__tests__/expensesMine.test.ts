@@ -142,8 +142,9 @@ function buildApp() {
 /** Returns the tagged object that eq() produced for the WHERE clause. */
 function wherePredicateArg(): { __eqCol: unknown; __eqVal: unknown } | undefined {
   // mockWhere is called once with the result of eq(submittedByUserId, userId)
-  if (!mockWhere.mock.calls.length) return undefined;
-  return mockWhere.mock.calls[0][0] as { __eqCol: unknown; __eqVal: unknown };
+  const calls = mockWhere.mock.calls as unknown as Array<[unknown]>;
+  if (!calls.length) return undefined;
+  return calls[0][0] as { __eqCol: unknown; __eqVal: unknown };
 }
 
 const WORKER_A_ID = "worker-a";
