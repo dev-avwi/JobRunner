@@ -11,6 +11,10 @@ import { PageShell } from "@/components/ui/page-shell";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useTheme } from "@/components/ThemeProvider";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Popover,
   PopoverContent,
@@ -31,6 +35,8 @@ import {
   Calendar as CalendarIcon,
   Clock,
   MapPin,
+  Map as MapIcon,
+  Navigation,
   Users,
   Briefcase,
   Plus,
@@ -50,6 +56,8 @@ import {
   CalendarDays,
   Columns3,
   Loader2,
+  RotateCcw,
+  Locate,
   X,
   Zap,
   Timer,
@@ -95,6 +103,8 @@ interface DispatchJob {
   scheduledTime?: string;
   estimatedDuration?: number;
   address?: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
   clientId: string;
   priority?: string;
   jobType?: string;
@@ -113,6 +123,12 @@ interface DispatchAssignment {
   memberLastName?: string;
   memberEmail?: string;
   isActive: boolean;
+  latestPing?: {
+    latitude: number;
+    longitude: number;
+    accuracyMeters?: number;
+    timestamp?: string;
+  } | null;
 }
 
 interface TeamMember {
@@ -1342,6 +1358,7 @@ function ResourceSidebar({
   allDayJobs,
   workerStates,
   embedded,
+  defaultTab,
 }: {
   workers: TeamMember[];
   resources?: DispatchResources;
@@ -1357,8 +1374,9 @@ function ResourceSidebar({
   workerStates?: WorkerState[];
   /** When true, suppresses the outer border/width/bg so the parent controls layout */
   embedded?: boolean;
+  defaultTab?: "workers" | "equipment" | "materials" | "capacity";
 }) {
-  const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">("workers");
+  const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">(defaultTab ?? "workers");
 
   const workerStateMap = useMemo(() => {
     const m = new Map<string, WorkerState>();
@@ -1597,9 +1615,8 @@ function ResourceSidebar({
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
-
-type ViewMode = "day" | "week" | "kanban";
+const MAP_TILE_LIGHT = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+type ViewMode = "day" | "week" | "kanban" | "map";
 
 export default function AdvancedDispatch() {
   const [, navigate] = useLocation();
@@ -1750,11 +1767,11 @@ export default function AdvancedDispatch() {
 
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
-    if (view === "day") setCurrentDate(d => subDays(d, 1));
+    if (view === "day" || view === "map") setCurrentDate(d => subDays(d, 1));
     else if (view === "week") setCurrentDate(d => subWeeks(d, 1));
   };
   const navNext = () => {
-    if (view === "day") setCurrentDate(d => addDays(d, 1));
+    if (view === "day" || view === "map") setCurrentDate(d => addDays(d, 1));
     else if (view === "week") setCurrentDate(d => addWeeks(d, 1));
   };
   const navToday = () => setCurrentDate(new Date());
@@ -1787,7 +1804,7 @@ export default function AdvancedDispatch() {
 
   // ── Period label ──────────────────────────────────────────────
   const periodLabel = useMemo(() => {
-    if (view === "day") return format(currentDate, "EEEE, d MMMM yyyy");
+    if (view === "day" || view === "map") return format(currentDate, "EEEE, d MMMM yyyy");
     if (view === "week") return `${format(weekStart, "d MMM")} – ${format(addDays(weekStart, 6), "d MMM yyyy")}`;
     return "All jobs";
   }, [view, currentDate, weekStart]);
@@ -1837,6 +1854,7 @@ export default function AdvancedDispatch() {
     { key: "day",    label: "Day",    icon: CalendarDays },
     { key: "week",   label: "Week",   icon: CalendarIcon },
     { key: "kanban", label: "Kanban", icon: Columns3 },
+    { key: "map",    label: "Map",    icon: MapIcon },
   ];
 
   return (
@@ -1860,27 +1878,33 @@ export default function AdvancedDispatch() {
             ))}
           </div>
 
-          {/* Date navigation (not shown for kanban) */}
+          {/* Date navigation (day, week, and map views) */}
           {view !== "kanban" && (
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={navPrev}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-7 text-xs font-medium px-2 gap-1.5">
-                    <CalendarIcon className="h-3.5 w-3.5" />
-                    {periodLabel}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={currentDate}
-                    onSelect={d => { if (d) { setCurrentDate(d); setCalendarOpen(false); } }}
-                  />
-                </PopoverContent>
-              </Popover>
+              {view !== "map" ? (
+                <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs font-medium px-2 gap-1.5">
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {periodLabel}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={d => { if (d) { setCurrentDate(d); setCalendarOpen(false); } }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <Button variant="ghost" size="sm" className="h-7 text-xs font-medium px-2">
+                  {periodLabel}
+                </Button>
+              )}
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={navNext}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -2060,6 +2084,15 @@ export default function AdvancedDispatch() {
             onCreateJob={(mid, date) => handleCreateJob(mid, date ?? undefined)}
             onReschedule={handleWeekReschedule}
           />
+        ) : view === "map" ? (
+          <MapView
+            jobs={dispatchJobs}
+            workers={workers}
+            date={currentDate}
+            selectedWorkerIds={selectedWorkerIds}
+            onJobClick={handleJobClick}
+            onWorkerToggle={handleWorkerToggle}
+          />
         ) : (
           <KanbanView
             jobs={filteredJobs}
@@ -2103,7 +2136,7 @@ export default function AdvancedDispatch() {
           </div>
         )}
 
-        {/* Sidebar for week / kanban views */}
+        {/* Sidebar for week / kanban / map views */}
         {showSidebar && view !== "day" && (
           <ResourceSidebar
             workers={workers}
@@ -2116,11 +2149,23 @@ export default function AdvancedDispatch() {
             onClose={() => setShowSidebar(false)}
             allDayJobs={allDayJobs}
             workerStates={workerStates}
+            defaultTab={view === "map" ? "capacity" : undefined}
           />
         )}
       </div>
     </PageShell>
   );
+}
+
+function createWorkerMarkerIcon(initials: string, color?: string) {
+  const bg = color || "#22c55e";
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:36px;height:36px;border-radius:50%;background:${bg};border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,sans-serif;animation:adpulse 2s ease-out infinite;"><span style="color:white;font-size:11px;font-weight:700;letter-spacing:0.5px;">${initials}</span></div><style>@keyframes adpulse{0%{box-shadow:0 0 0 0 ${bg}60;}70%{box-shadow:0 0 0 8px ${bg}00;}100%{box-shadow:0 0 0 0 ${bg}00;}}</style>`,
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -18],
+  });
 }
 
 interface LeaveRecord {
@@ -2148,4 +2193,327 @@ function workerLeaveLabel(leaveRecords: LeaveRecord[], memberId: string, date: D
   if (reason === "personal") return "Personal Leave";
   if (reason === "public_holiday") return "Public Holiday";
   return "On Leave";
+}
+
+const MAP_TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+/** Hook: fit map to all visible markers */
+function FitBounds({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 13);
+    } else {
+      map.fitBounds(L.latLngBounds(positions), { padding: [48, 48] });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
+const MAP_TILE_DARK  = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+
+type MapStatusFilter = "all" | "scheduled" | "active" | "completed";
+
+function createJobMarkerIcon(status: string) {
+  const colors: Record<string, string> = {
+    scheduled: "#3b82f6",
+    assigned:  "#3b82f6",
+    pending:   "#f59e0b",
+    en_route:  "#f59e0b",
+    arrived:   "#8b5cf6",
+    in_progress: "#f97316",
+    done:      "#22c55e",
+    completed: "#22c55e",
+    invoiced:  "#a855f7",
+    cancelled: "#94a3b8",
+  };
+  const color = colors[status?.toLowerCase()] ?? "#3b82f6";
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.35);display:flex;align-items:center;justify-content:center;"><div style="transform:rotate(45deg);color:white;font-size:13px;font-weight:700;"><svg width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5'><path d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z'/><circle cx='12' cy='10' r='3'/></svg></div></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
+  });
+}
+
+function MapView({
+  jobs,
+  workers,
+  date,
+  selectedWorkerIds,
+  onJobClick,
+  onWorkerToggle,
+}: {
+  jobs: DispatchJob[];
+  workers: TeamMember[];
+  date: Date;
+  selectedWorkerIds: string[];
+  onJobClick: (id: string) => void;
+  onWorkerToggle: (id: string) => void;
+}) {
+  const [statusFilter, setStatusFilter] = useState<MapStatusFilter>("all");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const { toast } = useToast();
+
+  // Filter jobs for the selected date
+  const dateJobs = useMemo(() => jobs.filter(j => jobOnDate(j, date)), [jobs, date]);
+
+  // Apply worker filter if any selected
+  const workerFilteredJobs = useMemo(() => {
+    if (selectedWorkerIds.length === 0) return dateJobs;
+    return dateJobs.filter(j => {
+      const wid = j.assignedTo ?? primaryAssignment(j)?.memberId;
+      return !!wid && selectedWorkerIds.includes(wid);
+    });
+  }, [dateJobs, selectedWorkerIds]);
+
+  // Apply status filter
+  const visibleJobs = useMemo(() => {
+    if (statusFilter === "all") return workerFilteredJobs;
+    if (statusFilter === "scheduled") return workerFilteredJobs.filter(j => ["pending", "scheduled", "assigned"].includes(j.status?.toLowerCase() ?? ""));
+    if (statusFilter === "active") return workerFilteredJobs.filter(j => ["en_route", "arrived", "in_progress"].includes(j.status?.toLowerCase() ?? ""));
+    if (statusFilter === "completed") return workerFilteredJobs.filter(j => ["done", "completed", "invoiced", "cancelled"].includes(j.status?.toLowerCase() ?? ""));
+    return workerFilteredJobs;
+  }, [workerFilteredJobs, statusFilter]);
+
+  // Build job markers
+  const jobMarkers = useMemo(() => visibleJobs.filter(j => {
+    const lat = Number(j.latitude);
+    const lng = Number(j.longitude);
+    return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+  }).map(j => ({
+    position: [Number(j.latitude), Number(j.longitude)] as [number, number],
+    job: j,
+  })), [visibleJobs]);
+
+  // Build worker markers (en-route or on-job workers with GPS pings)
+  const workerMarkers = useMemo(() => {
+    const markers: { position: [number, number]; assignment: DispatchAssignment; jobTitle: string; worker?: TeamMember }[] = [];
+    const workerMap = new Map(workers.map(w => [w.memberId || w.id, w]));
+    jobs.forEach(job => {
+      (job.assignments ?? []).forEach(asgn => {
+        if (!asgn.latestPing) return;
+        if (!["en_route", "arrived", "working"].includes(asgn.assignmentStatus)) return;
+        if (selectedWorkerIds.length > 0 && asgn.memberId && !selectedWorkerIds.includes(asgn.memberId)) return;
+        const lat = Number(asgn.latestPing.latitude);
+        const lng = Number(asgn.latestPing.longitude);
+        if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+          markers.push({
+            position: [lat, lng],
+            assignment: asgn,
+            jobTitle: job.title,
+            worker: asgn.memberId ? workerMap.get(asgn.memberId) : undefined,
+          });
+        }
+      });
+    });
+    return markers;
+  }, [jobs, workers, selectedWorkerIds]);
+
+  const allPositions: [number, number][] = [...jobMarkers.map(m => m.position), ...workerMarkers.map(m => m.position)];
+
+  const mapCenter: [number, number] = useMemo(() => {
+    if (allPositions.length === 0) return [-25.27, 133.77]; // centre of Australia as default
+    const avgLat = allPositions.reduce((s, p) => s + p[0], 0) / allPositions.length;
+    const avgLng = allPositions.reduce((s, p) => s + p[1], 0) / allPositions.length;
+    return [avgLat, avgLng];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshKey]);
+
+  const noCoords = jobMarkers.length === 0 && workerMarkers.length === 0;
+
+  const handleLocateMe = () => {
+    if (!navigator.geolocation) {
+      toast({ title: "Geolocation not supported", variant: "destructive" });
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      () => { /* map will re-center via locate() */ },
+      () => { toast({ title: "Could not get your location", variant: "destructive" }); },
+    );
+  };
+
+  const STATUS_FILTER_OPTIONS: { key: MapStatusFilter; label: string }[] = [
+    { key: "all",       label: "All" },
+    { key: "scheduled", label: "Scheduled" },
+    { key: "active",    label: "Active" },
+    { key: "completed", label: "Completed" },
+  ];
+
+  return (
+    <div className="flex flex-1 flex-col overflow-hidden">
+      {/* Map toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/20 flex-wrap">
+        {/* Status filter */}
+        <div className="flex items-center gap-0.5 rounded border bg-background p-0.5">
+          {STATUS_FILTER_OPTIONS.map(opt => (
+            <button
+              key={opt.key}
+              onClick={() => setStatusFilter(opt.key)}
+              className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors
+                ${statusFilter === opt.key ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <MapPin className="h-3.5 w-3.5" />
+          <span>{jobMarkers.length} job{jobMarkers.length !== 1 ? "s" : ""}</span>
+          {workerMarkers.length > 0 && (
+            <>
+              <Navigation className="h-3.5 w-3.5 ml-1" />
+              <span>{workerMarkers.length} worker{workerMarkers.length !== 1 ? "s" : ""} live</span>
+            </>
+          )}
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Refresh */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1.5"
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
+            setRefreshKey(k => k + 1);
+            toast({ title: "Refreshing positions..." });
+          }}
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Refresh
+        </Button>
+
+        {/* Locate me */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 text-xs gap-1.5"
+          onClick={handleLocateMe}
+        >
+          <Locate className="h-3.5 w-3.5" />
+          Locate me
+        </Button>
+      </div>
+
+      {/* Map */}
+      <div className="flex-1 relative overflow-hidden">
+        {noCoords ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground gap-3">
+            <MapIcon className="h-12 w-12 opacity-20" />
+            <div className="text-center">
+              <p className="text-sm font-medium">No job locations to show</p>
+              <p className="text-xs mt-1 opacity-70">Add addresses with coordinates to jobs to see them here.</p>
+            </div>
+          </div>
+        ) : null}
+        <MapContainer
+          key={refreshKey}
+          center={mapCenter}
+          zoom={allPositions.length > 0 ? 11 : 4}
+          className="h-full w-full"
+          scrollWheelZoom
+          zoomControl
+          style={{ height: "100%", width: "100%" }}
+        >
+          <ThemeAwareTiles />
+          {allPositions.length > 0 && <FitBounds positions={allPositions} />}
+
+          {/* Job markers */}
+          {jobMarkers.map(({ position, job }) => {
+            const asgn = primaryAssignment(job);
+            const assignedWorker = asgn?.memberId
+              ? workers.find(w => (w.memberId || w.id) === asgn.memberId)
+              : undefined;
+            const sc = getStatusColor(job.status);
+            return (
+              <Marker key={`job-${job.id}`} position={position} icon={createJobMarkerIcon(job.status)}>
+                <Popup>
+                  <div style={{ minWidth: 200, padding: "2px 0" }}>
+                    <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 3px 0", color: "#111" }}>{job.title}</p>
+                    {job.client?.name && (
+                      <p style={{ fontSize: 12, color: "#555", margin: "0 0 2px 0" }}>{job.client.name}</p>
+                    )}
+                    {job.address && (
+                      <p style={{ fontSize: 11, color: "#888", margin: "0 0 5px 0" }}>{job.address}</p>
+                    )}
+                    {job.scheduledAt && (
+                      <p style={{ fontSize: 11, color: "#888", margin: "0 0 5px 0" }}>
+                        {format(parseISO(job.scheduledAt), "d MMM")} {formatJobTime(job.scheduledTime, job.scheduledAt)}
+                      </p>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#f0f0f0", textTransform: "capitalize" }}>
+                        {job.status.replace(/_/g, " ")}
+                      </span>
+                      {assignedWorker && (
+                        <span style={{ fontSize: 11, color: "#666" }}>
+                          {memberName(assignedWorker)}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onJobClick(job.id)}
+                      style={{ marginTop: 8, fontSize: 11, color: "#3b82f6", cursor: "pointer", background: "none", border: "none", padding: 0, textDecoration: "underline" }}
+                    >
+                      View job
+                    </button>
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+
+          {/* Worker markers */}
+          {workerMarkers.map(({ position, assignment, jobTitle, worker }, idx) => {
+            const initials = (
+              (assignment.memberFirstName?.[0] ?? "") +
+              (assignment.memberLastName?.[0] ?? "")
+            ).toUpperCase() || "?";
+            const color = worker?.themeColor;
+            const displayName = worker ? memberName(worker) : [assignment.memberFirstName, assignment.memberLastName].filter(Boolean).join(" ") || assignment.memberEmail || "Worker";
+            const stateLabel = assignment.assignmentStatus === "en_route" ? "En route" : assignment.assignmentStatus === "arrived" ? "Arrived" : "Working";
+            return (
+              <Marker key={`worker-${assignment.id}-${idx}`} position={position} icon={createWorkerMarkerIcon(initials, color)}>
+                <Popup>
+                  <div style={{ minWidth: 200, padding: "2px 0" }}>
+                    <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 3px 0", color: "#111" }}>{displayName}</p>
+                    <p style={{ fontSize: 12, color: "#555", margin: "0 0 5px 0" }}>
+                      {stateLabel} — {jobTitle}
+                    </p>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4, background: "#dcfce7", color: "#15803d" }}>
+                      {stateLabel}
+                    </span>
+                    {assignment.latestPing?.timestamp && (
+                      <p style={{ fontSize: 10, color: "#aaa", marginTop: 6 }}>
+                        Updated {format(new Date(assignment.latestPing.timestamp), "h:mm a")}
+                      </p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </div>
+    </div>
+  );
+}
+
+function ThemeAwareTiles() {
+  const { theme } = useTheme();
+  const map = useMap();
+  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const tileUrl = isDark ? MAP_TILE_DARK : MAP_TILE_LIGHT;
+  useEffect(() => {
+    const layer = L.tileLayer(tileUrl, { attribution: MAP_TILE_ATTR });
+    layer.addTo(map);
+    return () => { map.removeLayer(layer); };
+  }, [tileUrl, map]);
+  return null;
 }
