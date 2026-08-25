@@ -61,6 +61,8 @@ import {
   ArrowRight,
   CalendarDays,
   ExternalLink,
+  Pencil,
+  Save,
   Maximize2,
   Minimize2,
   PanelRightClose,
@@ -93,6 +95,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   format,
   addDays,
@@ -1216,6 +1219,11 @@ export default function DispatchBoard() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
   const [phaseDetailOpen, setPhaseDetailOpen] = useState(false);
+  const [phaseDetailEditMode, setPhaseDetailEditMode] = useState(false);
+  const [editScheduledStart, setEditScheduledStart] = useState('');
+  const [editScheduledEnd, setEditScheduledEnd] = useState('');
+  const [editBookedHours, setEditBookedHours] = useState('');
+  const [editAssignedUserIds, setEditAssignedUserIds] = useState<string[]>([]);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('owner');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
   const [quickAssignJob, setQuickAssignJob] = useState<Job | null>(null);
@@ -1433,6 +1441,25 @@ export default function DispatchBoard() {
     },
     onError: (error: any) => {
       toast({ title: "Failed to unschedule phase", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updatePhaseDetailMutation = useMutation({
+    mutationFn: async ({ jobId, phaseId, data }: { jobId: string; phaseId: string; data: Record<string, unknown> }) => {
+      return apiRequest('PATCH', `/api/jobs/${jobId}/phases/${phaseId}`, data);
+    },
+    onSuccess: async (res) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dispatch/phases'] });
+      // Optimistically update the selected phase in state so the read view refreshes
+      try {
+        const updated = await (res as Response).json();
+        setSelectedPhase(prev => prev ? { ...prev, ...updated } : prev);
+      } catch { /* ignore */ }
+      setPhaseDetailEditMode(false);
+      toast({ title: "Phase updated", description: "Changes have been saved." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to update phase", description: error.message || "Could not save changes.", variant: "destructive" });
     },
   });
 
@@ -3592,7 +3619,13 @@ export default function DispatchBoard() {
       </Dialog>
 
       {/* Phase Detail Dialog */}
-      <Dialog open={phaseDetailOpen} onOpenChange={setPhaseDetailOpen}>
+      <Dialog
+        open={phaseDetailOpen}
+        onOpenChange={(open) => {
+          setPhaseDetailOpen(open);
+          if (!open) setPhaseDetailEditMode(false);
+        }}
+      >
         <DialogContent className="sm:max-w-md" data-testid="dialog-phase-detail">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -3612,7 +3645,7 @@ export default function DispatchBoard() {
             </DialogDescription>
           </DialogHeader>
 
-          {selectedPhase && (
+          {selectedPhase && !phaseDetailEditMode && (
             <div className="space-y-4 py-1">
               {/* Status */}
               <div className="flex items-center justify-between">
@@ -3640,6 +3673,12 @@ export default function DispatchBoard() {
                       </p>
                     )}
                   </div>
+                </div>
+              )}
+              {!selectedPhase.scheduledStart && !selectedPhase.scheduledEnd && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <CalendarDays className="h-4 w-4 flex-shrink-0" />
+                  No dates scheduled
                 </div>
               )}
 
@@ -3692,21 +3731,171 @@ export default function DispatchBoard() {
             </div>
           )}
 
+          {/* Edit mode form */}
+          {selectedPhase && phaseDetailEditMode && (
+            <div className="space-y-4 py-1" data-testid="phase-detail-edit-form">
+              {/* Scheduled Start */}
+              <div className="space-y-1.5">
+                <Label htmlFor="phase-edit-start" className="text-sm">Scheduled start</Label>
+                <Input
+                  id="phase-edit-start"
+                  type="date"
+                  value={editScheduledStart}
+                  onChange={(e) => setEditScheduledStart(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+
+              {/* Scheduled End */}
+              <div className="space-y-1.5">
+                <Label htmlFor="phase-edit-end" className="text-sm">Scheduled end</Label>
+                <Input
+                  id="phase-edit-end"
+                  type="date"
+                  value={editScheduledEnd}
+                  onChange={(e) => setEditScheduledEnd(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+
+              {/* Booked Hours */}
+              <div className="space-y-1.5">
+                <Label htmlFor="phase-edit-hours" className="text-sm">Booked hours</Label>
+                <Input
+                  id="phase-edit-hours"
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  placeholder="e.g. 8"
+                  value={editBookedHours}
+                  onChange={(e) => setEditBookedHours(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+
+              {/* Assigned members */}
+              <div className="space-y-2">
+                <Label className="text-sm">Assigned members</Label>
+                <ScrollArea className="h-36 rounded-md border p-2">
+                  <div className="space-y-2">
+                    {teamMembers.filter(m => m.isActive).map(member => {
+                      const memberId = member.memberId || member.id;
+                      const fullName = [member.firstName, member.lastName].filter(Boolean).join(' ') || member.email;
+                      const checked = editAssignedUserIds.includes(memberId);
+                      return (
+                        <label
+                          key={memberId}
+                          className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-1 py-0.5"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(val) => {
+                              setEditAssignedUserIds(prev =>
+                                val ? [...prev, memberId] : prev.filter(id => id !== memberId)
+                              );
+                            }}
+                          />
+                          <UserAvatar
+                            className="h-5 w-5"
+                            fallbackClassName="text-[9px]"
+                            user={{ id: memberId, firstName: member.firstName, lastName: member.lastName }}
+                          />
+                          <span className="text-sm">{fullName}</span>
+                        </label>
+                      );
+                    })}
+                    {teamMembers.filter(m => m.isActive).length === 0 && (
+                      <p className="text-xs text-muted-foreground text-center py-2">No active team members</p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+          )}
+
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setPhaseDetailOpen(false)}>
-              Close
-            </Button>
-            {selectedPhase && (
-              <Button
-                onClick={() => {
-                  setPhaseDetailOpen(false);
-                  navigate(`/jobs/${selectedPhase.jobId}`);
-                }}
-                data-testid="button-phase-detail-open-project"
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Open project
-              </Button>
+            {!phaseDetailEditMode ? (
+              <>
+                <Button variant="outline" onClick={() => setPhaseDetailOpen(false)}>
+                  Close
+                </Button>
+                {selectedPhase && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditScheduledStart(
+                          selectedPhase.scheduledStart
+                            ? format(new Date(selectedPhase.scheduledStart), 'yyyy-MM-dd')
+                            : ''
+                        );
+                        setEditScheduledEnd(
+                          selectedPhase.scheduledEnd
+                            ? format(new Date(selectedPhase.scheduledEnd), 'yyyy-MM-dd')
+                            : ''
+                        );
+                        setEditBookedHours(selectedPhase.bookedHours ?? '');
+                        setEditAssignedUserIds(selectedPhase.assignedUsers.map(u => u.id));
+                        setPhaseDetailEditMode(true);
+                      }}
+                      data-testid="button-phase-detail-edit"
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setPhaseDetailOpen(false);
+                        navigate(`/jobs/${selectedPhase.jobId}`);
+                      }}
+                      data-testid="button-phase-detail-open-project"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open project
+                    </Button>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setPhaseDetailEditMode(false)}
+                  disabled={updatePhaseDetailMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!selectedPhase) return;
+                    const payload: Record<string, unknown> = {
+                      scheduledStart: editScheduledStart || null,
+                      scheduledEnd: editScheduledEnd || null,
+                      bookedHours: editBookedHours || null,
+                      assignedUserIds: editAssignedUserIds,
+                    };
+                    updatePhaseDetailMutation.mutate({
+                      jobId: selectedPhase.jobId,
+                      phaseId: selectedPhase.id,
+                      data: payload,
+                    });
+                  }}
+                  disabled={updatePhaseDetailMutation.isPending}
+                  data-testid="button-phase-detail-save"
+                >
+                  {updatePhaseDetailMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save changes
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </DialogFooter>
         </DialogContent>
