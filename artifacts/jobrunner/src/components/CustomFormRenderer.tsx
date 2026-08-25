@@ -610,19 +610,19 @@ export function FormSubmissionList({ jobId, onFillForm }: FormSubmissionListProp
   const nonSafetySubmissions = submissions?.filter(s => !isSafetyForm(getFormById(s.formId))) || [];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <h3 className="font-medium flex items-center gap-2">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-base font-medium flex items-center gap-2">
           <ClipboardList className="h-4 w-4" />
           General Forms
-        </h3>
+        </CardTitle>
         {activeForms.length > 0 && (
           <Button size="sm" onClick={() => setShowFormPicker(true)} data-testid="button-fill-form">
             Fill Form
           </Button>
         )}
-      </div>
-
+      </CardHeader>
+      <CardContent>
       {nonSafetySubmissions.length === 0 && activeForms.length === 0 ? (
         <div className="text-center py-6 text-muted-foreground">
           <ClipboardList className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -696,7 +696,8 @@ export function FormSubmissionList({ jobId, onFillForm }: FormSubmissionListProp
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
