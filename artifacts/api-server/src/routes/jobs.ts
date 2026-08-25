@@ -2561,6 +2561,59 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  // ── Dispatch board: all phases for the business ────────────────────────────
+  // Returns every phase (with assignees + parent job title) so the dispatch
+  // board can render phase blocks alongside job blocks without making per-job
+  // requests. The client filters by date client-side.
+  app.get("/api/dispatch/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+
+      // All phases owned by this business
+      const phases = await db
+        .select({
+          id: jobPhases.id,
+          jobId: jobPhases.jobId,
+          phaseCode: jobPhases.phaseCode,
+          name: jobPhases.name,
+          description: jobPhases.description,
+          scheduledStart: jobPhases.scheduledStart,
+          scheduledEnd: jobPhases.scheduledEnd,
+          bookedHours: jobPhases.bookedHours,
+          status: jobPhases.status,
+          sortOrder: jobPhases.sortOrder,
+          notes: jobPhases.notes,
+          assignedUserId: jobPhases.assignedUserId,
+        })
+        .from(jobPhases)
+        .where(eq(jobPhases.userId, effectiveUserId));
+
+      if (phases.length === 0) return res.json([]);
+
+      // Enrich with normalised assignees
+      const enriched = await enrichPhasesWithAssignees(phases);
+
+      // Enrich with parent job title + type
+      const jobIds = [...new Set(phases.map((p) => p.jobId))];
+      const jobRows = await db
+        .select({ id: jobs.id, title: jobs.title, jobType: (jobs as any).jobType })
+        .from(jobs)
+        .where(inArray(jobs.id, jobIds));
+      const jobMap = new Map(jobRows.map((j) => [j.id, j]));
+
+      const result = enriched.map((phase) => ({
+        ...phase,
+        jobTitle: jobMap.get(phase.jobId)?.title || 'Untitled Project',
+        jobType: jobMap.get(phase.jobId)?.jobType || 'project',
+      }));
+
+      res.json(result);
+    } catch (err: any) {
+      console.error("Error fetching dispatch phases:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/jobs/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       // Use effectiveUserId (business owner's ID) for multi-tenant data scoping

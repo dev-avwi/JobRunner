@@ -289,6 +289,32 @@ interface DispatchAssignment {
   } | null;
 }
 
+interface DispatchPhaseUser {
+  id: string;
+  name: string;
+  isLead: boolean;
+}
+
+interface DispatchPhase {
+  id: string;
+  jobId: string;
+  phaseCode: string;
+  name: string;
+  description?: string | null;
+  scheduledStart?: string | null;
+  scheduledEnd?: string | null;
+  bookedHours?: string | null;
+  status: string;
+  sortOrder?: number | null;
+  notes?: string | null;
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
+  assignedUserIds: string[];
+  assignedUsers: DispatchPhaseUser[];
+  jobTitle: string;
+  jobType?: string | null;
+}
+
 function createJobIcon(status: string) {
   const colors: Record<string, string> = {
     scheduled: '#3b82f6',
@@ -1182,6 +1208,7 @@ export default function DispatchBoard() {
     });
   }, []);
   const [draggedJob, setDraggedJob] = useState<DraggedJob | null>(null);
+  const [draggedPhase, setDraggedPhase] = useState<DispatchPhase | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const [showAISuggestions, setShowAISuggestions] = useState(false);
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
@@ -1232,6 +1259,12 @@ export default function DispatchBoard() {
   const { data: dispatchJobs = [], isLoading: dispatchLoading } = useQuery<DispatchJob[]>({
     queryKey: ['/api/dispatch/board'],
     enabled: topView === 'board' || topView === 'map',
+  });
+
+  const { data: dispatchPhases = [] } = useQuery<DispatchPhase[]>({
+    queryKey: ['/api/dispatch/phases'],
+    enabled: topView === 'schedule',
+    staleTime: 1000 * 60 * 2,
   });
 
   // AI Scheduling Suggestions
@@ -1359,6 +1392,48 @@ export default function DispatchBoard() {
     },
   });
 
+  const reschedulePhaseMutation = useMutation({
+    mutationFn: async ({
+      jobId,
+      phaseId,
+      scheduledStart,
+      scheduledEnd,
+    }: {
+      jobId: string;
+      phaseId: string;
+      scheduledStart: string;
+      scheduledEnd: string;
+    }) => {
+      return apiRequest('PATCH', `/api/jobs/${jobId}/phases/${phaseId}`, {
+        scheduledStart,
+        scheduledEnd,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dispatch/phases'] });
+      toast({ title: "Phase rescheduled", description: "The phase has been moved to the new time slot" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to reschedule phase", description: error.message || "Could not move the phase", variant: "destructive" });
+    },
+  });
+
+  const unschedulePhaseMutation = useMutation({
+    mutationFn: async ({ jobId, phaseId }: { jobId: string; phaseId: string }) => {
+      return apiRequest('PATCH', `/api/jobs/${jobId}/phases/${phaseId}`, {
+        scheduledStart: null,
+        scheduledEnd: null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/dispatch/phases'] });
+      toast({ title: "Phase unscheduled" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Failed to unschedule phase", description: error.message, variant: "destructive" });
+    },
+  });
+
   const jobsWithClients = useMemo(() => 
     jobs.map(job => ({
       ...job,
@@ -1389,6 +1464,22 @@ export default function DispatchBoard() {
     [jobsWithClients]
   );
 
+  // Phases scheduled for the currently selected date (Day view) ──────────────
+  const scheduledPhasesForDate = useMemo(() => {
+    const dateStr = format(currentDate, 'yyyy-MM-dd');
+    return dispatchPhases.filter(phase => {
+      if (!phase.scheduledStart) return false;
+      try {
+        return format(new Date(phase.scheduledStart), 'yyyy-MM-dd') === dateStr;
+      } catch { return false; }
+    });
+  }, [dispatchPhases, currentDate]);
+
+  const unscheduledPhases = useMemo(() =>
+    dispatchPhases.filter(phase => !phase.scheduledStart && !['complete', 'invoiced'].includes(phase.status)),
+    [dispatchPhases]
+  );
+
   const teamMembersWithJobs = useMemo(() => {
     const ownerMember = {
       id: 'owner',
@@ -1415,18 +1506,32 @@ export default function DispatchBoard() {
         return match;
       });
 
-      const totalMinutes = memberJobs.reduce((sum, job) => 
-        sum + (job.estimatedDuration || 60), 0
-      );
+      // Phases for this member: any phase where this member is in assignedUsers;
+      // phases with no assignees fall into the owner lane.
+      const memberPhases = scheduledPhasesForDate.filter(phase => {
+        if (phase.assignedUsers && phase.assignedUsers.length > 0) {
+          return phase.assignedUsers.some(u => u.id === member.memberId || u.id === member.id);
+        }
+        return member.id === 'owner';
+      });
+
+      const jobMinutes = memberJobs.reduce((sum, job) => sum + (job.estimatedDuration || 60), 0);
+      const phaseMinutes = memberPhases.reduce((sum, phase) => {
+        if (phase.scheduledStart && phase.scheduledEnd) {
+          return sum + Math.max(30, (new Date(phase.scheduledEnd).getTime() - new Date(phase.scheduledStart).getTime()) / 60000);
+        }
+        return sum + (parseFloat(phase.bookedHours || '0') * 60 || 60);
+      }, 0);
 
       return {
         ...member,
         jobs: memberJobs,
-        totalHours: Math.round(totalMinutes / 60 * 10) / 10,
+        phases: memberPhases,
+        totalHours: Math.round((jobMinutes + phaseMinutes) / 60 * 10) / 10,
         capacity: 8,
       };
     });
-  }, [teamMembers, scheduledJobsForDate]);
+  }, [teamMembers, scheduledJobsForDate, scheduledPhasesForDate]);
 
   useEffect(() => {
     try {
@@ -1545,6 +1650,47 @@ export default function DispatchBoard() {
   const handleDragLeave = () => {
     lastDragOverSlotRef.current = null;
     setDragOverSlot(null);
+  };
+
+  const handlePhaseDragStart = (e: React.DragEvent, phase: DispatchPhase) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+    setDraggedPhase(phase);
+    // Clear any job drag so they don't conflict
+    setDraggedJob(null);
+  };
+
+  const handlePhaseDrop = (e: React.DragEvent, hour: number) => {
+    e.preventDefault();
+    setDragOverSlot(null);
+    if (!draggedPhase) return;
+
+    const scheduledStart = new Date(currentDate);
+    scheduledStart.setHours(hour, 0, 0, 0);
+
+    // Preserve original duration when rescheduling
+    let durationMin = 60;
+    if (draggedPhase.scheduledStart && draggedPhase.scheduledEnd) {
+      durationMin = Math.max(30, (new Date(draggedPhase.scheduledEnd).getTime() - new Date(draggedPhase.scheduledStart).getTime()) / 60000);
+    } else if (draggedPhase.bookedHours) {
+      durationMin = Math.max(30, parseFloat(draggedPhase.bookedHours) * 60);
+    }
+    const scheduledEnd = new Date(scheduledStart.getTime() + durationMin * 60000);
+
+    reschedulePhaseMutation.mutate({
+      jobId: draggedPhase.jobId,
+      phaseId: draggedPhase.id,
+      scheduledStart: scheduledStart.toISOString(),
+      scheduledEnd: scheduledEnd.toISOString(),
+    });
+    setDraggedPhase(null);
+  };
+
+  const handleUnscheduledPhaseDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedPhase) return;
+    unschedulePhaseMutation.mutate({ jobId: draggedPhase.jobId, phaseId: draggedPhase.id });
+    setDraggedPhase(null);
   };
 
   const handleDrop = (e: React.DragEvent, memberId: string, hour: number) => {
@@ -1677,6 +1823,32 @@ export default function DispatchBoard() {
     return { top, height };
   };
 
+  const getPhasePosition = (phase: DispatchPhase) => {
+    if (!phase.scheduledStart) return null;
+    try {
+      const start = new Date(phase.scheduledStart);
+      const hour = start.getHours();
+      const minute = start.getMinutes();
+      const startHour = WORK_HOURS[0];
+      const endHour = WORK_HOURS[WORK_HOURS.length - 1];
+      const clampedHour = Math.max(startHour, Math.min(endHour, hour));
+      const clampedMinute = clampedHour === endHour ? 0 : minute;
+      const totalGridHeight = WORK_HOURS.length * HOUR_HEIGHT;
+      let top = (clampedHour - startHour) * HOUR_HEIGHT + (clampedMinute / 60) * HOUR_HEIGHT;
+      top = Math.max(0, Math.min(top, totalGridHeight - 40));
+      let durationMin = 60;
+      if (phase.scheduledEnd) {
+        const end = new Date(phase.scheduledEnd);
+        durationMin = Math.max(30, (end.getTime() - start.getTime()) / 60000);
+      } else if (phase.bookedHours) {
+        durationMin = Math.max(30, parseFloat(phase.bookedHours) * 60);
+      }
+      const maxHeight = totalGridHeight - top;
+      const height = Math.min(Math.max((durationMin / 60) * HOUR_HEIGHT, 40), maxHeight);
+      return { top, height, durationMin };
+    } catch { return null; }
+  };
+
   const navigateDate = (direction: 'prev' | 'next') => {
     setCurrentDate(prev => direction === 'next' ? addDays(prev, 1) : subDays(prev, 1));
   };
@@ -1712,6 +1884,19 @@ export default function DispatchBoard() {
     });
     return map;
   }, [weekDays, jobsWithClients]);
+
+  // Phases by date for Week view (must be after weekDays is declared)
+  const phasesByDate = useMemo(() => {
+    const map: Record<string, DispatchPhase[]> = {};
+    weekDays.forEach(day => {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      map[dateStr] = dispatchPhases.filter(phase => {
+        if (!phase.scheduledStart) return false;
+        try { return format(new Date(phase.scheduledStart), 'yyyy-MM-dd') === dateStr; } catch { return false; }
+      });
+    });
+    return map;
+  }, [weekDays, dispatchPhases]);
 
   const threeDayDates = useMemo(() => {
     return Array.from({ length: 3 }, (_, i) => addDays(currentDate, i));
@@ -2121,6 +2306,36 @@ export default function DispatchBoard() {
                                           </div>
                                         );
                                       })}
+                                      {(phasesByDate[dateStr] || []).map((phase: DispatchPhase) => {
+                                        const pos = getPhasePosition(phase);
+                                        if (!pos) return null;
+                                        const { top, height } = pos;
+                                        return (
+                                          <div
+                                            key={phase.id}
+                                            className="pointer-events-auto absolute left-0 right-0 mx-0.5 rounded-md border overflow-hidden cursor-default bg-indigo-100 dark:bg-indigo-900/40 border-indigo-400 dark:border-indigo-500"
+                                            style={{
+                                              top: top + 1,
+                                              height: height - 2,
+                                              zIndex: 10,
+                                              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(99,102,241,0.1) 4px, rgba(99,102,241,0.1) 8px)',
+                                            }}
+                                            data-testid={`week-phase-${phase.id}`}
+                                          >
+                                            <div className="p-1 h-full flex flex-col">
+                                              <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide truncate">
+                                                {phase.phaseCode}
+                                              </span>
+                                              <span className="text-[10px] font-medium text-indigo-800 dark:text-indigo-200 truncate">
+                                                {phase.name}
+                                              </span>
+                                              {height > 50 && (
+                                                <span className="text-[9px] text-indigo-500 dark:text-indigo-400 truncate">{phase.jobTitle}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </td>
@@ -2323,7 +2538,7 @@ export default function DispatchBoard() {
                                 style={{ height: HOUR_HEIGHT, minWidth: 140, padding: 0 }}
                                 onDragOver={(e) => handleDragOver(e, slotId)}
                                 onDragLeave={handleDragLeave}
-                                onDrop={(e) => handleDrop(e, member.memberId, hour)}
+                                onDrop={(e) => { if (draggedPhase) { handlePhaseDrop(e, hour); } else { handleDrop(e, member.memberId, hour); } }}
                                 onClick={() => selectedJob && handleSlotClick(member.memberId, hour)}
                                 data-testid={`slot-${member.id}-${hour}`}
                               >
@@ -2396,6 +2611,75 @@ export default function DispatchBoard() {
                                               <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5 ml-5">
                                                 <MapPin className="h-3 w-3 flex-shrink-0" />
                                                 <span className="truncate">{job.address}</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+
+                                    {/* Phase blocks — indigo/violet, distinct from job blocks */}
+                                    {(member as any).phases?.map((phase: DispatchPhase) => {
+                                      const pos = getPhasePosition(phase);
+                                      if (!pos) return null;
+                                      const { top, height, durationMin } = pos;
+                                      const isDragging = draggedPhase?.id === phase.id;
+                                      const durationLabel = durationMin >= 60
+                                        ? `${Math.round(durationMin / 60)}h`
+                                        : `${Math.round(durationMin)}m`;
+                                      const startLabel = phase.scheduledStart
+                                        ? (() => { try { const d = new Date(phase.scheduledStart); const h = d.getHours(); const m = d.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; const dh = h > 12 ? h - 12 : h === 0 ? 12 : h; return `${dh}:${m.toString().padStart(2,'0')} ${ap}`; } catch { return ''; } })()
+                                        : '';
+                                      return (
+                                        <div
+                                          key={phase.id}
+                                          draggable
+                                          className="pointer-events-auto absolute left-0 right-0 mx-1 rounded-lg border cursor-grab active:cursor-grabbing overflow-hidden transition-shadow hover:shadow-md bg-indigo-100 dark:bg-indigo-900/40 border-indigo-400 dark:border-indigo-500"
+                                          style={{
+                                            top: top + 1,
+                                            height: height - 2,
+                                            zIndex: isDragging ? 50 : 12,
+                                            opacity: isDragging ? 0.5 : 1,
+                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(99,102,241,0.08) 6px, rgba(99,102,241,0.08) 12px)',
+                                          }}
+                                          onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                                          onDragEnd={() => setDraggedPhase(null)}
+                                          data-testid={`scheduled-phase-${phase.id}`}
+                                        >
+                                          <div className="p-2 h-full flex flex-col">
+                                            <div className="flex items-center gap-1.5">
+                                              <GripVertical className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
+                                              <span className="text-[9px] font-bold uppercase tracking-wide bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 px-1 py-0.5 rounded">
+                                                Phase
+                                              </span>
+                                              <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 whitespace-nowrap">
+                                                {startLabel}
+                                              </span>
+                                              <span className="text-[11px] text-indigo-500 dark:text-indigo-400 whitespace-nowrap">
+                                                {durationLabel}
+                                              </span>
+                                            </div>
+                                            <h4 className="font-semibold text-sm truncate min-w-0 ml-5 mt-0.5 text-indigo-800 dark:text-indigo-200">
+                                              {phase.phaseCode}: {phase.name}
+                                            </h4>
+                                            {height > 55 && (
+                                              <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate ml-5 mt-0.5">
+                                                {phase.jobTitle}
+                                              </p>
+                                            )}
+                                            {height > 85 && phase.assignedUsers.length > 0 && (
+                                              <div className="flex items-center gap-1 ml-5 mt-1">
+                                                {phase.assignedUsers.slice(0, 3).map(u => (
+                                                  <UserAvatar
+                                                    key={u.id}
+                                                    className="h-4 w-4"
+                                                    fallbackClassName="text-[7px]"
+                                                    user={{ id: u.id, firstName: u.name.split(' ')[0], lastName: u.name.split(' ')[1] }}
+                                                  />
+                                                ))}
+                                                {phase.assignedUsers.length > 3 && (
+                                                  <span className="text-[10px] text-indigo-500">+{phase.assignedUsers.length - 3}</span>
+                                                )}
                                               </div>
                                             )}
                                           </div>
@@ -2560,6 +2844,72 @@ export default function DispatchBoard() {
               </ScrollArea>
             </CardContent>
           </Card>
+
+          {/* Unscheduled Phases ───────────────────────────────────────────── */}
+          {unscheduledPhases.length > 0 && (
+          <Card
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={handleUnscheduledPhaseDrop}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-indigo-500" />
+                <span className="text-indigo-700 dark:text-indigo-300">Unscheduled Phases</span>
+                <Badge variant="secondary" className="ml-auto bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                  {unscheduledPhases.length}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-2">
+                  {unscheduledPhases.map(phase => (
+                    <div
+                      key={phase.id}
+                      draggable
+                      onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                      onDragEnd={() => setDraggedPhase(null)}
+                      className={`p-3 rounded-lg border cursor-grab active:cursor-grabbing bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-700 hover:shadow-sm transition-shadow ${draggedPhase?.id === phase.id ? 'opacity-50' : ''}`}
+                      data-testid={`unscheduled-phase-${phase.id}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <GripVertical className="h-4 w-4 text-indigo-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-bold uppercase tracking-wide bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 px-1 py-0.5 rounded">
+                              {phase.phaseCode}
+                            </span>
+                          </div>
+                          <h4 className="font-medium text-sm text-indigo-800 dark:text-indigo-200 truncate">{phase.name}</h4>
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate mt-0.5">{phase.jobTitle}</p>
+                          <div className="flex items-center gap-1 text-[10px] text-indigo-500 mt-1">
+                            <Clock className="h-3 w-3 flex-shrink-0" />
+                            <span className="italic">No date set — drag onto the schedule</span>
+                          </div>
+                          {phase.assignedUsers.length > 0 && (
+                            <div className="flex items-center gap-1 mt-1.5">
+                              {phase.assignedUsers.slice(0, 3).map(u => (
+                                <UserAvatar
+                                  key={u.id}
+                                  className="h-4 w-4"
+                                  fallbackClassName="text-[7px]"
+                                  user={{ id: u.id, firstName: u.name.split(' ')[0], lastName: u.name.split(' ')[1] }}
+                                />
+                              ))}
+                              {phase.assignedUsers.length > 3 && (
+                                <span className="text-[10px] text-indigo-500">+{phase.assignedUsers.length - 3}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+          )}
 
           <Card>
             <CardHeader className="pb-2">
@@ -3544,7 +3894,7 @@ export default function DispatchBoard() {
                               style={{ height: HOUR_HEIGHT, minWidth: 160, padding: 0 }}
                               onDragOver={(e) => handleDragOver(e, slotId)}
                               onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, member.memberId, hour)}
+                              onDrop={(e) => { if (draggedPhase) { handlePhaseDrop(e, hour); } else { handleDrop(e, member.memberId, hour); } }}
                               onClick={() => selectedJob && handleSlotClick(member.memberId, hour)}
                             >
                               {hour === WORK_HOURS[0] && (
@@ -3613,6 +3963,46 @@ export default function DispatchBoard() {
                                               <MapPin className="h-3 w-3 flex-shrink-0" />
                                               <span className="truncate">{job.address}</span>
                                             </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  {/* Phase blocks in fullscreen Day view */}
+                                  {(member as any).phases?.map((phase: DispatchPhase) => {
+                                    const pos = getPhasePosition(phase);
+                                    if (!pos) return null;
+                                    const { top, height, durationMin } = pos;
+                                    const isDragging = draggedPhase?.id === phase.id;
+                                    const durationLabel = durationMin >= 60 ? `${Math.round(durationMin / 60)}h` : `${Math.round(durationMin)}m`;
+                                    const startLabel = phase.scheduledStart ? (() => { try { const d = new Date(phase.scheduledStart!); const h = d.getHours(); const m = d.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; const dh = h > 12 ? h - 12 : h === 0 ? 12 : h; return `${dh}:${m.toString().padStart(2,'0')} ${ap}`; } catch { return ''; } })() : '';
+                                    return (
+                                      <div
+                                        key={phase.id}
+                                        draggable
+                                        className="pointer-events-auto absolute left-0 right-0 mx-1 rounded-lg border cursor-grab active:cursor-grabbing overflow-hidden transition-shadow hover:shadow-md bg-indigo-100 dark:bg-indigo-900/40 border-indigo-400 dark:border-indigo-500"
+                                        style={{
+                                          top: top + 1,
+                                          height: height - 2,
+                                          zIndex: isDragging ? 50 : 12,
+                                          opacity: isDragging ? 0.5 : 1,
+                                          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(99,102,241,0.08) 6px, rgba(99,102,241,0.08) 12px)',
+                                        }}
+                                        onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                                        onDragEnd={() => setDraggedPhase(null)}
+                                      >
+                                        <div className="p-2 h-full flex flex-col">
+                                          <div className="flex items-center gap-1.5">
+                                            <GripVertical className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
+                                            <span className="text-[9px] font-bold uppercase tracking-wide bg-indigo-200 dark:bg-indigo-800 text-indigo-700 dark:text-indigo-300 px-1 py-0.5 rounded">Phase</span>
+                                            <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 whitespace-nowrap">{startLabel}</span>
+                                            <span className="text-[11px] text-indigo-500 whitespace-nowrap">{durationLabel}</span>
+                                          </div>
+                                          <h4 className="font-semibold text-sm truncate min-w-0 ml-5 mt-0.5 text-indigo-800 dark:text-indigo-200">
+                                            {phase.phaseCode}: {phase.name}
+                                          </h4>
+                                          {height > 55 && (
+                                            <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate ml-5 mt-0.5">{phase.jobTitle}</p>
                                           )}
                                         </div>
                                       </div>
