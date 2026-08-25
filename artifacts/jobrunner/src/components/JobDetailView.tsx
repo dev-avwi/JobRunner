@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers, BarChart2, RotateCcw } from "lucide-react";
+import { ArrowLeft, Briefcase, User, MapPin, Calendar, Clock, Edit, FileText, FileEdit, Receipt, Camera, ExternalLink, Sparkles, Zap, Mic, ClipboardList, Users, Timer, CheckCircle, AlertTriangle, Loader2, PenLine, Trash2, Play, Square, Navigation, History, Mail, MessageSquare, CreditCard, Send, Bell, Plus, CheckCircle2, Smartphone, QrCode, DollarSign, Link2, Check, X, UserPlus, Copy, Circle, Package, Truck, Shield, Lock, Globe, Share2, Phone, Wrench, FileDown, Search, ChevronsUpDown, Eye, Image, ListChecks, Activity, MoreVertical, Star, Banknote, Layers, BarChart2, RotateCcw, ChevronDown, ChevronUp, TrendingUp, TrendingDown } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -242,6 +243,17 @@ export default function JobDetailView({
   });
   const [inspectionNotesInput, setInspectionNotesInput] = useState("");
   const [workerPopoverOpen, setWorkerPopoverOpen] = useState(false);
+  // Time & Attendance expanded-worker state
+  const [expandedWorkers, setExpandedWorkers] = useState<Set<string>>(new Set());
+  const toggleWorkerSessions = (userId: string) => {
+    setExpandedWorkers(prev => {
+      const next = new Set(prev);
+      if (next.has(userId)) next.delete(userId);
+      else next.add(userId);
+      return next;
+    });
+  };
+
   // Retention ledger state
   const [retentionEditMode, setRetentionEditMode] = useState(false);
   const [retentionPercent, setRetentionPercent] = useState('0');
@@ -1359,6 +1371,60 @@ export default function JobDetailView({
       toast({ title: "Error", description: "Failed to save template", variant: "destructive" });
     },
   });
+
+  const handleExportTimeCSV = () => {
+    const exportable = timeEntries.filter(e => !e.isBreak && e.endTime);
+    if (!exportable.length) return;
+
+    // Encode a value as a safe CSV cell:
+    // - Numbers are passed through as-is
+    // - Strings are quoted, internal quotes doubled, and formula-leading
+    //   characters (=, +, -, @) are prefixed with a tab to neutralise injection
+    const csvCell = (value: string | number | boolean): string => {
+      if (typeof value === 'number' || typeof value === 'boolean') {
+        return String(value);
+      }
+      const s = String(value ?? '');
+      // Neutralise spreadsheet formula injection
+      const safe = /^[=+\-@]/.test(s) ? `\t${s}` : s;
+      // Quote the field and escape any embedded quotes by doubling them
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+
+    const headers = ['Worker', 'Date', 'Clock In', 'Clock Out', 'Hours', 'Category', 'Billable', 'GPS Verified', 'Hourly Rate', 'Cost'];
+    const rows = exportable.map(entry => {
+      const start = new Date(entry.startTime);
+      const end = new Date(entry.endTime!);
+      // Use stored duration as the authoritative source (matches what the UI cards show),
+      // falling back to timestamp difference only when duration is absent.
+      const mins = entry.duration != null
+        ? entry.duration
+        : Math.floor((end.getTime() - start.getTime()) / 60000);
+      const hours = Math.round(mins / 60 * 100) / 100;
+      const cost = entry.hourlyRate ? Math.round(hours * entry.hourlyRate * 100) / 100 : '';
+      const verified = (entry.clockInLatitude || (entry as any).origin === 'geofence') ? 'Yes' : 'No';
+      return [
+        csvCell(entry.userName || 'Worker'),
+        csvCell(start.toLocaleDateString('en-AU')),
+        csvCell(start.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })),
+        csvCell(end.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })),
+        hours,
+        csvCell(entry.timeCategory || 'work'),
+        csvCell(entry.isBillable === false ? 'No' : 'Yes'),
+        csvCell(verified),
+        entry.hourlyRate ?? '',
+        cost,
+      ].join(',');
+    });
+    const csv = [headers.map(csvCell).join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `time-entries-job-${jobId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleDeleteJob = () => {
     setShowDeleteConfirm(true);
@@ -2989,89 +3055,213 @@ export default function JobDetailView({
                   assignedTo={job.assignedTo}
                 />
               )}
-              {/* Worker time summaries */}
-              {workerSummaries.length > 0 && (
-                <Card data-testid="card-worker-attendance">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-semibold flex items-center justify-between gap-2 flex-wrap">
-                      <span className="flex items-center gap-2"><Clock className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />Time & Attendance</span>
-                      {actualHoursData.hasData && <span className="text-sm font-normal text-muted-foreground">{actualHoursData.actualHours}h total{actualHoursData.laborCost > 0 && ` · $${actualHoursData.laborCost.toFixed(2)}`}</span>}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {workerSummaries.map((worker) => (
-                        <div key={worker.userId} className="rounded-md border p-3">
-                          <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-semibold" style={{ background: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}>
-                                {worker.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                              </div>
-                              <div>
-                                <span className="text-sm font-semibold">{worker.name}</span>
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <span>{worker.totalHours}h worked</span>
-                                  {worker.breakMinutes > 0 && <span>· {Math.round(worker.breakMinutes / 6) / 10}h break</span>}
-                                  {worker.entries.length > 1 && <span>· {worker.entries.length} sessions</span>}
+              {/* Worker time summaries — visual breakdown */}
+              {workerSummaries.length > 0 && (() => {
+                const CAT_COLORS: Record<string, string> = { work: '#2563EB', travel: '#7C3AED', materials: '#D97706', admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280' };
+                const CAT_LABELS: Record<string, string> = { work: 'Site Work', travel: 'Driving', materials: 'Supplies', admin: 'Admin', meeting: 'Meeting', training: 'Training', other: 'Other' };
+                const CAT_EMOJI: Record<string, string> = { work: '🔨', travel: '🚗', materials: '🛒', admin: '🖥️', meeting: '📋', training: '🎓', other: '⚙️' };
+
+                // Category totals for the donut chart
+                const catMap: Record<string, number> = {};
+                timeEntries.filter(e => !e.isBreak && e.endTime).forEach(e => {
+                  const cat = (e as any).timeCategory || 'work';
+                  const mins = (e as any).duration || Math.floor((new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / 60000);
+                  catMap[cat] = (catMap[cat] || 0) + mins;
+                });
+                const donutData = Object.entries(catMap).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a).map(([cat, mins]) => ({
+                  name: `${CAT_EMOJI[cat] ?? ''} ${CAT_LABELS[cat] ?? cat}`,
+                  value: Math.round(mins / 6) / 10,
+                  color: CAT_COLORS[cat] ?? '#6B7280',
+                }));
+
+                // Variance numbers
+                const totalActualHours = actualHoursData.actualHours;
+                const budgetedHours = job.estimatedHours ?? 0;
+                const hourVariance = budgetedHours > 0 ? totalActualHours - budgetedHours : null;
+                const overBudget = hourVariance !== null && hourVariance > 0;
+
+                const totalWorkerMinutes = workerSummaries.reduce((s, w) => s + w.totalMinutes, 0);
+
+                return (
+                  <Card data-testid="card-worker-attendance">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2">
+                          <Clock className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+                          Time & Attendance
+                        </CardTitle>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs gap-1"
+                          onClick={handleExportTimeCSV}
+                        >
+                          <FileDown className="h-3.5 w-3.5" />
+                          Export CSV
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+
+                      {/* Summary bar */}
+                      <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40">
+                        {/* Hours */}
+                        <div>
+                          <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mb-0.5">Hours worked</p>
+                          <div className="flex items-end gap-1.5">
+                            <span className="text-xl font-bold tabular-nums">{totalActualHours.toFixed(1)}</span>
+                            {budgetedHours > 0 && <span className="text-xs text-muted-foreground mb-0.5">/ {budgetedHours}h est.</span>}
+                          </div>
+                          {hourVariance !== null && (
+                            <div className={`flex items-center gap-0.5 text-xs font-medium mt-0.5 ${overBudget ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                              {overBudget ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                              {overBudget ? '+' : ''}{hourVariance.toFixed(1)}h vs estimate
+                            </div>
+                          )}
+                        </div>
+                        {/* Labour cost */}
+                        {actualHoursData.laborCost > 0 && (
+                          <div>
+                            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wide mb-0.5">Labour cost</p>
+                            <div className="flex items-end gap-1.5">
+                              <span className="text-xl font-bold tabular-nums">${actualHoursData.laborCost.toFixed(0)}</span>
+                            </div>
+                            {actualHoursData.hourlyRate > 0 && (
+                              <p className="text-xs text-muted-foreground mt-0.5">${actualHoursData.hourlyRate.toFixed(0)}/hr avg rate</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Per-worker cards */}
+                      <div className="space-y-2">
+                        {workerSummaries.map((worker) => {
+                          const sharePercent = totalWorkerMinutes > 0 ? Math.round((worker.totalMinutes / totalWorkerMinutes) * 100) : 0;
+                          const isExpanded = expandedWorkers.has(worker.userId);
+                          return (
+                            <div key={worker.userId} className="rounded-lg border bg-card overflow-hidden">
+                              {/* Worker header row */}
+                              <div className="flex items-center gap-3 p-3">
+                                <div className="w-9 h-9 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold" style={{ background: 'hsl(var(--trade) / 0.12)', color: 'hsl(var(--trade))' }}>
+                                  {worker.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="text-sm font-semibold truncate">{worker.name}</span>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                      {worker.laborCost > 0 && <span className="text-sm font-semibold">${worker.laborCost.toFixed(2)}</span>}
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6 text-muted-foreground"
+                                        onClick={() => toggleWorkerSessions(worker.userId)}
+                                      >
+                                        {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                    <span className="font-medium text-foreground">{worker.totalHours}h</span>
+                                    {worker.breakMinutes > 0 && <span>+ {Math.round(worker.breakMinutes / 60 * 10) / 10}h break</span>}
+                                    {worker.hourlyRate > 0 && <span>· ${worker.hourlyRate}/hr</span>}
+                                    {worker.entries.length > 0 && <span>· {worker.entries.length} session{worker.entries.length !== 1 ? 's' : ''}</span>}
+                                    {worker.hasGps && <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1 py-0.5 rounded"><CheckCircle className="h-2.5 w-2.5" />GPS</span>}
+                                  </div>
+                                  {/* Mini share bar */}
+                                  <div className="mt-2 flex items-center gap-2">
+                                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                      <div className="h-full rounded-full transition-all" style={{ width: `${sharePercent}%`, background: 'hsl(var(--trade))' }} />
+                                    </div>
+                                    <span className="text-[10px] text-muted-foreground tabular-nums">{sharePercent}%</span>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div className="text-right">
-                              {worker.hourlyRate > 0 && <div className="text-xs text-muted-foreground">${worker.hourlyRate}/hr</div>}
-                              {worker.laborCost > 0 && <div className="text-sm font-semibold">${worker.laborCost.toFixed(2)}</div>}
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            {worker.entries.map((entry) => {
-                              const hasGps = !!(entry.clockInLatitude || entry.clockOutLatitude);
-                              const isGeofence = entry.origin === 'geofence';
-                              const verified = hasGps || isGeofence;
-                              const startDate = new Date(entry.startTime);
-                              const endDate = entry.endTime ? new Date(entry.endTime) : null;
-                              const durationMins = endDate ? (entry.duration || Math.floor((endDate.getTime() - startDate.getTime()) / 60000)) : Math.floor((Date.now() - startDate.getTime()) / 60000);
-                              const hours = Math.round(durationMins / 60 * 10) / 10;
-                              return (
-                                <div key={entry.id} className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground py-1.5 px-2 rounded bg-muted/30">
-                                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${verified ? 'bg-green-500' : 'bg-amber-400'}`} />
-                                  <span className="font-medium text-foreground">{startDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
-                                  <span>{startDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}{endDate ? ` — ${endDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}` : ''}</span>
-                                  {!endDate && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">Active</Badge>}
-                                  {hours > 0 && <span className="font-medium text-foreground">{hours}h</span>}
-                                  {verified && <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1 py-0.5 rounded"><CheckCircle className="h-2.5 w-2.5" />GPS</span>}
+                              {/* Collapsible sessions */}
+                              {isExpanded && worker.entries.length > 0 && (
+                                <div className="border-t bg-muted/20 divide-y divide-border/50">
+                                  {worker.entries.map((entry) => {
+                                    const hasGps = !!(entry.clockInLatitude || entry.clockOutLatitude);
+                                    const isGeofence = (entry as any).origin === 'geofence';
+                                    const verified = hasGps || isGeofence;
+                                    const startDate = new Date(entry.startTime);
+                                    const endDate = entry.endTime ? new Date(entry.endTime) : null;
+                                    const durationMins = endDate
+                                      ? (entry.duration || Math.floor((endDate.getTime() - startDate.getTime()) / 60000))
+                                      : Math.floor((Date.now() - startDate.getTime()) / 60000);
+                                    const hours = Math.round(durationMins / 60 * 10) / 10;
+                                    const cat = (entry as any).timeCategory || 'work';
+                                    return (
+                                      <div key={entry.id} className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground px-3 py-2">
+                                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: CAT_COLORS[cat] ?? '#6B7280' }} />
+                                        <span className="font-medium text-foreground">{startDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
+                                        <span>
+                                          {startDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+                                          {endDate ? ` \u2013 ${endDate.toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                                        </span>
+                                        {!endDate && <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 animate-pulse">Active</Badge>}
+                                        {hours > 0 && <span className="font-medium text-foreground">{hours}h</span>}
+                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium" style={{ background: (CAT_COLORS[cat] ?? '#6B7280') + '1a', color: CAT_COLORS[cat] ?? '#6B7280' }}>
+                                          {CAT_EMOJI[cat] ?? ''} {CAT_LABELS[cat] ?? cat}
+                                        </span>
+                                        {verified && <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-1 py-0.5 rounded"><CheckCircle className="h-2.5 w-2.5" />GPS</span>}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                              );
-                            })}
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Category donut chart */}
+                      {donutData.length > 1 && (
+                        <div className="pt-2 border-t">
+                          <p className="text-xs font-medium text-muted-foreground mb-3">Hours by Category</p>
+                          <div className="flex items-center gap-4">
+                            <div className="w-24 h-24 flex-shrink-0">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                  <Pie
+                                    data={donutData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={28}
+                                    outerRadius={42}
+                                    paddingAngle={2}
+                                    dataKey="value"
+                                    strokeWidth={0}
+                                  >
+                                    {donutData.map((entry, index) => (
+                                      <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <RechartsTooltip
+                                    formatter={(value: number) => [`${value}h`, '']}
+                                    contentStyle={{ fontSize: 11, padding: '4px 8px', borderRadius: 6 }}
+                                    itemStyle={{ padding: 0 }}
+                                  />
+                                </PieChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="flex-1 space-y-1.5">
+                              {donutData.map((item) => (
+                                <div key={item.name} className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: item.color }} />
+                                    <span className="text-xs text-muted-foreground">{item.name}</span>
+                                  </div>
+                                  <span className="text-xs font-medium tabular-nums">{item.value}h</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    {(() => {
-                      const CAT_LABELS: Record<string, string> = { work: '🔨 Site Work', travel: '🚗 Driving', materials: '🛒 Supplies', admin: '🖥️ Admin', meeting: '📋 Meeting', training: '🎓 Training', other: '⚙️ Other' };
-                      const CAT_COLORS: Record<string, string> = { work: '#2563EB', travel: '#7C3AED', materials: '#D97706', admin: '#0891B2', meeting: '#059669', training: '#DB2777', other: '#6B7280' };
-                      const catMap: Record<string, number> = {};
-                      timeEntries.filter(e => !e.isBreak && e.endTime).forEach(e => {
-                        const cat = (e as any).timeCategory || 'work';
-                        const mins = (e as any).duration || Math.floor((new Date(e.endTime!).getTime() - new Date(e.startTime).getTime()) / 60000);
-                        catMap[cat] = (catMap[cat] || 0) + mins;
-                      });
-                      const cats = Object.entries(catMap).filter(([, m]) => m > 0).sort(([, a], [, b]) => b - a);
-                      if (cats.length <= 1) return null;
-                      return (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs font-medium text-muted-foreground mb-2">Hours by Category</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {cats.map(([cat, mins]) => (
-                              <span key={cat} className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: (CAT_COLORS[cat] ?? '#6B7280') + '18', color: CAT_COLORS[cat] ?? '#6B7280' }}>
-                                {CAT_LABELS[cat] ?? cat} {Math.round(mins / 6) / 10}h
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              )}
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
               {/* Profitability */}
               {!isTradie && <JobProfitabilityCard jobId={jobId} />}
               {/* Job costing */}
