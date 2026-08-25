@@ -141,6 +141,18 @@ export default function JobDetailView({
   const { user } = useAuth();
   const [, navigate] = useLocation();
   const searchString = useSearch();
+
+  // Track search string in local state so browser back/forward updates the active tab.
+  // wouter's useSearch does not reliably re-render on popstate, so we maintain our own
+  // copy that is kept in sync via a popstate listener and updated optimistically on tab click.
+  const [tabSearch, setTabSearch] = useState(() =>
+    typeof window !== 'undefined' ? window.location.search : ''
+  );
+  useEffect(() => {
+    const onPopState = () => setTabSearch(window.location.search);
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
   const { canUseAIFeatures } = useFeatureAccess();
   const collaboration = useJobCollaboration(jobId, user?.id, user?.name || user?.email || 'Viewer');
   const chatSectionRef = useRef<HTMLDivElement>(null);
@@ -1820,18 +1832,23 @@ export default function JobDetailView({
   // ── Tab navigation ────────────────────────────────────────────────────────
   const activeTab = useMemo(() => {
     const isProjectLocal = (job as any)?.jobType === 'project';
-    const params = new URLSearchParams(searchString || '');
+    const params = new URLSearchParams(tabSearch || '');
     const tab = params.get('tab');
     if (tab === 'claims') return isProjectLocal ? 'phases' : 'overview';
     const valid = isProjectLocal
       ? ['overview', 'phases', 'activity', 'financials', 'docs', 'chat']
       : ['overview', 'activity', 'financials', 'docs', 'chat'];
     return valid.includes(tab || '') ? tab! : 'overview';
-  }, [searchString, job]);
+  }, [tabSearch, job]);
 
   const handleTabChange = useCallback((tab: string) => {
     if (tab === 'chat') { navigate(`/chat?job=${jobId}`); return; }
-    navigate(`/jobs/${jobId}?tab=${tab}`);
+    // Push a new history entry so browser back/forward navigate between tabs.
+    // We update tabSearch optimistically so the tab switch is instant (no flicker),
+    // and the popstate listener keeps tabSearch in sync on back/forward.
+    const newSearch = `?tab=${tab}`;
+    window.history.pushState(null, '', `/jobs/${jobId}${newSearch}`);
+    setTabSearch(newSearch);
   }, [navigate, jobId]);
 
   if (isLoading) {
