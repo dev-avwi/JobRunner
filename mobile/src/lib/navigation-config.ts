@@ -237,6 +237,17 @@ export const mainMenuItems: NavItem[] = [
     allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie', 'staff'],
   },
   {
+    title: "My Expenses",
+    url: "/more/my-expenses",
+    icon: "trending-down",
+    description: "View all your submitted expense receipts",
+    color: "primary",
+    bgColor: "primary",
+    showInMore: true,
+    category: "team",
+    allowedRoles: ['staff_tradie', 'staff', 'subcontractor'],
+  },
+  {
     title: "Dispatch Board",
     url: "/more/dispatch-board",
     icon: "grid",

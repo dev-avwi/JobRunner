@@ -1,6 +1,4 @@
 import type { Express } from "express";
-import { insertExpenseSchema, db, expenses as expensesTable } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 import { createPermissionMiddleware, ownerOrManagerOnly, PERMISSIONS, getUserContext, hasPermission } from "../permissions";
 import { requireAuth } from "./middleware";
@@ -9,6 +7,8 @@ import {
   ExpensePhaseValidationError,
 } from "../phaseExpenseAttribution";
 import { createNotification } from "../notifications";
+import { insertExpenseSchema, db, expenses as expensesTable, expenseCategories, jobs } from "@workspace/db";
+import { eq, and, sql, desc } from "drizzle-orm";
 
 type ExpenseScope = {
   jobId?: string | null;
@@ -62,6 +62,45 @@ export function collectExpenseNotificationRecipients(
 }
 
 export function registerExpenseRoutes(app: Express) {
+  /**
+   * GET /api/expenses/mine
+   * Returns all expenses submitted by the requesting worker (submittedByUserId = rawUserId),
+   * sorted most-recent first. Accessible to any authenticated user.
+   */
+  app.get("/api/expenses/mine", requireAuth, async (req: any, res) => {
+    try {
+      const rawUserId = req.userId!;
+
+      const result = await db
+        .select({
+          id: expensesTable.id,
+          jobId: expensesTable.jobId,
+          categoryId: expensesTable.categoryId,
+          amount: expensesTable.amount,
+          gstAmount: expensesTable.gstAmount,
+          description: expensesTable.description,
+          vendor: expensesTable.vendor,
+          expenseDate: expensesTable.expenseDate,
+          status: expensesTable.status,
+          rejectionReason: (expensesTable as any).rejectionReason,
+          submittedByUserId: (expensesTable as any).submittedByUserId,
+          createdAt: expensesTable.createdAt,
+          categoryName: expenseCategories.name,
+          jobTitle: jobs.title,
+        })
+        .from(expensesTable)
+        .leftJoin(expenseCategories, eq(expensesTable.categoryId, expenseCategories.id))
+        .leftJoin(jobs, eq(expensesTable.jobId, jobs.id))
+        .where(eq((expensesTable as any).submittedByUserId, rawUserId))
+        .orderBy(desc(expensesTable.expenseDate));
+
+      res.json(result);
+    } catch (error) {
+      console.error("Get my expenses error:", error);
+      res.status(500).json({ error: "Failed to fetch your expenses" });
+    }
+  });
+
   /**
    * GET /api/jobs/:jobId/expenses
    * Returns expenses for a job, scoped to the requesting user's role:
