@@ -6,7 +6,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import {
-  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, User,
+  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, Crown, Users,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -27,6 +27,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -58,6 +60,12 @@ const CLAIM_BADGE: Record<ClaimStatus, { label: string; className: string }> = {
   paid:      { label: "Paid",            className: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
 };
 
+export interface PhaseAssignedUser {
+  id: string;
+  name: string;
+  isLead: boolean;
+}
+
 export interface JobPhase {
   id: string;
   jobId: string;
@@ -74,6 +82,9 @@ export interface JobPhase {
   notes?: string | null;
   assignedUserId?: string | null;
   assignedUserName?: string | null;
+  /** All assigned members (from job_phase_assignments + legacy lead) */
+  assignedUsers?: PhaseAssignedUser[];
+  assignedUserIds?: string[];
   createdAt: string;
 }
 
@@ -95,6 +106,7 @@ const EMPTY_FORM = {
   status: "not_started" as PhaseStatus,
   notes: "",
   assignedUserId: "",
+  assignedUserIds: [] as string[],
 };
 
 /** Build 1–2 character initials from a full name */
@@ -103,6 +115,180 @@ function initials(name?: string | null): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "";
   return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
+}
+
+/** Deterministic colour based on user id / name for avatar */
+const AVATAR_COLORS = [
+  "#4f7ddb", "#e07b39", "#5ba85f", "#9b59b6",
+  "#e74c3c", "#16a085", "#d35400", "#2c3e50",
+];
+function avatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+// ─── Stacked avatar display for phase members ─────────────────────────────────
+interface PhaseAssigneeStackProps {
+  members: PhaseAssignedUser[];
+  /** When provided, clicking the stack opens the member picker */
+  onManage?: () => void;
+  isTradie?: boolean;
+}
+
+function PhaseAssigneeStack({ members, onManage, isTradie }: PhaseAssigneeStackProps) {
+  if (members.length === 0) return null;
+  const MAX_SHOWN = 3;
+  const shown = members.slice(0, MAX_SHOWN);
+  const overflow = members.length - MAX_SHOWN;
+
+  const stack = (
+    <button
+      type="button"
+      onClick={onManage}
+      disabled={isTradie || !onManage}
+      className={`flex items-center gap-1 ${!isTradie && onManage ? "hover:opacity-80 cursor-pointer" : "cursor-default"}`}
+      title={members.map((m) => `${m.name}${m.isLead ? " (Lead)" : ""}`).join(", ")}
+    >
+      <div className="flex -space-x-1.5">
+        {shown.map((m) => (
+          <span
+            key={m.id}
+            className="relative inline-flex items-center justify-center w-5 h-5 rounded-full text-[8px] font-bold text-white border border-background ring-0"
+            style={{ backgroundColor: avatarColor(m.id) }}
+          >
+            {initials(m.name)}
+            {m.isLead && (
+              <Crown
+                className="absolute -top-1 -right-1 h-2.5 w-2.5 text-amber-400 drop-shadow"
+                fill="currentColor"
+              />
+            )}
+          </span>
+        ))}
+        {overflow > 0 && (
+          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[8px] font-bold text-muted-foreground bg-muted border border-background">
+            +{overflow}
+          </span>
+        )}
+      </div>
+    </button>
+  );
+
+  return stack;
+}
+
+// ─── Inline member picker popover ─────────────────────────────────────────────
+interface PhaseMemberPickerProps {
+  phase: JobPhase;
+  workers: { id: string; name: string }[];
+  onSave: (assignedUserIds: string[], leadId: string | null) => void;
+  isPending?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  children: React.ReactNode;
+}
+
+function PhaseMemberPicker({ phase, workers, onSave, isPending, open, onOpenChange, children }: PhaseMemberPickerProps) {
+  const currentMembers = phase.assignedUsers ?? (phase.assignedUserId ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }] : []);
+  const [selected, setSelected] = useState<string[]>(currentMembers.map((m) => m.id));
+  const [leadId, setLeadId] = useState<string>(phase.assignedUserId ?? currentMembers[0]?.id ?? "");
+
+  // Reset when popover opens
+  const handleOpenChange = (o: boolean) => {
+    if (o) {
+      const ids = currentMembers.map((m) => m.id);
+      setSelected(ids);
+      setLeadId(phase.assignedUserId ?? ids[0] ?? "");
+    }
+    onOpenChange(o);
+  };
+
+  const toggle = (id: string) => {
+    setSelected((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      // If we removed the current lead, pick another
+      if (!next.includes(leadId) && next.length > 0) setLeadId(next[0]);
+      if (next.length === 0) setLeadId("");
+      return next;
+    });
+  };
+
+  const handleSave = () => {
+    // Validate: if phase had members and we're clearing all, require at least one
+    const hadMembers = currentMembers.length > 0;
+    if (hadMembers && selected.length === 0) return; // UI prevents this with disabled Save
+    const effectiveLead = selected.includes(leadId) ? leadId : (selected[0] ?? null);
+    onSave(selected, effectiveLead);
+  };
+
+  const hadMembers = currentMembers.length > 0;
+
+  return (
+    <Popover open={open} onOpenChange={handleOpenChange}>
+      <PopoverTrigger asChild>{children}</PopoverTrigger>
+      <PopoverContent className="w-64 p-3 space-y-3" align="start">
+        <div className="flex items-center gap-2">
+          <Users className="h-3.5 w-3.5 text-muted-foreground" />
+          <span className="text-xs font-medium">Assign team members</span>
+        </div>
+
+        {workers.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No workers assigned to this job yet.</p>
+        ) : (
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {workers.map((w) => (
+              <label key={w.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-muted/50 rounded px-1">
+                <Checkbox
+                  checked={selected.includes(w.id)}
+                  onCheckedChange={() => toggle(w.id)}
+                  id={`member-${phase.id}-${w.id}`}
+                />
+                <span className="flex-1 text-xs">{w.name}</span>
+                {selected.includes(w.id) && selected.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); setLeadId(w.id); }}
+                    title="Set as lead"
+                    className="ml-auto"
+                  >
+                    <Crown
+                      className={`h-3 w-3 ${leadId === w.id ? "text-amber-400" : "text-muted-foreground/40 hover:text-amber-300"}`}
+                      fill={leadId === w.id ? "currentColor" : "none"}
+                    />
+                  </button>
+                )}
+                {selected.includes(w.id) && selected.length === 1 && (
+                  <Crown className="h-3 w-3 text-amber-400 ml-auto" fill="currentColor" />
+                )}
+              </label>
+            ))}
+          </div>
+        )}
+
+        {selected.length > 1 && (
+          <p className="text-[10px] text-muted-foreground">
+            Click <Crown className="inline h-2.5 w-2.5 text-muted-foreground" /> to set lead
+          </p>
+        )}
+
+        <div className="flex gap-2 pt-1 border-t">
+          <Button
+            size="sm"
+            className="flex-1 h-7 text-xs"
+            disabled={isPending || (hadMembers && selected.length === 0)}
+            onClick={handleSave}
+            style={{ backgroundColor: "hsl(var(--trade))", color: "white" }}
+          >
+            {isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Save"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
 }
 
 interface Props {
@@ -120,6 +306,8 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
   const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
   // Phase-complete → claim prompt state
   const [claimPromptPhase, setClaimPromptPhase] = useState<JobPhase | null>(null);
+  // Inline member picker state: which phase's popover is open
+  const [memberPickerPhaseId, setMemberPickerPhaseId] = useState<string | null>(null);
 
   const { data: phases = [], isLoading } = useQuery<JobPhase[]>({
     queryKey: [`/api/jobs/${jobId}/phases`],
@@ -224,6 +412,22 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
     onError: (e: any) => toast({ title: "Status update failed", description: e.message, variant: "destructive" }),
   });
 
+  // Quick-assign from the avatar popover (no form open)
+  const assignMembersMutation = useMutation({
+    mutationFn: ({ phaseId, assignedUserIds, assignedUserId }: {
+      phaseId: string;
+      assignedUserIds: string[];
+      assignedUserId: string | null;
+    }) =>
+      apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, { assignedUserIds, assignedUserId }),
+    onSuccess: () => {
+      invalidate();
+      setMemberPickerPhaseId(null);
+      toast({ title: "Team updated" });
+    },
+    onError: (e: any) => toast({ title: "Failed to update team", description: e.message, variant: "destructive" }),
+  });
+
   const handleMove = (idx: number, direction: "up" | "down") => {
     const ids = sorted.map((p) => p.id);
     const target = direction === "up" ? idx - 1 : idx + 1;
@@ -234,6 +438,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
 
   const startEdit = (phase: JobPhase) => {
     setEditingId(phase.id);
+    const currentMembers = phase.assignedUsers ?? (phase.assignedUserId ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }] : []);
     setEditForm({
       phaseCode: phase.phaseCode,
       name: phase.name,
@@ -245,6 +450,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       status: phase.status,
       notes: phase.notes ?? "",
       assignedUserId: phase.assignedUserId ?? "",
+      assignedUserIds: currentMembers.map((m) => m.id),
     });
   };
 
@@ -310,6 +516,10 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
           {sorted.map((phase, idx) => {
             const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
             const isEditing = editingId === phase.id;
+            const phaseMembers: PhaseAssignedUser[] = phase.assignedUsers
+              ?? (phase.assignedUserId
+                ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }]
+                : []);
 
             if (isEditing && !isTradie) {
               return (
@@ -322,6 +532,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                     isPending={updateMutation.isPending}
                     submitLabel="Save"
                     workers={workers}
+                    existingMembers={phaseMembers}
                   />
                 </div>
               );
@@ -398,20 +609,64 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                         {cfg.label}
                       </span>
                     )}
-                    {/* Assignee initials badge */}
-                    {phase.assignedUserName && (
-                      <span
-                        className="flex items-center gap-1 text-[10px] text-muted-foreground"
-                        title={phase.assignedUserName}
+
+                    {/* Assignee avatar stack — shows all members */}
+                    {phaseMembers.length > 0 && (
+                      <>
+                        {!isTradie ? (
+                          <PhaseMemberPicker
+                            phase={phase}
+                            workers={workers}
+                            open={memberPickerPhaseId === phase.id}
+                            onOpenChange={(o) => setMemberPickerPhaseId(o ? phase.id : null)}
+                            isPending={assignMembersMutation.isPending && memberPickerPhaseId === phase.id}
+                            onSave={(ids, leadId) =>
+                              assignMembersMutation.mutate({
+                                phaseId: phase.id,
+                                assignedUserIds: ids,
+                                assignedUserId: leadId,
+                              })
+                            }
+                          >
+                            <span>
+                              <PhaseAssigneeStack
+                                members={phaseMembers}
+                                onManage={() => setMemberPickerPhaseId(phase.id)}
+                                isTradie={false}
+                              />
+                            </span>
+                          </PhaseMemberPicker>
+                        ) : (
+                          <PhaseAssigneeStack members={phaseMembers} isTradie={true} />
+                        )}
+                      </>
+                    )}
+
+                    {/* "Manage team" button when no members yet (owner only) */}
+                    {phaseMembers.length === 0 && !isTradie && workers.length > 0 && (
+                      <PhaseMemberPicker
+                        phase={phase}
+                        workers={workers}
+                        open={memberPickerPhaseId === phase.id}
+                        onOpenChange={(o) => setMemberPickerPhaseId(o ? phase.id : null)}
+                        isPending={assignMembersMutation.isPending && memberPickerPhaseId === phase.id}
+                        onSave={(ids, leadId) =>
+                          assignMembersMutation.mutate({
+                            phaseId: phase.id,
+                            assignedUserIds: ids,
+                            assignedUserId: leadId,
+                          })
+                        }
                       >
-                        <span
-                          className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold text-white"
-                          style={{ backgroundColor: "hsl(var(--trade))" }}
+                        <button
+                          type="button"
+                          className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+                          title="Assign team members"
                         >
-                          {initials(phase.assignedUserName)}
-                        </span>
-                        <span className="hidden sm:inline">{phase.assignedUserName}</span>
-                      </span>
+                          <Users className="h-3 w-3" />
+                          <span>Assign</span>
+                        </button>
+                      </PhaseMemberPicker>
                     )}
                   </div>
 
@@ -517,13 +772,32 @@ interface PhaseFormProps {
   isPending: boolean;
   submitLabel: string;
   workers?: { id: string; name: string }[];
+  existingMembers?: PhaseAssignedUser[];
 }
 
-function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, workers = [] }: PhaseFormProps) {
+function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, workers = [], existingMembers = [] }: PhaseFormProps) {
   const set = (field: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm({ ...form, [field]: e.target.value });
   const setVal = (field: keyof typeof EMPTY_FORM) => (v: string) =>
     setForm({ ...form, [field]: v });
+
+  // Multi-member selection helpers
+  const selectedIds: string[] = form.assignedUserIds ?? [];
+  const leadId = form.assignedUserId ?? selectedIds[0] ?? "";
+
+  const toggleMember = (id: string) => {
+    const next = selectedIds.includes(id)
+      ? selectedIds.filter((x) => x !== id)
+      : [...selectedIds, id];
+    // If removing the lead, promote another
+    let newLead = leadId;
+    if (!next.includes(newLead)) newLead = next[0] ?? "";
+    setForm({ ...form, assignedUserIds: next, assignedUserId: newLead });
+  };
+
+  const setLead = (id: string) => {
+    setForm({ ...form, assignedUserId: id });
+  };
 
   return (
     <div className="space-y-3 p-3 rounded-lg border bg-muted/30">
@@ -610,21 +884,56 @@ function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, 
         </div>
       </div>
 
-      {/* Assignee picker — only shown when the job has assigned workers */}
+      {/* Multi-member picker — only shown when the job has assigned workers */}
       {workers.length > 0 && (
-        <div className="space-y-1">
-          <Label className="text-xs">Assigned to</Label>
-          <Select value={form.assignedUserId || "__none__"} onValueChange={(v) => setVal("assignedUserId")(v === "__none__" ? "" : v)}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="No assignee" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__none__">No assignee</SelectItem>
-              {workers.map((w) => (
-                <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-1.5">
+          <Label className="text-xs flex items-center gap-1">
+            <Users className="h-3 w-3" />
+            Team members
+            {selectedIds.length > 0 && (
+              <span className="text-muted-foreground font-normal">
+                ({selectedIds.length} selected)
+              </span>
+            )}
+          </Label>
+          <div className="border rounded-md divide-y max-h-36 overflow-y-auto bg-background">
+            {workers.map((w) => {
+              const isSelected = selectedIds.includes(w.id);
+              const isLead = leadId === w.id && isSelected;
+              return (
+                <label
+                  key={w.id}
+                  className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-muted/50"
+                >
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => toggleMember(w.id)}
+                    id={`form-member-${w.id}`}
+                  />
+                  <span className="flex-1 text-xs">{w.name}</span>
+                  {isSelected && (
+                    <button
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); if (selectedIds.length > 1) setLead(w.id); }}
+                      title={isLead ? "Lead member" : "Set as lead"}
+                      className="ml-auto"
+                      disabled={selectedIds.length <= 1}
+                    >
+                      <Crown
+                        className={`h-3 w-3 ${isLead ? "text-amber-400" : "text-muted-foreground/30 hover:text-amber-300"}`}
+                        fill={isLead ? "currentColor" : "none"}
+                      />
+                    </button>
+                  )}
+                </label>
+              );
+            })}
+          </div>
+          {selectedIds.length > 1 && (
+            <p className="text-[10px] text-muted-foreground">
+              Click <Crown className="inline h-2.5 w-2.5 text-muted-foreground" /> on a selected member to set them as lead
+            </p>
+          )}
         </div>
       )}
 
