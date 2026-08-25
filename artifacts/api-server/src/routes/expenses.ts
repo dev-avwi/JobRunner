@@ -8,7 +8,7 @@ import {
 } from "../phaseExpenseAttribution";
 import { createNotification } from "../notifications";
 import { insertExpenseSchema, db, expenses as expensesTable, expenseCategories, jobs } from "@workspace/db";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, or, sql, desc } from "drizzle-orm";
 
 type ExpenseScope = {
   jobId?: string | null;
@@ -71,6 +71,48 @@ export function registerExpenseRoutes(app: Express) {
     try {
       const rawUserId = req.userId!;
 
+      // Resolve business context so we can scope every predicate to the
+      // correct tenant.  For an owner effectiveUserId === rawUserId; for a
+      // team member it is the owner's userId that expenses are stored under.
+      const userContext = await getUserContext(rawUserId);
+      const effectiveUserId = userContext.effectiveUserId;
+
+      // Resolve the user's display name so we can also match legacy expenses
+      // that were recorded before the submittedByUserId column existed.
+      // Those expenses carry a "[Logged by <name>]" prefix on their description
+      // instead of the structured FK — we need both predicates to return a
+      // complete history.
+      const user = await storage.getUser(rawUserId);
+      const submitterName = user
+        ? (user.firstName || user.username || null)
+        : null;
+
+      // Escape LIKE special characters in the name so that a first name
+      // containing '%' or '_' cannot widen the pattern match.
+      const escapedName = submitterName
+        ? submitterName.replace(/[%_\\]/g, "\\$&")
+        : null;
+
+      // Build the WHERE clause:
+      //   (a) Modern row: submittedByUserId matches the caller's rawUserId
+      //   (b) Legacy row: description starts with the exact "[Logged by <name>]"
+      //       prefix AND the expense belongs to the caller's business
+      //       (expensesTable.userId = effectiveUserId).
+      //
+      // Constraining the legacy branch to effectiveUserId prevents cross-tenant
+      // leakage when two workers from different businesses share the same name.
+      const byUserId = eq((expensesTable as any).submittedByUserId, rawUserId);
+      const whereClause =
+        escapedName
+          ? or(
+              byUserId,
+              and(
+                eq(expensesTable.userId, effectiveUserId),
+                sql`${expensesTable.description} ILIKE ${"[Logged by " + escapedName + "]%"} ESCAPE '\\'`
+              )
+            )
+          : byUserId;
+
       const result = await db
         .select({
           id: expensesTable.id,
@@ -91,7 +133,7 @@ export function registerExpenseRoutes(app: Express) {
         .from(expensesTable)
         .leftJoin(expenseCategories, eq(expensesTable.categoryId, expenseCategories.id))
         .leftJoin(jobs, eq(expensesTable.jobId, jobs.id))
-        .where(eq((expensesTable as any).submittedByUserId, rawUserId))
+        .where(whereClause)
         .orderBy(desc(expensesTable.expenseDate));
 
       res.json(result);
