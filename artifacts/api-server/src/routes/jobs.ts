@@ -7264,8 +7264,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
       // Get job expenses
       const expenses = await storage.getExpenses(userId, { jobId });
-      const materialExpenses = expenses.filter(e => e.category === 'materials');
-      const nonMaterialExpensesList = expenses.filter(e => e.category !== 'materials');
+      // Rejected worker receipts are excluded from cost totals — they were not
+      // approved and should not inflate job costs on the manager/owner view.
+      const expensesForCosting = expenses.filter((e: any) => e.status !== 'rejected');
+      const materialExpenses = expensesForCosting.filter(e => e.category === 'materials');
+      const nonMaterialExpensesList = expensesForCosting.filter(e => e.category !== 'materials');
       const materialExpenseCost = materialExpenses.reduce((sum, e) => sum + parseFloat(e.amount || '0'), 0);
       const nonMaterialExpenses = nonMaterialExpensesList.reduce((sum, e) => sum + parseFloat(e.amount || '0'), 0);
 
@@ -7329,7 +7332,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const employeeLaborCost = employeeEntries.reduce((sum, entry) => sum + calcEntryCost(entry), 0);
       const subcontractorTimeCost = subcontractorEntries.reduce((sum, entry) => sum + calcEntryCost(entry), 0);
 
-      const subcontractorExpenses = expenses.filter(e => {
+      const subcontractorExpenses = expensesForCosting.filter(e => {
         const desc = (e.description || '').toLowerCase();
         const cat = ((e as any).category || (e as any).categoryName || '').toLowerCase();
         return cat.includes('subcontractor') || desc.includes('subcontractor');
@@ -7395,7 +7398,9 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             if (sjRevenue > 0) {
               // Rough margin using only invoice total vs material cost from expenses
               const sjExpenses = await storage.getExpenses(userId, { jobId: sj.id });
-              const sjCost = sjExpenses.reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
+              const sjCost = sjExpenses
+                .filter((e: any) => e.status !== 'rejected')
+                .reduce((s: number, e: any) => s + parseFloat(e.amount || '0'), 0);
               // Add labour cost from time entries
               try {
                 const sjTime = await storage.getTimeEntries(userId, sj.id);
@@ -7491,7 +7496,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             for (const m of jobMaterials) {
               bucketFor((m as any).createdAt, (m as any).phaseId).materials += parseFloat(m.totalCost?.toString() || '0');
             }
-            const expenseAllocation = allocateExpensesByPhase(expenses, buckets.keys());
+            const expenseAllocation = allocateExpensesByPhase(expensesForCosting, buckets.keys());
             for (const [phaseId, amount] of expenseAllocation.byPhaseId) {
               buckets.get(phaseId)!.expenses += amount;
             }
@@ -8094,15 +8099,17 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
       // Classify expenses using `categoryName` (the joined field from expenseCategories.name)
       // with description as a fallback only if category is absent.
+      // Rejected worker receipts are excluded from cost totals.
+      const expensesForCosting = expenses.filter((e: any) => e.status !== 'rejected');
       const catOf = (e: any): string =>
         ((e.categoryName || e.description || '') as string).toLowerCase();
-      const materialExpenses = expenses.filter((e: any) =>
+      const materialExpenses = expensesForCosting.filter((e: any) =>
         /material|supply|supplies|hardware/i.test(catOf(e))
       );
-      const subcontractorExpenses = expenses.filter((e: any) =>
+      const subcontractorExpenses = expensesForCosting.filter((e: any) =>
         /subcontractor|contractor|labour hire|labor hire/i.test(catOf(e))
       );
-      const otherExpenses = expenses.filter((e: any) =>
+      const otherExpenses = expensesForCosting.filter((e: any) =>
         !materialExpenses.includes(e) && !subcontractorExpenses.includes(e)
       );
 
