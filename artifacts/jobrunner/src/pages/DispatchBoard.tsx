@@ -1214,6 +1214,8 @@ export default function DispatchBoard() {
   const [appliedSuggestions, setAppliedSuggestions] = useState<Set<string>>(new Set());
   const [selectedJob, setSelectedJob] = useState<SelectedJobForAssignment | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
+  const [phaseDetailOpen, setPhaseDetailOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>('owner');
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<string>('09:00');
   const [quickAssignJob, setQuickAssignJob] = useState<Job | null>(null);
@@ -1806,6 +1808,13 @@ export default function DispatchBoard() {
     setAssignDialogOpen(false);
   };
 
+  const handlePhaseClick = useCallback((phase: DispatchPhase, e: React.MouseEvent) => {
+    // Don't open detail panel when the user is starting a drag
+    e.stopPropagation();
+    setSelectedPhase(phase);
+    setPhaseDetailOpen(true);
+  }, []);
+
   const getJobPosition = (job: Job) => {
     const { hour, minute } = parseJobTime(job.scheduledTime, job.scheduledAt);
     const startHour = WORK_HOURS[0];
@@ -2313,7 +2322,7 @@ export default function DispatchBoard() {
                                         return (
                                           <div
                                             key={phase.id}
-                                            className="pointer-events-auto absolute left-0 right-0 mx-0.5 rounded-md border overflow-hidden cursor-default bg-indigo-100 dark:bg-indigo-900/40 border-indigo-400 dark:border-indigo-500"
+                                            className="pointer-events-auto absolute left-0 right-0 mx-0.5 rounded-md border overflow-hidden cursor-pointer bg-indigo-100 dark:bg-indigo-900/40 border-indigo-400 dark:border-indigo-500 hover:shadow-md transition-shadow"
                                             style={{
                                               top: top + 1,
                                               height: height - 2,
@@ -2321,6 +2330,7 @@ export default function DispatchBoard() {
                                               backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(99,102,241,0.1) 4px, rgba(99,102,241,0.1) 8px)',
                                             }}
                                             data-testid={`week-phase-${phase.id}`}
+                                            onClick={(e) => handlePhaseClick(phase, e)}
                                           >
                                             <div className="p-1 h-full flex flex-col">
                                               <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide truncate">
@@ -2644,6 +2654,7 @@ export default function DispatchBoard() {
                                           }}
                                           onDragStart={(e) => handlePhaseDragStart(e, phase)}
                                           onDragEnd={() => setDraggedPhase(null)}
+                                          onClick={(e) => handlePhaseClick(phase, e)}
                                           data-testid={`scheduled-phase-${phase.id}`}
                                         >
                                           <div className="p-2 h-full flex flex-col">
@@ -3580,6 +3591,127 @@ export default function DispatchBoard() {
         </DialogContent>
       </Dialog>
 
+      {/* Phase Detail Dialog */}
+      <Dialog open={phaseDetailOpen} onOpenChange={setPhaseDetailOpen}>
+        <DialogContent className="sm:max-w-md" data-testid="dialog-phase-detail">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wide bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded">
+                Phase
+              </span>
+              <span className="truncate">{selectedPhase?.name}</span>
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-1.5">
+              <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="truncate">{selectedPhase?.jobTitle}</span>
+              {selectedPhase?.phaseCode && (
+                <Badge variant="outline" className="text-[10px] ml-auto shrink-0">
+                  {selectedPhase.phaseCode}
+                </Badge>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPhase && (
+            <div className="space-y-4 py-1">
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <Badge variant="secondary" className="capitalize">
+                  {selectedPhase.status.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+
+              {/* Dates */}
+              {(selectedPhase.scheduledStart || selectedPhase.scheduledEnd) && (
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    {selectedPhase.scheduledStart && (
+                      <p>
+                        <span className="text-muted-foreground">Start: </span>
+                        {(() => { try { return format(new Date(selectedPhase.scheduledStart!), 'EEE, MMM d, yyyy'); } catch { return selectedPhase.scheduledStart; } })()}
+                      </p>
+                    )}
+                    {selectedPhase.scheduledEnd && (
+                      <p>
+                        <span className="text-muted-foreground">End: </span>
+                        {(() => { try { return format(new Date(selectedPhase.scheduledEnd!), 'EEE, MMM d, yyyy'); } catch { return selectedPhase.scheduledEnd; } })()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Booked hours */}
+              {selectedPhase.bookedHours && (
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span className="text-sm">
+                    <span className="text-muted-foreground">Booked hours: </span>
+                    {selectedPhase.bookedHours}h
+                  </span>
+                </div>
+              )}
+
+              {/* Assigned members */}
+              {selectedPhase.assignedUsers.length > 0 && (
+                <div className="flex items-start gap-2">
+                  <Users className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPhase.assignedUsers.map(u => (
+                      <div key={u.id} className="flex items-center gap-1 bg-muted rounded-full pl-0.5 pr-2 py-0.5">
+                        <UserAvatar
+                          className="h-5 w-5"
+                          fallbackClassName="text-[9px]"
+                          user={{ id: u.id, firstName: u.name.split(' ')[0], lastName: u.name.split(' ')[1] }}
+                        />
+                        <span className="text-xs">{u.name}</span>
+                        {u.isLead && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 ml-0.5 h-4">Lead</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedPhase.assignedUsers.length === 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="h-4 w-4 flex-shrink-0" />
+                  No members assigned
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedPhase.notes && (
+                <div className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1 text-xs uppercase tracking-wide">Notes</p>
+                  <p className="whitespace-pre-wrap leading-relaxed">{selectedPhase.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setPhaseDetailOpen(false)}>
+              Close
+            </Button>
+            {selectedPhase && (
+              <Button
+                onClick={() => {
+                  setPhaseDetailOpen(false);
+                  navigate(`/jobs/${selectedPhase.jobId}`);
+                }}
+                data-testid="button-phase-detail-open-project"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open project
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!quickAssignJob} onOpenChange={(open) => { if (!open) setQuickAssignJob(null); }}>
         <DialogContent className="max-w-sm" data-testid="dialog-dispatch-quick-assign">
           <DialogHeader>
@@ -3990,6 +4122,7 @@ export default function DispatchBoard() {
                                         }}
                                         onDragStart={(e) => handlePhaseDragStart(e, phase)}
                                         onDragEnd={() => setDraggedPhase(null)}
+                                        onClick={(e) => handlePhaseClick(phase, e)}
                                       >
                                         <div className="p-2 h-full flex flex-col">
                                           <div className="flex items-center gap-1.5">
