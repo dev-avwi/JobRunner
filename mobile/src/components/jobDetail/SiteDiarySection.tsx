@@ -9,7 +9,7 @@
  *  - Full-screen photo viewer on thumbnail tap
  *  - Weather icon glyph shown inline alongside the text label
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -165,12 +165,17 @@ export function SiteDiarySection({
     }
   }, [jobId, loading]);
 
+  // Auto-load diary entries on mount
+  useEffect(() => {
+    loadEntries();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobId]);
+
   const handleToggle = useCallback(
     (id: string) => {
-      if (!loaded && !loading) loadEntries();
       setExpanded((prev) => (prev === id ? null : id));
     },
-    [loaded, loading, loadEntries],
+    [],
   );
 
   const handleSectionOpen = useCallback(() => {
@@ -371,13 +376,6 @@ export function SiteDiarySection({
             <Text style={[s.addBtnText, { color: colors.primary }]}>Retry</Text>
           </TouchableOpacity>
         </View>
-      )}
-
-      {!loaded && !loading && !loadError && (
-        <TouchableOpacity onPress={handleSectionOpen} style={s.loadPrompt}>
-          <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
-          <Text style={s.loadPromptText}>Tap to load diary</Text>
-        </TouchableOpacity>
       )}
 
       {loading && <SkeletonSection rows={2} />}
@@ -872,17 +870,6 @@ function localStyles(colors: any) {
     retryBtn: {
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
-    },
-    loadPrompt: {
-      flexDirection: 'row' as const,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      gap: spacing.xs,
-      paddingVertical: spacing.md,
-    },
-    loadPromptText: {
-      fontSize: typography.sizes.sm,
-      color: colors.mutedForeground,
     },
     emptyState: {
       alignItems: 'center',
