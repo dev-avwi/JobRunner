@@ -29,7 +29,8 @@ const mockGetUserContext = vi.fn().mockResolvedValue({
 
 vi.mock("../../permissions", () => ({
   createPermissionMiddleware: () => (_req: any, _res: any, next: any) => next(),
-  PERMISSIONS: { WRITE_EXPENSES: "write_expenses" },
+  ownerOrManagerOnly: () => (_req: any, _res: any, next: any) => next(),
+  PERMISSIONS: { WRITE_EXPENSES: "write_expenses", READ_EXPENSES: "read_expenses" },
   getUserContext: (...args: any[]) => mockGetUserContext(...args),
 }));
 
@@ -101,7 +102,9 @@ describe("expense phase attribution", () => {
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual([{ id: EXPENSE_ID, ...expenseBody }]);
-    expect(mockStorage.getExpenses).toHaveBeenCalledWith(WORKER_USER_ID, {
+    // GET /api/expenses uses effectiveUserId (owner scope) so managers and workers
+    // see the business owner's expenses, not just their own.
+    expect(mockStorage.getExpenses).toHaveBeenCalledWith(OWNER_USER_ID, {
       jobId: JOB_ID,
       categoryId: undefined,
       startDate: undefined,

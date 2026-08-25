@@ -1,5 +1,6 @@
 import type { Express } from "express";
-import { insertExpenseSchema } from "@workspace/db";
+import { insertExpenseSchema, db, expenses as expensesTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
 import { createPermissionMiddleware, ownerOrManagerOnly, PERMISSIONS, getUserContext } from "../permissions";
 import { requireAuth } from "./middleware";
@@ -35,6 +36,29 @@ async function validateExpenseScope({
   }
 
   return undefined;
+}
+
+/**
+ * Collect the unique users-table IDs that should receive an expense-decision
+ * notification for a given job.  `teamMemberId` on a job_assignment row is a
+ * FK to the team_members table — it must NOT be used as a notification userId.
+ * The correct field is always `assignment.userId`.
+ *
+ * Exported for unit-testing.
+ */
+export function collectExpenseNotificationRecipients(
+  assignments: Array<{ userId?: string | null }>,
+  legacyAssignedTo: string | null | undefined,
+  ownerId: string
+): string[] {
+  const seen = new Set<string>();
+  for (const a of assignments) {
+    if (a.userId && a.userId !== ownerId) seen.add(a.userId);
+  }
+  if (legacyAssignedTo && legacyAssignedTo !== ownerId) {
+    seen.add(legacyAssignedTo);
+  }
+  return Array.from(seen);
 }
 
 export function registerExpenseRoutes(app: Express) {
@@ -360,5 +384,68 @@ export function registerExpenseRoutes(app: Express) {
         res.status(400).json({ error: "Invalid expense data" });
       }
     },
+  );
+
+  // ── PUT /approve and /reject — atomic aliases ──────────────────────────────
+  // These endpoints are kept alongside PATCH /api/expenses/:id/status for
+  // backward compatibility with existing tests and any clients that call them.
+  // Both use a conditional WHERE status='pending' to prevent double-decisions.
+
+  async function handleExpenseDecision(
+    req: any,
+    res: any,
+    decision: "approved" | "rejected"
+  ) {
+    try {
+      const userId = req.userId!;
+      const ownerId = req.effectiveUserId || userId;
+      const { id } = req.params;
+
+      const existing = await storage.getExpense(id, ownerId);
+      if (!existing) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      if (existing.status !== "pending") {
+        return res.status(400).json({ error: `Expense is already ${existing.status}` });
+      }
+
+      // Atomic conditional update: only transitions from 'pending' → decision.
+      // The WHERE clause includes status = 'pending' so a concurrent request
+      // that already transitioned the row returns 0 rows and gets a 409.
+      const updated = await db
+        .update(expensesTable)
+        .set({ status: decision, approvedBy: userId, updatedAt: new Date() })
+        .where(
+          and(
+            eq(expensesTable.id, id),
+            eq(expensesTable.userId, ownerId),
+            sql`${expensesTable.status} = 'pending'`
+          )
+        )
+        .returning();
+
+      if (updated.length === 0) {
+        return res.status(409).json({ error: "Expense is no longer pending" });
+      }
+
+      res.json(updated[0]);
+    } catch (error: any) {
+      console.error(`${decision} expense error:`, error);
+      res.status(500).json({ error: `Failed to ${decision} expense` });
+    }
+  }
+
+  app.put(
+    "/api/expenses/:id/approve",
+    requireAuth,
+    createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES),
+    (req: any, res) => handleExpenseDecision(req, res, "approved")
+  );
+
+  app.put(
+    "/api/expenses/:id/reject",
+    requireAuth,
+    createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES),
+    (req: any, res) => handleExpenseDecision(req, res, "rejected")
   );
 }

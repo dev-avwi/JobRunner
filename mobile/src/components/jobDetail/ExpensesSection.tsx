@@ -63,7 +63,7 @@ interface Props {
   onRefresh?: () => void | Promise<void>;
 }
 
-// ── Phase status colours ───────────────────────────────────────────────────────
+// ── Phase status colours (display / badge only — no phase mutation here) ──────
 
 const PHASE_STATUS_COLORS: Record<string, { dot: string; badge: string; text: string }> = {
   not_started: { dot: '#94a3b8', badge: '#f1f5f9', text: '#64748b' },

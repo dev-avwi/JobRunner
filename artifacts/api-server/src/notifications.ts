@@ -570,3 +570,32 @@ export async function notifyPaymentFailed(
     actionLabel: 'Update Payment',
   });
 }
+
+// ===== EXPENSE EVENTS =====
+
+/**
+ * Notify a worker that their submitted expense has been approved or rejected.
+ * Called with each assigned worker's userId since the submitter's userId is not
+ * stored separately on the expense row.
+ */
+export async function notifyExpenseDecision(
+  storage: any,
+  workerUserId: string,
+  expense: any,
+  decision: 'approved' | 'rejected',
+  jobTitle: string
+) {
+  const approved = decision === 'approved';
+  const amount = parseFloat(String(expense.amount || 0)).toFixed(2);
+  await createNotification(storage, {
+    userId: workerUserId,
+    type: approved ? 'expense_approved' : 'expense_rejected',
+    title: approved ? 'Expense Approved' : 'Expense Rejected',
+    message: `Your $${amount} expense on "${jobTitle}" was ${approved ? 'approved' : 'rejected'}.`,
+    relatedType: 'job',
+    relatedId: expense.jobId || undefined,
+    priority: 'info',
+    actionUrl: expense.jobId ? `/jobs/${expense.jobId}` : undefined,
+    actionLabel: 'View Job',
+  });
+}
