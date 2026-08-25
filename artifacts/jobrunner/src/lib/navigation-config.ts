@@ -31,6 +31,7 @@ import {
   Shield,
   ShieldCheck,
   CalendarDays,
+  Columns3,
   type LucideIcon
 } from "lucide-react";
 
@@ -145,12 +146,25 @@ export const mainMenuItems: NavItem[] = [
     title: "Schedule",
     url: "/schedule",
     icon: Calendar,
-    description: "Calendar and dispatch board",
+    description: "Calendar and schedule view",
     color: "text-success",
     bgColor: "bg-success/10",
     showInSidebar: true,
     showInMore: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'],
+  },
+  {
+    title: "Dispatch",
+    url: "/dispatch",
+    icon: Columns3,
+    description: "Advanced dispatch board: workers, equipment, materials",
+    color: "text-blue-600",
+    bgColor: "bg-blue-600/10",
+    requiresTeam: true,
+    hideForStaff: true,
+    showInSidebar: true,
+    showInMore: true,
+    allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
   },
   {
     title: "Time Tracking",

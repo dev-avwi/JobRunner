@@ -2565,7 +2565,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
   // Returns every phase (with assignees + parent job title) so the dispatch
   // board can render phase blocks alongside job blocks without making per-job
   // requests. The client filters by date client-side.
-  app.get("/api/dispatch/phases", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
+  app.get("/api/dispatch/phases", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const effectiveUserId = req.effectiveUserId || req.userId;
 

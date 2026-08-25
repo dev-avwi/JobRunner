@@ -98,6 +98,7 @@ const JobMapPage = lazyWithReload(() => import("@/pages/JobMap"));
 const DirectMessagesPage = lazyWithReload(() => import("@/pages/DirectMessages"));
 const DispatchBoard = lazyWithReload(() => import("@/pages/DispatchBoard"));
 const SchedulePage = lazyWithReload(() => import("@/pages/SchedulePage"));
+const AdvancedDispatch = lazyWithReload(() => import("@/pages/AdvancedDispatch"));
 const Automations = lazyWithReload(() => import("@/pages/Automations"));
 const RecurringJobs = lazyWithReload(() => import("@/pages/RecurringJobs"));
 const ServiceRemindersPage = lazyWithReload(() => import("@/pages/ServiceReminders"));
@@ -758,9 +759,11 @@ function Router({
         </FeatureGate>
       )} />
 
-      <Route path="/dispatch">
-        <Redirect to="/schedule" />
-      </Route>
+      <Route path="/dispatch" component={() => (
+        <FeatureGate requiredTier="team" featureName="Dispatch" description="Advanced dispatch board combining workers, equipment, and materials in one view.">
+          <AdvancedDispatch />
+        </FeatureGate>
+      )} />
       
       {/* Templates route removed - template customization is now in Settings > Documents */}
       

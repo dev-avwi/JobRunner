@@ -16520,13 +16520,19 @@ Be specific about materials, colors, and features that would be included.`
 
   // ===== DISPATCH BOARD ENDPOINT =====
   
-  app.get("/api/dispatch/board", requireAuth, async (req: any, res) => {
+  app.get("/api/dispatch/board", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
-      const userId = req.userId;
+      // Resolve the effective business-owner ID so managers/office-admins see
+      // the same job pool as the owner instead of getting an empty board.
+      const userContext = await getUserContext(req.userId);
+      const userId = userContext.effectiveUserId;
+      const includeTerminal = req.query.includeTerminal === 'true';
       const allJobs = await storage.getJobs(userId);
-      const activeJobs = allJobs.filter((j: any) => 
-        !['completed', 'cancelled', 'archived', 'done'].includes(j.status?.toLowerCase() || '')
-      );
+      const activeJobs = includeTerminal
+        ? allJobs
+        : allJobs.filter((j: any) =>
+            !['completed', 'cancelled', 'archived', 'done'].includes(j.status?.toLowerCase() || '')
+          );
       
       const dispatchData = await Promise.all(activeJobs.map(async (job: any) => {
         const assignments = await storage.getJobAssignments(job.id);
@@ -16561,7 +16567,7 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
-  app.get("/api/dispatch/resources", requireAuth, async (req: any, res) => {
+  app.get("/api/dispatch/resources", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
       const userId = userContext.effectiveUserId;
