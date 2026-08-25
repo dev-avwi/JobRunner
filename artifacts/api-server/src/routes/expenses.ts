@@ -357,6 +357,13 @@ export function registerExpenseRoutes(app: Express) {
                   break;
                 }
               }
+              // Backfill submittedByUserId so future approvals don't need the
+              // name lookup (protects workers who were later removed from the job).
+              if (resolvedSubmitterUserId) {
+                await storage.updateExpense(id, ownerId, {
+                  submittedByUserId: resolvedSubmitterUserId,
+                } as any);
+              }
             }
           } catch (_lookupErr) {
             // Non-fatal — fall through without a resolved submitter
