@@ -61,6 +61,9 @@ import {
   X,
   Zap,
   Timer,
+  Maximize2,
+  Minimize2,
+  CalendarCheck,
 } from "lucide-react";
 import {
   Dialog,
@@ -709,6 +712,8 @@ function UnscheduledQueuePanel({
 
 // ─── Day View ────────────────────────────────────────────────────────────────
 
+const GUTTER_WIDTH = 52; // px — fixed time-gutter width so columns don't shift
+
 function DayView({
   date,
   jobs,
@@ -813,19 +818,27 @@ function DayView({
       <div className="flex flex-1 overflow-hidden">
         <ScrollArea className="flex-1">
           <div className="flex min-w-[700px]">
-            {/* Hour gutter */}
-            <div className="w-16 flex-shrink-0 relative" style={{ height: totalHeight + 24 }}>
-              <div className="h-6" /> {/* header spacer */}
+            {/* Hour gutter — fixed 52px so columns don't shift */}
+            <div className="flex-shrink-0 relative" style={{ width: GUTTER_WIDTH, height: totalHeight + 48 }}>
+              <div className="h-12" /> {/* header spacer matching worker header height */}
               {hours.map(h => (
                 <div key={h} className="absolute left-0 right-0 flex items-center justify-end pr-2 pointer-events-none"
-                  style={{ top: (h - TIMELINE_START) * HOUR_HEIGHT + 24, height: HOUR_HEIGHT }}>
+                  style={{ top: (h - TIMELINE_START) * HOUR_HEIGHT + 48, height: HOUR_HEIGHT }}>
                   <span className="text-[11px] text-muted-foreground/70 -translate-y-1/2">{formatHourLabel(h)}</span>
                 </div>
               ))}
             </div>
 
             {/* Worker columns */}
-            <div className="flex flex-1 border-l">
+            <div className="flex flex-1 border-l relative">
+              {/* Now line spanning all worker columns */}
+              {showNowLine && (
+                <div className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                  style={{ top: nowTop + 48 }}>
+                  <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -translate-y-1/2" />
+                  <div className="flex-1 border-t-2 border-red-500" />
+                </div>
+              )}
               {filteredWorkers.map(worker => {
                 const wid = worker.memberId || worker.id;
                 const workerJobs = jobsByMember.get(wid) ?? [];
@@ -834,8 +847,8 @@ function DayView({
                 const leaveLabel = onLeave ? workerLeaveLabel(leaveRecords, wid, date) : null;
                 return (
                   <div key={wid} className={`flex-1 min-w-[140px] border-r last:border-r-0 ${isOverCapacity ? "ring-1 ring-inset ring-red-500/40" : ""} ${onLeave ? "opacity-60" : ""}`}>
-                    {/* Worker header */}
-                    <div className={`h-auto min-h-[24px] flex items-center gap-1.5 px-2 py-0.5 border-b sticky top-0 z-10 flex-wrap ${onLeave ? "bg-slate-100 dark:bg-slate-800/60" : isOverCapacity ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
+                    {/* Worker header — fixed 48px height */}
+                    <div className={`h-12 flex items-center gap-1.5 px-2 border-b sticky top-0 z-10 overflow-hidden ${onLeave ? "bg-slate-100 dark:bg-slate-800/60" : isOverCapacity ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
                       <UserAvatar
                         user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
                         className="h-4 w-4 text-[8px]"
@@ -879,22 +892,16 @@ function DayView({
                         </div>
                       ))}
 
-                      {/* Now line */}
-                      {showNowLine && (
-                        <div className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                          style={{ top: nowTop }}>
-                          <div className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0 -translate-y-1/2" />
-                          <div className="flex-1 border-t-2 border-red-500" />
-                        </div>
-                      )}
-
-                      {/* Job blocks */}
+                      {/* Job blocks — jobs outside 6am-8pm are clamped to the edge */}
                       {workerJobs.map(job => {
                         const { hour, minute } = parseJobTime(job.scheduledTime, job.scheduledAt);
-                        if (hour < TIMELINE_START || hour >= TIMELINE_END) return null;
-                        const top = (hour - TIMELINE_START) * HOUR_HEIGHT + (minute / 60) * HOUR_HEIGHT;
+                        const isOutOfViewTop = hour < TIMELINE_START;
+                        const isOutOfViewBottom = hour >= TIMELINE_END;
+                        const clampedHour = Math.max(TIMELINE_START, Math.min(TIMELINE_END - 1, hour));
+                        const clampedMinute = (isOutOfViewTop || isOutOfViewBottom) ? 0 : minute;
+                        const top = (clampedHour - TIMELINE_START) * HOUR_HEIGHT + (clampedMinute / 60) * HOUR_HEIGHT;
                         const durationHrs = (job.estimatedDuration ?? 60) / 60;
-                        const height = Math.max(durationHrs * HOUR_HEIGHT - 4, 36);
+                        const height = Math.max(durationHrs * HOUR_HEIGHT - 4, 30);
                         const sc = getStatusColor(job.status);
                         const isBeingDragged = draggingJobId === job.id;
 
@@ -910,11 +917,16 @@ function DayView({
                             }}
                             onDragEnd={() => setDraggingJobId(null)}
                             onClick={e => { e.stopPropagation(); onJobClick(job.id); }}
-                            className={`absolute left-1 right-1 rounded px-1.5 py-1 cursor-pointer border-l-[3px] transition-all
+                            className={`absolute left-1 right-1 rounded-r px-1.5 py-1 cursor-pointer border-l-[3px] transition-all
                               ${sc.bg} ${sc.border} hover:brightness-95 active:scale-[0.98]
                               ${isBeingDragged ? "opacity-40" : "opacity-100"}`}
                             style={{ top: top + 2, height }}
                           >
+                            {(isOutOfViewTop || isOutOfViewBottom) && (
+                              <div className="text-[9px] font-bold text-muted-foreground mb-0.5">
+                                {isOutOfViewTop ? "▲ before 6am" : "▼ after 8pm"}
+                              </div>
+                            )}
                             <p className="text-[11px] font-semibold truncate">{job.title}</p>
                             {height > 40 && (
                               <p className={`text-[10px] truncate ${sc.text}`}>{job.client?.name ?? "—"}</p>
@@ -933,7 +945,7 @@ function DayView({
               {/* Unassigned column */}
               {(jobsByMember.get("unassigned") ?? []).length > 0 && (
                 <div className="flex-1 min-w-[140px] border-r border-dashed">
-                  <div className="h-6 flex items-center px-2 border-b bg-muted/10 sticky top-0 z-10">
+                  <div className="h-12 flex items-center px-2 border-b bg-muted/10 sticky top-0 z-10">
                     <span className="text-[11px] font-medium text-muted-foreground truncate">Unassigned</span>
                   </div>
                   <div className="p-1 space-y-1 mt-1">
@@ -985,9 +997,9 @@ function DayView({
         </ScrollArea>
       </div>
 
-      {/* Materials panel */}
+      {/* Materials panel — capped at 220px so it doesn't eat schedule space */}
       {showMaterials && (
-        <div className="w-64 border-l flex flex-col flex-shrink-0">
+        <div className="w-[220px] max-w-[220px] border-l flex flex-col flex-shrink-0">
           <div className="px-3 py-2 border-b bg-muted/20">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Materials Needed Today</p>
           </div>
@@ -1073,27 +1085,33 @@ function WeekView({
     setDraggingJobId(null);
   }, [onReschedule]);
 
+  const WEEK_MAX_VISIBLE_CHIPS = 2;
+
   return (
     <ScrollArea className="flex-1">
       <div className="min-w-[900px]">
         {/* Day headers */}
-        <div className="grid grid-cols-[120px_repeat(7,1fr)] border-b sticky top-0 z-10 bg-background">
-          <div className="px-2 py-2 text-[11px] font-semibold text-muted-foreground uppercase">Worker</div>
+        <div className="grid grid-cols-[160px_repeat(7,1fr)] border-b sticky top-0 z-10 bg-background">
+          <div className="px-2 py-2 text-[11px] font-semibold text-muted-foreground">Worker</div>
           {days.map(day => (
             <div key={day.toISOString()} className={`px-2 py-2 text-center border-l ${isToday(day) ? "bg-primary/5" : ""}`}>
-              <p className="text-[11px] font-medium text-muted-foreground">{format(day, "EEE")}</p>
-              <p className={`text-sm font-bold ${isToday(day) ? "text-primary" : ""}`}>{format(day, "d")}</p>
+              <p className={`text-xs font-bold ${isToday(day) ? "text-primary" : "text-foreground"}`}>
+                {format(day, "EEE d")}
+              </p>
+              {isToday(day) && (
+                <div className="mt-0.5 mx-auto w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
             </div>
           ))}
         </div>
 
-        {/* Worker rows */}
+        {/* Worker rows — fixed 56px per row */}
         {filteredWorkers.map(worker => {
           const wid = worker.memberId || worker.id;
           return (
-            <div key={wid} className="grid grid-cols-[120px_repeat(7,1fr)] border-b">
-              {/* Worker label */}
-              <div className="px-2 py-2 flex items-center gap-1.5 border-r">
+            <div key={wid} className="grid grid-cols-[160px_repeat(7,1fr)] border-b" style={{ minHeight: 56 }}>
+              {/* Worker label — fixed 160px */}
+              <div className="px-2 py-1.5 flex items-center gap-1.5 border-r" style={{ width: 160 }}>
                 <UserAvatar
                   user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
                   className="h-6 w-6 text-[10px] flex-shrink-0"
@@ -1115,18 +1133,27 @@ function WeekView({
                   const assignee = j.assignedTo ?? primaryAssignment(j)?.memberId;
                   return assignee === wid;
                 });
+                const visibleChips = dayJobs.slice(0, WEEK_MAX_VISIBLE_CHIPS);
+                const overflowCount = dayJobs.length - WEEK_MAX_VISIBLE_CHIPS;
                 return (
                   <div
                     key={dayStr}
-                    className={`border-l min-h-[80px] p-1 relative group transition-colors
-                      ${isToday(day) ? "bg-primary/[0.03]" : ""}
-                      ${onLeave ? "bg-slate-50 dark:bg-slate-900/30" : ""}
-                      ${isOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : !onLeave ? "hover:bg-muted/10" : ""}`}
+                    className={`border-l p-1 relative group transition-colors`}
+                    style={{ minHeight: 56 }}
                     onDragOver={e => { e.preventDefault(); setDragOverCell({ wid, dayStr }); }}
                     onDragLeave={() => setDragOverCell(null)}
                     onDrop={e => handleWeekDrop(wid, day, e)}
                     onClick={() => onCreateJob(wid, day)}
+                    data-today={isToday(day) || undefined}
+                    data-over={isOver || undefined}
+                    data-leave={onLeave || undefined}
                   >
+                    <style>{`
+                      [data-today] { background: hsl(var(--primary)/0.03); }
+                      [data-leave] { background: hsl(215 20% 96%); }
+                      .dark [data-leave] { background: hsl(215 20% 10%); }
+                      [data-over] { background: hsl(var(--primary)/0.1); box-shadow: inset 0 0 0 1px hsl(var(--primary)/0.3); }
+                    `}</style>
                     {/* Leave indicator */}
                     {onLeave && (
                       <>
@@ -1140,7 +1167,8 @@ function WeekView({
                         </div>
                       </>
                     )}
-                    {dayJobs.map(job => {
+                    {/* Job chips — show max 2, then "+N more" */}
+                    {visibleChips.map(job => {
                       const sc = getStatusColor(job.status);
                       return (
                         <div
@@ -1152,20 +1180,31 @@ function WeekView({
                           }}
                           onDragEnd={() => setDraggingJobId(null)}
                           onClick={e => { e.stopPropagation(); onJobClick(job.id); }}
-                          className={`rounded px-1.5 py-0.5 mb-0.5 cursor-grab active:cursor-grabbing border-l-2
+                          className={`flex items-center gap-1 rounded px-1.5 py-0.5 mb-0.5 cursor-pointer border-l-2
                             ${sc.bg} ${sc.border} hover:brightness-95
                             ${draggingJobId === job.id ? "opacity-40" : ""}`}
-                          title={`${job.title} — ${job.client?.name ?? ""} ${formatJobTime(job.scheduledTime, job.scheduledAt)}`}
+                          title={`${job.title}${job.client?.name ? ` — ${job.client.name}` : ""} ${formatJobTime(job.scheduledTime, job.scheduledAt)}`}
                         >
-                          <p className="text-[10px] font-medium truncate">{job.title}</p>
-                          <p className={`text-[10px] truncate ${sc.text}`}>{formatJobTime(job.scheduledTime, job.scheduledAt)}</p>
+                          {/* Status dot */}
+                          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sc.solid }} />
+                          <p className="text-[10px] font-medium truncate flex-1">{job.title}</p>
                         </div>
                       );
                     })}
+                    {overflowCount > 0 && (
+                      <div
+                        className="rounded px-1.5 py-0.5 bg-muted/60 text-[10px] text-muted-foreground font-medium cursor-pointer hover:bg-muted"
+                        onClick={e => { e.stopPropagation(); onJobClick(dayJobs[WEEK_MAX_VISIBLE_CHIPS].id); }}
+                      >
+                        +{overflowCount} more
+                      </div>
+                    )}
                     {/* Drop hint */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <Plus className="h-3 w-3 text-muted-foreground/30" />
-                    </div>
+                    {dayJobs.length === 0 && (
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        <Plus className="h-3 w-3 text-muted-foreground/30" />
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1261,10 +1300,10 @@ function KanbanView({
             onDrop={() => handleDrop(col.key)}
           >
             {/* Column header */}
-            <div className={`px-3 py-2 rounded-t-sm ${col.bg}`}>
+            <div className={`px-3 py-2.5 rounded-t-sm ${col.bg}`}>
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">{col.label}</p>
-                <Badge variant="secondary" className="text-xs h-5">{columnJobs[col.key]?.length ?? 0}</Badge>
+                <p className="text-sm font-bold">{col.label}</p>
+                <Badge variant="secondary" className="text-xs h-5 ml-auto">{columnJobs[col.key]?.length ?? 0}</Badge>
               </div>
             </div>
 
@@ -1286,53 +1325,59 @@ function KanbanView({
                       }}
                       onDragEnd={() => setDragState(null)}
                       onClick={() => onJobClick(job.id)}
-                      className={`bg-card rounded-lg border shadow-sm p-3 cursor-pointer hover:shadow-md transition-shadow
-                        ${dragState?.jobId === job.id ? "opacity-40" : ""}
-                        ${sc.border} border-l-[3px]`}
+                      className={`bg-card rounded-r-lg border border-l-0 shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex
+                        ${dragState?.jobId === job.id ? "opacity-40" : ""}`}
                     >
-                      <div className="flex items-start justify-between gap-2 mb-1.5">
-                        <p className="text-sm font-semibold leading-tight flex-1">{job.title}</p>
-                        {job.priority && job.priority !== "normal" && (
-                          <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 capitalize flex-shrink-0">{job.priority}</Badge>
+                      {/* Left status stripe — 3px, flush, no gap */}
+                      <div className={`w-[3px] flex-shrink-0 ${sc.border.replace("border-", "bg-").split(" ")[0]}`}
+                        style={{ background: sc.solid }} />
+                      {/* Card content */}
+                      <div className="p-3 flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <p className="text-sm font-semibold leading-tight flex-1">{job.title}</p>
+                          {job.priority && job.priority !== "normal" && (
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 capitalize flex-shrink-0">{job.priority}</Badge>
+                          )}
+                        </div>
+
+                        {job.client?.name && (
+                          <p className="text-[11px] text-muted-foreground/70 mb-1.5 truncate">{job.client.name}</p>
+                        )}
+
+                        {job.address && (
+                          <div className="flex items-center gap-1 mb-1.5">
+                            <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <p className="text-[11px] text-muted-foreground truncate">{job.address}</p>
+                          </div>
+                        )}
+
+                        {job.scheduledAt && (
+                          <div className="flex items-center gap-1 mb-2">
+                            <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                            <p className="text-[11px] text-muted-foreground">
+                              {format(parseISO(job.scheduledAt), "d MMM")} {formatJobTime(job.scheduledTime, job.scheduledAt)}
+                            </p>
+                          </div>
+                        )}
+
+                        {worker && (
+                          <div className="flex items-center gap-1.5 pt-1.5 border-t">
+                            <UserAvatar
+                              user={{ id: worker.memberId || worker.id, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
+                              className="h-5 w-5 text-[9px] flex-shrink-0"
+                            />
+                            <span className="text-[11px] text-muted-foreground truncate">{memberName(worker)}</span>
+                          </div>
                         )}
                       </div>
-
-                      {job.client?.name && (
-                        <p className="text-xs text-muted-foreground mb-1.5 truncate">{job.client.name}</p>
-                      )}
-
-                      {job.address && (
-                        <div className="flex items-center gap-1 mb-1.5">
-                          <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <p className="text-[11px] text-muted-foreground truncate">{job.address}</p>
-                        </div>
-                      )}
-
-                      {job.scheduledAt && (
-                        <div className="flex items-center gap-1 mb-2">
-                          <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                          <p className="text-[11px] text-muted-foreground">
-                            {format(parseISO(job.scheduledAt), "d MMM")} {formatJobTime(job.scheduledTime, job.scheduledAt)}
-                          </p>
-                        </div>
-                      )}
-
-                      {worker && (
-                        <div className="flex items-center gap-1.5 pt-1.5 border-t">
-                          <UserAvatar
-                            user={{ id: worker.memberId || worker.id, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
-                            className="h-5 w-5 text-[9px] flex-shrink-0"
-                          />
-                          <span className="text-[11px] text-muted-foreground truncate">{memberName(worker)}</span>
-                        </div>
-                      )}
                     </div>
                   );
                 })}
 
                 {(columnJobs[col.key] ?? []).length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground/50 text-xs">
-                    No jobs
+                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground/40 gap-2">
+                    <CalendarCheck className="h-7 w-7" />
+                    <p className="text-xs">No jobs</p>
                   </div>
                 )}
               </div>
@@ -1639,6 +1684,31 @@ export default function AdvancedDispatch() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [showMaterials, setShowMaterials] = useState(true);
 
+  // ── Full-screen mode ──────────────────────────────────────────
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(() => {
+    try { return sessionStorage.getItem("dispatch-fullscreen") === "1"; } catch { return false; }
+  });
+
+  const toggleFullScreen = useCallback(() => {
+    setIsFullScreen(prev => {
+      const next = !prev;
+      try { sessionStorage.setItem("dispatch-fullscreen", next ? "1" : "0"); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  // F key shortcut (when not in an input/textarea)
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== "f" && e.key !== "F") return;
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable) return;
+      toggleFullScreen();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toggleFullScreen]);
+
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
@@ -1857,8 +1927,8 @@ export default function AdvancedDispatch() {
     { key: "map",    label: "Map",    icon: MapIcon },
   ];
 
-  return (
-    <PageShell className="flex flex-col h-screen overflow-hidden" data-testid="dispatch-board">
+  const dispatchContent = (
+    <div className={`flex flex-col overflow-hidden ${isFullScreen ? "fixed inset-0 z-50 bg-background" : "flex-1"}`} data-testid="dispatch-board">
       {/* ── Top bar ── */}
       <div className="border-b flex-shrink-0 px-4 py-2 flex items-center gap-3 flex-wrap">
         <h1 className="text-xl font-bold tracking-tight flex-shrink-0">Dispatch</h1>
@@ -2042,6 +2112,17 @@ export default function AdvancedDispatch() {
             {showSidebar ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
           </Button>
 
+          {/* Full-screen toggle */}
+          <Button
+            variant={isFullScreen ? "secondary" : "outline"}
+            size="icon"
+            className="h-7 w-7"
+            onClick={toggleFullScreen}
+            title={isFullScreen ? "Exit full screen (F)" : "Full screen (F)"}
+          >
+            {isFullScreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </Button>
+
           {/* New job */}
           <Button size="sm" className="h-7 text-xs gap-1.5" onClick={() => handleCreateJob()}>
             <Plus className="h-3.5 w-3.5" />
@@ -2153,6 +2234,12 @@ export default function AdvancedDispatch() {
           />
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <PageShell className="flex flex-col h-screen overflow-hidden">
+      {dispatchContent}
     </PageShell>
   );
 }
