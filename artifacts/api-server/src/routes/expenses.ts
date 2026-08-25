@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { insertExpenseSchema, db, expenses as expensesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "../storage";
-import { createPermissionMiddleware, ownerOrManagerOnly, PERMISSIONS, getUserContext } from "../permissions";
+import { createPermissionMiddleware, ownerOrManagerOnly, PERMISSIONS, getUserContext, hasPermission } from "../permissions";
 import { requireAuth } from "./middleware";
 import {
   assertExpensePhaseAssignment,
@@ -82,10 +82,9 @@ export function registerExpenseRoutes(app: Express) {
         return res.status(404).json({ error: "Job not found" });
       }
 
-      const isManager =
-        !isOwner &&
-        roleName &&
-        ["admin", "manager"].includes(roleName.toLowerCase());
+      // Use permission-based check so custom roles granted MANAGE_TEAM are
+      // treated as managers, not just roles whose name is literally "manager".
+      const isManager = !isOwner && hasPermission(userContext, PERMISSIONS.MANAGE_TEAM);
 
       if (isOwner || isManager) {
         // Owners and managers see all expenses for the job
@@ -467,6 +466,17 @@ export function registerExpenseRoutes(app: Express) {
       if (!existing) {
         return res.status(404).json({ error: "Expense not found" });
       }
+
+      // Only worker-submitted expenses can be approved or rejected — uses the
+      // same predicate as PATCH /api/expenses/:id/status so both paths behave
+      // identically: either a new submittedByUserId field or the legacy
+      // "[Logged by Name]" description prefix qualifies the expense.
+      const submittedByUserId = (existing as any).submittedByUserId as string | null;
+      const isLegacyWorkerExpense = /^\[Logged by /i.test(existing.description ?? "");
+      if (!submittedByUserId && !isLegacyWorkerExpense) {
+        return res.status(400).json({ error: "Only worker-submitted expenses can be approved or rejected" });
+      }
+
       if (existing.status !== "pending") {
         return res.status(400).json({ error: `Expense is already ${existing.status}` });
       }
@@ -500,14 +510,14 @@ export function registerExpenseRoutes(app: Express) {
   app.put(
     "/api/expenses/:id/approve",
     requireAuth,
-    createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES),
+    ownerOrManagerOnly(),
     (req: any, res) => handleExpenseDecision(req, res, "approved")
   );
 
   app.put(
     "/api/expenses/:id/reject",
     requireAuth,
-    createPermissionMiddleware(PERMISSIONS.WRITE_EXPENSES),
+    ownerOrManagerOnly(),
     (req: any, res) => handleExpenseDecision(req, res, "rejected")
   );
 }

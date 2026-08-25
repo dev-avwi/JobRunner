@@ -94,16 +94,19 @@ export async function buildCostReportData(
     }
   }
 
+  // Exclude rejected expenses before any cost aggregation
+  const activeExpenses = expenses.filter((e: any) => e.status !== 'rejected');
+
   // Classify expenses
   const catOf = (e: any): string =>
     ((e.categoryName || e.description || '') as string).toLowerCase();
-  const materialExpenses = expenses.filter((e: any) =>
+  const materialExpenses = activeExpenses.filter((e: any) =>
     /material|supply|supplies|hardware/i.test(catOf(e))
   );
-  const subcontractorExpenses = expenses.filter((e: any) =>
+  const subcontractorExpenses = activeExpenses.filter((e: any) =>
     /subcontractor|contractor|labour hire|labor hire/i.test(catOf(e))
   );
-  const otherExpenses = expenses.filter((e: any) =>
+  const otherExpenses = activeExpenses.filter((e: any) =>
     !materialExpenses.includes(e) && !subcontractorExpenses.includes(e)
   );
 

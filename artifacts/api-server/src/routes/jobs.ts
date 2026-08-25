@@ -9609,6 +9609,18 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       if (!job) {
         return res.status(404).json({ error: 'Job not found' });
       }
+
+      // Non-owners (workers) must be assigned to the job to flag extra work.
+      // Managers/admins (MANAGE_TEAM permission) may act across all jobs.
+      if (!userContext.isOwner && !hasPermission(userContext, PERMISSIONS.MANAGE_TEAM)) {
+        const isLegacyAssigned = (job as any).assignedTo === userId;
+        if (!isLegacyAssigned) {
+          const assignmentRecord = await storage.getJobAssignmentForUser(jobId, userId);
+          if (!assignmentRecord) {
+            return res.status(403).json({ error: 'You are not assigned to this job' });
+          }
+        }
+      }
       
       const user = await storage.getUser(userId);
       const nextNumber = await storage.getNextVariationNumber(jobId, userContext.effectiveUserId);

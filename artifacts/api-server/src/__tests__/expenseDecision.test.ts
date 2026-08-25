@@ -91,7 +91,11 @@ const PENDING_EXPENSE = {
   jobId: "job-1",
   status: "pending",
   amount: "150.00",
+  // userId matches the business owner scope — needed by getExpense lookup
   userId: "owner-1",
+  // submittedByUserId marks this as a worker-submitted expense so the
+  // approve/reject guard passes (mirrors production behaviour)
+  submittedByUserId: "worker-1",
 };
 
 const APPROVED_EXPENSE = { ...PENDING_EXPENSE, status: "approved", approvedBy: "owner-1" };
@@ -251,6 +255,39 @@ describe("PUT /api/expenses/:id/approve", () => {
       .send({});
     expect(res.status).toBe(400);
     // DB update should NOT have been called since pre-check caught it
+    expect(mockDbUpdate).not.toHaveBeenCalled();
+  });
+
+  it("approves a legacy worker expense identified by [Logged by ...] description prefix", async () => {
+    mockStorage.getExpense.mockResolvedValue({
+      ...PENDING_EXPENSE,
+      submittedByUserId: null,
+      description: "[Logged by Jane Smith] Paint supplies",
+    });
+    mockDbReturning.mockResolvedValue([{ ...APPROVED_EXPENSE }]);
+
+    const res = await request(app)
+      .put("/api/expenses/exp-1/approve")
+      .set(authHeaders())
+      .send({});
+
+    expect(res.status).toBe(200);
+  });
+
+  it("returns 400 when expense has no submittedByUserId and no [Logged by] prefix (owner-created)", async () => {
+    mockStorage.getExpense.mockResolvedValue({
+      ...PENDING_EXPENSE,
+      submittedByUserId: null,
+      description: "Owner office supplies",
+    });
+
+    const res = await request(app)
+      .put("/api/expenses/exp-1/approve")
+      .set(authHeaders())
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toMatch(/Only worker-submitted/);
     expect(mockDbUpdate).not.toHaveBeenCalled();
   });
 });
