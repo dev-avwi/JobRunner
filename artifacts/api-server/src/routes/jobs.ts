@@ -9643,7 +9643,32 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         entityId: jobId,
         description: `Created variation ${nextNumber}: ${variation.title}`,
       });
-      
+
+      // Notify owner when a worker flags extra work from the field
+      if (userId !== userContext.effectiveUserId) {
+        try {
+          const { sendPushNotification } = await import('../pushNotifications');
+          sendPushNotification({
+            userId: userContext.effectiveUserId,
+            type: 'general',
+            title: 'Extra Work Flagged',
+            body: `${variation.createdByName || 'A team member'} flagged extra work on "${(job as any).title}": ${variation.title}`,
+            data: { jobId, relatedType: 'job' },
+          }).catch(() => {});
+          await storage.createNotification({
+            userId: userContext.effectiveUserId,
+            type: 'job_status_changed',
+            title: 'Extra Work Flagged',
+            message: `${variation.createdByName || 'A team member'} flagged extra work on "${(job as any).title}": ${variation.title}`,
+            priority: 'high',
+            actionUrl: `/jobs/${jobId}`,
+            actionLabel: 'Review Variation',
+            relatedId: jobId,
+            relatedType: 'job',
+          }).catch(() => {});
+        } catch { /* non-fatal */ }
+      }
+
       res.json(variation);
     } catch (error: any) {
       console.error('Error creating job variation:', error);
@@ -10238,6 +10263,37 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         }).catch((e: any) => console.error('[Phase advance] In-app notification failed:', e));
       } catch (notifyErr) {
         console.error('[Phase advance] Notification error:', notifyErr);
+      }
+
+      // If this was the final phase to complete, fire an "all phases done — ready to invoice" alert
+      if (nextStatus === 'complete') {
+        try {
+          const allPhases = await storage.getJobPhases(jobId, jobOwnerId);
+          const allDone = allPhases.length > 0 && allPhases.every((p: any) => p.status === 'complete' || p.status === 'invoiced');
+          if (allDone) {
+            const { sendPushNotification } = await import('../pushNotifications');
+            sendPushNotification({
+              userId: jobOwnerId,
+              type: 'general',
+              title: 'All Phases Complete',
+              body: `All phases on "${(job as any).title}" are done — ready to invoice.`,
+              data: { jobId: job.id, relatedType: 'job' },
+            }).catch((e: any) => console.error('[Phase advance] All-complete push failed:', e));
+            await storage.createNotification({
+              userId: jobOwnerId,
+              type: 'job_status_changed',
+              title: 'All Phases Complete',
+              message: `All phases on "${(job as any).title}" are done — ready to invoice.`,
+              priority: 'high',
+              actionUrl: `/jobs/${job.id}`,
+              actionLabel: 'View Job',
+              relatedId: job.id,
+              relatedType: 'job',
+            }).catch((e: any) => console.error('[Phase advance] All-complete notification failed:', e));
+          }
+        } catch (allDoneErr) {
+          console.error('[Phase advance] All-complete check failed:', allDoneErr);
+        }
       }
 
       const enriched = await enrichPhasesWithAssignees([updated]);

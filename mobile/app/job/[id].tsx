@@ -2334,6 +2334,10 @@ export default function JobDetailScreen() {
   const [jobPurchaseOrders, setJobPurchaseOrders] = useState<any[]>([]);
   const [isLoadingPOs, setIsLoadingPOs] = useState(false);
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [showFlagExtraWorkModal, setShowFlagExtraWorkModal] = useState(false);
+  const [flagExtraWorkTitle, setFlagExtraWorkTitle] = useState('');
+  const [flagExtraWorkDesc, setFlagExtraWorkDesc] = useState('');
+  const [flagExtraWorkLoading, setFlagExtraWorkLoading] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
   const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] as string[] });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
@@ -3952,9 +3956,10 @@ export default function JobDetailScreen() {
       loadUploadedDocuments();
       loadSwmsDocuments();
     }
-    // Projects: load phases for the worker phase view in Tasks tab
+    // Projects: load phases + SWMS for the worker Tasks tab (SWMS needed for pre-start safety check)
     if (activeTab === 'tasks' && id && job?.jobType === 'project') {
       loadPhases();
+      loadSwmsDocuments();
     }
   }, [activeTab, id, job?.jobType]);
 
@@ -7872,6 +7877,17 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       )}
 
+      {/* ── All phases complete: ready to invoice ── */}
+      {isProject && phases.length > 0 && phases.every(p => p.status === 'complete' || p.status === 'invoiced') && job.status !== 'invoiced' && (isOwnerOrManager || isSoloOwner) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${colors.success}15`, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.md, borderWidth: 1, borderColor: `${colors.success}40`, gap: spacing.sm }}>
+          <Feather name="check-circle" size={18} color={colors.success} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>All phases complete</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: spacing.xxs }}>Ready to raise an invoice</Text>
+          </View>
+        </View>
+      )}
+
       {/* What's Next card — project jobs only */}
       {isProject ? (() => {
         const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
@@ -7972,6 +7988,23 @@ export default function JobDetailScreen() {
                 <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
               )}
             </View>
+
+            {/* Phase progress bar */}
+            {totalPhases > 0 && (
+              <View style={{ gap: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                    {completedPhases} of {totalPhases} phase{totalPhases === 1 ? '' : 's'} complete
+                  </Text>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: completedPhases === totalPhases ? colors.success : colors.primary }}>
+                    {Math.round((completedPhases / totalPhases) * 100)}%
+                  </Text>
+                </View>
+                <View style={{ height: 4, backgroundColor: colors.muted, borderRadius: 2, overflow: 'hidden' }}>
+                  <View style={{ height: 4, width: `${(completedPhases / totalPhases) * 100}%` as any, backgroundColor: completedPhases === totalPhases ? colors.success : colors.primary, borderRadius: 2 }} />
+                </View>
+              </View>
+            )}
 
             {isLoadingPhases ? (
               <SkeletonSection rows={1} />
@@ -11908,7 +11941,20 @@ export default function JobDetailScreen() {
                     </View>
                   ) : (
                     <TouchableOpacity
-                      onPress={() => proceedWithTimerStart(false, phase.id)}
+                      onPress={() => {
+                        if (swmsDocuments.length > 0 && (hasIncompleteSwms || pendingSafetyForms.length > 0)) {
+                          Alert.alert(
+                            'SWMS Not Signed',
+                            'The Safe Work Method Statement for this job has not been completed. Start work anyway?',
+                            [
+                              { text: 'Review SWMS', style: 'cancel', onPress: () => setActiveTab('files') },
+                              { text: 'Start Anyway', style: 'destructive', onPress: () => proceedWithTimerStart(false, phase.id) },
+                            ]
+                          );
+                        } else {
+                          proceedWithTimerStart(false, phase.id);
+                        }
+                      }}
                       disabled={timerLoading || otherJobTimer || phase.status === 'complete'}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: phase.status === 'complete' ? colors.border : phaseOtherActive ? colors.border : `${colors.primary}40`, backgroundColor: phase.status === 'complete' ? colors.muted : phaseOtherActive ? colors.muted : `${colors.primary}08`, opacity: (otherJobTimer || phase.status === 'complete') ? 0.4 : 1 }}
                       activeOpacity={0.7}
@@ -11950,6 +11996,24 @@ export default function JobDetailScreen() {
                   <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginTop: 4, textAlign: 'center' }}>Add phases from the Manage tab</Text>
                 )}
               </View>
+            )}
+
+            {/* Flag extra work — fires a draft variation and notifies the owner */}
+            {job.status !== 'invoiced' && (
+              <TouchableOpacity
+                style={[styles.photosCard, { flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }]}
+                onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${colors.warning}15`, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="alert-circle" size={18} color={colors.warning} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Flag Extra Work</Text>
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Report unexpected work for owner to quote as a variation</Text>
+                </View>
+                <Feather name="chevron-right" size={18} color={colors.warning} />
+              </TouchableOpacity>
             )}
 
             {/* Log material, checklist, forms, diary, photos, notes — same as service call */}
@@ -13163,6 +13227,71 @@ export default function JobDetailScreen() {
             }}
             isUploading={isUploadingFABVoice}
           />
+        </View>
+      </AppBottomSheet>
+
+      {/* Flag Extra Work Modal */}
+      <AppBottomSheet
+        visible={showFlagExtraWorkModal}
+        onDismiss={() => setShowFlagExtraWorkModal(false)}
+        title="Flag Extra Work"
+        showCloseButton
+        snapPoints={['55%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => setShowFlagExtraWorkModal(false)} style={{ flex: 1 }} />
+            <SheetButton
+              onPress={async () => {
+                if (!flagExtraWorkTitle.trim() || !job?.id) return;
+                setFlagExtraWorkLoading(true);
+                try {
+                  await api.post(`/api/jobs/${job.id}/variations`, {
+                    title: flagExtraWorkTitle.trim(),
+                    description: flagExtraWorkDesc.trim() || undefined,
+                    additionalAmount: '0',
+                    reason: 'Extra work flagged by worker from field',
+                  });
+                  setShowFlagExtraWorkModal(false);
+                  Alert.alert('Flagged', 'Extra work has been reported. The owner will be notified to review and quote the variation.');
+                } catch {
+                  Alert.alert('Error', 'Could not flag extra work. Please try again.');
+                } finally {
+                  setFlagExtraWorkLoading(false);
+                }
+              }}
+              loading={flagExtraWorkLoading}
+              disabled={flagExtraWorkLoading || !flagExtraWorkTitle.trim()}
+              label="Flag for Owner"
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}>
+        <View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>What extra work was found? *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.md }]}
+            value={flagExtraWorkTitle}
+            onChangeText={setFlagExtraWorkTitle}
+            placeholder="e.g. Asbestos sheeting behind wall"
+            placeholderTextColor={colors.mutedForeground}
+            autoFocus
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Additional details (optional)</Text>
+          <TextInput
+            style={[styles.multiLineInput, { marginBottom: spacing.md }]}
+            value={flagExtraWorkDesc}
+            onChangeText={setFlagExtraWorkDesc}
+            placeholder="Describe what you found and why it needs extra work..."
+            placeholderTextColor={colors.mutedForeground}
+            multiline
+            numberOfLines={3}
+          />
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, backgroundColor: `${colors.warning}10`, borderRadius: radius.md, padding: spacing.sm }}>
+            <Feather name="info" size={14} color={colors.warning} style={{ marginTop: 1 }} />
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, flex: 1, lineHeight: 18 }}>
+              This creates a draft variation. The owner will set the amount and send it to the client for approval.
+            </Text>
+          </View>
         </View>
       </AppBottomSheet>
 
