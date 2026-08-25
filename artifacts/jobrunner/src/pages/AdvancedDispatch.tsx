@@ -200,6 +200,11 @@ interface DispatchResources {
   availableEquipment: number;
 }
 
+interface DispatchPhaseUser {
+  id: string;
+  name: string;
+  isLead: boolean;
+}
 interface OpsHealth {
   todayJobCount: number;
   unassignedJobs: number;
@@ -1047,8 +1052,14 @@ function DayView({
   );
 }
 
-// ─── Week View ───────────────────────────────────────────────────────────────
-
+/** Returns true if the phase is scheduled on the given day. */
+function phaseOnDate(phase: DispatchPhase, day: Date): boolean {
+  if (!phase.scheduledStart) return false;
+  const start = startOfDay(parseISO(phase.scheduledStart));
+  const end = phase.scheduledEnd ? startOfDay(parseISO(phase.scheduledEnd)) : start;
+  const d = startOfDay(day);
+  return d >= start && d <= end;
+}
 function WeekView({
   weekStart,
   jobs,
@@ -1071,6 +1082,13 @@ function WeekView({
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [dragOverCell, setDragOverCell] = useState<{ wid: string; dayStr: string } | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
+  const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
+  const [phasePopoverAnchor, setPhasePopoverAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  const { data: phases = [] } = useQuery<DispatchPhase[]>({
+    queryKey: ["/api/dispatch/phases"],
+    staleTime: 2 * 60 * 1000,
+  });
 
   const filteredWorkers = useMemo(() => {
     if (selectedWorkerIds.length === 0) return workers;
@@ -1084,6 +1102,24 @@ function WeekView({
     setDragOverCell(null);
     setDraggingJobId(null);
   }, [onReschedule]);
+
+  const handlePhaseClick = useCallback((phase: DispatchPhase, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedPhase(phase);
+    setPhasePopoverAnchor({ x: e.clientX, y: e.clientY });
+  }, []);
+
+  const closePhasePopover = useCallback(() => {
+    setSelectedPhase(null);
+    setPhasePopoverAnchor(null);
+  }, []);
+
+  const phaseStatusLabel: Record<string, string> = {
+    not_started: "Not started",
+    in_progress: "In progress",
+    complete: "Complete",
+    on_hold: "On hold",
+  };
 
   const WEEK_MAX_VISIBLE_CHIPS = 2;
 
@@ -1105,12 +1141,12 @@ function WeekView({
           ))}
         </div>
 
-        {/* Worker rows — fixed 56px per row */}
+        {/* Worker rows */}
         {filteredWorkers.map(worker => {
           const wid = worker.memberId || worker.id;
           return (
             <div key={wid} className="grid grid-cols-[160px_repeat(7,1fr)] border-b" style={{ minHeight: 56 }}>
-              {/* Worker label — fixed 160px */}
+              {/* Worker label */}
               <div className="px-2 py-1.5 flex items-center gap-1.5 border-r" style={{ width: 160 }}>
                 <UserAvatar
                   user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
@@ -1133,12 +1169,13 @@ function WeekView({
                   const assignee = j.assignedTo ?? primaryAssignment(j)?.memberId;
                   return assignee === wid;
                 });
+                const dayPhases = phases.filter(p => phaseOnDate(p, day) && phaseForWorker(p, wid));
                 const visibleChips = dayJobs.slice(0, WEEK_MAX_VISIBLE_CHIPS);
                 const overflowCount = dayJobs.length - WEEK_MAX_VISIBLE_CHIPS;
                 return (
                   <div
                     key={dayStr}
-                    className={`border-l p-1 relative group transition-colors`}
+                    className="border-l p-1 relative group transition-colors"
                     style={{ minHeight: 56 }}
                     onDragOver={e => { e.preventDefault(); setDragOverCell({ wid, dayStr }); }}
                     onDragLeave={() => setDragOverCell(null)}
@@ -1185,7 +1222,6 @@ function WeekView({
                             ${draggingJobId === job.id ? "opacity-40" : ""}`}
                           title={`${job.title}${job.client?.name ? ` — ${job.client.name}` : ""} ${formatJobTime(job.scheduledTime, job.scheduledAt)}`}
                         >
-                          {/* Status dot */}
                           <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: sc.solid }} />
                           <p className="text-[10px] font-medium truncate flex-1">{job.title}</p>
                         </div>
@@ -1199,8 +1235,30 @@ function WeekView({
                         +{overflowCount} more
                       </div>
                     )}
+                    {/* Phase blocks */}
+                    {dayPhases.map(phase => (
+                      <div
+                        key={phase.id}
+                        data-testid={`week-phase-${phase.id}`}
+                        onClick={e => handlePhaseClick(phase, e)}
+                        className="rounded px-1.5 py-0.5 mb-0.5 border-l-2 border-indigo-400 dark:border-indigo-500
+                          bg-indigo-100 dark:bg-indigo-900/40 hover:brightness-95 cursor-pointer"
+                        style={{
+                          backgroundImage:
+                            "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(99,102,241,0.1) 4px, rgba(99,102,241,0.1) 8px)",
+                        }}
+                        title={`${phase.phaseCode}: ${phase.name} — ${phase.jobTitle}`}
+                      >
+                        <p className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide truncate">
+                          Phase
+                        </p>
+                        <p className="text-[10px] font-medium text-indigo-800 dark:text-indigo-200 truncate">
+                          {phase.phaseCode}: {phase.name}
+                        </p>
+                      </div>
+                    ))}
                     {/* Drop hint */}
-                    {dayJobs.length === 0 && (
+                    {dayJobs.length === 0 && dayPhases.length === 0 && (
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                         <Plus className="h-3 w-3 text-muted-foreground/30" />
                       </div>
@@ -1212,6 +1270,75 @@ function WeekView({
           );
         })}
       </div>
+
+      {/* Phase detail popover (fixed position, read-only) */}
+      {selectedPhase && phasePopoverAnchor && (
+        <div
+          className="fixed inset-0 z-50"
+          onClick={closePhasePopover}
+        >
+          <div
+            className="absolute bg-popover border rounded-lg shadow-lg p-3 w-64 z-50"
+            style={{
+              top: Math.min(phasePopoverAnchor.y + 8, window.innerHeight - 220),
+              left: Math.min(phasePopoverAnchor.x + 8, window.innerWidth - 272),
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">
+                  Phase
+                </p>
+                <p className="text-sm font-semibold truncate">{selectedPhase.phaseCode}: {selectedPhase.name}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{selectedPhase.jobTitle}</p>
+              </div>
+              <button onClick={closePhasePopover} className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            <div className="space-y-1.5 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Status</span>
+                <span className="font-medium capitalize">
+                  {phaseStatusLabel[selectedPhase.status] ?? selectedPhase.status.replace(/_/g, " ")}
+                </span>
+              </div>
+              {selectedPhase.bookedHours && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Booked hours</span>
+                  <span className="font-medium">{selectedPhase.bookedHours}h</span>
+                </div>
+              )}
+              {selectedPhase.scheduledStart && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Start</span>
+                  <span className="font-medium">{format(parseISO(selectedPhase.scheduledStart), "d MMM yyyy")}</span>
+                </div>
+              )}
+              {selectedPhase.scheduledEnd && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">End</span>
+                  <span className="font-medium">{format(parseISO(selectedPhase.scheduledEnd), "d MMM yyyy")}</span>
+                </div>
+              )}
+              {selectedPhase.assignedUsers.length > 0 && (
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-muted-foreground flex-shrink-0">Assigned</span>
+                  <span className="font-medium text-right truncate">
+                    {selectedPhase.assignedUsers.map(u => u.name).join(", ")}
+                  </span>
+                </div>
+              )}
+              {selectedPhase.notes && (
+                <p className="text-muted-foreground italic pt-1 border-t text-[11px] leading-relaxed line-clamp-3">
+                  {selectedPhase.notes}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </ScrollArea>
   );
 }
@@ -2603,4 +2730,30 @@ function ThemeAwareTiles() {
     return () => { map.removeLayer(layer); };
   }, [tileUrl, map]);
   return null;
+}
+
+interface DispatchPhase {
+  id: string;
+  jobId: string;
+  phaseCode: string;
+  name: string;
+  description?: string | null;
+  scheduledStart?: string | null;
+  scheduledEnd?: string | null;
+  bookedHours?: string | null;
+  status: string;
+  sortOrder?: number | null;
+  notes?: string | null;
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
+  assignedUserIds: string[];
+  assignedUsers: DispatchPhaseUser[];
+  jobTitle: string;
+  jobType?: string | null;
+}
+
+/** Returns true if the phase is assigned to (or includes) the given worker. */
+function phaseForWorker(phase: DispatchPhase, wid: string): boolean {
+  if (phase.assignedUserIds.length > 0) return phase.assignedUserIds.includes(wid);
+  return phase.assignedUserId === wid;
 }
