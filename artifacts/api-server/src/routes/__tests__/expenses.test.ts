@@ -13,6 +13,7 @@ const mockStorage = vi.hoisted(() => ({
   updateExpense: vi.fn(),
   getExpenseCategories: vi.fn(),
   getJobAssignmentForUser: vi.fn(),
+  getJobAssignments: vi.fn(),
   getUser: vi.fn(),
 }));
 
@@ -389,5 +390,42 @@ describe("worker job expense creation", () => {
         relatedId: JOB_ID,
       }),
     );
+  });
+});
+
+// ── PATCH /api/expenses/:id/status — approval flow ───────────────────────────
+
+describe("expense status approval (PATCH /api/expenses/:id/status)", () => {
+  /**
+   * Legacy expenses written before submittedByUserId was added carry a
+   * "[Logged by Name]" prefix in their description.  When the job has zero
+   * assignment records (e.g. they were all deleted), the name-based lookup
+   * loop finds nothing.  The request must still succeed (200) and simply skip
+   * the notification rather than throwing.
+   */
+  it("returns 200 without sending a notification when the job has no assignment records", async () => {
+    const legacyExpense = {
+      id: EXPENSE_ID,
+      jobId: JOB_ID,
+      userId: OWNER_USER_ID,
+      amount: "75.00",
+      description: "[Logged by Jake] Pipe fittings",
+      status: "pending",
+      submittedByUserId: null,
+    };
+
+    mockStorage.getExpense.mockResolvedValue(legacyExpense);
+    mockStorage.updateExpense.mockResolvedValue({ ...legacyExpense, status: "approved" });
+    // No assignment records at all on this job
+    mockStorage.getJobAssignments.mockResolvedValue([]);
+
+    const response = await request(buildApp())
+      .patch(`/api/expenses/${EXPENSE_ID}/status`)
+      .send({ status: "approved" });
+
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe("approved");
+    // The submitter could not be resolved, so no notification should be sent
+    expect(createNotification).not.toHaveBeenCalled();
   });
 });
