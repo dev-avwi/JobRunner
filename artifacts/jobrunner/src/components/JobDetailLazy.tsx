@@ -137,3 +137,13 @@ export const JobChecklistSection = lazyWithSuspense(
   () => import("./JobChecklistSection").then((m) => ({ default: m.JobChecklistSection })),
   sectionFallback,
 );
+
+export const JobRfisSection = lazyWithSuspense(
+  () => import("./ProjectDocumentRegister").then((m) => ({ default: m.JobRfisSection })),
+  sectionFallback,
+);
+
+export const JobPurchaseOrdersSection = lazyWithSuspense(
+  () => import("./ProjectDocumentRegister").then((m) => ({ default: m.JobPurchaseOrdersSection })),
+  sectionFallback,
+);

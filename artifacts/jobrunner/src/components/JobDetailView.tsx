@@ -46,6 +46,8 @@ import {
   DefectsSection,
   SiteDiarySection,
   JobChecklistSection,
+  JobRfisSection,
+  JobPurchaseOrdersSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
 import { PresenceIndicator } from './JobCollaborationUI';
@@ -3186,6 +3188,8 @@ export default function JobDetailView({
                   })()}
                 </CardContent>
               </Card>
+              {/* Purchase orders linked to this job */}
+              {!isTradie && <JobPurchaseOrdersSection jobId={jobId} isTradie={isTradie} />}
               {/* Defects (project only) */}
               {isProject && <DefectsSection jobId={jobId} isTradie={isTradie} teamMembers={teamMembers} />}
             </TabsContent>
@@ -3193,6 +3197,8 @@ export default function JobDetailView({
             {/* ── DOCS & SAFETY TAB ── */}
             <TabsContent value="docs" className="mt-0 space-y-6">
               {isProject && <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />}
+              {/* RFIs for service-call jobs (projects get RFIs via ProjectDocumentRegister above) */}
+              {!isProject && <JobRfisSection jobId={jobId} canEdit={job.status !== 'invoiced'} />}
               <SafetyFormsSection jobId={jobId} jobStatus={job.status} jobTitle={job.title} jobAddress={job.address} />
               <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
               {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && <JobSignature jobId={jobId} />}

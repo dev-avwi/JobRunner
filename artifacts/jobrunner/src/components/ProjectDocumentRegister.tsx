@@ -57,6 +57,9 @@ import {
   Flag,
   CalendarDays,
   User,
+  ShoppingCart,
+  ExternalLink,
+  Package,
 } from 'lucide-react';
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -1147,5 +1150,344 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+// ── Standalone RFI Section ────────────────────────────────────────────────────
+// Renders just the RFI card (no document register). Used on service-call jobs
+// where ProjectDocumentRegister is not shown.
+export function JobRfisSection({ jobId, canEdit = true }: { jobId: string; canEdit?: boolean }) {
+  const { toast } = useToast();
+
+  const [showRfiDialog, setShowRfiDialog] = useState(false);
+  const [rfiQuestion, setRfiQuestion] = useState('');
+  const [rfiDescription, setRfiDescription] = useState('');
+  const [rfiAssignedToName, setRfiAssignedToName] = useState('');
+  const [rfiPriority, setRfiPriority] = useState<'low' | 'medium' | 'high' | ''>('');
+  const [rfiDueDate, setRfiDueDate] = useState('');
+  const [deleteRfiId, setDeleteRfiId] = useState<string | null>(null);
+
+  const { data: rfis = [], isLoading: rfisLoading } = useQuery<ProjectRfi[]>({
+    queryKey: ['/api/jobs', jobId, 'rfis'],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/rfis`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to load RFIs');
+      return res.json();
+    },
+  });
+
+  const createRfiMutation = useMutation({
+    mutationFn: async () => {
+      if (!rfiQuestion) throw new Error('Question is required');
+      const res = await fetch(`/api/jobs/${jobId}/rfis`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({
+          question: rfiQuestion,
+          description: rfiDescription || undefined,
+          assignedToName: rfiAssignedToName || undefined,
+          priority: rfiPriority || undefined,
+          dueDate: rfiDueDate || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'RFI raised' });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'rfis'] });
+      setShowRfiDialog(false);
+      setRfiQuestion('');
+      setRfiDescription('');
+      setRfiAssignedToName('');
+      setRfiPriority('');
+      setRfiDueDate('');
+    },
+    onError: (err: any) => toast({ title: 'Failed to create RFI', description: err.message, variant: 'destructive' }),
+  });
+
+  const deleteRfiMutation = useMutation({
+    mutationFn: async (rfiId: string) => {
+      const res = await fetch(`/api/jobs/${jobId}/rfis/${rfiId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'RFI deleted' });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'rfis'] });
+      setDeleteRfiId(null);
+    },
+    onError: (err: any) => toast({ title: 'Delete failed', description: err.message, variant: 'destructive' }),
+  });
+
+  const openRfiCount = rfis.filter(r => r.status === 'open').length;
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <HelpCircle className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+              RFIs
+              {rfis.length > 0 && <Badge variant="secondary" className="text-xs">{rfis.length}</Badge>}
+              {openRfiCount > 0 && <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">{openRfiCount} open</Badge>}
+            </CardTitle>
+            {canEdit && (
+              <Button size="sm" variant="outline" onClick={() => setShowRfiDialog(true)} className="h-7 text-xs gap-1">
+                <Plus className="h-3 w-3" />
+                Raise RFI
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {rfisLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : rfis.length === 0 ? (
+            <div className="text-center py-8">
+              <HelpCircle className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No RFIs raised yet</p>
+              {canEdit && (
+                <Button size="sm" variant="outline" className="mt-3 h-7 text-xs gap-1" onClick={() => setShowRfiDialog(true)}>
+                  <Plus className="h-3 w-3" />
+                  Raise first RFI
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {rfis.map(rfi => (
+                <RfiRow
+                  key={rfi.id}
+                  rfi={rfi}
+                  jobId={jobId}
+                  canEdit={canEdit}
+                  onDelete={setDeleteRfiId}
+                />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create RFI dialog */}
+      <Dialog open={showRfiDialog} onOpenChange={setShowRfiDialog}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Raise RFI</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Question *</Label>
+              <Input placeholder="What information do you need?" value={rfiQuestion} onChange={e => setRfiQuestion(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Description (optional)</Label>
+              <Textarea placeholder="Provide more context…" value={rfiDescription} onChange={e => setRfiDescription(e.target.value)} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label>Priority</Label>
+                <Select value={rfiPriority} onValueChange={v => setRfiPriority(v as 'low' | 'medium' | 'high' | '')}>
+                  <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Due Date</Label>
+                <Input type="date" value={rfiDueDate} onChange={e => setRfiDueDate(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Assign to (optional)</Label>
+              <Input placeholder="Name of person to answer this RFI" value={rfiAssignedToName} onChange={e => setRfiAssignedToName(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRfiDialog(false)}>Cancel</Button>
+            <Button onClick={() => createRfiMutation.mutate()} disabled={!rfiQuestion || createRfiMutation.isPending}>
+              {createRfiMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Raise RFI
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete RFI confirm */}
+      <AlertDialog open={!!deleteRfiId} onOpenChange={open => !open && setDeleteRfiId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete RFI?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete this RFI and its answer. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteRfiId && deleteRfiMutation.mutate(deleteRfiId)}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+// ── Per-Job Purchase Orders Section ──────────────────────────────────────────
+// Displays purchase orders linked to a specific job in the Financials tab.
+
+interface JobPurchaseOrder {
+  id: string;
+  poNumber: string | null;
+  supplierId: string | null;
+  supplierName: string | null;
+  status: string;
+  total: string | null;
+  subtotal: string | null;
+  notes: string | null;
+  orderDate: string | null;
+  items: Array<{ id: string; description: string; quantity: string; unitPrice: string | null; receivedQty?: string | null }>;
+}
+
+const PO_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  pending:      { label: 'Pending',      className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400' },
+  sent:         { label: 'Sent',         className: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' },
+  acknowledged: { label: 'Acknowledged', className: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' },
+  partial:      { label: 'Part Received', className: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400' },
+  received:     { label: 'Received',     className: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' },
+  cancelled:    { label: 'Cancelled',    className: 'bg-gray-100 text-gray-500 dark:bg-gray-800/30 dark:text-gray-400' },
+};
+
+export function JobPurchaseOrdersSection({ jobId, isTradie }: { jobId: string; isTradie: boolean }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const { data: purchaseOrders = [], isLoading } = useQuery<JobPurchaseOrder[]>({
+    queryKey: ['/api/jobs', jobId, 'purchase-orders'],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/purchase-orders`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to load purchase orders');
+      return res.json();
+    },
+  });
+
+  const totalValue = purchaseOrders.reduce((sum, po) => sum + (parseFloat(po.total || po.subtotal || '0') || 0), 0);
+  const pendingCount = purchaseOrders.filter(po => po.status === 'pending' || po.status === 'sent').length;
+
+  return (
+    <Card data-testid="card-purchase-orders">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+            <CardTitle className="text-sm font-medium">Purchase Orders</CardTitle>
+            {purchaseOrders.length > 0 && <Badge variant="secondary" className="text-xs">{purchaseOrders.length}</Badge>}
+            {pendingCount > 0 && <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">{pendingCount} pending</Badge>}
+          </div>
+          {!isTradie && (
+            <a
+              href="/inventory?tab=purchase-orders"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              Manage in Inventory
+            </a>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-6">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : purchaseOrders.length === 0 ? (
+          <div className="text-center py-8">
+            <Package className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No purchase orders for this job</p>
+            {!isTradie && (
+              <a
+                href="/inventory?tab=purchase-orders"
+                className="inline-flex items-center gap-1 mt-3 text-xs text-primary hover:underline"
+              >
+                <Plus className="h-3 w-3" />
+                Create a purchase order
+              </a>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {purchaseOrders.map(po => {
+              const isExpanded = expandedId === po.id;
+              const statusCfg = PO_STATUS_CONFIG[po.status] ?? { label: po.status, className: 'bg-gray-100 text-gray-600' };
+              const poTotal = parseFloat(po.total || po.subtotal || '0');
+              return (
+                <div key={po.id} className="border border-border rounded-lg overflow-hidden">
+                  <div
+                    className="flex items-start gap-3 p-3 bg-card hover:bg-muted/30 cursor-pointer"
+                    onClick={() => setExpandedId(isExpanded ? null : po.id)}
+                  >
+                    <ShoppingCart className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {po.poNumber && <span className="font-mono text-xs text-muted-foreground">{po.poNumber}</span>}
+                        <span className="font-medium text-sm">{po.supplierName ?? 'No supplier'}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${statusCfg.className}`}>{statusCfg.label}</span>
+                        {po.items.length > 0 && <span className="text-xs text-muted-foreground">{po.items.length} item{po.items.length !== 1 ? 's' : ''}</span>}
+                        {poTotal > 0 && <span className="text-xs font-medium">${poTotal.toFixed(2)}</span>}
+                        {po.orderDate && <span className="text-xs text-muted-foreground">{format(new Date(po.orderDate), 'dd MMM yyyy')}</span>}
+                      </div>
+                    </div>
+                    {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground flex-shrink-0" /> : <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
+                  </div>
+                  {isExpanded && po.items.length > 0 && (
+                    <div className="border-t border-border bg-muted/10 px-3 py-2 space-y-1">
+                      {po.items.map(item => (
+                        <div key={item.id} className="flex items-center justify-between gap-2 text-sm py-0.5">
+                          <span className="text-muted-foreground truncate">{item.description}</span>
+                          <div className="flex items-center gap-3 flex-shrink-0 text-xs text-muted-foreground">
+                            <span>Qty: {item.quantity}</span>
+                            {item.unitPrice && parseFloat(item.unitPrice) > 0 && (
+                              <span>${(parseFloat(item.unitPrice) * parseFloat(item.quantity || '1')).toFixed(2)}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                      {po.notes && (
+                        <p className="text-xs text-muted-foreground pt-1 border-t border-border mt-1">{po.notes}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {!isTradie && totalValue > 0 && (
+              <div className="flex items-center justify-between pt-2 border-t text-sm font-medium">
+                <span className="text-muted-foreground">Total PO value</span>
+                <span>${totalValue.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

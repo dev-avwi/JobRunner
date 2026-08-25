@@ -2,12 +2,10 @@
  * Tests for GET /api/expenses/mine
  *
  * Verifies that:
- *   1. The WHERE clause is built using `expenses.submittedByUserId` for modern rows.
- *   2. Legacy rows with a "[Logged by <name>]" description prefix are also returned
- *      via an OR condition against the caller's resolved display name.
- *   3. An expense with neither a matching submittedByUserId nor a matching name
- *      prefix is absent from the result.
- *   4. The endpoint returns 401 when called without authentication.
+ *   1. The WHERE clause is built exclusively using `expenses.submittedByUserId`.
+ *   2. Name-based (ILIKE) fallback is NOT used — two workers with the same
+ *      first name cannot retrieve each other's legacy expenses.
+ *   3. The endpoint returns 401 when called without authentication.
  */
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import express from "express";
@@ -17,7 +15,6 @@ import request from "supertest";
 
 /** Unique symbol for the submittedByUserId column reference. */
 const SUBMITTED_BY_COL = vi.hoisted(() => Symbol("expenses.submittedByUserId"));
-const USER_ID_COL = vi.hoisted(() => Symbol("expenses.userId"));
 
 /**
  * eq() returns a tagged object carrying both arguments so tests can inspect
@@ -27,7 +24,7 @@ const mockEq = vi.hoisted(() =>
   vi.fn((col: unknown, val: unknown) => ({ __eqCol: col, __eqVal: val }))
 );
 
-/** or()/and() return tagged objects so tests can verify the OR condition. */
+/** or()/and() — tracked to confirm they are never called (no ILIKE branch). */
 const mockOr = vi.hoisted(() =>
   vi.fn((...args: unknown[]) => ({ __or: args }))
 );
@@ -35,7 +32,7 @@ const mockAnd = vi.hoisted(() =>
   vi.fn((...args: unknown[]) => ({ __and: args }))
 );
 
-/** sql`` tagged template — captures interpolated values for assertion. */
+/** sql — tracked to confirm it is never called (no ILIKE branch). */
 const mockSql = vi.hoisted(() =>
   vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({
     __sql: { raw: strings.join("?"), values },
@@ -63,7 +60,7 @@ vi.mock("@workspace/db", async (importOriginal) => {
     db: { select: mockSelect },
     expenses: {
       submittedByUserId: SUBMITTED_BY_COL,
-      userId: USER_ID_COL,
+      userId: Symbol("expenses.userId"),
       id: Symbol("expenses.id"),
       jobId: Symbol("expenses.jobId"),
       categoryId: Symbol("expenses.categoryId"),
@@ -101,11 +98,9 @@ vi.mock("../routes/middleware", () => ({
   },
 }));
 
-// Storage mock includes getUser so the route can resolve the display name.
-const mockGetUser = vi.hoisted(() => vi.fn());
 vi.mock("../storage", () => ({
   storage: {
-    getUser: mockGetUser,
+    getUser: vi.fn(),
     getExpense: vi.fn(),
     updateExpense: vi.fn(),
     getJob: vi.fn(),
@@ -113,7 +108,6 @@ vi.mock("../storage", () => ({
   },
 }));
 
-// getUserContext is called by the route; return a simple context object.
 const mockGetUserContext = vi.hoisted(() => vi.fn());
 vi.mock("../permissions", () => ({
   createPermissionMiddleware: () => (req: any, _res: any, next: any) => {
@@ -149,7 +143,7 @@ function buildApp() {
   return app;
 }
 
-/** Returns the argument passed to .where() (eq result or or result). */
+/** Returns the argument passed to .where(). */
 function whereArg(): unknown {
   if (!mockWhere.mock.calls.length) return undefined;
   return mockWhere.mock.calls[0][0];
@@ -159,7 +153,8 @@ function whereArg(): unknown {
 
 const WORKER_A_ID = "worker-a";
 const WORKER_B_ID = "worker-b";
-const WORKER_A_NAME = "Alice";
+// Both workers share the same first name — this is the collision scenario.
+const SHARED_FIRST_NAME = "Alex";
 
 const MODERN_EXPENSE_A = {
   id: "exp-a1",
@@ -169,12 +164,12 @@ const MODERN_EXPENSE_A = {
   expenseDate: "2026-01-10",
 };
 
-const LEGACY_EXPENSE_A = {
-  id: "exp-legacy-1",
+const LEGACY_EXPENSE_B = {
+  id: "exp-legacy-b",
   amount: "45.00",
   status: "approved",
   submittedByUserId: null,
-  description: `[Logged by ${WORKER_A_NAME}] Paint supplies`,
+  description: `[Logged by ${SHARED_FIRST_NAME}] Paint supplies`,
   expenseDate: "2025-06-15",
 };
 
@@ -204,9 +199,6 @@ describe("GET /api/expenses/mine", () => {
     mockFrom.mockReturnValue({ leftJoin: mockLeftJoin1 });
     mockSelect.mockReturnValue({ from: mockFrom });
 
-    // Default: no display name → only the submittedByUserId branch fires.
-    mockGetUser.mockResolvedValue(null);
-    // Default: getUserContext returns a simple identity context.
     mockGetUserContext.mockResolvedValue({ effectiveUserId: WORKER_A_ID });
 
     app = buildApp();
@@ -219,27 +211,26 @@ describe("GET /api/expenses/mine", () => {
     expect(res.status).toBe(401);
   });
 
-  // ── Modern path (submittedByUserId) ─────────────────────────────────────────
+  // ── WHERE predicate is strictly submittedByUserId ───────────────────────────
 
-  it("builds a simple eq predicate on submittedByUserId when user has no display name", async () => {
-    mockGetUser.mockResolvedValue(null);
+  it("builds a simple eq predicate on submittedByUserId — no OR, no ILIKE", async () => {
     mockOrderBy.mockResolvedValue([MODERN_EXPENSE_A]);
 
     await request(app)
       .get("/api/expenses/mine")
       .set("x-user-id", WORKER_A_ID);
 
-    // No name → no OR; where() receives eq(submittedByUserId, userId) directly.
     const arg = whereArg() as any;
     expect(arg).toBeDefined();
     expect(arg.__eqCol).toBe(SUBMITTED_BY_COL);
     expect(arg.__eqVal).toBe(WORKER_A_ID);
-    // or() must NOT have been called when there is no display name.
+    // Neither or() nor and() nor sql`` should be invoked — no legacy branch.
     expect(mockOr).not.toHaveBeenCalled();
+    expect(mockAnd).not.toHaveBeenCalled();
+    expect(mockSql).not.toHaveBeenCalled();
   });
 
-  it("scopes the WHERE predicate to the authenticated worker's ID", async () => {
-    mockGetUser.mockResolvedValue(null);
+  it("scopes the WHERE predicate to the authenticated worker's own ID", async () => {
     mockOrderBy.mockResolvedValue([MODERN_EXPENSE_A]);
 
     await request(app)
@@ -251,8 +242,7 @@ describe("GET /api/expenses/mine", () => {
     expect(arg.__eqVal).not.toBe(WORKER_B_ID);
   });
 
-  it("uses worker B's ID in the WHERE predicate when authenticated as worker B", async () => {
-    mockGetUser.mockResolvedValue(null);
+  it("uses worker B's ID when authenticated as worker B", async () => {
     mockGetUserContext.mockResolvedValue({ effectiveUserId: WORKER_B_ID });
     mockOrderBy.mockResolvedValue([]);
 
@@ -266,8 +256,74 @@ describe("GET /api/expenses/mine", () => {
     expect(arg.__eqVal).not.toBe(WORKER_A_ID);
   });
 
-  it("returns the modern expense row in the response", async () => {
-    mockGetUser.mockResolvedValue(null);
+  // ── Same-name collision: no cross-worker leakage ────────────────────────────
+
+  it("never uses ILIKE even when two workers share the same first name", async () => {
+    // Worker A and Worker B both have firstName = SHARED_FIRST_NAME.
+    // Worker A requests /mine — the predicate must still be eq(submittedByUserId, WORKER_A_ID),
+    // not an OR that would also match Worker B's legacy expense via the shared name.
+    mockOrderBy.mockResolvedValue([]);
+
+    await request(app)
+      .get("/api/expenses/mine")
+      .set("x-user-id", WORKER_A_ID);
+
+    // Confirm the route never touched or(), and(), or sql().
+    expect(mockOr).not.toHaveBeenCalled();
+    expect(mockAnd).not.toHaveBeenCalled();
+    expect(mockSql).not.toHaveBeenCalled();
+
+    // The WHERE is strictly on submittedByUserId = WORKER_A_ID.
+    const arg = whereArg() as any;
+    expect(arg.__eqCol).toBe(SUBMITTED_BY_COL);
+    expect(arg.__eqVal).toBe(WORKER_A_ID);
+  });
+
+  it("does not return a legacy expense belonging to a same-name peer", async () => {
+    // The DB correctly returns nothing for Worker A (LEGACY_EXPENSE_B belongs
+    // to Worker B, who shares the first name but has a different submittedByUserId).
+    mockOrderBy.mockResolvedValue([]);
+
+    const res = await request(app)
+      .get("/api/expenses/mine")
+      .set("x-user-id", WORKER_A_ID);
+
+    expect(res.status).toBe(200);
+    const ids = res.body.map((e: any) => e.id);
+    expect(ids).not.toContain(LEGACY_EXPENSE_B.id);
+  });
+
+  // ── Departed-worker / replacement scenario ──────────────────────────────────
+
+  it("does not expose a departed worker's legacy expense to a replacement with the same name", async () => {
+    // Scenario: the original "Alex" left; a new "Alex" joined and is now the
+    // only current team member with that name. The backfill must NOT have set
+    // submitted_by_user_id = WORKER_A_ID on the departed worker's expense.
+    // The read path must return nothing for the current Alex because the
+    // WHERE clause only matches submittedByUserId, and a correctly-disabled
+    // backfill would have left the legacy row's submittedByUserId NULL.
+    //
+    // We simulate this by having the DB return an empty list (the unresolved
+    // legacy row has submittedByUserId = NULL, so eq(submittedByUserId, WORKER_A_ID)
+    // excludes it), and assert no ILIKE/OR path was attempted.
+    mockOrderBy.mockResolvedValue([]);
+
+    const res = await request(app)
+      .get("/api/expenses/mine")
+      .set("x-user-id", WORKER_A_ID);
+
+    expect(res.status).toBe(200);
+    // Replacement worker sees no expenses from the departed worker.
+    expect(res.body).toEqual([]);
+    // Confirm the route never attempted any name-based OR/ILIKE path.
+    expect(mockOr).not.toHaveBeenCalled();
+    expect(mockAnd).not.toHaveBeenCalled();
+    expect(mockSql).not.toHaveBeenCalled();
+  });
+
+  // ── Normal result handling ──────────────────────────────────────────────────
+
+  it("returns the worker's own modern expense row", async () => {
     mockOrderBy.mockResolvedValue([MODERN_EXPENSE_A]);
 
     const res = await request(app)
@@ -280,73 +336,7 @@ describe("GET /api/expenses/mine", () => {
     expect(ids).not.toContain(UNRELATED_EXPENSE.id);
   });
 
-  // ── Legacy path ([Logged by Name] prefix) ───────────────────────────────────
-
-  it("builds an OR predicate that includes the ILIKE branch when the user has a display name", async () => {
-    mockGetUser.mockResolvedValue({ firstName: WORKER_A_NAME, username: "alice123" });
-    mockOrderBy.mockResolvedValue([MODERN_EXPENSE_A]);
-
-    await request(app)
-      .get("/api/expenses/mine")
-      .set("x-user-id", WORKER_A_ID);
-
-    // or() should have been called to combine the modern and legacy branches.
-    expect(mockOr).toHaveBeenCalledOnce();
-    const [modernBranch] = mockOr.mock.calls[0] as any[];
-    expect(modernBranch.__eqCol).toBe(SUBMITTED_BY_COL);
-    expect(modernBranch.__eqVal).toBe(WORKER_A_ID);
-  });
-
-  it("includes the correct [Logged by Name] ILIKE pattern in the legacy branch", async () => {
-    mockGetUser.mockResolvedValue({ firstName: WORKER_A_NAME });
-    mockOrderBy.mockResolvedValue([LEGACY_EXPENSE_A]);
-
-    await request(app)
-      .get("/api/expenses/mine")
-      .set("x-user-id", WORKER_A_ID);
-
-    expect(mockAnd).toHaveBeenCalledOnce();
-    expect(mockSql).toHaveBeenCalledOnce();
-    const sqlCall = mockSql.mock.calls[0];
-    // sql`${col} ILIKE ${pattern} ESCAPE ...`
-    // index 0 = TemplateStringsArray, 1 = column symbol, 2 = ILIKE string
-    const iLikePattern = sqlCall[2] as string;
-    expect(typeof iLikePattern).toBe("string");
-    expect(iLikePattern).toMatch(/^\[Logged by Alice\]/);
-  });
-
-  it("returns a legacy expense row when the DB resolves it for the OR query", async () => {
-    mockGetUser.mockResolvedValue({ firstName: WORKER_A_NAME });
-    // Simulate the DB returning the legacy row (matched by the ILIKE branch).
-    mockOrderBy.mockResolvedValue([LEGACY_EXPENSE_A]);
-
-    const res = await request(app)
-      .get("/api/expenses/mine")
-      .set("x-user-id", WORKER_A_ID);
-
-    expect(res.status).toBe(200);
-    const ids = res.body.map((e: any) => e.id);
-    expect(ids).toContain(LEGACY_EXPENSE_A.id);
-  });
-
-  it("confirms an unrelated expense (no matching userId, no matching name prefix) is absent", async () => {
-    mockGetUser.mockResolvedValue({ firstName: WORKER_A_NAME });
-    // The DB returns nothing — the unrelated expense matched neither branch.
-    mockOrderBy.mockResolvedValue([]);
-
-    const res = await request(app)
-      .get("/api/expenses/mine")
-      .set("x-user-id", WORKER_A_ID);
-
-    expect(res.status).toBe(200);
-    const ids = res.body.map((e: any) => e.id);
-    expect(ids).not.toContain(UNRELATED_EXPENSE.id);
-  });
-
-  // ── Edge cases ──────────────────────────────────────────────────────────────
-
-  it("returns an empty array when the authenticated worker has no expenses", async () => {
-    mockGetUser.mockResolvedValue(null);
+  it("returns an empty array when the worker has no expenses", async () => {
     mockOrderBy.mockResolvedValue([]);
 
     const res = await request(app)
@@ -358,7 +348,6 @@ describe("GET /api/expenses/mine", () => {
   });
 
   it("returns 500 when the database query fails", async () => {
-    mockGetUser.mockResolvedValue(null);
     mockOrderBy.mockRejectedValue(new Error("DB connection lost"));
 
     const res = await request(app)

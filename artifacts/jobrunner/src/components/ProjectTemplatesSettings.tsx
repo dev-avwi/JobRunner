@@ -35,7 +35,6 @@ import {
   ChevronDown,
   GripVertical,
   X,
-  ChevronDown,
   ChevronRight,
   Percent,
   DollarSign,
