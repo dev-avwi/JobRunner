@@ -2891,12 +2891,25 @@ export default function JobDetailScreen() {
       if (!res.error && res.data?.status) {
         setPhases(prev => prev.map(p => p.id === phaseId ? { ...p, status: res.data.status } : p));
       } else if (res.error) {
-        const msg = (res.data as any)?.error || res.error || 'Failed to update phase status';
-        Alert.alert('Error', msg);
+        const data = res.data as any;
+        const code = data?.code;
+        if (code === 'PHASE_NOT_FOUND') {
+          Alert.alert('Phase Not Found', 'This phase no longer exists. Pull down to refresh.');
+          loadPhases();
+        } else {
+          const msg = data?.error || res.error || 'Failed to update phase status';
+          Alert.alert('Error', msg);
+        }
       }
     } catch (e: any) {
-      const msg = e?.response?.data?.error || 'Failed to update phase status';
-      Alert.alert('Error', msg);
+      const code = e?.response?.data?.code;
+      if (code === 'PHASE_NOT_FOUND') {
+        Alert.alert('Phase Not Found', 'This phase no longer exists. Pull down to refresh.');
+        loadPhases();
+      } else {
+        const msg = e?.response?.data?.error || 'Failed to update phase status';
+        Alert.alert('Error', msg);
+      }
     } finally {
       setPhaseStatusLoading(prev => { const next = new Set(prev); next.delete(phaseId); return next; });
     }

@@ -10249,12 +10249,18 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
   // sequence not_started → in_progress → complete. Regression is blocked for
   // non-owner/manager callers. Owners and managers retain full control via the
   // full PATCH endpoint below.
+  //
+  // IMPORTANT: this POST route must remain registered BEFORE the wildcard
+  // PATCH /api/jobs/:jobId/phases/:phaseId below, even though Express only
+  // matches on method+path. Keeping it higher guards against future wildcards.
   app.post("/api/jobs/:jobId/phases/:phaseId/advance-status", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId, phaseId } = req.params;
       const userContext = req.userContext;
       const effectiveUserId = req.effectiveUserId || userId;
+
+      console.log(`[advance-status] reached — jobId=${jobId} phaseId=${phaseId} userId=${userId}`);
 
       // Resolve the job — support cross-business subcontractor assignments
       let job = await storage.getJob(jobId, effectiveUserId);
@@ -10270,7 +10276,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           }
         }
       }
-      if (!job) return res.status(404).json({ error: "Job not found" });
+      if (!job) return res.status(404).json({ error: "Job not found", code: "JOB_NOT_FOUND" });
 
       // Staff workers must be assigned to this job
       const isOwnerOrManager = userContext?.isOwner || userContext?.permissions?.includes('view_all');
@@ -10285,10 +10291,30 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         if (!isAssigned) return res.status(403).json({ error: "You can only update phases on your assigned jobs" });
       }
 
-      // Fetch the current phase (always scoped to the job owner's tenant)
+      // Fetch the current phase (always scoped to the job owner's tenant).
+      // Fall back to a direct phaseId lookup in case the phase was recreated
+      // during a migration and the mobile app still holds a stale jobId scope.
       const phases = await storage.getJobPhases(jobId, jobOwnerId);
-      const phase = phases.find((p: any) => p.id === phaseId);
-      if (!phase) return res.status(404).json({ error: "Phase not found" });
+      let phase = phases.find((p: any) => p.id === phaseId);
+      if (!phase) {
+        // Fallback: look up the phase directly by ID regardless of jobId scope.
+        // This handles the case where the phase was recreated with a new ID
+        // during a multi-member migration and the mobile state is stale.
+        const [directPhase] = await db
+          .select()
+          .from(jobPhases)
+          .where(eq(jobPhases.id, phaseId))
+          .limit(1);
+        if (directPhase && directPhase.jobId === jobId) {
+          phase = directPhase;
+        }
+      }
+      if (!phase) {
+        return res.status(404).json({
+          error: "Phase not found — it may have been removed. Pull down to refresh.",
+          code: "PHASE_NOT_FOUND",
+        });
+      }
 
       // Determine the next status in the advancement sequence
       const advanceMap: Record<string, string> = {
@@ -10312,7 +10338,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId)))
         .returning();
 
-      if (!updated) return res.status(404).json({ error: "Phase not found" });
+      if (!updated) return res.status(404).json({ error: "Phase not found — it may have been removed. Pull down to refresh.", code: "PHASE_NOT_FOUND" });
 
       // Fire-and-forget push notification to the job owner
       try {
