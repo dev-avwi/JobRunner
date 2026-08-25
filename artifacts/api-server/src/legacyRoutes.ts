@@ -16680,6 +16680,61 @@ Be specific about materials, colors, and features that would be included.`
     }
   });
 
+  // ===== DISPATCH LEAVE ENDPOINT =====
+  // Returns approved leave records for team members within a date range.
+  // Used by the Dispatch board to grey-out workers on leave and show warnings.
+  app.get("/api/dispatch/leave", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const userId = userContext.effectiveUserId;
+
+      // Accept ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD (default: today)
+      const today = new Date().toISOString().split('T')[0];
+      const startDateStr = (req.query.startDate as string) || today;
+      const endDateStr   = (req.query.endDate   as string) || startDateStr;
+
+      // Query approved leave records whose range overlaps the requested window.
+      // Overlap condition: leave.startDate <= endDate AND leave.endDate >= startDate
+      const records = await db
+        .select({
+          id:             teamMemberTimeOff.id,
+          teamMemberId:   teamMemberTimeOff.teamMemberId,
+          memberId:       teamMembers.memberId,
+          memberFirstName: teamMembers.firstName,
+          memberLastName:  teamMembers.lastName,
+          startDate:      teamMemberTimeOff.startDate,
+          endDate:        teamMemberTimeOff.endDate,
+          reason:         teamMemberTimeOff.reason,
+          status:         teamMemberTimeOff.status,
+        })
+        .from(teamMemberTimeOff)
+        .innerJoin(teamMembers, eq(teamMemberTimeOff.teamMemberId, teamMembers.id))
+        .where(
+          and(
+            eq(teamMembers.businessOwnerId, userId),
+            eq(teamMemberTimeOff.status, 'approved'),
+            lte(teamMemberTimeOff.startDate, new Date(endDateStr + 'T23:59:59Z')),
+            gte(teamMemberTimeOff.endDate,   new Date(startDateStr + 'T00:00:00Z')),
+          )
+        );
+
+      res.json(records.map(r => ({
+        id:              r.id,
+        teamMemberId:    r.teamMemberId,
+        memberId:        r.memberId,
+        memberFirstName: r.memberFirstName,
+        memberLastName:  r.memberLastName,
+        startDate:       r.startDate instanceof Date ? r.startDate.toISOString() : r.startDate,
+        endDate:         r.endDate instanceof Date   ? r.endDate.toISOString()   : r.endDate,
+        reason:          r.reason,
+        status:          r.status,
+      })));
+    } catch (error: any) {
+      console.error("Error fetching dispatch leave:", error);
+      res.status(500).json({ error: "Failed to fetch leave data" });
+    }
+  });
+
   // Get operational health metrics for the dispatch board
   app.get("/api/ops/health", requireAuth, async (req: any, res) => {
     try {

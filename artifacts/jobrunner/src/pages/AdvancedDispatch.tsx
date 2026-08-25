@@ -274,6 +274,39 @@ function memberInitials(m: TeamMember) {
   return (f + l).toUpperCase() || m.email.slice(0, 2).toUpperCase();
 }
 
+/**
+ * Extract the calendar-date string (YYYY-MM-DD) from a leave ISO timestamp.
+ * Leave records are persisted at midnight UTC (e.g. "2026-08-25T00:00:00.000Z"),
+ * so slicing the first 10 characters always yields the correct calendar date
+ * regardless of the client timezone.
+ */
+function leaveDateStr(isoOrDate: string): string {
+  return isoOrDate.slice(0, 10); // "YYYY-MM-DD"
+}
+/**
+ * Returns true when any approved leave record covers this memberId on the given date.
+ * Compares YYYY-MM-DD strings rather than millisecond timestamps so the result is
+ * stable in every timezone, including UTC-negative offsets where a midnight-UTC
+ * end date would otherwise fall before the local day start.
+ */
+function workerOnLeaveForDate(leaveRecords: LeaveRecord[], memberId: string, date: Date): boolean {
+  const dateStr = format(date, "yyyy-MM-dd");
+  return leaveRecords.some(r => {
+    if (r.memberId !== memberId) return false;
+    return leaveDateStr(r.startDate) <= dateStr && leaveDateStr(r.endDate) >= dateStr;
+  });
+}
+
+/** Returns true when the worker has approved leave on ANY day in [rangeStart, rangeEnd]. */
+function workerOnLeaveInRange(leaveRecords: LeaveRecord[], memberId: string, rangeStart: Date, rangeEnd: Date): boolean {
+  const startStr = format(rangeStart, "yyyy-MM-dd");
+  const endStr   = format(rangeEnd,   "yyyy-MM-dd");
+  return leaveRecords.some(r => {
+    if (r.memberId !== memberId) return false;
+    // Overlap: leave.start <= rangeEnd AND leave.end >= rangeStart
+    return leaveDateStr(r.startDate) <= endStr && leaveDateStr(r.endDate) >= startStr;
+  });
+}
 function jobOnDate(job: DispatchJob, date: Date): boolean {
   if (!job.scheduledAt) return false;
   try {
@@ -667,6 +700,7 @@ function DayView({
   resources,
   selectedWorkerIds,
   overCapacityWorkerIds,
+  leaveRecords,
   onJobClick,
   onCreateJob,
   onReschedule,
@@ -678,11 +712,13 @@ function DayView({
   resources?: DispatchResources;
   selectedWorkerIds: string[];
   overCapacityWorkerIds?: Set<string>;
+  leaveRecords: LeaveRecord[];
   onJobClick: (id: string) => void;
   onCreateJob: (memberId?: string, hour?: number) => void;
   onReschedule: (jobId: string, memberId: string, hour: number, minute: number) => void;
   showMaterials: boolean;
 }) {
+  const { toast } = useToast();
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
@@ -735,10 +771,22 @@ function DayView({
     const offsetY = e.dataTransfer.getData("offsetY");
     const minuteOffset = Math.round((parseInt(offsetY || "0") / HOUR_HEIGHT) * 60);
     const minute = Math.round(minuteOffset / 30) * 30;
-    if (jobId) onReschedule(jobId, memberId, hour, Math.min(minute, 30));
+    if (jobId) {
+      // Warn if the target worker is on leave, but still allow the assignment
+      if (workerOnLeaveForDate(leaveRecords, memberId, date)) {
+        const worker = workers.find(w => (w.memberId || w.id) === memberId);
+        const name = worker ? memberName(worker) : "This worker";
+        toast({
+          title: `${name} is on leave`,
+          description: "Job assigned, but this worker has approved leave for today.",
+          variant: "destructive",
+        });
+      }
+      onReschedule(jobId, memberId, hour, Math.min(minute, 30));
+    }
     setDragOverCell(null);
     setDraggingJobId(null);
-  }, [onReschedule]);
+  }, [onReschedule, leaveRecords, date, workers, toast]);
 
   const materialsNeeded = resources?.materialsNeeded ?? [];
   const [checkedMaterials, setCheckedMaterials] = useState<Set<string>>(new Set());
@@ -766,19 +814,32 @@ function DayView({
                 const wid = worker.memberId || worker.id;
                 const workerJobs = jobsByMember.get(wid) ?? [];
                 const isOverCapacity = overCapacityWorkerIds?.has(wid) ?? false;
+                const onLeave = workerOnLeaveForDate(leaveRecords, wid, date);
+                const leaveLabel = onLeave ? workerLeaveLabel(leaveRecords, wid, date) : null;
                 return (
-                  <div key={wid} className={`flex-1 min-w-[140px] border-r last:border-r-0 ${isOverCapacity ? "ring-1 ring-inset ring-red-500/40" : ""}`}>
+                  <div key={wid} className={`flex-1 min-w-[140px] border-r last:border-r-0 ${isOverCapacity ? "ring-1 ring-inset ring-red-500/40" : ""} ${onLeave ? "opacity-60" : ""}`}>
                     {/* Worker header */}
-                    <div className={`h-6 flex items-center gap-1.5 px-2 border-b sticky top-0 z-10 ${isOverCapacity ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
+                    <div className={`h-auto min-h-[24px] flex items-center gap-1.5 px-2 py-0.5 border-b sticky top-0 z-10 flex-wrap ${onLeave ? "bg-slate-100 dark:bg-slate-800/60" : isOverCapacity ? "bg-red-50 dark:bg-red-950/20" : "bg-muted/30"}`}>
                       <UserAvatar
                         user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
                         className="h-4 w-4 text-[8px]"
                       />
                       <span className="text-[11px] font-medium truncate">{memberName(worker)}</span>
+                      {onLeave && (
+                        <span className="ml-auto text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 whitespace-nowrap flex-shrink-0">
+                          {leaveLabel ?? "On Leave"}
+                        </span>
+                      )}
                     </div>
 
                     {/* Hour cells + job blocks */}
                     <div className="relative" style={{ height: totalHeight }}>
+                      {/* Leave hatch overlay */}
+                      {onLeave && (
+                        <div className="absolute inset-0 z-10 pointer-events-none"
+                          style={{ background: "repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(148,163,184,0.12) 6px,rgba(148,163,184,0.12) 12px)" }}
+                        />
+                      )}
                       {/* Hour grid lines */}
                       {hours.map(h => (
                         <div key={h}
@@ -965,6 +1026,7 @@ function WeekView({
   jobs,
   workers,
   selectedWorkerIds,
+  leaveRecords,
   onJobClick,
   onCreateJob,
   onReschedule,
@@ -973,6 +1035,7 @@ function WeekView({
   jobs: DispatchJob[];
   workers: TeamMember[];
   selectedWorkerIds: string[];
+  leaveRecords: LeaveRecord[];
   onJobClick: (id: string) => void;
   onCreateJob: (memberId?: string, date?: Date) => void;
   onReschedule: (jobId: string, memberId: string, date: Date) => void;
@@ -1029,6 +1092,8 @@ function WeekView({
               {days.map(day => {
                 const dayStr = day.toISOString();
                 const isOver = dragOverCell?.wid === wid && dragOverCell?.dayStr === dayStr;
+                const onLeave = workerOnLeaveForDate(leaveRecords, wid, day);
+                const leaveLabel = onLeave ? workerLeaveLabel(leaveRecords, wid, day) : null;
                 const dayJobs = jobs.filter(j => {
                   if (!jobOnDate(j, day)) return false;
                   const assignee = j.assignedTo ?? primaryAssignment(j)?.memberId;
@@ -1039,12 +1104,26 @@ function WeekView({
                     key={dayStr}
                     className={`border-l min-h-[80px] p-1 relative group transition-colors
                       ${isToday(day) ? "bg-primary/[0.03]" : ""}
-                      ${isOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : "hover:bg-muted/10"}`}
+                      ${onLeave ? "bg-slate-50 dark:bg-slate-900/30" : ""}
+                      ${isOver ? "bg-primary/10 ring-1 ring-inset ring-primary/30" : !onLeave ? "hover:bg-muted/10" : ""}`}
                     onDragOver={e => { e.preventDefault(); setDragOverCell({ wid, dayStr }); }}
                     onDragLeave={() => setDragOverCell(null)}
                     onDrop={e => handleWeekDrop(wid, day, e)}
                     onClick={() => onCreateJob(wid, day)}
                   >
+                    {/* Leave indicator */}
+                    {onLeave && (
+                      <>
+                        <div className="absolute inset-0 pointer-events-none"
+                          style={{ background: "repeating-linear-gradient(135deg,transparent,transparent 6px,rgba(148,163,184,0.1) 6px,rgba(148,163,184,0.1) 12px)" }}
+                        />
+                        <div className="relative z-10 mb-0.5">
+                          <span className="text-[8px] font-semibold px-1 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            {leaveLabel ?? "On Leave"}
+                          </span>
+                        </div>
+                      </>
+                    )}
                     {dayJobs.map(job => {
                       const sc = getStatusColor(job.status);
                       return (
@@ -1255,6 +1334,9 @@ function ResourceSidebar({
   workers,
   resources,
   selectedWorkerIds,
+  leaveRecords,
+  leaveRangeStart,
+  leaveRangeEnd,
   onWorkerToggle,
   onClose,
   allDayJobs,
@@ -1264,6 +1346,11 @@ function ResourceSidebar({
   workers: TeamMember[];
   resources?: DispatchResources;
   selectedWorkerIds: string[];
+  leaveRecords: LeaveRecord[];
+  /** First day of the visible period (inclusive) — used for leave badge in sidebar. */
+  leaveRangeStart: Date;
+  /** Last day of the visible period (inclusive) — used for leave badge in sidebar. */
+  leaveRangeEnd: Date;
   onWorkerToggle: (id: string) => void;
   onClose: () => void;
   allDayJobs?: DispatchJob[];
@@ -1331,12 +1418,17 @@ function ResourceSidebar({
             {workers.map(worker => {
               const wid = worker.memberId || worker.id;
               const isSelected = selectedWorkerIds.includes(wid);
+              // In week view the range spans the whole week; in day view start===end.
+              const onLeave = workerOnLeaveInRange(leaveRecords, wid, leaveRangeStart, leaveRangeEnd);
+              // Show the specific-day label for the range start (first day on leave in range)
+              const leaveLabel = onLeave ? workerLeaveLabel(leaveRecords, wid, leaveRangeStart) : null;
               return (
                 <button
                   key={wid}
                   onClick={() => onWorkerToggle(wid)}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-colors text-left
-                    ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/50"}`}
+                    ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/50"}
+                    ${onLeave ? "opacity-70" : ""}`}
                 >
                   <UserAvatar
                     user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
@@ -1344,7 +1436,14 @@ function ResourceSidebar({
                   />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium truncate">{memberName(worker)}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{worker.roleName}</p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <p className="text-[10px] text-muted-foreground truncate">{worker.roleName}</p>
+                      {onLeave && (
+                        <span className="text-[9px] font-semibold px-1 py-0 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 flex-shrink-0">
+                          {leaveLabel ?? "On Leave"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {isSelected && <Check className="h-3 w-3 flex-shrink-0" />}
                 </button>
@@ -1562,6 +1661,20 @@ export default function AdvancedDispatch() {
   const { data: workerStates = [] } = useQuery<WorkerState[]>({
     queryKey: ["/api/team/worker-states"],
     refetchInterval: 30_000,
+  });
+
+  // Fetch approved leave for the visible date range so we can surface it on the board
+  const leaveStartDate = view === "week"
+    ? format(weekStart, "yyyy-MM-dd")
+    : format(currentDate, "yyyy-MM-dd");
+  const leaveEndDate = view === "week"
+    ? format(addDays(weekStart, 6), "yyyy-MM-dd")
+    : format(currentDate, "yyyy-MM-dd");
+
+  const leaveUrl = `/api/dispatch/leave?startDate=${leaveStartDate}&endDate=${leaveEndDate}`;
+  const { data: leaveRecords = [] } = useQuery<LeaveRecord[]>({
+    queryKey: [leaveUrl],
+    staleTime: 60_000,
   });
 
   // ── Mutations ─────────────────────────────────────────────────
@@ -1783,6 +1896,24 @@ export default function AdvancedDispatch() {
             <span className="text-sm font-medium text-muted-foreground">All Jobs</span>
           )}
 
+          {/* On-Leave alert chip — shown in day/week when workers have approved leave */}
+          {view !== "kanban" && (() => {
+            const datesInView = view === "week"
+              ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+              : [currentDate];
+            const onLeaveCount = workers.filter(w => {
+              const wid = w.memberId || w.id;
+              return datesInView.some(d => workerOnLeaveForDate(leaveRecords, wid, d));
+            }).length;
+            if (onLeaveCount === 0) return null;
+            return (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-xs font-semibold flex-shrink-0">
+                <AlertCircle className="h-3.5 w-3.5" />
+                {onLeaveCount} On Leave
+              </div>
+            );
+          })()}
+
           <div className="flex-1" />
 
           {/* Search */}
@@ -1912,6 +2043,7 @@ export default function AdvancedDispatch() {
             resources={resources}
             selectedWorkerIds={selectedWorkerIds}
             overCapacityWorkerIds={overCapacityWorkerIds}
+            leaveRecords={leaveRecords}
             onJobClick={handleJobClick}
             onCreateJob={handleCreateJob}
             onReschedule={handleReschedule}
@@ -1923,6 +2055,7 @@ export default function AdvancedDispatch() {
             jobs={filteredJobs}
             workers={workers}
             selectedWorkerIds={selectedWorkerIds}
+            leaveRecords={leaveRecords}
             onJobClick={handleJobClick}
             onCreateJob={(mid, date) => handleCreateJob(mid, date ?? undefined)}
             onReschedule={handleWeekReschedule}
@@ -1956,6 +2089,9 @@ export default function AdvancedDispatch() {
                   workers={workers}
                   resources={resources}
                   selectedWorkerIds={selectedWorkerIds}
+                  leaveRecords={leaveRecords}
+                  leaveRangeStart={currentDate}
+                  leaveRangeEnd={currentDate}
                   onWorkerToggle={handleWorkerToggle}
                   onClose={() => setShowSidebar(false)}
                   allDayJobs={allDayJobs}
@@ -1973,6 +2109,9 @@ export default function AdvancedDispatch() {
             workers={workers}
             resources={resources}
             selectedWorkerIds={selectedWorkerIds}
+            leaveRecords={leaveRecords}
+            leaveRangeStart={view === "week" ? weekStart : currentDate}
+            leaveRangeEnd={view === "week" ? addDays(weekStart, 6) : currentDate}
             onWorkerToggle={handleWorkerToggle}
             onClose={() => setShowSidebar(false)}
             allDayJobs={allDayJobs}
@@ -1982,4 +2121,31 @@ export default function AdvancedDispatch() {
       </div>
     </PageShell>
   );
+}
+
+interface LeaveRecord {
+  id: string;
+  teamMemberId: string;
+  memberId: string | null; // matches TeamMember.memberId (the user ID)
+  memberFirstName?: string | null;
+  memberLastName?: string | null;
+  startDate: string; // ISO timestamp
+  endDate: string;   // ISO timestamp
+  reason: string;
+  status: string;
+}
+
+function workerLeaveLabel(leaveRecords: LeaveRecord[], memberId: string, date: Date): string | null {
+  const dateStr = format(date, "yyyy-MM-dd");
+  const record = leaveRecords.find(r => {
+    if (r.memberId !== memberId) return false;
+    return leaveDateStr(r.startDate) <= dateStr && leaveDateStr(r.endDate) >= dateStr;
+  });
+  if (!record) return null;
+  const reason = record.reason?.toLowerCase() ?? "";
+  if (reason === "annual_leave") return "Annual Leave";
+  if (reason === "sick_leave") return "Sick Leave";
+  if (reason === "personal") return "Personal Leave";
+  if (reason === "public_holiday") return "Public Holiday";
+  return "On Leave";
 }
