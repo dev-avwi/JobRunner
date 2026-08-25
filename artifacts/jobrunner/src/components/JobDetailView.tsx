@@ -154,6 +154,7 @@ export default function JobDetailView({
     window.addEventListener('popstate', onPopState);
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
+
   const { canUseAIFeatures } = useFeatureAccess();
   const collaboration = useJobCollaboration(jobId, user?.id, user?.name || user?.email || 'Viewer');
   const chatSectionRef = useRef<HTMLDivElement>(null);
@@ -3395,8 +3396,6 @@ export default function JobDetailView({
                   })()}
                 </CardContent>
               </Card>
-              {/* Purchase orders linked to this job */}
-              {!isTradie && <JobPurchaseOrdersSection jobId={jobId} isTradie={isTradie} />}
               {/* Defects (project only) */}
               {isProject && <DefectsSection jobId={jobId} isTradie={isTradie} teamMembers={teamMembers} />}
             </TabsContent>
@@ -3404,11 +3403,13 @@ export default function JobDetailView({
             {/* ── DOCS & SAFETY TAB ── */}
             <TabsContent value="docs" className="mt-0 space-y-6">
               {isProject && <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />}
-              {/* RFIs for service-call jobs (projects get RFIs via ProjectDocumentRegister above) */}
-              {!isProject && <JobRfisSection jobId={jobId} canEdit={job.status !== 'invoiced'} />}
               <SafetyFormsSection jobId={jobId} jobStatus={job.status} jobTitle={job.title} jobAddress={job.address} />
               <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
               {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && <JobSignature jobId={jobId} />}
+              {/* Purchase orders linked to this job */}
+              {!isTradie && <JobPurchaseOrdersSection jobId={jobId} isTradie={isTradie} />}
+              {/* RFIs for service-call jobs (projects get RFIs via ProjectDocumentRegister above) */}
+              {!isProject && <JobRfisSection jobId={jobId} canEdit={job.status !== 'invoiced'} />}
             </TabsContent>
 
             {/* ── CHAT TAB ── */}
@@ -3431,7 +3432,7 @@ export default function JobDetailView({
           <div className="lg:col-span-4">
             <div className="space-y-4 lg:sticky lg:top-20">
 
-              {/* Client card */}
+              {/* ── CLIENT CARD ── */}
               {(client || job.address) && (
                 <Card data-testid="sidebar-client-card">
                   <CardHeader className="pb-2">
@@ -3441,16 +3442,43 @@ export default function JobDetailView({
                   </CardHeader>
                   <CardContent className="pt-0 space-y-3">
                     {client && (
-                      <div>
-                        <button className="text-sm font-semibold hover:underline text-left" onClick={() => job.clientId && onViewClient?.(job.clientId)}>{client.name}</button>
-                        <div className="flex flex-col gap-1 mt-2">
-                          {client.phone && <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"><Phone className="h-3 w-3" />{client.phone}</a>}
-                          {client.email && <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"><Mail className="h-3 w-3" />{client.email}</a>}
+                      <div className="flex items-start gap-3">
+                        {/* Avatar */}
+                        <div
+                          className="w-10 h-10 rounded-full text-white text-sm font-bold flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: 'hsl(var(--trade))' }}
+                        >
+                          {client.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <button
+                            className="text-sm font-semibold hover:underline text-left truncate block w-full"
+                            onClick={() => job.clientId && onViewClient?.(job.clientId)}
+                          >
+                            {client.name}
+                          </button>
+                          <div className="flex flex-col gap-1 mt-1.5">
+                            {client.phone && (
+                              <a href={`tel:${client.phone}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                <Phone className="h-3 w-3 shrink-0" />{client.phone}
+                              </a>
+                            )}
+                            {client.email && (
+                              <a href={`mailto:${client.email}`} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                                <Mail className="h-3 w-3 shrink-0" /><span className="truncate">{client.email}</span>
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
                     )}
                     {job.address && (
-                      <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`} target="_blank" rel="noopener noreferrer" className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(job.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
                         <MapPin className="h-3 w-3 mt-0.5 shrink-0" /><span>{job.address}</span>
                       </a>
                     )}
@@ -3458,51 +3486,235 @@ export default function JobDetailView({
                 </Card>
               )}
 
-              {/* At a glance */}
+              {/* ── JOB PROGRESS ── */}
               <Card data-testid="sidebar-at-a-glance">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                    <Briefcase className="h-3.5 w-3.5" />At a Glance
+                    <CheckCircle className="h-3.5 w-3.5" />Job Progress
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 space-y-2">
-                  {job.scheduledAt && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" />Scheduled</span>
-                      <span className="font-medium">{format(new Date(job.scheduledAt), 'MMM d, h:mm a')}</span>
-                    </div>
-                  )}
-                  {activeAssignments.length > 0 && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5"><Users className="h-3.5 w-3.5" />Team</span>
-                      <div className="flex items-center gap-1">
-                        {activeAssignments.slice(0, 3).map((a) => {
-                          const name = a.workerDisplayNameSnapshot || a.displayName || 'W';
-                          const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                          return <div key={a.id} className="w-6 h-6 rounded-full text-white text-[10px] font-bold flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--trade))' }} title={name}>{initials}</div>;
-                        })}
-                        {activeAssignments.length > 3 && <span className="text-xs text-muted-foreground ml-1">+{activeAssignments.length - 3}</span>}
-                      </div>
-                    </div>
-                  )}
-                  {!isTradie && actualHoursData.hasData && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />Time</span>
-                      <span className="font-medium">{actualHoursData.actualHours}h tracked</span>
-                    </div>
-                  )}
-                  {!isTradie && linkedInvoice && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground flex items-center gap-1.5"><Receipt className="h-3.5 w-3.5" />Invoice</span>
-                      <span className={`font-semibold ${(linkedInvoice.status === 'sent' || linkedInvoice.status === 'overdue') ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'}`}>
-                        ${parseFloat(linkedInvoice.total as string || '0').toFixed(2)}
+                <CardContent className="pt-0 space-y-3">
+                  {/* Status badge */}
+                  <div className="flex items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className={`text-xs capitalize ${
+                        job.status === 'done' || job.status === 'invoiced'
+                          ? 'border-green-500 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30'
+                          : job.status === 'in_progress'
+                          ? 'border-blue-500 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30'
+                          : (job.status as string) === 'cancelled' || (job.status as string) === 'on_hold'
+                          ? 'border-gray-400 text-gray-600 dark:text-gray-400'
+                          : 'border-amber-500 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30'
+                      }`}
+                    >
+                      {job.status === 'in_progress' ? 'In Progress' : (job.status as string) === 'on_hold' ? 'On Hold' : job.status}
+                    </Badge>
+                    {job.scheduledAt && (
+                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />{format(new Date(job.scheduledAt), 'MMM d')}
                       </span>
+                    )}
+                  </div>
+
+                  {/* Service call: status stepper */}
+                  {isServiceCall && (() => {
+                    const steps: { key: string; label: string }[] = [
+                      { key: 'pending', label: 'Pending' },
+                      { key: 'scheduled', label: 'Scheduled' },
+                      { key: 'in_progress', label: 'In Progress' },
+                      { key: 'done', label: 'Done' },
+                      { key: 'invoiced', label: 'Invoiced' },
+                    ];
+                    const currentIdx = steps.findIndex(s => s.key === job.status);
+                    const activeIdx = currentIdx === -1 ? 0 : currentIdx;
+                    return (
+                      <div className="flex items-center gap-0.5">
+                        {steps.map((step, idx) => {
+                          const done = idx < activeIdx;
+                          const active = idx === activeIdx;
+                          return (
+                            <div key={step.key} className="flex items-center flex-1 min-w-0">
+                              <div className="flex flex-col items-center flex-1 min-w-0">
+                                <div
+                                  className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[9px] font-bold transition-all ${
+                                    done
+                                      ? 'bg-green-500 text-white'
+                                      : active
+                                      ? 'text-white'
+                                      : 'bg-muted text-muted-foreground'
+                                  }`}
+                                  style={active ? { backgroundColor: 'hsl(var(--trade))' } : undefined}
+                                  title={step.label}
+                                >
+                                  {done ? <Check className="h-2.5 w-2.5" /> : idx + 1}
+                                </div>
+                                <span className={`text-[9px] mt-0.5 text-center leading-tight ${active ? 'font-semibold' : 'text-muted-foreground'}`} style={active ? { color: 'hsl(var(--trade))' } : undefined}>
+                                  {step.label}
+                                </span>
+                              </div>
+                              {idx < steps.length - 1 && (
+                                <div className={`h-px flex-shrink-0 w-2 mb-3.5 ${done ? 'bg-green-500' : 'bg-muted'}`} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Project: phase progress bar */}
+                  {isProject && jobPhasesForPicker.length > 0 && (() => {
+                    const total = jobPhasesForPicker.length;
+                    const completedCount = jobPhasesForPicker.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
+                    const pct = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="text-muted-foreground flex items-center gap-1"><Layers className="h-3 w-3" />Phases</span>
+                          <span className="font-medium">{completedCount} / {total} ({pct}%)</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${pct}%`, backgroundColor: pct === 100 ? 'hsl(142 71% 45%)' : 'hsl(var(--trade))' }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Time tracked row */}
+                  {!isTradie && actualHoursData.hasData && (
+                    <div className="flex items-center justify-between text-xs pt-0.5 border-t border-border">
+                      <span className="text-muted-foreground flex items-center gap-1.5"><Clock className="h-3 w-3" />Time tracked</span>
+                      <span className="font-medium">{actualHoursData.actualHours}h</span>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              {/* Quick links */}
+              {/* ── FINANCIAL SNAPSHOT ── */}
+              {!isTradie && jobProfitabilityData && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <DollarSign className="h-3.5 w-3.5" />Financial Snapshot
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-2">
+                    {(() => {
+                      const quoted = jobProfitabilityData?.quoted?.amount ?? null;
+                      const costs = jobProfitabilityData?.costs?.total ?? null;
+                      const margin = jobProfitabilityData?.profit?.margin ?? null;
+                      const isLoss = jobProfitabilityData?.profit?.isNegative;
+
+                      // Outstanding balance is computed server-side in the profitability API:
+                      // sum of ALL invoice totals (any status) minus sum of all receipts received.
+                      // This is accurate for multi-invoice jobs and any payment status.
+                      const serverOutstanding = jobProfitabilityData?.revenue?.outstandingBalance ?? null;
+                      const allInvoicedTotal = jobProfitabilityData?.revenue?.allInvoicedTotal ?? null;
+                      let outstandingAmt: number | null = null;
+                      let outstandingColor: string | undefined;
+                      if (serverOutstanding !== null && allInvoicedTotal !== null && allInvoicedTotal > 0) {
+                        outstandingAmt = serverOutstanding;
+                        if (outstandingAmt === 0) {
+                          outstandingColor = 'text-green-600 dark:text-green-400';
+                        } else if (linkedInvoice?.status === 'overdue') {
+                          outstandingColor = 'text-red-600 dark:text-red-400';
+                        } else {
+                          outstandingColor = 'text-amber-600 dark:text-amber-400';
+                        }
+                      }
+
+                      const fmt = (n: number) =>
+                        `$${n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+                      const marginColor = margin === null
+                        ? ''
+                        : isLoss || margin < 0
+                        ? 'text-red-600 dark:text-red-400'
+                        : margin < 15
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-green-600 dark:text-green-400';
+
+                      const rows: { label: string; value: string | null; color?: string; icon?: React.ReactNode }[] = [
+                        {
+                          label: 'Quoted',
+                          value: quoted !== null ? fmt(parseFloat(quoted.toString())) : null,
+                          icon: <FileText className="h-3 w-3" />,
+                        },
+                        {
+                          label: 'Costs to date',
+                          value: costs !== null ? fmt(parseFloat(costs.toString())) : null,
+                          color: costs !== null && quoted !== null && costs > parseFloat(quoted.toString()) ? 'text-red-600 dark:text-red-400' : undefined,
+                          icon: <Receipt className="h-3 w-3" />,
+                        },
+                        {
+                          label: 'Outstanding',
+                          value: outstandingAmt !== null ? fmt(outstandingAmt) : null,
+                          color: outstandingColor,
+                          icon: <Banknote className="h-3 w-3" />,
+                        },
+                      ];
+
+                      return (
+                        <>
+                          {rows.filter(r => r.value !== null).map((row) => (
+                            <div key={row.label} className="flex items-center justify-between text-sm">
+                              <span className="text-muted-foreground flex items-center gap-1.5">{row.icon}{row.label}</span>
+                              <span className={`font-semibold tabular-nums ${row.color ?? ''}`}>{row.value}</span>
+                            </div>
+                          ))}
+                          {margin !== null && (
+                            <div className="flex items-center justify-between text-sm pt-1.5 mt-0.5 border-t border-border">
+                              <span className="text-muted-foreground flex items-center gap-1.5"><BarChart2 className="h-3 w-3" />Margin</span>
+                              <span className={`font-bold tabular-nums ${marginColor}`}>
+                                {isLoss ? '' : ''}{margin.toFixed(1)}%
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ── ASSIGNED TEAM ── */}
+              {!isTradie && !isSolo && activeAssignments.length > 0 && (
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5" />Team ({activeAssignments.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-2">
+                      {activeAssignments.map((a) => {
+                        const name = a.workerDisplayNameSnapshot || a.displayName || 'Worker';
+                        const initials = name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        const isPrimary = a.isPrimary;
+                        return (
+                          <div key={a.id} className="flex items-center gap-1.5 group" title={name}>
+                            <div
+                              className="w-7 h-7 rounded-full text-white text-[11px] font-bold flex items-center justify-center shrink-0 ring-2 ring-background"
+                              style={{ backgroundColor: isPrimary ? 'hsl(var(--trade))' : 'hsl(var(--muted-foreground))' }}
+                            >
+                              {initials}
+                            </div>
+                            <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors truncate max-w-[90px]">
+                              {name.split(' ')[0]}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ── QUICK LINKS ── */}
               {!isTradie && (
                 <Card data-testid="sidebar-quick-links">
                   <CardHeader className="pb-2">

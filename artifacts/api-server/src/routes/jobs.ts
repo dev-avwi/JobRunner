@@ -7289,6 +7289,16 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       }, 0);
       const pendingRevenue = jobInvoices.filter(inv => inv.status === 'sent').reduce((sum, inv) => sum + parseFloat(inv.total || '0'), 0);
 
+      // Outstanding balance: per-invoice (total - amountPaid), summed across all job invoices.
+      // invoice.amountPaid is updated by every payment path (mark-paid, record-payment, Stripe webhook)
+      // regardless of whether a receipt document is created, so this avoids double-counting.
+      const allInvoicedTotal = jobInvoices.reduce((sum, inv) => sum + parseFloat(inv.total || '0'), 0);
+      const outstandingBalance = jobInvoices.reduce((sum, inv) => {
+        const total = parseFloat(inv.total || '0');
+        const paid = parseFloat((inv as any).amountPaid || '0');
+        return sum + Math.max(0, total - paid);
+      }, 0);
+
       // Approved variation revenue (adds to revised contract value, shown separately)
       let approvedVariationsTotal = 0;
       let pendingVariationsTotal = 0;
@@ -7650,6 +7660,8 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           invoiced: totalRevenue,
           pending: pendingRevenue,
           received: totalRevenue,
+          outstandingBalance: Math.round(outstandingBalance * 100) / 100,
+          allInvoicedTotal: Math.round(allInvoicedTotal * 100) / 100,
         },
         variations: {
           approvedTotal: Math.round(approvedVariationsTotal * 100) / 100,
