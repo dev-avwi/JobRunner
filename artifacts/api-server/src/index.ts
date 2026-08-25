@@ -15,6 +15,7 @@ import { storage, pool as sharedPgPool, guidedProjectSetupSchemaReady } from "./
 import { setupWebSocket } from "./websocket";
 import { metricsMiddleware } from "./metrics";
 import { activityTrackingMiddleware, backfillSignupDayActivity, backfillFeaturePermissions } from "./routes/middleware";
+import { backfillExpenseSubmitters } from "./backfillExpenseSubmitters";
 import { getErrorMessage } from "./lib/errors";
 import { initializeStripe } from "./stripeClient";
 import { WebhookHandlers } from "./webhookHandlers";
@@ -395,6 +396,7 @@ if (process.env.DATABASE_URL) {
 
   backfillSignupDayActivity().catch((err) => logger.error({ err }, '[ActivityBackfill] failed'));
   backfillFeaturePermissions().catch((err) => logger.error({ err }, '[FeaturePermissionBackfill] failed'));
+  backfillExpenseSubmitters().catch((err) => logger.error({ err }, '[ExpenseBackfill] failed'));
 
   setupWebSocket(server, sessionStore);
 

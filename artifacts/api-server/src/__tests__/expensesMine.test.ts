@@ -102,6 +102,9 @@ vi.mock("../storage", () => ({
     updateExpense: vi.fn(),
     getJob: vi.fn(),
     getJobAssignments: vi.fn(),
+    // Return null so submitterName is null → whereClause uses byUserId directly
+    // (no ILIKE fallback branch), which is the path these tests exercise.
+    getUser: vi.fn().mockResolvedValue(null),
   },
 }));
 
@@ -112,7 +115,10 @@ vi.mock("../permissions", () => ({
   },
   ownerOrManagerOnly: () => (_req: any, _res: any, next: any) => next(),
   PERMISSIONS: { WRITE_EXPENSES: "write_expenses" },
-  getUserContext: vi.fn(),
+  // Return effectiveUserId = rawUserId so the route doesn't crash.
+  getUserContext: vi.fn().mockImplementation((uid: string) =>
+    Promise.resolve({ effectiveUserId: uid, isOwner: false, roleName: "worker" })
+  ),
   hasPermission: vi.fn(),
 }));
 
@@ -142,7 +148,7 @@ function buildApp() {
 /** Returns the tagged object that eq() produced for the WHERE clause. */
 function wherePredicateArg(): { __eqCol: unknown; __eqVal: unknown } | undefined {
   // mockWhere is called once with the result of eq(submittedByUserId, userId)
-  const calls = mockWhere.mock.calls as unknown as Array<[unknown]>;
+  const calls = mockWhere.mock.calls as unknown as Array<Array<unknown>>;
   if (!calls.length) return undefined;
   return calls[0][0] as { __eqCol: unknown; __eqVal: unknown };
 }
