@@ -1004,7 +1004,21 @@ export default function ExpensesSection({
               }}>
                 <Feather name="clock" size={9} color="#92400e" />
                 <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: '#92400e' }}>
-                  {isWorkerSubmitted ? 'Worker submitted' : 'Pending approval'}
+                  {isOwnerOrManager
+                    ? (isWorkerSubmitted ? 'Worker submitted' : 'Pending approval')
+                    : 'Awaiting review'}
+                </Text>
+              </View>
+            )}
+            {!isPending && !isRejected && expense.status === 'approved' && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: '#f0fdf4', paddingHorizontal: 6,
+                paddingVertical: 2, borderRadius: 8,
+              }}>
+                <Feather name="check-circle" size={9} color="#15803d" />
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: '#15803d' }}>
+                  Approved
                 </Text>
               </View>
             )}
@@ -1078,7 +1092,7 @@ export default function ExpensesSection({
     }}>
       <Feather name="credit-card" size={14} color={colors.mutedForeground} />
       <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold as any, color: colors.foreground, flex: 1 }}>
-        Expenses
+        {isOwnerOrManager ? 'Expenses' : 'My Expenses'}
       </Text>
       {expenses.length > 0 && (
         <View style={{ borderRadius: 99, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: colors.muted }}>

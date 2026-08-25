@@ -63,6 +63,61 @@ export function collectExpenseNotificationRecipients(
 
 export function registerExpenseRoutes(app: Express) {
   /**
+   * GET /api/jobs/:jobId/expenses
+   * Returns expenses for a job, scoped to the requesting user's role:
+   * - Owners and managers see all expenses for the job.
+   * - Workers see only expenses they submitted (submittedByUserId = their userId).
+   */
+  app.get("/api/jobs/:jobId/expenses", requireAuth, async (req: any, res) => {
+    try {
+      const rawUserId = req.userId!;
+      const { jobId } = req.params;
+
+      const userContext = await getUserContext(rawUserId);
+      const { effectiveUserId, isOwner, roleName } = userContext;
+
+      // Verify the job exists and belongs to this business
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+
+      const isManager =
+        !isOwner &&
+        roleName &&
+        ["admin", "manager"].includes(roleName.toLowerCase());
+
+      if (isOwner || isManager) {
+        // Owners and managers see all expenses for the job
+        const expenses = await storage.getExpenses(effectiveUserId, { jobId });
+        return res.json(expenses);
+      }
+
+      // Workers: verify they are assigned to this job
+      const isLegacyAssigned = (job as any).assignedTo === rawUserId;
+      if (!isLegacyAssigned) {
+        const assignmentRecord = await storage.getJobAssignmentForUser(
+          jobId,
+          rawUserId
+        );
+        if (!assignmentRecord) {
+          return res.status(403).json({ error: "You are not assigned to this job" });
+        }
+      }
+
+      // Return only expenses submitted by this worker
+      const allExpenses = await storage.getExpenses(effectiveUserId, { jobId });
+      const workerExpenses = allExpenses.filter(
+        (e: any) => e.submittedByUserId === rawUserId
+      );
+      return res.json(workerExpenses);
+    } catch (error) {
+      console.error("Get job expenses error:", error);
+      res.status(500).json({ error: "Failed to fetch expenses" });
+    }
+  });
+
+  /**
    * Worker-accessible expense creation scoped to a job.
    * Workers cannot use POST /api/expenses (requires WRITE_EXPENSES permission),
    * but they can log a receipt against a job they are assigned to.

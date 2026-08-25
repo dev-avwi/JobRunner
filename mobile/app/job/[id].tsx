@@ -5260,7 +5260,9 @@ export default function JobDetailScreen() {
   const loadJobExpenses = async () => {
     setIsLoadingExpenses(true);
     try {
-      const response = await api.get<any[]>(`/api/expenses?jobId=${id}`);
+      // Use the job-scoped endpoint: owners/managers see all expenses;
+      // workers see only their own submitted expenses.
+      const response = await api.get<any[]>(`/api/jobs/${id}/expenses`);
       if (response.data && Array.isArray(response.data)) {
         setJobExpenses(response.data);
       }
@@ -9668,6 +9670,18 @@ export default function JobDetailScreen() {
       )}
 
       </CollapsibleSection>
+      )}
+
+      {/* My Submitted Expenses — visible to workers (non-owners) only */}
+      {!(isOwnerOrManager || isSoloOwner) && (isLoadingExpenses || jobExpenses.length > 0) && (
+        <ExpensesSection
+          colors={colors}
+          expenses={jobExpenses}
+          isLoading={isLoadingExpenses}
+          jobId={id as string}
+          isOwnerOrManager={false}
+          onRefresh={loadJobExpenses}
+        />
       )}
 
     </>
