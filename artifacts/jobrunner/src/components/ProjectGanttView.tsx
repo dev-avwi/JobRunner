@@ -15,10 +15,10 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, Layers, Download, X, Check } from "lucide-react";
+import { Loader2, Layers, Download, X, Check, Crown } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { JobPhase, PhaseStatus } from "./JobPhasesSection";
+import type { JobPhase, PhaseStatus, PhaseAssignedUser } from "./JobPhasesSection";
 
 // ── Status colour palette (matches JobPhasesSection STATUS_CONFIG) ──────────
 const STATUS_COLORS: Record<PhaseStatus, { bar: string; text: string; border: string }> = {
@@ -45,6 +45,57 @@ function initials(name?: string | null): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) return parts[0][0]?.toUpperCase() ?? "";
   return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
+}
+
+/** Deterministic colour based on user id for avatar — matches JobPhasesSection */
+const AVATAR_COLORS = [
+  "#4f7ddb", "#e07b39", "#5ba85f", "#9b59b6",
+  "#e74c3c", "#16a085", "#d35400", "#2c3e50",
+];
+function avatarColor(id: string): string {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+
+// ── Read-only stacked avatars for Gantt bars ──────────────────────────────────
+interface GanttAvatarStackProps {
+  members: PhaseAssignedUser[];
+}
+
+function GanttAvatarStack({ members }: GanttAvatarStackProps) {
+  if (members.length === 0) return null;
+  const MAX_SHOWN = 3;
+  const shown = members.slice(0, MAX_SHOWN);
+  const overflow = members.length - MAX_SHOWN;
+
+  return (
+    <div
+      className="flex -space-x-1"
+      title={members.map((m) => `${m.name}${m.isLead ? " (Lead)" : ""}`).join(", ")}
+    >
+      {shown.map((m) => (
+        <span
+          key={m.id}
+          className="relative inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-white border border-background"
+          style={{ backgroundColor: avatarColor(m.id) }}
+        >
+          {initials(m.name)}
+          {m.isLead && (
+            <Crown
+              className="absolute -top-1 -right-0.5 h-2 w-2 text-amber-400 drop-shadow"
+              fill="currentColor"
+            />
+          )}
+        </span>
+      ))}
+      {overflow > 0 && (
+        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold text-muted-foreground bg-muted border border-background">
+          +{overflow}
+        </span>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -451,24 +502,38 @@ export function ProjectGanttView({ jobId, isTradie = false }: Props) {
                           title={`${phase.phaseCode} ${phase.name}${isTradie ? "" : " — click to edit dates"}`}
                           disabled={isTradie}
                         >
-                          {bar.width > 56 && (
-                            <span
-                              className="absolute inset-0 flex items-center px-1.5 text-[9px] font-semibold leading-none overflow-hidden whitespace-nowrap"
-                              style={{ color: cfg.text, paddingRight: phase.assignedUserName ? "22px" : undefined }}
-                            >
-                              {bar.width > 96 ? `${phase.phaseCode} ${phase.name}` : phase.phaseCode}
-                            </span>
-                          )}
-                          {/* Assignee initials badge — right end of bar */}
-                          {phase.assignedUserName && bar.width > 20 && (
-                            <span
-                              className="absolute right-1 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-4 h-4 rounded-full text-[7px] font-bold leading-none"
-                              style={{ backgroundColor: "rgba(255,255,255,0.30)", color: cfg.text }}
-                              title={phase.assignedUserName}
-                            >
-                              {initials(phase.assignedUserName)}
-                            </span>
-                          )}
+                          {(() => {
+                            const members: PhaseAssignedUser[] =
+                              phase.assignedUsers && phase.assignedUsers.length > 0
+                                ? phase.assignedUsers
+                                : phase.assignedUserId
+                                  ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }]
+                                  : [];
+                            const shownCount = Math.min(members.length, 3) + (members.length > 3 ? 1 : 0);
+                            // Each avatar w-4 (16px) with -space-x-1 (4px overlap after first)
+                            const stackW = shownCount > 0 ? 16 + (shownCount - 1) * 12 + 4 : 0;
+                            return (
+                              <>
+                                {bar.width > 56 && (
+                                  <span
+                                    className="absolute inset-0 flex items-center px-1.5 text-[9px] font-semibold leading-none overflow-hidden whitespace-nowrap"
+                                    style={{
+                                      color: cfg.text,
+                                      paddingRight: members.length > 0 && bar.width > 20 ? `${stackW + 6}px` : undefined,
+                                    }}
+                                  >
+                                    {bar.width > 96 ? `${phase.phaseCode} ${phase.name}` : phase.phaseCode}
+                                  </span>
+                                )}
+                                {/* Stacked team avatars — right end of bar */}
+                                {members.length > 0 && bar.width > 20 && (
+                                  <span className="absolute right-1 top-1/2 -translate-y-1/2">
+                                    <GanttAvatarStack members={members} />
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </button>
                       ) : (
                         <button
