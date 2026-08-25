@@ -64,6 +64,7 @@ import {
   Maximize2,
   Minimize2,
   CalendarCheck,
+  Layers,
 } from "lucide-react";
 import {
   Dialog,
@@ -227,8 +228,42 @@ interface WorkerState {
   updatedAt?: string | null;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+interface DispatchPhase {
+  id: string;
 
+  jobId: string;
+
+  jobTitle: string;
+
+  jobType: string;
+
+  phaseCode?: string;
+
+  name: string;
+
+  description?: string | null;
+
+  scheduledStart?: string | null;
+
+  scheduledEnd?: string | null;
+
+  bookedHours?: string | number | null;
+
+  status: string;
+
+  sortOrder?: number;
+
+  assignedUserId?: string | null;
+
+  assignedUserName?: string | null;
+  /** Enriched by /api/dispatch/phases via enrichPhasesWithAssignees */
+
+  assignedUserIds?: string[];
+
+  assignedUsers?: Array<{ id: string; name: string; isLead?: boolean }>;
+
+  notes?: string | null;
+}
 const TIMELINE_START = 6;   // 6 AM
 const TIMELINE_END = 20;    // 8 PM
 const HOUR_HEIGHT = 72;     // px per hour
@@ -1322,17 +1357,17 @@ function WeekView({
                   <span className="font-medium">{format(parseISO(selectedPhase.scheduledEnd), "d MMM yyyy")}</span>
                 </div>
               )}
-              {selectedPhase.assignedUsers.length > 0 && (
+              {(selectedPhase.assignedUsers?.length ?? 0) > 0 && (
                 <div className="flex items-start justify-between gap-2">
                   <span className="text-muted-foreground flex-shrink-0">Assigned</span>
                   <span className="font-medium text-right truncate">
-                    {selectedPhase.assignedUsers.map(u => u.name).join(", ")}
+                    {(selectedPhase.assignedUsers ?? []).map(u => u.name).join(", ")}
                   </span>
                 </div>
               )}
-              {selectedPhase.notes && (
+              {(selectedPhase.notes ?? selectedPhase.description) && (
                 <p className="text-muted-foreground italic pt-1 border-t text-[11px] leading-relaxed line-clamp-3">
-                  {selectedPhase.notes}
+                  {selectedPhase.notes ?? selectedPhase.description}
                 </p>
               )}
             </div>
@@ -1788,15 +1823,30 @@ function ResourceSidebar({
 }
 
 const MAP_TILE_LIGHT = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
-type ViewMode = "day" | "week" | "kanban" | "map";
+
+function phaseOnDay(phase: DispatchPhase, day: Date): boolean {
+  if (!phase.scheduledStart || !phase.scheduledEnd) return false;
+  const dayStr = format(day, "yyyy-MM-dd");
+  const start = phase.scheduledStart.slice(0, 10);
+  const end = phase.scheduledEnd.slice(0, 10);
+  return dayStr >= start && dayStr <= end;
+}
+type ViewMode = "day" | "week" | "kanban" | "map" | "job";
 
 export default function AdvancedDispatch() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
-  // View state — initialise date from ?date=YYYY-MM-DD so legacy /dispatch-board?date=…
-  // deep links and bookmarks continue to work after the route consolidation.
-  const [view, setView] = useState<ViewMode>("day");
+  // View state — initialise from URL params so deep links work.
+  // Supported: ?date=YYYY-MM-DD, ?view=job&jobId=...
+  const [view, setView] = useState<ViewMode>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view");
+      if (v === "job") return "job";
+    } catch { /* ignore */ }
+    return "day";
+  });
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -1808,6 +1858,15 @@ export default function AdvancedDispatch() {
     } catch { /* ignore */ }
     return new Date();
   });
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("jobId") ?? null;
+    } catch { /* ignore */ }
+    return null;
+  });
+  const [jobPickerSearch, setJobPickerSearch] = useState("");
+  const [jobPickerOpen, setJobPickerOpen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showMaterials, setShowMaterials] = useState(true);
 
@@ -1851,6 +1910,26 @@ export default function AdvancedDispatch() {
   // Week navigation
   const weekStart = useMemo(() => startOfWeek(currentDate, { weekStartsOn: 1 }), [currentDate]);
 
+  // ── Sync URL params when view / selectedJobId change ──────────
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (view === "job") {
+        params.set("view", "job");
+        if (selectedJobId) params.set("jobId", selectedJobId);
+        else params.delete("jobId");
+      } else {
+        params.delete("view");
+        params.delete("jobId");
+      }
+      const newSearch = params.toString();
+      const newUrl = newSearch
+        ? `${window.location.pathname}?${newSearch}`
+        : window.location.pathname;
+      window.history.replaceState(null, "", newUrl);
+    } catch { /* ignore */ }
+  }, [view, selectedJobId]);
+
   // ── Data fetching ─────────────────────────────────────────────
   // When Kanban's completed-jobs toggle is on, ask the endpoint to include
   // terminal-status jobs (completed / done / cancelled / archived).
@@ -1877,11 +1956,18 @@ export default function AdvancedDispatch() {
     refetchInterval: 30_000,
   });
 
+  // Fetch all phases — used by the Job view to display phase blocks
+  const { data: allPhases = [] } = useQuery<DispatchPhase[]>({
+    queryKey: ["/api/dispatch/phases"],
+    staleTime: 60_000,
+    enabled: view === "job",
+  });
+
   // Fetch approved leave for the visible date range so we can surface it on the board
-  const leaveStartDate = view === "week"
+  const leaveStartDate = (view === "week" || view === "job")
     ? format(weekStart, "yyyy-MM-dd")
     : format(currentDate, "yyyy-MM-dd");
-  const leaveEndDate = view === "week"
+  const leaveEndDate = (view === "week" || view === "job")
     ? format(addDays(weekStart, 6), "yyyy-MM-dd")
     : format(currentDate, "yyyy-MM-dd");
 
@@ -1965,11 +2051,11 @@ export default function AdvancedDispatch() {
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
     if (view === "day" || view === "map") setCurrentDate(d => subDays(d, 1));
-    else if (view === "week") setCurrentDate(d => subWeeks(d, 1));
+    else if (view === "week" || view === "job") setCurrentDate(d => subWeeks(d, 1));
   };
   const navNext = () => {
     if (view === "day" || view === "map") setCurrentDate(d => addDays(d, 1));
-    else if (view === "week") setCurrentDate(d => addWeeks(d, 1));
+    else if (view === "week" || view === "job") setCurrentDate(d => addWeeks(d, 1));
   };
   const navToday = () => setCurrentDate(new Date());
 
@@ -2002,7 +2088,7 @@ export default function AdvancedDispatch() {
   // ── Period label ──────────────────────────────────────────────
   const periodLabel = useMemo(() => {
     if (view === "day" || view === "map") return format(currentDate, "EEEE, d MMMM yyyy");
-    if (view === "week") return `${format(weekStart, "d MMM")} – ${format(addDays(weekStart, 6), "d MMM yyyy")}`;
+    if (view === "week" || view === "job") return `${format(weekStart, "d MMM")} – ${format(addDays(weekStart, 6), "d MMM yyyy")}`;
     return "All jobs";
   }, [view, currentDate, weekStart]);
 
@@ -2052,10 +2138,24 @@ export default function AdvancedDispatch() {
     { key: "week",   label: "Week",   icon: CalendarIcon },
     { key: "kanban", label: "Kanban", icon: Columns3 },
     { key: "map",    label: "Map",    icon: MapIcon },
+    { key: "job",    label: "Job",    icon: Layers },
   ];
 
-  const dispatchContent = (
-    <div className={`flex flex-col overflow-hidden ${isFullScreen ? "fixed inset-0 z-50 bg-background" : "flex-1"}`} data-testid="dispatch-board">
+  // Job picker filtered list
+  const jobPickerJobs = useMemo(() => {
+    const q = jobPickerSearch.trim().toLowerCase();
+    if (!q) return dispatchJobs.slice(0, 20);
+    return dispatchJobs
+      .filter(j =>
+        j.title.toLowerCase().includes(q) ||
+        j.client?.name?.toLowerCase().includes(q),
+      )
+      .slice(0, 20);
+  }, [dispatchJobs, jobPickerSearch]);
+
+  return (
+    <PageShell className="flex flex-col h-screen overflow-hidden" data-testid="dispatch-board">
+      <div className={`flex flex-col flex-1 overflow-hidden${isFullScreen ? " fixed inset-0 z-50 bg-background" : ""}`}>
       {/* ── Top bar ── */}
       <div className="border-b flex-shrink-0 px-4 py-2 flex items-center gap-3 flex-wrap">
         <h1 className="text-xl font-bold tracking-tight flex-shrink-0">Dispatch</h1>
@@ -2075,7 +2175,7 @@ export default function AdvancedDispatch() {
             ))}
           </div>
 
-          {/* Date navigation (day, week, and map views) */}
+          {/* Date navigation (day, week, job, and map views) */}
           {view !== "kanban" && (
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={navPrev}>
@@ -2117,9 +2217,72 @@ export default function AdvancedDispatch() {
             <span className="text-sm font-medium text-muted-foreground">All Jobs</span>
           )}
 
-          {/* On-Leave alert chip — shown in day/week when workers have approved leave */}
-          {view !== "kanban" && (() => {
-            const datesInView = view === "week"
+          {/* Job picker — shown only in Job view */}
+          {view === "job" && (
+            <Popover open={jobPickerOpen} onOpenChange={setJobPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5 max-w-[220px]">
+                  <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">
+                    {selectedJobId
+                      ? (dispatchJobs.find(j => j.id === selectedJobId)?.title ?? "Select job")
+                      : "Select job"}
+                  </span>
+                  <ChevronDown className="h-3 w-3 flex-shrink-0 ml-auto" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-2" align="start">
+                <div className="relative mb-2">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search jobs or clients..."
+                    value={jobPickerSearch}
+                    onChange={e => setJobPickerSearch(e.target.value)}
+                    className="pl-7 h-7 text-xs"
+                    autoFocus
+                  />
+                </div>
+                <ScrollArea className="max-h-60">
+                  {jobPickerJobs.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No jobs found</p>
+                  ) : (
+                    <div className="space-y-0.5">
+                      {jobPickerJobs.map(j => {
+                        const sc = STATUS_COLORS[j.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
+                        return (
+                          <button
+                            key={j.id}
+                            onClick={() => {
+                              setSelectedJobId(j.id);
+                              setJobPickerOpen(false);
+                              setJobPickerSearch("");
+                            }}
+                            className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-muted/50 flex items-center gap-2
+                              ${selectedJobId === j.id ? "bg-primary/10 text-primary" : ""}`}
+                          >
+                            <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0`} style={{ backgroundColor: sc.solid }} />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{j.title}</p>
+                              {j.client?.name && (
+                                <p className="text-[10px] text-muted-foreground truncate">{j.client.name}</p>
+                              )}
+                            </div>
+                            <Badge variant="outline" className="text-[9px] h-3.5 px-1 capitalize flex-shrink-0">
+                              {(j.jobType ?? "service") === "project" ? "Project" : "Service"}
+                            </Badge>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* On-Leave alert chip — shown in day/week/job when workers have approved leave */}
+          {view !== "kanban" && view !== "job" && (() => {
+            const datesInView = (view === "week")
               ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
               : [currentDate];
             const onLeaveCount = workers.filter(w => {
@@ -2137,83 +2300,89 @@ export default function AdvancedDispatch() {
 
           <div className="flex-1" />
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search jobs or clients..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-7 h-7 text-xs w-48"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Worker filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-                <Users className="h-3.5 w-3.5" />
-                Workers
-                {selectedWorkerIds.length > 0 && (
-                  <Badge className="h-4 text-[10px] px-1">{selectedWorkerIds.length}</Badge>
-                )}
-                <ChevronDown className="h-3 w-3 ml-0.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-52">
-              <DropdownMenuLabel className="text-xs">Filter by worker</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {workers.map(w => {
-                const wid = w.memberId || w.id;
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={wid}
-                    checked={selectedWorkerIds.includes(wid)}
-                    onCheckedChange={() => handleWorkerToggle(wid)}
-                    className="text-xs"
-                  >
-                    {memberName(w)}
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
-              {workers.length === 0 && <div className="text-xs text-muted-foreground px-2 py-1">No workers</div>}
-              {selectedWorkerIds.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem
-                    checked={false}
-                    onCheckedChange={() => setSelectedWorkerIds([])}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Clear filter
-                  </DropdownMenuCheckboxItem>
-                </>
+          {/* Search (hidden in job view — the job picker serves the same role) */}
+          {view !== "job" && (
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Search jobs or clients..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="pl-7 h-7 text-xs w-48"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-3.5 w-3.5" />
+                </button>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+            </div>
+          )}
 
-          {/* Job type filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
-                <Filter className="h-3.5 w-3.5" />
-                {jobTypeFilter === "all" ? "All types" : jobTypeFilter === "service" ? "Service calls" : "Projects"}
-                <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {(["all", "service", "project"] as const).map(t => (
-                <DropdownMenuCheckboxItem key={t} checked={jobTypeFilter === t} onCheckedChange={() => setJobTypeFilter(t)} className="text-xs capitalize">
-                  {t === "all" ? "All types" : t === "service" ? "Service calls" : "Projects"}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Worker filter (hidden in job view) */}
+          {view !== "job" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                  <Users className="h-3.5 w-3.5" />
+                  Workers
+                  {selectedWorkerIds.length > 0 && (
+                    <Badge className="h-4 text-[10px] px-1">{selectedWorkerIds.length}</Badge>
+                  )}
+                  <ChevronDown className="h-3 w-3 ml-0.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuLabel className="text-xs">Filter by worker</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {workers.map(w => {
+                  const wid = w.memberId || w.id;
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={wid}
+                      checked={selectedWorkerIds.includes(wid)}
+                      onCheckedChange={() => handleWorkerToggle(wid)}
+                      className="text-xs"
+                    >
+                      {memberName(w)}
+                    </DropdownMenuCheckboxItem>
+                  );
+                })}
+                {workers.length === 0 && <div className="text-xs text-muted-foreground px-2 py-1">No workers</div>}
+                {selectedWorkerIds.length > 0 && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuCheckboxItem
+                      checked={false}
+                      onCheckedChange={() => setSelectedWorkerIds([])}
+                      className="text-xs text-muted-foreground"
+                    >
+                      Clear filter
+                    </DropdownMenuCheckboxItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
+          {/* Job type filter (hidden in job view) */}
+          {view !== "job" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                  <Filter className="h-3.5 w-3.5" />
+                  {jobTypeFilter === "all" ? "All types" : jobTypeFilter === "service" ? "Service calls" : "Projects"}
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {(["all", "service", "project"] as const).map(t => (
+                  <DropdownMenuCheckboxItem key={t} checked={jobTypeFilter === t} onCheckedChange={() => setJobTypeFilter(t)} className="text-xs capitalize">
+                    {t === "all" ? "All types" : t === "service" ? "Service calls" : "Projects"}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
 
           {/* Materials toggle (day view only) */}
           {view === "day" && (
@@ -2228,16 +2397,18 @@ export default function AdvancedDispatch() {
             </Button>
           )}
 
-          {/* Resource sidebar toggle */}
-          <Button
-            variant={showSidebar ? "secondary" : "outline"}
-            size="icon"
-            className="h-7 w-7"
-            onClick={() => setShowSidebar(v => !v)}
-            title={showSidebar ? "Hide resources" : "Show resources"}
-          >
-            {showSidebar ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
-          </Button>
+          {/* Resource sidebar toggle (hidden in job view — it has its own right panel) */}
+          {view !== "job" && (
+            <Button
+              variant={showSidebar ? "secondary" : "outline"}
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setShowSidebar(v => !v)}
+              title={showSidebar ? "Hide resources" : "Show resources"}
+            >
+              {showSidebar ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
+            </Button>
+          )}
 
           {/* Full-screen toggle */}
           <Button
@@ -2301,6 +2472,18 @@ export default function AdvancedDispatch() {
             onJobClick={handleJobClick}
             onWorkerToggle={handleWorkerToggle}
           />
+        ) : view === "job" ? (
+          <JobView
+            weekStart={weekStart}
+            selectedJobId={selectedJobId}
+            allJobs={dispatchJobs}
+            jobsLoading={jobsLoading}
+            phases={allPhases}
+            workers={workers}
+            resources={resources}
+            allDispatchJobs={dispatchJobs}
+            onJobClick={handleJobClick}
+          />
         ) : (
           <KanbanView
             jobs={filteredJobs}
@@ -2344,8 +2527,8 @@ export default function AdvancedDispatch() {
           </div>
         )}
 
-        {/* Sidebar for week / kanban / map views */}
-        {showSidebar && view !== "day" && (
+        {/* Sidebar for week / kanban / map views (not job — it has its own right panel) */}
+        {showSidebar && view !== "day" && view !== "job" && (
           <ResourceSidebar
             workers={workers}
             resources={resources}
@@ -2361,15 +2544,11 @@ export default function AdvancedDispatch() {
           />
         )}
       </div>
-    </div>
-  );
-
-  return (
-    <PageShell className="flex flex-col h-screen overflow-hidden">
-      {dispatchContent}
+      </div>{/* end full-screen wrapper */}
     </PageShell>
   );
 }
+
 
 function createWorkerMarkerIcon(initials: string, color?: string) {
   const bg = color || "#22c55e";
@@ -2732,28 +2911,482 @@ function ThemeAwareTiles() {
   return null;
 }
 
-interface DispatchPhase {
-  id: string;
-  jobId: string;
-  phaseCode: string;
-  name: string;
-  description?: string | null;
-  scheduledStart?: string | null;
-  scheduledEnd?: string | null;
-  bookedHours?: string | null;
-  status: string;
-  sortOrder?: number | null;
-  notes?: string | null;
-  assignedUserId?: string | null;
-  assignedUserName?: string | null;
-  assignedUserIds: string[];
-  assignedUsers: DispatchPhaseUser[];
-  jobTitle: string;
-  jobType?: string | null;
+function JobView({
+  weekStart,
+  selectedJobId,
+  allJobs,
+  jobsLoading,
+  phases,
+  workers,
+  resources,
+  allDispatchJobs,
+  onJobClick,
+}: {
+  weekStart: Date;
+  selectedJobId: string | null;
+  allJobs: DispatchJob[];
+  /** True while the dispatch board query is still in-flight. */
+  jobsLoading: boolean;
+  phases: DispatchPhase[];
+  workers: TeamMember[];
+  resources?: DispatchResources;
+  allDispatchJobs: DispatchJob[];
+  onJobClick: (id: string) => void;
+}) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
+
+  const selectedJob = useMemo(
+    () => allJobs.find(j => j.id === selectedJobId) ?? null,
+    [allJobs, selectedJobId],
+  );
+
+  const jobPhasesList = useMemo(
+    () => (selectedJobId ? phases.filter(p => p.jobId === selectedJobId) : []),
+    [phases, selectedJobId],
+  );
+
+  const jobWorkerIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (selectedJob?.assignedTo) ids.add(selectedJob.assignedTo);
+    (selectedJob?.assignments ?? []).forEach(a => { if (a.memberId) ids.add(a.memberId); });
+    jobPhasesList.forEach(p => {
+      if (p.assignedUserId) ids.add(p.assignedUserId);
+      (p.assignedUsers ?? []).forEach(a => ids.add(a.id));
+    });
+    return ids;
+  }, [selectedJob, jobPhasesList]);
+
+  const jobWorkers = useMemo(
+    () => workers.filter(w => jobWorkerIds.has(w.memberId || w.id)),
+    [workers, jobWorkerIds],
+  );
+
+  const jobMaterials = useMemo(
+    () => (resources?.materialsNeeded ?? []).filter(m => !m.jobId || m.jobId === selectedJobId),
+    [resources, selectedJobId],
+  );
+
+  if (!selectedJobId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Layers className="h-12 w-12 opacity-20" />
+        <p className="text-sm font-medium">Select a job to view its timeline</p>
+        <p className="text-xs text-center px-8">Use the job picker in the toolbar above to choose a job or project</p>
+      </div>
+    );
+  }
+
+  if (!selectedJob) {
+    if (jobsLoading) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      );
+    }
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Briefcase className="h-12 w-12 opacity-20" />
+        <p className="text-sm font-medium">Job not found</p>
+        <p className="text-xs text-center px-8">
+          This job may have been deleted or you may not have access to it.
+          Try selecting a different job from the picker above.
+        </p>
+      </div>
+    );
+  }
+
+  const isProject = (selectedJob.jobType ?? "service") === "project";
+  const scJob = STATUS_COLORS[selectedJob.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
+
+  return (
+    <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden">
+        {/* Job header */}
+        <div className="border-b flex-shrink-0 px-4 py-2.5 bg-card">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-bold truncate">{selectedJob.title}</h2>
+                {selectedJob.client?.name && (
+                  <span className="text-sm text-muted-foreground truncate">{selectedJob.client.name}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5">
+                  {isProject ? "Project" : "Service Call"}
+                </Badge>
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium capitalize ${scJob.bg} ${scJob.text}`}>
+                  {selectedJob.status}
+                </span>
+                {selectedJob.scheduledAt && (
+                  <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    {format(parseISO(selectedJob.scheduledAt), "d MMM yyyy")}
+                  </span>
+                )}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onJobClick(selectedJob.id)}>
+              Open Job
+            </Button>
+          </div>
+        </div>
+
+        {/* Timeline grid */}
+        <ScrollArea className="flex-1">
+          <div className="min-w-[700px]">
+            {/* Day headers */}
+            <div className="grid grid-cols-[140px_repeat(7,1fr)] border-b sticky top-0 z-10 bg-background">
+              <div className="px-2 py-2 text-[11px] font-semibold text-muted-foreground uppercase border-r">Worker</div>
+              {days.map(day => (
+                <div key={day.toISOString()} className={`px-2 py-2 text-center border-l ${isToday(day) ? "bg-primary/5" : ""}`}>
+                  <p className="text-[11px] font-medium text-muted-foreground">{format(day, "EEE")}</p>
+                  <p className={`text-sm font-bold ${isToday(day) ? "text-primary" : ""}`}>{format(day, "d")}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Worker rows */}
+            {jobWorkers.length === 0 && !isProject ? (
+              /* Service call with no team members — show a single job row */
+              <div className="grid grid-cols-[140px_repeat(7,1fr)] border-b">
+                <div className="px-2 py-2 border-r flex items-center text-[11px] text-muted-foreground">Job</div>
+                {days.map(day => {
+                  const onDay = jobOnDate(selectedJob, day);
+                  return (
+                    <div key={day.toISOString()} className={`border-l min-h-[72px] p-1 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}>
+                      {onDay && (
+                        <div className={`rounded px-1.5 py-0.5 border-l-[3px] ${scJob.bg} ${scJob.border}`}>
+                          <p className="text-[10px] font-medium truncate">{selectedJob.title}</p>
+                          <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : jobWorkers.length === 0 ? (
+              <div className="flex flex-col items-center py-12 text-muted-foreground gap-2">
+                <Users className="h-8 w-8 opacity-20" />
+                <p className="text-xs">No crew assigned to this project yet</p>
+              </div>
+            ) : (
+              jobWorkers.map(worker => {
+                const wid = worker.memberId || worker.id;
+                const isLead = jobPhasesList.some(p => p.assignedUserId === wid) || selectedJob?.assignedTo === wid;
+                return (
+                  <div key={wid} className="grid grid-cols-[140px_repeat(7,1fr)] border-b">
+                    {/* Worker label */}
+                    <div className="px-2 py-2 flex items-center gap-1.5 border-r">
+                      <UserAvatar
+                        user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
+                        className="h-6 w-6 text-[10px] flex-shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[11px] font-medium truncate">{memberName(worker)}</p>
+                        <p className="text-[10px] text-muted-foreground truncate capitalize">{isLead ? "Lead" : "Member"}</p>
+                      </div>
+                    </div>
+
+                    {/* Day cells */}
+                    {days.map(day => {
+                      const dayStr = day.toISOString();
+                      const phaseBlocks = jobPhasesList.filter(p => phaseOnDay(p, day) && phaseForWorker(p, wid) !== null);
+                      const conflictJobs = allDispatchJobs.filter(j => {
+                        if (j.id === selectedJobId) return false;
+                        if (!jobOnDate(j, day)) return false;
+                        // Check direct assignedTo and ALL active assignments
+                        if (j.assignedTo === wid) return true;
+                        return (j.assignments ?? []).some(a => a.memberId === wid && a.isActive);
+                      });
+                      return (
+                        <div
+                          key={dayStr}
+                          className={`border-l min-h-[72px] p-1 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}
+                        >
+                          {/* Conflict ghost blocks */}
+                          {conflictJobs.map(cj => (
+                            <div
+                              key={cj.id}
+                              title={`Conflict: ${cj.title}`}
+                              onClick={() => onJobClick(cj.id)}
+                              className="rounded px-1.5 py-0.5 mb-0.5 border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/40 opacity-60 cursor-pointer hover:opacity-80 transition-opacity"
+                            >
+                              <p className="text-[9px] text-muted-foreground truncate">{cj.title}</p>
+                              <p className="text-[8px] text-muted-foreground/70 truncate">{formatJobTime(cj.scheduledTime, cj.scheduledAt)}</p>
+                            </div>
+                          ))}
+
+                          {/* Phase / job blocks */}
+                          {isProject ? phaseBlocks.map(p => {
+                            const role = phaseForWorker(p, wid);
+                            const psc = STATUS_COLORS[p.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
+                            return (
+                              <div
+                                key={p.id}
+                                onClick={() => setSelectedPhase(p)}
+                                className={`rounded px-1.5 py-0.5 mb-0.5 cursor-pointer transition-all hover:brightness-95
+                                  ${psc.bg} ${psc.border}
+                                  ${role === "lead" ? "border-l-[3px]" : "border-l border-dashed ml-1 opacity-80"}`}
+                                title={`${p.name} — ${p.bookedHours ?? "?"} hrs`}
+                              >
+                                <p className="text-[10px] font-medium truncate">{p.name}</p>
+                                {role === "lead" && (
+                                  <div className="flex items-center gap-1">
+                                    <span className={`text-[9px] truncate capitalize ${psc.text}`}>{p.status}</span>
+                                    {p.bookedHours && (
+                                      <span className="text-[9px] text-muted-foreground">{p.bookedHours}h</span>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }) : (
+                            /* Service call: show the job block on its scheduled day */
+                            jobOnDate(selectedJob, day) && (
+                              <div className={`rounded px-1.5 py-0.5 border-l-[3px] ${scJob.bg} ${scJob.border}`}>
+                                <p className="text-[10px] font-medium truncate">{selectedJob.title}</p>
+                                <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+
+      {/* Right panel */}
+      <JobViewSidebar
+        job={selectedJob}
+        phases={jobPhasesList}
+        workers={jobWorkers}
+        materials={jobMaterials}
+      />
+
+      {/* Phase detail dialog */}
+      {selectedPhase && (
+        <Dialog open={!!selectedPhase} onOpenChange={open => { if (!open) setSelectedPhase(null); }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-sm">{selectedPhase.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 flex-wrap">
+                {(() => {
+                  const psc = STATUS_COLORS[selectedPhase.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
+                  return (
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium capitalize ${psc.bg} ${psc.text}`}>
+                      {selectedPhase.status}
+                    </span>
+                  );
+                })()}
+                {selectedPhase.bookedHours && (
+                  <span className="text-xs text-muted-foreground">{selectedPhase.bookedHours} booked hours</span>
+                )}
+              </div>
+              {(selectedPhase.scheduledStart || selectedPhase.scheduledEnd) && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                  <span>
+                    {selectedPhase.scheduledStart ? format(parseISO(selectedPhase.scheduledStart), "d MMM yyyy") : "—"}
+                    {" to "}
+                    {selectedPhase.scheduledEnd ? format(parseISO(selectedPhase.scheduledEnd), "d MMM yyyy") : "—"}
+                  </span>
+                </div>
+              )}
+              {(selectedPhase.assignedUsers?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs font-semibold mb-1.5">Assigned team</p>
+                  <div className="space-y-1.5">
+                    {(selectedPhase.assignedUsers ?? []).map(a => (
+                      <div key={a.id} className="flex items-center gap-2">
+                        <UserAvatar user={{ id: a.id }} className="h-6 w-6 text-[10px] flex-shrink-0" />
+                        <span className="text-sm truncate">{a.name}</span>
+                        {a.isLead && (
+                          <Badge variant="outline" className="text-[10px] h-4 px-1 flex-shrink-0">Lead</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedPhase.description && (
+                <p className="text-sm text-muted-foreground">{selectedPhase.description}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" size="sm" onClick={() => setSelectedPhase(null)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
 }
 
-/** Returns true if the phase is assigned to (or includes) the given worker. */
-function phaseForWorker(phase: DispatchPhase, wid: string): boolean {
-  if (phase.assignedUserIds.length > 0) return phase.assignedUserIds.includes(wid);
-  return phase.assignedUserId === wid;
+function JobViewSidebar({
+  job,
+  phases,
+  workers,
+  materials,
+}: {
+  job: DispatchJob | null;
+  phases: DispatchPhase[];
+  workers: TeamMember[];
+  materials: MaterialItem[];
+}) {
+  const [activeTab, setActiveTab] = useState<"team" | "materials">("team");
+
+  const workerHours = useMemo(() => {
+    const map = new Map<string, number>();
+    phases.forEach(p => {
+      const hrs = parseFloat(String(p.bookedHours ?? "0")) || 0;
+      if (p.assignedUserId) map.set(p.assignedUserId, (map.get(p.assignedUserId) ?? 0) + hrs);
+      (p.assignedUsers ?? []).forEach(a => {
+        if (a.id !== p.assignedUserId) {
+          const share = hrs / Math.max(1, (p.assignedUsers?.length ?? 1) - 1);
+          map.set(a.id, (map.get(a.id) ?? 0) + share);
+        }
+      });
+    });
+    return map;
+  }, [phases]);
+
+  const workerRole = useMemo(() => {
+    const map = new Map<string, "lead" | "member">();
+    phases.forEach(p => {
+      if (p.assignedUserId) map.set(p.assignedUserId, "lead");
+      (p.assignedUsers ?? []).forEach(a => {
+        if (!map.has(a.id)) map.set(a.id, a.isLead ? "lead" : "member");
+      });
+    });
+    if (job?.assignedTo && !map.has(job.assignedTo)) map.set(job.assignedTo, "lead");
+    return map;
+  }, [phases, job]);
+
+  const sidebarTabs = [
+    { key: "team" as const, label: "Team", icon: Users },
+    { key: "materials" as const, label: "Materials", icon: Package },
+  ];
+
+  return (
+    <div className="w-64 border-l flex flex-col flex-shrink-0 bg-card">
+      <div className="flex items-center border-b px-1 pt-1">
+        {sidebarTabs.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex flex-col items-center py-2 gap-0.5 text-[10px] font-medium rounded-t transition-colors
+                ${activeTab === tab.key ? "bg-background text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <ScrollArea className="flex-1">
+        {activeTab === "team" && (
+          <div className="p-2 space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1">
+              Assigned crew ({workers.length})
+            </p>
+            {workers.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-muted-foreground">
+                <Users className="h-7 w-7 mb-2 opacity-30" />
+                <p className="text-xs">No crew assigned</p>
+              </div>
+            ) : (
+              workers.map(worker => {
+                const wid = worker.memberId || worker.id;
+                const role = workerRole.get(wid) ?? "member";
+                const hrs = Math.round((workerHours.get(wid) ?? 0) * 10) / 10;
+                return (
+                  <div key={wid} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/30">
+                    <UserAvatar
+                      user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
+                      className="h-7 w-7 text-[10px] flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium truncate">{memberName(worker)}</p>
+                      <p className="text-[10px] text-muted-foreground">{worker.roleName}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                      <Badge variant={role === "lead" ? "default" : "outline"} className="text-[9px] h-3.5 px-1 capitalize">
+                        {role}
+                      </Badge>
+                      {hrs > 0 && (
+                        <span className="text-[9px] text-muted-foreground">{hrs}h</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {activeTab === "materials" && (
+          <div className="p-2 space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1">
+              Materials
+            </p>
+            {materials.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-muted-foreground">
+                <Package className="h-7 w-7 mb-2 opacity-30" />
+                <p className="text-xs">No materials listed</p>
+              </div>
+            ) : (
+              materials.map(mat => (
+                <div key={mat.id} className="px-2 py-1.5 rounded hover:bg-muted/30">
+                  <p className="text-[11px] font-medium truncate">{mat.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {mat.quantity && (
+                      <span className="text-[10px] text-muted-foreground">{mat.quantity} {mat.unit}</span>
+                    )}
+                    {mat.status && (
+                      <Badge variant="outline" className="text-[9px] h-3.5 px-1 capitalize">{mat.status}</Badge>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+}
+
+/**
+ * Returns "lead" | "member" | null for a worker on a phase.
+ * Uses assignedUserIds (enriched list) when available for reliability.
+ * Returning a non-null string is truthy, so this also works as a boolean
+ * predicate in Array.filter calls (e.g. week-view phase chips).
+ */
+function phaseForWorker(phase: DispatchPhase, workerId: string): "lead" | "member" | null {
+  // Use the enriched assignedUserIds list when available
+  if ((phase.assignedUserIds?.length ?? 0) > 0) {
+    if (!phase.assignedUserIds!.includes(workerId)) return null;
+    const user = (phase.assignedUsers ?? []).find(u => u.id === workerId);
+    if (user?.isLead || phase.assignedUserId === workerId) return "lead";
+    return "member";
+  }
+  // Fallback: check legacy assignedUserId
+  if (phase.assignedUserId === workerId) return "lead";
+  // Check assignedUsers array
+  const user = (phase.assignedUsers ?? []).find(u => u.id === workerId);
+  if (!user) return null;
+  return user.isLead ? "lead" : "member";
 }
