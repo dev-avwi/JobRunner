@@ -571,8 +571,16 @@ export function PhasesSection({
                           <Text style={styles.claimedBadgeText}>Claimed</Text>
                         </View>
                       )}
-                      {/* Assignee avatar badge */}
-                      {phase.assignedUserName ? (
+                      {/* Assignee avatar badge — stacked for multi-member phases */}
+                      {phase.assignedUsers?.length ? (
+                        <View style={{ flexDirection: 'row' }}>
+                          {phase.assignedUsers.slice(0, 3).map((member, index) => (
+                            <View key={member.id} style={{ marginLeft: index ? -6 : 0, borderWidth: 1.5, borderColor: colors.card, borderRadius: 12 }}>
+                              <TeamAvatar name={member.name} userId={member.id} size={20} />
+                            </View>
+                          ))}
+                        </View>
+                      ) : phase.assignedUserName ? (
                         <TeamAvatar
                           name={phase.assignedUserName}
                           userId={phase.assignedUserId || phase.assignedUserName}
