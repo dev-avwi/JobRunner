@@ -234,32 +234,44 @@ export function SafetyFormsSection({ jobId, jobStatus, jobTitle, jobAddress, onS
   return (
     <>
       <Card data-testid="card-safety-forms" className={className}>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center justify-between gap-4">
-            <span className="flex items-center gap-2">
-              <safetyStatus.icon className={`h-4 w-4 ${safetyStatus.color}`} />
-              Safety & Compliance
-            </span>
-            <div className="flex items-center gap-2">
-              {totalSafetyDocs > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {totalSafetyDocs}
-                </Badge>
-              )}
-              {safetyStatus.status === 'required' && !hasAnySafetyContent && (
-                <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 text-xs">
-                  <AlertCircle className="h-3 w-3 mr-1" />
-                  Required
-                </Badge>
-              )}
-              {safetyStatus.status === 'complete' && (
-                <Badge className="bg-green-500 text-xs">
-                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                  Complete
-                </Badge>
-              )}
-            </div>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <safetyStatus.icon className={`h-4 w-4 ${safetyStatus.color}`} />
+            Safety & Compliance
           </CardTitle>
+          <div className="flex items-center gap-2">
+            {totalSafetyDocs > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {totalSafetyDocs}
+              </Badge>
+            )}
+            {safetyStatus.status === 'required' && !hasAnySafetyContent && (
+              <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-400 text-xs">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Required
+              </Badge>
+            )}
+            {safetyStatus.status === 'complete' && (
+              <Badge className="bg-green-500 text-xs">
+                <CheckCircle2 className="h-3 w-3 mr-1" />
+                Complete
+              </Badge>
+            )}
+            {jobStatus !== 'invoiced' && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditingSwmsId(undefined);
+                  setShowSwmsBuilder(true);
+                }}
+                data-testid="button-add-safety-doc"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {!hasAnySafetyContent && safetyForms.length > 0 && (
