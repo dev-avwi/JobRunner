@@ -125,6 +125,85 @@ function ExpenseRow({ expense, colors, styles }: { expense: MyExpense; colors: T
   );
 }
 
+// ── Filter tabs ───────────────────────────────────────────────────────────────
+
+type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected';
+
+const FILTER_TABS: { key: FilterStatus; label: string }[] = [
+  { key: 'all',      label: 'All' },
+  { key: 'pending',  label: 'Pending' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+];
+
+function FilterTabs({
+  active,
+  counts,
+  colors,
+  styles,
+  onChange,
+}: {
+  active: FilterStatus;
+  counts: Record<FilterStatus, number>;
+  colors: ThemeColors;
+  styles: ReturnType<typeof createStyles>;
+  onChange: (f: FilterStatus) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.tabsScroll}
+      contentContainerStyle={styles.tabsContent}
+    >
+      {FILTER_TABS.map(tab => {
+        const isActive = tab.key === active;
+        return (
+          <TouchableOpacity
+            key={tab.key}
+            onPress={() => onChange(tab.key)}
+            activeOpacity={0.7}
+            style={[
+              styles.tab,
+              isActive
+                ? { backgroundColor: colors.primary, borderColor: colors.primary }
+                : { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Text
+              style={[
+                styles.tabLabel,
+                { color: isActive ? '#fff' : colors.mutedForeground },
+              ]}
+            >
+              {tab.label}
+            </Text>
+            <View
+              style={[
+                styles.tabCount,
+                {
+                  backgroundColor: isActive
+                    ? 'rgba(255,255,255,0.25)'
+                    : colors.muted,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabCountText,
+                  { color: isActive ? '#fff' : colors.mutedForeground },
+                ]}
+              >
+                {counts[tab.key]}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function MyExpensesScreen() {
@@ -136,6 +215,7 @@ export default function MyExpensesScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<FilterStatus>('all');
 
   const load = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
@@ -154,9 +234,21 @@ export default function MyExpensesScreen() {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  const counts = useMemo<Record<FilterStatus, number>>(() => ({
+    all:      expenses.length,
+    pending:  expenses.filter(e => e.status === 'pending').length,
+    approved: expenses.filter(e => e.status === 'approved').length,
+    rejected: expenses.filter(e => e.status === 'rejected').length,
+  }), [expenses]);
+
+  const filtered = useMemo(
+    () => activeFilter === 'all' ? expenses : expenses.filter(e => e.status === activeFilter),
+    [expenses, activeFilter],
+  );
+
   const total = useMemo(
-    () => expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0),
-    [expenses],
+    () => filtered.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0),
+    [filtered],
   );
 
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -171,7 +263,7 @@ export default function MyExpensesScreen() {
           <Text style={[styles.headerTitle, { color: colors.foreground }]}>My Expenses</Text>
           {expenses.length > 0 && (
             <Text style={[styles.headerSubtitle, { color: colors.mutedForeground }]}>
-              {expenses.length} {expenses.length === 1 ? 'receipt' : 'receipts'} · {fmt(total)} total
+              {filtered.length} {filtered.length === 1 ? 'receipt' : 'receipts'} · {fmt(total)} total
             </Text>
           )}
         </View>
@@ -200,22 +292,45 @@ export default function MyExpensesScreen() {
             </Text>
           </View>
         ) : (
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ padding: spacing.md, paddingBottom: bottomNavHeight + spacing.lg }}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => load(true)}
-                tintColor={colors.primary}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          >
-            {expenses.map(expense => (
-              <ExpenseRow key={expense.id} expense={expense} colors={colors} styles={styles} />
-            ))}
-          </ScrollView>
+          <>
+            <FilterTabs
+              active={activeFilter}
+              counts={counts}
+              colors={colors}
+              styles={styles}
+              onChange={setActiveFilter}
+            />
+            {filtered.length === 0 ? (
+              <View style={styles.centered}>
+                <View style={[styles.emptyIcon, { backgroundColor: colors.muted }]}>
+                  <Feather name="filter" size={28} color={colors.mutedForeground} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+                  No {activeFilter} expenses
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+                  None of your expenses match this filter.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={{ flex: 1 }}
+                contentContainerStyle={{ padding: spacing.md, paddingBottom: bottomNavHeight + spacing.lg }}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={() => load(true)}
+                    tintColor={colors.primary}
+                  />
+                }
+                showsVerticalScrollIndicator={false}
+              >
+                {filtered.map(expense => (
+                  <ExpenseRow key={expense.id} expense={expense} colors={colors} styles={styles} />
+                ))}
+              </ScrollView>
+            )}
+          </>
         )}
       </View>
     </>
@@ -332,6 +447,40 @@ function createStyles(colors: ThemeColors) {
       color: '#7f1d1d',
       flex: 1,
       lineHeight: 16,
+    },
+    tabsScroll: {
+      flexGrow: 0,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    tabsContent: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.xs,
+    },
+    tab: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 6,
+      borderRadius: radius.full ?? 99,
+      borderWidth: 1,
+    },
+    tabLabel: {
+      fontSize: 13,
+      fontWeight: fontWeights.medium as any,
+    },
+    tabCount: {
+      borderRadius: 99,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      minWidth: 20,
+      alignItems: 'center',
+    },
+    tabCountText: {
+      fontSize: 11,
+      fontWeight: fontWeights.semibold as any,
     },
   });
 }
