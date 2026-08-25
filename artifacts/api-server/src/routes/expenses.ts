@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { insertExpenseSchema } from "@workspace/db";
 import { storage } from "../storage";
-import { createPermissionMiddleware, PERMISSIONS, getUserContext } from "../permissions";
+import { createPermissionMiddleware, ownerOrManagerOnly, PERMISSIONS, getUserContext } from "../permissions";
 import { requireAuth } from "./middleware";
 import {
   assertExpensePhaseAssignment,
@@ -119,7 +119,9 @@ export function registerExpenseRoutes(app: Express) {
         ...data,
         userId: effectiveUserId,
         status: "pending",
-      });
+        // Track the submitting worker so they can be notified when approved/rejected
+        submittedByUserId: isOwner ? undefined : rawUserId,
+      } as any);
 
       // Notify the business owner when a worker submits a receipt
       if (!isOwner) {
@@ -150,11 +152,15 @@ export function registerExpenseRoutes(app: Express) {
     }
   });
 
-  app.get("/api/expenses", requireAuth, async (req: any, res) => {
+  app.get("/api/expenses", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const rawUserId = req.userId!;
       const { jobId, categoryId, startDate, endDate } = req.query;
-      const expenses = await storage.getExpenses(userId, {
+      // ownerOrManagerOnly() already resolved the context; fall back to getUserContext
+      // so managers retrieve the owner-scoped business list, not just their own rows.
+      const userContext = await getUserContext(rawUserId);
+      const ownerId = userContext.effectiveUserId;
+      const expenses = await storage.getExpenses(ownerId, {
         jobId: jobId as string,
         categoryId: categoryId as string,
         startDate: startDate as string,
@@ -193,6 +199,102 @@ export function registerExpenseRoutes(app: Express) {
       } catch (error) {
         console.error("Create expense error:", error);
         res.status(400).json({ error: "Invalid expense data" });
+      }
+    },
+  );
+
+  /**
+   * PATCH /api/expenses/:id/status
+   * Owners/managers approve or reject a worker-submitted pending expense.
+   * - Sets status to 'approved' or 'rejected'
+   * - Records who approved (approvedBy) and optional rejection reason
+   * - Notifies the submitting worker of the decision
+   */
+  app.patch(
+    "/api/expenses/:id/status",
+    requireAuth,
+    ownerOrManagerOnly(),
+    async (req: any, res) => {
+      try {
+        const userId = req.userId!;
+        const ownerId = req.effectiveUserId || userId;
+        const { id } = req.params;
+        const { status, rejectionReason } = req.body;
+
+        if (status !== "approved" && status !== "rejected") {
+          return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
+        }
+
+        const existing = await storage.getExpense(id, ownerId);
+        if (!existing) {
+          return res.status(404).json({ error: "Expense not found" });
+        }
+
+        // Only worker-submitted expenses go through this approval flow.
+        // Support both the new submittedByUserId field (set after this feature shipped)
+        // and the legacy "[Logged by Name]" prefix on descriptions written before the migration.
+        const submittedByUserId = (existing as any).submittedByUserId as string | null;
+        const isLegacyWorkerExpense = /^\[Logged by /i.test(existing.description ?? "");
+        if (!submittedByUserId && !isLegacyWorkerExpense) {
+          return res.status(400).json({ error: "Only worker-submitted expenses can be approved or rejected" });
+        }
+
+        if (existing.status !== "pending") {
+          return res.status(400).json({ error: "Only pending expenses can be approved or rejected" });
+        }
+
+        const updates: Record<string, any> = {
+          status,
+          approvedBy: userId,
+        };
+        if (status === "rejected" && rejectionReason?.trim()) {
+          updates.rejectionReason = rejectionReason.trim();
+        }
+
+        const updated = await storage.updateExpense(id, ownerId, updates);
+        if (!updated) {
+          return res.status(404).json({ error: "Expense not found" });
+        }
+
+        // Notify the worker who submitted the expense (submittedByUserId already declared above)
+        if (submittedByUserId) {
+          try {
+            const amountFmt = `$${parseFloat(String(existing.amount)).toFixed(2)}`;
+            if (status === "approved") {
+              await createNotification(storage, {
+                userId: submittedByUserId,
+                type: "expense_approved",
+                title: "Expense approved",
+                message: `Your ${amountFmt} expense has been approved.`,
+                relatedType: "job",
+                relatedId: existing.jobId ?? undefined,
+                priority: "important",
+                actionUrl: existing.jobId ? `/jobs/${existing.jobId}` : undefined,
+                actionLabel: "View Job",
+              });
+            } else {
+              const reasonSuffix = updates.rejectionReason ? `: ${updates.rejectionReason}` : ".";
+              await createNotification(storage, {
+                userId: submittedByUserId,
+                type: "expense_rejected",
+                title: "Expense rejected",
+                message: `Your ${amountFmt} expense was not approved${reasonSuffix}`,
+                relatedType: "job",
+                relatedId: existing.jobId ?? undefined,
+                priority: "important",
+                actionUrl: existing.jobId ? `/jobs/${existing.jobId}` : undefined,
+                actionLabel: "View Job",
+              });
+            }
+          } catch (_notifyErr) {
+            // Non-fatal
+          }
+        }
+
+        res.json(updated);
+      } catch (error) {
+        console.error("Update expense status error:", error);
+        res.status(500).json({ error: "Failed to update expense status" });
       }
     },
   );

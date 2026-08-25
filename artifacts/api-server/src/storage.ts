@@ -1629,6 +1629,16 @@ pool
     console.error('[Schema] Failed to ensure sheet sync columns:', err.message);
   });
 
+// Task #883: Expense approval — track who submitted and why it was rejected.
+pool
+  .query(`
+    ALTER TABLE expenses ADD COLUMN IF NOT EXISTS submitted_by_user_id varchar REFERENCES users(id);
+    ALTER TABLE expenses ADD COLUMN IF NOT EXISTS rejection_reason text;
+  `)
+  .catch((err) => {
+    console.error('[Schema] Failed to add expense approval columns:', err.message);
+  });
+
 // Task #387: Job phases with codes, booked hours, and job number auto-generation.
 // Created idempotently with raw SQL at startup (we do NOT use drizzle-kit push on this database).
 pool
@@ -4804,6 +4814,8 @@ export class PostgresStorage implements IStorage {
       recurringFrequency: expenses.recurringFrequency,
       status: expenses.status,
       approvedBy: expenses.approvedBy,
+      submittedByUserId: expenses.submittedByUserId,
+      rejectionReason: expenses.rejectionReason,
       createdAt: expenses.createdAt,
       updatedAt: expenses.updatedAt,
       phaseId: expenses.phaseId,

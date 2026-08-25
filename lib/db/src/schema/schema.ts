@@ -1824,6 +1824,8 @@ export const expenses = pgTable("expenses", {
   recurringFrequency: text("recurring_frequency"), // monthly, quarterly, yearly
   status: text("status").default('pending'), // pending, approved, rejected, reimbursed
   approvedBy: varchar("approved_by").references(() => users.id),
+  rejectionReason: text("rejection_reason"),
+  submittedByUserId: varchar("submitted_by_user_id").references(() => users.id),
   phaseId: varchar("phase_id"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -2770,6 +2772,9 @@ export const insertExpenseSchema = createInsertSchema(expenses, {
   userId: true,
   createdAt: true,
   updatedAt: true,
+  approvedBy: true,
+  rejectionReason: true,
+  submittedByUserId: true,
 });
 
 // Inventory Management Schemas  

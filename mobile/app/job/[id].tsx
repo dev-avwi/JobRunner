@@ -315,6 +315,8 @@ interface JobExpense {
   isBillable: boolean;
   status?: string;
   phaseId?: string | null;
+  submittedByUserId?: string | null;
+  rejectionReason?: string | null;
 }
 
 interface JobDocument {
@@ -7533,8 +7535,13 @@ export default function JobDetailScreen() {
     const chatCount = jobMessages.length;
     const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
     const safetyIssues = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
+    // Only count worker-submitted pending expenses — owner-created expenses default to 'pending'
+    // but cannot be approved/rejected through this flow.
     const pendingExpenseCount = (isOwnerOrManager || isSoloOwner)
-      ? jobExpenses.filter(e => e.status === 'pending').length
+      ? jobExpenses.filter(e =>
+          e.status === 'pending' &&
+          (e.submittedByUserId || /^\[Logged by /i.test(e.description ?? ''))
+        ).length
       : 0;
     return {
       overview: 0,
@@ -12213,9 +12220,13 @@ export default function JobDetailScreen() {
         {activeTab === 'comms' && renderChatTab()}
         {activeTab === 'manage' && (
           <>
-            {/* Pending expenses callout — owners/managers only */}
-            {(isOwnerOrManager || isSoloOwner) && jobExpenses.filter(e => e.status === 'pending').length > 0 && (() => {
-              const pendingCount = jobExpenses.filter(e => e.status === 'pending').length;
+            {/* Pending expenses callout — owners/managers only, worker-submitted expenses only */}
+            {(isOwnerOrManager || isSoloOwner) && (() => {
+              const pendingCount = jobExpenses.filter(e =>
+                e.status === 'pending' &&
+                (e.submittedByUserId || /^\[Logged by /i.test(e.description ?? ''))
+              ).length;
+              if (pendingCount === 0) return null;
               return (
                 <View style={{
                   flexDirection: 'row',
@@ -12237,6 +12248,7 @@ export default function JobDetailScreen() {
                 </View>
               );
             })()}
+
 
             {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
             {isProject && (
@@ -12353,6 +12365,19 @@ export default function JobDetailScreen() {
                   />
                 </View>
               </>
+            )}
+            {/* Expenses — service calls (flat view, no phases) */}
+            {!isProject && (isOwnerOrManager || isSoloOwner) && (
+              <View style={{ marginBottom: spacing.md }}>
+                <ExpensesSection
+                  colors={colors}
+                  expenses={jobExpenses}
+                  isLoading={isLoadingExpenses}
+                  jobId={id as string}
+                  isOwnerOrManager={true}
+                  onRefresh={loadJobExpenses}
+                />
+              </View>
             )}
             {renderManageTab()}
           </>

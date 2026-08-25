@@ -35,6 +35,8 @@ export interface SectionExpense {
   isBillable: boolean;
   status?: string;
   phaseId?: string | null;
+  submittedByUserId?: string | null;
+  rejectionReason?: string | null;
 }
 
 export interface PhaseStub {
@@ -150,6 +152,63 @@ export default function ExpensesSection({
       marginBottom: spacing.xs,
     },
   });
+
+  // ── Approval sheet state ─────────────────────────────────────────────────────
+
+  const [reviewingExpense, setReviewingExpense] = useState<SectionExpense | null>(null);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [isSubmittingDecision, setIsSubmittingDecision] = useState(false);
+
+  const openApprovalSheet = useCallback((expense: SectionExpense) => {
+    setReviewingExpense(expense);
+    setRejectMode(false);
+    setRejectionReason('');
+  }, []);
+
+  const closeApprovalSheet = useCallback(() => {
+    if (isSubmittingDecision) return;
+    setReviewingExpense(null);
+    setRejectMode(false);
+    setRejectionReason('');
+  }, [isSubmittingDecision]);
+
+  const handleApproveExpense = useCallback(async () => {
+    if (!reviewingExpense || isSubmittingDecision) return;
+    setIsSubmittingDecision(true);
+    try {
+      const response = await api.patch(`/api/expenses/${reviewingExpense.id}/status`, { status: 'approved' });
+      if (response.error) throw new Error(response.error);
+      setReviewingExpense(null);
+      await onRefresh?.();
+      showToast({ type: 'success', message: 'Expense approved', description: 'The expense has been approved.' });
+    } catch (error: any) {
+      showToast({ type: 'error', message: 'Could not approve expense', description: error?.message || 'Please try again.' });
+    } finally {
+      setIsSubmittingDecision(false);
+    }
+  }, [reviewingExpense, isSubmittingDecision, onRefresh]);
+
+  const handleRejectExpense = useCallback(async () => {
+    if (!reviewingExpense || isSubmittingDecision) return;
+    setIsSubmittingDecision(true);
+    try {
+      const response = await api.patch(`/api/expenses/${reviewingExpense.id}/status`, {
+        status: 'rejected',
+        rejectionReason: rejectionReason.trim() || undefined,
+      });
+      if (response.error) throw new Error(response.error);
+      setReviewingExpense(null);
+      setRejectMode(false);
+      setRejectionReason('');
+      await onRefresh?.();
+      showToast({ type: 'success', message: 'Expense rejected' });
+    } catch (error: any) {
+      showToast({ type: 'error', message: 'Could not reject expense', description: error?.message || 'Please try again.' });
+    } finally {
+      setIsSubmittingDecision(false);
+    }
+  }, [reviewingExpense, rejectionReason, isSubmittingDecision, onRefresh]);
 
   // ── Edit expense sheet state ─────────────────────────────────────────────────
 
@@ -305,6 +364,153 @@ export default function ExpensesSection({
   // ── Shared sorted phases ─────────────────────────────────────────────────────
 
   const sortedPhases = phases ? [...phases].sort((a, b) => a.sortOrder - b.sortOrder) : [];
+
+  // ── Approval sheet ───────────────────────────────────────────────────────────
+
+  const approvalSheet = (
+    <AppBottomSheet
+      visible={reviewingExpense !== null}
+      onDismiss={closeApprovalSheet}
+      title={rejectMode ? 'Reject Expense' : 'Review Expense'}
+      showCloseButton
+      snapPoints={rejectMode ? ['55%'] : ['45%']}
+      footer={
+        rejectMode ? (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => setRejectMode(false)}
+              disabled={isSubmittingDecision}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: spacing.md,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: colors.foreground }}>
+                Back
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="expense-confirm-reject"
+              onPress={handleRejectExpense}
+              disabled={isSubmittingDecision}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: spacing.md,
+                borderRadius: radius.lg,
+                backgroundColor: isSubmittingDecision ? colors.muted : colors.destructive,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: isSubmittingDecision ? colors.mutedForeground : '#fff' }}>
+                {isSubmittingDecision ? 'Rejecting...' : 'Reject'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              testID="expense-reject-btn"
+              onPress={() => setRejectMode(true)}
+              disabled={isSubmittingDecision}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: spacing.md,
+                borderRadius: radius.lg,
+                borderWidth: 1,
+                borderColor: colors.destructive,
+                backgroundColor: `${colors.destructive}10`,
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
+                Reject
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              testID="expense-approve-btn"
+              onPress={handleApproveExpense}
+              disabled={isSubmittingDecision}
+              activeOpacity={0.7}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: spacing.md,
+                borderRadius: radius.lg,
+                backgroundColor: isSubmittingDecision ? colors.muted : '#16a34a',
+              }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold as any, color: isSubmittingDecision ? colors.mutedForeground : '#fff' }}>
+                {isSubmittingDecision ? 'Approving...' : 'Approve'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )
+      }
+    >
+      {reviewingExpense && (
+        <View style={{ gap: spacing.md }}>
+          {/* Expense summary */}
+          <View style={{
+            padding: spacing.md,
+            borderRadius: radius.lg,
+            backgroundColor: colors.muted,
+          }}>
+            <Text style={{ ...typography.bodySemibold, color: colors.foreground }} numberOfLines={2}>
+              {reviewingExpense.description}
+            </Text>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs }}>
+              {fmt(reviewingExpense.amount)}
+              {reviewingExpense.vendor ? `  ·  ${reviewingExpense.vendor}` : ''}
+              {`  ·  ${fmtDate(reviewingExpense.expenseDate)}`}
+            </Text>
+          </View>
+
+          {rejectMode ? (
+            <View>
+              <Text style={styles.fieldLabel}>Reason (optional)</Text>
+              <TextInput
+                style={[styles.input, { minHeight: 80, textAlignVertical: 'top', paddingTop: spacing.sm }]}
+                placeholder="Why is this expense being rejected?"
+                placeholderTextColor={colors.mutedForeground}
+                value={rejectionReason}
+                onChangeText={setRejectionReason}
+                multiline
+                autoCapitalize="sentences"
+                returnKeyType="done"
+              />
+            </View>
+          ) : (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+              padding: spacing.md,
+              borderRadius: radius.lg,
+              backgroundColor: '#fef3c7',
+              borderWidth: 1,
+              borderColor: '#fde68a',
+            }}>
+              <Feather name="clock" size={16} color="#92400e" />
+              <Text style={{ fontSize: 13, color: '#92400e', flex: 1 }}>
+                This expense is pending your approval.
+              </Text>
+            </View>
+          )}
+        </View>
+      )}
+    </AppBottomSheet>
+  );
 
   // ── Edit sheet ───────────────────────────────────────────────────────────────
 
@@ -739,21 +945,27 @@ export default function ExpensesSection({
     </AppBottomSheet>
   );
 
-  const total = expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
+  // Exclude rejected expenses from totals — they are struck through and not counted
+  const total = expenses.reduce((s, e) => e.status === 'rejected' ? s : s + (parseFloat(e.amount) || 0), 0);
 
   // ── Expense row ─────────────────────────────────────────────────────────────
   const renderRow = useCallback((expense: SectionExpense) => {
     const isPending = expense.status === 'pending';
-    // Worker-submitted expenses are prefixed with "[Logged by …]"
-    const isWorkerSubmitted = isPending && /^\[Logged by /i.test(expense.description);
+    const isRejected = expense.status === 'rejected';
+    // Worker-submitted: either the new submittedByUserId field OR the legacy "[Logged by …]" prefix
+    const isWorkerSubmitted = !!expense.submittedByUserId || /^\[Logged by /i.test(expense.description ?? '');
+    // Owners/managers can only approve/reject pending worker-submitted expenses
+    const canReview = isOwnerOrManager && isPending && isWorkerSubmitted;
 
     return (
       <TouchableOpacity
         key={expense.id}
         testID={`expense-row-${expense.id}`}
-        activeOpacity={0.7}
+        activeOpacity={canReview || (isOwnerOrManager && !isPending) ? 0.7 : 1}
         onPress={() => {
-          if (isOwnerOrManager) {
+          if (canReview) {
+            openApprovalSheet(expense);
+          } else if (isOwnerOrManager && !isPending) {
             openEditExpense(expense);
           }
         }}
@@ -765,6 +977,7 @@ export default function ExpensesSection({
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
           gap: spacing.sm,
+          opacity: isRejected ? 0.5 : 1,
           backgroundColor: isPending ? `#f59e0b08` : undefined,
         }}
       >
@@ -795,22 +1008,62 @@ export default function ExpensesSection({
                 </Text>
               </View>
             )}
+            {isRejected && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: `${colors.destructive}15`, paddingHorizontal: 6,
+                paddingVertical: 2, borderRadius: 8,
+              }}>
+                <Feather name="x-circle" size={9} color={colors.destructive} />
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: colors.destructive }}>
+                  Rejected
+                </Text>
+              </View>
+            )}
+            {canReview && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 3,
+                backgroundColor: colors.primaryLight, paddingHorizontal: 6,
+                paddingVertical: 2, borderRadius: 8,
+              }}>
+                <Feather name="check-circle" size={9} color={colors.primary} />
+                <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold as any, color: colors.primary }}>
+                  Tap to review
+                </Text>
+              </View>
+            )}
           </View>
-          <Text style={{ fontSize: 13, fontWeight: fontWeights.medium as any, color: colors.foreground }} numberOfLines={1}>
+          <Text style={{
+            fontSize: 13,
+            fontWeight: fontWeights.medium as any,
+            color: isRejected ? colors.mutedForeground : colors.foreground,
+            textDecorationLine: isRejected ? 'line-through' : 'none',
+          }} numberOfLines={1}>
             {expense.description}
           </Text>
           <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
             {[expense.vendor, fmtDate(expense.expenseDate)].filter(Boolean).join('  ·  ')}
           </Text>
+          {isRejected && expense.rejectionReason ? (
+            <Text style={{ fontSize: 11, color: colors.destructive, marginTop: 2 }} numberOfLines={1}>
+              Reason: {expense.rejectionReason}
+            </Text>
+          ) : null}
         </View>
 
         {/* Amount */}
-        <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold as any, color: colors.destructive, marginTop: 1 }}>
+        <Text style={{
+          fontSize: 13,
+          fontWeight: fontWeights.semibold as any,
+          color: isRejected ? colors.mutedForeground : colors.destructive,
+          marginTop: 1,
+          textDecorationLine: isRejected ? 'line-through' : 'none',
+        }}>
           -{fmt(expense.amount)}
         </Text>
       </TouchableOpacity>
     );
-  }, [colors, isOwnerOrManager, openEditExpense]);
+  }, [colors, isOwnerOrManager, openApprovalSheet, openEditExpense]);
 
   // ── Card-style header — matches Claims / Variations section header pattern
   const cardHeader = (
@@ -863,6 +1116,7 @@ export default function ExpensesSection({
         ...shadows.sm,
       }}>
         {cardHeader}
+        {approvalSheet}
         {editSheet}
         {addSheet}
         <View style={{ padding: spacing.sm }}>
@@ -896,6 +1150,7 @@ export default function ExpensesSection({
 
     return (
       <>
+        {approvalSheet}
         {editSheet}
         {addSheet}
         {/* One unified card — header + phase rows all connected, matching Claims/POs pattern */}
@@ -1001,6 +1256,7 @@ export default function ExpensesSection({
   // ── Flat view (service calls) ─────────────────────────────────────────────────
   return (
     <>
+      {approvalSheet}
       {editSheet}
       {addSheet}
       <View style={{
