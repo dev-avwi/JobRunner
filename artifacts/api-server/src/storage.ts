@@ -1710,6 +1710,8 @@ async function ensureGuidedProjectSetupSchema(): Promise<void> {
     },
     { query: `ALTER TABLE claims ADD COLUMN IF NOT EXISTS planned_percentage decimal(5,2)` },
     { query: `ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS phase_id varchar` },
+    { query: `ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS receipt_url text` },
+    { query: `ALTER TABLE purchase_orders ADD COLUMN IF NOT EXISTS sent_at timestamp` },
     { query: `ALTER TABLE jobs ADD COLUMN IF NOT EXISTS creation_request_id varchar(100)` },
     {
       duplicateRepair: true,

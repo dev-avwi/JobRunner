@@ -2727,11 +2727,13 @@ export const purchaseOrders = pgTable("purchase_orders", {
   requiredDate: timestamp("required_date"),
   deliveryDate: timestamp("delivery_date"),
   status: text("status").default('pending'), // 'pending', 'approved', 'sent', 'received', 'cancelled'
+  sentAt: timestamp("sent_at"), // When PO was emailed to supplier
   subtotal: decimal("subtotal", { precision: 10, scale: 2 }).default('0.00'),
   gstAmount: decimal("gst_amount", { precision: 10, scale: 2 }).default('0.00'),
   total: decimal("total", { precision: 10, scale: 2 }).default('0.00'),
   terms: text("terms"),
   notes: text("notes"),
+  receiptUrl: text("receipt_url"),
   approvedBy: varchar("approved_by").references(() => users.id),
   approvedAt: timestamp("approved_at"),
   createdAt: timestamp("created_at").defaultNow(),
