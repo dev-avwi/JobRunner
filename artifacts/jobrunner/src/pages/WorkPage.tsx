@@ -772,9 +772,17 @@ export default function WorkPage({
           </div>
           
           <div className="mt-2 pt-2 border-t flex items-center justify-between gap-2">
-            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-              {job.jobType === 'project' ? 'Project' : 'Job'}
-            </span>
+            {job.jobType === 'project' ? (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border"
+                style={{ backgroundColor: 'hsl(221 83% 95%)', color: 'hsl(221 83% 35%)', borderColor: 'hsl(221 83% 80%)' }}>
+                Project
+              </span>
+            ) : (
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full border"
+                style={{ backgroundColor: 'hsl(38 92% 94%)', color: 'hsl(38 92% 30%)', borderColor: 'hsl(38 92% 75%)' }}>
+                Job
+              </span>
+            )}
             {nextAction && (
               <Button
                 size="sm"

@@ -171,8 +171,16 @@ export default function JobCard({
                 {jobNumber && (
                   <span className="text-xs font-mono font-semibold bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{jobNumber}</span>
                 )}
-                {jobType === 'project' && (
-                  <span className="text-xs font-medium bg-muted text-muted-foreground px-1.5 py-0.5 rounded">Project</span>
+                {jobType === 'project' ? (
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full border"
+                    style={{ backgroundColor: 'hsl(221 83% 95%)', color: 'hsl(221 83% 35%)', borderColor: 'hsl(221 83% 80%)' }}>
+                    Project
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full border"
+                    style={{ backgroundColor: 'hsl(38 92% 94%)', color: 'hsl(38 92% 30%)', borderColor: 'hsl(38 92% 75%)' }}>
+                    Job
+                  </span>
                 )}
               </div>
             )}
