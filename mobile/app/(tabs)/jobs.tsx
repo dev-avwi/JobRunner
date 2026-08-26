@@ -376,6 +376,8 @@ function TodaySectionRow({ job, colors }: { job: any; colors: any }) {
   const responsiveShell = usePageShell();
   const contentWidth = useContentWidth();
   const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal), [colors, contentWidth, responsiveShell.paddingHorizontal]);
+  const [isSendingOnWay, setIsSendingOnWay] = useState(false);
+  const [sentOnWay, setSentOnWay] = useState(false);
 
   const formatTime = (dateStr?: string) => {
     if (!dateStr) return null;
@@ -393,6 +395,35 @@ function TodaySectionRow({ job, colors }: { job: any; colors: any }) {
   const handlePress = () => {
     router.push(`/job/${job.id}`);
   };
+
+  const handleOnTheWay = async () => {
+    if (isSendingOnWay) return;
+    setIsSendingOnWay(true);
+    try {
+      type OnMyWayResp = { notConfigured?: boolean; estimatedMinutes?: number; distanceKm?: number; etaSource?: string };
+      const response = await api.post<OnMyWayResp>(`/api/jobs/${job.id}/on-my-way`, {});
+      if (response.error) {
+        if (response.data?.notConfigured) {
+          showToast({ type: 'info', message: 'SMS Not Configured', description: 'Set up Twilio in Settings to send notifications.' });
+        } else {
+          showToast({ type: 'error', message: response.error });
+        }
+      } else {
+        const eta = response.data?.estimatedMinutes;
+        const etaSource = response.data?.etaSource;
+        const dist = response.data?.distanceKm;
+        const etaInfo = (eta && etaSource !== 'default') ? ` ETA: ~${eta} min${dist ? ` (${dist.toFixed(1)} km)` : ''}.` : '';
+        setSentOnWay(true);
+        showToast({ type: 'info', message: 'En Route', description: `Client notified you're on the way.${etaInfo}` });
+      }
+    } catch (err: any) {
+      showToast({ type: 'error', message: err?.message || 'Failed to send notification.' });
+    } finally {
+      setIsSendingOnWay(false);
+    }
+  };
+
+  const showOnTheWayBtn = job.status === 'scheduled' && !sentOnWay;
 
   return (
     <AnimatedCardPressable onPress={handlePress} style={styles.todayJobRow}>
@@ -432,15 +463,32 @@ function TodaySectionRow({ job, colors }: { job: any; colors: any }) {
           )}
         </View>
 
-        {/* Start button */}
-        <TouchableOpacity
-          style={styles.todayStartBtn}
-          onPress={handleStart}
-          activeOpacity={0.8}
-        >
-          <Feather name="play" size={12} color={colors.primaryForeground} />
-          <Text style={styles.todayStartBtnText}>Start</Text>
-        </TouchableOpacity>
+        {/* Action buttons */}
+        <View style={styles.todayActionBtns}>
+          {showOnTheWayBtn && (
+            <TouchableOpacity
+              style={[styles.todayOnWayBtn, isSendingOnWay && { opacity: 0.6 }]}
+              onPress={handleOnTheWay}
+              activeOpacity={0.8}
+              disabled={isSendingOnWay}
+            >
+              {isSendingOnWay ? (
+                <ActivityIndicator size="small" color={colors.primary} style={{ width: 12, height: 12 }} />
+              ) : (
+                <Feather name="navigation" size={12} color={colors.primary} />
+              )}
+              <Text style={styles.todayOnWayBtnText}>On the way</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={styles.todayStartBtn}
+            onPress={handleStart}
+            activeOpacity={0.8}
+          >
+            <Feather name="play" size={12} color={colors.primaryForeground} />
+            <Text style={styles.todayStartBtnText}>Start</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </AnimatedCardPressable>
   );
@@ -2275,6 +2323,27 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     fontSize: typography.sizes.xs,
     fontWeight: fontWeights.medium,
     color: colors.mutedForeground,
+  },
+  todayActionBtns: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    flexShrink: 0,
+  },
+  todayOnWayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  todayOnWayBtnText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.primary,
   },
   todayStartBtn: {
     flexDirection: 'row',
