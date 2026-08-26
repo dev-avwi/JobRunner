@@ -2117,7 +2117,7 @@ function SupplierPickerSheetContent({
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function JobDetailScreen() {
   console.log('[LA-DEBUG] LiveActivity module:', typeof LiveActivity, LiveActivity && Object.keys(LiveActivity));
-  const { id, action: navAction } = useLocalSearchParams<{ id: string; action?: string }>();
+  const { id, action: navAction, tab: navTab } = useLocalSearchParams<{ id: string; action?: string; tab?: string }>();
   const { colors, isDark } = useTheme();
   const confirm = useConfirmDialog();
   const showActionSheet = useActionSheet();
@@ -2751,6 +2751,20 @@ export default function JobDetailScreen() {
     });
     return () => handle.cancel();
   }, [job, isLoading, navAction, client, assignmentsLoaded, jobAssignments, user]);
+
+  // Switch to the tab requested via the `?tab=` URL param (e.g. from the
+  // Work tab Today section "Start" button which links straight to Tasks).
+  // Fires exactly once per navTab value after the job has loaded.
+  const navTabFiredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!job || isLoading || !navTab) return;
+    if (navTabFiredRef.current === navTab) return;
+    navTabFiredRef.current = navTab;
+    const validTabs = ['overview', 'tasks', 'files', 'comms', 'manage'];
+    if (validTabs.includes(navTab)) {
+      setActiveTab(navTab as 'overview' | 'tasks' | 'files' | 'comms' | 'manage');
+    }
+  }, [job, isLoading, navTab]);
 
   useEffect(() => {
     if (timerError) {

@@ -372,6 +372,80 @@ function JobCard({
   );
 }
 
+function TodaySectionRow({ job, colors }: { job: any; colors: any }) {
+  const responsiveShell = usePageShell();
+  const contentWidth = useContentWidth();
+  const styles = useMemo(() => createStyles(colors, contentWidth, responsiveShell.paddingHorizontal), [colors, contentWidth, responsiveShell.paddingHorizontal]);
+
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (d.getHours() === 0 && d.getMinutes() === 0) return null;
+    return d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
+  };
+
+  const timeLabel = formatTime(job.scheduledAt);
+
+  const handleStart = () => {
+    router.push(`/job/${job.id}?tab=tasks`);
+  };
+
+  const handlePress = () => {
+    router.push(`/job/${job.id}`);
+  };
+
+  return (
+    <AnimatedCardPressable onPress={handlePress} style={styles.todayJobRow}>
+      <View style={styles.todayJobRowInner}>
+        {/* Time pill */}
+        <View style={[styles.todayTimePill, !timeLabel && styles.todayTimePillMuted]}>
+          <Feather name="clock" size={10} color={timeLabel ? colors.primary : colors.mutedForeground} />
+          <Text style={[styles.todayTimePillText, !timeLabel && styles.todayTimePillTextMuted]}>
+            {timeLabel ?? 'Time not set'}
+          </Text>
+        </View>
+
+        {/* Job info */}
+        <View style={styles.todayJobInfo}>
+          <Text style={styles.todayJobTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
+          <View style={styles.todayJobMeta}>
+            {job.clientName ? (
+              <Text style={styles.todayJobMetaText} numberOfLines={1}>
+                {job.clientName}
+              </Text>
+            ) : null}
+            {job.clientName && job.address ? (
+              <Text style={styles.todayJobMetaSep}> · </Text>
+            ) : null}
+            {job.address ? (
+              <Text style={[styles.todayJobMetaText, { flex: 1 }]} numberOfLines={1}>
+                {job.address.split(',')[0]}
+              </Text>
+            ) : null}
+          </View>
+          {/* Job type badge */}
+          {job.jobType === 'project' && (
+            <View style={styles.todayJobTypeBadge}>
+              <Feather name="layers" size={9} color={colors.mutedForeground} />
+              <Text style={styles.todayJobTypeBadgeText}>Project</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Start button */}
+        <TouchableOpacity
+          style={styles.todayStartBtn}
+          onPress={handleStart}
+          activeOpacity={0.8}
+        >
+          <Feather name="play" size={12} color={colors.primaryForeground} />
+          <Text style={styles.todayStartBtnText}>Start</Text>
+        </TouchableOpacity>
+      </View>
+    </AnimatedCardPressable>
+  );
+}
+
 export default function JobsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
@@ -390,7 +464,7 @@ export default function JobsScreen() {
     }
   }, [scrollToTopTrigger]);
   
-  const { jobs, fetchJobs, isLoading, updateJobStatus } = useJobsStore();
+  const { jobs, todaysJobs, fetchJobs, fetchTodaysJobs, isLoading, updateJobStatus } = useJobsStore();
   const { clients, fetchClients } = useClientsStore();
   const { roleInfo, hasPermission, businessSettings, user } = useAuthStore();
   const params = useLocalSearchParams<{ filter?: string }>();
@@ -640,8 +714,8 @@ export default function JobsScreen() {
   );
 
   const refreshData = useCallback(async () => {
-    await Promise.all([fetchJobs(), fetchClients(), fetchSavedFilters(), fetchTeamMembers()]);
-  }, [fetchJobs, fetchClients, fetchSavedFilters, fetchTeamMembers]);
+    await Promise.all([fetchJobs(), fetchTodaysJobs(), fetchClients(), fetchSavedFilters(), fetchTeamMembers()]);
+  }, [fetchJobs, fetchTodaysJobs, fetchClients, fetchSavedFilters, fetchTeamMembers]);
 
   const refreshDataRef = useRef(refreshData);
   useEffect(() => { refreshDataRef.current = refreshData; }, [refreshData]);
@@ -933,6 +1007,30 @@ export default function JobsScreen() {
         </View>
       </View>
       <Text style={styles.pageSubtitleInline}>{sortedJobs.length} {sortedJobs.length === 1 ? 'job' : 'jobs'} total</Text>
+
+      {todaysJobs.length > 0 && (
+        <View style={styles.todaySection}>
+          <View style={styles.todaySectionHeader}>
+            <Feather name="sun" size={iconSizes.md} color={colors.primary} />
+            <Text style={styles.todaySectionTitle}>
+              {'TODAY — ' + new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }).toUpperCase()}
+            </Text>
+          </View>
+          {[...todaysJobs]
+            .sort((a, b) => {
+              const aHasTime = a.scheduledAt && (new Date(a.scheduledAt).getHours() !== 0 || new Date(a.scheduledAt).getMinutes() !== 0);
+              const bHasTime = b.scheduledAt && (new Date(b.scheduledAt).getHours() !== 0 || new Date(b.scheduledAt).getMinutes() !== 0);
+              if (aHasTime && !bHasTime) return -1;
+              if (!aHasTime && bHasTime) return 1;
+              if (a.scheduledAt && b.scheduledAt) return new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+              return 0;
+            })
+            .map(job => (
+              <TodaySectionRow key={job.id} job={job} colors={colors} />
+            ))
+          }
+        </View>
+      )}
 
       <UsageLimitBanner />
 
@@ -1366,7 +1464,7 @@ export default function JobsScreen() {
         </View>
       )}
     </View>
-  ), [jobs.length, viewMode, searchQuery, activeFilter, statusCounts, colors, styles, sortField, sortDirection, sortedJobs.length, advancedOpen, advancedFilters, hasAdvancedFilters, activeFilterCount, savedFilters, teamMembers, clients, saveDialogOpen, batchMode, selectedJobIds.size, completedJobs.length]);
+  ), [jobs.length, todaysJobs, viewMode, searchQuery, activeFilter, statusCounts, colors, styles, sortField, sortDirection, sortedJobs.length, advancedOpen, advancedFilters, hasAdvancedFilters, activeFilterCount, savedFilters, teamMembers, clients, saveDialogOpen, batchMode, selectedJobIds.size, completedJobs.length]);
 
   const listEmptyComponent = useMemo(() => {
     if (isLoading) {
@@ -2073,6 +2171,125 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   filterCountTextActive: {
     color: colors.white,
+  },
+
+  // Today section
+  todaySection: {
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    marginBottom: spacing.lg,
+    overflow: 'hidden',
+    ...shadows.sm,
+  },
+  todaySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+    backgroundColor: colorWithOpacity(colors.primary, 0.06),
+  },
+  todaySectionTitle: {
+    ...typography.label,
+    color: colors.primary,
+    letterSpacing: 0.5,
+    fontWeight: fontWeights.bold,
+  },
+  todayJobRow: {
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+    backgroundColor: colors.card,
+  },
+  todayJobRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
+  },
+  todayTimePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colorWithOpacity(colors.primary, 0.1),
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    minWidth: 72,
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  todayTimePillMuted: {
+    backgroundColor: colors.muted,
+  },
+  todayTimePillText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.primary,
+  },
+  todayTimePillTextMuted: {
+    color: colors.mutedForeground,
+    fontWeight: fontWeights.medium,
+  },
+  todayJobInfo: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  todayJobTitle: {
+    ...typography.bodySemibold,
+    color: colors.foreground,
+    fontSize: typography.sizes.sm,
+  },
+  todayJobMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minWidth: 0,
+  },
+  todayJobMetaText: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+  },
+  todayJobMetaSep: {
+    ...typography.captionSmall,
+    color: colors.mutedForeground,
+  },
+  todayJobTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.muted,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  todayJobTypeBadgeText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.medium,
+    color: colors.mutedForeground,
+  },
+  todayStartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.primary,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    flexShrink: 0,
+  },
+  todayStartBtnText: {
+    fontSize: typography.sizes.xs,
+    fontWeight: fontWeights.bold,
+    color: colors.primaryForeground,
   },
 
   section: {
