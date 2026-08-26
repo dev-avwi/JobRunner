@@ -447,6 +447,141 @@ describe("GET /api/jobs/today — Today section visibility", () => {
     });
   });
 
+  // ── Rescheduling sync ─────────────────────────────────────────────────────
+  describe("when a job is rescheduled", () => {
+    // ── Owner-scoped ────────────────────────────────────────────────────────
+    describe("owner scope", () => {
+      it("removes a job rescheduled from today to tomorrow on the next refresh", async () => {
+        // Before reschedule the job was scheduledAt=today; after reschedule it is tomorrow.
+        // The endpoint should reflect the new scheduledAt and exclude the job.
+        mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-1", status: "scheduled", scheduledAt: tomorrowAt(9) }),
+        ]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+
+      it("shows a job rescheduled from a future date to today on the next refresh", async () => {
+        // Before reschedule the job was scheduledAt=tomorrow; after reschedule it is today.
+        mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-1", status: "scheduled", scheduledAt: todayAt(14) }),
+        ]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].id).toBe("job-1");
+      });
+
+      it("keeps remaining today jobs visible after one job is rescheduled away", async () => {
+        mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-kept",    status: "scheduled", scheduledAt: todayAt(9) }),
+          makeJob({ id: "job-removed", status: "scheduled", scheduledAt: tomorrowAt(11) }),
+        ]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].id).toBe("job-kept");
+      });
+
+      it("hides the Today section entirely when all jobs are rescheduled away", async () => {
+        mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-a", status: "scheduled", scheduledAt: tomorrowAt(9) }),
+          makeJob({ id: "job-b", status: "scheduled", scheduledAt: tomorrowAt(14) }),
+        ]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+    });
+
+    // ── Worker-scoped ───────────────────────────────────────────────────────
+    describe("worker scope", () => {
+      it("removes a worker's job rescheduled from today to tomorrow on the next refresh", async () => {
+        mockGetUserContext.mockResolvedValue(WORKER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-1", assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: tomorrowAt(9) }),
+        ]);
+        mockStorage.getAssignedJobIdsForUser.mockResolvedValue([]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+
+      it("shows a worker's job rescheduled from a future date to today on the next refresh", async () => {
+        mockGetUserContext.mockResolvedValue(WORKER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-1", assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: todayAt(10) }),
+        ]);
+        mockStorage.getAssignedJobIdsForUser.mockResolvedValue([]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].id).toBe("job-1");
+      });
+
+      it("keeps a worker's remaining today job visible after one job is rescheduled away", async () => {
+        mockGetUserContext.mockResolvedValue(WORKER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-kept",    assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: todayAt(9) }),
+          makeJob({ id: "job-removed", assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: tomorrowAt(11) }),
+        ]);
+        mockStorage.getAssignedJobIdsForUser.mockResolvedValue([]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(1);
+        expect(res.body[0].id).toBe("job-kept");
+      });
+
+      it("hides the Today section for the worker when all their jobs are rescheduled away", async () => {
+        mockGetUserContext.mockResolvedValue(WORKER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-a", assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: tomorrowAt(9) }),
+          makeJob({ id: "job-b", assignedTo: WORKER_USER_ID, status: "scheduled", scheduledAt: tomorrowAt(14) }),
+        ]);
+        mockStorage.getAssignedJobIdsForUser.mockResolvedValue([]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+
+      it("does not surface another worker's job rescheduled to today", async () => {
+        // The calling worker (WORKER_USER_ID) should not see a job assigned to someone else,
+        // even if its scheduledAt was just moved to today.
+        mockGetUserContext.mockResolvedValue(WORKER_CONTEXT);
+        mockStorage.getJobs.mockResolvedValue([
+          makeJob({ id: "job-other", assignedTo: "other-worker", status: "scheduled", scheduledAt: todayAt(9) }),
+        ]);
+        mockStorage.getAssignedJobIdsForUser.mockResolvedValue([]);
+
+        const res = await request(buildApp()).get("/api/jobs/today");
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveLength(0);
+      });
+    });
+  });
+
   // ── Sort order ────────────────────────────────────────────────────────────
   describe("sort order", () => {
     it("sorts by scheduleOrder when set", async () => {
