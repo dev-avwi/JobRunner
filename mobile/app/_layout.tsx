@@ -694,6 +694,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const { fetchNotifications } = useNotificationsStore();
   const { isAuthenticated, isOwner, isStaff, hasActiveTeam, user, logout, businessSettings, onboardingFinishing, setOnboardingFinishing } = useAuthStore();
+  const { fetchTodaysJobs } = useJobsStore();
   const { colors } = useTheme();
   const { isOnline, isInitialized: offlineInitialized } = useOfflineStore();
   const shouldUseSidebar = useShouldUseSidebar();
@@ -704,6 +705,12 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
       fetchNotifications();
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchTodaysJobs();
     }
   }, [isAuthenticated]);
 

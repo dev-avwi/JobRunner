@@ -8,7 +8,7 @@ import { useTheme, ThemeColors } from '../lib/theme';
 import { useScrollToTop } from '../contexts/ScrollContext';
 import { isIPad } from '../lib/device';
 import { useNotificationsStore } from '../lib/notifications-store';
-import { useAuthStore } from '../lib/store';
+import { useAuthStore, useJobsStore } from '../lib/store';
 
 interface NavItem {
   title: string;
@@ -83,6 +83,8 @@ function NavButton({
   styles,
   isPad,
   badgeCount,
+  badgeColor,
+  badgeTextColor,
 }: { 
   item: NavItem; 
   active: boolean; 
@@ -91,6 +93,8 @@ function NavButton({
   styles: ReturnType<typeof createStyles>;
   isPad: boolean;
   badgeCount?: number;
+  badgeColor?: string;
+  badgeTextColor?: string;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -150,8 +154,8 @@ function NavButton({
             color={active ? colors.primary : colors.mutedForeground}
           />
           {badgeCount != null && badgeCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
+            <View style={[styles.badge, badgeColor ? { backgroundColor: badgeColor } : undefined]}>
+              <Text style={[styles.badgeText, badgeTextColor ? { color: badgeTextColor } : undefined]}>
                 {badgeCount > 99 ? '99+' : badgeCount}
               </Text>
             </View>
@@ -177,6 +181,7 @@ export function BottomNav() {
   const { triggerScrollToTop } = useScrollToTop();
   const unreadCount = useNotificationsStore((s) => s.unreadCount);
   const { roleInfo } = useAuthStore();
+  const todaysJobCount = useJobsStore((s) => s.todaysJobs.length);
   
   const isSubcontractorRole = roleInfo?.roleName?.toLowerCase() === 'subcontractor' || roleInfo?.roleName?.toLowerCase() === 'sub_contractor';
   const navItems = isSubcontractorRole ? subcontractorNavItems : defaultNavItems;
@@ -234,7 +239,9 @@ export function BottomNav() {
             colors={colors}
             styles={styles}
             isPad={isPadDevice}
-            badgeCount={item.title === 'Chat' ? unreadCount : undefined}
+            badgeCount={item.title === 'Chat' ? unreadCount : (item.title === 'Work' || item.title === 'My Jobs') ? todaysJobCount : undefined}
+            badgeColor={(item.title === 'Work' || item.title === 'My Jobs') ? colors.primary : undefined}
+            badgeTextColor={(item.title === 'Work' || item.title === 'My Jobs') ? colors.primaryForeground : undefined}
           />
         ))}
       </View>
