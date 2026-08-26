@@ -337,15 +337,8 @@ export function ProjectGanttView({ jobId, isTradie = false }: Props) {
     doc.close();
   }
 
-  // Don't render if it's not a project or there are no phases
-  if (isLoading) return (
-    <Card>
-      <CardContent className="py-6 flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading timeline…
-      </CardContent>
-    </Card>
-  );
-  if (sorted.length === 0) return null;
+  // Don't render if loading or there are no phases (keeps the phases tab clean)
+  if (isLoading || sorted.length === 0) return null;
 
   return (
     <>

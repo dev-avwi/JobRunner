@@ -485,9 +485,24 @@ function StockSection() {
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
-        <div />
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as StockTab)} className="flex-1 min-w-0">
+          <TabsList className="overflow-x-auto flex-nowrap w-auto">
+            <TabsTrigger value="items">Items</TabsTrigger>
+            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="low-stock">
+              Low Stock
+              {lowStockItems.length > 0 && (
+                <Badge variant="destructive" className="ml-1.5 text-xs">
+                  {lowStockItems.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
+            <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex items-center gap-2 shrink-0">
           {activeTab === "items" && (
             <Button onClick={() => { setEditingItem(null); setShowItemDialog(true); }}>
               <Plus className="w-4 h-4 mr-1" /> Add Item
@@ -510,23 +525,6 @@ function StockSection() {
           )}
         </div>
       </div>
-
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as StockTab)}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="items">Items</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="low-stock">
-            Low Stock
-            {lowStockItems.length > 0 && (
-              <Badge variant="destructive" className="ml-1.5 text-xs">
-                {lowStockItems.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="purchase-orders">Purchase Orders</TabsTrigger>
-          <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       {activeTab === "items" && (
         <ItemsTab

@@ -3919,40 +3919,38 @@ export default function TemplatesHub() {
           onValueChange={(v) => setLocation(`/templates?tab=${v}`)}
           className="space-y-6"
         >
-          <TabsList>
-            <TabsTrigger value="styles" className="gap-2">
-              <Palette className="h-4 w-4" />
-              Styles
-            </TabsTrigger>
-            <TabsTrigger value="components" className="gap-2">
-              <Layers className="h-4 w-4" />
-              Components
-            </TabsTrigger>
-            <TabsTrigger value="price-list" className="gap-2" data-testid="tab-price-list">
-              <Tag className="h-4 w-4" />
-              Price List
-            </TabsTrigger>
-            <TabsTrigger value="quick-templates" className="gap-2">
-              <Briefcase className="h-4 w-4" />
-              Quick Templates
-            </TabsTrigger>
-            <TabsTrigger value="sms-templates" className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Messaging
-            </TabsTrigger>
-            <TabsTrigger value="job-cards" className="gap-2">
-              <ClipboardCheck className="h-4 w-4" />
-              Job Cards
-            </TabsTrigger>
-            <TabsTrigger value="forms" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Forms & Safety
-            </TabsTrigger>
-            <TabsTrigger value="project-templates" className="gap-2" data-testid="tab-project-templates">
-              <Layers className="h-4 w-4" />
-              Project Templates
-            </TabsTrigger>
-          </TabsList>
+          {/* Scrollable tab bar — underline style so 8 tabs don't feel cramped */}
+          <div className="overflow-x-auto no-scrollbar border-b">
+            <TabsList className="h-auto bg-transparent p-0 gap-0 w-max min-w-full rounded-none">
+              {[
+                { value: 'styles',            icon: Palette,       label: 'Styles' },
+                { value: 'components',        icon: Layers,        label: 'Components' },
+                { value: 'price-list',        icon: Tag,           label: 'Price List',        testId: 'tab-price-list' },
+                { value: 'quick-templates',   icon: Briefcase,     label: 'Quick Templates' },
+                { value: 'sms-templates',     icon: MessageSquare, label: 'Messaging' },
+                { value: 'job-cards',         icon: ClipboardCheck,label: 'Job Cards' },
+                { value: 'forms',             icon: FileText,      label: 'Forms & Safety' },
+                { value: 'project-templates', icon: Layers,        label: 'Project Templates', testId: 'tab-project-templates' },
+              ].map(({ value, icon: Icon, label, testId }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  data-testid={testId}
+                  className="relative gap-1.5 px-4 py-2.5 rounded-none bg-transparent text-muted-foreground font-medium text-sm whitespace-nowrap
+                    data-[state=active]:text-foreground data-[state=active]:shadow-none
+                    data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:rounded-full
+                    hover:text-foreground hover:bg-muted/40 transition-colors"
+                  style={activeTab === value ? { '--tw-content': '""' } as any : undefined}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {label}
+                  {activeTab === value && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: 'hsl(var(--trade))' }} />
+                  )}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
           
           <TabsContent value="styles">
             <StylePresetsWithPreview />

@@ -179,26 +179,26 @@ export function LinkedDocumentsCard({
           onClick={() => linkedQuote && onViewQuote?.(linkedQuote.id)}
           data-testid="quote-link"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className={cn(
-              "w-9 h-9 rounded-lg flex items-center justify-center",
+              "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center",
               linkedQuote ? "bg-blue-500/10" : "bg-muted"
             )}>
               <FileText className={cn("h-4 w-4", linkedQuote ? "text-blue-600" : "text-muted-foreground")} />
             </div>
-            <div>
-              <p className="text-sm font-medium">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">
                 {linkedQuote 
                   ? (linkedQuote.quoteNumber || `Quote`) 
                   : "No Quote"}
               </p>
               {linkedQuote ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-muted-foreground">${linkedQuote.total}</span>
                   {getQuoteStatusBadge(linkedQuote.status)}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">Create a quote for this job</p>
+                <p className="text-xs text-muted-foreground truncate">Create a quote for this job</p>
               )}
             </div>
           </div>
@@ -237,28 +237,28 @@ export function LinkedDocumentsCard({
           onClick={() => linkedInvoice && onViewInvoice?.(linkedInvoice.id)}
           data-testid="invoice-link"
         >
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className={cn(
-              "w-9 h-9 rounded-lg flex items-center justify-center",
+              "w-8 h-8 shrink-0 rounded-lg flex items-center justify-center",
               linkedInvoice ? "bg-purple-500/10" : "bg-muted"
             )}>
               <Receipt className={cn("h-4 w-4", linkedInvoice ? "text-purple-600" : "text-muted-foreground")} />
             </div>
-            <div>
-              <p className="text-sm font-medium">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium truncate">
                 {linkedInvoice 
                   ? (linkedInvoice.invoiceNumber || `Invoice`) 
                   : "No Invoice"}
               </p>
               {linkedInvoice ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs text-muted-foreground">${linkedInvoice.total}</span>
                   {getInvoiceStatusBadge(linkedInvoice.status)}
                 </div>
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground truncate">
                   {jobStatus === 'done' 
-                    ? "Job complete - ready to invoice!" 
+                    ? "Job complete — ready to invoice!" 
                     : "Invoice will be created after job is done"}
                 </p>
               )}

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1375,6 +1376,7 @@ const PO_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
 
 export function JobPurchaseOrdersSection({ jobId, isTradie }: { jobId: string; isTradie: boolean }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [, navigate] = useLocation();
 
   const { data: purchaseOrders = [], isLoading } = useQuery<JobPurchaseOrder[]>({
     queryKey: ['/api/jobs', jobId, 'purchase-orders'],
@@ -1402,13 +1404,13 @@ export function JobPurchaseOrdersSection({ jobId, isTradie }: { jobId: string; i
             {pendingCount > 0 && <Badge variant="outline" className="text-xs border-amber-400 text-amber-600">{pendingCount} pending</Badge>}
           </div>
           {!isTradie && (
-            <a
-              href="/inventory?tab=purchase-orders"
+            <button
+              onClick={() => navigate('/inventory?tab=purchase-orders')}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ExternalLink className="h-3 w-3" />
               Manage in Inventory
-            </a>
+            </button>
           )}
         </div>
       </CardHeader>
@@ -1422,13 +1424,13 @@ export function JobPurchaseOrdersSection({ jobId, isTradie }: { jobId: string; i
             <Package className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">No purchase orders for this job</p>
             {!isTradie && (
-              <a
-                href="/inventory?tab=purchase-orders"
+              <button
+                onClick={() => navigate('/inventory?tab=purchase-orders')}
                 className="inline-flex items-center gap-1 mt-3 text-xs text-primary hover:underline"
               >
                 <Plus className="h-3 w-3" />
                 Create a purchase order
-              </a>
+              </button>
             )}
           </div>
         ) : (
