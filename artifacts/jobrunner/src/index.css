@@ -195,6 +195,14 @@
 
 }
 
+/* ── Dispatch full-screen mode ──────────────────────────────────────────────
+   When the Dispatch page adds dispatch-fullscreen to <body>, hide the sidebar
+   so the scheduling grid fills the full viewport width. The class is removed
+   on unmount / when the user exits full-screen. */
+body.dispatch-fullscreen [data-slot="sidebar"]:not([data-mobile="true"]) {
+  display: none !important;
+}
+
 @layer base {
   * {
     @apply border-border;

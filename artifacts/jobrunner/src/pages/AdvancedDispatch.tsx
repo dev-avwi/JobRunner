@@ -1883,6 +1883,19 @@ export default function AdvancedDispatch() {
     });
   }, []);
 
+  // Sync the dispatch-fullscreen class on document.body so the sidebar CSS
+  // can respond to it. Cleanup removes the class when navigating away.
+  useEffect(() => {
+    if (isFullScreen) {
+      document.body.classList.add("dispatch-fullscreen");
+    } else {
+      document.body.classList.remove("dispatch-fullscreen");
+    }
+    return () => {
+      document.body.classList.remove("dispatch-fullscreen");
+    };
+  }, [isFullScreen]);
+
   // F key shortcut (when not in an input/textarea)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -2155,10 +2168,9 @@ export default function AdvancedDispatch() {
 
   return (
     <PageShell className="flex flex-col h-screen overflow-hidden" data-testid="dispatch-board">
-      <div className={`flex flex-col flex-1 overflow-hidden${isFullScreen ? " fixed inset-0 z-50 bg-background" : ""}`}>
+      <div className="flex flex-col flex-1 overflow-hidden">
       {/* ── Top bar ── */}
       <div className="border-b flex-shrink-0 px-4 py-2 flex items-center gap-3 flex-wrap">
-        <h1 className="text-xl font-bold tracking-tight flex-shrink-0">Dispatch</h1>
         <div className="flex items-center gap-2 flex-wrap flex-1">
           {/* View toggle */}
           <div className="flex items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
