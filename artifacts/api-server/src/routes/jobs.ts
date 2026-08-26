@@ -4292,6 +4292,64 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       }
 
 
+      // Notify new assignee when assignedTo changes via the full PATCH path
+      // (dispatch drag-drop goes through here). Fire-and-forget so it never
+      // blocks the response. Skip when the same person is re-saved unchanged.
+      if (
+        data.assignedTo !== undefined &&
+        existingJob &&
+        data.assignedTo !== null &&
+        data.assignedTo !== existingJob.assignedTo
+      ) {
+        (async () => {
+          try {
+            const newAssigneeUserId =
+              (await resolveAssigneeUserId(data.assignedTo as string, effectiveUserId)) ||
+              (data.assignedTo as string);
+            const [client, assigner] = await Promise.all([
+              job.clientId ? storage.getClient(job.clientId, effectiveUserId) : Promise.resolve(null),
+              storage.getUser(req.userId),
+            ]);
+            // In-app notification
+            try {
+              await notifyJobAssignedDB(storage, newAssigneeUserId, job, assigner || { firstName: 'Manager' });
+            } catch (e) {
+              console.error('[Job Assign PATCH] DB notification failed:', e);
+            }
+            // Push notification with client name and scheduled time.
+            // skipInAppNotification prevents a duplicate record — notifyJobAssignedDB
+            // above is the sole in-app persistence path (it includes the assigner name).
+            await notifyJobAssigned(newAssigneeUserId, job.title, job.id, {
+              clientName: client?.name,
+              scheduledAt: job.scheduledAt,
+              skipInAppNotification: true,
+            });
+            // SMS fallback: send when the worker has no active push tokens
+            try {
+              const [workerTokens, worker] = await Promise.all([
+                storage.getPushTokens(newAssigneeUserId),
+                storage.getUser(newAssigneeUserId),
+              ]);
+              const hasPush = workerTokens && workerTokens.length > 0;
+              if (!hasPush && worker?.phone) {
+                const clientStr = client?.name ? `, ${client.name}` : '';
+                const timeStr = job.scheduledAt
+                  ? `, ${new Date(job.scheduledAt).toLocaleString('en-AU', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                  : '';
+                await sendSMS({
+                  to: worker.phone,
+                  message: `JobRunner: New job assigned to you: "${job.title}"${clientStr}${timeStr}.`,
+                });
+              }
+            } catch (smsErr) {
+              console.error('[Job Assign PATCH] SMS notify failed:', smsErr);
+            }
+          } catch (e) {
+            console.error('[Job Assign PATCH] Failed to notify new assignee:', e);
+          }
+        })();
+      }
+
       // Create notifications and log activity for status changes
       if (data.status && existingJob && data.status !== existingJob.status) {
         const client = job.clientId ? await storage.getClient(job.clientId, effectiveUserId) : null;
@@ -4818,39 +4876,79 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       // Resolve assignedTo to proper user ID for notifications
       // (assignedTo may be a team member record ID or a user ID)
       const assigneeUserId = await resolveAssigneeUserId(assignedTo, userContext.effectiveUserId) || assignedTo;
-      
-      // Create DB notification for the assigned team member
-      try {
-        const assigner = await storage.getUser(req.userId);
-        await notifyJobAssignedDB(storage, assigneeUserId, job, assigner || { firstName: 'Manager' });
-      } catch (notifErr) {
-        console.error('Failed to send job assigned DB notification:', notifErr);
-      }
-      
-      // Send push notification to assigned team member
-      await notifyJobAssigned(assigneeUserId, job.title, job.id);
-      
-      // Send email notification to assigned team member
-      try {
-        const assigneeUser = await storage.getUser(assigneeUserId);
-        const assigner = await storage.getUser(req.userId);
-        
-        if (assigneeUser?.email) {
-          await sendJobAssignmentEmail(
-            assigneeUser.email,
-            assigneeUser.firstName || null,
-            assigner?.firstName || 'Your manager',
-            (await storage.getBusinessSettings(userContext.effectiveUserId))?.businessName || 'JobRunner',
-            job.title,
-            (job as any).address || null,
-            (job as any).scheduledDate || null,
-            getProductionBaseUrl(req),
-            job.id
-          );
+
+      // Only notify when the assignee has actually changed (avoid duplicate
+      // notifications when a dispatcher re-saves the same worker).
+      const isReassignedToSame = existingJobForAssign.assignedTo === assignedTo ||
+        existingJobForAssign.assignedTo === assigneeUserId;
+
+      if (!isReassignedToSame) {
+        // Fetch client info and assigner in parallel for the richer notification body
+        const [client, assigner] = await Promise.all([
+          job.clientId ? storage.getClient(job.clientId, userContext.effectiveUserId) : Promise.resolve(null),
+          storage.getUser(req.userId),
+        ]);
+
+        // Create DB (in-app) notification for the assigned team member
+        try {
+          await notifyJobAssignedDB(storage, assigneeUserId, job, assigner || { firstName: 'Manager' });
+        } catch (notifErr) {
+          console.error('Failed to send job assigned DB notification:', notifErr);
         }
-      } catch (emailError) {
-        console.error('Failed to send job assignment email:', emailError);
-        // Don't fail if email fails
+
+        // Push notification with client name and scheduled time.
+        // skipInAppNotification prevents a duplicate record — notifyJobAssignedDB
+        // above is the sole in-app persistence path (it includes the assigner name).
+        await notifyJobAssigned(assigneeUserId, job.title, job.id, {
+          clientName: client?.name,
+          scheduledAt: job.scheduledAt,
+          skipInAppNotification: true,
+        });
+
+        // SMS fallback: send when the worker has no active push tokens
+        try {
+          const [workerTokens, worker] = await Promise.all([
+            storage.getPushTokens(assigneeUserId),
+            storage.getUser(assigneeUserId),
+          ]);
+          const hasPush = workerTokens && workerTokens.length > 0;
+          if (!hasPush && worker?.phone) {
+            const clientStr = client?.name ? `, ${client.name}` : '';
+            const timeStr = job.scheduledAt
+              ? `, ${new Date(job.scheduledAt).toLocaleString('en-AU', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+              : '';
+            await sendSMS({
+              to: worker.phone,
+              message: `JobRunner: New job assigned to you: "${job.title}"${clientStr}${timeStr}.`,
+            });
+          }
+        } catch (smsErr) {
+          console.error('[Job Assign] SMS notify failed:', smsErr);
+        }
+
+        // Send email notification to assigned team member (inside the changed-assignee
+        // guard so re-saving the same worker does not trigger a duplicate email).
+        try {
+          if (assigner && assigneeUserId) {
+            const assigneeUser = await storage.getUser(assigneeUserId);
+            if (assigneeUser?.email) {
+              await sendJobAssignmentEmail(
+                assigneeUser.email,
+                assigneeUser.firstName || null,
+                assigner?.firstName || 'Your manager',
+                (await storage.getBusinessSettings(userContext.effectiveUserId))?.businessName || 'JobRunner',
+                job.title,
+                (job as any).address || null,
+                (job as any).scheduledDate || null,
+                getProductionBaseUrl(req),
+                job.id
+              );
+            }
+          }
+        } catch (emailError) {
+          console.error('Failed to send job assignment email:', emailError);
+          // Don't fail if email fails
+        }
       }
       
       res.json(job);
@@ -4882,6 +4980,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
       const results: any[] = [];
       const assigner = await storage.getUser(req.userId);
+      // Fetch client once for all per-worker notifications below
+      const multiAssignClient = job.clientId
+        ? await storage.getClient(job.clientId, userContext.effectiveUserId).catch(() => null)
+        : null;
 
       for (const workerId of workerIds) {
         const validMember = teamMembers.find((m: any) =>
@@ -4914,11 +5016,38 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
               : null,
           });
 
-          await notifyJobAssigned(resolvedUserId, job.title, job.id);
+          // In-app notification (single persistence path — assigner name included)
           try {
             await notifyJobAssignedDB(storage, resolvedUserId, job, assigner || { firstName: 'Manager' });
           } catch (e) {
             logger.warn('background', 'Failed to persist in-app job-assignment notification', { userId: resolvedUserId, error: e, metadata: { jobId: job.id } });
+          }
+          // Push notification — skipInAppNotification prevents a duplicate in-app
+          // record alongside the notifyJobAssignedDB call above.
+          await notifyJobAssigned(resolvedUserId, job.title, job.id, {
+            clientName: multiAssignClient?.name,
+            scheduledAt: job.scheduledAt,
+            skipInAppNotification: true,
+          });
+          // SMS fallback when the worker has no active push tokens
+          try {
+            const [workerTokens, worker] = await Promise.all([
+              storage.getPushTokens(resolvedUserId),
+              storage.getUser(resolvedUserId),
+            ]);
+            const hasPush = workerTokens && workerTokens.length > 0;
+            if (!hasPush && worker?.phone) {
+              const clientStr = multiAssignClient?.name ? `, ${multiAssignClient.name}` : '';
+              const timeStr = job.scheduledAt
+                ? `, ${new Date(job.scheduledAt).toLocaleString('en-AU', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                : '';
+              await sendSMS({
+                to: worker.phone,
+                message: `JobRunner: New job assigned to you: "${job.title}"${clientStr}${timeStr}.`,
+              });
+            }
+          } catch (smsErr) {
+            console.error('[MultiAssign] SMS notify failed for', resolvedUserId, ':', smsErr);
           }
 
           results.push({ workerId, status: 'assigned', assignmentId: assignment?.id });

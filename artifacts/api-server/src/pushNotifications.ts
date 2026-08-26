@@ -339,13 +339,45 @@ function getChannelId(type: NotificationType): string {
 
 // Convenience functions for common notification types
 
-export async function notifyJobAssigned(userId: string, jobTitle: string, jobId: string): Promise<void> {
+export async function notifyJobAssigned(
+  userId: string,
+  jobTitle: string,
+  jobId: string,
+  options?: {
+    clientName?: string | null;
+    scheduledAt?: Date | string | null;
+    /** Set true when the caller persists the in-app notification separately
+     *  (e.g. via notifyJobAssignedDB) to avoid creating a duplicate record. */
+    skipInAppNotification?: boolean;
+  }
+): Promise<void> {
+  let body = `You've been assigned to: ${jobTitle}`;
+  if (options?.clientName || options?.scheduledAt) {
+    const parts: string[] = [jobTitle];
+    if (options.clientName) parts.push(options.clientName);
+    if (options.scheduledAt) {
+      const d = new Date(options.scheduledAt as any);
+      if (!isNaN(d.getTime())) {
+        parts.push(
+          d.toLocaleString('en-AU', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        );
+      }
+    }
+    body = `New job assigned: ${parts.join(', ')}`;
+  }
   await sendPushNotification({
     userId,
     type: 'job_assigned',
     title: 'New Job Assigned',
-    body: `You've been assigned to: ${jobTitle}`,
+    body,
     data: { jobId, relatedType: 'job' },
+    skipInAppNotification: options?.skipInAppNotification,
   });
 }
 
