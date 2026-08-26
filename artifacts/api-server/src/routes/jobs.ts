@@ -2238,9 +2238,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
+      const COMPLETED_STATUSES = new Set(['done', 'invoiced']);
       const todaysJobs = jobs
         .filter(job => {
           if (!job.scheduledAt) return false;
+          if (COMPLETED_STATUSES.has(job.status)) return false;
           const schedDate = new Date(job.scheduledAt);
           return schedDate >= today && schedDate < tomorrow;
         })
