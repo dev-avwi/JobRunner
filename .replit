@@ -28,6 +28,10 @@ args = "schema-imports"
 task = "workflow.run"
 args = "dispatch-skeleton-e2e"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "schema-drift-check"
+
 [[workflows.workflow]]
 name = "Expo"
 author = "agent"
@@ -58,6 +62,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd artifacts/jobrunner && PORT=22128 npx playwright test --config playwright.config.ts"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "schema-drift-check"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "SCHEMA_DRIFT_CHECK=1 pnpm --filter @workspace/api-server test --run src/__tests__/schemaDriftCheck.test.ts"
 
 [workflows.workflow.metadata]
 isValidation = true
