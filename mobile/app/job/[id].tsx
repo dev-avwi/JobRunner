@@ -2317,7 +2317,12 @@ export default function JobDetailScreen() {
   const [phases, setPhases] = useState<JobPhase[]>([]);
   const [isLoadingPhases, setIsLoadingPhases] = useState(false);
   const [phaseStatusLoading, setPhaseStatusLoading] = useState<Set<string>>(new Set());
-  const [expandedCompletedPhases, setExpandedCompletedPhases] = useState<Set<string>>(new Set());
+  // Stored in a ref so it survives tab switches without resetting; a version
+  // counter is the only trigger needed to re-render the phase list.
+  const expandedCompletedPhasesRef = useRef<Set<string>>(new Set());
+  // Version counter is never read directly — it just triggers a re-render when
+  // the ref's Set is mutated so the phase list reflects the new expand state.
+  const [, setExpandedCompletedPhasesVersion] = useState(0);
 
   // Job task cost data — pre-loaded at job scope so the profitability card can link to the Tasks tab
   type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
@@ -11902,7 +11907,7 @@ export default function JobDetailScreen() {
               const phaseOtherActive = isTimerForThisJob && !isActivePhase;
               const otherJobTimer = !!(activeTimer && !isTimerForThisJob);
               const isComplete = phase.status === 'complete';
-              const isCompletedExpanded = expandedCompletedPhases.has(phase.id);
+              const isCompletedExpanded = expandedCompletedPhasesRef.current.has(phase.id);
               const isInProgress = phase.status === 'in_progress';
 
               const statusMap: Record<string, { bg: string; border: string; text: string; label: string }> = {
@@ -11929,7 +11934,7 @@ export default function JobDetailScreen() {
                   <TouchableOpacity
                     key={phase.id}
                     style={cardStyle}
-                    onPress={() => setExpandedCompletedPhases(prev => { const next = new Set(prev); next.add(phase.id); return next; })}
+                    onPress={() => { expandedCompletedPhasesRef.current.add(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
                     activeOpacity={0.7}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 28, gap: spacing.sm }}>
@@ -11979,7 +11984,7 @@ export default function JobDetailScreen() {
                       {/* Collapse button for expanded complete phase */}
                       {isComplete && isCompletedExpanded && (
                         <TouchableOpacity
-                          onPress={() => setExpandedCompletedPhases(prev => { const next = new Set(prev); next.delete(phase.id); return next; })}
+                          onPress={() => { expandedCompletedPhasesRef.current.delete(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                           activeOpacity={0.7}
                         >
