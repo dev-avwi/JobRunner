@@ -9,7 +9,7 @@
  *  - Full-screen photo viewer on thumbnail tap
  *  - Weather icon glyph shown inline alongside the text label
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -133,6 +133,10 @@ export function SiteDiarySection({
   const [loadError, setLoadError] = useState(false);
   const confirm = useConfirmDialog();
 
+  // Ref-based in-flight guard — prevents duplicate fetches regardless of
+  // stale closure captures (state updates are async; refs are always current).
+  const loadingRef = useRef(false);
+
   // Full-screen photo viewer
   const [viewerPhotos, setViewerPhotos] = useState<string[]>([]);
   const [viewerIndex, setViewerIndex] = useState(0);
@@ -145,7 +149,10 @@ export function SiteDiarySection({
   }, []);
 
   const loadEntries = useCallback(async () => {
-    if (loading) return;
+    // Use a ref-based guard so the check is never stale regardless of which
+    // closure instance is called (e.g. from the Retry button or handleSectionOpen).
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     setLoadError(false);
     try {
@@ -161,15 +168,16 @@ export function SiteDiarySection({
       setLoadError(true);
       setLoaded(false);
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [jobId, loading]);
+  }, [jobId]);
 
-  // Auto-load diary entries on mount
+  // Auto-load diary entries on mount (and whenever jobId changes, e.g. deep-link
+  // navigation to a different job without unmounting the screen).
   useEffect(() => {
     loadEntries();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId]);
+  }, [loadEntries]);
 
   const handleToggle = useCallback(
     (id: string) => {
