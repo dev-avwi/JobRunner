@@ -2171,6 +2171,7 @@ export default function AdvancedDispatch() {
       <div className="flex flex-col flex-1 overflow-hidden">
       {/* ── Top bar ── */}
       <div className="border-b flex-shrink-0 px-4 py-2 flex items-center gap-3 flex-wrap">
+        <h1 className="sr-only">Dispatch</h1>
         <div className="flex items-center gap-2 flex-wrap flex-1">
           {/* View toggle */}
           <div className="flex items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5">
