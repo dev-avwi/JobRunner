@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,7 @@ function EquipmentStatusBadge({ status }: { status: string }) {
 export default function InventoryPage({ initialSection }: { initialSection?: Section }) {
   const [section, setSection] = useState<Section>(initialSection || "stock");
   const [location] = useLocation();
+  const equipmentOpenCreateRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (location === "/equipment") {
@@ -152,7 +153,7 @@ export default function InventoryPage({ initialSection }: { initialSection?: Sec
       />
 
       <div className="feed-card overflow-x-auto no-scrollbar mb-4">
-        <div className="p-1.5">
+        <div className="p-1.5 flex items-center justify-between gap-2">
           <Tabs value={section} onValueChange={(v) => setSection(v as Section)}>
             <TabsList className="w-full sm:w-auto">
               <TabsTrigger value="stock" className="gap-1.5">
@@ -165,10 +166,16 @@ export default function InventoryPage({ initialSection }: { initialSection?: Sec
               </TabsTrigger>
             </TabsList>
           </Tabs>
+          {section === "equipment" && (
+            <Button size="sm" onClick={() => equipmentOpenCreateRef.current?.()}>
+              <Plus className="h-4 w-4 mr-1.5" />
+              Add Equipment
+            </Button>
+          )}
         </div>
       </div>
 
-      {section === "stock" ? <StockSection /> : <EquipmentSection />}
+      {section === "stock" ? <StockSection /> : <EquipmentSection openCreateRef={equipmentOpenCreateRef} />}
     </PageShell>
   );
 }
@@ -656,7 +663,7 @@ function StockSection() {
   );
 }
 
-function EquipmentSection() {
+function EquipmentSection({ openCreateRef }: { openCreateRef?: React.MutableRefObject<(() => void) | null> }) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<EquipmentTab>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -798,6 +805,9 @@ function EquipmentSection() {
     setCreateDialogOpen(true);
   }
 
+  // Expose openCreate to the parent so it can place the button in the header row
+  if (openCreateRef) openCreateRef.current = openCreate;
+
   function openEdit(item: Equipment) {
     setFormData({
       name: item.name || "",
@@ -864,13 +874,6 @@ function EquipmentSection() {
 
   return (
     <>
-      <div className="flex items-center justify-end mb-4">
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-1.5" />
-          Add Equipment
-        </Button>
-      </div>
-
       {!isLoading && equipmentList.length > 0 && (
         <div className="animate-fade-up mb-4">
           <p className="ios-label mb-3">Overview</p>
