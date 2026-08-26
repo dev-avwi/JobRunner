@@ -2503,10 +2503,11 @@ export default function JobDetailView({
         </div>
 
         {/* ─── Two-column grid: main content + persistent sidebar ─── */}
+        {/* On the Phases tab the sidebar is hidden so the gantt/phases content gets full width */}
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 mt-6 space-y-6 lg:space-y-0">
 
           {/* ═══ MAIN CONTENT COLUMN ═══ */}
-          <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className={`${activeTab === 'phases' ? 'lg:col-span-12' : 'lg:col-span-8'} flex flex-col gap-6`}>
 
             {/* ── OVERVIEW TAB ── */}
             <TabsContent value="overview" className="mt-0 space-y-6">
@@ -3429,7 +3430,7 @@ export default function JobDetailView({
           </div>{/* end main column */}
 
           {/* ═══ PERSISTENT SIDEBAR ═══ */}
-          <div className="lg:col-span-4">
+          <div className={`lg:col-span-4 ${activeTab === 'phases' ? 'hidden' : ''}`}>
             <div className="space-y-4 lg:sticky lg:top-20">
 
               {/* ── CLIENT CARD ── */}
