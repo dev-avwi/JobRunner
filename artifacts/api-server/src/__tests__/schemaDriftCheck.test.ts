@@ -13,9 +13,10 @@
  *   developers who see undocumented columns in production.
  *
  * How it works:
- *   1. Extract the expected column names from the Drizzle table definitions
- *      (lib/db/src/schema/schema.ts) using drizzle-orm's getTableColumns().
- *   2. Query information_schema.columns for each key table in the live DB.
+ *   1. Import the full schema barrel (@workspace/db/schema) and filter for
+ *      every exported value that is a Drizzle table using isTable().  No
+ *      manual registration is needed — new tables are picked up automatically.
+ *   2. Query information_schema.columns for each table in the live DB.
  *   3. Fail with a descriptive error for every column that is declared in the
  *      schema but absent from the database (forward drift).
  *   4. Warn (but do not fail) for every column that exists in the database
@@ -38,54 +39,24 @@
  */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { getTableColumns } from "drizzle-orm";
+import { getTableColumns, isTable, type Table } from "drizzle-orm";
 import pg from "pg";
 import https from "node:https";
 import http from "node:http";
 
 // ── Schema imports ────────────────────────────────────────────────────────────
-// Import from "@workspace/db/schema" (not "@workspace/db") to get the Drizzle
-// table definitions WITHOUT triggering the lib/db/src/index.ts boot guard that
-// throws when DATABASE_URL is absent.  The "/schema" export path is declared in
-// lib/db/package.json and resolves to lib/db/src/schema/index.ts.
-import {
-  purchaseOrders,
-  purchaseOrderItems,
-  jobs,
-  jobPhases,
-  jobPhaseAssignments,
-  invoices,
-  invoiceLineItems,
-  quotes,
-  expenses,
-  timeEntries,
-  teamMembers,
-  businessSettings,
-  clients,
-  users,
-  notifications,
-} from "@workspace/db/schema";
+// Import the full schema barrel WITHOUT triggering the lib/db/src/index.ts
+// boot guard that throws when DATABASE_URL is absent.  The "/schema" export
+// path is declared in lib/db/package.json and resolves to
+// lib/db/src/schema/index.ts.
+import * as schemaModule from "@workspace/db/schema";
 
-// ── Tables under test ─────────────────────────────────────────────────────────
-// Add new tables here whenever a schema addition lands so that the drift check
-// covers them automatically going forward.
-const KEY_TABLES = [
-  purchaseOrders,
-  purchaseOrderItems,
-  jobs,
-  jobPhases,
-  jobPhaseAssignments,
-  invoices,
-  invoiceLineItems,
-  quotes,
-  expenses,
-  timeEntries,
-  teamMembers,
-  businessSettings,
-  clients,
-  users,
-  notifications,
-] as const;
+// ── Auto-discover all Drizzle tables ─────────────────────────────────────────
+// Filter every exported value through isTable() so that new tables added to
+// the schema are automatically covered without any manual registration step.
+const ALL_TABLES: Table[] = (Object.values(schemaModule) as unknown[]).filter(
+  (v): v is Table => isTable(v),
+);
 
 // ── Known intentional extra DB columns ───────────────────────────────────────
 // If a table has columns that deliberately live in the DB but are not (yet)
@@ -160,7 +131,7 @@ const dbUrl =
  * Returns the SQL table name for a Drizzle table object.
  * Drizzle stores it at table[Symbol.for("drizzle:Name")].
  */
-function getTableName(table: (typeof KEY_TABLES)[number]): string {
+function getTableName(table: Table): string {
   // drizzle-orm ≥0.29 stores the table name under this symbol
   return (table as unknown as Record<symbol, string>)[
     Symbol.for("drizzle:Name")
@@ -170,9 +141,7 @@ function getTableName(table: (typeof KEY_TABLES)[number]): string {
 /**
  * Returns the set of SQL column names declared in the Drizzle table definition.
  */
-function schemaColumnNames(
-  table: (typeof KEY_TABLES)[number],
-): Set<string> {
+function schemaColumnNames(table: Table): Set<string> {
   const cols = getTableColumns(table as Parameters<typeof getTableColumns>[0]);
   return new Set(Object.values(cols).map((c) => c.name));
 }
@@ -239,7 +208,7 @@ describe("schema drift check", () => {
     }
   });
 
-  for (const table of KEY_TABLES) {
+  for (const table of ALL_TABLES) {
     const tableName = getTableName(table);
 
     it(`${tableName}: all schema columns exist in the database`, async () => {
