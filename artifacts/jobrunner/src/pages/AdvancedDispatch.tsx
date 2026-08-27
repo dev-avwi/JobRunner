@@ -3631,10 +3631,12 @@ function JobView({
                         if (j.assignedTo === wid) return true;
                         return (j.assignments ?? []).some(a => a.memberId === wid && a.isActive);
                       });
+                      // For projects: show a dimmed background when this worker has no phases today
+                      const notScheduledToday = isProject && phaseBlocks.length === 0;
                       return (
                         <div
                           key={dayStr}
-                          className={`border-l min-h-[80px] p-1.5 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}
+                          className={`border-l min-h-[80px] p-1.5 ${isToday(day) ? "bg-primary/[0.03]" : ""} ${notScheduledToday && conflictJobs.length === 0 ? "bg-muted/20" : ""}`}
                         >
                           {/* Conflict ghost blocks */}
                           {conflictJobs.map(cj => (
@@ -3654,27 +3656,51 @@ function JobView({
                             const role = phaseForWorker(p, wid);
                             const psc = STATUS_COLORS[p.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
                             const assignedNames = (p.assignedUsers ?? []).map(u => u.name.split(" ")[0]).join(", ");
+                            const spanPos = getPhaseSpanPosition(p, day, days);
+                            const isMultiDay = spanPos !== "single";
+
+                            // For multi-day phases: bleed background to cell boundaries by overcoming
+                            // the parent cell's p-1.5 (6px) padding with negative margins.
+                            // All span segments share h-9 so the bar is a uniform height across days.
+                            const spanLayoutClass = !isMultiDay
+                              ? "px-1.5 rounded"
+                              : spanPos === "start"
+                                ? "pl-1.5 pr-0 -mr-1.5 rounded-l rounded-r-none h-9"
+                                : spanPos === "end"
+                                  ? "pl-1.5 pr-0 -ml-1.5 rounded-l-none rounded-r h-9"
+                                  : /* middle */ "-mx-1.5 rounded-none h-9";
+
                             return (
                               <div
                                 key={p.id}
                                 onClick={() => setSelectedPhase(p)}
-                                className={`rounded px-1.5 py-1 mb-0.5 cursor-pointer transition-all hover:brightness-95
+                                // border-t-2 with inline borderTopColor (Tailwind can't generate
+                                // `border-t-current/40` reliably, so use explicit style instead)
+                                style={isMultiDay ? { borderTopWidth: 2, borderTopStyle: "solid", borderTopColor: psc.solid } : undefined}
+                                className={`py-1 mb-0.5 cursor-pointer transition-all hover:brightness-95 overflow-hidden
+                                  ${spanLayoutClass}
                                   ${psc.bg}
-                                  ${role === "lead" ? "ring-1 ring-inset ring-current/20" : "ml-1 opacity-70"}`}
-                                title={`${p.name} — ${p.bookedHours ?? "?"} hrs`}
+                                  ${role === "lead" ? "ring-1 ring-inset ring-current/20" : "opacity-70"}`}
+                                title={`${p.name}${isMultiDay ? " (multi-day)" : ""} — ${p.bookedHours ?? "?"} hrs`}
                               >
-                                <p className="text-[10px] font-semibold truncate">{p.name}</p>
-                                {role === "lead" && (
-                                  <div className="flex items-center gap-1 mt-0.5">
-                                    <span className={`text-[9px] truncate capitalize ${psc.text}`}>{p.status?.replace(/_/g, " ")}</span>
-                                    {p.bookedHours && (
-                                      <span className="text-[9px] text-muted-foreground">{p.bookedHours}h</span>
+                                {/* Only show content on the start or single-day block */}
+                                {(spanPos === "single" || spanPos === "start") && (
+                                  <>
+                                    <p className="text-[10px] font-semibold truncate">{p.name}</p>
+                                    {role === "lead" && (
+                                      <div className="flex items-center gap-1 mt-0.5">
+                                        <span className={`text-[9px] truncate capitalize ${psc.text}`}>{p.status?.replace(/_/g, " ")}</span>
+                                        {p.bookedHours && (
+                                          <span className="text-[9px] text-muted-foreground">{p.bookedHours}h</span>
+                                        )}
+                                      </div>
                                     )}
-                                  </div>
+                                    {assignedNames && (
+                                      <p className="text-[9px] text-muted-foreground truncate">{assignedNames}</p>
+                                    )}
+                                  </>
                                 )}
-                                {assignedNames && (
-                                  <p className="text-[9px] text-muted-foreground truncate">{assignedNames}</p>
-                                )}
+                                {/* Middle/end continuation: empty bar — same height as start */}
                               </div>
                             );
                           }) : (
@@ -3710,9 +3736,17 @@ function JobView({
         <Dialog open={!!selectedPhase} onOpenChange={open => { if (!open) setSelectedPhase(null); }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-sm">{selectedPhase.name}</DialogTitle>
+              <div className="flex items-start gap-2">
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="text-sm leading-snug">{selectedPhase.name}</DialogTitle>
+                  {selectedPhase.phaseCode && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">{selectedPhase.phaseCode}</p>
+                  )}
+                </div>
+              </div>
             </DialogHeader>
             <div className="space-y-3">
+              {/* Status + hours */}
               <div className="flex items-center gap-2 flex-wrap">
                 {(() => {
                   const psc = STATUS_COLORS[selectedPhase.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
@@ -3723,9 +3757,14 @@ function JobView({
                   );
                 })()}
                 {selectedPhase.bookedHours && (
-                  <span className="text-xs text-muted-foreground">{selectedPhase.bookedHours} booked hours</span>
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Timer className="h-3.5 w-3.5" />
+                    {selectedPhase.bookedHours} booked hours
+                  </span>
                 )}
               </div>
+
+              {/* Date range */}
               {(selectedPhase.scheduledStart || selectedPhase.scheduledEnd) && (
                 <div className="flex items-center gap-1.5 text-sm">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -3736,9 +3775,11 @@ function JobView({
                   </span>
                 </div>
               )}
+
+              {/* Assigned crew */}
               {(selectedPhase.assignedUsers?.length ?? 0) > 0 && (
                 <div>
-                  <p className="text-xs font-semibold mb-1.5">Assigned team</p>
+                  <p className="text-xs font-semibold mb-1.5">Assigned crew</p>
                   <div className="space-y-1.5">
                     {(selectedPhase.assignedUsers ?? []).map(a => (
                       <div key={a.id} className="flex items-center gap-2">
@@ -3752,12 +3793,22 @@ function JobView({
                   </div>
                 </div>
               )}
+
+              {/* Notes */}
               {selectedPhase.description && (
                 <p className="text-sm text-muted-foreground">{selectedPhase.description}</p>
               )}
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedPhase(null)}>Close</Button>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                onClick={() => { setSelectedPhase(null); onJobClick(selectedPhase.jobId); }}
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Open job
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -3874,7 +3925,7 @@ function JobViewSidebar({
         {activeTab === "materials" && (
           <div className="p-2 space-y-1">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1">
-              Materials
+              Materials needed ({materials.length})
             </p>
             {materials.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-muted-foreground">
@@ -3882,19 +3933,34 @@ function JobViewSidebar({
                 <p className="text-xs">No materials listed</p>
               </div>
             ) : (
-              materials.map(mat => (
-                <div key={mat.id} className="px-2 py-1.5 rounded hover:bg-muted/30">
-                  <p className="text-[11px] font-medium truncate">{mat.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {mat.quantity && (
-                      <span className="text-[10px] text-muted-foreground">{mat.quantity} {mat.unit}</span>
-                    )}
-                    {mat.status && (
-                      <Badge variant="outline" className="text-[9px] h-3.5 px-1 capitalize">{mat.status}</Badge>
+              materials.map(mat => {
+                const matStatus = mat.status?.toLowerCase() ?? "needed";
+                const statusColor =
+                  matStatus === "delivered" || matStatus === "received" ? "text-green-600 dark:text-green-400" :
+                  matStatus === "shipped"  ? "text-blue-600 dark:text-blue-400" :
+                  matStatus === "ordered"  ? "text-amber-600 dark:text-amber-400" :
+                  "text-muted-foreground";
+                return (
+                  <div key={mat.id} className="px-2 py-1.5 rounded hover:bg-muted/30 border-b border-border/30 last:border-0">
+                    <p className="text-[11px] font-medium leading-snug">{mat.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {mat.quantity != null && (
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {mat.quantity}{mat.unit ? ` ${mat.unit}` : ""}
+                        </span>
+                      )}
+                      {mat.status && (
+                        <span className={`text-[10px] capitalize font-medium ${statusColor}`}>
+                          {mat.status}
+                        </span>
+                      )}
+                    </div>
+                    {mat.supplier && (
+                      <p className="text-[9px] text-muted-foreground/70 truncate mt-0.5">via {mat.supplier}</p>
                     )}
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -3917,4 +3983,35 @@ function phaseForWorker(phase: DispatchPhase, workerId: string): "lead" | "membe
   const user = (phase.assignedUsers ?? []).find(u => u.id === workerId);
   if (!user) return null;
   return user.isLead ? "lead" : "member";
+}
+
+/**
+ * For a multi-day phase rendered across a 7-day grid, returns whether the
+ * given day is the start, an interior day, the end, or the only day.
+ * Used to apply spanning visual styles (border-radius, etc.).
+ */
+function getPhaseSpanPosition(
+  phase: DispatchPhase,
+  day: Date,
+  weekDays: Date[],
+): "single" | "start" | "middle" | "end" {
+  if (!phase.scheduledStart || !phase.scheduledEnd) return "single";
+  const phaseStart = phase.scheduledStart.slice(0, 10);
+  const phaseEnd   = phase.scheduledEnd.slice(0, 10);
+  if (phaseStart === phaseEnd) return "single";
+
+  // Days in the current view that fall inside this phase
+  const activeDays = weekDays.filter(d => {
+    const ds = format(d, "yyyy-MM-dd");
+    return ds >= phaseStart && ds <= phaseEnd;
+  });
+  if (activeDays.length <= 1) return "single";
+
+  const dayStr = format(day, "yyyy-MM-dd");
+  const firstActive = format(activeDays[0], "yyyy-MM-dd");
+  const lastActive  = format(activeDays[activeDays.length - 1], "yyyy-MM-dd");
+
+  if (dayStr === firstActive) return "start";
+  if (dayStr === lastActive)  return "end";
+  return "middle";
 }
