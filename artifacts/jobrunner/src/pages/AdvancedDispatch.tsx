@@ -276,8 +276,10 @@ const GUTTER_WIDTH = 64;    // px — wider gutter for time labels
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string; solid: string }> = {
   pending:     { bg: "bg-amber-100 dark:bg-amber-900/30",  border: "border-amber-400", text: "text-amber-700 dark:text-amber-300",  solid: "#f59e0b" },
+  not_started: { bg: "bg-slate-100 dark:bg-slate-800/50",  border: "border-slate-300", text: "text-slate-600 dark:text-slate-400",  solid: "#94a3b8" },
   scheduled:   { bg: "bg-blue-100 dark:bg-blue-900/30",    border: "border-blue-400",  text: "text-blue-700 dark:text-blue-300",    solid: "#3b82f6" },
   in_progress: { bg: "bg-orange-100 dark:bg-orange-900/30",border: "border-orange-400",text: "text-orange-700 dark:text-orange-300",solid: "#f97316" },
+  complete:    { bg: "bg-green-100 dark:bg-green-900/30",  border: "border-green-400", text: "text-green-700 dark:text-green-300",  solid: "#22c55e" },
   done:        { bg: "bg-green-100 dark:bg-green-900/30",  border: "border-green-400", text: "text-green-700 dark:text-green-300",  solid: "#22c55e" },
   invoiced:    { bg: "bg-purple-100 dark:bg-purple-900/30",border: "border-purple-400",text: "text-purple-700 dark:text-purple-300",solid: "#a855f7" },
   cancelled:   { bg: "bg-slate-100 dark:bg-slate-800/50",  border: "border-slate-300", text: "text-slate-500",                      solid: "#94a3b8" },
@@ -3458,6 +3460,12 @@ function JobView({
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
+  const [phaseStatusFilter, setPhaseStatusFilter] = useState<"all" | "not_started" | "in_progress" | "complete" | "invoiced">("all");
+
+  // Reset filter when the selected job changes so stale state doesn't carry over
+  useEffect(() => {
+    setPhaseStatusFilter("all");
+  }, [selectedJobId]);
 
   const selectedJob = useMemo(
     () => allJobs.find(j => j.id === selectedJobId) ?? null,
@@ -3565,6 +3573,45 @@ function JobView({
           </div>
         </div>
 
+        {/* Phase status filter chips — project only */}
+        {isProject && (
+          <div className="flex items-center gap-1.5 px-4 py-2 border-b flex-shrink-0 bg-background overflow-x-auto">
+            {(
+              [
+                { key: "all",         label: "All" },
+                { key: "not_started", label: "Not Started" },
+                { key: "in_progress", label: "In Progress" },
+                { key: "complete",    label: "Complete" },
+                { key: "invoiced",    label: "Invoiced" },
+              ] as const
+            ).map(({ key, label }) => {
+              const active = phaseStatusFilter === key;
+              const sc = key === "all" ? null : (STATUS_COLORS[key] ?? null);
+              return (
+                <button
+                  key={key}
+                  onClick={() => setPhaseStatusFilter(key)}
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-all
+                    ${active
+                      ? sc
+                        ? `${sc.bg} ${sc.text} ring-1 ring-inset ring-current/20`
+                        : "bg-primary text-primary-foreground"
+                      : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                    }`}
+                >
+                  {sc && (
+                    <span
+                      className="inline-block h-1.5 w-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: sc.solid }}
+                    />
+                  )}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Timeline grid */}
         <ScrollArea className="flex-1">
           <div className="min-w-[700px]">
@@ -3624,7 +3671,11 @@ function JobView({
                     {/* Day cells */}
                     {days.map(day => {
                       const dayStr = day.toISOString();
-                      const phaseBlocks = jobPhasesList.filter(p => phaseOnDay(p, day) && phaseForWorker(p, wid) !== null);
+                      const phaseBlocks = jobPhasesList.filter(p =>
+                        phaseOnDay(p, day) &&
+                        phaseForWorker(p, wid) !== null &&
+                        (phaseStatusFilter === "all" || (p.status?.toLowerCase().replace(" ", "_")) === phaseStatusFilter)
+                      );
                       const conflictJobs = allDispatchJobs.filter(j => {
                         if (j.id === selectedJobId) return false;
                         if (!jobOnDate(j, day)) return false;
