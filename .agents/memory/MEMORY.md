@@ -13,3 +13,4 @@
 - [Live RBAC fixtures](live-rbac-fixtures.md) — seeded staff may authenticate without job assignments; create isolated assignments and clean them up for authorization checks.
 - [Mobile UI conventions skill](mobile-ui-conventions-skill.md) — TeamAvatar, multi-select bottom sheets, AppBottomSheet footer; load `.agents/skills/mobile-ui-conventions/SKILL.md` before any mobile screen work.
 - [Compliance payment holds](compliance-payment-holds.md) — financial compliance holds must be enforced at the final server-side capture point and recover safely from interrupted captures.
+- [No left-border colour tags on cards](no-left-border-colour-tags.md) — user strongly dislikes coloured left-border accent bars on cards; only use them if no other way to distinguish; prefer badges/icons instead.

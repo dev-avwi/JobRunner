@@ -2512,7 +2512,7 @@ export default function AdvancedDispatch() {
   }, [dispatchJobs, jobPickerSearch]);
 
   return (
-    <PageShell className="flex flex-col h-screen overflow-hidden pt-0 px-0" data-testid="dispatch-board">
+    <div className="w-full max-w-full flex flex-col h-screen overflow-hidden bg-background" data-testid="dispatch-board">
       {/* Full-screen CSS: hide app sidebar + header when dispatch-fullscreen class is active */}
       <style>{`
         body.dispatch-fullscreen [data-app-sidebar],
@@ -2930,7 +2930,7 @@ export default function AdvancedDispatch() {
           )}
         </div>
       </div>
-    </PageShell>
+    </div>
   );
 }
 
@@ -3510,7 +3510,7 @@ function JobView({
                   return (
                     <div key={day.toISOString()} className={`border-l min-h-[80px] p-1.5 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}>
                       {onDay && (
-                        <div className={`rounded px-1.5 py-1 border-l-[3px] ${scJob.bg} ${scJob.border}`}>
+                        <div className={`rounded px-1.5 py-1 ${scJob.bg}`}>
                           <p className="text-[10px] font-semibold truncate">{selectedJob.title}</p>
                           <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
                         </div>
@@ -3580,8 +3580,8 @@ function JobView({
                                 key={p.id}
                                 onClick={() => setSelectedPhase(p)}
                                 className={`rounded px-1.5 py-1 mb-0.5 cursor-pointer transition-all hover:brightness-95
-                                  ${psc.bg} ${psc.border}
-                                  ${role === "lead" ? "border-l-[3px]" : "border-l border-dashed ml-1 opacity-80"}`}
+                                  ${psc.bg}
+                                  ${role === "lead" ? "ring-1 ring-inset ring-current/20" : "ml-1 opacity-70"}`}
                                 title={`${p.name} — ${p.bookedHours ?? "?"} hrs`}
                               >
                                 <p className="text-[10px] font-semibold truncate">{p.name}</p>
@@ -3601,7 +3601,7 @@ function JobView({
                           }) : (
                             /* Service call: show the job block on its scheduled day */
                             jobOnDate(selectedJob, day) && (
-                              <div className={`rounded px-1.5 py-1 border-l-[3px] ${scJob.bg} ${scJob.border}`}>
+                              <div className={`rounded px-1.5 py-1 ${scJob.bg}`}>
                                 <p className="text-[10px] font-semibold truncate">{selectedJob.title}</p>
                                 <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
                               </div>
