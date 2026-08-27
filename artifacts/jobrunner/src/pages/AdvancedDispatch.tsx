@@ -871,6 +871,7 @@ function DayView({
   onAssignJobToSlot,
   showMaterials,
   onEquipmentAssign,
+  onMaterialAssign,
   jobEquipmentMap,
 }: {
   date: Date;
@@ -887,6 +888,7 @@ function DayView({
   onAssignJobToSlot: (jobId: string, memberId: string, hour: number) => void;
   showMaterials: boolean;
   onEquipmentAssign?: (equipmentId: string, jobId: string) => void;
+  onMaterialAssign?: (materialId: string, jobId: string) => void;
   jobEquipmentMap?: Map<string, DeployedEquipmentItem[]>;
 }) {
   const { toast } = useToast();
@@ -948,16 +950,18 @@ function DayView({
     e.preventDefault();
     const jobId = e.dataTransfer.getData("jobId");
     const equipmentId = e.dataTransfer.getData("equipmentId");
+    const materialId = e.dataTransfer.getData("materialId");
 
-    if (equipmentId) {
-      // Equipment dropped onto a time slot — find the job in that slot
+    if (equipmentId || materialId) {
+      // Resource dropped onto a time slot — find the nearest job in that slot
       const slotJobs = jobsByMember.get(memberId) ?? [];
       const targetJob = slotJobs.find(j => {
         const { hour: jh } = parseJobTime(j.scheduledTime, j.scheduledAt);
         return Math.abs(jh - hour) <= 1;
       }) ?? slotJobs[0];
-      if (targetJob && onEquipmentAssign) {
-        onEquipmentAssign(equipmentId, targetJob.id);
+      if (targetJob) {
+        if (equipmentId && onEquipmentAssign) onEquipmentAssign(equipmentId, targetJob.id);
+        if (materialId && onMaterialAssign) onMaterialAssign(materialId, targetJob.id);
       }
       setDragOverCell(null);
       return;
@@ -980,17 +984,20 @@ function DayView({
     }
     setDragOverCell(null);
     setDraggingJobId(null);
-  }, [onReschedule, leaveRecords, date, workers, toast, jobsByMember, onEquipmentAssign]);
+  }, [onReschedule, leaveRecords, date, workers, toast, jobsByMember, onEquipmentAssign, onMaterialAssign]);
 
   const handleJobBlockDrop = useCallback((jobId: string, e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     const equipmentId = e.dataTransfer.getData("equipmentId");
+    const materialId = e.dataTransfer.getData("materialId");
     if (equipmentId && onEquipmentAssign) {
       onEquipmentAssign(equipmentId, jobId);
+    } else if (materialId && onMaterialAssign) {
+      onMaterialAssign(materialId, jobId);
     }
     setEquipDragOverJobId(null);
-  }, [onEquipmentAssign]);
+  }, [onEquipmentAssign, onMaterialAssign]);
 
   const materialsNeeded = resources?.materialsNeeded ?? [];
   const [checkedMaterials, setCheckedMaterials] = useState<Set<string>>(new Set());
@@ -1159,17 +1166,35 @@ function DayView({
                               {height > 50 && (
                                 <p className="text-[10px] text-muted-foreground/80 truncate mt-auto">{timeLabel}</p>
                               )}
-                              {/* Equipment chips — sourced from resources.deployedEquipment map */}
-                              {height > 60 && (jobEquipmentMap?.get(job.id)?.length ?? 0) > 0 && (
-                                <div className="flex flex-wrap gap-0.5 mt-0.5">
-                                  {(jobEquipmentMap!.get(job.id)!).slice(0, 2).map(eq => (
-                                    <span key={eq.equipmentId} className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-black/10 dark:bg-white/10 text-[8px] font-medium truncate max-w-[70px]">
-                                      <Truck className="h-2 w-2 flex-shrink-0" />
-                                      {eq.equipmentName}
-                                    </span>
-                                  ))}
-                                </div>
-                              )}
+                              {/* Equipment & material chips — max 2 visible, +N more for overflow */}
+                              {height > 60 && (() => {
+                                const equipItems = jobEquipmentMap?.get(job.id) ?? [];
+                                const matItems = (resources?.materialsNeeded ?? []).filter(m => m.jobId === job.id);
+                                const allChips = [
+                                  ...equipItems.map(eq => ({ key: `e-${eq.equipmentId}`, isEquip: true as const, name: eq.equipmentName })),
+                                  ...matItems.map(m => ({ key: `m-${m.id}`, isEquip: false as const, name: m.name })),
+                                ];
+                                if (allChips.length === 0) return null;
+                                const visibleChips = allChips.slice(0, 2);
+                                const overflow = allChips.length - visibleChips.length;
+                                return (
+                                  <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                    {visibleChips.map(chip => (
+                                      <span key={chip.key} className="inline-flex items-center gap-0.5 px-1 py-0 rounded bg-black/10 dark:bg-white/10 text-[8px] font-medium truncate max-w-[70px]">
+                                        {chip.isEquip
+                                          ? <Truck className="h-2 w-2 flex-shrink-0" />
+                                          : <Package className="h-2 w-2 flex-shrink-0" />}
+                                        {chip.name}
+                                      </span>
+                                    ))}
+                                    {overflow > 0 && (
+                                      <span className="inline-flex items-center px-1 py-0 rounded bg-black/10 dark:bg-white/10 text-[8px] font-medium">
+                                        +{overflow}
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
                         );
@@ -1859,6 +1884,7 @@ function ResourceSidebar({
 }) {
   const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">(defaultTab ?? "workers");
   const [draggingEquipId, setDraggingEquipId] = useState<string | null>(null);
+  const [draggingMatId, setDraggingMatId] = useState<string | null>(null);
 
   const workerStateMap = useMemo(() => {
     const m = new Map<string, WorkerState>();
@@ -2030,22 +2056,41 @@ function ResourceSidebar({
                 <p className="text-xs">No materials needed</p>
               </div>
             ) : (
-              (resources?.materialsNeeded ?? []).map(mat => (
-                <div key={mat.id} className="px-2 py-1.5 rounded hover:bg-muted/30">
-                  <p className="text-[11px] font-medium truncate">{mat.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    {mat.quantity && (
-                      <span className="text-[10px] text-muted-foreground">{mat.quantity} {mat.unit}</span>
-                    )}
-                    {mat.jobTitle && (
-                      <span className="text-[10px] text-muted-foreground truncate">For: {mat.jobTitle}</span>
-                    )}
+              <>
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-1">
+                  Materials — drag onto a job
+                </p>
+                {(resources?.materialsNeeded ?? []).map(mat => (
+                  <div
+                    key={mat.id}
+                    draggable
+                    onDragStart={e => {
+                      e.dataTransfer.setData("materialId", mat.id);
+                      e.dataTransfer.setData("materialName", mat.name);
+                      setDraggingMatId(mat.id);
+                    }}
+                    onDragEnd={() => setDraggingMatId(null)}
+                    className={`flex items-start gap-2 px-2 py-1.5 rounded hover:bg-muted/30 cursor-grab active:cursor-grabbing transition-opacity
+                      ${draggingMatId === mat.id ? "opacity-40" : ""}`}
+                  >
+                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/50 flex-shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium truncate">{mat.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {mat.quantity && (
+                          <span className="text-[10px] text-muted-foreground">{mat.quantity} {mat.unit}</span>
+                        )}
+                        {mat.jobTitle && (
+                          <span className="text-[10px] text-muted-foreground truncate">For: {mat.jobTitle}</span>
+                        )}
+                      </div>
+                      {mat.status && (
+                        <Badge variant="outline" className="text-[9px] h-3.5 px-1 mt-0.5 capitalize">{mat.status}</Badge>
+                      )}
+                    </div>
                   </div>
-                  {mat.status && (
-                    <Badge variant="outline" className="text-[9px] h-3.5 px-1 mt-0.5 capitalize">{mat.status}</Badge>
-                  )}
-                </div>
-              ))
+                ))}
+              </>
             )}
           </div>
         )}
@@ -2256,8 +2301,19 @@ export default function AdvancedDispatch() {
     queryKey: ["/api/team/members"],
   });
 
+  // Resources are scoped to the currently viewed date so chips and sidebar items
+  // match the jobs on the board even when navigating away from today.
+  // Key uses a structured tuple [baseKey, date] so invalidateQueries({ exact: false })
+  // on the base key flushes all dated variants immediately after mutations.
+  const resourcesDateStr = (view === "day" || view === "map")
+    ? format(currentDate, "yyyy-MM-dd")
+    : format(weekStart, "yyyy-MM-dd");
+  const resourcesBaseKey = "/api/dispatch/resources";
+  const resourcesUrl = `${resourcesBaseKey}?date=${resourcesDateStr}`;
+
   const { data: resources, isLoading: resourcesLoading } = useQuery<DispatchResources>({
-    queryKey: ["/api/dispatch/resources"],
+    queryKey: [resourcesBaseKey, resourcesDateStr],
+    queryFn: () => fetch(resourcesUrl, { credentials: "include" }).then(r => r.json()),
     refetchInterval: 60_000,
   });
 
@@ -2326,6 +2382,19 @@ export default function AdvancedDispatch() {
     },
     onError: (err: any) => {
       toast({ title: "Unlink failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const materialAssignMutation = useMutation({
+    mutationFn: async ({ materialId, jobId }: { materialId: string; jobId: string }) => {
+      return apiRequest("POST", `/api/dispatch/materials/${materialId}/assign`, { jobId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dispatch/resources"] });
+      toast({ title: "Material moved to job" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Material assignment failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -2400,6 +2469,10 @@ export default function AdvancedDispatch() {
   const handleEquipmentUnassign = useCallback((assignmentId: string, jobId: string) => {
     equipmentUnassignMutation.mutate({ assignmentId, jobId });
   }, [equipmentUnassignMutation]);
+
+  const handleMaterialAssign = useCallback((materialId: string, jobId: string) => {
+    materialAssignMutation.mutate({ materialId, jobId });
+  }, [materialAssignMutation]);
 
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
@@ -2835,6 +2908,7 @@ export default function AdvancedDispatch() {
               onAssignJobToSlot={handleAssignJobToSlotDay}
               showMaterials={showMaterials}
               onEquipmentAssign={handleEquipmentAssign}
+              onMaterialAssign={handleMaterialAssign}
               jobEquipmentMap={jobEquipmentMap}
             />
           ) : view === "week" ? (

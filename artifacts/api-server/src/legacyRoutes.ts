@@ -16572,14 +16572,19 @@ Be specific about materials, colors, and features that would be included.`
       const userContext = await getUserContext(req.userId);
       const userId = userContext.effectiveUserId;
       const allJobs = await storage.getJobs(userId);
+
+      // Accept ?date=YYYY-MM-DD to scope resources to the selected dispatch date.
+      // Falls back to today when absent or invalid so existing callers are unaffected.
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];
+      const rawDate = req.query.date as string | undefined;
+      const targetDateStr = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : todayStr;
 
       const activeJobs = allJobs.filter((j: any) => {
         const status = (j.status || '').toLowerCase();
         if (['done', 'completed', 'cancelled', 'archived'].includes(status)) return false;
         if (!j.scheduledAt) return status === 'in_progress';
-        return new Date(j.scheduledAt).toISOString().split('T')[0] === todayStr || status === 'in_progress';
+        return new Date(j.scheduledAt).toISOString().split('T')[0] === targetDateStr || status === 'in_progress';
       });
 
       const equipmentAssignments: any[] = [];
@@ -16677,6 +16682,45 @@ Be specific about materials, colors, and features that would be included.`
     } catch (error: any) {
       console.error("Error fetching dispatch resources:", error);
       res.status(500).json({ error: "Failed to fetch dispatch resources" });
+    }
+  });
+
+  // ===== DISPATCH MATERIAL ASSIGN ENDPOINT =====
+  // Reassigns an existing job_materials record to a different job by updating its jobId.
+  // Used by the dispatch board when a dispatcher drags a material chip onto a different job block.
+  app.post("/api/dispatch/materials/:materialId/assign", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const userId = userContext.effectiveUserId;
+      const { materialId } = req.params;
+      const { jobId } = req.body;
+      if (!jobId || typeof jobId !== "string") {
+        return res.status(400).json({ error: "jobId is required" });
+      }
+      // Verify the target job belongs to this business
+      const job = await storage.getJob(jobId, userId);
+      if (!job) {
+        return res.status(404).json({ error: "Job not found" });
+      }
+      // Fetch the current record to detect whether the job is actually changing.
+      // Only clear phaseId on a cross-job move — a phase belongs to the source job
+      // and would create invalid attribution on the target. Same-job drops preserve
+      // any existing phase attribution.
+      const existing = await storage.getJobMaterial(materialId, userId);
+      if (!existing) {
+        return res.status(404).json({ error: "Material not found" });
+      }
+      const isCrossJobMove = existing.jobId !== jobId;
+      const updatePayload: Parameters<typeof storage.updateJobMaterial>[2] = { jobId };
+      if (isCrossJobMove) (updatePayload as any).phaseId = null;
+      const updated = await storage.updateJobMaterial(materialId, userId, updatePayload);
+      if (!updated) {
+        return res.status(404).json({ error: "Material not found" });
+      }
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error assigning material to job:", error);
+      res.status(500).json({ error: "Failed to assign material to job" });
     }
   });
 
