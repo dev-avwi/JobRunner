@@ -3626,6 +3626,111 @@ function JobView({
               ))}
             </div>
 
+            {/* Phases summary row — projects only, one Gantt-style bar per phase above the worker rows */}
+            {isProject && (() => {
+              const weekStartStr = format(days[0], "yyyy-MM-dd");
+              const weekEndStr   = format(days[6], "yyyy-MM-dd");
+
+              const scheduledPhases = jobPhasesList
+                .filter(p => p.scheduledStart && p.scheduledEnd)
+                .filter(p => {
+                  const ps = p.scheduledStart!.slice(0, 10);
+                  const pe = p.scheduledEnd!.slice(0, 10);
+                  return ps <= weekEndStr && pe >= weekStartStr;
+                })
+                .sort((a, b) => (a.scheduledStart ?? "").localeCompare(b.scheduledStart ?? ""));
+
+              if (scheduledPhases.length === 0) return null;
+
+              // Assign non-overlapping lanes (greedy)
+              type Lane = { endCol: number };
+              const lanes: Lane[] = [];
+              const phaseLayout = scheduledPhases.map(p => {
+                const startCol = (() => {
+                  const ps = p.scheduledStart!.slice(0, 10);
+                  for (let i = 0; i < 7; i++) {
+                    if (format(days[i], "yyyy-MM-dd") >= ps) return i;
+                  }
+                  return 6;
+                })();
+                const endCol = (() => {
+                  const pe = p.scheduledEnd!.slice(0, 10);
+                  for (let i = 6; i >= 0; i--) {
+                    if (format(days[i], "yyyy-MM-dd") <= pe) return i;
+                  }
+                  return startCol;
+                })();
+                const laneIdx = lanes.findIndex(l => l.endCol < startCol);
+                if (laneIdx === -1) {
+                  lanes.push({ endCol });
+                  return { phase: p, startCol, endCol, laneIdx: lanes.length - 1 };
+                }
+                lanes[laneIdx].endCol = endCol;
+                return { phase: p, startCol, endCol, laneIdx };
+              });
+
+              const barH    = 26; // px — height of each phase bar
+              const barGap  = 4;  // px — vertical gap between bar and row edge / next bar
+              const rowH    = lanes.length * (barH + barGap) + barGap;
+
+              return (
+                <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b" style={{ height: rowH }}>
+                  {/* Label */}
+                  <div className="px-2 border-r bg-muted/5 flex items-center">
+                    <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Phases</p>
+                  </div>
+
+                  {/* 7-column area: day column dividers as background, bars overlaid */}
+                  <div className="col-span-7 relative" style={{ height: rowH }}>
+                    {/* Column background stripes */}
+                    <div className="absolute inset-0 grid grid-cols-7 pointer-events-none">
+                      {days.map(day => (
+                        <div
+                          key={day.toISOString()}
+                          className={`border-l h-full ${isToday(day) ? "bg-primary/[0.03]" : ""}`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Phase bars */}
+                    {phaseLayout.map(({ phase, startCol, endCol, laneIdx }) => {
+                      const psc     = STATUS_COLORS[phase.status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
+                      const leftPct = (startCol / 7) * 100;
+                      const widPct  = ((endCol - startCol + 1) / 7) * 100;
+                      const topPx   = barGap + laneIdx * (barH + barGap);
+                      const dateRange = [
+                        phase.scheduledStart ? format(parseISO(phase.scheduledStart), "d MMM") : "",
+                        phase.scheduledEnd   ? format(parseISO(phase.scheduledEnd),   "d MMM") : "",
+                      ].filter(Boolean).join(" – ");
+
+                      return (
+                        <div
+                          key={phase.id}
+                          onClick={() => setSelectedPhase(phase)}
+                          title={`${phase.name}${dateRange ? ` (${dateRange})` : ""}`}
+                          className={`absolute rounded cursor-pointer hover:brightness-95 transition-all overflow-hidden flex items-center gap-1.5 px-2 ${psc.bg}`}
+                          style={{
+                            left:   `calc(${leftPct}% + 3px)`,
+                            width:  `calc(${widPct}% - 6px)`,
+                            top:    topPx,
+                            height: barH,
+                            borderTopWidth:  2,
+                            borderTopStyle:  "solid",
+                            borderTopColor:  psc.solid,
+                          }}
+                        >
+                          <p className="text-[10px] font-semibold truncate flex-1 min-w-0">{phase.name}</p>
+                          <span className={`text-[9px] capitalize shrink-0 ${psc.text}`}>
+                            {phase.status?.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Worker rows */}
             {jobWorkers.length === 0 && !isProject ? (
               /* Service call with no team members — show a single job row */
