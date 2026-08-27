@@ -1,19 +1,28 @@
 /**
  * Schema drift check — catches columns that exist in the Drizzle schema but
- * are missing from the live database table.
+ * are missing from the live database table, AND columns that exist in the live
+ * database but are absent from the Drizzle schema definition.
  *
  * Why this matters:
- *   The receipt_url and sent_at columns were missing from purchase_orders in
- *   production while being present in the schema, causing 500 errors on every
- *   request that touched those columns.  This test catches that class of
- *   problem before deployment.
+ *   Forward drift (schema → DB): The receipt_url and sent_at columns were
+ *   missing from purchase_orders in production while being present in the
+ *   schema, causing 500 errors on every request that touched those columns.
+ *
+ *   Reverse drift (DB → schema): Columns orphaned in the DB after a schema
+ *   rename or removal silently waste storage space and confuse future
+ *   developers who see undocumented columns in production.
  *
  * How it works:
  *   1. Extract the expected column names from the Drizzle table definitions
  *      (lib/db/src/schema/schema.ts) using drizzle-orm's getTableColumns().
  *   2. Query information_schema.columns for each key table in the live DB.
  *   3. Fail with a descriptive error for every column that is declared in the
- *      schema but absent from the database.
+ *      schema but absent from the database (forward drift).
+ *   4. Warn (but do not fail) for every column that exists in the database
+ *      but is absent from the Drizzle schema (reverse drift).  These show up
+ *      as console warnings so they don't block deploys caused by safe legacy
+ *      columns.  Known intentional extras can be suppressed per-table via
+ *      KNOWN_EXTRA_DB_COLUMNS below.
  *
  * When to run:
  *   This test intentionally does NOT run as part of the regular unit-test
@@ -75,6 +84,18 @@ const KEY_TABLES = [
   users,
   notifications,
 ] as const;
+
+// ── Known intentional extra DB columns ───────────────────────────────────────
+// If a table has columns that deliberately live in the DB but are not (yet)
+// reflected in the Drizzle schema — e.g. added directly via a migration for a
+// feature not yet merged — list them here to suppress the reverse-drift warning
+// for that specific column.  Remove entries once the schema catches up.
+//
+// Format:  tableName → Set of column names to ignore
+const KNOWN_EXTRA_DB_COLUMNS: Record<string, Set<string>> = {
+  // Example (uncomment and adapt as needed):
+  // purchase_orders: new Set(["legacy_ref_code"]),
+};
 
 // ── DB connection ─────────────────────────────────────────────────────────────
 
@@ -196,6 +217,72 @@ describe("schema drift check", () => {
 
       // All declared columns are present — pass.
       expect(missing).toHaveLength(0);
+    });
+
+    it(`${tableName}: database has no unexpected columns beyond the schema definition`, async () => {
+      if (!ENABLED) {
+        return;
+      }
+      if (!dbUrl) {
+        console.warn(
+          `[schema-drift] Skipping ${tableName}: no DATABASE_URL / NEON_DATABASE_URL`,
+        );
+        return;
+      }
+
+      const client = await pool!.connect();
+      let dbColumns: Set<string>;
+
+      try {
+        const result = await client.query<{ column_name: string }>(
+          `SELECT column_name
+             FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name   = $1`,
+          [tableName],
+        );
+
+        if (result.rows.length === 0) {
+          // Forward-drift test already handles the missing-table case with an
+          // error; silently skip the reverse check to avoid a duplicate report.
+          return;
+        }
+
+        dbColumns = new Set(result.rows.map((r) => r.column_name));
+      } finally {
+        client.release();
+      }
+
+      const expected = schemaColumnNames(table);
+      const allowlist = KNOWN_EXTRA_DB_COLUMNS[tableName] ?? new Set<string>();
+
+      const orphaned: string[] = [];
+      for (const col of dbColumns) {
+        if (!expected.has(col) && !allowlist.has(col)) {
+          orphaned.push(col);
+        }
+      }
+
+      if (orphaned.length > 0) {
+        // Surface as a warning, not a test failure, so that safe legacy
+        // columns don't block deploys.  The developer should either remove the
+        // column via a migration or add it to KNOWN_EXTRA_DB_COLUMNS above.
+        console.warn(
+          `[schema-drift] Reverse drift detected in "${tableName}".\n` +
+            `The following column(s) exist in the live database but are NOT ` +
+            `declared in the Drizzle schema:\n` +
+            orphaned.map((c) => `  • ${c}`).join("\n") +
+            `\n\nIf intentional, add them to KNOWN_EXTRA_DB_COLUMNS in ` +
+            `schemaDriftCheck.test.ts to suppress this warning.\n` +
+            `If the column was renamed or removed, drop it from the DB:\n` +
+            orphaned
+              .map((c) => `  ALTER TABLE ${tableName} DROP COLUMN IF EXISTS ${c};`)
+              .join("\n"),
+        );
+      }
+
+      // Reverse drift is a warning only — always pass.
+      expect(true).toBe(true);
     });
   }
 });
