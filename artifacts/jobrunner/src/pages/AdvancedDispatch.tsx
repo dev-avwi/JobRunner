@@ -11,6 +11,8 @@ import { PageShell } from "@/components/ui/page-shell";
 import { UserAvatar } from "@/components/UserAvatar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { getPhaseSpanPosition } from "@/lib/phaseSpan";
+export { getPhaseSpanPosition };
 import { useTheme } from "@/components/ThemeProvider";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -3776,11 +3778,20 @@ function JobView({
                     {/* Day cells */}
                     {days.map(day => {
                       const dayStr = day.toISOString();
-                      const phaseBlocks = jobPhasesList.filter(p =>
-                        phaseOnDay(p, day) &&
-                        phaseForWorker(p, wid) !== null &&
-                        (phaseStatusFilter === "all" || (p.status?.toLowerCase().replace(" ", "_")) === phaseStatusFilter)
-                      );
+                      const phaseBlocks = jobPhasesList.filter(p => {
+                        // Phases without scheduled dates are treated as single-day blocks
+                        // anchored to the first day of the current view so they remain
+                        // visible (instead of being silently hidden).
+                        const onDay =
+                          !p.scheduledStart || !p.scheduledEnd
+                            ? format(day, "yyyy-MM-dd") === format(days[0], "yyyy-MM-dd")
+                            : phaseOnDay(p, day);
+                        return (
+                          onDay &&
+                          phaseForWorker(p, wid) !== null &&
+                          (phaseStatusFilter === "all" || (p.status?.toLowerCase().replace(" ", "_")) === phaseStatusFilter)
+                        );
+                      });
                       const conflictJobs = allDispatchJobs.filter(j => {
                         if (j.id === selectedJobId) return false;
                         if (!jobOnDate(j, day)) return false;
@@ -3829,6 +3840,7 @@ function JobView({
                             return (
                               <div
                                 key={p.id}
+                                data-testid={`job-view-phase-${p.id}`}
                                 onClick={() => setSelectedPhase(p)}
                                 // border-t-2 with inline borderTopColor (Tailwind can't generate
                                 // `border-t-current/40` reliably, so use explicit style instead)
@@ -4139,35 +4151,4 @@ function phaseForWorker(phase: DispatchPhase, workerId: string): "lead" | "membe
   const user = (phase.assignedUsers ?? []).find(u => u.id === workerId);
   if (!user) return null;
   return user.isLead ? "lead" : "member";
-}
-
-/**
- * For a multi-day phase rendered across a 7-day grid, returns whether the
- * given day is the start, an interior day, the end, or the only day.
- * Used to apply spanning visual styles (border-radius, etc.).
- */
-function getPhaseSpanPosition(
-  phase: DispatchPhase,
-  day: Date,
-  weekDays: Date[],
-): "single" | "start" | "middle" | "end" {
-  if (!phase.scheduledStart || !phase.scheduledEnd) return "single";
-  const phaseStart = phase.scheduledStart.slice(0, 10);
-  const phaseEnd   = phase.scheduledEnd.slice(0, 10);
-  if (phaseStart === phaseEnd) return "single";
-
-  // Days in the current view that fall inside this phase
-  const activeDays = weekDays.filter(d => {
-    const ds = format(d, "yyyy-MM-dd");
-    return ds >= phaseStart && ds <= phaseEnd;
-  });
-  if (activeDays.length <= 1) return "single";
-
-  const dayStr = format(day, "yyyy-MM-dd");
-  const firstActive = format(activeDays[0], "yyyy-MM-dd");
-  const lastActive  = format(activeDays[activeDays.length - 1], "yyyy-MM-dd");
-
-  if (dayStr === firstActive) return "start";
-  if (dayStr === lastActive)  return "end";
-  return "middle";
 }
