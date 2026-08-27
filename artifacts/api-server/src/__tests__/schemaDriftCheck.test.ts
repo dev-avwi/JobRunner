@@ -40,6 +40,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getTableColumns } from "drizzle-orm";
 import pg from "pg";
+import https from "node:https";
+import http from "node:http";
 
 // ── Schema imports ────────────────────────────────────────────────────────────
 // Import from "@workspace/db/schema" (not "@workspace/db") to get the Drizzle
@@ -97,6 +99,52 @@ const KNOWN_EXTRA_DB_COLUMNS: Record<string, Set<string>> = {
   // purchase_orders: new Set(["legacy_ref_code"]),
 };
 
+// ── Slack notification helper ─────────────────────────────────────────────────
+/**
+ * Posts a plain-text message to the SLACK_AI_LOGS_WEBHOOK URL (if set).
+ * Uses only Node built-ins so there is no extra dependency.
+ */
+function postToSlack(text: string): Promise<void> {
+  const webhookUrl = process.env.SLACK_AI_LOGS_WEBHOOK;
+  if (!webhookUrl) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const body = JSON.stringify({ text });
+    const parsed = new URL(webhookUrl);
+    const transport = parsed.protocol === "https:" ? https : http;
+    const req = transport.request(
+      {
+        hostname: parsed.hostname,
+        path: parsed.pathname + parsed.search,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(body),
+        },
+      },
+      (res) => {
+        res.resume(); // drain the response
+        if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Slack webhook returned HTTP ${res.statusCode}`));
+        }
+      },
+    );
+    req.on("error", reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+// ── Reverse-drift accumulator ─────────────────────────────────────────────────
+// Populated during the test run; flushed to Slack in afterAll.
+const reverseDriftFindings: Array<{
+  table: string;
+  orphaned: string[];
+}> = [];
+
 // ── DB connection ─────────────────────────────────────────────────────────────
 
 // Gate: only run against a live database when SCHEMA_DRIFT_CHECK=1.
@@ -144,6 +192,48 @@ describe("schema drift check", () => {
   });
 
   afterAll(async () => {
+    // ── Post reverse-drift summary to Slack ──────────────────────────────────
+    if (ENABLED && reverseDriftFindings.length > 0) {
+      const totalCols = reverseDriftFindings.reduce(
+        (n, f) => n + f.orphaned.length,
+        0,
+      );
+
+      const tableLines = reverseDriftFindings
+        .map((f) => {
+          const drops = f.orphaned
+            .map(
+              (c) =>
+                `  \`ALTER TABLE ${f.table} DROP COLUMN IF EXISTS ${c};\``,
+            )
+            .join("\n");
+          return (
+            `*${f.table}* — ${f.orphaned.length} orphaned column(s): ` +
+            f.orphaned.map((c) => `\`${c}\``).join(", ") +
+            `\n${drops}`
+          );
+        })
+        .join("\n\n");
+
+      const message =
+        `:warning: *Schema reverse-drift detected* (${reverseDriftFindings.length} table(s), ${totalCols} orphaned column(s))\n\n` +
+        `These columns exist in the live database but are *not* declared in the Drizzle schema. ` +
+        `Drop them via a migration or add them to \`KNOWN_EXTRA_DB_COLUMNS\` to suppress.\n\n` +
+        tableLines;
+
+      try {
+        await postToSlack(message);
+        console.log(
+          `[schema-drift] Reverse-drift summary posted to Slack (${reverseDriftFindings.length} table(s) affected).`,
+        );
+      } catch (err) {
+        console.warn(
+          `[schema-drift] Failed to post reverse-drift summary to Slack:`,
+          err,
+        );
+      }
+    }
+
     if (pool) {
       await pool.end();
     }
@@ -264,9 +354,11 @@ describe("schema drift check", () => {
       }
 
       if (orphaned.length > 0) {
-        // Surface as a warning, not a test failure, so that safe legacy
-        // columns don't block deploys.  The developer should either remove the
-        // column via a migration or add it to KNOWN_EXTRA_DB_COLUMNS above.
+        // Accumulate findings for the Slack summary posted in afterAll.
+        reverseDriftFindings.push({ table: tableName, orphaned });
+
+        // Also surface as a console warning so it's visible in CI/local logs
+        // without waiting for the afterAll flush.
         console.warn(
           `[schema-drift] Reverse drift detected in "${tableName}".\n` +
             `The following column(s) exist in the live database but are NOT ` +
