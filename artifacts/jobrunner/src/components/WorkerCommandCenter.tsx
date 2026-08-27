@@ -422,10 +422,7 @@ export default function WorkerCommandCenter({ memberId, open, onOpenChange }: Wo
                 <div className="grid grid-cols-3 gap-3">
                   <div 
                     className="rounded-xl p-4 text-center relative overflow-hidden"
-                    style={{ 
-                      backgroundColor: `${themeColor}10`,
-                      borderLeft: `3px solid ${themeColor}`
-                    }}
+                    style={{ backgroundColor: `${themeColor}10` }}
                   >
                     <div 
                       className="text-3xl font-bold" 
@@ -444,13 +441,13 @@ export default function WorkerCommandCenter({ memberId, open, onOpenChange }: Wo
                       </div>
                     )}
                   </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center border-l-3 border-blue-500">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-center">
                     <div className="text-3xl font-bold text-blue-600 dark:text-blue-400" data-testid="text-active-jobs">
                       {data.stats.activeJobs}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">Active Jobs</div>
                   </div>
-                  <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center border-l-3 border-emerald-500">
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 text-center">
                     <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400" data-testid="text-completed-jobs">
                       {data.stats.completedJobs}
                     </div>

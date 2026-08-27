@@ -210,7 +210,6 @@ function TodayView({
                   right: "12px",
                   height: `${height}px`,
                   backgroundColor: "hsl(var(--trade) / 0.13)",
-                  borderLeft: "3px solid hsl(var(--trade))",
                 }}
                 onClick={() => onViewJob?.(job.id)}
                 data-testid={`today-job-${job.id}`}

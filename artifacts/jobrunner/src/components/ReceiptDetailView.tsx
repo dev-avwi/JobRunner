@@ -657,29 +657,33 @@ export default function ReceiptDetailView({ receiptId, onBack }: ReceiptDetailVi
 
           {invoice && (
             <div 
-              className="p-4 border rounded-md border-l-4 mb-4 cursor-pointer hover-elevate transition-colors" 
-              style={{ borderLeftColor: brandColor }}
+              className="p-4 border rounded-md mb-4 cursor-pointer hover-elevate transition-colors flex items-center justify-between gap-3" 
               onClick={() => navigate(`/invoices/${invoice.id}`)}
               data-testid="link-invoice-reference"
             >
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Invoice Reference</p>
-              <p className="font-medium underline hover:no-underline" style={{ color: brandColor }}>
-                Invoice #{invoice.number}
-              </p>
-              {invoice.title && <p className="text-sm text-muted-foreground">{invoice.title}</p>}
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Invoice Reference</p>
+                <p className="font-medium underline hover:no-underline" style={{ color: brandColor }}>
+                  Invoice #{invoice.number}
+                </p>
+                {invoice.title && <p className="text-sm text-muted-foreground">{invoice.title}</p>}
+              </div>
+              <span className="text-muted-foreground flex-shrink-0">→</span>
             </div>
           )}
 
           {job && (
             <div 
-              className="p-4 border rounded-md border-l-4 mb-6 cursor-pointer hover-elevate transition-colors" 
-              style={{ borderLeftColor: brandColor }}
+              className="p-4 border rounded-md mb-6 cursor-pointer hover-elevate transition-colors flex items-center justify-between gap-3" 
               onClick={() => navigate(`/jobs/${job.id}`)}
               data-testid="link-job-reference"
             >
-              <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Job Reference</p>
-              <p className="font-medium underline hover:no-underline" style={{ color: brandColor }}>{job.title}</p>
-              {job.address && <p className="text-sm text-muted-foreground">{job.address}</p>}
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Job Reference</p>
+                <p className="font-medium underline hover:no-underline" style={{ color: brandColor }}>{job.title}</p>
+                {job.address && <p className="text-sm text-muted-foreground">{job.address}</p>}
+              </div>
+              <span className="text-muted-foreground flex-shrink-0">→</span>
             </div>
           )}
 

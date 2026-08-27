@@ -333,9 +333,6 @@ export default function NotificationDropdown() {
                 const colors = getNotificationColor(notification);
                 const typeBadge = getNotificationTypeBadge(notification);
                 const priorityBadge = getPriorityBadge(notification);
-                const urgentBorder = notification.priority === 'urgent' ? 'border-l-4 border-l-green-500' : '';
-                const importantBorder = notification.priority === 'important' ? 'border-l-4 border-l-amber-500' : '';
-                
                 return (
                   <div 
                     key={notification.id}
@@ -343,7 +340,7 @@ export default function NotificationDropdown() {
                     style={{ animationDelay: `${index * 50}ms` }}
                   >
                     <div
-                      className={`px-4 py-4 cursor-pointer transition-all duration-200 hover:bg-muted/50 active:bg-muted border-b border-border/50 ${urgentBorder} ${importantBorder} ${
+                      className={`px-4 py-4 cursor-pointer transition-all duration-200 hover:bg-muted/50 active:bg-muted border-b border-border/50 ${
                         !notification.read ? 'bg-primary/5' : ''
                       }`}
                       onClick={() => handleNotificationClick(notification)}

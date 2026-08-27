@@ -652,16 +652,19 @@ function UnscheduledQueuePanel({
                       setDraggingId(job.id);
                     }}
                     onDragEnd={() => setDraggingId(null)}
-                    className={`rounded border-l-[3px] ${sc.bg} ${sc.border} p-2 cursor-grab active:cursor-grabbing
+                    className={`rounded ${sc.bg} p-2 cursor-grab active:cursor-grabbing
                       ${draggingId === job.id ? "opacity-40" : ""}`}
                   >
                     <div className="flex items-start justify-between gap-1 mb-0.5">
-                      <button
-                        className="text-[11px] font-medium truncate text-left flex-1 hover:underline"
-                        onClick={() => onJobClick(job.id)}
-                      >
-                        {job.title}
-                      </button>
+                      <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: sc.solid }} />
+                        <button
+                          className="text-[11px] font-medium truncate text-left flex-1 hover:underline"
+                          onClick={() => onJobClick(job.id)}
+                        >
+                          {job.title}
+                        </button>
+                      </div>
                     </div>
                     {job.client?.name && (
                       <p className="text-[10px] text-muted-foreground truncate">{job.client.name}</p>
@@ -1137,13 +1140,12 @@ function DayView({
                             onDragLeave={() => setEquipDragOverJobId(null)}
                             onDrop={e => handleJobBlockDrop(job.id, e)}
                             onClick={e => { e.stopPropagation(); onJobClick(job.id); }}
-                            className={`absolute left-1 right-1 rounded-r overflow-hidden cursor-pointer border-l-[3px] transition-all
-                              ${sc.bg} ${sc.border}
+                            className={`absolute left-1 right-1 rounded overflow-hidden cursor-pointer transition-all
+                              ${sc.bg}
                               ${isBeingDragged ? "opacity-40" : "opacity-100"}
                               ${isEquipDragOver ? "ring-2 ring-blue-400 ring-inset" : "hover:brightness-95 active:scale-[0.98]"}`}
                             style={{ top: top + 2, height }}
                           >
-                            {/* Status accent bar at left is already via border-l-[3px] */}
                             <div className="px-1.5 py-1 flex flex-col h-full">
                               {(isOutOfViewTop || isOutOfViewBottom) && (
                                 <div className="text-[9px] font-bold text-muted-foreground mb-0.5">
@@ -1196,10 +1198,13 @@ function DayView({
                           }}
                           onDragEnd={() => setDraggingJobId(null)}
                           onClick={() => onJobClick(job.id)}
-                          className={`rounded px-2 py-1.5 cursor-pointer border-l-[3px] ${sc.bg} ${sc.border} hover:brightness-95`}
+                          className={`rounded px-2 py-1.5 cursor-pointer ${sc.bg} hover:brightness-95`}
                         >
-                          <p className="text-[11px] font-semibold truncate">{job.title}</p>
-                          <p className={`text-[10px] truncate ${sc.text}`}>{job.client?.name ?? "—"}</p>
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: sc.solid }} />
+                            <p className="text-[11px] font-semibold truncate">{job.title}</p>
+                          </div>
+                          <p className={`text-[10px] truncate ${sc.text} pl-3`}>{job.client?.name ?? "—"}</p>
                         </div>
                       );
                     })}
@@ -1500,8 +1505,8 @@ function WeekView({
                             setEquipDragOverJobId(null);
                           }}
                           onClick={e => { e.stopPropagation(); onJobClick(job.id); }}
-                          className={`rounded-sm mb-0.5 cursor-pointer border-l-[3px] overflow-hidden
-                            ${sc.bg} ${sc.border} hover:brightness-95
+                          className={`rounded-sm mb-0.5 cursor-pointer overflow-hidden
+                            ${sc.bg} hover:brightness-95
                             ${draggingJobId === job.id ? "opacity-40" : ""}
                             ${equipDragOverJobId === job.id ? "ring-1 ring-blue-400" : ""}`}
                           title={`${job.title}${job.client?.name ? ` — ${job.client.name}` : ""} ${timeLabel}`}
@@ -1532,7 +1537,7 @@ function WeekView({
                         key={phase.id}
                         data-testid={`week-phase-${phase.id}`}
                         onClick={e => { e.stopPropagation(); handlePhaseClick(phase, e); }}
-                        className="rounded-sm px-1.5 py-0.5 mb-0.5 border-l-[3px] border-indigo-500
+                        className="rounded-sm px-1.5 py-0.5 mb-0.5
                           bg-indigo-50 dark:bg-indigo-900/30 hover:brightness-95 cursor-pointer overflow-hidden"
                         title={`${phase.phaseCode}: ${phase.name} — ${phase.jobTitle}`}
                       >

@@ -91,36 +91,30 @@ interface DraggedJob {
   originMemberId: string | null;
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   pending: { 
     bg: 'bg-amber-50 dark:bg-amber-900/20', 
     text: 'text-amber-700 dark:text-amber-300', 
-    border: 'border-l-amber-500' 
   },
   scheduled: { 
     bg: 'bg-blue-50 dark:bg-blue-900/20', 
     text: 'text-blue-700 dark:text-blue-300', 
-    border: 'border-l-blue-500' 
   },
   in_progress: { 
     bg: 'bg-orange-50 dark:bg-orange-900/20', 
     text: 'text-orange-700 dark:text-orange-300', 
-    border: 'border-l-orange-500' 
   },
   done: { 
     bg: 'bg-green-50 dark:bg-green-900/20', 
     text: 'text-green-700 dark:text-green-300', 
-    border: 'border-l-green-500' 
   },
   completed: { 
     bg: 'bg-green-50 dark:bg-green-900/20', 
     text: 'text-green-700 dark:text-green-300', 
-    border: 'border-l-green-500' 
   },
   invoiced: { 
     bg: 'bg-purple-50 dark:bg-purple-900/20', 
     text: 'text-purple-700 dark:text-purple-300', 
-    border: 'border-l-purple-500' 
   },
 };
 
@@ -579,7 +573,7 @@ export default function TeamScheduler({ onViewJob, onCreateJob }: TeamSchedulerP
                         draggable
                         onDragStart={(e) => handleDragStart(e, job, null)}
                         onDragEnd={handleDragEnd}
-                        className={`p-2 rounded-md border-l-4 cursor-grab active:cursor-grabbing hover-elevate active-elevate-2 transition-all ${statusStyle.bg} ${statusStyle.border} ${draggedJob?.job.id === job.id ? 'opacity-50' : ''}`}
+                        className={`p-2 rounded-md cursor-grab active:cursor-grabbing hover-elevate active-elevate-2 transition-all ${statusStyle.bg} ${draggedJob?.job.id === job.id ? 'opacity-50' : ''}`}
                         data-testid={`unassigned-job-${job.id}`}
                       >
                         <div onClick={() => onViewJob?.(job.id)}>
@@ -656,19 +650,19 @@ export default function TeamScheduler({ onViewJob, onCreateJob }: TeamSchedulerP
       <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground flex-wrap gap-2">
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-md bg-amber-100 dark:bg-amber-900/30 border-l-2 border-amber-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
             <span>Pending</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-md bg-blue-100 dark:bg-blue-900/30 border-l-2 border-blue-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
             <span>Scheduled</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-md bg-orange-100 dark:bg-orange-900/30 border-l-2 border-orange-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
             <span>In Progress</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-md bg-green-100 dark:bg-green-900/30 border-l-2 border-green-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
             <span>Completed</span>
           </div>
           <div className="flex items-center gap-2">
@@ -1005,7 +999,7 @@ function WeekGridView({
                                   onDragStart={(e: React.DragEvent) => onDragStart(e, job, member.memberId)}
                                   onDragEnd={onDragEnd}
                                   onClick={(e: React.MouseEvent) => { e.stopPropagation(); onViewJob?.(job.id); }}
-                                  className={`p-1.5 rounded-md border-l-2 cursor-grab active:cursor-grabbing hover-elevate transition-all text-left w-full ${statusStyle.bg} ${statusStyle.border} ${draggedJob?.job.id === job.id ? 'opacity-50' : ''}`}
+                                  className={`p-1.5 rounded-md cursor-grab active:cursor-grabbing hover-elevate transition-all text-left w-full ${statusStyle.bg} ${draggedJob?.job.id === job.id ? 'opacity-50' : ''}`}
                                   data-testid={`scheduled-job-${job.id}`}
                                 >
                                   <p className={`text-[11px] font-medium truncate ${statusStyle.text}`}>{job.title}</p>
@@ -1197,8 +1191,8 @@ function TimelineView({
                                 onDragStart={(e: React.DragEvent) => onDragStart(e, job, member.memberId)}
                                 onDragEnd={onDragEnd}
                                 onClick={() => onViewJob?.(job.id)}
-                                className={`absolute left-1 right-1 rounded-md border-l-4 p-1.5 cursor-grab active:cursor-grabbing hover-elevate overflow-hidden z-[5]
-                                  ${statusStyle.bg} ${statusStyle.border}
+                                className={`absolute left-1 right-1 rounded-md p-1.5 cursor-grab active:cursor-grabbing hover-elevate overflow-hidden z-[5]
+                                  ${statusStyle.bg}
                                   ${draggedJob?.job.id === job.id ? 'opacity-50' : ''}
                                 `}
                                 style={{ top: topOffset + 2, height: Math.max(blockHeight, 28) }}
