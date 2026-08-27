@@ -996,7 +996,7 @@ function DayView({
     <div className="flex flex-1 overflow-hidden">
       {/* Timeline grid */}
       <div className="flex flex-1 overflow-hidden">
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-x-auto overflow-y-auto">
           <div className="flex min-w-[700px]">
             {/* Hour gutter */}
             <div className="flex-shrink-0 relative" style={{ width: GUTTER_WIDTH, height: totalHeight + 48 }}>
@@ -1229,7 +1229,7 @@ function DayView({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Materials panel */}
@@ -2512,7 +2512,7 @@ export default function AdvancedDispatch() {
   }, [dispatchJobs, jobPickerSearch]);
 
   return (
-    <PageShell className="flex flex-col h-screen overflow-hidden" data-testid="dispatch-board">
+    <PageShell className="flex flex-col h-screen overflow-hidden pt-0 px-0" data-testid="dispatch-board">
       {/* Full-screen CSS: hide app sidebar + header when dispatch-fullscreen class is active */}
       <style>{`
         body.dispatch-fullscreen [data-app-sidebar],
@@ -2781,7 +2781,7 @@ export default function AdvancedDispatch() {
               size="icon"
               className="h-7 w-7 flex-shrink-0"
               onClick={() => setShowSidebar(v => !v)}
-              title={showSidebar ? "Hide resources" : "Show resources"}
+              title={showSidebar ? "Hide resources & queue" : "Show resources & queue"}
             >
               {showSidebar ? <PanelRightClose className="h-3.5 w-3.5" /> : <PanelRightOpen className="h-3.5 w-3.5" />}
             </Button>
@@ -2879,8 +2879,8 @@ export default function AdvancedDispatch() {
             />
           )}
 
-          {/* Unscheduled queue panel (day view, right side) */}
-          {view === "day" && (
+          {/* Unscheduled queue panel (day view, right side) — hidden when sidebar is hidden */}
+          {view === "day" && showSidebar && (
             <div className="w-64 flex-shrink-0 border-l flex flex-col bg-card overflow-hidden">
               <UnscheduledQueuePanel
                 jobs={unscheduledJobs}
@@ -2981,8 +2981,8 @@ function workerLeaveLabel(leaveRecords: LeaveRecord[], memberId: string, date: D
 
 const MAP_TILE_ATTR  = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-/** Hook: fit map to all visible markers */
-function FitBounds({ positions }: { positions: [number, number][] }) {
+/** Hook: fit map to all visible markers whenever positions change (by coordinate, not just count). */
+function FitBounds({ positions, posKey }: { positions: [number, number][]; posKey: string }) {
   const map = useMap();
   useEffect(() => {
     if (positions.length === 0) return;
@@ -2991,8 +2991,9 @@ function FitBounds({ positions }: { positions: [number, number][] }) {
     } else {
       map.fitBounds(L.latLngBounds(positions), { padding: [48, 48] });
     }
+  // posKey is a stable string encoding all coordinates; it changes whenever any position changes.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [posKey]);
   return null;
 }
 
@@ -3098,15 +3099,23 @@ function MapView({
     return markers;
   }, [jobs, workers, selectedWorkerIds]);
 
-  const allPositions: [number, number][] = [...jobMarkers.map(m => m.position), ...workerMarkers.map(m => m.position)];
+  const allPositions: [number, number][] = useMemo(
+    () => [...jobMarkers.map(m => m.position), ...workerMarkers.map(m => m.position)],
+    [jobMarkers, workerMarkers],
+  );
+
+  /** Stable string encoding every coordinate — changes whenever any position moves, not just the count. */
+  const positionsKey = useMemo(
+    () => allPositions.map(p => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join("|"),
+    [allPositions],
+  );
 
   const mapCenter: [number, number] = useMemo(() => {
     if (allPositions.length === 0) return [-25.27, 133.77];
     const avgLat = allPositions.reduce((s, p) => s + p[0], 0) / allPositions.length;
     const avgLng = allPositions.reduce((s, p) => s + p[1], 0) / allPositions.length;
     return [avgLat, avgLng];
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+  }, [refreshKey, positionsKey]);
 
   const noCoords = jobMarkers.length === 0 && workerMarkers.length === 0;
 
@@ -3146,7 +3155,7 @@ function MapView({
           style={{ height: "100%", width: "100%" }}
         >
           <ThemeAwareTiles />
-          {allPositions.length > 0 && <FitBounds positions={allPositions} />}
+          {allPositions.length > 0 && <FitBounds positions={allPositions} posKey={positionsKey} />}
 
           {/* Job markers */}
           {jobMarkers.map(({ position, job }) => {
