@@ -1244,8 +1244,8 @@ function DayView({
                 );
               })}
 
-              {/* Unassigned column — drop a job here to unassign it */}
-              {(jobsByMember.get("unassigned") ?? []).length > 0 && (
+              {/* Unassigned column — drop a job here to unassign it; always visible during a drag so the target exists even when all jobs are assigned */}
+              {((jobsByMember.get("unassigned") ?? []).length > 0 || draggingJobId !== null) && (
                 <div
                   className="flex-1 min-w-[140px] border-r border-dashed"
                   onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("bg-amber-50", "dark:bg-amber-950/20"); }}
