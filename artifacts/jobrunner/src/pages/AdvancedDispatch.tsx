@@ -292,11 +292,11 @@ function getStatusColor(status: string) {
 }
 
 const KANBAN_COLUMNS = [
-  { key: "assigned",    label: "Assigned",    headerColor: "border-t-blue-500",   bg: "bg-blue-50 dark:bg-blue-950/20" },
-  { key: "en_route",   label: "En Route",    headerColor: "border-t-amber-500",  bg: "bg-amber-50 dark:bg-amber-950/20" },
-  { key: "arrived",    label: "Arrived",     headerColor: "border-t-violet-500", bg: "bg-violet-50 dark:bg-violet-950/20" },
-  { key: "in_progress",label: "In Progress", headerColor: "border-t-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
-  { key: "completed",  label: "Completed",   headerColor: "border-t-green-500",  bg: "bg-green-50 dark:bg-green-950/20" },
+  { key: "assigned",    label: "Assigned",    dot: "#3b82f6" },
+  { key: "en_route",   label: "En Route",    dot: "#f59e0b" },
+  { key: "arrived",    label: "Arrived",     dot: "#8b5cf6" },
+  { key: "in_progress",label: "In Progress", dot: "#f97316" },
+  { key: "completed",  label: "Completed",   dot: "#22c55e" },
 ] as const;
 
 const TERMINAL_STATUSES = ["done", "completed", "invoiced", "cancelled"];
@@ -894,12 +894,48 @@ function DayView({
   onEquipmentAssign?: (equipmentId: string, jobId: string) => void;
   onMaterialAssign?: (materialId: string, jobId: string) => void;
   jobEquipmentMap?: Map<string, DeployedEquipmentItem[]>;
+  onUnassign?: (jobId: string) => void;
 }) {
   const { toast } = useToast();
   const [now, setNow] = useState(new Date());
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
+  }, []);
+
+  // Edge-scroll: auto-scroll the timeline left/right when dragging near the edge
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    let animFrame: number | null = null;
+    const EDGE = 80;
+    const SPEED = 12;
+    const stop = () => { if (animFrame !== null) { cancelAnimationFrame(animFrame); animFrame = null; } };
+    const onOver = (e: DragEvent) => {
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      stop();
+      if (x < EDGE && x >= 0) {
+        const ratio = 1 - x / EDGE;
+        const tick = () => { container.scrollLeft -= SPEED * ratio; animFrame = requestAnimationFrame(tick); };
+        animFrame = requestAnimationFrame(tick);
+      } else if (x > rect.width - EDGE && x <= rect.width) {
+        const ratio = 1 - (rect.width - x) / EDGE;
+        const tick = () => { container.scrollLeft += SPEED * ratio; animFrame = requestAnimationFrame(tick); };
+        animFrame = requestAnimationFrame(tick);
+      }
+    };
+    container.addEventListener("dragover", onOver);
+    container.addEventListener("dragleave", stop);
+    document.addEventListener("dragend", stop);
+    return () => {
+      container.removeEventListener("dragover", onOver);
+      container.removeEventListener("dragleave", stop);
+      document.removeEventListener("dragend", stop);
+      stop();
+    };
   }, []);
 
   const [dragOverCell, setDragOverCell] = useState<{ memberId: string; hour: number } | null>(null);
@@ -1010,7 +1046,7 @@ function DayView({
     <div className="flex flex-1 overflow-hidden">
       {/* Timeline grid */}
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-x-auto overflow-y-auto">
+        <div className="flex-1 overflow-x-auto overflow-y-auto" ref={scrollRef}>
           <div className="flex min-w-[700px]">
             {/* Hour gutter */}
             <div className="flex-shrink-0 relative" style={{ width: GUTTER_WIDTH, height: totalHeight + 48 }}>
@@ -1208,9 +1244,20 @@ function DayView({
                 );
               })}
 
-              {/* Unassigned column */}
+              {/* Unassigned column — drop a job here to unassign it */}
               {(jobsByMember.get("unassigned") ?? []).length > 0 && (
-                <div className="flex-1 min-w-[140px] border-r border-dashed">
+                <div
+                  className="flex-1 min-w-[140px] border-r border-dashed"
+                  onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add("bg-amber-50", "dark:bg-amber-950/20"); }}
+                  onDragLeave={e => { e.currentTarget.classList.remove("bg-amber-50", "dark:bg-amber-950/20"); }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    e.currentTarget.classList.remove("bg-amber-50", "dark:bg-amber-950/20");
+                    const jobId = e.dataTransfer.getData("jobId");
+                    if (jobId && onUnassign) onUnassign(jobId);
+                    setDraggingJobId(null);
+                  }}
+                >
                   <div className="h-12 flex items-center px-2 border-b bg-muted/10 sticky top-0 z-10">
                     <span className="text-[11px] font-medium text-muted-foreground truncate">Unassigned</span>
                   </div>
@@ -1448,7 +1495,7 @@ function WeekView({
         {filteredWorkers.map(worker => {
           const wid = worker.memberId || worker.id;
           return (
-            <div key={wid} className="grid grid-cols-[160px_repeat(7,1fr)] border-b" style={{ minHeight: 64 }}>
+            <div key={wid} className="grid grid-cols-[160px_repeat(7,1fr)] border-b overflow-hidden" style={{ minHeight: 64 }}>
               {/* Worker label */}
               <div className="px-2 py-1.5 flex items-center gap-1.5 border-r bg-muted/10" style={{ width: 160 }}>
                 <UserAvatar
@@ -1478,7 +1525,7 @@ function WeekView({
                 return (
                   <div
                     key={dayStr}
-                    className={`border-l p-1 relative group transition-colors cursor-pointer ${
+                    className={`border-l p-1 relative group transition-colors cursor-pointer overflow-hidden ${
                       isToday(day) ? "bg-primary/[0.03]" : ""
                     } ${isOver ? "bg-primary/10 ring-inset ring-1 ring-primary/30" : "hover:bg-muted/20"} ${
                       onLeave ? "bg-slate-100/60 dark:bg-slate-800/30" : ""
@@ -1755,32 +1802,33 @@ function KanbanView({
           </button>
         </div>
       )}
-      <div className="flex flex-1 overflow-x-auto overflow-y-hidden gap-3 p-3">
+      <div className="flex flex-1 overflow-x-auto overflow-y-hidden gap-2.5 p-3">
         {KANBAN_COLUMNS.map(col => (
           <div
             key={col.key}
-            className={`flex flex-col w-72 flex-shrink-0 rounded-lg border border-t-0 border-t-4 ${col.headerColor} ${
-              dragOverCol === col.key ? "ring-2 ring-primary/30" : ""
-            } overflow-hidden`}
+            className={`flex flex-col w-64 flex-shrink-0 rounded-xl border bg-muted/30 dark:bg-muted/10 overflow-hidden transition-colors
+              ${dragOverCol === col.key ? "ring-2 ring-primary/40 bg-primary/5 dark:bg-primary/10" : ""}`}
             onDragOver={e => { e.preventDefault(); setDragOverCol(col.key); }}
             onDragLeave={() => setDragOverCol(null)}
             onDrop={() => handleDrop(col.key)}
           >
             {/* Column header */}
-            <div className={`px-3 py-2.5 ${col.bg} border-b`}>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold">{col.label}</p>
-                <Badge variant="secondary" className="text-xs h-5 ml-auto min-w-[1.25rem] text-center">{columnJobs[col.key]?.length ?? 0}</Badge>
-              </div>
+            <div className="px-3 pt-3 pb-2 flex items-center gap-2 flex-shrink-0">
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: col.dot }} />
+              <span className="text-[13px] font-semibold tracking-tight">{col.label}</span>
+              <span className="ml-auto text-xs font-bold text-muted-foreground tabular-nums min-w-[1.25rem] text-right">
+                {columnJobs[col.key]?.length ?? 0}
+              </span>
             </div>
 
             {/* Cards */}
-            <ScrollArea className={`flex-1 ${col.bg}`}>
-              <div className="p-2 space-y-2">
+            <ScrollArea className="flex-1">
+              <div className="px-2 pb-2 space-y-1.5">
                 {(columnJobs[col.key] ?? []).map(job => {
                   const asgn = primaryAssignment(job);
                   const worker = asgn?.memberId ? workerMap.get(asgn.memberId) : undefined;
                   const sc = getStatusColor(job.status);
+                  const isProject = (job.jobType ?? "service") === "project";
 
                   return (
                     <div
@@ -1792,58 +1840,68 @@ function KanbanView({
                       }}
                       onDragEnd={() => setDragState(null)}
                       onClick={() => onJobClick(job.id)}
-                      className={`bg-card rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-shadow overflow-hidden flex
-                        ${dragState?.jobId === job.id ? "opacity-40" : ""}`}
+                      className={`bg-card rounded-lg border shadow-sm cursor-pointer hover:shadow-md hover:-translate-y-0.5 transition-all p-3
+                        ${dragState?.jobId === job.id ? "opacity-40 scale-[0.97]" : ""}`}
                     >
-                      {/* Left status stripe */}
-                      <div className="w-1 flex-shrink-0" style={{ background: sc.solid }} />
-                      {/* Card content */}
-                      <div className="p-3 flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <p className="text-sm font-bold leading-tight flex-1 truncate">{job.title}</p>
-                          {job.priority && job.priority !== "normal" && (
-                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 capitalize flex-shrink-0">{job.priority}</Badge>
-                          )}
-                        </div>
-
-                        {job.client?.name && (
-                          <p className="text-[11px] text-muted-foreground mb-1.5 truncate font-medium">{job.client.name}</p>
-                        )}
-
-                        {job.address && (
-                          <div className="flex items-center gap-1 mb-1.5">
-                            <MapPin className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            <p className="text-[11px] text-muted-foreground truncate">{job.address}</p>
-                          </div>
-                        )}
-
-                        {job.scheduledAt && (
-                          <div className="flex items-center gap-1 mb-2">
-                            <Clock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                            <p className="text-[11px] text-muted-foreground">
-                              {format(parseISO(job.scheduledAt), "d MMM")} {formatJobTime(job.scheduledTime, job.scheduledAt)}
-                            </p>
-                          </div>
-                        )}
-
+                      {/* Title + worker avatar */}
+                      <div className="flex items-start gap-2 mb-1.5">
+                        <p className="text-[13px] font-semibold leading-snug flex-1 min-w-0 line-clamp-2">{job.title}</p>
                         {worker && (
-                          <div className="flex items-center gap-1.5 pt-1.5 border-t border-border/40">
-                            <UserAvatar
-                              user={{ id: worker.memberId || worker.id, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
-                              className="h-5 w-5 text-[9px] flex-shrink-0"
-                            />
-                            <span className="text-[11px] text-muted-foreground truncate">{memberName(worker)}</span>
-                          </div>
+                          <UserAvatar
+                            user={{ id: worker.memberId || worker.id, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
+                            className="h-6 w-6 text-[9px] flex-shrink-0 mt-0.5"
+                          />
                         )}
                       </div>
+
+                      {job.client?.name && (
+                        <p className="text-[11px] text-muted-foreground mb-2 truncate">{job.client.name}</p>
+                      )}
+
+                      {/* Tag row */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sc.bg} ${sc.text}`}>
+                          <span className="w-1 h-1 rounded-full flex-shrink-0" style={{ background: sc.solid }} />
+                          {job.status?.replace(/_/g, " ")}
+                        </span>
+                        <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                          {isProject ? "Project" : "Service"}
+                        </span>
+                        {job.priority && job.priority !== "normal" && (
+                          <span className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 capitalize">
+                            {job.priority}
+                          </span>
+                        )}
+                      </div>
+
+                      {(job.address || job.scheduledAt) && (
+                        <div className="mt-2 pt-2 border-t border-border/30 space-y-0.5">
+                          {job.address && (
+                            <div className="flex items-center gap-1">
+                              <MapPin className="h-2.5 w-2.5 text-muted-foreground/50 flex-shrink-0" />
+                              <p className="text-[10px] text-muted-foreground truncate">{job.address}</p>
+                            </div>
+                          )}
+                          {job.scheduledAt && (
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5 text-muted-foreground/50 flex-shrink-0" />
+                              <p className="text-[10px] text-muted-foreground">
+                                {format(parseISO(job.scheduledAt), "d MMM")} {formatJobTime(job.scheduledTime, job.scheduledAt)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
                 {(columnJobs[col.key] ?? []).length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground/40 gap-2">
-                    <CalendarCheck className="h-7 w-7" />
-                    <p className="text-xs">No jobs</p>
+                  <div className="flex flex-col items-center justify-center py-8 gap-2 text-muted-foreground/30 mx-1 mt-1">
+                    <div className="w-9 h-9 rounded-full bg-muted/60 flex items-center justify-center">
+                      <CalendarCheck className="h-4 w-4" />
+                    </div>
+                    <p className="text-[11px] font-medium">No jobs</p>
                   </div>
                 )}
               </div>
@@ -2478,6 +2536,10 @@ export default function AdvancedDispatch() {
     materialAssignMutation.mutate({ materialId, jobId });
   }, [materialAssignMutation]);
 
+  const handleUnassign = useCallback((jobId: string) => {
+    updateJobMutation.mutate({ jobId, assignedTo: null } as Parameters<typeof updateJobMutation.mutate>[0]);
+  }, [updateJobMutation]);
+
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
     if (view === "day" || view === "map") setCurrentDate(d => subDays(d, 1));
@@ -2914,6 +2976,7 @@ export default function AdvancedDispatch() {
               onEquipmentAssign={handleEquipmentAssign}
               onMaterialAssign={handleMaterialAssign}
               jobEquipmentMap={jobEquipmentMap}
+              onUnassign={handleUnassign}
             />
           ) : view === "week" ? (
             <WeekView
@@ -2949,6 +3012,7 @@ export default function AdvancedDispatch() {
               resources={resources}
               allDispatchJobs={dispatchJobs}
               onJobClick={handleJobClick}
+              onOpenJobPicker={() => setJobPickerOpen(true)}
             />
           ) : (
             <KanbanView
@@ -3449,6 +3513,7 @@ function JobView({
   resources,
   allDispatchJobs,
   onJobClick,
+  onOpenJobPicker,
 }: {
   weekStart: Date;
   selectedJobId: string | null;
@@ -3459,6 +3524,7 @@ function JobView({
   resources?: DispatchResources;
   allDispatchJobs: DispatchJob[];
   onJobClick: (id: string) => void;
+  onOpenJobPicker?: () => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
@@ -3502,10 +3568,18 @@ function JobView({
 
   if (!selectedJobId) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-        <Layers className="h-12 w-12 opacity-20" />
-        <p className="text-sm font-medium">Select a job to view its timeline</p>
-        <p className="text-xs text-center px-8">Use the job picker in the toolbar above to choose a job or project</p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 text-muted-foreground px-6">
+        <div className="w-16 h-16 rounded-2xl bg-muted/50 flex items-center justify-center">
+          <Layers className="h-8 w-8 opacity-30" />
+        </div>
+        <div className="text-center space-y-1">
+          <p className="text-sm font-semibold text-foreground">Choose a job or project</p>
+          <p className="text-xs text-muted-foreground">See crew schedule, phase timeline and materials at a glance</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-2" onClick={onOpenJobPicker}>
+          <Briefcase className="h-3.5 w-3.5" />
+          Browse jobs
+        </Button>
       </div>
     );
   }
