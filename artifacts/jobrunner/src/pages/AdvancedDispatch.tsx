@@ -2048,36 +2048,9 @@ function ResourceSidebar({
               </div>
             ) : (
               <>
-                {/* Deployed */}
-                {(resources?.deployedEquipment?.length ?? 0) > 0 && (
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-1">Deployed</p>
-                )}
-                {(resources?.deployedEquipment ?? []).map(eq => (
-                  <div key={eq.equipmentId} className="flex items-start gap-2 px-2 py-1.5 rounded bg-orange-50 dark:bg-orange-950/20">
-                    <div className="w-5 h-5 rounded bg-orange-200 dark:bg-orange-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <Truck className="h-2.5 w-2.5 text-orange-600 dark:text-orange-400" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] font-medium truncate">{eq.equipmentName}</p>
-                      {eq.jobTitle && (
-                        <p className="text-[10px] text-muted-foreground truncate">{eq.jobTitle}</p>
-                      )}
-                    </div>
-                    {eq.jobId && onEquipmentUnassign && (
-                      <button
-                        onClick={() => onEquipmentUnassign(eq.assignmentId, eq.jobId!)}
-                        className="text-muted-foreground hover:text-destructive flex-shrink-0 p-0.5 rounded hover:bg-destructive/10"
-                        title="Unlink from job"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-
-                {/* Available — with drag handles */}
+                {/* Available — drag onto a job (shown first: primary action) */}
                 {(resources?.allEquipment ?? []).filter(e => !e.isDeployed).length > 0 && (
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-2">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-1">
                     Available — drag onto a job
                   </p>
                 )}
@@ -2102,6 +2075,33 @@ function ResourceSidebar({
                       <p className="text-[11px] font-medium truncate">{eq.name}</p>
                       {eq.categoryName && <p className="text-[10px] text-muted-foreground">{eq.categoryName}</p>}
                     </div>
+                  </div>
+                ))}
+
+                {/* Deployed */}
+                {(resources?.deployedEquipment?.length ?? 0) > 0 && (
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 pt-2">Deployed</p>
+                )}
+                {(resources?.deployedEquipment ?? []).map(eq => (
+                  <div key={eq.equipmentId} className="flex items-start gap-2 px-2 py-1.5 rounded bg-orange-50 dark:bg-orange-950/20">
+                    <div className="w-5 h-5 rounded bg-orange-200 dark:bg-orange-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Truck className="h-2.5 w-2.5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-medium truncate">{eq.equipmentName}</p>
+                      {eq.jobTitle && (
+                        <p className="text-[10px] text-muted-foreground truncate">{eq.jobTitle}</p>
+                      )}
+                    </div>
+                    {eq.jobId && onEquipmentUnassign && (
+                      <button
+                        onClick={() => onEquipmentUnassign(eq.assignmentId, eq.jobId!)}
+                        className="text-muted-foreground hover:text-destructive flex-shrink-0 p-0.5 rounded hover:bg-destructive/10"
+                        title="Unlink from job"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 ))}
               </>
