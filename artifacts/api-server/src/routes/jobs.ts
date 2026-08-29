@@ -1523,8 +1523,33 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
   app.get("/api/jobs/:id/equipment", requireAuth, async (req: any, res) => {
     try {
+      const userContext = await getUserContext(req.userId);
+      const userId = userContext.effectiveUserId;
+      // Verify the job exists and belongs to this tenant before exposing any data.
+      const job = await storage.getJob(req.params.id, userId);
+      if (!job) return res.status(404).json({ error: "Job not found" });
       const assignments = await storage.getJobEquipment(req.params.id);
-      res.json(assignments);
+      const [equipmentList, categories] = await Promise.all([
+        storage.getEquipment(userId),
+        storage.getEquipmentCategories(userId),
+      ]);
+      const enriched = assignments.map((a: any) => {
+        const eq = equipmentList.find((e: any) => e.id === a.equipmentId);
+        const cat = eq?.categoryId ? categories.find((c: any) => c.id === eq.categoryId) : null;
+        return {
+          assignmentId: a.id,
+          equipmentId: a.equipmentId,
+          equipmentName: eq?.name ?? "Unknown",
+          category: cat?.name ?? "",
+          categoryId: eq?.categoryId ?? null,
+          serialNumber: eq?.serialNumber ?? "",
+          model: eq?.model ?? "",
+          notes: a.notes,
+          assignedAt: a.assignedAt,
+          jobId: a.jobId,
+        };
+      });
+      res.json(enriched);
     } catch (error) {
       console.error("Error fetching job equipment:", error);
       res.status(500).json({ error: "Failed to fetch job equipment" });

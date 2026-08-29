@@ -2527,9 +2527,10 @@ export default function AdvancedDispatch() {
     mutationFn: async ({ equipmentId, jobId }: { equipmentId: string; jobId: string }) => {
       return apiRequest("POST", `/api/jobs/${jobId}/equipment`, { equipmentId });
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/dispatch/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", vars.jobId, "equipment"] });
       toast({ title: "Equipment assigned to job" });
     },
     onError: (err: any) => {
@@ -2541,9 +2542,10 @@ export default function AdvancedDispatch() {
     mutationFn: async ({ assignmentId, jobId }: { assignmentId: string; jobId: string }) => {
       return apiRequest("DELETE", `/api/jobs/${jobId}/equipment/${assignmentId}`);
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
       queryClient.invalidateQueries({ queryKey: ["/api/dispatch/resources"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", vars.jobId, "equipment"] });
       toast({ title: "Equipment unlinked from job" });
     },
     onError: (err: any) => {
@@ -3726,6 +3728,13 @@ function JobView({
     [resources, selectedJobId],
   );
 
+  const { data: jobEquipmentRaw = [] } = useQuery<DeployedEquipmentItem[]>({
+    queryKey: ["/api/jobs", selectedJobId, "equipment"],
+    queryFn: () => apiRequest("GET", `/api/jobs/${selectedJobId}/equipment`).then(r => r.json()),
+    enabled: !!selectedJobId,
+  });
+  const jobEquipment = jobEquipmentRaw;
+
   if (!selectedJobId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-5 text-muted-foreground px-6">
@@ -4167,6 +4176,7 @@ function JobView({
         phases={jobPhasesList}
         workers={jobWorkers}
         materials={jobMaterials}
+        equipment={jobEquipment}
       />
 
       {/* Phase detail dialog */}
@@ -4260,13 +4270,15 @@ function JobViewSidebar({
   phases,
   workers,
   materials,
+  equipment,
 }: {
   job: DispatchJob | null;
   phases: DispatchPhase[];
   workers: TeamMember[];
   materials: MaterialItem[];
+  equipment: DeployedEquipmentItem[];
 }) {
-  const [activeTab, setActiveTab] = useState<"team" | "materials">("team");
+  const [activeTab, setActiveTab] = useState<"team" | "materials" | "equipment">("team");
 
   const workerHours = useMemo(() => {
     const map = new Map<string, number>();
@@ -4298,6 +4310,7 @@ function JobViewSidebar({
   const sidebarTabs = [
     { key: "team" as const, label: "Team", icon: Users },
     { key: "materials" as const, label: "Materials", icon: Package },
+    { key: "equipment" as const, label: "Equipment", icon: Wrench },
   ];
 
   return (
@@ -4399,6 +4412,40 @@ function JobViewSidebar({
                   </div>
                 );
               })
+            )}
+          </div>
+        )}
+
+        {activeTab === "equipment" && (
+          <div className="p-2 space-y-1">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1">
+              Deployed ({equipment.length})
+            </p>
+            {equipment.length === 0 ? (
+              <div className="flex flex-col items-center py-8 text-muted-foreground">
+                <Wrench className="h-7 w-7 mb-2 opacity-30" />
+                <p className="text-xs text-center">No equipment deployed</p>
+                <p className="text-[10px] text-muted-foreground/70 text-center mt-1 px-4">
+                  Drag equipment from the panel to assign it here
+                </p>
+              </div>
+            ) : (
+              equipment.map(eq => (
+                <div key={eq.assignmentId} className="px-2 py-1.5 rounded hover:bg-muted/30 border-b border-border/30 last:border-0">
+                  <div className="flex items-start gap-1.5">
+                    <Wrench className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[11px] font-medium leading-snug truncate">{eq.equipmentName}</p>
+                      {eq.category && (
+                        <p className="text-[10px] text-muted-foreground truncate">{eq.category}</p>
+                      )}
+                      {eq.serialNumber && (
+                        <p className="text-[9px] text-muted-foreground/70 font-mono truncate">S/N: {eq.serialNumber}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
