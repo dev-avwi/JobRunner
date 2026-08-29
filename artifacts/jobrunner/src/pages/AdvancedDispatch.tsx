@@ -2013,6 +2013,7 @@ function ResourceSidebar({
   workerStates?: WorkerState[];
   embedded?: boolean;
   defaultTab?: "workers" | "equipment" | "materials" | "capacity";
+  availableTabs?: Array<"workers" | "equipment" | "materials" | "capacity">;
   onEquipmentUnassign?: (assignmentId: string, jobId: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">(defaultTab ?? "workers");
@@ -2038,12 +2039,13 @@ function ResourceSidebar({
     return m;
   }, [workers, allDayJobs]);
 
-  const tabs = [
+  const allTabs = [
     { key: "workers" as const,   label: "Workers",   icon: Users },
     { key: "equipment" as const, label: "Equipment", icon: Wrench },
     { key: "materials" as const, label: "Materials", icon: Package },
     { key: "capacity" as const,  label: "Capacity",  icon: Timer },
   ];
+  const tabs = availableTabs ? allTabs.filter(t => availableTabs.includes(t.key)) : allTabs;
 
   return (
     <div className={embedded ? "flex flex-col flex-1 overflow-hidden" : "w-64 border-l flex flex-col flex-shrink-0 bg-card"}>
@@ -2625,7 +2627,7 @@ export default function AdvancedDispatch() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
           queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
-          toast({ title: "Job unassigned" });
+          // No toast — the visual change (job moves to Unassigned row) is feedback enough
         },
         onError: (err: any) => {
           toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
@@ -3167,8 +3169,8 @@ export default function AdvancedDispatch() {
             </div>
           )}
 
-          {/* Sidebar for week / kanban / map views */}
-          {showSidebar && view !== "day" && view !== "job" && (
+          {/* Sidebar for week / map views — kanban has no drag targets so hide it */}
+          {showSidebar && (view === "week" || view === "map") && (
             <ResourceSidebar
               workers={workers}
               resources={resources}
@@ -3180,12 +3182,13 @@ export default function AdvancedDispatch() {
               onClose={() => setShowSidebar(false)}
               allDayJobs={allDayJobs}
               workerStates={workerStates}
-              defaultTab={view === "map" ? "capacity" : undefined}
+              defaultTab={view === "map" ? "capacity" : "workers"}
+              availableTabs={["workers", "capacity"]}
               onEquipmentUnassign={handleEquipmentUnassign}
             />
           )}
 
-          {/* Resource sidebar in job view — workers + materials draggable onto the selected job */}
+          {/* Resource sidebar in job view — Workers / Equipment / Materials draggable onto the job */}
           {showSidebar && view === "job" && (
             <ResourceSidebar
               workers={workers}
@@ -3199,6 +3202,7 @@ export default function AdvancedDispatch() {
               allDayJobs={allDayJobs}
               workerStates={workerStates}
               defaultTab="workers"
+              availableTabs={["workers", "equipment", "materials"]}
               onEquipmentAssign={handleEquipmentAssign}
               onEquipmentUnassign={handleEquipmentUnassign}
               onMaterialAssign={handleMaterialAssign}
