@@ -3145,6 +3145,7 @@ export default function AdvancedDispatch() {
               onWorkerAssign={handleWorkerAssignToJob}
               onMaterialAssign={handleMaterialAssignToJob}
               onEquipmentAssign={handleEquipmentAssignToJob}
+              onEquipmentUnassign={handleEquipmentUnassign}
             />
           ) : (
             <KanbanView
@@ -3671,6 +3672,7 @@ function JobView({
   onWorkerAssign,
   onMaterialAssign,
   onEquipmentAssign,
+  onEquipmentUnassign,
 }: {
   weekStart: Date;
   selectedJobId: string | null;
@@ -3685,6 +3687,7 @@ function JobView({
   onWorkerAssign?: (workerId: string) => void;
   onMaterialAssign?: (materialId: string) => void;
   onEquipmentAssign?: (equipmentId: string) => void;
+  onEquipmentUnassign?: (assignmentId: string, jobId: string) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
@@ -4178,6 +4181,7 @@ function JobView({
         workers={jobWorkers}
         materials={jobMaterials}
         equipment={jobEquipment}
+        onEquipmentUnassign={onEquipmentUnassign}
       />
 
       {/* Phase detail dialog */}
@@ -4272,12 +4276,14 @@ function JobViewSidebar({
   workers,
   materials,
   equipment,
+  onEquipmentUnassign,
 }: {
   job: DispatchJob | null;
   phases: DispatchPhase[];
   workers: TeamMember[];
   materials: MaterialItem[];
   equipment: DeployedEquipmentItem[];
+  onEquipmentUnassign?: (assignmentId: string, jobId: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"team" | "materials" | "equipment">("team");
 
@@ -4444,6 +4450,15 @@ function JobViewSidebar({
                         <p className="text-[9px] text-muted-foreground/70 font-mono truncate">S/N: {eq.serialNumber}</p>
                       )}
                     </div>
+                    {onEquipmentUnassign && job && (
+                      <button
+                        onClick={() => onEquipmentUnassign(eq.assignmentId, job.id)}
+                        className="flex-shrink-0 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Remove equipment from job"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
