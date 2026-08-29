@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -429,101 +431,100 @@ export default function TeamPage() {
         )}
 
         {/* Tabs */}
-        <div className="border-b flex items-center flex-wrap gap-y-1 mt-5">
-          {([
-            ["directory", "Directory", totalCount, Users],
-            ["subinvoices", "Sub Invoices", null, Receipt],
-          ] as const).map(([key, label, count, Icon]) => {
-            const active = tab === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setTab(key as TabKey)}
-                data-testid={`tab-${key}`}
-                className={`flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold border-b-2 -mb-px transition-colors ${
-                  active ? "text-foreground border-foreground" : "text-muted-foreground border-transparent hover:text-foreground"
-                }`}
+        <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="mt-5">
+          <div className="border-b flex items-center flex-wrap gap-y-0">
+            <TabsList className="h-auto bg-transparent p-0 gap-0 rounded-none -mb-px">
+              <TabsTrigger
+                value="directory"
+                data-testid="tab-directory"
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent bg-transparent text-muted-foreground hover:text-foreground transition-colors"
               >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-                {count !== null && (
-                  <span className={`text-[10.5px] font-medium px-1.5 py-px rounded ${active ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}>
-                    {count}
+                <Users className="w-3.5 h-3.5" />
+                Directory
+                {totalCount > 0 && (
+                  <span className={`text-[10.5px] font-medium px-1.5 py-px rounded ${tab === "directory" ? "bg-foreground/10 text-foreground" : "bg-muted text-muted-foreground"}`}>
+                    {totalCount}
                   </span>
                 )}
-              </button>
-            );
-          })}
-          <div className="ml-auto flex items-center gap-1 pb-1.5">
-            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-roles-permissions">
-              Roles and permissions
-            </Button>
-            <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-activity-log">
-              Activity log
-            </Button>
+              </TabsTrigger>
+              <TabsTrigger
+                value="subinvoices"
+                data-testid="tab-subinvoices"
+                className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:bg-transparent bg-transparent text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Receipt className="w-3.5 h-3.5" />
+                Sub Invoices
+              </TabsTrigger>
+            </TabsList>
+            <div className="ml-auto flex items-center gap-1 pb-1.5">
+              <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-roles-permissions">
+                Roles and permissions
+              </Button>
+              <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLocation("/team-operations")} data-testid="button-activity-log">
+                Activity log
+              </Button>
+            </div>
           </div>
-        </div>
 
-        {/* Search bar (directory only) */}
-        {tab === "directory" && (
-          <div className="flex items-center gap-2 py-3.5">
-            <div className="relative flex-1 max-w-xs">
-              <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search people…"
-                className="h-8 pl-8 text-[12.5px]"
-                data-testid="input-team-search"
-              />
+          <TabsContent value="directory" className="mt-0">
+            {/* Search bar */}
+            <div className="flex items-center gap-2 py-3.5">
+              <div className="relative flex-1 max-w-xs">
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search people…"
+                  className="h-8 pl-8 text-[12.5px]"
+                  data-testid="input-team-search"
+                />
+                {search && (
+                  <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <span className="text-[12px] text-muted-foreground">
+                  {searchedEntries.length} result{searchedEntries.length !== 1 ? "s" : ""}
+                </span>
               )}
             </div>
-            {search && (
-              <span className="text-[12px] text-muted-foreground">
-                {searchedEntries.length} result{searchedEntries.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-        )}
+            <div className="relative">
+              <DirectoryView
+                grouped={grouped}
+                membersLoading={membersQuery.isLoading && hasTeamPlan}
+                subsLoading={subsQuery.isLoading}
+                hasTeamPlan={hasTeamPlan}
+                isFree={isFree}
+                canChangeRoles={isOwner}
+                onInviteMember={() => handleAddChoice("member")}
+                onSendMagicLink={() => handleAddChoice("magic_link")}
+                onUpgradeSub={(sub) => {
+                  if (!hasTeamPlan) {
+                    toast({ title: "Team Plan needed", description: "Upgrading subs to accounts needs a Team plan." });
+                    setLocation("/pricing");
+                    return;
+                  }
+                  setUpgradeSubTarget(sub);
+                  setUpgradeSubOpen(true);
+                }}
+                onChangeRole={(member) => setRoleEditTarget(member)}
+              />
+            </div>
+          </TabsContent>
 
-        {/* Tab content */}
-        <div className={tab === "subinvoices" ? "relative min-h-[420px] pt-3.5" : "relative"}>
-          {tab === "directory" ? (
-            <DirectoryView
-              grouped={grouped}
-              membersLoading={membersQuery.isLoading && hasTeamPlan}
-              subsLoading={subsQuery.isLoading}
-              hasTeamPlan={hasTeamPlan}
-              isFree={isFree}
-              canChangeRoles={isOwner}
-              onInviteMember={() => handleAddChoice("member")}
-              onSendMagicLink={() => handleAddChoice("magic_link")}
-              onUpgradeSub={(sub) => {
-                if (!hasTeamPlan) {
-                  toast({ title: "Team Plan needed", description: "Upgrading subs to accounts needs a Team plan." });
-                  setLocation("/pricing");
-                  return;
-                }
-                setUpgradeSubTarget(sub);
-                setUpgradeSubOpen(true);
-              }}
-              onChangeRole={(member) => setRoleEditTarget(member)}
-            />
-          ) : (
-            isFree ? (
+          <TabsContent value="subinvoices" className="relative min-h-[420px] pt-3.5 mt-0">
+            {isFree ? (
               <PlanLockOverlay
                 onUpgrade={() => setLocation("/pricing")}
                 message="Reviewing and paying subcontractor invoices needs a paid plan. Upgrade to unlock."
               />
             ) : (
               <SubcontractorInvoices embedded />
-            )
-          )}
-        </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Send Magic Link Sheet */}
@@ -1109,12 +1110,17 @@ function DirectoryRow({
         onClick={() => { if (!showLockedSample) onNavigate(); }}
       >
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          <div className="w-9 h-9 rounded-full text-white text-[12px] font-semibold flex items-center justify-center" style={{ background: color }}>
-            {init}
-          </div>
-          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-background ${sm.dot}`} />
-        </div>
+        <UserAvatar
+          className="h-9 w-9 flex-shrink-0"
+          user={{ id: m.id, firstName: m.firstName, lastName: m.lastName, email: m.email }}
+          showStatus={true}
+          statusColor={
+            status === "on" ? "hsl(var(--success))" :
+            status === "away" ? "#a855f7" :
+            status === "pending" ? "hsl(var(--warning))" :
+            "hsl(var(--muted-foreground))"
+          }
+        />
 
         {/* Name + contact */}
         <div className="flex-1 min-w-0">
@@ -1230,12 +1236,16 @@ function DirectoryRow({
         className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 group cursor-pointer transition-colors"
       >
         {/* Avatar */}
-        <div className="relative flex-shrink-0">
-          <div className="w-9 h-9 rounded-full text-white text-[12px] font-semibold flex items-center justify-center" style={{ background: color }}>
-            {init}
-          </div>
-          <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full ring-2 ring-background ${sm.dot}`} />
-        </div>
+        <UserAvatar
+          className="h-9 w-9 flex-shrink-0"
+          user={{ id: s.id, name: s.name }}
+          showStatus={true}
+          statusColor={
+            subStatus === "on" ? "hsl(var(--success))" :
+            subStatus === "pending" ? "hsl(var(--warning))" :
+            "hsl(var(--muted-foreground))"
+          }
+        />
 
         {/* Name + contact */}
         <div className="flex-1 min-w-0">

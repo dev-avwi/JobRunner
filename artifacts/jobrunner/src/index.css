@@ -1180,3 +1180,10 @@ main[data-scroll-container] > * {
     margin-top: 1.5cm;
   }
 }
+
+/* Map marker pulse animation — referenced by Leaflet divIcon markers */
+@keyframes team-pulse {
+  0%   { box-shadow: 0 0 0 0   var(--pulse-color, rgba(59,130,246,0.5)); }
+  70%  { box-shadow: 0 0 0 10px var(--pulse-color, rgba(59,130,246,0)); }
+  100% { box-shadow: 0 0 0 0   var(--pulse-color, rgba(59,130,246,0)); }
+}

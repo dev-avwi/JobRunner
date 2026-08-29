@@ -454,11 +454,11 @@ function LiveOpsTab() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="space-y-4">
             <Collapsible open={statusBoardOpen} onOpenChange={setStatusBoardOpen}>
-              <div className="feed-card">
+              <Card>
               <CollapsibleTrigger asChild>
-                <div className="cursor-pointer hover-elevate py-3 px-4 flex items-center justify-between gap-2">
+                <div className="cursor-pointer py-3 px-4 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors rounded-[calc(var(--radius)-1px)]">
                   <div className="flex items-center gap-2">
-                    <p className="ios-label">Team Status</p>
+                    <span className="text-sm font-semibold">Team Status</span>
                     <Badge variant="secondary" className="text-xs">{sortedAcceptedMembers.length}</Badge>
                   </div>
                   {statusBoardOpen ? (
@@ -469,7 +469,7 @@ function LiveOpsTab() {
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="px-4 pb-4">
+                <div className="border-t px-4 pb-4 pt-3">
                   <ScrollArea className="h-[300px]">
                     <div className="space-y-1">
                       {sortedAcceptedMembers.map((member, index) => {
@@ -484,7 +484,7 @@ function LiveOpsTab() {
                         return (
                           <div
                             key={member.id}
-                            className={`feed-card card-press flex items-center gap-3 p-3 cursor-pointer animate-fade-up stagger-delay-${Math.min(index + 1, 8)}`}
+                            className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-muted/40 transition-colors animate-fade-up stagger-delay-${Math.min(index + 1, 8)}`}
                             onClick={() => handleMemberClick(member)}
                             data-testid={`member-status-${member.id}`}
                           >
@@ -514,14 +514,13 @@ function LiveOpsTab() {
                                   {statusDisplay.label}
                                 </span>
                                 {status === 'offline' && lastSeen && (
-                                  <span className="ios-caption">{lastSeen}</span>
+                                  <span className="text-xs text-muted-foreground">{lastSeen}</span>
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                            <div className="flex items-center gap-2 shrink-0">
                               {(() => {
                                 const ws = workerStateMap[member.memberId || member.id];
-                                if (!ws || ws.state === 'available') return null;
                                 const stateConfig: Record<string, { label: string; color: string }> = {
                                   on_job: { label: 'On Job', color: '#f97316' },
                                   travelling: { label: 'Travelling', color: '#3b82f6' },
@@ -529,28 +528,24 @@ function LiveOpsTab() {
                                   delayed: { label: 'Delayed', color: '#eab308' },
                                   needs_help: { label: 'Needs Help', color: '#ef4444' },
                                 };
-                                const cfg = stateConfig[ws.state];
-                                if (!cfg) return null;
-                                return (
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-xs no-default-hover-elevate no-default-active-elevate"
-                                    style={{ backgroundColor: `${cfg.color}20`, color: cfg.color, borderColor: `${cfg.color}30` }}
-                                    title={ws.note || undefined}
-                                  >
-                                    <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: cfg.color }} />
-                                    {cfg.label}
-                                  </Badge>
-                                );
+                                if (ws && ws.state !== 'available') {
+                                  const cfg = stateConfig[ws.state];
+                                  if (cfg) return (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs"
+                                      style={{ backgroundColor: `${cfg.color}20`, color: cfg.color, borderColor: `${cfg.color}30` }}
+                                      title={ws.note || undefined}
+                                    >
+                                      <span className="inline-block w-1.5 h-1.5 rounded-full mr-1" style={{ backgroundColor: cfg.color }} />
+                                      {cfg.label}
+                                    </Badge>
+                                  );
+                                }
+                                return member.roleName ? (
+                                  <span className="text-xs text-muted-foreground hidden sm:inline">{member.roleName}</span>
+                                ) : null;
                               })()}
-                              {member.roleName && (
-                                <Badge variant="secondary" className="text-xs">{member.roleName}</Badge>
-                              )}
-                              {memberPresence?.currentJob && (
-                                <Badge variant="secondary" className="text-xs truncate max-w-[100px]">
-                                  {memberPresence.currentJob.title}
-                                </Badge>
-                              )}
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); }}>
                                 <MessageCircle className="h-4 w-4 text-muted-foreground" />
                               </Button>
@@ -564,21 +559,21 @@ function LiveOpsTab() {
                             <Users className="h-10 w-10" style={{ color: 'hsl(var(--trade) / 0.4)' }} />
                           </div>
                           <p className="font-medium mb-1">No team members yet</p>
-                          <p className="ios-caption">Invite your first team member to get started</p>
+                          <p className="text-xs text-muted-foreground">Invite your first team member to get started</p>
                         </div>
                       )}
                     </div>
                   </ScrollArea>
                 </div>
               </CollapsibleContent>
-            </div>
+            </Card>
           </Collapsible>
 
             <Collapsible open={mapOpen} onOpenChange={setMapOpen}>
-              <div className="feed-card">
+              <Card>
                 <CollapsibleTrigger asChild>
-                  <div className="cursor-pointer hover-elevate py-3 px-4 flex items-center justify-between gap-2">
-                    <p className="ios-label">Team Map</p>
+                  <div className="cursor-pointer py-3 px-4 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors rounded-[calc(var(--radius)-1px)]">
+                    <span className="text-sm font-semibold">Team Map</span>
                     {mapOpen ? (
                       <ChevronUp className="h-4 w-4 text-muted-foreground" />
                     ) : (
@@ -587,7 +582,7 @@ function LiveOpsTab() {
                   </div>
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <div className="px-4 pb-4">
+                  <div className="border-t px-4 pb-4 pt-3">
                     <div className="h-[450px] rounded-lg overflow-hidden border" data-testid="team-map-container">
                       {presence.some(p => p.lastLocationLat && p.lastLocationLng) ? (
                         <MapContainer
@@ -644,6 +639,7 @@ function LiveOpsTab() {
                                       box-shadow: 0 3px 10px rgba(0,0,0,0.3);
                                       font-family: system-ui, -apple-system, sans-serif;
                                       cursor: pointer;
+                                      --pulse-color: ${bg}80;
                                       ${isActive ? `animation: team-pulse 2s ease-out infinite;` : ''}
                                     ">
                                       <span style="
@@ -662,8 +658,7 @@ function LiveOpsTab() {
                                         background: ${p.status === 'online' ? '#22c55e' : p.status === 'on_job' ? '#f59e0b' : p.status === 'break' ? '#eab308' : '#94a3b8'};
                                         border: 2px solid white;
                                       "></div>
-                                    </div>
-                                    <style>@keyframes team-pulse { 0% { box-shadow: 0 0 0 0 ${bg}50; } 70% { box-shadow: 0 0 0 10px ${bg}00; } 100% { box-shadow: 0 0 0 0 ${bg}00; } }</style>`,
+                                    </div>`,
                                     iconSize: [38, 38],
                                     iconAnchor: [19, 19],
                                   });
@@ -797,16 +792,16 @@ function LiveOpsTab() {
                     </div>
                   </div>
                 </CollapsibleContent>
-              </div>
+              </Card>
             </Collapsible>
           </div>
 
           <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
-            <div className="feed-card h-full">
+            <Card className="h-full">
               <CollapsibleTrigger asChild>
-                <div className="cursor-pointer hover-elevate py-3 px-4 flex items-center justify-between gap-2">
+                <div className="cursor-pointer py-3 px-4 flex items-center justify-between gap-2 hover:bg-muted/30 transition-colors rounded-[calc(var(--radius)-1px)]">
                   <div className="flex items-center gap-2">
-                    <p className="ios-label">Recent Activity</p>
+                    <span className="text-sm font-semibold">Recent Activity</span>
                     <Badge variant="secondary" className="text-xs">{activities.length}</Badge>
                   </div>
                   {activityOpen ? (
@@ -817,7 +812,7 @@ function LiveOpsTab() {
                 </div>
               </CollapsibleTrigger>
               <CollapsibleContent>
-                <div className="px-4 pb-4">
+                <div className="border-t px-4 pb-4 pt-3">
                   <ScrollArea className="h-[300px]">
                     <div className="space-y-1">
                       {activities.slice(0, 15).map((activity, index) => (
@@ -849,7 +844,7 @@ function LiveOpsTab() {
                               {' '}
                               <span className="text-muted-foreground">{activity.description}</span>
                             </p>
-                            <p className="ios-caption mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {formatDistanceToNow(new Date(activity.createdAt), { addSuffix: true })}
                             </p>
                           </div>
@@ -861,14 +856,14 @@ function LiveOpsTab() {
                             <Activity className="h-7 w-7 text-muted-foreground" />
                           </div>
                           <p className="font-medium mb-1">No recent activity</p>
-                          <p className="ios-caption">Activity will appear here as your team works</p>
+                          <p className="text-xs text-muted-foreground">Activity will appear here as your team works</p>
                         </div>
                       )}
                     </div>
                   </ScrollArea>
                 </div>
               </CollapsibleContent>
-            </div>
+            </Card>
           </Collapsible>
         </div>
       </div>
@@ -1488,42 +1483,22 @@ function TeamAdminTab() {
 
   return (
     <div className="p-4 sm:p-5 section-gap">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-1">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100 dark:bg-green-900/30">
-            <UserCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-bold">{activeCount}</p>
-            <p className="ios-caption truncate">Active</p>
-          </div>
+      <div className="flex gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-1">
+          <div className="text-2xl font-bold tabular-nums text-success">{activeCount}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Active members</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-amber-100 dark:bg-amber-900/30">
-            <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-bold">{pendingCount}</p>
-            <p className="ios-caption truncate">Pending</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-2">
+          <div className="text-2xl font-bold tabular-nums text-warning">{pendingCount}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Pending invites</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-900/30">
-            <Briefcase className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-bold">{onJobCount}</p>
-            <p className="ios-caption truncate">On Job Today</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-3">
+          <div className="text-2xl font-bold tabular-nums">{onJobCount}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">On job today</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-purple-100 dark:bg-purple-900/30">
-            <DollarSign className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl font-bold">${totalHourlyCost.toFixed(0)}</p>
-            <p className="ios-caption truncate">$/hr Total</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-4">
+          <div className="text-2xl font-bold tabular-nums">${totalHourlyCost.toFixed(0)}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">$/hr total</div>
         </div>
       </div>
 
@@ -1561,17 +1536,17 @@ function TeamAdminTab() {
         </div>
       </div>
 
-      <p className="ios-label">Members ({filteredMembers.length})</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Members ({filteredMembers.length})</p>
       <div className="grid gap-3">
         {filteredMembers.map((member, index) => {
           const role = roles?.find(r => r.id === member.roleId);
           const isPending = member.inviteStatus === 'pending' || member.inviteStatus === 'invited';
           const currentJob = member.userId ? getMemberCurrentJob(member.userId) : null;
           return (
-            <div 
+            <Card 
               key={member.id} 
               data-testid={`member-card-${member.id}`}
-              className={`feed-card card-press animate-fade-up stagger-delay-${Math.min(index + 1, 8)} ${isPending ? 'border-amber-200 dark:border-amber-800' : ''}`}
+              className={`animate-fade-up stagger-delay-${Math.min(index + 1, 8)} ${isPending ? 'border-amber-200 dark:border-amber-800' : ''}`}
             >
               <div className="p-4">
                 {isPending && (
@@ -1601,12 +1576,17 @@ function TeamAdminTab() {
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">
                   <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                     {isPending ? (
-                      <Avatar className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 opacity-70">
-                        <AvatarImage src={member.profileImageUrl} />
-                        <AvatarFallback className="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300">
-                          {getInitials(member.firstName, member.lastName, member.email)}
-                        </AvatarFallback>
-                      </Avatar>
+                      <UserAvatar
+                        className="h-11 w-11 sm:h-12 sm:w-12 shrink-0 opacity-70"
+                        user={{
+                          id: member.userId || member.id,
+                          firstName: member.firstName,
+                          lastName: member.lastName,
+                          email: member.email,
+                          photoUrl: member.profileImageUrl,
+                          themeColor: '#f59e0b',
+                        }}
+                      />
                     ) : (
                       <UserAvatar
                         className="h-11 w-11 sm:h-12 sm:w-12 shrink-0"
@@ -1773,12 +1753,12 @@ function TeamAdminTab() {
                   })()}
                 </div>
               </div>
-            </div>
+            </Card>
           );
         })}
 
         {filteredMembers.length === 0 && (
-          <div className="feed-card p-8 text-center">
+          <Card className="p-8 text-center">
             <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--trade) / 0.1)' }}>
               <Users className="h-10 w-10" style={{ color: 'hsl(var(--trade) / 0.4)' }} />
             </div>
@@ -1787,12 +1767,12 @@ function TeamAdminTab() {
                 ? 'No team members match your filters'
                 : 'No team members yet'}
             </p>
-            <p className="ios-caption">
+            <p className="text-xs text-muted-foreground">
               {searchQuery || statusFilter !== 'all'
                 ? 'Try adjusting your search or filters'
                 : 'Invite your first team member to get started!'}
             </p>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -4203,12 +4183,12 @@ function PerformanceTab() {
     <div className="p-4 sm:p-5 section-gap">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="ios-section-title flex items-center gap-2">
+          <h2 className="text-base font-semibold flex items-center gap-2">
             Team Performance
           </h2>
-          <p className="ios-caption mt-0.5">Track productivity and job completion metrics</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Track productivity and job completion metrics</p>
         </div>
-        <div className="feed-card p-1 flex">
+        <div className="rounded-lg border bg-muted/50 p-1 flex gap-0.5">
           <Button
             variant={period === 'week' ? 'default' : 'ghost'}
             size="sm"
@@ -4236,56 +4216,36 @@ function PerformanceTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="feed-card card-accent p-4 flex items-center gap-3 animate-fade-up stagger-delay-1">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-5 w-5 text-green-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-2xl sm:text-3xl font-bold text-green-600 dark:text-green-400">{totalCompleted}</p>
-            <p className="ios-caption truncate">Jobs Done</p>
-          </div>
+      <div className="flex gap-2.5 flex-wrap">
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-1">
+          <div className="text-2xl sm:text-3xl font-bold tabular-nums text-success">{totalCompleted}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Jobs done</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-2">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-900/30">
-            <Briefcase className="h-5 w-5 text-blue-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl sm:text-2xl font-bold">{totalInProgress}</p>
-            <p className="ios-caption truncate">Active</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-2">
+          <div className="text-2xl font-bold tabular-nums">{totalInProgress}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Active</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: 'hsl(var(--trade) / 0.1)' }}>
-            <Clock className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl sm:text-2xl font-bold">{totalHours.toFixed(1)}</p>
-            <p className="ios-caption truncate">Hours Tracked</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-3">
+          <div className="text-2xl font-bold tabular-nums">{totalHours.toFixed(1)}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Hours tracked</div>
         </div>
-        <div className="feed-card p-4 flex items-center gap-3 animate-fade-up stagger-delay-4">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-yellow-100 dark:bg-yellow-900/30">
-            <DollarSign className="h-5 w-5 text-yellow-600" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xl sm:text-2xl font-bold">{formatRevenue(totalRevenue)}</p>
-            <p className="ios-caption truncate">Revenue</p>
-          </div>
+        <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg bg-muted/50 border animate-fade-up stagger-delay-4">
+          <div className="text-2xl font-bold tabular-nums">{formatRevenue(totalRevenue)}</div>
+          <div className="text-xs text-muted-foreground leading-tight font-medium">Revenue</div>
         </div>
       </div>
 
       <div>
-        <p className="ios-label mb-3">Individual Performance</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">Individual Performance</p>
         <div className="space-y-3">
           {memberStats.map((member, index) => {
             const jobShare = totalCompleted > 0 ? (member.completedJobs / totalCompleted) * 100 : 0;
 
             return (
-              <div
+              <Card
                 key={member.id}
                 data-testid={`performance-${member.id}`}
-                className={`feed-card card-press animate-fade-up stagger-delay-${Math.min(index + 1, 8)}`}
+                className={`animate-fade-up stagger-delay-${Math.min(index + 1, 8)}`}
               >
                 <div className="p-4">
                   <div className="flex items-center gap-3 mb-3">
@@ -4348,18 +4308,18 @@ function PerformanceTab() {
                     </span>
                   </div>
                 </div>
-              </div>
+              </Card>
             );
           })}
 
           {memberStats.length === 0 && (
-            <div className="feed-card p-8 text-center">
+            <Card className="p-8 text-center">
               <div className="w-20 h-20 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'hsl(var(--trade) / 0.1)' }}>
                 <BarChart3 className="h-10 w-10" style={{ color: 'hsl(var(--trade) / 0.4)' }} />
               </div>
               <p className="font-medium mb-1">No performance data yet</p>
-              <p className="ios-caption">Team member stats will appear here as jobs are completed</p>
-            </div>
+              <p className="text-xs text-muted-foreground">Team member stats will appear here as jobs are completed</p>
+            </Card>
           )}
         </div>
       </div>
