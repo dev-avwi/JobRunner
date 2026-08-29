@@ -5117,6 +5117,52 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  // Clear ALL active job_assignments and null out assignedTo in one DB transaction —
+  // used by dispatch board when a job is dropped onto the Unassigned zone.
+  app.post("/api/jobs/:id/unassign-all", requireAuth, createPermissionMiddleware(PERMISSIONS.ASSIGN_JOBS), async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const canManage = userContext.isOwner || userContext.permissions.includes('view_all');
+      if (!canManage) {
+        return res.status(403).json({ error: "Only owners and managers can unassign jobs" });
+      }
+
+      const jobId = req.params.id;
+
+      // Single transaction: bulk-deactivate all active assignment records AND clear
+      // the legacy assignedTo column so the dispatch board reflects no assignee.
+      const updatedJob = await db.transaction(async (tx) => {
+        // Verify the job belongs to this business before modifying anything
+        const [existing] = await tx
+          .select({ id: jobs.id })
+          .from(jobs)
+          .where(and(eq(jobs.id, jobId), eq(jobs.userId, userContext.effectiveUserId)));
+        if (!existing) return null;
+
+        // Bulk-deactivate all active assignment records for this job
+        await tx
+          .update(jobAssignments)
+          .set({ isActive: false, assignmentStatus: "removed" })
+          .where(and(eq(jobAssignments.jobId, jobId), eq(jobAssignments.isActive, true)));
+
+        // Clear the legacy assignedTo field on the job row
+        const [updated] = await tx
+          .update(jobs)
+          .set({ assignedTo: null, updatedAt: new Date() })
+          .where(and(eq(jobs.id, jobId), eq(jobs.userId, userContext.effectiveUserId)))
+          .returning();
+        return updated ?? null;
+      });
+
+      if (!updatedJob) return res.status(404).json({ error: "Job not found or access denied" });
+
+      res.json({ unassigned: true, job: updatedJob });
+    } catch (error: any) {
+      console.error("Error unassigning job:", error);
+      res.status(500).json({ error: error.message || "Failed to unassign job" });
+    }
+  });
+
   app.post("/api/jobs/:jobId/nudge-worker", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);

@@ -877,6 +877,7 @@ function DayView({
   onEquipmentAssign,
   onMaterialAssign,
   jobEquipmentMap,
+  onUnassign,
 }: {
   date: Date;
   jobs: DispatchJob[];
@@ -1398,6 +1399,7 @@ function WeekView({
   onReschedule,
   onAssignJobToSlot,
   onEquipmentAssign,
+  onUnassign,
 }: {
   weekStart: Date;
   jobs: DispatchJob[];
@@ -1410,6 +1412,7 @@ function WeekView({
   onReschedule: (jobId: string, memberId: string, date: Date) => void;
   onAssignJobToSlot: (jobId: string, memberId: string, date: Date) => void;
   onEquipmentAssign?: (equipmentId: string, jobId: string) => void;
+  onUnassign?: (jobId: string) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [dragOverCell, setDragOverCell] = useState<{ wid: string; dayStr: string } | null>(null);
@@ -1642,6 +1645,73 @@ function WeekView({
             </div>
           );
         })}
+
+        {/* Unassigned row — drop a job here to clear its assignment; visible during drag even when every job is assigned */}
+        {(() => {
+          const unassignedWeekJobs = jobs.filter(j => {
+            const assignee = j.assignedTo ?? primaryAssignment(j)?.memberId;
+            return !assignee;
+          });
+          const showUnassignedRow = draggingJobId !== null || unassignedWeekJobs.length > 0;
+          if (!showUnassignedRow) return null;
+          return (
+            <div className="grid grid-cols-[160px_repeat(7,1fr)] border-b border-dashed overflow-hidden bg-amber-50/30 dark:bg-amber-950/10" style={{ minHeight: 48 }}>
+              {/* Label cell */}
+              <div className="px-2 py-1.5 flex items-center gap-1.5 border-r bg-amber-50/60 dark:bg-amber-950/20" style={{ width: 160 }}>
+                <span className="text-[11px] font-medium text-muted-foreground">Unassigned</span>
+              </div>
+              {/* One cell per day — each is a drop target that calls onUnassign */}
+              {days.map(day => {
+                const dayStr = day.toISOString();
+                const dayUnassigned = unassignedWeekJobs.filter(j => jobOnDate(j, day));
+                const isOverUnassign = dragOverCell?.wid === "unassigned" && dragOverCell?.dayStr === dayStr;
+                return (
+                  <div
+                    key={dayStr}
+                    className={`border-l p-1 transition-colors ${isOverUnassign ? "bg-amber-100 dark:bg-amber-900/30 ring-inset ring-1 ring-amber-400/50" : "hover:bg-amber-50/50 dark:hover:bg-amber-950/20"}`}
+                    style={{ minHeight: 48 }}
+                    onDragOver={e => { e.preventDefault(); setDragOverCell({ wid: "unassigned", dayStr }); }}
+                    onDragLeave={() => setDragOverCell(null)}
+                    onDrop={e => {
+                      e.preventDefault();
+                      const jobId = e.dataTransfer.getData("jobId");
+                      if (jobId && onUnassign) onUnassign(jobId);
+                      setDragOverCell(null);
+                      setDraggingJobId(null);
+                    }}
+                  >
+                    {dayUnassigned.map(job => {
+                      const sc = getStatusColor(job.status);
+                      return (
+                        <div
+                          key={job.id}
+                          draggable
+                          onDragStart={e => {
+                            e.dataTransfer.setData("jobId", job.id);
+                            setDraggingJobId(job.id);
+                          }}
+                          onDragEnd={() => setDraggingJobId(null)}
+                          onClick={e => { e.stopPropagation(); onJobClick(job.id); }}
+                          className={`rounded-sm mb-0.5 cursor-pointer overflow-hidden ${sc.bg} hover:brightness-95 ${draggingJobId === job.id ? "opacity-40" : ""}`}
+                          title={job.title}
+                        >
+                          <div className="px-1.5 py-0.5">
+                            <p className="text-[10px] font-semibold truncate">{job.title}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {draggingJobId !== null && dayUnassigned.length === 0 && (
+                      <div className="flex items-center justify-center h-full opacity-30 pointer-events-none">
+                        <X className="h-3 w-3 text-amber-500" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Phase detail popover (fixed position, read-only) */}
@@ -2405,7 +2475,7 @@ export default function AdvancedDispatch() {
 
   // ── Mutations ─────────────────────────────────────────────────
   const updateJobMutation = useMutation({
-    mutationFn: async (payload: { jobId: string; status?: string; workerStatus?: string; scheduledAt?: string; scheduledTime?: string; assignedTo?: string }) => {
+    mutationFn: async (payload: { jobId: string; status?: string; workerStatus?: string; scheduledAt?: string; scheduledTime?: string; assignedTo?: string | null }) => {
       const { jobId, ...body } = payload;
       return apiRequest("PATCH", `/api/jobs/${jobId}`, body);
     },
@@ -2536,9 +2606,23 @@ export default function AdvancedDispatch() {
     materialAssignMutation.mutate({ materialId, jobId });
   }, [materialAssignMutation]);
 
+  const unassignAllMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return apiRequest("POST", `/api/jobs/${jobId}/unassign-all`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
+      toast({ title: "Job unassigned" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
+    },
+  });
+
   const handleUnassign = useCallback((jobId: string) => {
-    updateJobMutation.mutate({ jobId, assignedTo: null } as Parameters<typeof updateJobMutation.mutate>[0]);
-  }, [updateJobMutation]);
+    unassignAllMutation.mutate(jobId);
+  }, [unassignAllMutation]);
 
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
@@ -2991,6 +3075,7 @@ export default function AdvancedDispatch() {
               onReschedule={handleWeekReschedule}
               onAssignJobToSlot={handleAssignJobToSlotWeek}
               onEquipmentAssign={handleEquipmentAssign}
+              onUnassign={handleUnassign}
             />
           ) : view === "map" ? (
             <MapView
