@@ -2018,6 +2018,7 @@ function ResourceSidebar({
   const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">(defaultTab ?? "workers");
   const [draggingEquipId, setDraggingEquipId] = useState<string | null>(null);
   const [draggingMatId, setDraggingMatId] = useState<string | null>(null);
+  const [draggingWorkerId, setDraggingWorkerId] = useState<string | null>(null);
 
   const workerStateMap = useMemo(() => {
     const m = new Map<string, WorkerState>();
@@ -2071,8 +2072,9 @@ function ResourceSidebar({
         {/* Workers tab */}
         {activeTab === "workers" && (
           <div className="p-2 space-y-1">
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1">
-              Filter by worker
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-1 py-1 flex items-center gap-1.5">
+              <GripVertical className="h-3 w-3 opacity-50" />
+              Drag to assign / click to filter
             </p>
             {workers.map(worker => {
               const wid = worker.memberId || worker.id;
@@ -2080,13 +2082,22 @@ function ResourceSidebar({
               const onLeave = workerOnLeaveInRange(leaveRecords, wid, leaveRangeStart, leaveRangeEnd);
               const leaveLabel = onLeave ? workerLeaveLabel(leaveRecords, wid, leaveRangeStart) : null;
               return (
-                <button
+                <div
                   key={wid}
+                  draggable
                   onClick={() => onWorkerToggle(wid)}
-                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-colors text-left
+                  onDragStart={e => {
+                    e.dataTransfer.setData("workerId", wid);
+                    e.dataTransfer.setData("workerName", memberName(worker));
+                    setDraggingWorkerId(wid);
+                  }}
+                  onDragEnd={() => setDraggingWorkerId(null)}
+                  className={`w-full flex items-center gap-2 px-2 py-1.5 rounded transition-all text-left cursor-grab active:cursor-grabbing
                     ${isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/50"}
-                    ${onLeave ? "opacity-70" : ""}`}
+                    ${onLeave ? "opacity-70" : ""}
+                    ${draggingWorkerId === wid ? "opacity-40 scale-[0.98]" : ""}`}
                 >
+                  <GripVertical className="h-3.5 w-3.5 text-muted-foreground/40 flex-shrink-0" />
                   <UserAvatar
                     user={{ id: wid, firstName: worker.firstName, lastName: worker.lastName, photoUrl: worker.profileImageUrl, themeColor: worker.themeColor }}
                     className="h-6 w-6 text-[10px] flex-shrink-0"
@@ -2103,7 +2114,7 @@ function ResourceSidebar({
                     </div>
                   </div>
                   {isSelected && <Check className="h-3 w-3 flex-shrink-0 text-primary" />}
-                </button>
+                </div>
               );
             })}
           </div>
@@ -2625,6 +2636,18 @@ export default function AdvancedDispatch() {
     unassignAllMutation.mutate(jobId);
   }, [unassignAllMutation]);
 
+  // Assign a worker to the currently-selected job (used by job view drag-drop)
+  const handleWorkerAssignToJob = useCallback((workerId: string) => {
+    if (!selectedJobId) return;
+    updateJobMutation.mutate({ jobId: selectedJobId, assignedTo: workerId });
+  }, [selectedJobId, updateJobMutation]);
+
+  // Assign a material to the currently-selected job (used by job view drag-drop)
+  const handleMaterialAssignToJob = useCallback((materialId: string) => {
+    if (!selectedJobId) return;
+    materialAssignMutation.mutate({ materialId, jobId: selectedJobId });
+  }, [selectedJobId, materialAssignMutation]);
+
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
     if (view === "day" || view === "map") setCurrentDate(d => subDays(d, 1));
@@ -3099,6 +3122,8 @@ export default function AdvancedDispatch() {
               allDispatchJobs={dispatchJobs}
               onJobClick={handleJobClick}
               onOpenJobPicker={() => setJobPickerOpen(true)}
+              onWorkerAssign={handleWorkerAssignToJob}
+              onMaterialAssign={handleMaterialAssignToJob}
             />
           ) : (
             <KanbanView
@@ -3159,6 +3184,26 @@ export default function AdvancedDispatch() {
               workerStates={workerStates}
               defaultTab={view === "map" ? "capacity" : undefined}
               onEquipmentUnassign={handleEquipmentUnassign}
+            />
+          )}
+
+          {/* Resource sidebar in job view — workers + materials draggable onto the selected job */}
+          {showSidebar && view === "job" && (
+            <ResourceSidebar
+              workers={workers}
+              resources={resources}
+              selectedWorkerIds={selectedWorkerIds}
+              leaveRecords={leaveRecords}
+              leaveRangeStart={currentDate}
+              leaveRangeEnd={currentDate}
+              onWorkerToggle={handleWorkerToggle}
+              onClose={() => setShowSidebar(false)}
+              allDayJobs={allDayJobs}
+              workerStates={workerStates}
+              defaultTab="workers"
+              onEquipmentAssign={handleEquipmentAssign}
+              onEquipmentUnassign={handleEquipmentUnassign}
+              onMaterialAssign={handleMaterialAssign}
             />
           )}
         </div>
@@ -3600,6 +3645,8 @@ function JobView({
   allDispatchJobs,
   onJobClick,
   onOpenJobPicker,
+  onWorkerAssign,
+  onMaterialAssign,
 }: {
   weekStart: Date;
   selectedJobId: string | null;
@@ -3611,10 +3658,14 @@ function JobView({
   allDispatchJobs: DispatchJob[];
   onJobClick: (id: string) => void;
   onOpenJobPicker?: () => void;
+  onWorkerAssign?: (workerId: string) => void;
+  onMaterialAssign?: (materialId: string) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
   const [phaseStatusFilter, setPhaseStatusFilter] = useState<"all" | "not_started" | "in_progress" | "complete" | "invoiced">("all");
+  const [workerDragOver, setWorkerDragOver] = useState(false);
+  const [materialDragOver, setMaterialDragOver] = useState(false);
 
   // Reset filter when the selected job changes so stale state doesn't carry over
   useEffect(() => {
@@ -3774,9 +3825,28 @@ function JobView({
           </div>
         )}
 
-        {/* Timeline grid */}
-        <ScrollArea className="flex-1">
-          <div className="min-w-[700px]">
+        {/* Timeline grid — also a drop zone for workers and materials */}
+        <ScrollArea
+          className="flex-1"
+          onDragOver={e => {
+            if (e.dataTransfer.types.includes("workerid") || e.dataTransfer.types.includes("materialid")) {
+              e.preventDefault();
+              if (e.dataTransfer.types.includes("workerid")) setWorkerDragOver(true);
+              if (e.dataTransfer.types.includes("materialid")) setMaterialDragOver(true);
+            }
+          }}
+          onDragLeave={() => { setWorkerDragOver(false); setMaterialDragOver(false); }}
+          onDrop={e => {
+            e.preventDefault();
+            setWorkerDragOver(false);
+            setMaterialDragOver(false);
+            const wid = e.dataTransfer.getData("workerId");
+            const mid = e.dataTransfer.getData("materialId");
+            if (wid && onWorkerAssign) onWorkerAssign(wid);
+            if (mid && onMaterialAssign && selectedJobId) onMaterialAssign(mid);
+          }}
+        >
+          <div className={`min-w-[700px] transition-all ${workerDragOver ? "ring-2 ring-inset ring-primary/40 bg-primary/[0.02]" : ""} ${materialDragOver ? "ring-2 ring-inset ring-green-500/40 bg-green-500/[0.02]" : ""}`}>
             {/* Day headers */}
             <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b sticky top-0 z-10 bg-background">
               <div className="px-2 py-2 text-[11px] font-semibold text-muted-foreground uppercase border-r">Worker</div>
@@ -3896,26 +3966,38 @@ function JobView({
             {/* Worker rows */}
             {jobWorkers.length === 0 && !isProject ? (
               /* Service call with no team members — show a single job row */
-              <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b">
-                <div className="px-2 py-2 border-r flex items-center text-[11px] text-muted-foreground italic">Job schedule</div>
-                {days.map(day => {
-                  const onDay = jobOnDate(selectedJob, day);
-                  return (
-                    <div key={day.toISOString()} className={`border-l min-h-[80px] p-1.5 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}>
-                      {onDay && (
-                        <div className={`rounded px-1.5 py-1 ${scJob.bg}`}>
-                          <p className="text-[10px] font-semibold truncate">{selectedJob.title}</p>
-                          <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b">
+                  <div className="px-2 py-2 border-r flex items-center text-[11px] text-muted-foreground italic">Job schedule</div>
+                  {days.map(day => {
+                    const onDay = jobOnDate(selectedJob, day);
+                    return (
+                      <div key={day.toISOString()} className={`border-l min-h-[80px] p-1.5 ${isToday(day) ? "bg-primary/[0.03]" : ""}`}>
+                        {onDay && (
+                          <div className={`rounded px-1.5 py-1 ${scJob.bg}`}>
+                            <p className="text-[10px] font-semibold truncate">{selectedJob.title}</p>
+                            <p className={`text-[9px] ${scJob.text}`}>{formatJobTime(selectedJob.scheduledTime, selectedJob.scheduledAt)}</p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Drop hint for assigning a worker to this service call */}
+                <div className={`flex items-center justify-center py-3 mx-3 my-2 rounded-lg border-2 border-dashed transition-all
+                  ${workerDragOver ? "border-primary/60 bg-primary/5" : "border-border/30"}`}>
+                  <Users className={`h-3.5 w-3.5 mr-1.5 transition-colors ${workerDragOver ? "text-primary" : "text-muted-foreground/40"}`} />
+                  <p className={`text-[11px] transition-colors ${workerDragOver ? "text-primary font-medium" : "text-muted-foreground/50"}`}>
+                    {workerDragOver ? "Drop to assign worker" : "Drag a worker here to assign them"}
+                  </p>
+                </div>
+              </>
             ) : jobWorkers.length === 0 ? (
-              <div className="flex flex-col items-center py-12 text-muted-foreground gap-2">
-                <Users className="h-8 w-8 opacity-20" />
-                <p className="text-xs">No crew assigned to this project yet</p>
+              <div className={`flex flex-col items-center py-12 text-muted-foreground gap-2 transition-all rounded-lg mx-4 my-2 border-2 border-dashed
+                ${workerDragOver ? "border-primary/50 bg-primary/5 text-primary" : "border-border/40"}`}>
+                <Users className={`h-8 w-8 ${workerDragOver ? "opacity-60" : "opacity-20"}`} />
+                <p className="text-xs font-medium">{workerDragOver ? "Drop to assign worker" : "No crew assigned yet"}</p>
+                <p className="text-[10px] opacity-60">{workerDragOver ? "" : "Drag a worker from the panel"}</p>
               </div>
             ) : (
               jobWorkers.map(worker => {
