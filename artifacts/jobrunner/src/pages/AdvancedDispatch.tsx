@@ -14,6 +14,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { getPhaseSpanPosition } from "@/lib/phaseSpan";
 export { getPhaseSpanPosition };
+import { makeEquipmentAssignHandler } from "@/lib/equipmentAssignHandler";
 import { useTheme } from "@/components/ThemeProvider";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
@@ -2662,10 +2663,10 @@ export default function AdvancedDispatch() {
   }, [selectedJobId, materialAssignMutation]);
 
   // Assign equipment to the currently-selected job (used by job view drag-drop)
-  const handleEquipmentAssignToJob = useCallback((equipmentId: string) => {
-    if (!selectedJobId) return;
-    equipmentAssignMutation.mutate({ equipmentId, jobId: selectedJobId });
-  }, [selectedJobId, equipmentAssignMutation]);
+  const handleEquipmentAssignToJob = useCallback(
+    makeEquipmentAssignHandler(selectedJobId, equipmentAssignMutation.mutate),
+    [selectedJobId, equipmentAssignMutation],
+  );
 
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
