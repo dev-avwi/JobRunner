@@ -2618,23 +2618,21 @@ export default function AdvancedDispatch() {
     materialAssignMutation.mutate({ materialId, jobId });
   }, [materialAssignMutation]);
 
-  const unassignAllMutation = useMutation({
-    mutationFn: async (jobId: string) => {
-      return apiRequest("POST", `/api/jobs/${jobId}/unassign-all`, {});
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
-      queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
-      toast({ title: "Job unassigned" });
-    },
-    onError: (err: any) => {
-      toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
-    },
-  });
-
   const handleUnassign = useCallback((jobId: string) => {
-    unassignAllMutation.mutate(jobId);
-  }, [unassignAllMutation]);
+    updateJobMutation.mutate(
+      { jobId, assignedTo: null },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
+          queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
+          toast({ title: "Job unassigned" });
+        },
+        onError: (err: any) => {
+          toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
+        },
+      }
+    );
+  }, [updateJobMutation, queryClient, toast]);
 
   // Assign a worker to the currently-selected job (used by job view drag-drop)
   const handleWorkerAssignToJob = useCallback((workerId: string) => {
