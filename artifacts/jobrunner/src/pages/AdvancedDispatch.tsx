@@ -1999,7 +1999,10 @@ function ResourceSidebar({
   workerStates,
   embedded,
   defaultTab,
+  availableTabs,
+  onEquipmentAssign,
   onEquipmentUnassign,
+  onMaterialAssign,
 }: {
   workers: TeamMember[];
   resources?: DispatchResources;
@@ -2014,7 +2017,9 @@ function ResourceSidebar({
   embedded?: boolean;
   defaultTab?: "workers" | "equipment" | "materials" | "capacity";
   availableTabs?: Array<"workers" | "equipment" | "materials" | "capacity">;
+  onEquipmentAssign?: (equipmentId: string, jobId: string) => void;
   onEquipmentUnassign?: (assignmentId: string, jobId: string) => void;
+  onMaterialAssign?: (materialId: string, jobId: string) => void;
 }) {
   const [activeTab, setActiveTab] = useState<"workers" | "equipment" | "materials" | "capacity">(defaultTab ?? "workers");
   const [draggingEquipId, setDraggingEquipId] = useState<string | null>(null);
@@ -2503,6 +2508,21 @@ export default function AdvancedDispatch() {
     },
   });
 
+  // Dedicated unassign-all mutation: clears assignedTo AND deactivates all
+  // active job_assignments records in a single server-side transaction.
+  const unassignAllMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      return apiRequest("POST", `/api/jobs/${jobId}/unassign-all`, {});
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
+      queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
+    },
+  });
+
   const equipmentAssignMutation = useMutation({
     mutationFn: async ({ equipmentId, jobId }: { equipmentId: string; jobId: string }) => {
       return apiRequest("POST", `/api/jobs/${jobId}/equipment`, { equipmentId });
@@ -2621,20 +2641,11 @@ export default function AdvancedDispatch() {
   }, [materialAssignMutation]);
 
   const handleUnassign = useCallback((jobId: string) => {
-    updateJobMutation.mutate(
-      { jobId, assignedTo: null },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["/api/dispatch/board"], exact: false });
-          queryClient.invalidateQueries({ queryKey: ["/api/ops/health"] });
-          // No toast — the visual change (job moves to Unassigned row) is feedback enough
-        },
-        onError: (err: any) => {
-          toast({ title: "Failed to unassign job", description: err.message, variant: "destructive" });
-        },
-      }
-    );
-  }, [updateJobMutation, queryClient, toast]);
+    // Uses the dedicated POST /api/jobs/:id/unassign-all endpoint which atomically
+    // clears jobs.assignedTo AND deactivates all active job_assignments records.
+    // The generic PATCH only nulls assignedTo and would leave assignment records intact.
+    unassignAllMutation.mutate(jobId);
+  }, [unassignAllMutation]);
 
   // Assign a worker to the currently-selected job (used by job view drag-drop)
   const handleWorkerAssignToJob = useCallback((workerId: string) => {
@@ -2647,6 +2658,12 @@ export default function AdvancedDispatch() {
     if (!selectedJobId) return;
     materialAssignMutation.mutate({ materialId, jobId: selectedJobId });
   }, [selectedJobId, materialAssignMutation]);
+
+  // Assign equipment to the currently-selected job (used by job view drag-drop)
+  const handleEquipmentAssignToJob = useCallback((equipmentId: string) => {
+    if (!selectedJobId) return;
+    equipmentAssignMutation.mutate({ equipmentId, jobId: selectedJobId });
+  }, [selectedJobId, equipmentAssignMutation]);
 
   // ── Navigation ────────────────────────────────────────────────
   const navPrev = () => {
@@ -3124,6 +3141,7 @@ export default function AdvancedDispatch() {
               onOpenJobPicker={() => setJobPickerOpen(true)}
               onWorkerAssign={handleWorkerAssignToJob}
               onMaterialAssign={handleMaterialAssignToJob}
+              onEquipmentAssign={handleEquipmentAssignToJob}
             />
           ) : (
             <KanbanView
@@ -3649,6 +3667,7 @@ function JobView({
   onOpenJobPicker,
   onWorkerAssign,
   onMaterialAssign,
+  onEquipmentAssign,
 }: {
   weekStart: Date;
   selectedJobId: string | null;
@@ -3662,12 +3681,14 @@ function JobView({
   onOpenJobPicker?: () => void;
   onWorkerAssign?: (workerId: string) => void;
   onMaterialAssign?: (materialId: string) => void;
+  onEquipmentAssign?: (equipmentId: string) => void;
 }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const [selectedPhase, setSelectedPhase] = useState<DispatchPhase | null>(null);
   const [phaseStatusFilter, setPhaseStatusFilter] = useState<"all" | "not_started" | "in_progress" | "complete" | "invoiced">("all");
   const [workerDragOver, setWorkerDragOver] = useState(false);
   const [materialDragOver, setMaterialDragOver] = useState(false);
+  const [equipmentDragOver, setEquipmentDragOver] = useState(false);
 
   // Reset filter when the selected job changes so stale state doesn't carry over
   useEffect(() => {
@@ -3827,28 +3848,33 @@ function JobView({
           </div>
         )}
 
-        {/* Timeline grid — also a drop zone for workers and materials */}
+        {/* Timeline grid — drop zone for workers, materials, and equipment */}
         <ScrollArea
           className="flex-1"
           onDragOver={e => {
-            if (e.dataTransfer.types.includes("workerid") || e.dataTransfer.types.includes("materialid")) {
+            const types = e.dataTransfer.types;
+            if (types.includes("workerid") || types.includes("materialid") || types.includes("equipmentid")) {
               e.preventDefault();
-              if (e.dataTransfer.types.includes("workerid")) setWorkerDragOver(true);
-              if (e.dataTransfer.types.includes("materialid")) setMaterialDragOver(true);
+              if (types.includes("workerid")) setWorkerDragOver(true);
+              if (types.includes("materialid")) setMaterialDragOver(true);
+              if (types.includes("equipmentid")) setEquipmentDragOver(true);
             }
           }}
-          onDragLeave={() => { setWorkerDragOver(false); setMaterialDragOver(false); }}
+          onDragLeave={() => { setWorkerDragOver(false); setMaterialDragOver(false); setEquipmentDragOver(false); }}
           onDrop={e => {
             e.preventDefault();
             setWorkerDragOver(false);
             setMaterialDragOver(false);
+            setEquipmentDragOver(false);
             const wid = e.dataTransfer.getData("workerId");
             const mid = e.dataTransfer.getData("materialId");
+            const eid = e.dataTransfer.getData("equipmentId");
             if (wid && onWorkerAssign) onWorkerAssign(wid);
-            if (mid && onMaterialAssign && selectedJobId) onMaterialAssign(mid);
+            if (mid && onMaterialAssign) onMaterialAssign(mid);
+            if (eid && onEquipmentAssign) onEquipmentAssign(eid);
           }}
         >
-          <div className={`min-w-[700px] transition-all ${workerDragOver ? "ring-2 ring-inset ring-primary/40 bg-primary/[0.02]" : ""} ${materialDragOver ? "ring-2 ring-inset ring-green-500/40 bg-green-500/[0.02]" : ""}`}>
+          <div className={`min-w-[700px] transition-all ${workerDragOver ? "ring-2 ring-inset ring-primary/40 bg-primary/[0.02]" : ""} ${materialDragOver ? "ring-2 ring-inset ring-green-500/40 bg-green-500/[0.02]" : ""} ${equipmentDragOver ? "ring-2 ring-inset ring-orange-500/40 bg-orange-500/[0.02]" : ""}`}>
             {/* Day headers */}
             <div className="grid grid-cols-[150px_repeat(7,1fr)] border-b sticky top-0 z-10 bg-background">
               <div className="px-2 py-2 text-[11px] font-semibold text-muted-foreground uppercase border-r">Worker</div>
