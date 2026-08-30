@@ -1,0 +1,101 @@
+Hi Ayden, Nic and Hans!
+
+I have had a chat with Owen and he has a couple of things to consider for JobRunner. 
+
+1. Feedback button for users to give feedback about something within the app that may not be working or could be improved.
+
+2. Have clear user guides and how to videos on how to do each action like "Adding a new Customer" and "Creating a new Job Card" and "Adding a Service type".
+
+3. Test both the app and website version fully so you know every component is working as it should be. 
+
+4. Have AI help assistant in the app to answer questions for you.
+
+5. Seek out Government Funded young entrepreneurs Grants
+
+TIME TO REACH OUT FOR HELP
+You’ll want a team that can handle QA and security testing, compliance, and documentation, plus ongoing maintenance and support. Not a full rebuild. 
+I'd suggest bringing someone in for a technical audit, rather than rebuilding, and then put them on a monthly support plan.  
+
+There are a few Cairns-based options you can start with, like: 
+
+HansenDev - https://hansendev.com.au
+  They explicitly mention app audits, QA, React Native, and launch support, so that might line up very well.
+ 
+What you mostly need is an Audit of your app and for someone to assist in fine tuning it. So maybe reach out to HansenDev and shoot him an email or go to him directly and introduce yourself and present to him what you have created. I am sure he will be impressed. 
+Maybe he would be great to do some work experience with if he's open to it.
+
+Ensure anyone you talk to sign an NDA before you hand over your code or detailed documentation. Second, use a proper services agreement with very clear IP ownership clauses, stating that all pre-existing IP and any enhancements remain yours.  
+Consider trademarking the name JobRunner if you haven't already, and make sure your copyright in the code and assets is documented.  
+
+Share only what's necessary at each stage. You don't need to hand over the full crown jewels just to get a quote. And given how much you've invested in this already, I really think it's worth having a lawyer. even if it's a brief, an Australian commercial lawyer, to give you some of that paperwork to look over.  
+
+  In Cairns, I would start with Miller Harris Lawyers. They have a clear intellectual property and commercial law practice, which makes them a good fit for software IP, NDAs, and contracts. Also, consider O'Connor Law. They handle commercial law matters. And Devenish Law, a boutique commercial practice. If it were my project, I'd book a one-hour consult with Miller Harris first, specifically ask for help with an NDA, an IP ownership clause in your services agreement, and advice on trademarking job runner. That should give you a solid legal foundation before you share anything further.  
+I found a few that are much more relevant to what you're doing with JobRunner than a generic Indigenous business.
+
+Brisbane has a few good options, like The Useful Apps, App Gurus, and Digital8. 
+
+My strongest Brisbane options for you
+
+Yura Tech — Brisbane
+
+This is the one I'd put at the top of your list. Yura Tech describes itself as a 100% Indigenous-owned software technology company and specifically offers:
+
+Mobile app development
+Custom software development
+Product design and ideation
+Digital transformation
+Cloud solutions
+Data/analytics
+That's very close to what you need for JobRunner: taking an already-designed app, technically reviewing it, fine-tuning it and getting it ready for commercial launch.
+
+Yura Tech website
+
+Baidam — Brisbane CBD
+
+Baidam is a 100% Australian-owned First Nations IT business, headquartered at Level 19, 167 Eagle Street, Brisbane. They're particularly strong in cybersecurity, application security and IT, rather than being primarily an app-development company.
+
+For JobRunner, I'd consider them for a security/technical audit, especially before you start taking paying customers.
+
+Baidam website
+
+Clevvi Technology — Queensland
+
+Clevvi is a Queensland Indigenous-owned digital and AI consultancy. They have software engineers, architects, project managers and business analysts and work across custom digital solutions, cloud, systems integration and digital transformation.
+
+They're potentially useful if JobRunner needs more than just app development — for example, backend architecture, integrations, scalability or business systems.
+
+Projects in Technology — Hamilton, Brisbane
+
+This one is interesting because they're an Indigenous-led technology project management consultancy based at Hamilton. They specialize in IT implementations, business transformation, project assurance and change management.
+
+They may be particularly useful if you need someone to independently assess where JobRunner is up to and manage the process of getting it launch-ready, rather than simply writing code.
+
+Elry — Brisbane
+
+Elry is a smaller Indigenous-owned technology company focused on software/automation and managed technology services. Their model is deliberately small and senior, with the people scoping the work involved in delivering it. They state that their Indigenous ownership became 100% in April 2026 and that they're Supply Nation Certified.
+
+This could be worth investigating if you prefer dealing directly with a small senior team rather than a big agency.
+
+One important thing I noticed
+
+There's also a Queensland Indigenous Business Network (QIBN) office in Fortitude Valley:
+
+Queensland Indigenous Business Network (QIBN)
+
+Non-profit organization•Closed
+Website•Directions
+They're not a software developer themselves, but this could actually be very useful for you. Queensland Government specifically points people toward the Indigenous Business Gateway/QIBN directory for finding Aboriginal and Torres Strait Islander businesses in Queensland.
+
+For your JobRunner, I'd approach them in this order
+
+🥇 Yura Tech — technical development + app review + launch
+🥈 Projects in Technology — independent technical/project oversight
+🥉 Baidam — cybersecurity/application security audit
+4️⃣ Clevvi — broader digital architecture and systems
+5️⃣ Elry — smaller-team technology/automation support
+
+And honestly, I wouldn't automatically go to Sydney or Melbourne. Given that you want face-to-face contact, I'd start with Brisbane. You can always bring in a specialist from elsewhere later if there's something the Brisbane team can't handle.
+
+Check out Owen's Business Website:
+
+https://rockaxiom.au/

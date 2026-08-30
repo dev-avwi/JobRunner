@@ -1,0 +1,31 @@
+1. Register the business name, structure, ABN, GST, and set up a business bank account and accounting software.
+ 
+2. Protect the IP with a trademark for a job runner and get the legal docs together, like Privacy policy, terms and conditions, EULA, employment agreements, contractor agreements, NDAs where needed.
+3. For insurance, consider public liability, professional indemnity, cyber, management liability, workers' comp if hiring, and contents.
+4. Cybersecurity basics too like MFA, encryption, daily backups, secure hosting, SSL, and a basic incident response plan.
+5. Compliance-wise, make sure you're aligned with the Privacy Act if applicable, spam act for emails, PCI if handling card data, and keep good tax records.
+6. On the product side, test across devices, fix critical bugs, set up payments properly, support, and a simple help center.
+7. Go to market, pricing, trials, website, socials, demo video, and testimonials. Run a small beta with local tradies, iterate, then push broader.
+8. Also set up a data room. A clean cloud folder with all key docs, so if an investor asks, you're ready. Given the ambition here, I'd treat it like a real startup scale across Australia. If you like, I can produce a full Startup Launch Pack, a professional set of 20 or so documents, pitch deck, financial model, launch roadmap, all aligned and investor ready.
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+This guide is to help ensure your app is polished, secure, reliable, and ready for long-term success.
+Section 1: intellectual property and code ownership. Confirm and document ownership of all source code. Register trademarks if appropriate. Keep version control and regular backups in multiple secure locations.
+Section 2: software quality. Every feature should function correctly. Quotes, invoices, scheduling, staff allocation, syncing, search, notifications. Nothing critical should break.
+Section 3: testing. Test on different devices and screen sizes, slow internet, high data volumes, first-time users, security checks.
+Section4: user experience. Clear navigation, logical menus, plain English language, readable fonts, consistent buttons and fast load times.
+Section 5: first-time user setup. Welcome screens, step-by-step setup wizards, tutorials for first job, first quote, first invoice, and perhaps a getting started checklist.
+Section 6: help centre and support. Searchable help, FAQs, short how-to videos, contact support, bug reports and feedback.
+Section 7: documentation. User manual, admin guide, release notes, technical notes, API docs if relevant.
+Section8: security and privacy. Strong authentication, sensible permissions, encrypted connections, regular updates and a clear privacy policy.
+Section 9: reliability and monitoring. Crash reporting, error logs, performance monitoring, server monitoring, backup checks.
+Section 10: ongoing improvement. Track feature requests, bugs, and plan updates.
+Section 11, communication. Keep written notes on feature requests, decisions, and future plans.
+Section 12: release checklist. Before each public release, finish testing, resolve critical bugs, update documentation, check security, update the help center.
