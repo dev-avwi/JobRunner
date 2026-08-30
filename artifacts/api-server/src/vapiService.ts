@@ -98,21 +98,9 @@ export function verifyVapiWebhook(
     return false;
   }
 
-  try {
-    const parsed = JSON.parse(rawBody.toString('utf8'));
-    const assistantId = parsed?.message?.call?.assistantId || parsed?.call?.assistantId;
-    if (assistantId) {
-      return true;
-    }
-    const eventType = parsed?.message?.type || parsed?.type;
-    if (['status-update', 'end-of-call-report', 'tool-calls', 'hang'].includes(eventType)) {
-      return true;
-    }
-    console.warn('[Vapi] Webhook event missing identifiable data — rejecting');
-    return false;
-  } catch {
-    return false;
-  }
+  // VAPI_WEBHOOK_SECRET is not configured — fail closed; do not allow any request through
+  console.error('[Vapi] VAPI_WEBHOOK_SECRET not configured — rejecting webhook (fail-closed)');
+  return false;
 }
 
 interface KnowledgeBankContent {

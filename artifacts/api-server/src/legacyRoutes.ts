@@ -42577,12 +42577,29 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
   app.post("/api/admin/website-change-requests", requireAuth, requireAdmin, async (req: any, res) => {
     try {
-      const { title, description, userId, businessId, priority } = req.body;
+      const { title, description, businessId: bodyBusinessId, priority } = req.body;
       if (!description && !title) {
         return res.status(400).json({ error: 'Description or title is required' });
       }
-      const effectiveUserId = userId || req.userId;
-      const effectiveBusinessId = businessId || effectiveUserId;
+      // Always attribute the record to the authenticated admin user, never from req.body.
+      // businessId is a FK to users.id, so it must be a userId, not a businessSettings.id.
+      const effectiveUserId = req.userId;
+      // Default: the admin's own userId serves as both userId and businessId.
+      let effectiveBusinessId = effectiveUserId;
+      // Allow an override only if bodyBusinessId is a real userId that has business
+      // settings (i.e. is a genuine business owner), so the admin can create a request
+      // attributed to another user's account.
+      if (bodyBusinessId && bodyBusinessId !== effectiveUserId) {
+        const [overrideSettings] = await db
+          .select({ id: businessSettings.id })
+          .from(businessSettings)
+          .where(eq(businessSettings.userId, bodyBusinessId))
+          .limit(1);
+        if (!overrideSettings) {
+          return res.status(403).json({ error: 'Forbidden: businessId is not a valid business owner userId' });
+        }
+        effectiveBusinessId = bodyBusinessId;
+      }
       const effectiveTitle = title || (description ? description.substring(0, 80) : 'Untitled');
       const [created] = await db.insert(websiteChangeRequests).values({
         title: effectiveTitle,

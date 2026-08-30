@@ -97,18 +97,63 @@ if (process.env.DATABASE_URL) {
   }
 
   app.post('/api/vapi/webhook', express.raw({ type: 'application/json' }), async (req: any, res: any) => {
+    const { processWebhookEvent, verifyVapiWebhook } = await import('./vapiService');
+    const signature = req.headers['x-vapi-signature'] as string | undefined;
+    const verbatimSecret = req.headers['x-vapi-secret'] as string | undefined;
+
+    // 1. Basic request validation — not retryable
+    if (!Buffer.isBuffer(req.body)) return res.status(400).json({ error: 'Invalid request body' });
+
+    // 2. Signature verification — 401 is not retried by Vapi
+    if (!verifyVapiWebhook(req.body, signature, verbatimSecret)) {
+      return res.status(401).json({ error: 'Invalid webhook signature' });
+    }
+
+    let parsed: unknown;
     try {
-      const { processWebhookEvent, verifyVapiWebhook } = await import('./vapiService');
-      const signature = req.headers['x-vapi-signature'] as string | undefined;
-      const verbatimSecret = req.headers['x-vapi-secret'] as string | undefined;
-      if (!Buffer.isBuffer(req.body)) return res.status(500).json({ error: 'Webhook processing error' });
-      if (!verifyVapiWebhook(req.body, signature, verbatimSecret)) return res.status(401).json({ error: 'Invalid webhook signature' });
-      const parsed = JSON.parse(req.body.toString('utf8'));
+      parsed = JSON.parse(req.body.toString('utf8'));
+    } catch {
+      return res.status(400).json({ error: 'Invalid JSON payload' });
+    }
+
+    // 3. Deduplication using SHA-256 of the raw body.
+    // Vapi retries replay the exact same bytes, so true duplicates hash
+    // identically. Distinct events (different status value, different tool call
+    // IDs) differ in body content and produce different hashes — they pass through.
+    const { createHash } = await import('crypto');
+    const dedupKey = createHash('sha256').update(req.body).digest('hex');
+    const callId: string | undefined = (parsed as any)?.call?.id || (parsed as any)?.message?.call?.id;
+    const eventType: string | undefined = (parsed as any)?.message?.type || (parsed as any)?.type;
+
+    const { db } = await import('./storage');
+    const { vapiEvents } = await import('@workspace/db');
+    const { eq } = await import('drizzle-orm');
+
+    try {
+      await db.insert(vapiEvents).values({ dedupKey, callId, eventType });
+    } catch (dedupErr: unknown) {
+      const msg = dedupErr instanceof Error ? dedupErr.message : String(dedupErr);
+      if (msg.includes('uq_vapi_events_dedup') || msg.includes('unique constraint') || msg.includes('unique violation')) {
+        // Already processed — acknowledge without re-running side effects
+        logger.info({ callId, eventType, dedupKey }, '[Vapi Webhook] Duplicate event — skipping');
+        return res.status(200).json({ ok: true, duplicate: true });
+      }
+      // Unexpected DB error inserting dedup row — no row was committed, safe to retry
+      logger.error({ err: dedupErr }, '[Vapi Webhook] Dedup insert failed');
+      return res.status(500).json({ error: 'Webhook processing error' });
+    }
+
+    // 4. Process the event.  On failure, roll back the dedup row so future
+    // Vapi retries are not permanently blocked (5xx causes Vapi to retry).
+    try {
       const result = await processWebhookEvent(parsed);
-      res.json(result);
-    } catch (error: unknown) {
-      logger.error({ err: error }, '[Vapi Webhook] Error');
-      res.status(500).json({ error: 'Webhook processing failed' });
+      return res.json(result); // 200 — processing complete
+    } catch (processingErr: unknown) {
+      logger.error({ err: processingErr }, '[Vapi Webhook] Processing error — rolling back dedup row');
+      await db.delete(vapiEvents).where(eq(vapiEvents.dedupKey, dedupKey)).catch((e: unknown) => {
+        logger.error({ err: e }, '[Vapi Webhook] Failed to roll back dedup row');
+      });
+      return res.status(500).json({ error: 'Webhook processing failed' });
     }
   });
 

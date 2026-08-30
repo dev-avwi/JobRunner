@@ -5900,3 +5900,22 @@ export const taskMaterials = pgTable("task_materials", {
   uniqueIndex("uq_task_materials").on(table.taskId, table.jobMaterialId),
   index("idx_task_materials_task_id").on(table.taskId),
 ]);
+
+// Vapi webhook deduplication.
+// dedupKey is a SHA-256 hex digest of the raw request body.
+// Vapi always retries with a byte-identical payload, so true duplicates hash
+// identically. Distinct events (different status value, different tool call IDs)
+// produce different bodies and therefore different hashes — all pass through.
+export const vapiEvents = pgTable("vapi_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  callId: text("call_id"),      // audit: extracted from payload
+  eventType: text("event_type"), // audit: extracted from payload
+  dedupKey: text("dedup_key").notNull(),
+  receivedAt: timestamp("received_at").defaultNow().notNull(),
+}, (table) => [
+  unique("uq_vapi_events_dedup").on(table.dedupKey),
+  index("idx_vapi_events_call_id").on(table.callId),
+]);
+
+export type VapiEvent = typeof vapiEvents.$inferSelect;
+export type InsertVapiEvent = typeof vapiEvents.$inferInsert;
