@@ -1050,8 +1050,11 @@ export default function NewQuoteScreen() {
         showToast({ type: 'error', message: `Failed to ${isEditing ? 'update' : 'create'} quote` });
       }
     } catch (error: any) {
-      // Network error - save offline
-      if (error.message?.includes('Network') || error.code === 'ECONNABORTED') {
+      // Network error - save offline (only for create, not edit)
+      // Edit mode is intentionally excluded: queuing a stale edit for a future
+      // sync could overwrite server-side changes made in the meantime. Mirror
+      // the explicit !isEditing guard used in the invoice screen.
+      if (!isEditing && (error.message?.includes('Network') || error.code === 'ECONNABORTED')) {
         try {
           await offlineStorage.saveQuoteOffline(quoteData);
           showToast({ type: 'success', message: 'Saved Offline', description: 'Quote saved locally and will sync when connection is restored.' });
@@ -1061,7 +1064,7 @@ export default function NewQuoteScreen() {
           showToast({ type: 'error', message: 'Failed to save quote. Please try again.' });
         }
       } else {
-        showToast({ type: 'error', message: 'Failed to create quote. Please try again.' });
+        showToast({ type: 'error', message: `Failed to ${isEditing ? 'update' : 'create'} quote. Please try again.` });
       }
     }
     setIsLoading(false);
