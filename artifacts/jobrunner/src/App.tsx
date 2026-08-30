@@ -33,6 +33,7 @@ import { useAppMode } from "@/hooks/use-app-mode";
 import { useUserRole } from "@/hooks/use-user-role";
 import { KeyboardShortcutsDialog, useKeyboardShortcuts } from "@/components/KeyboardShortcuts";
 import WhatYouMissedModal from "@/components/WhatYouMissedModal";
+import FeedbackTab from "@/components/FeedbackTab";
 import AdminAppShell from "@/components/AdminAppShell";
 
 const Dashboard = lazyWithReload(() => import("@/components/Dashboard"));
@@ -1868,6 +1869,9 @@ function AppLayout() {
       
       {/* AI Assistant - floating above all pages (only for Pro+ subscribers) */}
       <GatedFloatingAIChat onNavigate={handleNavigation} />
+
+      {/* Feedback tab - always visible on the right edge */}
+      <FeedbackTab />
       
       {quoteModal.quoteId && (
         <QuoteModal

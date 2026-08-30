@@ -304,6 +304,16 @@ export function FloatingAIWidget({ isVisible, onClose }: FloatingAIWidgetProps) 
                   <Text style={styles.clearButtonText}>Clear</Text>
                 </PressableRow>
               )}
+              <PressableRow
+                onPress={() => {
+                  onClose();
+                  router.push('/more/report-bug' as any);
+                }}
+                style={styles.closeButton}
+                accessibilityLabel="Send feedback"
+              >
+                <Feather name="message-circle" size={20} color={colors.foreground} />
+              </PressableRow>
               <PressableRow onPress={onClose} style={styles.closeButton}>
                 <Feather name="x" size={20} color={colors.foreground} />
               </PressableRow>
