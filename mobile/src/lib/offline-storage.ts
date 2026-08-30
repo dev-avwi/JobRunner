@@ -849,6 +849,23 @@ class OfflineStorageService {
           try { await this.db.execAsync(`ALTER TABLE chat_messages ADD COLUMN send_status TEXT DEFAULT 'pending'`); } catch {}
         }
       } catch {}
+
+      // QI-1: Backfill guard — purge server-fetched quotes whose quote_number is NULL.
+      // These rows were written by the pre-fix cacheQuotes that read quote.quoteNumber
+      // (always undefined on an API response) instead of quote.number.  They will be
+      // re-fetched cleanly on the next fullSync().
+      try {
+        await this.db.execAsync(
+          `DELETE FROM quotes WHERE quote_number IS NULL AND (pending_sync = 0 OR pending_sync IS NULL)`
+        );
+      } catch {}
+
+      // QI-1: Same backfill guard for invoices.
+      try {
+        await this.db.execAsync(
+          `DELETE FROM invoices WHERE invoice_number IS NULL AND (pending_sync = 0 OR pending_sync IS NULL)`
+        );
+      } catch {}
       
     } catch (error) {
       if (__DEV__) console.warn('[OfflineStorage] Migration warning:', error);
