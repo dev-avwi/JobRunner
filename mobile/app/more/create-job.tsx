@@ -1122,7 +1122,12 @@ export default function CreateJobScreen() {
       }
     }
     
-    // Online: try API first, fallback to offline if network error
+    // Online: try API first, fallback to offline if network error.
+    // This screen calls the API directly rather than the createJob store
+    // mutation, so there is no optimistic state update to roll back. The
+    // job is only navigated to after a confirmed success response
+    // (response.data?.id), preventing any ghost record from appearing on
+    // rejection.
     try {
       const response = await api.post<{
         id?: string;

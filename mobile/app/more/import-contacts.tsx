@@ -192,6 +192,9 @@ export default function ImportContactsScreen() {
           }
           merged++;
         } else {
+          // createClient returns null when the server rejects the request.
+          // A null result is counted as a failure rather than a successful
+          // import, so no ghost record appears in the client list.
           const created = await createClient({
             name: row.name,
             phone: row.phone,

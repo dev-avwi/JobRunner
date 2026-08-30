@@ -1028,6 +1028,10 @@ export default function NewQuoteScreen() {
       return;
     }
     
+    // This screen calls the API directly rather than the createQuote store
+    // mutation, so there is no optimistic state update to roll back. The
+    // quote list is only refreshed (fetchQuotes) after a confirmed success
+    // response, preventing any ghost record from appearing on rejection.
     try {
       const response = isEditing
         ? await api.patch(`/api/quotes/${params.editQuoteId}`, quoteData)

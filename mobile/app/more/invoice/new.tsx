@@ -1336,7 +1336,11 @@ export default function NewInvoiceScreen() {
       return;
     }
     
-    // Online: try API first, fallback to offline if network error
+    // Online: try API first, fallback to offline if network error.
+    // This screen calls the API directly rather than the createInvoice store
+    // mutation, so there is no optimistic state update to roll back. The
+    // invoice list is only refreshed (fetchInvoices) after a confirmed success
+    // response, preventing any ghost record from appearing on rejection.
     try {
       const response = isEditing 
         ? await api.patch(`/api/invoices/${params.editInvoiceId}`, invoiceData)

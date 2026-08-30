@@ -232,6 +232,9 @@ export default function NewClientScreen() {
         Alert.alert('Error', 'Failed to update client. Please try again.');
       }
     } else {
+      // createClient returns null when the server rejects the request.
+      // Checking the return value here prevents a ghost record: the client
+      // is never shown as successfully created unless the mutation confirms it.
       const client = await createClient(payload);
       setIsLoading(false);
 
