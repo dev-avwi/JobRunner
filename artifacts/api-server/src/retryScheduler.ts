@@ -121,11 +121,14 @@ export async function processFailedSmsMessages() {
     } else if (
       msg.includes('Connection terminated') ||
       msg.includes('connection timeout') ||
+      msg.includes('terminating connection') ||
       msg.includes('ECONNRESET') ||
       msg.includes('ETIMEDOUT') ||
       msg.includes('socket hang up') ||
       error?.code === 'ECONNRESET' ||
-      error?.code === 'ETIMEDOUT'
+      error?.code === 'ETIMEDOUT' ||
+      // 57P01 = administrator_shutdown — Neon killed an idle connection in the pool
+      error?.code === '57P01'
     ) {
       // Transient Neon pool drop — log warn, skip alert. Will retry next tick.
       logger.warn('background', 'SMS retry scheduler skipped tick (transient DB connection)', { metadata: { error: msg } });

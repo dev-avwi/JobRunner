@@ -1416,8 +1416,11 @@ const pool = new pg.Pool({
   connectionString: process.env.DATABASE_URL!,
   max: 15,
   min: 2,
-  idleTimeoutMillis: 20000,
+  // Release idle connections after 4 minutes so Neon's 5-minute idle-connection
+  // terminator never kills a connection that is still in the pool.
+  idleTimeoutMillis: 240000,
   connectionTimeoutMillis: 10000,
+  keepAlive: true,
   allowExitOnIdle: false,
 });
 
