@@ -27,6 +27,7 @@ import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '..
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { SkeletonListItem } from '../../src/components/Skeleton';
+import { useUserRole } from '../../src/hooks/use-user-role';
 
 type FilterKey = 'all' | 'residential' | 'commercial' | 'vip' | 'outstanding' | 'inactive_6mo' | 'with_email' | 'with_phone' | 'with_address';
 
@@ -180,13 +181,17 @@ function ClientCard({
             <Text style={styles.cardActionText}>SMS</Text>
           </PressableRow>
         )}
-        <PressableRow style={[styles.cardActionButton, styles.cardActionButtonPrimary]} onPress={(e) => { e.stopPropagation(); onCreateJob?.(); }} >
-          <Feather name="briefcase" size={14} color={colors.primaryForeground} />
-          <Text style={[styles.cardActionText, styles.cardActionTextPrimary]}>Job</Text>
-        </PressableRow>
-        <PressableRow style={[styles.cardActionButton, styles.cardActionButtonDestructive]} onPress={(e) => { e.stopPropagation(); onDelete?.(); }} >
-          <Feather name="trash-2" size={14} color={colors.destructive} />
-        </PressableRow>
+        {onCreateJob && (
+          <PressableRow style={[styles.cardActionButton, styles.cardActionButtonPrimary]} onPress={(e) => { e.stopPropagation(); onCreateJob(); }} >
+            <Feather name="briefcase" size={14} color={colors.primaryForeground} />
+            <Text style={[styles.cardActionText, styles.cardActionTextPrimary]}>Job</Text>
+          </PressableRow>
+        )}
+        {onDelete && (
+          <PressableRow style={[styles.cardActionButton, styles.cardActionButtonDestructive]} onPress={(e) => { e.stopPropagation(); onDelete(); }} >
+            <Feather name="trash-2" size={14} color={colors.destructive} />
+          </PressableRow>
+        )}
       </View>
     </AnimatedCardPressable>
   );
@@ -200,6 +205,7 @@ function ClientsScreenInner() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const { canEditClients, canCreateClients, canDeleteClients, canCreateJobs } = useUserRole();
   const { colors } = useTheme();
   const responsiveShell = usePageShell();
   const bottomInset = useBottomInset(40);
@@ -398,8 +404,8 @@ function ClientsScreenInner() {
         onCall={() => item.phone && handleCall(item.phone)}
         onEmail={() => item.email && handleEmail(item.email)}
         onSms={() => item.phone && handleSms(item.phone)}
-        onCreateJob={() => handleCreateJob(item.id)}
-        onDelete={() => handleDeleteClient(item)}
+        onCreateJob={canCreateJobs ? () => handleCreateJob(item.id) : undefined}
+        onDelete={canDeleteClients ? () => handleDeleteClient(item) : undefined}
         smsLocked={smsLocked}
       />
     </View>
@@ -413,13 +419,17 @@ function ClientsScreenInner() {
           <Text style={styles.pageSubtitle}>All your clients in one place</Text>
         </View>
         <View style={styles.headerActions}>
-          <PressableRow style={styles.importButton} onPress={() => router.push('/more/import-contacts')} >
-            <Feather name="download" size={18} color={colors.primary} />
-          </PressableRow>
-          <PressableRow style={styles.newButton} onPress={handleCreateClient} >
-            <Feather name="plus" size={18} color={colors.primaryForeground} />
-            <Text style={styles.newButtonText}>New Client</Text>
-          </PressableRow>
+          {canCreateClients && (
+            <PressableRow style={styles.importButton} onPress={() => router.push('/more/import-contacts')} >
+              <Feather name="download" size={18} color={colors.primary} />
+            </PressableRow>
+          )}
+          {canCreateClients && (
+            <PressableRow style={styles.newButton} onPress={handleCreateClient} >
+              <Feather name="plus" size={18} color={colors.primaryForeground} />
+              <Text style={styles.newButtonText}>New Client</Text>
+            </PressableRow>
+          )}
         </View>
       </View>
 
@@ -540,7 +550,7 @@ function ClientsScreenInner() {
             ? 'Try adjusting your search or filters'
             : 'Save client details once, use them everywhere. Makes quoting and invoicing a breeze.'}
         </Text>
-        {!searchQuery && activeFilter === 'all' && (
+        {!searchQuery && activeFilter === 'all' && canCreateClients && (
           <PressableRow style={styles.emptyStateButton} onPress={handleCreateClient} >
             <Feather name="plus" size={16} color={colors.primaryForeground} />
             <Text style={styles.emptyStateButtonText}>Add Your First Client</Text>
@@ -983,7 +993,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 export default function ClientsScreen() {
   return (
-    <OwnerOnlyGuard requiredPermission={['edit_clients', 'create_clients', 'write_clients']}>
+    <OwnerOnlyGuard requiredPermission={['view_clients', 'read_clients', 'edit_clients', 'create_clients', 'write_clients']}>
       <ClientsScreenInner />
     </OwnerOnlyGuard>
   );

@@ -26,6 +26,7 @@ import { getNestedHeaderOptions } from '../../../src/lib/nested-header';
 import { showSmsLockedAlert, useSmsLocked, handleDedicatedNumberError } from '../../../src/lib/smsGate';
 import { TeamAvatar } from '../../../src/components/TeamAvatar';
 import { useConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { useUserRole } from '../../../src/hooks/use-user-role';
 
 type TabKey = 'overview' | 'jobs' | 'quotes' | 'invoices';
 
@@ -50,6 +51,7 @@ export default function ClientDetailScreen() {
   const [savedSignature, setSavedSignature] = useState<{ signatureData: string | null; signatureDate: string | null } | null>(null);
   const [isLoadingSignature, setIsLoadingSignature] = useState(false);
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  const { canEditClients, canDeleteClients, canCreateJobs } = useUserRole();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -245,24 +247,24 @@ export default function ClientDetailScreen() {
   };
 
   const showClientActionsMenu = () => {
-    const options = ['Edit Client', 'Delete Client', 'Cancel'];
-    const destructiveIndex = 1;
-    const cancelIndex = 2;
-
     if (Platform.OS === 'ios') {
+      const options: string[] = [];
+      const actionMap: Array<() => void> = [];
+      if (canEditClients) { options.push('Edit Client'); actionMap.push(handleEdit); }
+      if (canDeleteClients) { options.push('Delete Client'); actionMap.push(handleDelete); }
+      const cancelIndex = options.length;
+      options.push('Cancel');
+      const destructiveIndex = canDeleteClients ? actionMap.length - 1 : undefined;
       ActionSheetIOS.showActionSheetWithOptions(
         { options, cancelButtonIndex: cancelIndex, destructiveButtonIndex: destructiveIndex, title: 'Client Actions' },
-        (buttonIndex) => {
-          if (buttonIndex === 0) handleEdit();
-          else if (buttonIndex === 1) handleDelete();
-        },
+        (buttonIndex) => { if (buttonIndex < actionMap.length) actionMap[buttonIndex](); },
       );
     } else {
-      Alert.alert('Client Actions', undefined, [
-        { text: 'Edit Client', onPress: handleEdit },
-        { text: 'Delete Client', style: 'destructive', onPress: handleDelete },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      const androidOptions: { text: string; style?: 'cancel' | 'default' | 'destructive'; onPress?: () => void }[] = [];
+      if (canEditClients) androidOptions.push({ text: 'Edit Client', onPress: handleEdit });
+      if (canDeleteClients) androidOptions.push({ text: 'Delete Client', style: 'destructive', onPress: handleDelete });
+      androidOptions.push({ text: 'Cancel', style: 'cancel' });
+      Alert.alert('Client Actions', undefined, androidOptions);
     }
   };
 
@@ -517,10 +519,12 @@ export default function ClientDetailScreen() {
                 </View>
                 <Text style={styles.emptyStateTitle}>No jobs yet</Text>
                 <Text style={styles.emptyStateSubtitle}>Create your first job for this client</Text>
-                <PressableRow style={styles.emptyStateButton} onPress={handleCreateJob}>
-                  <Feather name="plus" size={16} color={colors.white} />
-                  <Text style={styles.emptyStateButtonText}>Create Job</Text>
-                </PressableRow>
+                {canCreateJobs && (
+                  <PressableRow style={styles.emptyStateButton} onPress={handleCreateJob}>
+                    <Feather name="plus" size={16} color={colors.white} />
+                    <Text style={styles.emptyStateButtonText}>Create Job</Text>
+                  </PressableRow>
+                )}
               </View>
             ) : (
               clientJobs.map((job) => (
@@ -680,20 +684,24 @@ export default function ClientDetailScreen() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Pressable
-                onPress={handleEdit}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Feather name="edit-2" size={18} color={colors.primary} />
-              </Pressable>
-              <Pressable
-                onPress={showClientActionsMenu}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Feather name="more-horizontal" size={18} color={colors.primary} />
-              </Pressable>
+              {canEditClients && (
+                <Pressable
+                  onPress={handleEdit}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Feather name="edit-2" size={18} color={colors.primary} />
+                </Pressable>
+              )}
+              {(canEditClients || canDeleteClients) && (
+                <Pressable
+                  onPress={showClientActionsMenu}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Feather name="more-horizontal" size={18} color={colors.primary} />
+                </Pressable>
+              )}
             </View>
           ),
         }}
@@ -738,10 +746,12 @@ export default function ClientDetailScreen() {
 
             {/* Secondary Actions */}
             <View style={styles.actionsRowSecondary}>
-              <PressableRow style={styles.actionButtonSecondary} onPress={handleCreateJob} >
-                <Feather name="briefcase" size={16} color={colors.primary} />
-                <Text style={styles.actionButtonSecondaryText}>New Job</Text>
-              </PressableRow>
+              {canCreateJobs && (
+                <PressableRow style={styles.actionButtonSecondary} onPress={handleCreateJob} >
+                  <Feather name="briefcase" size={16} color={colors.primary} />
+                  <Text style={styles.actionButtonSecondaryText}>New Job</Text>
+                </PressableRow>
+              )}
               <PressableRow style={styles.actionButtonSecondary} onPress={() => router.push(`/more/quote/new?clientId=${id}`)} >
                 <Feather name="file-text" size={16} color={colors.primary} />
                 <Text style={styles.actionButtonSecondaryText}>Quote</Text>

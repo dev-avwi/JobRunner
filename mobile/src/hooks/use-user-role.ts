@@ -392,7 +392,21 @@ export function useUserRole() {
       const perms = Array.isArray(cache.permissions) ? cache.permissions : [];
       // Handle wildcard "*" permission (Administrator and other full-access roles)
       if (perms.includes('*')) return true;
-      return perms.includes(key);
+      if (perms.includes(key)) return true;
+      // Expand coarse server-side permissions to the granular keys the mobile UI checks.
+      const COARSE_TO_GRANULAR: Record<string, string[]> = {
+        write_clients:   ['view_clients', 'create_clients', 'edit_clients', 'delete_clients'],
+        read_clients:    ['view_clients'],
+        write_jobs:      ['view_jobs', 'create_jobs', 'edit_jobs', 'delete_jobs'],
+        write_quotes:    ['view_quotes', 'create_quotes', 'edit_quotes', 'delete_quotes', 'send_quotes'],
+        read_quotes:     ['view_quotes'],
+        write_invoices:  ['view_invoices', 'create_invoices', 'edit_invoices', 'delete_invoices', 'send_invoices'],
+        read_invoices:   ['view_invoices'],
+        manage_payments: ['collect_payments'],
+        read_reports:    ['view_reports'],
+        manage_team:     ['view_team', 'manage_roles'],
+      };
+      return perms.some((perm) => (COARSE_TO_GRANULAR[perm] ?? []).includes(key));
     }
     
     // During loading, only grant for a CONFIRMED server owner.

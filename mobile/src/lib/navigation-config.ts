@@ -83,10 +83,6 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "featured",
     allowedRoles: ['owner', 'solo_owner', 'manager'],
-    // Automations live under business settings; a role granted manage_settings
-    // can reach Autopilot. Pro-plan lock below still applies. Not a DEFAULT
-    // worker permission, so default workers are unchanged.
-    requiredPermission: ['manage_settings'],
   },
   {
     title: "Clients",
@@ -387,10 +383,9 @@ export const mainMenuItems: NavItem[] = [
     showInMore: true,
     category: "work",
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
-    // Custom roles granted the (new) leads permission can reach this page.
+    // Custom roles granted the leads permission can reach this page.
     // Not a DEFAULT worker permission, so default workers are unchanged.
     requiredPermission: ['view_leads', 'read_leads'],
-    // Gate strictly on the permission, not role name (see Action Centre).
     strictPermission: true,
   },
   {
@@ -974,7 +969,6 @@ export const sidebarMainItems: SidebarNavItem[] = [
     requiresOwnerOrManager: true,
     requiresProPlan: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],
-    requiredPermission: ['manage_settings'],
   },
   { 
     id: 'reports',
@@ -1061,6 +1055,8 @@ export const sidebarMainItems: SidebarNavItem[] = [
     section: 'main',
     hideForStaff: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin'],
+    // Custom roles granted the leads permission can reach this page.
+    // Not a DEFAULT worker permission, so default workers are unchanged.
     requiredPermission: ['view_leads', 'read_leads'],
     strictPermission: true,
   },

@@ -46,12 +46,28 @@ interface OwnerOnlyGuardProps {
    * field in navigation-config.ts so the nav and screen guard stay in sync.
    */
   requiredPermission?: string | string[];
+  /**
+   * When true, restricts access to owners only (solo_owner, owner, standalone
+   * subcontractor) — managers are NOT allowed through. Use when the underlying
+   * server route is ownerOnly rather than ownerOrManagerOnly.
+   */
+  ownerOnly?: boolean;
+  /**
+   * When true, `requiredPermission` becomes a hard gate rather than an additive
+   * unlock: every user (including managers) must hold one of the listed
+   * permissions to pass. Owners always pass because they hold `*`. Use when the
+   * navigation uses `strictPermission: true` and the screen guard should match,
+   * e.g. Leads where managers may have the permission custom-removed.
+   */
+  strictPermission?: boolean;
 }
 
 export function OwnerOnlyGuard({
   children,
   redirectTo = '/jobs',
   requiredPermission,
+  ownerOnly = false,
+  strictPermission = false,
 }: OwnerOnlyGuardProps) {
   const { colors } = useTheme();
   const { isOwner, isManager, isStandaloneSubcontractor, isLoading, hasPermission } = useUserRole();
@@ -63,7 +79,13 @@ export function OwnerOnlyGuard({
   // has full owner powers (server returns isOwner:true for them). The hook keeps
   // role='subcontractor' so the dashboard/badge still shows, but they must pass
   // owner-only guards the same way a solo owner would.
-  const hasRoleAccess = isOwner || isManager || isStandaloneSubcontractor;
+  //
+  // When ownerOnly=true, managers are excluded — only actual owners (and
+  // standalone subcontractors who effectively are owners) pass through. Use
+  // this when the server route is ownerOnly rather than ownerOrManagerOnly.
+  const hasRoleAccess = ownerOnly
+    ? isOwner || isStandaloneSubcontractor
+    : isOwner || isManager || isStandaloneSubcontractor;
 
   // Additive unlock: check if the user holds any of the required permissions.
   // This mirrors the `requiredPermission` unlock in navigation-config.ts so the
@@ -74,7 +96,14 @@ export function OwnerOnlyGuard({
     return keys.some((key) => hasPermission(key));
   })();
 
-  const hasAccess = hasRoleAccess || hasPermissionAccess;
+  // When strictPermission is true, requiredPermission is a hard gate: the user
+  // must hold one of the listed permissions regardless of role. Owners always
+  // pass because hasPermission returns true for them (they hold `*`). Standalone
+  // subcontractors are explicitly included because the server treats them as
+  // owners even though their role token stays 'subcontractor'.
+  const hasAccess = strictPermission && requiredPermission
+    ? hasPermissionAccess || isStandaloneSubcontractor
+    : hasRoleAccess || hasPermissionAccess;
 
   useEffect(() => {
     // Wait until the role has been resolved before deciding to redirect.

@@ -25,6 +25,7 @@ import { TradeTypeSelector } from '../../src/components/TradeTypeSelector';
 import { api } from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
@@ -142,7 +143,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
 });
 
-export default function BusinessSettingsScreen() {
+function BusinessSettingsScreenInner() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -535,5 +536,13 @@ export default function BusinessSettingsScreen() {
       </ScrollView>
       </KeyboardAvoidingView>
     </>
+  );
+}
+
+export default function BusinessSettingsScreen() {
+  return (
+    <OwnerOnlyGuard ownerOnly>
+      <BusinessSettingsScreenInner />
+    </OwnerOnlyGuard>
   );
 }

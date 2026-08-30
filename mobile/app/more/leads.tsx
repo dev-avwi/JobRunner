@@ -677,7 +677,7 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
 
 export default function LeadsScreen() {
   return (
-    <OwnerOnlyGuard requiredPermission={['view_leads', 'read_leads']}>
+    <OwnerOnlyGuard requiredPermission={['view_leads', 'read_leads']} strictPermission>
       <LeadsScreenInner />
     </OwnerOnlyGuard>
   );
