@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { partitionByRecent } from "@shared/dateUtils";
 import { trackEvent } from "@/lib/analytics";
 import { celebrate } from "@/lib/celebrate";
+import { useToast } from "@/hooks/use-toast";
 
 async function applyOptimisticInvoiceStatus(id: string, status: string) {
   await queryClient.cancelQueries({ queryKey: ["/api/invoices"] });
@@ -32,6 +33,7 @@ export function useInvoices(options?: { archived?: boolean }) {
 }
 
 export function useArchiveInvoice() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/invoices/${id}/archive`);
@@ -41,10 +43,14 @@ export function useArchiveInvoice() {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", { archived: true }] });
     },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to archive invoice", description: error?.message ?? "Please try again." });
+    },
   });
 }
 
 export function useUnarchiveInvoice() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/invoices/${id}/unarchive`);
@@ -53,6 +59,9 @@ export function useUnarchiveInvoice() {
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", { archived: true }] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to unarchive invoice", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -75,6 +84,7 @@ export function useRecentInvoices() {
 }
 
 export function useCreateInvoice() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (invoiceData: any) => {
       // Use offline-aware request when offline
@@ -88,6 +98,9 @@ export function useCreateInvoice() {
     },
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to create invoice", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -120,6 +133,7 @@ export function useSendInvoice() {
 }
 
 export function useCreatePaymentLink() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (invoiceId: string) => {
       const response = await apiRequest("POST", `/api/invoices/${invoiceId}/create-checkout-session`);
@@ -127,6 +141,9 @@ export function useCreatePaymentLink() {
     },
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to create payment link", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -222,6 +239,7 @@ export function usePaymentRecords(invoiceId: string) {
 }
 
 export function useVoidPayment() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ invoiceId, paymentId }: { invoiceId: string; paymentId: string }) => {
       const response = await apiRequest("DELETE", `/api/invoices/${invoiceId}/payments/${paymentId}`);
@@ -236,10 +254,14 @@ export function useVoidPayment() {
       safeInvalidateQueries({ queryKey: ["/api/invoices", variables.invoiceId] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", variables.invoiceId, "payments"] });
     },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to void payment", description: error?.message ?? "Please try again." });
+    },
   });
 }
 
 export function useUpdateMilestones() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ invoiceId, milestones, retentionPercent }: { invoiceId: string; milestones?: any[]; retentionPercent?: number }) => {
       const response = await apiRequest("PATCH", `/api/invoices/${invoiceId}/milestones`, {
@@ -255,6 +277,9 @@ export function useUpdateMilestones() {
     onSuccess: (_data: any, variables: { invoiceId: string; milestones?: any[]; retentionPercent?: number }) => {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", variables.invoiceId] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to update milestones", description: error?.message ?? "Please try again." });
     },
   });
 }

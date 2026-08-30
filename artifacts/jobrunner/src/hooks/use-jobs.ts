@@ -29,6 +29,7 @@ export function useJobs(options?: { archived?: boolean }) {
 }
 
 export function useArchiveJob() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/jobs/${id}/archive`);
@@ -38,10 +39,14 @@ export function useArchiveJob() {
       safeInvalidateQueries({ queryKey: ["/api/jobs"] });
       safeInvalidateQueries({ queryKey: ["/api/jobs", { archived: true }] });
     },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to archive job", description: error?.message ?? "Please try again." });
+    },
   });
 }
 
 export function useUnarchiveJob() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/jobs/${id}/unarchive`);
@@ -50,6 +55,9 @@ export function useUnarchiveJob() {
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/jobs"] });
       safeInvalidateQueries({ queryKey: ["/api/jobs", { archived: true }] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to unarchive job", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -150,6 +158,7 @@ export function useCreateJob() {
 }
 
 export function useUpdateJob() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
       const response = await apiRequest("PATCH", `/api/jobs/${id}`, data);
@@ -167,6 +176,9 @@ export function useUpdateJob() {
       if (variables?.data?.status === 'done') {
         celebrate('job_completed');
       }
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to update job", description: error?.message ?? "Please try again." });
     },
   });
 }

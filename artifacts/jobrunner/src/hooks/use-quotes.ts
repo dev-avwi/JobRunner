@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { partitionByRecent } from "@shared/dateUtils";
 import { trackEvent } from "@/lib/analytics";
 import { celebrate } from "@/lib/celebrate";
+import { useToast } from "@/hooks/use-toast";
 
 // Apply an optimistic status update across every cached quote list/detail
 // containing the given id, returning rollback snapshots for onError.
@@ -77,6 +78,7 @@ export function useRecentQuotes() {
 }
 
 export function useCreateQuote() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (quoteData: any) => {
       // Use offline-aware request when offline
@@ -90,6 +92,9 @@ export function useCreateQuote() {
     },
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to create quote", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -122,6 +127,7 @@ export function useSendQuote() {
 }
 
 export function useGenerateQuoteFromJob() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (jobId: string) => {
       const response = await apiRequest("POST", `/api/jobs/${jobId}/generate-quote`);
@@ -130,6 +136,9 @@ export function useGenerateQuoteFromJob() {
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
       safeInvalidateQueries({ queryKey: ["/api/jobs"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to generate quote from job", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -149,6 +158,7 @@ export function useQuoteWithDetails(id: string) {
 }
 
 export function useConvertQuoteToInvoice() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (quoteId: string) => {
       const response = await apiRequest("POST", `/api/quotes/${quoteId}/convert-to-invoice`);
@@ -159,10 +169,14 @@ export function useConvertQuoteToInvoice() {
       safeInvalidateQueries({ queryKey: ["/api/invoices"] });
       safeInvalidateQueries({ queryKey: ["/api/invoices", { quoteId }] });
     },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to convert quote to invoice", description: error?.message ?? "Please try again." });
+    },
   });
 }
 
 export function useCloneQuote() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/quotes/${id}/clone`);
@@ -170,6 +184,9 @@ export function useCloneQuote() {
     },
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to clone quote", description: error?.message ?? "Please try again." });
     },
   });
 }
@@ -182,13 +199,17 @@ export function useConvertQuotePreview(id: string | null, enabled: boolean) {
 }
 
 export function useDeclineQuote() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/quotes/${id}/reject`);
       return response.json();
     },
     onMutate: async (id: string) => ({ snapshots: await applyOptimisticQuoteStatus(id, 'declined') }),
-    onError: (_err, _id, ctx: any) => { if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots); },
+    onError: (_err, _id, ctx: any) => {
+      if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots);
+      toast({ variant: "destructive", title: "Failed to decline quote", description: _err?.message ?? "Please try again." });
+    },
     onSettled: (_data, _err, id) => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
       safeInvalidateQueries({ queryKey: ["/api/quotes", id] });
@@ -197,13 +218,17 @@ export function useDeclineQuote() {
 }
 
 export function useUpdateQuoteStatus() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const response = await apiRequest("PATCH", `/api/quotes/${id}`, { status });
       return response.json();
     },
     onMutate: async ({ id, status }) => ({ snapshots: await applyOptimisticQuoteStatus(id, status) }),
-    onError: (_err, _vars, ctx: any) => { if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots); },
+    onError: (_err, _vars, ctx: any) => {
+      if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots);
+      toast({ variant: "destructive", title: "Failed to update quote status", description: _err?.message ?? "Please try again." });
+    },
     onSuccess: (_data, vars) => {
       if (vars.status === 'accepted') celebrate('quote_accepted');
     },
@@ -215,13 +240,17 @@ export function useUpdateQuoteStatus() {
 }
 
 export function useAcceptQuote() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       const response = await apiRequest("POST", `/api/quotes/${id}/accept`);
       return response.json();
     },
     onMutate: async (id: string) => ({ snapshots: await applyOptimisticQuoteStatus(id, 'accepted') }),
-    onError: (_err, _id, ctx: any) => { if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots); },
+    onError: (_err, _id, ctx: any) => {
+      if (ctx?.snapshots) rollbackQuoteSnapshots(ctx.snapshots);
+      toast({ variant: "destructive", title: "Failed to accept quote", description: _err?.message ?? "Please try again." });
+    },
     onSuccess: () => {
       celebrate('quote_accepted');
     },
@@ -233,6 +262,7 @@ export function useAcceptQuote() {
 }
 
 export function useDeleteQuote() {
+  const { toast } = useToast();
   return useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("DELETE", `/api/quotes/${id}`);
@@ -241,6 +271,9 @@ export function useDeleteQuote() {
     onSuccess: () => {
       safeInvalidateQueries({ queryKey: ["/api/quotes"] });
       safeInvalidateQueries({ queryKey: ["/api/quotes", { archived: true }] });
+    },
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Failed to delete quote", description: error?.message ?? "Please try again." });
     },
   });
 }
