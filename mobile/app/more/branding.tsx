@@ -530,59 +530,52 @@ function BrandingScreenInner() {
 
   const uploadImage = async (asset: ImagePicker.ImagePickerAsset) => {
     setIsUploadingLogo(true);
+    const previousLogoUrl = logoUrl;
 
     try {
-      const API_BASE = process.env.EXPO_PUBLIC_API_URL || 'https://jobrunner.com.au';
-      const token = await api.getToken();
-      
-      const filename = `logo-${Date.now()}.${asset.uri.split('.').pop() || 'jpg'}`;
+      const filename = asset.uri.split('/').pop() || 'logo.jpg';
       const mimeType = asset.mimeType || 'image/jpeg';
 
-      const paramsResponse = await fetch(`${API_BASE}/api/objects/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          filename,
-          contentType: mimeType,
-          isPublic: true,
-        }),
-      });
+      // Upload via /api/objects/upload-file (multipart, field name 'file')
+      // which returns { objectPath } for the persisted object.
+      const formData = new FormData();
+      formData.append('file', {
+        uri: asset.uri,
+        name: filename,
+        type: mimeType,
+      } as any);
 
-      if (!paramsResponse.ok) {
-        throw new Error('Failed to get upload URL');
+      const uploadResponse = await api.uploadFile<{ objectPath: string }>(
+        '/api/objects/upload-file',
+        formData,
+      );
+
+      if (uploadResponse.error || !uploadResponse.data?.objectPath) {
+        throw new Error(uploadResponse.error || 'Upload failed');
       }
 
-      const { signedUrl, publicUrl } = await paramsResponse.json();
+      const { objectPath } = uploadResponse.data;
 
-      const imageResponse = await fetch(asset.uri);
-      const imageBlob = await imageResponse.blob();
+      // Persist the relative object path through the standard PATCH /api/business-settings
+      // endpoint. The server stores relative paths and resolves them at read time.
+      const saved = await updateBusinessSettings({ logoUrl: objectPath });
+      if (!saved) {
+        throw new Error('Failed to save logo URL');
+      }
 
-      await fetch(signedUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': mimeType },
-        body: imageBlob,
-      });
+      // Construct an absolute URL for the local preview — React Native's <Image>
+      // requires an absolute URI for network images, but we persist the relative path.
+      const previewUrl = objectPath.startsWith('/')
+        ? `${api.getBaseUrl()}${objectPath}`
+        : objectPath;
 
-      setLogoUrl(publicUrl);
-      
-      await fetch(`${API_BASE}/api/business-settings/logo`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        credentials: 'include',
-        body: JSON.stringify({ logoUrl: publicUrl }),
-      });
-
-      await updateBusinessSettings({ logoUrl: publicUrl });
+      // Only update the preview after all server calls succeed
+      setLogoUrl(previewUrl);
       Alert.alert('Success', 'Logo uploaded successfully!');
     } catch (error) {
       console.error('Error uploading logo:', error);
+      // Revert preview to the previous logo so the user sees the unchanged state
+      setLogoUrl(previousLogoUrl);
       Alert.alert('Error', 'Failed to upload logo. Please try again.');
     } finally {
       setIsUploadingLogo(false);

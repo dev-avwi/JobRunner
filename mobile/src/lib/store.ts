@@ -858,6 +858,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   updateBusinessSettings: async (settings: Partial<BusinessSettings>) => {
     const response = await api.patch<BusinessSettings>('/api/business-settings', settings);
+    // Check error before data: the API client sets both .error and .data for
+    // JSON 4xx/5xx responses, so data-first would silently accept a rejection.
+    if (response.error) {
+      if (__DEV__) console.log('[AuthStore] updateBusinessSettings failed:', response.error);
+      return false;
+    }
     if (response.data) {
       set({ businessSettings: response.data });
       return true;
@@ -1172,34 +1178,56 @@ export const useJobsStore = create<JobsState>((set, get) => ({
 
   updateJobNotes: async (jobId: string, notes: string) => {
     const { jobs, todaysJobs } = get();
+    const isOnline = useOfflineStore.getState().isOnline;
+
     const previousJobs = jobs;
     const previousTodaysJobs = todaysJobs;
     set({
       jobs: jobs.map(j => j.id === jobId ? { ...j, notes } : j),
       todaysJobs: todaysJobs.map(j => j.id === jobId ? { ...j, notes } : j),
     });
-    try {
-      const response = await api.patch<Job>(`/api/jobs/${jobId}`, { notes });
-      if (response.error) {
+
+    if (isOnline) {
+      try {
+        const response = await api.patch<Job>(`/api/jobs/${jobId}`, { notes });
+        if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ jobs: previousJobs, todaysJobs: previousTodaysJobs, error: response.error });
+            return false;
+          }
+          try {
+            await offlineStorage.updateJobOffline(jobId, { notes });
+          } catch (queueErr) {
+            if (__DEV__) console.log('[JobsStore] Failed to queue offline update, reverting:', queueErr);
+            set({ jobs: previousJobs, todaysJobs: previousTodaysJobs, error: 'Failed to update job notes' });
+            return false;
+          }
+        } else if (response.data) {
+          await offlineStorage.cacheJobs([response.data]);
+        }
+      } catch (e) {
+        if (__DEV__) console.log('[JobsStore] Network error, queueing notes update:', e);
         try {
           await offlineStorage.updateJobOffline(jobId, { notes });
-        } catch {
+        } catch (queueErr) {
+          if (__DEV__) console.log('[JobsStore] Failed to queue offline update, reverting:', queueErr);
           set({ jobs: previousJobs, todaysJobs: previousTodaysJobs, error: 'Failed to update job notes' });
           return false;
         }
-      } else if (response.data) {
-        await offlineStorage.cacheJobs([response.data]);
       }
-      return true;
-    } catch {
+    } else {
       try {
         await offlineStorage.updateJobOffline(jobId, { notes });
-        return true;
-      } catch {
+      } catch (e) {
+        if (__DEV__) console.log('[JobsStore] Failed to queue offline update, reverting:', e);
         set({ jobs: previousJobs, todaysJobs: previousTodaysJobs, error: 'Failed to update job notes' });
         return false;
       }
     }
+    return true;
   },
 
   createJob: async (job: Partial<Job>) => {
@@ -1208,7 +1236,19 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     if (isOnline) {
       try {
         const response = await api.post<Job>('/api/jobs', job);
-        if (response.data) {
+        if (response.error) {
+          // The API client sets both .error and .data for JSON 4xx responses.
+          // Check error first so a JSON validation/auth rejection is never
+          // treated as a successful creation.
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            if (__DEV__) console.log('[JobsStore] Server rejected job creation:', response.error);
+            return null;
+          }
+          // connectivity failure — fall through to offline creation
+        } else if (response.data) {
           const { jobs } = get();
           set({ jobs: [...jobs, response.data] });
           
@@ -1217,13 +1257,12 @@ export const useJobsStore = create<JobsState>((set, get) => ({
           
           return response.data;
         }
-        // API error - fall through to offline creation
       } catch (e) {
         // Network error - create offline
         if (__DEV__) console.log('[JobsStore] Network error, creating job offline:', e);
       }
       
-      // Fall back to offline creation
+      // Fall back to offline creation (only reached on connectivity failures)
       try {
         const offlineJob = await offlineStorage.saveJobOffline(job, 'create');
         const { jobs } = get();
@@ -1394,7 +1433,19 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
     if (isOnline) {
       try {
         const response = await api.post<Client>('/api/clients', client);
-        if (response.data) {
+        if (response.error) {
+          // The API client sets both .error and .data for JSON 4xx responses.
+          // Check error first so a JSON validation/auth rejection is never
+          // treated as a successful creation.
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            if (__DEV__) console.log('[ClientsStore] Server rejected client creation:', response.error);
+            return null;
+          }
+          // connectivity failure — fall through to offline creation
+        } else if (response.data) {
           const { clients } = get();
           // Invalidate TTL so the next fetchClients() re-fetches from the server.
           set({ clients: [...clients, response.data], lastFetched: null });
@@ -1404,13 +1455,12 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
           
           return response.data;
         }
-        // API error - fall through to offline creation
       } catch (e) {
         // Network error - create offline
         if (__DEV__) console.log('[ClientsStore] Network error, creating client offline:', e);
       }
       
-      // Fall back to offline creation
+      // Fall back to offline creation (only reached on connectivity failures)
       try {
         const offlineClient = await offlineStorage.saveClientOffline(client, 'create');
         const { clients } = get();
@@ -1447,6 +1497,13 @@ export const useClientsStore = create<ClientsState>((set, get) => ({
       try {
         const response = await api.patch<Client>(`/api/clients/${id}`, client);
         if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ clients: previousClients, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateClientOffline(id, client);
           } catch (queueErr) {
@@ -1625,7 +1682,19 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
     if (isOnline) {
       try {
         const response = await api.post<Quote>('/api/quotes', quote);
-        if (response.data) {
+        if (response.error) {
+          // The API client sets both .error and .data for JSON 4xx responses.
+          // Check error first so a JSON validation/auth rejection is never
+          // treated as a successful creation.
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            if (__DEV__) console.log('[QuotesStore] Server rejected quote creation:', response.error);
+            return null;
+          }
+          // connectivity failure — fall through to offline creation
+        } else if (response.data) {
           const { quotes } = get();
           set({ quotes: [...quotes, response.data] });
           
@@ -1634,13 +1703,12 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
           
           return response.data;
         }
-        // API error - fall through to offline creation
       } catch (e) {
         // Network error - create offline
         if (__DEV__) console.log('[QuotesStore] Network error, creating quote offline:', e);
       }
       
-      // Fall back to offline creation
+      // Fall back to offline creation (only reached on connectivity failures)
       try {
         const offlineQuote = await offlineStorage.saveQuoteOffline(quote as Parameters<typeof offlineStorage.saveQuoteOffline>[0]);
         const { quotes } = get();
@@ -1676,6 +1744,13 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       try {
         const response = await api.patch<Quote>(`/api/quotes/${id}`, quote);
         if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ quotes: previousQuotes, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateQuoteOffline(id, quote);
           } catch (queueErr) {
@@ -1721,6 +1796,13 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       try {
         const response = await api.patch<Quote>(`/api/quotes/${id}`, { status });
         if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ quotes: previousQuotes, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateQuoteOffline(id, { status });
           } catch (queueErr) {
@@ -1895,7 +1977,19 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
     if (isOnline) {
       try {
         const response = await api.post<Invoice>('/api/invoices', invoice);
-        if (response.data) {
+        if (response.error) {
+          // The API client sets both .error and .data for JSON 4xx responses.
+          // Check error first so a JSON validation/auth rejection is never
+          // treated as a successful creation.
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            if (__DEV__) console.log('[InvoicesStore] Server rejected invoice creation:', response.error);
+            return null;
+          }
+          // connectivity failure — fall through to offline creation
+        } else if (response.data) {
           const { invoices } = get();
           set({ invoices: [...invoices, response.data] });
           
@@ -1904,13 +1998,12 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
           
           return response.data;
         }
-        // API error - fall through to offline creation
       } catch (e) {
         // Network error - create offline
         if (__DEV__) console.log('[InvoicesStore] Network error, creating invoice offline:', e);
       }
       
-      // Fall back to offline creation
+      // Fall back to offline creation (only reached on connectivity failures)
       try {
         const offlineInvoice = await offlineStorage.saveInvoiceOffline(invoice as Parameters<typeof offlineStorage.saveInvoiceOffline>[0]);
         const { invoices } = get();
@@ -1946,6 +2039,13 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       try {
         const response = await api.patch<Invoice>(`/api/invoices/${id}`, invoice);
         if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ invoices: previousInvoices, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateInvoiceOffline(id, invoice);
           } catch (queueErr) {
@@ -1991,6 +2091,13 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       try {
         const response = await api.patch<Invoice>(`/api/invoices/${id}`, { status });
         if (response.error) {
+          const isConnectivityFailure =
+            (response as any).isOffline ||
+            /offline|timed out|network|connection/i.test(response.error);
+          if (!isConnectivityFailure) {
+            set({ invoices: previousInvoices, error: response.error });
+            return false;
+          }
           try {
             await offlineStorage.updateInvoiceOffline(id, { status });
           } catch (queueErr) {
