@@ -127,7 +127,7 @@ function QuoteCard({
             <PressableRow
               testID={`swipe-archive-quote-${quote.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`Archive quote ${quote.quoteNumber || ''}`}
+              accessibilityLabel={`Archive quote ${quote.number || ''}`}
               style={[styles.swipeAction, styles.swipeArchiveAction]}
               onPress={onArchive}
             >
@@ -139,7 +139,7 @@ function QuoteCard({
             <PressableRow
               testID={`swipe-delete-quote-${quote.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`Delete quote ${quote.quoteNumber || ''}`}
+              accessibilityLabel={`Delete quote ${quote.number || ''}`}
               style={[styles.swipeAction, styles.swipeDeleteAction]}
               onPress={onDelete}
             >
@@ -168,7 +168,7 @@ function QuoteCard({
             <View style={styles.cardInfoSection}>
               {/* Number + Status badge */}
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardNumber}>{quote.quoteNumber || 'Draft'}</Text>
+                <Text style={styles.cardNumber}>{quote.number || 'Draft'}</Text>
                 <StatusBadge status={quote.status} size="sm" />
               </View>
               
@@ -287,7 +287,7 @@ export default function QuotesScreen() {
     const searchLower = debouncedSearch.toLowerCase();
     const clientName = getClientName(quote.clientId);
     const matchesSearch = 
-      quote.quoteNumber?.toLowerCase().includes(searchLower) ||
+      quote.number?.toLowerCase().includes(searchLower) ||
       clientName.toLowerCase().includes(searchLower) ||
       quote.title?.toLowerCase().includes(searchLower);
     
@@ -373,7 +373,7 @@ export default function QuotesScreen() {
     
     Alert.alert(
       'Create Invoice',
-      `Create an invoice from quote ${quote?.quoteNumber}?`,
+      `Create an invoice from quote ${quote?.number}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -394,7 +394,7 @@ export default function QuotesScreen() {
     
     const ok = await confirm({
       title: 'Delete Quote',
-      message: `Are you sure you want to delete ${quote?.quoteNumber || 'this quote'}? This action cannot be undone.`,
+      message: `Are you sure you want to delete ${quote?.number || 'this quote'}? This action cannot be undone.`,
       confirmText: 'Delete',
       cancelText: 'Cancel',
       destructive: true,
@@ -415,7 +415,7 @@ export default function QuotesScreen() {
     const quote = quotes.find(q => q.id === quoteId);
     const ok = await confirm({
       title: 'Archive Quote',
-      message: `Are you sure you want to archive ${quote?.quoteNumber || 'this quote'}?`,
+      message: `Are you sure you want to archive ${quote?.number || 'this quote'}?`,
       confirmText: 'Archive',
       cancelText: 'Cancel',
     });
@@ -615,7 +615,7 @@ export default function QuotesScreen() {
           documentId={selectedQuoteForEmail.id}
           clientName={selectedQuoteForEmail.client?.name || 'Client'}
           clientEmail={selectedQuoteForEmail.client?.email || ''}
-          documentNumber={selectedQuoteForEmail.quoteNumber || ''}
+          documentNumber={selectedQuoteForEmail.number || ''}
           documentTitle={selectedQuoteForEmail.title || 'Services'}
           total={`$${parseFloat(String(selectedQuoteForEmail.total || 0)).toFixed(2)}`}
           businessName={businessSettings?.businessName || user?.businessName || 'Your Business'}

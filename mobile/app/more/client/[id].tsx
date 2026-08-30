@@ -132,7 +132,7 @@ export default function ClientDetailScreen() {
         id: `quote-${quote.id}`,
         entityId: quote.id,
         type: 'quote',
-        title: `Quote #${quote.quoteNumber || quote.id.slice(0,6)}`,
+        title: `Quote #${quote.number || quote.id.slice(0,6)}`,
         date: new Date(quote.createdAt || Date.now()),
         amount: quote.total,
       });
@@ -143,7 +143,7 @@ export default function ClientDetailScreen() {
         id: `invoice-${invoice.id}`,
         entityId: invoice.id,
         type: 'invoice',
-        title: `Invoice #${invoice.invoiceNumber || invoice.id.slice(0,6)}`,
+        title: `Invoice #${invoice.number || invoice.id.slice(0,6)}`,
         date: new Date(invoice.createdAt || Date.now()),
         amount: invoice.total,
       });
@@ -585,7 +585,7 @@ export default function ClientDetailScreen() {
                       </View>
                       <View style={styles.jobCardInfo}>
                         <Text style={styles.jobTitle} numberOfLines={1}>
-                          Quote #{quote.quoteNumber || quote.id.slice(0, 6)}
+                          Quote #{quote.number || quote.id.slice(0, 6)}
                         </Text>
                         <Text style={styles.jobDate}>{quote.title || 'Untitled'}</Text>
                       </View>
@@ -635,7 +635,7 @@ export default function ClientDetailScreen() {
                       </View>
                       <View style={styles.jobCardInfo}>
                         <Text style={styles.jobTitle} numberOfLines={1}>
-                          Invoice #{invoice.invoiceNumber || invoice.id.slice(0, 6)}
+                          Invoice #{invoice.number || invoice.id.slice(0, 6)}
                         </Text>
                         <Text style={styles.jobDate}>{invoice.title || 'Untitled'}</Text>
                       </View>

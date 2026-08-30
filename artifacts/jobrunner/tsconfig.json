@@ -13,6 +13,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@shared/schema": ["../../lib/db/src/schema/schema.ts"],
+      "@shared/apiTypes": ["../../shared/apiTypes.ts"],
       "@shared/permissions": ["../../lib/db/src/schema/permissions.ts"],
       "@shared/pricing": ["../../lib/db/src/schema/pricing.ts"],
       "@shared/safety-forms": ["../../lib/db/src/schema/safety-forms.ts"],

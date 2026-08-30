@@ -23,23 +23,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Copy, Receipt, Plus, Download, Trash2 } from "lucide-react";
+import type { ApiSubcontractorInvoice } from "@shared/apiTypes";
 
-interface SubInvoice {
-  id: string;
-  docType: string;
-  title: string | null;
-  status: string;
-  invoiceNumber: string;
-  subtotalAmount: string;
-  gstAmount: string;
-  totalAmount: string;
-  dueDate: string | null;
-  createdAt?: string;
-  businessName: string;
-  paymentToken: string | null;
-  accountingBillId?: string | null;
-  accountingSyncedAt?: string | null;
-}
+// Use the canonical shared type for subcontractor invoices returned by
+// GET /api/subcontractor/invoices.  The local redeclaration was removed to
+// ensure the type stays in sync with the server response.
+type SubInvoice = ApiSubcontractorInvoice;
 
 interface UnbilledJob {
   jobId: string;

@@ -34,7 +34,7 @@ import { typography, fontWeights, spacing } from '../../../src/lib/design-tokens
 
 interface LinkedInvoice {
   id: string;
-  invoiceNumber?: string;
+  number?: string;
   total: number;
   status: string;
 }
@@ -266,7 +266,7 @@ export default function QuoteDetailScreen() {
     if (foundInvoice) {
       setLinkedInvoice({
         id: foundInvoice.id,
-        invoiceNumber: foundInvoice.invoiceNumber,
+        number: foundInvoice.number,
         total: foundInvoice.total,
         status: foundInvoice.status,
       });
@@ -414,7 +414,7 @@ export default function QuoteDetailScreen() {
   const handleShareAsComposedEmail = async () => {
     if (!quote) return;
     const client = getClient(quote.clientId);
-    const quoteNumber = quote.quoteNumber || quote.number || quote.id?.slice(0, 8);
+    const quoteNumber = quote.number || quote.number || quote.id?.slice(0, 8);
     
     setIsDownloadingPdf(true);
     try {
@@ -493,7 +493,7 @@ ${businessName}`;
   const handleShareAsImage = async () => {
     if (!quote) return;
     const client = getClient(quote.clientId);
-    const quoteNumber = quote.quoteNumber || quote.id?.slice(0, 8);
+    const quoteNumber = quote.number || quote.id?.slice(0, 8);
     
     setIsDownloadingPdf(true);
     try {
@@ -578,7 +578,7 @@ ${businessName}`;
       
       if (canShare) {
         // Use share sheet which allows user to select email app AND attaches the PDF
-        const quoteNumber = quote.quoteNumber || quote.id?.slice(0, 8);
+        const quoteNumber = quote.number || quote.id?.slice(0, 8);
         const total = formatCurrency(quote.total);
         
         // Note: Share sheet will pass the PDF - user types their own message in their email app
@@ -605,7 +605,7 @@ ${businessName}`;
         );
       } else {
         // Fallback to mailto without attachment
-        const quoteNumber = quote.quoteNumber || quote.id?.slice(0, 8);
+        const quoteNumber = quote.number || quote.id?.slice(0, 8);
         const total = formatCurrency(quote.total);
         const subject = `Quote ${quoteNumber} - ${total}`;
         const publicUrl = quote.acceptanceToken 
@@ -749,7 +749,7 @@ ${businessName}`;
                   clientId: quote.clientId,
                   jobId: quote.jobId || undefined,
                   quoteId: quote.id,
-                  title: quote.title || `Invoice from Quote #${quote.quoteNumber || id?.slice(0, 6)}`,
+                  title: quote.title || `Invoice from Quote #${quote.number || id?.slice(0, 6)}`,
                   description: quote.description || undefined,
                   lineItems: quote.lineItems || [],
                   subtotal: quote.subtotal,
@@ -813,7 +813,7 @@ ${businessName}`;
                   'Authorization': `Bearer ${authToken}`,
                 },
                 body: JSON.stringify({
-                  title: `Job from Quote #${quote?.quoteNumber || id?.slice(0, 6)}`,
+                  title: `Job from Quote #${quote?.number || id?.slice(0, 6)}`,
                   description: quote?.notes || '',
                   clientId: quote?.clientId,
                   quoteId: id,
@@ -899,7 +899,7 @@ ${businessName}`;
       throw new Error('Not authenticated. Please log in again.');
     }
     
-    const fileUri = `${FileSystem.cacheDirectory}${quote.quoteNumber || 'quote'}_${Date.now()}.pdf`;
+    const fileUri = `${FileSystem.cacheDirectory}${quote.number || 'quote'}_${Date.now()}.pdf`;
     const params = new URLSearchParams();
     if (includeBeforePhotos) params.set('includeBeforePhotos', 'true');
     if (includeAfterPhotos) params.set('includeAfterPhotos', 'true');
@@ -999,12 +999,12 @@ ${businessName}`;
       if (canShare) {
         await Sharing.shareAsync(uri, {
           mimeType: 'application/pdf',
-          dialogTitle: `Save Quote ${quote?.quoteNumber}`,
+          dialogTitle: `Save Quote ${quote?.number}`,
           UTI: 'com.adobe.pdf',
         });
       } else {
         // Fallback: Copy to document directory
-        const fileName = `${quote?.quoteNumber || 'quote'}.pdf`;
+        const fileName = `${quote?.number || 'quote'}.pdf`;
         const destUri = `${FileSystem.documentDirectory}${fileName}`;
         await FileSystem.copyAsync({ from: uri, to: destUri });
         showToast({ type: 'success', message: `PDF saved to app documents: ${fileName}` });
@@ -1031,7 +1031,7 @@ ${businessName}`;
       if (canShare) {
         await Sharing.shareAsync(uri, {
           mimeType: 'application/pdf',
-          dialogTitle: `Quote ${quote?.quoteNumber}`,
+          dialogTitle: `Quote ${quote?.number}`,
           UTI: 'com.adobe.pdf',
         });
       } else {
@@ -1058,12 +1058,12 @@ ${businessName}`;
       if (canShare) {
         await Sharing.shareAsync(uri, {
           mimeType: 'application/pdf',
-          dialogTitle: `Save Quote ${quote?.quoteNumber}`,
+          dialogTitle: `Save Quote ${quote?.number}`,
           UTI: 'com.adobe.pdf',
         });
       } else {
         // Fallback: Copy to document directory
-        const fileName = `${quote?.quoteNumber || 'quote'}.pdf`;
+        const fileName = `${quote?.number || 'quote'}.pdf`;
         const destUri = `${FileSystem.documentDirectory}${fileName}`;
         await FileSystem.copyAsync({ from: uri, to: destUri });
         showToast({ type: 'success', message: `PDF saved to app documents: ${fileName}` });
@@ -1130,7 +1130,7 @@ ${businessName}`;
 
   const previewDocument = {
     id: quote.id,
-    number: quote.quoteNumber,
+    number: quote.number,
     status: quote.status,
     clientName: client?.name || 'Unknown Client',
     clientEmail: client?.email,
@@ -1156,7 +1156,7 @@ ${businessName}`;
     <>
       <Stack.Screen 
         options={{ 
-          title: quote.quoteNumber || 'Quote',
+          title: quote.number || 'Quote',
           headerRight: () => (
             <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <Button
@@ -1186,7 +1186,7 @@ ${businessName}`;
           {/* Header Card */}
           <View style={styles.headerCard}>
             <View style={styles.headerTop}>
-              <Text style={styles.quoteNumber}>{quote.quoteNumber}</Text>
+              <Text style={styles.quoteNumber}>{quote.number}</Text>
               <View style={[styles.statusBadge, { backgroundColor: status.bg }]}>
                 <Text style={[styles.statusText, { color: status.color }]}>
                   {status.label}
@@ -1522,7 +1522,7 @@ ${businessName}`;
                     </View>
                     <View style={styles.linkedDocInfo}>
                       <Text style={styles.linkedDocLabel}>Invoice</Text>
-                      <Text style={styles.linkedDocTitle}>{linkedInvoice.invoiceNumber || `Invoice #${linkedInvoice.id.slice(0,6)}`}</Text>
+                      <Text style={styles.linkedDocTitle}>{linkedInvoice.number || `Invoice #${linkedInvoice.id.slice(0,6)}`}</Text>
                     </View>
                     <View style={[styles.linkedDocStatus, { 
                       backgroundColor: linkedInvoice.status === 'paid' ? colors.successLight : 
@@ -1926,7 +1926,7 @@ ${businessName}`;
           )}
           <LiveDocumentPreview
             type="quote"
-            documentNumber={quote.quoteNumber}
+            documentNumber={quote.number}
             date={quote.createdAt}
             validUntil={quote.validUntil}
             lineItems={lineItems.map((item: any) => ({
@@ -1984,7 +1984,7 @@ ${businessName}`;
         documentId={id!}
         clientName={client?.name || 'Client'}
         clientEmail={client?.email || ''}
-        documentNumber={quote?.quoteNumber || ''}
+        documentNumber={quote?.number || ''}
         documentTitle={quote?.title || 'Quote'}
         total={formatCurrency(quote?.total || 0)}
         businessName={user?.businessName}
@@ -2048,7 +2048,7 @@ ${businessName}`;
           <View style={styles.shareSheetContent}>
             <View style={styles.shareSheetHandle} />
             <Text style={styles.shareSheetTitle}>Share Quote</Text>
-            <Text style={styles.shareSheetSubtitle}>{quote?.quoteNumber}</Text>
+            <Text style={styles.shareSheetSubtitle}>{quote?.number}</Text>
             
             <View style={styles.shareOptions}>
               <TouchableOpacity 
@@ -2128,7 +2128,7 @@ ${businessName}`;
         recipientName={getClient(quote?.clientId)?.name || 'Client'}
         recipientEmail={getClient(quote?.clientId)?.email}
         recipientPhone={getClient(quote?.clientId)?.phone}
-        documentTitle={quote?.quoteNumber || quote?.title || 'Quote'}
+        documentTitle={quote?.number || quote?.title || 'Quote'}
         defaultTab={sendModalDefaultTab}
         onSendSuccess={() => { loadData(); setShowSendModal(false); }}
       />

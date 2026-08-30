@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { isAuthErrorMessage, setAuthExpiredCallback } from './api';
+import type { ApiInvoice, ApiQuote, ApiInvoiceLineItem, ApiQuoteLineItem } from '@shared/apiTypes';
 
 // Module-level generation counters — incremented on each fetch so stale
 // out-of-order responses can be detected and discarded before committing state.
@@ -28,7 +29,7 @@ export const _authExpiredHandler = () => {
   }
 };
 setAuthExpiredCallback(_authExpiredHandler);
-import offlineStorage, { useOfflineStore } from './offline-storage';
+import offlineStorage, { useOfflineStore, type CachedQuote, type CachedInvoice } from './offline-storage';
 import { clearRoleCache } from './role-cache';
 import { useThemeStore, ThemeMode } from './theme-store';
 import locationTracking from './location-tracking';
@@ -183,75 +184,18 @@ interface Client {
   savedSignatureData?: string | null;
 }
 
-interface QuoteLineItem {
-  id: string;
-  quoteId: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
+// Re-export the canonical line-item types so existing references inside this
+// module continue to work under the old short names.
+type QuoteLineItem = ApiQuoteLineItem;
+type InvoiceLineItem = ApiInvoiceLineItem;
 
-interface Quote {
-  id: string;
-  quoteNumber: string;
-  clientId: string;
-  jobId?: string;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'archived';
-  subtotal: number;
-  gstAmount: number;
-  total: number;
-  validUntil?: string;
-  notes?: string;
-  createdAt: string;
-  lineItems?: QuoteLineItem[];
-  clientName?: string;
-  title?: string;
-  description?: string;
-  archived?: boolean;
-  depositRequired?: boolean;
-  depositPercent?: number;
-  depositAmount?: number;
-  documentTemplate?: string;
-  documentTemplateSettings?: TemplateCustomization | null;
-  includesGst?: boolean;
-  acceptedAt?: string;
-  acceptedBy?: string;
-}
-
-interface InvoiceLineItem {
-  id: string;
-  invoiceId: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
-}
-
-interface Invoice {
-  id: string;
-  invoiceNumber: string;
-  clientId: string;
-  jobId?: string;
-  quoteId?: string;
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
-  subtotal: number;
-  gstAmount: number;
-  total: number;
-  amountPaid: number;
-  dueDate?: string;
-  paidAt?: string;
-  notes?: string;
-  createdAt: string;
-  lineItems?: InvoiceLineItem[];
-  clientName?: string;
-  title?: string;
-  description?: string;
-  terms?: string;
-  isRecurring?: boolean;
-  recurrencePattern?: string | null;
-  recurrenceEndDate?: string | null;
-}
+// Re-export the canonical API types under the short names used throughout this
+// module.  Field names now match exactly what GET /api/quotes and
+// GET /api/invoices return:
+//   • document number: `number` (was `quoteNumber` / `invoiceNumber`)
+//   • monetary fields: number (subtotal, gstAmount, total, amountPaid)
+type Quote = ApiQuote;
+type Invoice = ApiInvoice;
 
 interface TimeEntry {
   id: string;
@@ -1603,7 +1547,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       try {
         const cachedQuotes = await offlineStorage.getCachedQuotes();
         set({ 
-          quotes: cachedQuotes as Quote[], 
+          quotes: cachedQuotes as unknown as Quote[], 
           isLoading: false,
           isOfflineData: true,
           error: null
@@ -1624,7 +1568,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
         const cachedQuotes = await offlineStorage.getCachedQuotes();
         if (cachedQuotes.length > 0) {
           set({ 
-            quotes: cachedQuotes as Quote[], 
+            quotes: cachedQuotes as unknown as Quote[], 
             isLoading: false,
             isOfflineData: true,
             error: null 
@@ -1655,7 +1599,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
     if (!isOnline) {
       try {
         const cached = await offlineStorage.getCachedQuote(id);
-        return cached as Quote | null;
+        return cached as unknown as Quote | null;
       } catch (e) {
         if (__DEV__) console.log('[QuotesStore] Offline cache read failed:', e);
         return null;
@@ -1670,7 +1614,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
     // Fall back to cache on API error
     try {
       const cached = await offlineStorage.getCachedQuote(id);
-      return cached as Quote | null;
+      return cached as unknown as Quote | null;
     } catch (e) {
       return null;
     }
@@ -1712,8 +1656,8 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       try {
         const offlineQuote = await offlineStorage.saveQuoteOffline(quote as Parameters<typeof offlineStorage.saveQuoteOffline>[0]);
         const { quotes } = get();
-        set({ quotes: [...quotes, offlineQuote as Quote] });
-        return offlineQuote as Quote;
+        set({ quotes: [...quotes, offlineQuote as unknown as Quote] });
+        return offlineQuote as unknown as Quote;
       } catch (e) {
         if (__DEV__) console.log('[QuotesStore] Failed to create offline quote:', e);
         return null;
@@ -1723,8 +1667,8 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       try {
         const offlineQuote = await offlineStorage.saveQuoteOffline(quote as Parameters<typeof offlineStorage.saveQuoteOffline>[0]);
         const { quotes } = get();
-        set({ quotes: [...quotes, offlineQuote as Quote] });
-        return offlineQuote as Quote;
+        set({ quotes: [...quotes, offlineQuote as unknown as Quote] });
+        return offlineQuote as unknown as Quote;
       } catch (e) {
         if (__DEV__) console.log('[QuotesStore] Failed to create offline quote:', e);
         return null;
@@ -1752,7 +1696,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
             return false;
           }
           try {
-            await offlineStorage.updateQuoteOffline(id, quote);
+            await offlineStorage.updateQuoteOffline(id, quote as Partial<CachedQuote>);
           } catch (queueErr) {
             if (__DEV__) console.log('[QuotesStore] Failed to queue offline update, reverting:', queueErr);
             set({ quotes: previousQuotes, error: 'Failed to update quote' });
@@ -1765,7 +1709,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       } catch (e) {
         if (__DEV__) console.log('[QuotesStore] Network error, queueing update:', e);
         try {
-          await offlineStorage.updateQuoteOffline(id, quote);
+          await offlineStorage.updateQuoteOffline(id, quote as Partial<CachedQuote>);
         } catch (queueErr) {
           if (__DEV__) console.log('[QuotesStore] Failed to queue offline update, reverting:', queueErr);
           set({ quotes: previousQuotes, error: 'Failed to update quote' });
@@ -1774,7 +1718,7 @@ export const useQuotesStore = create<QuotesState>((set, get) => ({
       }
     } else {
       try {
-        await offlineStorage.updateQuoteOffline(id, quote);
+        await offlineStorage.updateQuoteOffline(id, quote as Partial<CachedQuote>);
       } catch (e) {
         if (__DEV__) console.log('[QuotesStore] Failed to queue offline update, reverting:', e);
         set({ quotes: previousQuotes, error: 'Failed to update quote' });
@@ -1898,7 +1842,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       try {
         const cachedInvoices = await offlineStorage.getCachedInvoices();
         set({ 
-          invoices: cachedInvoices as Invoice[], 
+          invoices: cachedInvoices as unknown as Invoice[], 
           isLoading: false,
           isOfflineData: true,
           error: null
@@ -1919,7 +1863,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
         const cachedInvoices = await offlineStorage.getCachedInvoices();
         if (cachedInvoices.length > 0) {
           set({ 
-            invoices: cachedInvoices as Invoice[], 
+            invoices: cachedInvoices as unknown as Invoice[], 
             isLoading: false,
             isOfflineData: true,
             error: null 
@@ -1950,7 +1894,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
     if (!isOnline) {
       try {
         const cached = await offlineStorage.getCachedInvoice(id);
-        return cached as Invoice | null;
+        return cached as unknown as Invoice | null;
       } catch (e) {
         if (__DEV__) console.log('[InvoicesStore] Offline cache read failed:', e);
         return null;
@@ -1965,7 +1909,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
     // Fall back to cache on API error
     try {
       const cached = await offlineStorage.getCachedInvoice(id);
-      return cached as Invoice | null;
+      return cached as unknown as Invoice | null;
     } catch (e) {
       return null;
     }
@@ -2007,8 +1951,8 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       try {
         const offlineInvoice = await offlineStorage.saveInvoiceOffline(invoice as Parameters<typeof offlineStorage.saveInvoiceOffline>[0]);
         const { invoices } = get();
-        set({ invoices: [...invoices, offlineInvoice as Invoice] });
-        return offlineInvoice as Invoice;
+        set({ invoices: [...invoices, offlineInvoice as unknown as Invoice] });
+        return offlineInvoice as unknown as Invoice;
       } catch (e) {
         if (__DEV__) console.log('[InvoicesStore] Failed to create offline invoice:', e);
         return null;
@@ -2018,8 +1962,8 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       try {
         const offlineInvoice = await offlineStorage.saveInvoiceOffline(invoice as Parameters<typeof offlineStorage.saveInvoiceOffline>[0]);
         const { invoices } = get();
-        set({ invoices: [...invoices, offlineInvoice as Invoice] });
-        return offlineInvoice as Invoice;
+        set({ invoices: [...invoices, offlineInvoice as unknown as Invoice] });
+        return offlineInvoice as unknown as Invoice;
       } catch (e) {
         if (__DEV__) console.log('[InvoicesStore] Failed to create offline invoice:', e);
         return null;
@@ -2047,7 +1991,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
             return false;
           }
           try {
-            await offlineStorage.updateInvoiceOffline(id, invoice);
+            await offlineStorage.updateInvoiceOffline(id, invoice as Partial<CachedInvoice>);
           } catch (queueErr) {
             if (__DEV__) console.log('[InvoicesStore] Failed to queue offline update, reverting:', queueErr);
             set({ invoices: previousInvoices, error: 'Failed to update invoice' });
@@ -2060,7 +2004,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       } catch (e) {
         if (__DEV__) console.log('[InvoicesStore] Network error, queueing update:', e);
         try {
-          await offlineStorage.updateInvoiceOffline(id, invoice);
+          await offlineStorage.updateInvoiceOffline(id, invoice as Partial<CachedInvoice>);
         } catch (queueErr) {
           if (__DEV__) console.log('[InvoicesStore] Failed to queue offline update, reverting:', queueErr);
           set({ invoices: previousInvoices, error: 'Failed to update invoice' });
@@ -2069,7 +2013,7 @@ export const useInvoicesStore = create<InvoicesState>((set, get) => ({
       }
     } else {
       try {
-        await offlineStorage.updateInvoiceOffline(id, invoice);
+        await offlineStorage.updateInvoiceOffline(id, invoice as Partial<CachedInvoice>);
       } catch (e) {
         if (__DEV__) console.log('[InvoicesStore] Failed to queue offline update, reverting:', e);
         set({ invoices: previousInvoices, error: 'Failed to update invoice' });
@@ -2220,8 +2164,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
           offlineStorage.getCachedInvoices(),
         ]);
         jobs = cachedJobs as Job[];
-        quotes = cachedQuotes as Quote[];
-        invoices = cachedInvoices as Invoice[];
+        quotes = cachedQuotes as unknown as Quote[];
+        invoices = cachedInvoices as unknown as Invoice[];
       } catch (e) {
         if (__DEV__) console.log('[DashboardStore] Offline cache read failed:', e);
         set({ isLoading: false });
@@ -2244,8 +2188,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
             offlineStorage.getCachedInvoices(),
           ]);
           jobs = cachedJobs as Job[];
-          quotes = cachedQuotes as Quote[];
-          invoices = cachedInvoices as Invoice[];
+          quotes = cachedQuotes as unknown as Quote[];
+          invoices = cachedInvoices as unknown as Invoice[];
         } catch (e) {
           if (__DEV__) console.log('[DashboardStore] Cache fallback failed:', e);
           set({ isLoading: false });

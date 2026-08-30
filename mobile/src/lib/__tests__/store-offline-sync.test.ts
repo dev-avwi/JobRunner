@@ -179,7 +179,7 @@ const baseClient = {
 };
 const baseQuote = {
   id: QUOTE_ID,
-  quoteNumber: 'Q-001',
+  number: 'Q-001',
   clientId: CLIENT_ID,
   status: 'draft' as const,
   subtotal: 100,
@@ -189,12 +189,13 @@ const baseQuote = {
 };
 const baseInvoice = {
   id: INVOICE_ID,
-  invoiceNumber: 'INV-001',
+  number: 'INV-001',
   clientId: CLIENT_ID,
   status: 'draft' as const,
   subtotal: 200,
   gstAmount: 20,
   total: 220,
+  amountPaid: 0,
   dueDate: '2026-02-01T00:00:00Z',
   createdAt: '2026-01-01T00:00:00Z',
 };

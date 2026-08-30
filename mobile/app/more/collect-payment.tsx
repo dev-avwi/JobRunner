@@ -844,7 +844,7 @@ function StatCard({
 
 interface SelectedInvoice {
   id: string;
-  invoiceNumber: string;
+  number: string;
   jobId?: string;
   clientId: string;
   clientName: string;
@@ -1244,7 +1244,7 @@ function CollectScreenInner() {
         
         setSelectedInvoice({
           id: invoice.id,
-          invoiceNumber: invoice.invoiceNumber,
+          number: invoice.number,
           jobId: invoice.jobId || undefined,
           clientId: invoice.clientId,
           clientName: client?.name || 'Unknown Client',
@@ -1256,7 +1256,7 @@ function CollectScreenInner() {
         });
         
         setAmount(invoiceAmountDue.toFixed(2));
-        setDescription(`Payment for ${invoice.invoiceNumber || 'Invoice'}`);
+        setDescription(`Payment for ${invoice.number || 'Invoice'}`);
         hasAutoSelectedInvoice.current = true;
       }
     } else if (!invoiceId) {
@@ -1284,7 +1284,7 @@ function CollectScreenInner() {
     
     setSelectedInvoice({
       id: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
+      number: invoice.number,
       jobId: invoice.jobId || undefined,
       clientId: invoice.clientId,
       clientName: client?.name || 'Unknown Client',
@@ -1297,7 +1297,7 @@ function CollectScreenInner() {
     
     // Pre-fill the amount and description
     setAmount(amountDue.toFixed(2));
-    setDescription(`Payment for ${invoice.invoiceNumber || 'Invoice'}`);
+    setDescription(`Payment for ${invoice.number || 'Invoice'}`);
   };
 
   // Clear invoice selection
@@ -1443,7 +1443,7 @@ function CollectScreenInner() {
             amount: amountCents,
             description: description || 'Payment received',
             invoiceId: selectedInvoice?.id,
-            invoiceNumber: selectedInvoice?.invoiceNumber,
+            invoiceNumber: selectedInvoice?.number,
             clientName: selectedInvoice?.clientName,
             method: 'email',
           });
@@ -1460,7 +1460,7 @@ function CollectScreenInner() {
             amount: amountCents,
             description: description || 'Payment received',
             invoiceId: selectedInvoice?.id,
-            invoiceNumber: selectedInvoice?.invoiceNumber,
+            invoiceNumber: selectedInvoice?.number,
             clientName: selectedInvoice?.clientName,
             method: 'sms',
           });
@@ -1682,7 +1682,7 @@ function CollectScreenInner() {
         amount: lastPaymentAmount, // Amount in cents - backend divides by 100
         description: description || 'Payment received',
         invoiceId: selectedInvoice?.id,
-        invoiceNumber: selectedInvoice?.invoiceNumber,
+        invoiceNumber: selectedInvoice?.number,
         clientName: selectedInvoice?.clientName,
         method: 'email',
       });
@@ -1719,7 +1719,7 @@ function CollectScreenInner() {
         amount: lastPaymentAmount, // Amount in cents - backend divides by 100
         description: description || 'Payment received',
         invoiceId: selectedInvoice?.id,
-        invoiceNumber: selectedInvoice?.invoiceNumber,
+        invoiceNumber: selectedInvoice?.number,
         clientName: selectedInvoice?.clientName,
         method: 'sms',
       });
@@ -1784,7 +1784,7 @@ function CollectScreenInner() {
         description: description || 'Payment',
         invoiceId: selectedInvoice?.id,
         clientId: selectedInvoice?.clientId,
-        reference: selectedInvoice?.invoiceNumber,
+        reference: selectedInvoice?.number,
       });
 
       if (response.error) {
@@ -1870,7 +1870,7 @@ function CollectScreenInner() {
         description: description || 'Payment',
         invoiceId: selectedInvoice?.id,
         clientId: selectedInvoice?.clientId,
-        reference: selectedInvoice?.invoiceNumber,
+        reference: selectedInvoice?.number,
       });
 
       if (response.error) {
@@ -2086,7 +2086,7 @@ function CollectScreenInner() {
     // Pre-fill from selected invoice if available
     if (selectedInvoice) {
       setRecordAmount(selectedInvoice.amountDue.toFixed(2));
-      setRecordDescription(`Payment for ${selectedInvoice.invoiceNumber || 'Invoice'}`);
+      setRecordDescription(`Payment for ${selectedInvoice.number || 'Invoice'}`);
       setRecordClientId(selectedInvoice.clientId);
       setRecordInvoiceId(selectedInvoice.id);
     } else if (amount) {
@@ -2239,7 +2239,7 @@ function CollectScreenInner() {
     
     setSelectedInvoice({
       id: invoice.id,
-      invoiceNumber: invoice.invoiceNumber,
+      number: invoice.number,
       jobId: invoice.jobId || undefined,
       clientId: invoice.clientId,
       clientName: client?.name || 'Unknown Client',
@@ -2251,7 +2251,7 @@ function CollectScreenInner() {
     });
     
     setAmount(amountDue.toFixed(2));
-    setDescription(`Payment for ${invoice.invoiceNumber || 'Invoice'}`);
+    setDescription(`Payment for ${invoice.number || 'Invoice'}`);
     setQuickCollectJobId(null);
     
     setShowInvoicePickerModal(false);
@@ -2594,7 +2594,7 @@ function CollectScreenInner() {
               
               {selectedInvoice && (
                 <Text style={styles.modalStepSubtitle}>
-                  {selectedInvoice.invoiceNumber} • {selectedInvoice.clientName}
+                  {selectedInvoice.number} • {selectedInvoice.clientName}
                 </Text>
               )}
               
@@ -2684,7 +2684,7 @@ function CollectScreenInner() {
             </Text>
             {selectedInvoice && (
               <Text style={styles.modalStepSubtitle}>
-                {selectedInvoice.invoiceNumber} • {selectedInvoice.clientName}
+                {selectedInvoice.number} • {selectedInvoice.clientName}
               </Text>
             )}
           </View>
@@ -3124,7 +3124,7 @@ function CollectScreenInner() {
                             onPress={() => {
                               setRecordInvoiceId(invoice.id);
                               setRecordAmount(amountDue.toFixed(2));
-                              setRecordDescription(`Payment for ${invoice.invoiceNumber || 'Invoice'}`);
+                              setRecordDescription(`Payment for ${invoice.number || 'Invoice'}`);
                             }}
                             style={{
                               paddingVertical: spacing.sm,
@@ -3142,7 +3142,7 @@ function CollectScreenInner() {
                               fontWeight: fontWeights.medium,
                               color: recordInvoiceId === invoice.id ? colors.primary : colors.foreground,
                             }}>
-                              {invoice.invoiceNumber}
+                              {invoice.number}
                             </Text>
                             <Text style={{ 
                               fontSize: typography.sizes.xs, 
@@ -3219,7 +3219,7 @@ function CollectScreenInner() {
     const filteredInvoices = collectibleInvoices.filter(inv => {
       if (!pickerSearch) return true;
       const clientName = getClientName(inv.clientId);
-      return (inv.invoiceNumber || '').toLowerCase().includes(searchLower) ||
+      return (inv.number || '').toLowerCase().includes(searchLower) ||
              clientName.toLowerCase().includes(searchLower);
     });
     const statusLabels: Record<string, string> = {
@@ -3437,7 +3437,7 @@ function CollectScreenInner() {
                         </View>
                         <View style={styles.invoicePickerItemContent}>
                           <View style={styles.invoicePickerItemHeader}>
-                            <Text style={styles.invoicePickerItemTitle}>{invoice.invoiceNumber}</Text>
+                            <Text style={styles.invoicePickerItemTitle}>{invoice.number}</Text>
                             {isOverdue && (
                               <Badge variant="destructive">Overdue</Badge>
                             )}
@@ -4076,7 +4076,7 @@ function CollectScreenInner() {
 
             {selectedInvoice && (
               <Text style={[styles.modalStepSubtitle, { marginTop: spacing.sm }]}>
-                {selectedInvoice.invoiceNumber} • {selectedInvoice.clientName}
+                {selectedInvoice.number} • {selectedInvoice.clientName}
               </Text>
             )}
 

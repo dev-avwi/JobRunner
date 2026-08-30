@@ -76,10 +76,11 @@ export interface CachedClient {
 
 export interface CachedQuote {
   id: string;
-  quoteNumber: string;
+  /** Document number.  Field name is `number` to match the server API response. */
+  number: string;
   clientId: string;
   clientName?: string;
-  jobId?: string;
+  jobId?: string | null;
   status: string;
   subtotal: number;
   gstAmount: number;
@@ -95,11 +96,12 @@ export interface CachedQuote {
 
 export interface CachedInvoice {
   id: string;
-  invoiceNumber: string;
+  /** Document number.  Field name is `number` to match the server API response. */
+  number: string;
   clientId: string;
   clientName?: string;
-  jobId?: string;
-  quoteId?: string;
+  jobId?: string | null;
+  quoteId?: string | null;
   status: string;
   subtotal: number;
   gstAmount: number;
@@ -1246,7 +1248,7 @@ class OfflineStorageService {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
            COALESCE((SELECT pending_sync FROM quotes WHERE id = ?), 0),
            (SELECT sync_action FROM quotes WHERE id = ?))`,
-        [quote.id, quote.quoteNumber, quote.clientId, quote.clientName, quote.jobId, quote.status,
+        [quote.id, quote.number, quote.clientId, quote.clientName, quote.jobId, quote.status,
          quote.subtotal, quote.gstAmount, quote.total, quote.validUntil, quote.notes, quote.createdAt, now,
          quote.id, quote.id]
       );
@@ -1265,7 +1267,7 @@ class OfflineStorageService {
     
     return rows.map((row: any) => ({
       id: row.id,
-      quoteNumber: row.quote_number,
+      number: row.quote_number,
       clientId: row.client_id,
       clientName: row.client_name,
       jobId: row.job_id,
@@ -1295,7 +1297,7 @@ class OfflineStorageService {
     
     return {
       id: row.id,
-      quoteNumber: row.quote_number,
+      number: row.quote_number,
       clientId: row.client_id,
       clientName: row.client_name,
       jobId: row.job_id,
@@ -1407,7 +1409,7 @@ class OfflineStorageService {
     if (__DEV__) console.log(`[OfflineStorage] Saved quote offline: ${id}`);
     return { 
       id, 
-      quoteNumber: '', 
+      number: '', 
       clientId: quote.clientId,
       clientName: quote.clientName,
       jobId: quote.jobId,
@@ -1480,7 +1482,7 @@ class OfflineStorageService {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
            COALESCE((SELECT pending_sync FROM invoices WHERE id = ?), 0),
            (SELECT sync_action FROM invoices WHERE id = ?))`,
-        [invoice.id, invoice.invoiceNumber, invoice.clientId, invoice.clientName, invoice.jobId, invoice.quoteId, invoice.status,
+        [invoice.id, invoice.number, invoice.clientId, invoice.clientName, invoice.jobId, invoice.quoteId, invoice.status,
          invoice.subtotal, invoice.gstAmount, invoice.total, invoice.amountPaid, invoice.dueDate, invoice.paidAt, invoice.notes, invoice.createdAt, now,
          invoice.id, invoice.id]
       );
@@ -1499,7 +1501,7 @@ class OfflineStorageService {
     
     return rows.map((row: any) => ({
       id: row.id,
-      invoiceNumber: row.invoice_number,
+      number: row.invoice_number,
       clientId: row.client_id,
       clientName: row.client_name,
       jobId: row.job_id,
@@ -1532,7 +1534,7 @@ class OfflineStorageService {
     
     return {
       id: row.id,
-      invoiceNumber: row.invoice_number,
+      number: row.invoice_number,
       clientId: row.client_id,
       clientName: row.client_name,
       jobId: row.job_id,
@@ -1654,7 +1656,7 @@ class OfflineStorageService {
     if (__DEV__) console.log(`[OfflineStorage] Saved invoice offline: ${id}`);
     return { 
       id, 
-      invoiceNumber: '', 
+      number: '', 
       clientId: invoice.clientId,
       clientName: invoice.clientName,
       jobId: invoice.jobId,
@@ -3474,14 +3476,14 @@ class OfflineStorageService {
       } else if (entityType === 'quote') {
         await this.db.runAsync(
           `UPDATE ${table} SET quote_number = ?, client_id = ?, client_name = ?, job_id = ?, status = ?, subtotal = ?, gst_amount = ?, total = ?, valid_until = ?, notes = ?, cached_at = ?, pending_sync = 1, sync_action = 'update' WHERE id = ?`,
-          [mergedData.quoteNumber, mergedData.clientId, mergedData.clientName, mergedData.jobId,
+          [mergedData.number, mergedData.clientId, mergedData.clientName, mergedData.jobId,
            mergedData.status, mergedData.subtotal, mergedData.gstAmount, mergedData.total,
            mergedData.validUntil, mergedData.notes, Date.now(), entityId]
         );
       } else if (entityType === 'invoice') {
         await this.db.runAsync(
           `UPDATE ${table} SET invoice_number = ?, client_id = ?, client_name = ?, job_id = ?, quote_id = ?, status = ?, subtotal = ?, gst_amount = ?, total = ?, amount_paid = ?, due_date = ?, paid_at = ?, notes = ?, cached_at = ?, pending_sync = 1, sync_action = 'update' WHERE id = ?`,
-          [mergedData.invoiceNumber, mergedData.clientId, mergedData.clientName, mergedData.jobId,
+          [mergedData.number, mergedData.clientId, mergedData.clientName, mergedData.jobId,
            mergedData.quoteId, mergedData.status, mergedData.subtotal, mergedData.gstAmount,
            mergedData.total, mergedData.amountPaid, mergedData.dueDate, mergedData.paidAt,
            mergedData.notes, Date.now(), entityId]

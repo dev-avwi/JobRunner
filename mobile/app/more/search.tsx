@@ -197,13 +197,13 @@ export default function SearchScreen() {
 
     quotes.forEach(quote => {
       if (
-        quote.quoteNumber?.toLowerCase().includes(lowerQuery) ||
+        quote.number?.toLowerCase().includes(lowerQuery) ||
         quote.clientName?.toLowerCase().includes(lowerQuery)
       ) {
         searchResults.push({
           id: quote.id,
           type: 'quote',
-          title: `Quote #${quote.quoteNumber}`,
+          title: `Quote #${quote.number}`,
           subtitle: quote.clientName,
           icon: 'file-text',
           iconColor: colors.warning,
@@ -214,13 +214,13 @@ export default function SearchScreen() {
 
     invoices.forEach(invoice => {
       if (
-        invoice.invoiceNumber?.toLowerCase().includes(lowerQuery) ||
+        invoice.number?.toLowerCase().includes(lowerQuery) ||
         invoice.clientName?.toLowerCase().includes(lowerQuery)
       ) {
         searchResults.push({
           id: invoice.id,
           type: 'invoice',
-          title: `Invoice #${invoice.invoiceNumber}`,
+          title: `Invoice #${invoice.number}`,
           subtitle: invoice.clientName,
           icon: 'dollar-sign',
           iconColor: colors.success,

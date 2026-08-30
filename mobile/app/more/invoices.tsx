@@ -102,7 +102,7 @@ function InvoiceCard({
             <PressableRow
               testID={`swipe-archive-invoice-${invoice.id}`}
               accessibilityRole="button"
-              accessibilityLabel={`Archive invoice ${invoice.invoiceNumber || ''}`}
+              accessibilityLabel={`Archive invoice ${invoice.number || ''}`}
               style={[styles.swipeAction, styles.swipeArchiveAction]}
               onPress={onArchive}
             >
@@ -131,7 +131,7 @@ function InvoiceCard({
             <View style={styles.cardInfoSection}>
               {/* Number + Status badge */}
               <View style={styles.cardHeaderRow}>
-                <Text style={styles.cardNumber}>{invoice.invoiceNumber || 'Draft'}</Text>
+                <Text style={styles.cardNumber}>{invoice.number || 'Draft'}</Text>
                 <StatusBadge status={invoice.status || 'draft'} size="sm" />
               </View>
               
@@ -281,7 +281,7 @@ export default function InvoicesScreen() {
     const searchLower = debouncedSearch.toLowerCase();
     const clientName = getClientName(invoice.clientId);
     const matchesSearch = 
-      invoice.invoiceNumber?.toLowerCase().includes(searchLower) ||
+      invoice.number?.toLowerCase().includes(searchLower) ||
       clientName.toLowerCase().includes(searchLower);
     
     let matchesFilter = false;
@@ -398,7 +398,7 @@ export default function InvoicesScreen() {
     
     const ok = await confirm({
       title: 'Archive Invoice',
-      message: `Are you sure you want to archive ${invoice?.invoiceNumber || 'this invoice'}?`,
+      message: `Are you sure you want to archive ${invoice?.number || 'this invoice'}?`,
       confirmText: 'Archive',
       cancelText: 'Cancel',
     });
@@ -583,7 +583,7 @@ export default function InvoicesScreen() {
           documentId={selectedInvoiceForEmail.id}
           clientName={selectedInvoiceForEmail.client?.name || 'Client'}
           clientEmail={selectedInvoiceForEmail.client?.email || ''}
-          documentNumber={selectedInvoiceForEmail.invoiceNumber || ''}
+          documentNumber={selectedInvoiceForEmail.number || ''}
           documentTitle={selectedInvoiceForEmail.description || 'Services'}
           total={`$${parseFloat(String(selectedInvoiceForEmail.total || 0)).toFixed(2)}`}
           businessName={businessSettings?.businessName || user?.businessName || 'Your Business'}

@@ -14,29 +14,12 @@ import {
 import { HardHat, FileText, Download, CheckCircle2, XCircle, DollarSign, Building2, Loader2, Receipt, Eye, CreditCard, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient, getSessionToken } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { ApiBusinessSubcontractorInvoice } from "@shared/apiTypes";
 
-interface SubInvoice {
-  id: string;
-  invoiceNumber: string;
-  docType: string;
-  title: string | null;
-  status: string;
-  gstEnabled: boolean;
-  subtotalAmount: string;
-  gstAmount: string;
-  totalAmount: string;
-  createdAt: string | null;
-  dueDate: string | null;
-  subcontractorName: string;
-  accountingBillId: string | null;
-  accountingProvider: string | null;
-  paymentToken?: string | null;
-  compliance?: {
-    status: 'valid' | 'expiring_soon' | 'expired';
-    expiredDocuments?: string[];
-    requiresPaymentConfirmation?: boolean;
-  };
-}
+// Use the canonical shared type for subcontractor invoices returned by
+// GET /api/business/subcontractor-invoices.  The local redeclaration was
+// removed to ensure the type stays in sync with the server response.
+type SubInvoice = ApiBusinessSubcontractorInvoice;
 
 interface SubInvoiceItem {
   id: string;
