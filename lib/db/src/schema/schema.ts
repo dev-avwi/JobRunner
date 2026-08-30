@@ -1352,7 +1352,7 @@ export const insertJobSchema = createInsertSchema(jobs).omit({
   updatedAt: true,
 }).extend({
   retentionPercent: z.coerce.string().optional().nullable().refine(
-    (value) => value === null || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100),
+    (value) => value === null || value === undefined || (Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100),
     { message: "Retention percent must be between 0 and 100" },
   ),
 });

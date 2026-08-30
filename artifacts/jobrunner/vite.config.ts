@@ -57,6 +57,7 @@ export default defineConfig({
       '@shared/displayName': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-displayName.ts'),
       '@shared/tradeCatalog': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-tradeCatalog.ts'),
       '@shared/financials': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-financials.ts'),
+      '@shared/apiTypes': path.resolve(import.meta.dirname, '..', '..', 'shared', 'apiTypes.ts'),
     },
     dedupe: ['react', 'react-dom'],
   },
