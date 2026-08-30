@@ -32,6 +32,10 @@ args = "dispatch-skeleton-e2e"
 task = "workflow.run"
 args = "schema-drift-check"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "check-vite-aliases"
+
 [[workflows.workflow]]
 name = "Expo"
 author = "agent"
@@ -73,6 +77,17 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "SCHEMA_DRIFT_CHECK=1 pnpm --filter @workspace/api-server test --run src/__tests__/schemaDriftCheck.test.ts"
+
+[workflows.workflow.metadata]
+isValidation = true
+
+[[workflows.workflow]]
+name = "check-vite-aliases"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pnpm --filter @workspace/jobrunner run check:aliases"
 
 [workflows.workflow.metadata]
 isValidation = true
