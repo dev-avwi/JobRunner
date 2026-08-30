@@ -8,6 +8,7 @@ import multer from "multer";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { storage } from "./storage";
+import { calculateDocumentTotals } from "./shared-financials";
 import {
   isStalePaymentIntentCreation,
   paymentIntentCreationRejection,
@@ -7818,9 +7819,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           jobId: action.data.fromJobId || null,
           title: action.data.description || 'Invoice',
           description: action.data.description,
-          subtotal: String(action.data.amount),
-          gstAmount: String(action.data.amount * 0.1),
-          total: String(action.data.amount * 1.1),
+          ...(() => { const t = calculateDocumentTotals([{ amount: action.data.amount }]); return { subtotal: String(t.subtotal), gstAmount: String(t.gstAmount), total: String(t.total) }; })(),
           status: 'draft',
           dueDate,
         });
@@ -7864,9 +7863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clientId,
           title: action.data.description || 'Quote',
           description: action.data.description,
-          subtotal: String(action.data.amount),
-          gstAmount: String(action.data.amount * 0.1),
-          total: String(action.data.amount * 1.1),
+          ...(() => { const t = calculateDocumentTotals([{ amount: action.data.amount }]); return { subtotal: String(t.subtotal), gstAmount: String(t.gstAmount), total: String(t.total) }; })(),
           status: 'draft',
           validUntil,
         });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray, useWatch } from "react-hook-form";
+import { calculateDocumentTotals } from "@shared/financials";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSearch, useLocation, Link } from "wouter";
@@ -841,16 +842,16 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     }).format(amount);
   };
 
-  const calculateTotal = (quantity: string, unitPrice: string) => {
-    return (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0);
-  };
+  // Per-line helper for display only; document-level totals use calculateDocumentTotals below
+  const calculateTotal = (quantity: string, unitPrice: string) =>
+    (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0);
 
-  const subtotal = lineItems?.reduce(
-    (sum, item) => sum + calculateTotal(item.quantity, item.unitPrice), 
-    0
-  ) || 0;
-  const gst = subtotal * 0.1;
-  const total = subtotal + gst;
+  const { subtotal, gstAmount: gst, total } = calculateDocumentTotals(
+    (lineItems ?? []).map(item => ({
+      quantity: parseFloat(item.quantity) || 0,
+      unitPrice: parseFloat(item.unitPrice) || 0,
+    }))
+  );
 
   const handleSubmit = async (data: InvoiceFormData) => {
     try {

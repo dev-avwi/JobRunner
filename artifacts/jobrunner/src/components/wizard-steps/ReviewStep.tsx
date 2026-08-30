@@ -1,4 +1,5 @@
 import { useFormContext } from "react-hook-form";
+import { calculateDocumentTotals } from "@shared/financials";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -40,16 +41,17 @@ export default function ReviewStep({ type, showNotes = true }: ReviewStepProps) 
     }).format(amount);
   };
 
-  const calculateTotal = (quantity: string | number, unitPrice: string | number) => {
-    return (parseFloat(String(quantity)) || 0) * (parseFloat(String(unitPrice)) || 0);
-  };
+  // Per-line helper for display only; document-level totals use calculateDocumentTotals below
+  const calculateTotal = (quantity: string | number, unitPrice: string | number) =>
+    (parseFloat(String(quantity)) || 0) * (parseFloat(String(unitPrice)) || 0);
 
   const lineItems = formData.lineItems || [];
-  const subtotal = lineItems.reduce((sum: number, item: any) => 
-    sum + calculateTotal(item.quantity, item.unitPrice), 0
+  const { subtotal, gstAmount: gst, total } = calculateDocumentTotals(
+    lineItems.map((item: any) => ({
+      quantity: parseFloat(String(item.quantity)) || 0,
+      unitPrice: parseFloat(String(item.unitPrice)) || 0,
+    }))
   );
-  const gst = subtotal * 0.1;
-  const total = subtotal + gst;
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "Not set";

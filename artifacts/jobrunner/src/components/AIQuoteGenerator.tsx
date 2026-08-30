@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { calculateDocumentTotals } from "@shared/financials";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -284,9 +285,9 @@ export default function AIQuoteGenerator({ open, onOpenChange, jobId, onApplyIte
   };
 
   const includedItems = lineItems.filter(i => i.included);
-  const subtotal = includedItems.reduce((sum, i) => sum + i.total, 0);
-  const gst = subtotal * 0.1;
-  const grandTotal = subtotal + gst;
+  const { subtotal, gstAmount: gst, total: grandTotal } = calculateDocumentTotals(
+    includedItems.map(i => ({ amount: i.total }))
+  );
 
   const handleApply = () => {
     const toApply = includedItems.map(({ description, quantity, unitPrice, total, category }) => ({

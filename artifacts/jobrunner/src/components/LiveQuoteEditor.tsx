@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useForm, useWatch, useFieldArray } from "react-hook-form";
+import { calculateDocumentTotals } from "@shared/financials";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useSearch, Link, useLocation } from "wouter";
@@ -655,13 +656,14 @@ export default function LiveQuoteEditor({ quoteId: editQuoteId, onSave, onCancel
     return ((revenue - totalCost) / revenue) * 100;
   };
 
-  const subtotal = lineItems.reduce(
-    (sum, item) => sum + calculateTotal(item.quantity, item.unitPrice), 
-    0
-  );
   const quoteGstEnabled = watchedValues.gstEnabled ?? true;
-  const gst = quoteGstEnabled ? subtotal * 0.1 : 0;
-  const total = subtotal + gst;
+  const { subtotal, gstAmount: gst, total } = calculateDocumentTotals(
+    lineItems.map(item => ({
+      quantity: parseFloat(item.quantity) || 0,
+      unitPrice: parseFloat(item.unitPrice) || 0,
+    })),
+    quoteGstEnabled ? 0.1 : 0
+  );
   
   // Profit margin calculations
   const totalCost = lineItems.reduce(

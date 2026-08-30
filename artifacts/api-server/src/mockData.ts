@@ -1,4 +1,5 @@
 import { storage } from './storage';
+import { calculateDocumentTotals } from './shared-financials';
 
 const AUSTRALIAN_FIRST_NAMES = [
   'Sarah', 'David', 'Emma', 'James', 'Olivia', 'Michael', 'Sophia', 'Daniel',
@@ -301,10 +302,9 @@ export async function seedMockData(userId: string, tradeType: string = 'plumbing
         const job = i < 5 && availableJobs.length > 0 ? randomItem(availableJobs) : null;
         const status = i < 5 ? 'draft' : i < 13 ? 'sent' : i < 21 ? 'accepted' : 'declined';
         
-        const subtotal = randomInt(200, 3000);
-        const gst = Math.round(subtotal * 0.1 * 100) / 100;
-        const total = subtotal + gst;
-        
+        const rawSubtotal = randomInt(200, 3000);
+        const { subtotal, gstAmount: gst, total } = calculateDocumentTotals([{ amount: rawSubtotal }]);
+
         const quoteNumber = await storage.generateQuoteNumber(userId);
         const quote = await storage.createQuote({
           userId,
@@ -362,10 +362,9 @@ export async function seedMockData(userId: string, tradeType: string = 'plumbing
                        i < 8 ? 'sent' : 
                        i < 16 ? 'paid' : 'overdue';
         
-        const subtotal = randomInt(150, 2500);
-        const gst = Math.round(subtotal * 0.1 * 100) / 100;
-        const total = subtotal + gst;
-        
+        const rawSubtotal = randomInt(150, 2500);
+        const { subtotal, gstAmount: gst, total } = calculateDocumentTotals([{ amount: rawSubtotal }]);
+
         const invoiceNumber = await storage.generateInvoiceNumber(userId);
         const dueDate = status === 'overdue' ? getRandomDate(-30, -7) :
                         status === 'paid' ? getRandomDate(-30, -1) :

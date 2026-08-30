@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
+import { calculateDocumentTotals } from '@shared/financials';
 import {
   View,
   Text,
@@ -1413,14 +1414,13 @@ export function SubcontractorDashboard() {
                 <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colorWithOpacity(colors.muted, 0.3), borderRadius: radius.lg }}>
                   {(() => {
                     const selectedItems = unbilledWork.filter(i => selectedJobs[i.jobId]);
-                    const subtotal = selectedItems.reduce((sum, i) => {
+                    const lineAmounts = selectedItems.map(i => {
                       const includedIds = lineItemEdits[i.jobId]?.includeTimeEntryIds || i.timeEntries.map(te => te.id);
                       const includedEntries = i.timeEntries.filter(te => includedIds.includes(te.id));
                       const hours = includedEntries.reduce((s, te) => s + te.hours, 0);
-                      return sum + Math.round(hours * i.hourlyRate * 100) / 100 + (i.materialsCost || 0);
-                    }, 0);
-                    const gst = subtotal * 0.1;
-                    const total = subtotal + gst;
+                      return { amount: Math.round(hours * i.hourlyRate * 100) / 100 + (i.materialsCost || 0) };
+                    });
+                    const { subtotal, gstAmount: gst, total } = calculateDocumentTotals(lineAmounts);
                     return (
                       <>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>

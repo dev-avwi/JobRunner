@@ -1,5 +1,6 @@
 import { useForm, FormProvider } from "react-hook-form";
 import { getAuthHeaders } from "@/lib/queryClient";
+import { calculateDocumentTotals } from "@shared/financials";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { WizardLayout, WIZARD_ICONS } from "@/components/FormWizard";
@@ -94,13 +95,13 @@ export default function InvoiceForm({ onSubmit, onCancel }: InvoiceFormProps) {
 
   const calculateTotal = () => {
     const lineItems = form.watch("lineItems") || [];
-    const subtotal = lineItems.reduce((sum, item) => {
-      const quantity = parseFloat(item.quantity) || 0;
-      const unitPrice = parseFloat(item.unitPrice) || 0;
-      return sum + (quantity * unitPrice);
-    }, 0);
-    const gst = subtotal * 0.1;
-    return { subtotal, gst, total: subtotal + gst };
+    const { subtotal, gstAmount, total } = calculateDocumentTotals(
+      lineItems.map(item => ({
+        quantity: parseFloat(item.quantity) || 0,
+        unitPrice: parseFloat(item.unitPrice) || 0,
+      }))
+    );
+    return { subtotal, gst: gstAmount, total };
   };
 
   const handleApplyTemplate = (template: DocumentTemplate) => {

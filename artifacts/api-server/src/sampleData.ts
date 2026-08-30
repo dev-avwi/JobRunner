@@ -8,6 +8,7 @@
 import { storage, db } from './storage';
 import { clients, jobs, quotes, quoteLineItems, invoices, invoiceLineItems } from '@workspace/db';
 import { tradeCatalog } from './shared-tradeCatalog';
+import { calculateDocumentTotals } from './shared-financials';
 import { and, eq } from 'drizzle-orm';
 
 interface SampleLineItem {
@@ -166,9 +167,9 @@ function getTradeSampleSpec(tradeType: string | undefined | null, hourly: number
 }
 
 function totals(items: SampleLineItem[]) {
-  const subtotal = items.reduce((s, i) => s + i.quantity * i.unitPrice, 0);
-  const gstAmount = subtotal * 0.1;
-  const total = subtotal + gstAmount;
+  const { subtotal, gstAmount, total } = calculateDocumentTotals(
+    items.map(i => ({ quantity: i.quantity, unitPrice: i.unitPrice }))
+  );
   return {
     subtotal: subtotal.toFixed(2),
     gstAmount: gstAmount.toFixed(2),

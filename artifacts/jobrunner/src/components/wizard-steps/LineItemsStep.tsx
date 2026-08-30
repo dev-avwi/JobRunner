@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useFormContext, useFieldArray } from "react-hook-form";
+import { calculateDocumentTotals } from "@shared/financials";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,6 +140,8 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
     return (parseFloat(quantity) || 0) * (parseFloat(unitPrice) || 0);
   };
 
+  // calculateTotal is kept for per-line display; document-level totals use the shared helper
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
       style: 'currency',
@@ -211,8 +214,11 @@ export default function LineItemsStep({ tradeType }: LineItemsStepProps) {
     }
   };
 
-  const subtotal = watchedLineItems.reduce((sum: number, item: any) => 
-    sum + calculateTotal(String(item.quantity), String(item.unitPrice)), 0
+  const { subtotal } = calculateDocumentTotals(
+    watchedLineItems.map((item: any) => ({
+      quantity: parseFloat(String(item.quantity)) || 0,
+      unitPrice: parseFloat(String(item.unitPrice)) || 0,
+    }))
   );
 
   return (

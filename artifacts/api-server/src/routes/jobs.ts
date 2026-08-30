@@ -13,6 +13,7 @@ import multer from "multer";
 import jwt from "jsonwebtoken";
 import rateLimit from "express-rate-limit";
 import { storage } from "../storage";
+import { calculateDocumentTotals, reverseTaxCalculation } from "../shared-financials";
 import { AuthService } from "../auth";
 import { setupGoogleAuth } from "../googleAuth";
 import { setupXeroAuth } from "../xeroAuth";
@@ -3527,11 +3528,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
             }
 
             for (const po of initialProjectSetup?.purchaseOrders ?? []) {
-              const subtotal = po.items.reduce(
-                (sum, item) => sum + item.quantity * item.unitPrice,
-                0,
+              const { subtotal, gstAmount, total: poTotal } = calculateDocumentTotals(
+                po.items.map(item => ({ quantity: item.quantity, unitPrice: item.unitPrice })),
+                gstEnabled ? 0.1 : 0
               );
-              const gstAmount = gstEnabled ? subtotal * 0.1 : 0;
               const poId = randomUUID();
               await tx.execute(sql`
                 INSERT INTO purchase_orders (
@@ -3543,7 +3543,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
                   ${po.poNumber}, ${new Date()},
                   ${po.requiredDate ? new Date(po.requiredDate) : null},
                   'pending', ${subtotal.toFixed(2)}, ${gstAmount.toFixed(2)},
-                  ${(subtotal + gstAmount).toFixed(2)}, ${po.terms ?? null},
+                  ${poTotal.toFixed(2)}, ${po.terms ?? null},
                   ${po.notes ?? null},
                   ${po.phaseClientId ? phaseIdByClientId.get(po.phaseClientId) ?? null : null}
                 )
@@ -6546,9 +6546,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
       // For immediate payment methods (cash, card, bank_transfer), create invoice + receipt
       const parsedAmount = parseFloat(amount);
-      const gstRate = 0.10; // Australian GST
-      const gstAmount = parsedAmount - (parsedAmount / (1 + gstRate));
-      const subtotal = parsedAmount - gstAmount;
+      const { subtotal, gstAmount } = reverseTaxCalculation(parsedAmount);
 
       // Get line items: from quote if available, or from request body
       const quoteLineItems = quoteId && quote ? await storage.getQuoteLineItems(quoteId) : [];
@@ -9901,9 +9899,8 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       
       // Calculate GST (10% for Australia)
       const additionalAmount = parseFloat(req.body.additionalAmount || '0');
-      const gstAmount = additionalAmount * 0.10;
-      const totalAmount = additionalAmount + gstAmount;
-      
+      const { gstAmount, total: totalAmount } = calculateDocumentTotals([{ amount: additionalAmount }]);
+
       const variation = await storage.createJobVariation({
         userId: userContext.effectiveUserId,
         jobId,
@@ -10020,10 +10017,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         }
         if (req.body.additionalAmount !== undefined) {
           const additionalAmount = parseFloat(req.body.additionalAmount || '0');
-          const gstAmount = additionalAmount * 0.10;
+          const { gstAmount, total: totalAmount } = calculateDocumentTotals([{ amount: additionalAmount }]);
           updates.additionalAmount = String(additionalAmount);
           updates.gstAmount = String(gstAmount.toFixed(2));
-          updates.totalAmount = String((additionalAmount + gstAmount).toFixed(2));
+          updates.totalAmount = String(totalAmount.toFixed(2));
         }
       }
 
