@@ -1032,6 +1032,9 @@ export default function NewQuoteScreen() {
     // mutation, so there is no optimistic state update to roll back. The
     // quote list is only refreshed (fetchQuotes) after a confirmed success
     // response, preventing any ghost record from appearing on rejection.
+    // The edit path (PATCH) shares the same response handling: fetchQuotes is
+    // inside the `else if (response.data)` branch and is never called when
+    // response.error is set, so a rejected save cannot produce stale local state.
     try {
       const response = isEditing
         ? await api.patch(`/api/quotes/${params.editQuoteId}`, quoteData)
