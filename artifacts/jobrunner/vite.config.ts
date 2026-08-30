@@ -56,6 +56,7 @@ export default defineConfig({
       '@shared/dateUtils': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-dateUtils.ts'),
       '@shared/displayName': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-displayName.ts'),
       '@shared/tradeCatalog': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-tradeCatalog.ts'),
+      '@shared/financials': path.resolve(import.meta.dirname, 'src', 'lib', 'shared-financials.ts'),
     },
     dedupe: ['react', 'react-dom'],
   },
