@@ -276,6 +276,7 @@ const styles = StyleSheet.create({
     // Fill the sheet's real content box (measured via onLayout) instead of a
     // guessed pixel width, so the whole grid stays centered edge-to-edge.
     alignSelf: 'stretch',
+    rowGap: spacing.lg,
   },
   gridItem: {
     alignItems: 'center',

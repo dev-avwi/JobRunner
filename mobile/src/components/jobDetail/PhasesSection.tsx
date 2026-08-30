@@ -177,6 +177,10 @@ export function PhasesSection({
   const [viewingPhase, setViewingPhase] = useState<JobPhase | null>(null);
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const visiblePhases = showCompleted
+    ? sorted
+    : sorted.filter(p => p.status !== 'complete' && p.status !== 'invoiced');
 
   const handleCycleStatus = async (phase: JobPhase) => {
     if (isTradie || !onStatusChange) return;
@@ -503,12 +507,27 @@ export function PhasesSection({
             </View>
           )}
 
+          {/* Collapse toggle — shown above the list when there are completed phases hidden */}
+          {completedCount > 0 && !showCompleted && (
+            <TouchableOpacity
+              onPress={() => setShowCompleted(true)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: spacing.xs, marginBottom: spacing.xs, alignSelf: 'flex-start' }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                {completedCount} completed phase{completedCount === 1 ? '' : 's'} hidden
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Phase rows */}
-          {sorted.map((phase, idx) => {
+          {visiblePhases.map((phase, idx) => {
             const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
             const isUpdating = updatingId === phase.id;
             const isFlashing = flashingId === phase.id;
-            const isLast = idx === sorted.length - 1;
+            const isLast = idx === visiblePhases.length - 1;
             const startStr = fmtDate(phase.scheduledStart);
             const endStr = fmtDate(phase.scheduledEnd);
             const hoursNum = parseFloat(phase.bookedHours ?? '0') || 0;
@@ -669,6 +688,21 @@ export function PhasesSection({
               </View>
             );
           })}
+
+          {/* Show / hide completed toggle */}
+          {completedCount > 0 && (
+            <TouchableOpacity
+              onPress={() => setShowCompleted(v => !v)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: spacing.xs, alignSelf: 'flex-start' }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+            >
+              <Feather name={showCompleted ? 'chevron-up' : 'chevron-down'} size={13} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 12, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                {showCompleted ? `Hide ${completedCount} completed` : `Show ${completedCount} completed`}
+              </Text>
+            </TouchableOpacity>
+          )}
         </>
       )}
 

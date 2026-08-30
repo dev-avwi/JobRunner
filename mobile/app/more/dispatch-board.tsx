@@ -977,6 +977,64 @@ function DispatchBoardScreenInner() {
           );
         })()}
 
+
+        {/* Unscheduled tray */}
+        <View style={styles.trayContainer}>
+          <PressableRow
+            style={styles.trayHeader}
+            onPress={() => setTrayExpanded(v => !v)}
+          >
+            <Feather name="inbox" size={16} color={colors.mutedForeground} />
+            <Text style={styles.trayTitle}>Unscheduled</Text>
+            <View style={[styles.trayCountBadge, { backgroundColor: `${colors.warning}20` }]}>
+              <Text style={[styles.trayCountText, { color: colors.warning }]}>{unscheduledJobs.length}</Text>
+            </View>
+            <View style={{ flex: 1 }} />
+            <Feather
+              name={trayExpanded ? 'chevron-down' : 'chevron-up'}
+              size={16}
+              color={colors.mutedForeground}
+            />
+          </PressableRow>
+          {trayExpanded && (
+            unscheduledJobs.length === 0 ? (
+              <View style={styles.trayEmpty}>
+                <Text style={styles.trayEmptyText}>All jobs are scheduled</Text>
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.trayScrollContent}
+              >
+                {unscheduledJobs.map(job => {
+                  const statusColor = getStatusColor(job.status, job.scheduledAt);
+                  const isBeingDragged = draggingJob?.id === job.id;
+                  const gesture = buildDragGesture(job);
+                  return (
+                    <GestureDetector key={job.id} gesture={gesture}>
+                      <Animated.View
+                        style={[styles.trayCard, { borderLeftColor: statusColor, opacity: isBeingDragged ? 0.3 : 1 }]}
+                      >
+                        <PressableRow onPress={() => router.push(`/job/${job.id}` as any)}>
+                          <Text style={styles.trayCardTitle} numberOfLines={2}>{job.title}</Text>
+                          {job.clientName && (
+                            <Text style={styles.trayCardMeta} numberOfLines={1}>{job.clientName}</Text>
+                          )}
+                          <View style={styles.trayCardHint}>
+                            <Feather name="move" size={10} color={colors.mutedForeground} />
+                            <Text style={styles.trayCardHintText}>Drag to board</Text>
+                          </View>
+                        </PressableRow>
+                      </Animated.View>
+                    </GestureDetector>
+                  );
+                })}
+              </ScrollView>
+            )
+          )}
+        </View>
+
         {/* Board — day: horizontal time-grid; week: vertical daily agenda */}
         <View
           ref={boardRef}
@@ -1160,62 +1218,6 @@ function DispatchBoardScreenInner() {
           )}
         </View>
 
-        {/* Unscheduled tray */}
-        <View style={styles.trayContainer}>
-          <PressableRow
-            style={styles.trayHeader}
-            onPress={() => setTrayExpanded(v => !v)}
-          >
-            <Feather name="inbox" size={16} color={colors.mutedForeground} />
-            <Text style={styles.trayTitle}>Unscheduled</Text>
-            <View style={[styles.trayCountBadge, { backgroundColor: `${colors.warning}20` }]}>
-              <Text style={[styles.trayCountText, { color: colors.warning }]}>{unscheduledJobs.length}</Text>
-            </View>
-            <View style={{ flex: 1 }} />
-            <Feather
-              name={trayExpanded ? 'chevron-down' : 'chevron-up'}
-              size={16}
-              color={colors.mutedForeground}
-            />
-          </PressableRow>
-          {trayExpanded && (
-            unscheduledJobs.length === 0 ? (
-              <View style={styles.trayEmpty}>
-                <Text style={styles.trayEmptyText}>All jobs are scheduled</Text>
-              </View>
-            ) : (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.trayScrollContent}
-              >
-                {unscheduledJobs.map(job => {
-                  const statusColor = getStatusColor(job.status, job.scheduledAt);
-                  const isBeingDragged = draggingJob?.id === job.id;
-                  const gesture = buildDragGesture(job);
-                  return (
-                    <GestureDetector key={job.id} gesture={gesture}>
-                      <Animated.View
-                        style={[styles.trayCard, { borderLeftColor: statusColor, opacity: isBeingDragged ? 0.3 : 1 }]}
-                      >
-                        <PressableRow onPress={() => router.push(`/job/${job.id}` as any)}>
-                          <Text style={styles.trayCardTitle} numberOfLines={2}>{job.title}</Text>
-                          {job.clientName && (
-                            <Text style={styles.trayCardMeta} numberOfLines={1}>{job.clientName}</Text>
-                          )}
-                          <View style={styles.trayCardHint}>
-                            <Feather name="move" size={10} color={colors.mutedForeground} />
-                            <Text style={styles.trayCardHintText}>Drag to board</Text>
-                          </View>
-                        </PressableRow>
-                      </Animated.View>
-                    </GestureDetector>
-                  );
-                })}
-              </ScrollView>
-            )
-          )}
-        </View>
       </View>
     );
   };
