@@ -2226,7 +2226,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         const paidDate = new Date(i.paidAt);
         return paidDate.getMonth() === thisMonth && paidDate.getFullYear() === thisYear;
       })
-      .reduce((sum, i) => sum + (i.total || 0), 0);
+      .reduce((sum, i) => sum + Number(i.total || 0), 0);
 
     const unpaidInvoices = invoices.filter(i => 
       i.status === 'sent' || i.status === 'overdue'
@@ -2235,7 +2235,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
     // Calculate outstanding amount (total value of unpaid invoices)
     const outstandingAmount = invoices
       .filter(i => i.status === 'sent' || i.status === 'overdue')
-      .reduce((sum, i) => sum + ((i.total || 0) - (i.amountPaid || 0)), 0);
+      .reduce((sum, i) => sum + (Number(i.total || 0) - Number(i.amountPaid || 0)), 0);
 
     // Calculate paid in last 30 days
     const thirtyDaysAgo = new Date();
@@ -2246,7 +2246,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         const paidDate = new Date(i.paidAt);
         return paidDate >= thirtyDaysAgo;
       })
-      .reduce((sum, i) => sum + (i.total || 0), 0);
+      .reduce((sum, i) => sum + Number(i.total || 0), 0);
 
     const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
     const lastMonthYear = thisMonth === 0 ? thisYear - 1 : thisYear;
@@ -2257,7 +2257,7 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         const paidDate = new Date(i.paidAt);
         return paidDate.getMonth() === lastMonth && paidDate.getFullYear() === lastMonthYear;
       })
-      .reduce((sum, i) => sum + (i.total || 0), 0);
+      .reduce((sum, i) => sum + Number(i.total || 0), 0);
 
     const thisMonthJobsCompleted = jobs.filter(j => {
       if (j.status !== 'done' && j.status !== 'invoiced') return false;
@@ -2286,11 +2286,11 @@ export const useDashboardStore = create<DashboardState>((set) => ({
         jobsToday,
         overdueJobs,
         pendingQuotes,
-        thisMonthRevenue: thisMonthRevenue / 100,
+        thisMonthRevenue,
         unpaidInvoices,
-        outstandingAmount: outstandingAmount / 100,
-        paidLast30Days: paidLast30Days / 100,
-        lastMonthRevenue: lastMonthRevenue / 100,
+        outstandingAmount,
+        paidLast30Days,
+        lastMonthRevenue,
         lastMonthJobsCompleted,
         thisMonthJobsCompleted,
         lastMonthQuotesSent,

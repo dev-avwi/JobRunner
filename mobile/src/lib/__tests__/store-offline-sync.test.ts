@@ -46,6 +46,11 @@ const mockCacheClients = jest.fn().mockResolvedValue(undefined);
 const mockCacheQuotes = jest.fn().mockResolvedValue(undefined);
 const mockCacheInvoices = jest.fn().mockResolvedValue(undefined);
 
+const mockGetCachedJobs = jest.fn().mockResolvedValue([]);
+const mockGetCachedClients = jest.fn().mockResolvedValue([]);
+const mockGetCachedQuotes = jest.fn().mockResolvedValue([]);
+const mockGetCachedInvoices = jest.fn().mockResolvedValue([]);
+
 jest.mock('../offline-storage', () => ({
   __esModule: true,
   useOfflineStore: {
@@ -70,11 +75,12 @@ jest.mock('../offline-storage', () => ({
     cacheClients: (...args: unknown[]) => mockCacheClients(...args),
     cacheQuotes: (...args: unknown[]) => mockCacheQuotes(...args),
     cacheInvoices: (...args: unknown[]) => mockCacheInvoices(...args),
-    // read helpers (not exercised here but needed so the module loads)
-    getCachedJobs: jest.fn().mockResolvedValue([]),
-    getCachedClients: jest.fn().mockResolvedValue([]),
-    getCachedQuotes: jest.fn().mockResolvedValue([]),
-    getCachedInvoices: jest.fn().mockResolvedValue([]),
+    // read helpers — delegated to outer jest.fn() variables so tests can
+    // control their return values per-scenario via mockGetCached* references.
+    getCachedJobs: (...args: unknown[]) => mockGetCachedJobs(...args),
+    getCachedClients: (...args: unknown[]) => mockGetCachedClients(...args),
+    getCachedQuotes: (...args: unknown[]) => mockGetCachedQuotes(...args),
+    getCachedInvoices: (...args: unknown[]) => mockGetCachedInvoices(...args),
     getCachedJob: jest.fn().mockResolvedValue(null),
     getCachedClient: jest.fn().mockResolvedValue(null),
     getCachedQuote: jest.fn().mockResolvedValue(null),
@@ -157,6 +163,7 @@ import {
   useClientsStore,
   useQuotesStore,
   useInvoicesStore,
+  useDashboardStore,
 } from '../store';
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -253,6 +260,10 @@ describe('store offline-sync correctness after fake-success fix', () => {
     mockCacheClients.mockReset().mockResolvedValue(undefined);
     mockCacheQuotes.mockReset().mockResolvedValue(undefined);
     mockCacheInvoices.mockReset().mockResolvedValue(undefined);
+    mockGetCachedJobs.mockReset().mockResolvedValue([]);
+    mockGetCachedClients.mockReset().mockResolvedValue([]);
+    mockGetCachedQuotes.mockReset().mockResolvedValue([]);
+    mockGetCachedInvoices.mockReset().mockResolvedValue([]);
 
     // Reset stores to a known state
     useJobsStore.setState({ jobs: [{ ...baseJob }], todaysJobs: [], error: null } as any);
@@ -858,6 +869,173 @@ describe('store offline-sync correctness after fake-success fix', () => {
       expect(result).toEqual(offlineRecord);
       expect(mockSaveInvoiceOffline).toHaveBeenCalled();
       expect(mockApiPost).not.toHaveBeenCalled();
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  Decimal invoice amounts: display and arithmetic correctness with string totals
+//
+//  The PostgreSQL/Drizzle API returns monetary fields (subtotal, gstAmount,
+//  total, amountPaid) as numeric strings ("100.00").  These are typed as
+//  `number` in ApiInvoice/ApiQuote.  Between the API fetch and the SQLite cache
+//  write the in-memory store holds the raw string values.
+//
+//  These tests confirm that:
+//   1. The display path (formatCurrency in InvoiceCard) renders string totals
+//      correctly when the store holds API-returned string values.
+//   2. fetchInvoices in offline mode loads cached invoices whose monetary fields
+//      are strings and populates the store so InvoiceCard can render them.
+//   3. useDashboardStore.fetchStats produces correct numeric revenue/outstanding
+//      aggregates when invoice totals are strings (requires Number() coercion,
+//      not bare `sum + (i.total || 0)` which triggers string concatenation).
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('decimal invoice amounts: display and arithmetic correctness with string totals', () => {
+  // Two invoices whose monetary fields are strings, as the API actually returns.
+  // Cast to `unknown as number` to satisfy ApiInvoice typing while exercising
+  // real JS runtime behaviour.
+  const thisYear = new Date().getFullYear();
+  const thisMonth = new Date().getMonth() + 1; // 1-based for ISO string
+  const paidAt = `${thisYear}-${String(thisMonth).padStart(2, '0')}-15T10:00:00.000Z`;
+
+  const sentStringInvoice = {
+    id: 'inv-str-sent',
+    number: 'INV-STR-001',
+    clientId: CLIENT_ID,
+    status: 'sent' as const,
+    subtotal: '200.50' as unknown as number,
+    gstAmount: '20.05' as unknown as number,
+    total: '220.55' as unknown as number,
+    amountPaid: '0.00' as unknown as number,
+    dueDate: '2026-06-01T00:00:00Z',
+    createdAt: '2026-01-01T00:00:00Z',
+  };
+
+  const paidStringInvoice = {
+    id: 'inv-str-paid',
+    number: 'INV-STR-002',
+    clientId: CLIENT_ID,
+    status: 'paid' as const,
+    subtotal: '500.00' as unknown as number,
+    gstAmount: '50.00' as unknown as number,
+    total: '550.00' as unknown as number,
+    amountPaid: '550.00' as unknown as number,
+    dueDate: null,
+    paidAt,
+    createdAt: '2026-01-01T00:00:00Z',
+  };
+
+  beforeEach(() => {
+    goOnline();
+    mockApiGet.mockReset();
+    mockGetCachedInvoices.mockReset().mockResolvedValue([]);
+    mockGetCachedJobs.mockReset().mockResolvedValue([]);
+    mockGetCachedQuotes.mockReset().mockResolvedValue([]);
+    useInvoicesStore.setState({ invoices: [], isLoading: false, error: null } as any);
+    useDashboardStore.setState({ isLoading: false } as any);
+  });
+
+  // ── 1. Display path via fetchInvoices offline ──────────────────────────────
+  //
+  // fetchInvoices when offline reads from the cache and commits the result to
+  // the store.  InvoiceCard then calls formatCurrency(invoice.total || 0).
+  // Both must work when the cached values are strings.
+
+  describe('fetchInvoices offline path', () => {
+    it('populates the store from cache and formatCurrency renders the string total correctly', async () => {
+      const { formatCurrency } = require('../format');
+      goOffline();
+      mockGetCachedInvoices.mockResolvedValue([sentStringInvoice]);
+
+      await useInvoicesStore.getState().fetchInvoices();
+
+      const { invoices, isOfflineData } = useInvoicesStore.getState();
+      expect(isOfflineData).toBe(true);
+      expect(invoices).toHaveLength(1);
+
+      const inv = invoices.find(i => i.id === 'inv-str-sent')!;
+      // Mirrors the InvoiceCard display expression: formatCurrency(invoice.total || 0)
+      expect(formatCurrency(inv.total || 0)).toBe('$220.55');
+    });
+
+    it('renders the correct amount for multiple string-total invoices loaded from cache', async () => {
+      const { formatCurrency } = require('../format');
+      goOffline();
+      mockGetCachedInvoices.mockResolvedValue([sentStringInvoice, paidStringInvoice]);
+
+      await useInvoicesStore.getState().fetchInvoices();
+
+      const { invoices } = useInvoicesStore.getState();
+      expect(invoices).toHaveLength(2);
+
+      const sent = invoices.find(i => i.id === 'inv-str-sent')!;
+      const paid = invoices.find(i => i.id === 'inv-str-paid')!;
+      expect(formatCurrency(sent.total || 0)).toBe('$220.55');
+      expect(formatCurrency(paid.total || 0)).toBe('$550.00');
+    });
+  });
+
+  // ── 2. Dashboard store fetchStats with string totals ───────────────────────
+  //
+  // fetchStats aggregates totals via reduce().  The fix in store.ts wraps each
+  // total with Number() to prevent `+` from concatenating strings.  These tests
+  // catch a regression where bare `sum + (i.total || 0)` would produce the
+  // wrong accumulated value (e.g. 0 + "220.55" + "550.00" = "0220.55550.00").
+
+  describe('fetchStats: correct aggregation of string-typed invoice totals', () => {
+    it('computes this-month revenue correctly when the API returns string totals (online path)', async () => {
+      mockApiGet.mockImplementation((url: string) => {
+        if (url === '/api/invoices') {
+          return Promise.resolve({ data: [paidStringInvoice], error: null });
+        }
+        if (url === '/api/jobs') return Promise.resolve({ data: [], error: null });
+        if (url === '/api/quotes') return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: [], error: null });
+      });
+
+      await useDashboardStore.getState().fetchStats();
+
+      const { stats } = useDashboardStore.getState();
+      // thisMonthRevenue is in dollars — no division applied
+      expect(stats.thisMonthRevenue).toBeCloseTo(550.0, 2);
+    });
+
+    it('computes outstandingAmount correctly for multiple sent invoices with string totals (online path)', async () => {
+      const secondSent = {
+        ...sentStringInvoice,
+        id: 'inv-str-sent-2',
+        total: '110.25' as unknown as number,
+        amountPaid: '0.00' as unknown as number,
+      };
+
+      mockApiGet.mockImplementation((url: string) => {
+        if (url === '/api/invoices') {
+          return Promise.resolve({ data: [sentStringInvoice, secondSent], error: null });
+        }
+        if (url === '/api/jobs') return Promise.resolve({ data: [], error: null });
+        if (url === '/api/quotes') return Promise.resolve({ data: [], error: null });
+        return Promise.resolve({ data: [], error: null });
+      });
+
+      await useDashboardStore.getState().fetchStats();
+
+      const { stats } = useDashboardStore.getState();
+      // outstandingAmount is in dollars — no division applied
+      expect(stats.outstandingAmount).toBeCloseTo(330.8, 2);
+    });
+
+    it('computes stats correctly when offline and cache returns string totals', async () => {
+      goOffline();
+      mockGetCachedInvoices.mockResolvedValue([paidStringInvoice]);
+      mockGetCachedJobs.mockResolvedValue([]);
+      mockGetCachedQuotes.mockResolvedValue([]);
+
+      await useDashboardStore.getState().fetchStats();
+
+      const { stats } = useDashboardStore.getState();
+      expect(stats.thisMonthRevenue).toBeCloseTo(550.0, 2);
+      expect(stats.unpaidInvoices).toBe(0);
     });
   });
 });
