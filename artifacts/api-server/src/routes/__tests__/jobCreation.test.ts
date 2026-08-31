@@ -17,6 +17,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getIdempotencyRecord, setIdempotencyRecord } from "../helpers";
 
 // ── Storage mock ─────────────────────────────────────────────────────────────
 const CLIENT_ID = "client-abc";
@@ -653,5 +654,133 @@ describe("POST /api/jobs — worker double-booking guard", () => {
 
     expect(res.status).toBe(201);
     expect(mockStorage.createJob).toHaveBeenCalledOnce();
+  });
+});
+
+// ── Idempotency replay tests ──────────────────────────────────────────────────
+
+describe("POST /api/jobs — clientGeneratedId idempotency replay", () => {
+  let app: ReturnType<typeof buildApp>;
+
+  const PROJECT_PAYLOAD = {
+    title: "Kitchen renovation",
+    jobType: "project",
+    status: "pending",
+    clientId: CLIENT_ID,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+    mockCanUserCreateJob.mockResolvedValue({ canCreate: true, usageInfo: { jobCount: 0 } });
+    mockIncrementJobCount.mockResolvedValue(undefined);
+    mockStorage.getBusinessSettings.mockResolvedValue(null);
+    mockStorage.generateJobNumber.mockResolvedValue("JOB-001");
+    mockStorage.getClient.mockResolvedValue(FAKE_CLIENT);
+    mockStorage.updateJob.mockResolvedValue(undefined);
+    mockStorage.getJobs.mockResolvedValue([]);
+
+    // db.transaction: project job creation path.
+    // When clientGeneratedId is set the handler makes TWO tx.insert calls inside
+    // the same transaction:
+    //   1. tx.insert(idempotencyKeys).values(...).onConflictDoNothing().returning()
+    //      → must return [{key}] to signal a successful reservation
+    //   2. tx.insert(jobs).values(...).returning()
+    //      → returns the created job row
+    // mockReturnValueOnce chains them in order.
+    mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => {
+      // findDurableProjectReplay inside transaction uses tx.select
+      mockTx.select.mockReturnValue({
+        from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })),
+      });
+
+      // First insert: idempotency key reservation
+      mockTx.insert
+        .mockReturnValueOnce({
+          values: vi.fn(() => ({
+            onConflictDoNothing: vi.fn(() => ({
+              returning: vi.fn().mockResolvedValue([{ key: "stub-idem-key" }]),
+            })),
+          })),
+        })
+        // Second insert: jobs row
+        .mockReturnValueOnce({
+          values: vi.fn(() => ({
+            returning: vi.fn().mockResolvedValue([FAKE_PROJECT_JOB]),
+            onConflictDoNothing: vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) })),
+          })),
+        });
+
+      // tx.update: called at the end to write the final response into idempotencyKeys
+      mockTx.update.mockReturnValue({ set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })) });
+      mockTx.delete.mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+      mockTx.execute.mockResolvedValue(undefined);
+      return cb(mockTx);
+    });
+
+    // Outer-level db.select: used by findDurableProjectReplay before the transaction.
+    // Default: no existing job found (returns empty array).
+    mockDb.select.mockReturnValue({
+      from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })),
+    });
+
+    // Default helpers: cache miss on reads, no-op on writes.
+    vi.mocked(getIdempotencyRecord).mockResolvedValue(null);
+    vi.mocked(setIdempotencyRecord).mockResolvedValue(undefined);
+
+    app = buildApp();
+  });
+
+  it("returns 201 with the original job body when the same clientGeneratedId is sent a second time", async () => {
+    // Simulate the in-memory idempotency cache: capture what setIdempotencyRecord
+    // stores on the first POST and return it from getIdempotencyRecord on the second.
+    let storedRecord: any = null;
+    vi.mocked(getIdempotencyRecord)
+      .mockResolvedValueOnce(null)                         // first POST: cache miss
+      .mockImplementation(async () => storedRecord);       // second POST: cache hit
+    vi.mocked(setIdempotencyRecord).mockImplementation(async (_key, record) => {
+      storedRecord = record;
+    });
+
+    const res1 = await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({ ...PROJECT_PAYLOAD, clientGeneratedId: "idem-replay-001" });
+
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({ ...PROJECT_PAYLOAD, clientGeneratedId: "idem-replay-001" });
+
+    expect(res2.status).toBe(201);
+    expect(res2.body.id).toBe(res1.body.id);
+  });
+
+  it("only calls db.transaction once when the same clientGeneratedId is sent twice", async () => {
+    // Wire the idempotency cache so the second POST hits the cache and never
+    // reaches the transaction.
+    let storedRecord: any = null;
+    vi.mocked(getIdempotencyRecord)
+      .mockResolvedValueOnce(null)
+      .mockImplementation(async () => storedRecord);
+    vi.mocked(setIdempotencyRecord).mockImplementation(async (_key, record) => {
+      storedRecord = record;
+    });
+
+    await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({ ...PROJECT_PAYLOAD, clientGeneratedId: "idem-replay-002" });
+
+    await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({ ...PROJECT_PAYLOAD, clientGeneratedId: "idem-replay-002" });
+
+    // The DB transaction must run exactly once — the replay must not re-enter it.
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
   });
 });
