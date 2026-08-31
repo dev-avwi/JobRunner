@@ -62,6 +62,8 @@ const mockStorage = vi.hoisted(() => ({
   generateJobNumber: vi.fn().mockResolvedValue("JOB-001"),
   updateJob: vi.fn().mockResolvedValue(undefined),
   updateQuote: vi.fn().mockResolvedValue(undefined),
+  // Required by findWorkerBookingConflict
+  getJobs: vi.fn().mockResolvedValue([]),
 }));
 
 // ── db mock (from "../storage") ───────────────────────────────────────────────
@@ -519,5 +521,137 @@ describe("POST /api/jobs — retentionPercent validation", () => {
     expect(res.status).toBe(400);
     expect(mockStorage.createJob).not.toHaveBeenCalled();
     expect(mockDb.transaction).not.toHaveBeenCalled();
+  });
+});
+
+// ── Booking-conflict guard ────────────────────────────────────────────────────
+
+describe("POST /api/jobs — worker double-booking guard", () => {
+  const WORKER_A = "worker-user-a";
+  const WORKER_B = "worker-user-b";
+
+  // A job already in the system for WORKER_A starting at a fixed time.
+  const BASE_TIME = new Date("2026-09-01T09:00:00.000Z");
+
+  const EXISTING_JOB_WORKER_A = {
+    id: "job-existing-1",
+    title: "Existing plumbing job",
+    jobType: "service",
+    status: "pending",
+    userId: OWNER_USER_ID,
+    clientId: CLIENT_ID,
+    assignedTo: WORKER_A,
+    scheduledAt: BASE_TIME.toISOString(),
+    estimatedDuration: 60,
+    retentionPercent: null,
+    createdAt: new Date().toISOString(),
+  };
+
+  let app: ReturnType<typeof buildApp>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // Restore mocks that vi.clearAllMocks() strips implementations from.
+    mockGetUserContext.mockResolvedValue(OWNER_CONTEXT);
+    mockCanUserCreateJob.mockResolvedValue({ canCreate: true, usageInfo: { jobCount: 0 } });
+    mockIncrementJobCount.mockResolvedValue(undefined);
+
+    // Storage stubs.
+    mockStorage.getBusinessSettings.mockResolvedValue(null);
+    mockStorage.generateJobNumber.mockResolvedValue("JOB-001");
+    mockStorage.getClient.mockResolvedValue(FAKE_CLIENT);
+    mockStorage.updateJob.mockResolvedValue(undefined);
+
+    // By default, no existing jobs.
+    mockStorage.getJobs.mockResolvedValue([]);
+
+    // Service job creation returns a valid job.
+    mockStorage.createJob.mockResolvedValue({
+      ...FAKE_SERVICE_JOB,
+      assignedTo: WORKER_A,
+      scheduledAt: BASE_TIME.toISOString(),
+    });
+
+    // Restore db stubs.
+    mockDb.transaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => {
+      const mockReturning = vi.fn().mockResolvedValue([FAKE_PROJECT_JOB]);
+      const mockOnConflict = vi.fn(() => ({ returning: vi.fn().mockResolvedValue([]) }));
+      const mockValues = vi.fn(() => ({ returning: mockReturning, onConflictDoNothing: mockOnConflict }));
+      mockTx.insert.mockReturnValue({ values: mockValues });
+      mockTx.select.mockReturnValue({
+        from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })),
+      });
+      mockTx.update.mockReturnValue({
+        set: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
+      });
+      mockTx.delete.mockReturnValue({ where: vi.fn().mockResolvedValue([]) });
+      mockTx.execute.mockResolvedValue(undefined);
+      return cb(mockTx);
+    });
+    mockDb.select.mockReturnValue({
+      from: vi.fn(() => ({ where: vi.fn(() => ({ limit: vi.fn().mockResolvedValue([]) })) })),
+    });
+
+    app = buildApp();
+  });
+
+  it("returns 409 BOOKING_CONFLICT when a second overlapping job is posted for the same worker", async () => {
+    // Simulate an existing job for WORKER_A that will overlap the new request.
+    mockStorage.getJobs.mockResolvedValue([EXISTING_JOB_WORKER_A]);
+
+    // Post a new job for the same worker, 30 minutes into the existing booking
+    // (BASE_TIME + 30 min), so the windows definitely overlap.
+    const overlappingTime = new Date(BASE_TIME.getTime() + 30 * 60 * 1000).toISOString();
+
+    const res = await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({
+        title: "Second plumbing job",
+        jobType: "service",
+        status: "pending",
+        clientId: CLIENT_ID,
+        assignedTo: WORKER_A,
+        scheduledAt: overlappingTime,
+        estimatedDuration: 60,
+      });
+
+    expect(res.status).toBe(409);
+    expect(res.body).toMatchObject({
+      code: "BOOKING_CONFLICT",
+      conflictingJobId: EXISTING_JOB_WORKER_A.id,
+    });
+    // Creation must not proceed after the conflict is detected.
+    expect(mockStorage.createJob).not.toHaveBeenCalled();
+  });
+
+  it("returns 201 when two different workers are booked at the same time", async () => {
+    // WORKER_A already has a job at BASE_TIME.
+    mockStorage.getJobs.mockResolvedValue([EXISTING_JOB_WORKER_A]);
+
+    // WORKER_B is posted for exactly the same time slot — no conflict.
+    mockStorage.createJob.mockResolvedValue({
+      ...FAKE_SERVICE_JOB,
+      id: "job-worker-b-1",
+      assignedTo: WORKER_B,
+      scheduledAt: BASE_TIME.toISOString(),
+    });
+
+    const res = await request(app)
+      .post("/api/jobs")
+      .set("x-user-id", OWNER_USER_ID)
+      .send({
+        title: "Worker B job",
+        jobType: "service",
+        status: "pending",
+        clientId: CLIENT_ID,
+        assignedTo: WORKER_B,
+        scheduledAt: BASE_TIME.toISOString(),
+        estimatedDuration: 60,
+      });
+
+    expect(res.status).toBe(201);
+    expect(mockStorage.createJob).toHaveBeenCalledOnce();
   });
 });
