@@ -495,7 +495,6 @@ function Router({
   
   // Stable callbacks for quote/invoice editors using useCallback
   const handleQuoteSave = useCallback((quoteId: string) => {
-    console.log('Quote created:', quoteId);
     onShowQuoteModal(quoteId);
   }, [onShowQuoteModal]);
   
@@ -504,7 +503,6 @@ function Router({
   }, [onNavigate]);
   
   const handleInvoiceSave = useCallback((invoiceId: string) => {
-    console.log('Invoice created:', invoiceId);
     onShowInvoiceModal(invoiceId);
   }, [onShowInvoiceModal]);
   
@@ -513,7 +511,6 @@ function Router({
   }, [onNavigate]);
   
   const handleJobSubmit = useCallback((jobId: string) => {
-    console.log('Job created:', jobId);
     onNavigate(`/jobs/${jobId}`);
   }, [onNavigate]);
   
@@ -587,7 +584,6 @@ function Router({
         <JobCompletionWrapper 
           jobId={params.id}
           onComplete={(jobId) => {
-            console.log('Job completed:', jobId);
             // After completion, go back to the job details
             onNavigate(`/jobs/${jobId}`);
           }}
@@ -648,7 +644,6 @@ function Router({
       <Route path="/clients/new" component={() => (
         <ClientForm 
           onSubmit={(clientId) => {
-            console.log('Client created:', clientId);
             onNavigate(`/clients/${clientId}`);
           }}
           onCancel={() => onNavigate('/clients')}

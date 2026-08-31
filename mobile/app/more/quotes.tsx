@@ -16,6 +16,7 @@ import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useQuotesStore, useClientsStore, useAuthStore } from '../../src/lib/store';
+import { useUserRole } from '../../src/hooks/use-user-role';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { api, API_URL } from '../../src/lib/api';
 import { spacing, radius, shadows, typography, sizes, pageShell, iconSizes, fontWeights } from '../../src/lib/design-tokens';
@@ -245,6 +246,7 @@ export default function QuotesScreen() {
   const { quotes, fetchQuotes, isLoading } = useQuotesStore();
   const { clients, fetchClients } = useClientsStore();
   const { user, businessSettings } = useAuthStore();
+  const { canDeleteQuotes } = useUserRole();
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterKey>('all');
@@ -570,7 +572,7 @@ export default function QuotesScreen() {
               onPress={() => router.push(`/more/quote/${quote.id}`)}
               onSend={() => handleSendQuote(quote.id)}
               onConvertToInvoice={() => handleConvertToInvoice(quote.id)}
-              onDelete={() => handleDeleteQuote(quote.id)}
+              onDelete={canDeleteQuotes ? () => handleDeleteQuote(quote.id) : undefined}
               onArchive={() => handleArchiveQuote(quote.id)}
             />
           )}

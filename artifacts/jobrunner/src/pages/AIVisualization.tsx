@@ -49,7 +49,6 @@ export default function AIVisualizationPage() {
 
   const handleSaveToJob = async (imageUrl: string) => {
     if (!jobIdFromUrl) return;
-    console.log("Saving visualization to job:", jobIdFromUrl, imageUrl);
   };
 
   const formatDate = (dateString: string) => {

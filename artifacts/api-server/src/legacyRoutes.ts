@@ -512,24 +512,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Detailed in-memory metrics: top routes by traffic with p50/p95/p99.
   // Intentionally public read-only for ops/load-test scripts; contains no PII.
   app.get("/api/metrics", async (req: any, res) => {
-    const { getMetricsSnapshot } = await import('./metrics');
-    const { getAllQueueStats } = await import('./concurrency');
-    const { getCacheStats } = await import('./cache');
-    const { pool } = await import('./storage');
-    const mem = process.memoryUsage();
-    res.json({
-      timestamp: new Date().toISOString(),
-      uptimeSec: Math.floor(process.uptime()),
-      ...getMetricsSnapshot(),
-      queues: getAllQueueStats(),
-      caches: getCacheStats(),
-      pool: { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount },
-      memoryMb: {
-        rss: Math.round(mem.rss / 1024 / 1024),
-        heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
-        heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
-      },
-    });
+    try {
+      const { getMetricsSnapshot } = await import('./metrics');
+      const { getAllQueueStats } = await import('./concurrency');
+      const { getCacheStats } = await import('./cache');
+      const { pool } = await import('./storage');
+      const mem = process.memoryUsage();
+      res.json({
+        timestamp: new Date().toISOString(),
+        uptimeSec: Math.floor(process.uptime()),
+        ...getMetricsSnapshot(),
+        queues: getAllQueueStats(),
+        caches: getCacheStats(),
+        pool: { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount },
+        memoryMb: {
+          rss: Math.round(mem.rss / 1024 / 1024),
+          heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+          heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+        },
+      });
+    } catch (err: any) {
+      logger.error('metrics', 'Failed to gather metrics', { error: err?.message });
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   const earlyAccessStatusHandler = async (req: any, res: any) => {
@@ -19359,26 +19364,27 @@ Be specific about materials, colors, and features that would be included.`
       }
       
       if (lineItems && Array.isArray(lineItems)) {
-        const existingItems = await storage.getQuoteLineItems(req.params.id);
-        for (const existing of existingItems) {
-          await storage.deleteQuoteLineItem(existing.id, userContext.effectiveUserId);
-        }
-        
         let subtotalCents = 0;
-        for (let i = 0; i < lineItems.length; i++) {
-          const item = lineItems[i];
-          const qty = parseFloat(String(item.quantity || 1));
-          const price = parseFloat(String(item.unitPrice || 0));
-          const total = (qty * price).toFixed(2);
-          subtotalCents += Math.round(qty * price * 100);
-          const lineItemData = insertQuoteLineItemSchema.parse({ 
-            ...item, 
-            quoteId: req.params.id, 
-            total,
-            sortOrder: item.sortOrder ?? i,
-          });
-          await storage.createQuoteLineItem(lineItemData, userContext.effectiveUserId);
-        }
+
+        // Atomically replace all line items so a mid-update failure never
+        // leaves the quote with zero (deleted) or partial (half-inserted) items.
+        await db.transaction(async (tx) => {
+          await tx.delete(quoteLineItems).where(eq(quoteLineItems.quoteId, req.params.id));
+          for (let i = 0; i < lineItems.length; i++) {
+            const item = lineItems[i];
+            const qty = parseFloat(String(item.quantity || 1));
+            const price = parseFloat(String(item.unitPrice || 0));
+            const total = (qty * price).toFixed(2);
+            subtotalCents += Math.round(qty * price * 100);
+            const lineItemData = insertQuoteLineItemSchema.parse({
+              ...item,
+              quoteId: req.params.id,
+              total,
+              sortOrder: item.sortOrder ?? i,
+            });
+            await tx.insert(quoteLineItems).values(lineItemData);
+          }
+        });
         
         const calculatedSubtotal = subtotalCents / 100;
         const business = await storage.getBusinessSettings(userContext.effectiveUserId);
@@ -46548,38 +46554,44 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         } catch {}
       }
 
-      const [doc] = await db.insert(swmsDocuments).values({
-        userId,
-        jobId: jobId || null,
-        title,
-        description: description || null,
-        siteAddress: resolvedAddress || null,
-        workActivityDescription: workActivityDescription || null,
-        ppeRequirements: ppeRequirements || [],
-        emergencyContact: emergencyContact || null,
-        firstAidLocation: firstAidLocation || null,
-        status: status || 'draft',
-        attachmentUrl: attachmentUrl || null,
-        attachmentType: attachmentType || null,
-      }).returning();
+      // Atomically insert the SWMS document and all its hazards so a failed
+      // hazard write never leaves an orphaned/incomplete SWMS record.
+      let doc;
+      await db.transaction(async (tx) => {
+        const [inserted] = await tx.insert(swmsDocuments).values({
+          userId,
+          jobId: jobId || null,
+          title,
+          description: description || null,
+          siteAddress: resolvedAddress || null,
+          workActivityDescription: workActivityDescription || null,
+          ppeRequirements: ppeRequirements || [],
+          emergencyContact: emergencyContact || null,
+          firstAidLocation: firstAidLocation || null,
+          status: status || 'draft',
+          attachmentUrl: attachmentUrl || null,
+          attachmentType: attachmentType || null,
+        }).returning();
+        doc = inserted;
 
-      if (hazards && Array.isArray(hazards) && hazards.length > 0) {
-        for (let i = 0; i < hazards.length; i++) {
-          const h = hazards[i];
-          await db.insert(swmsHazards).values({
-            swmsId: doc.id,
-            stepNumber: i + 1,
-            activityTask: h.activityTask || 'Activity',
-            hazard: h.hazard || 'Hazard',
-            likelihood: h.likelihood || 'possible',
-            consequence: h.consequence || 'moderate',
-            riskBefore: h.riskBefore || 'medium',
-            controlMeasures: h.controlMeasures || null,
-            riskAfter: h.riskAfter || 'low',
-            sortOrder: i,
-          });
+        if (hazards && Array.isArray(hazards) && hazards.length > 0) {
+          for (let i = 0; i < hazards.length; i++) {
+            const h = hazards[i];
+            await tx.insert(swmsHazards).values({
+              swmsId: doc.id,
+              stepNumber: i + 1,
+              activityTask: h.activityTask || 'Activity',
+              hazard: h.hazard || 'Hazard',
+              likelihood: h.likelihood || 'possible',
+              consequence: h.consequence || 'moderate',
+              riskBefore: h.riskBefore || 'medium',
+              controlMeasures: h.controlMeasures || null,
+              riskAfter: h.riskAfter || 'low',
+              sortOrder: i,
+            });
+          }
         }
-      }
+      });
 
       res.json(doc);
     } catch (error: any) {
