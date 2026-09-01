@@ -10746,6 +10746,12 @@ Thank you for your prompt attention to this matter.`,
         result.set(row.userId, row);
       }
     }
+    // Warm the per-user cache so subsequent getBusinessSettings calls for these
+    // owners hit the cache instead of issuing redundant DB round trips.
+    const { businessSettingsCache } = await import('./cache');
+    for (const [userId, settings] of result) {
+      businessSettingsCache.set(userId, settings);
+    }
     return result;
   }
 
