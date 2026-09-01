@@ -18461,9 +18461,13 @@ Be specific about materials, colors, and features that would be included.`
       
       // Fetch events ONCE for the whole job (not per-token)
       const allSubEvents = activeSubTokens.length > 0 ? await storage.getSubcontractorEventsByJob(portalToken.jobId) : [];
+
+      // Fetch latest pings for ALL active sub-tokens in a single batch query
+      const activeSubTokenIds = activeSubTokens.map(st => st.id);
+      const latestPingByToken = await storage.getLatestSubcontractorLocationPingsByTokenIds(activeSubTokenIds);
       
-      const subcontractors = await Promise.all(activeSubTokens.map(async (st) => {
-        const ping = await storage.getLatestSubcontractorLocationPing(st.id);
+      const subcontractors = activeSubTokens.map((st) => {
+        const ping = latestPingByToken.get(st.id) ?? null;
         let location = null;
         let stale = true;
         
@@ -18507,7 +18511,7 @@ Be specific about materials, colors, and features that would be included.`
           stale,
           lastUpdated: ping?.recordedAt || null,
         };
-      }));
+      });
 
       // Solo-tradie / no-assignment fallback: if no active assignment surfaced a
       // location but the job is on its way, show the assigned worker (or job
@@ -51921,7 +51925,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
 
       const membershipRate = membership[0]?.hourlyRate;
 
-      const result = await Promise.all(completedJobs.map(async job => {
+      // Batch-fetch all materials for every completed job in a single query
+      const completedJobIds = completedJobs.map(j => j.id);
+      const materialsByJob = await storage.getJobMaterialsByJobIds(completedJobIds, userId);
+
+      const result = completedJobs.map(job => {
         const assignment = assignments.find(a => a.jobId === job.id);
         const fallbackRate = parseFloat(assignment?.hourlyRateOverride || membershipRate || '0');
         // Exclude break entries — breaks are unpaid and must never be billed.
@@ -51944,7 +51952,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         totalHours = Math.round(totalHours * 100) / 100;
         labourAmount = Math.round(labourAmount * 100) / 100;
 
-        const materials = await storage.getJobMaterials(job.id, userId);
+        const materials = materialsByJob.get(job.id) ?? [];
         const materialsCost = Math.round(materials.reduce((sum: number, m: { totalCost?: string | number | null }) => sum + parseFloat(m.totalCost?.toString() || '0'), 0) * 100) / 100;
 
         return {
@@ -51958,7 +51966,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           suggestedAmount: Math.round((labourAmount + materialsCost) * 100) / 100,
           alreadyBilled: billedJobIds.has(job.id),
         };
-      }));
+      });
 
       res.json(result);
     } catch (error) {
@@ -52039,7 +52047,20 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         billedJobIds = new Set(billedRows.map(r => r.jobId).filter(Boolean) as string[]);
       }
 
-      const assignmentCache: Record<string, boolean> = {};
+      // Batch-fetch all referenced jobs and assignments up-front so the item
+      // validation loop below never touches the database per-row.
+      const uniqueJobIds = [...new Set(items.map((i: any) => i.jobId).filter(Boolean) as string[])];
+      const [jobRecordRows, assignmentRows] = uniqueJobIds.length > 0
+        ? await Promise.all([
+            db.select().from(jobs)
+              .where(and(inArray(jobs.id, uniqueJobIds), eq(jobs.userId, businessOwnerId))),
+            db.select({ jobId: jobAssignments.jobId }).from(jobAssignments)
+              .where(and(eq(jobAssignments.userId, userId), inArray(jobAssignments.jobId, uniqueJobIds), eq(jobAssignments.isActive, true))),
+          ])
+        : [[], []];
+      const jobRecordByIdMap = new Map(jobRecordRows.map((j: any) => [j.id, j]));
+      const assignedJobIdSet = new Set(assignmentRows.map((a: any) => a.jobId));
+
       let subtotal = 0;
       const resolvedItems: Array<{ description: string; quantity: string; unitPrice: string; amount: string; jobId: string | null }> = [];
 
@@ -52058,27 +52079,21 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         }
 
         const jobId = item.jobId || null;
-        if (jobId && assignmentCache[jobId] === undefined) {
-          // Verify job belongs to the business, is completed, and the subbie is assigned
-          const jobRecord = await db.select().from(jobs)
-            .where(and(eq(jobs.id, jobId), eq(jobs.userId, businessOwnerId)))
-            .limit(1);
-          if (jobRecord.length === 0) {
+        if (jobId) {
+          // Validate using the pre-fetched Maps — zero additional DB queries per row
+          const jobRecord = jobRecordByIdMap.get(jobId);
+          if (!jobRecord) {
             return res.status(400).json({ error: 'A selected job does not belong to the selected business' });
           }
-          if (jobRecord[0].status !== 'done' && jobRecord[0].status !== 'invoiced') {
-            return res.status(400).json({ error: `Job "${jobRecord[0].title}" must be completed before billing` });
+          if (jobRecord.status !== 'done' && jobRecord.status !== 'invoiced') {
+            return res.status(400).json({ error: `Job "${jobRecord.title}" must be completed before billing` });
           }
-          const assignment = await db.select().from(jobAssignments)
-            .where(and(eq(jobAssignments.userId, userId), eq(jobAssignments.jobId, jobId), eq(jobAssignments.isActive, true)))
-            .limit(1);
-          if (assignment.length === 0 && jobRecord[0].assignedTo !== userId) {
-            return res.status(400).json({ error: `You are not assigned to job "${jobRecord[0].title}"` });
+          if (!assignedJobIdSet.has(jobId) && jobRecord.assignedTo !== userId) {
+            return res.status(400).json({ error: `You are not assigned to job "${jobRecord.title}"` });
           }
           if (docType === 'invoice' && billedJobIds.has(jobId)) {
-            return res.status(400).json({ error: `Job "${jobRecord[0].title}" has already been invoiced` });
+            return res.status(400).json({ error: `Job "${jobRecord.title}" has already been invoiced` });
           }
-          assignmentCache[jobId] = true;
         }
 
         const amount = Math.round(quantity * unitPrice * 100) / 100;

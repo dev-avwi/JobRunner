@@ -535,6 +535,8 @@ export interface IStorage {
 
   // Job Materials
   getJobMaterials(jobId: string, userId: string): Promise<JobMaterial[]>;
+  /** Batch variant: fetch all materials for multiple jobs in one query. */
+  getJobMaterialsByJobIds(jobIds: string[], userId: string): Promise<Map<string, JobMaterial[]>>;
   getJobMaterial(id: string, userId: string): Promise<JobMaterial | undefined>;
   createJobMaterial(material: InsertJobMaterial): Promise<JobMaterial>;
   updateJobMaterial(id: string, userId: string, updates: Partial<InsertJobMaterial>): Promise<JobMaterial | undefined>;
@@ -1274,6 +1276,8 @@ export interface IStorage {
   createSubcontractorLocationPing(data: InsertSubcontractorLocationPing): Promise<SubcontractorLocationPing>;
   getLatestSubcontractorLocationPing(tokenId: string): Promise<SubcontractorLocationPing | null>;
   getSubcontractorLocationPingsByJob(jobId: string): Promise<SubcontractorLocationPing[]>;
+  /** Batch variant: returns the most-recent ping for each of the given tokenIds in a single query. */
+  getLatestSubcontractorLocationPingsByTokenIds(tokenIds: string[]): Promise<Map<string, SubcontractorLocationPing>>;
 
   // Equipment Management
   getEquipment(userId: string): Promise<Equipment[]>;
@@ -2725,6 +2729,26 @@ export class PostgresStorage implements IStorage {
       .from(jobMaterials)
       .where(and(eq(jobMaterials.jobId, jobId), eq(jobMaterials.userId, userId)))
       .orderBy(desc(jobMaterials.createdAt));
+  }
+
+  async getJobMaterialsByJobIds(jobIds: string[], userId: string): Promise<Map<string, JobMaterial[]>> {
+    if (jobIds.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(jobMaterials)
+      .where(and(inArray(jobMaterials.jobId, jobIds), eq(jobMaterials.userId, userId)))
+      .orderBy(desc(jobMaterials.createdAt));
+    const byJob = new Map<string, JobMaterial[]>();
+    for (const row of rows) {
+      if (!row.jobId) continue;
+      const existing = byJob.get(row.jobId);
+      if (existing) {
+        existing.push(row);
+      } else {
+        byJob.set(row.jobId, [row]);
+      }
+    }
+    return byJob;
   }
 
   async getJobMaterial(id: string, userId: string): Promise<JobMaterial | undefined> {
@@ -9809,6 +9833,42 @@ Thank you for your prompt attention to this matter.`,
     return await db.select().from(subcontractorLocationPings)
       .where(eq(subcontractorLocationPings.jobId, jobId))
       .orderBy(desc(subcontractorLocationPings.recordedAt));
+  }
+
+  async getLatestSubcontractorLocationPingsByTokenIds(tokenIds: string[]): Promise<Map<string, SubcontractorLocationPing>> {
+    if (tokenIds.length === 0) return new Map();
+    // DISTINCT ON returns exactly one (the newest) row per token_id at the
+    // database level — equivalent to N individual LIMIT 1 queries but in a
+    // single round trip. No unbounded historical rows are transferred.
+    // The tokenIds array is passed as a proper parameterized binding via
+    // Drizzle's sql template, so there is no string interpolation / injection risk.
+    const result = await db.execute<{
+      id: string; token_id: string; job_id: string | null;
+      latitude: string; longitude: string; accuracy_meters: string | null;
+      recorded_at: Date | null; created_at: Date | null;
+    }>(sql`
+      SELECT DISTINCT ON (token_id) *
+      FROM subcontractor_location_pings
+      WHERE token_id = ANY(${tokenIds}::text[])
+      ORDER BY token_id, recorded_at DESC
+    `);
+    const latestByToken = new Map<string, SubcontractorLocationPing>();
+    for (const row of result.rows) {
+      if (row.token_id) {
+        // Map snake_case columns back to the camelCase shape expected by callers
+        latestByToken.set(row.token_id, {
+          id: row.id,
+          tokenId: row.token_id,
+          jobId: row.job_id,
+          latitude: row.latitude,
+          longitude: row.longitude,
+          accuracyMeters: row.accuracy_meters,
+          recordedAt: row.recorded_at,
+          createdAt: row.created_at,
+        } as unknown as SubcontractorLocationPing);
+      }
+    }
+    return latestByToken;
   }
 
   async getEquipment(userId: string): Promise<Equipment[]> {
