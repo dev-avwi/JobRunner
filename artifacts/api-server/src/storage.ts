@@ -1244,6 +1244,15 @@ export interface IStorage {
   updateJobPortalTokenExpiry(tokenId: string, expiresAt: Date): Promise<void>;
   updateJobPortalTokenSettings(tokenId: string, settings: { showTimeline?: boolean; showPhotos?: boolean; showChecklist?: boolean; showActivityFeed?: boolean; showFinancialsOnPortal?: boolean; clientMessage?: string | null }): Promise<JobPortalToken | null>;
   getActiveJobPortalToken(jobId: string): Promise<JobPortalToken | null>;
+  // Batch helpers
+  getJobPortalTokensByJobIds(jobIds: string[]): Promise<Map<string, JobPortalToken[]>>;
+  getJobAssignmentsByJobIds(jobIds: string[]): Promise<Map<string, JobAssignment[]>>;
+  getTeamMembersByIds(ids: string[]): Promise<Map<string, TeamMember>>;
+  getJobVariationsByJobIds(jobIds: string[]): Promise<Map<string, JobVariation[]>>;
+  getJobVariationById(id: string): Promise<JobVariation | undefined>;
+  getBusinessSettingsBatch(userIds: string[]): Promise<Map<string, BusinessSettings>>;
+  getCustomFormsByIds(ids: string[], userId: string): Promise<Map<string, CustomForm>>;
+  getUsersByIds(ids: string[]): Promise<Map<string, User>>;
 
   // Subcontractor Web View
   createSubcontractorToken(data: InsertSubcontractorToken): Promise<SubcontractorToken>;
@@ -10706,6 +10715,161 @@ Thank you for your prompt attention to this matter.`,
       .delete(siteDiaryEntries)
       .where(eq(siteDiaryEntries.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  // ----------------------------------------------------------------
+  // Batch helpers — single-query alternatives to per-row loops.
+  // These reduce O(N) sequential round-trips to O(1) for portal load,
+  // proof-pack generation, and portal variation lookup.
+  // ----------------------------------------------------------------
+
+  /**
+   * Fetch business settings for multiple owner IDs in a single DB round trip.
+   * Returns a Map keyed by userId. Uses the same ordering as getBusinessSettings
+   * so the "best" row per user is selected.
+   */
+  async getBusinessSettingsBatch(userIds: string[]): Promise<Map<string, BusinessSettings>> {
+    if (userIds.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(businessSettings)
+      .where(inArray(businessSettings.userId, userIds))
+      .orderBy(
+        sql`CASE WHEN ${businessSettings.businessName} IS NOT NULL AND ${businessSettings.businessName} <> '' AND ${businessSettings.businessName} <> 'Worker Profile' THEN 0 ELSE 1 END`,
+        desc(businessSettings.updatedAt),
+        desc(businessSettings.createdAt),
+      );
+    // Take the first (best) row per userId (already ordered by preference)
+    const result = new Map<string, BusinessSettings>();
+    for (const row of rows) {
+      if (!result.has(row.userId)) {
+        result.set(row.userId, row);
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Fetch all portal tokens for multiple job IDs in a single query.
+   * Returns a Map keyed by jobId, values are ordered newest-first (same as
+   * getJobPortalTokensByJobId).
+   */
+  async getJobPortalTokensByJobIds(jobIds: string[]): Promise<Map<string, JobPortalToken[]>> {
+    if (jobIds.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(jobPortalTokens)
+      .where(inArray(jobPortalTokens.jobId, jobIds))
+      .orderBy(desc(jobPortalTokens.createdAt));
+    const result = new Map<string, JobPortalToken[]>();
+    for (const row of rows) {
+      if (!result.has(row.jobId)) result.set(row.jobId, []);
+      result.get(row.jobId)!.push(row);
+    }
+    return result;
+  }
+
+  /**
+   * Fetch all job assignments for multiple job IDs in a single query.
+   * Returns a Map keyed by jobId.
+   */
+  async getJobAssignmentsByJobIds(jobIds: string[]): Promise<Map<string, JobAssignment[]>> {
+    if (jobIds.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(jobAssignments)
+      .where(inArray(jobAssignments.jobId, jobIds));
+    const result = new Map<string, JobAssignment[]>();
+    for (const row of rows) {
+      if (!result.has(row.jobId)) result.set(row.jobId, []);
+      result.get(row.jobId)!.push(row);
+    }
+    return result;
+  }
+
+  /**
+   * Fetch team members by their row IDs (used to resolve assignment
+   * teamMemberId references). Returns a Map keyed by teamMember.id.
+   */
+  async getTeamMembersByIds(ids: string[]): Promise<Map<string, TeamMember>> {
+    if (ids.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(teamMembers)
+      .where(inArray(teamMembers.id, ids));
+    const result = new Map<string, TeamMember>();
+    for (const row of rows) {
+      result.set(row.id, row);
+    }
+    return result;
+  }
+
+  /**
+   * Fetch all job variations for multiple job IDs in a single query.
+   * Does NOT re-validate job ownership — callers must ensure jobIds are already
+   * scoped to the correct owner (e.g. from a prior scoped job-list fetch).
+   * Returns a Map keyed by jobId, ordered newest-first within each group.
+   */
+  async getJobVariationsByJobIds(jobIds: string[]): Promise<Map<string, JobVariation[]>> {
+    if (jobIds.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(jobVariations)
+      .where(inArray(jobVariations.jobId, jobIds))
+      .orderBy(desc(jobVariations.createdAt));
+    const result = new Map<string, JobVariation[]>();
+    for (const row of rows) {
+      if (!result.has(row.jobId)) result.set(row.jobId, []);
+      result.get(row.jobId)!.push(row);
+    }
+    return result;
+  }
+
+  /**
+   * Fetch a single job variation by its ID without ownership re-validation.
+   * Used by the portal variation lookup which verifies scope via the job list.
+   */
+  async getJobVariationById(id: string): Promise<JobVariation | undefined> {
+    const [row] = await db
+      .select()
+      .from(jobVariations)
+      .where(eq(jobVariations.id, id))
+      .limit(1);
+    return row;
+  }
+
+  /**
+   * Fetch custom forms by their IDs. Returns a Map keyed by form.id.
+   * Scoped to userId so only forms visible to that owner are returned.
+   */
+  async getCustomFormsByIds(ids: string[], userId: string): Promise<Map<string, CustomForm>> {
+    if (ids.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(customForms)
+      .where(and(inArray(customForms.id, ids), eq(customForms.userId, userId)));
+    const result = new Map<string, CustomForm>();
+    for (const row of rows) {
+      result.set(row.id, row);
+    }
+    return result;
+  }
+
+  /**
+   * Fetch users by their IDs in a single query.
+   * Returns a Map keyed by user.id.
+   */
+  async getUsersByIds(ids: string[]): Promise<Map<string, User>> {
+    if (ids.length === 0) return new Map();
+    const rows = await db
+      .select()
+      .from(users)
+      .where(inArray(users.id, ids));
+    const result = new Map<string, User>();
+    for (const row of rows) {
+      result.set(row.id, row);
+    }
+    return result;
   }
 }
 

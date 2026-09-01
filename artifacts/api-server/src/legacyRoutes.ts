@@ -1308,20 +1308,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       receipts.forEach(r => ownerIds.add(r.userId));
       jobs.forEach(j => ownerIds.add(j.userId));
       
-      // Fetch business settings for all owners
+      // Batch-fetch business settings for all owners in a single DB round trip
       const businessInfoMap = new Map<string, any>();
-      for (const ownerId of Array.from(ownerIds)) {
-        const settings = await storage.getBusinessSettings(ownerId);
-        if (settings) {
-          businessInfoMap.set(ownerId, {
-            businessName: settings.businessName,
-            phone: settings.phone,
-            email: settings.email,
-            address: settings.address,
-            logoUrl: settings.logoUrl,
-            abn: settings.abn,
-          });
-        }
+      const settingsBatch = await storage.getBusinessSettingsBatch(Array.from(ownerIds));
+      for (const [ownerId, settings] of settingsBatch) {
+        businessInfoMap.set(ownerId, {
+          businessName: settings.businessName,
+          phone: settings.phone,
+          email: settings.email,
+          address: settings.address,
+          logoUrl: settings.logoUrl,
+          abn: settings.abn,
+        });
       }
       
       // Add business info to each document
@@ -1367,15 +1365,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { nanoid: nanoidForTokens } = await import('nanoid');
       const cryptoModule = await import('crypto');
-      const jobsWithPortalTokens = await Promise.all(jobs.map(async (j) => {
+
+      // Batch-fetch all portal tokens, assignments, and team members in 3 round
+      // trips instead of O(jobs + assignments) sequential queries.
+      const jobIds = jobs.map((j: any) => j.id);
+      const [allTokensMap, allAssignmentsMap] = await Promise.all([
+        storage.getJobPortalTokensByJobIds(jobIds),
+        storage.getJobAssignmentsByJobIds(jobIds),
+      ]);
+      // Collect every teamMemberId referenced across all assignments
+      const teamMemberIdSet = new Set<string>();
+      for (const assignments of allAssignmentsMap.values()) {
+        for (const a of assignments) {
+          if (a.teamMemberId) teamMemberIdSet.add(a.teamMemberId);
+        }
+      }
+      const teamMembersMap = await storage.getTeamMembersByIds(Array.from(teamMemberIdSet));
+
+      const jobsWithPortalTokens = await Promise.all(jobs.map(async (j: any) => {
         let portalToken = null;
         let assignedWorkers: Array<{ id: string; name: string }> = [];
         try {
-          const tokens = await storage.getJobPortalTokensByJobId(j.id);
-          const activeToken = tokens?.find((t: any) => !t.revokedAt && (!t.expiresAt || new Date(t.expiresAt) > new Date()));
+          const tokens = allTokensMap.get(j.id) || [];
+          const activeToken = tokens.find((t: any) => !t.revokedAt && (!t.expiresAt || new Date(t.expiresAt) > new Date()));
           if (activeToken) {
             portalToken = activeToken.token;
-          } else if (tokens && tokens.length > 0) {
+          } else if (tokens.length > 0) {
             const expiredToken = tokens.find((t: any) => !t.revokedAt && t.expiresAt && new Date(t.expiresAt) <= new Date());
             if (expiredToken) {
               const newTokenStr = cryptoModule.randomBytes(32).toString('hex');
@@ -1395,26 +1410,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           logger.warn('api', 'Failed to resolve/rotate job portal token', { userId: j.userId, error: e, metadata: { jobId: j.id } });
         }
         try {
-          const assignments = await storage.getJobAssignments(j.id);
-          if (assignments && assignments.length > 0) {
-            for (const a of assignments) {
-              try {
-                if (a.teamMemberId) {
-                  const worker = await storage.getTeamMember(a.teamMemberId, j.userId);
-                  if (worker) {
-                    assignedWorkers.push({ 
-                      id: worker.memberId || worker.id, 
-                      name: `${worker.firstName || ''} ${worker.lastName || ''}`.trim() || a.displayName || a.workerDisplayNameSnapshot || 'Worker'
-                    });
-                  }
-                } else if (a.displayName || a.workerDisplayNameSnapshot) {
+          const assignments = allAssignmentsMap.get(j.id) || [];
+          for (const a of assignments) {
+            try {
+              if (a.teamMemberId) {
+                const worker = teamMembersMap.get(a.teamMemberId);
+                if (worker) {
                   assignedWorkers.push({
-                    id: a.userId || a.id,
-                    name: a.displayName || a.workerDisplayNameSnapshot || 'Worker'
+                    id: worker.memberId || worker.id,
+                    name: `${worker.firstName || ''} ${worker.lastName || ''}`.trim() || a.displayName || a.workerDisplayNameSnapshot || 'Worker'
                   });
                 }
-              } catch (e) {}
-            }
+              } else if (a.displayName || a.workerDisplayNameSnapshot) {
+                assignedWorkers.push({
+                  id: a.userId || a.id,
+                  name: a.displayName || a.workerDisplayNameSnapshot || 'Worker'
+                });
+              }
+            } catch (e) {}
           }
         } catch (e) {}
         return {
@@ -1427,11 +1440,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Variations for the client's jobs: pending ('sent') ones can be
       // approved/rejected from the portal; approved/rejected are shown as history.
+      // Batch-fetch all variations for the client's jobs in a single query.
+      const allVariationsMap = await storage.getJobVariationsByJobIds(jobs.map((j: any) => j.id));
       const variations: any[] = [];
-      await Promise.all(jobs.map(async (j) => {
+      for (const j of jobs) {
         try {
-          const jobVariations = await storage.getJobVariations(j.id, j.userId);
-          for (const v of jobVariations) {
+          const jobVars = allVariationsMap.get(j.id) || [];
+          for (const v of jobVars) {
             if (v.status !== 'sent' && v.status !== 'approved' && v.status !== 'rejected') continue;
             variations.push({
               id: v.id,
@@ -1455,7 +1470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (e) {
           logger.warn('api', 'Failed to load variations for portal job', { userId: j.userId, error: e, metadata: { jobId: j.id } });
         }
-      }));
+      }
       variations.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
 
       return res.json({
@@ -1501,16 +1516,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const clientById = new Map(clients.map((c) => [c.id, c]));
     const jobs = await storage.getJobsForClientIds(clients.map((c) => c.id));
-    for (const job of jobs) {
-      try {
-        const jobVariations = await storage.getJobVariations(job.id, job.userId);
-        const variation = jobVariations.find((v: any) => v.id === variationId);
-        if (variation) {
+    // Fetch the variation by ID directly (1 query) then verify it belongs to
+    // a job in this client's scope, avoiding O(jobs) sequential lookups.
+    try {
+      const variation = await storage.getJobVariationById(variationId);
+      if (variation) {
+        const job = jobs.find((j: any) => j.id === variation.jobId);
+        if (job) {
           return { session, job, client: clientById.get(job.clientId) || clients[0], variation };
         }
-      } catch (e) {
-        logger.warn('api', 'Portal variation lookup failed for job', { userId: job.userId, error: e, metadata: { jobId: job.id } });
       }
+    } catch (e) {
+      logger.warn('api', 'Portal variation lookup failed', { error: e, metadata: { variationId } });
     }
     return { error: { status: 404, message: 'Variation not found' } };
   }
@@ -8775,30 +8792,48 @@ Be specific about materials, colors, and features that would be included.`
     let swmsList: any[] = [];
     try {
       const swmsDocs = await db.select().from(swmsDocuments).where(and(eq(swmsDocuments.jobId, jobId), eq(swmsDocuments.userId, userId)));
-      for (const sdoc of swmsDocs) {
-        const hazards = await db.select().from(swmsHazards).where(eq(swmsHazards.swmsId, sdoc.id)).orderBy(asc(swmsHazards.sortOrder));
-        const sigs = await db.select().from(swmsSignatures).where(eq(swmsSignatures.swmsId, sdoc.id)).orderBy(asc(swmsSignatures.signedAt));
+      if (swmsDocs.length > 0) {
+        // Batch-fetch hazards and signatures for all SWMS docs in 2 round trips
+        const swmsIds = swmsDocs.map((d: any) => d.id);
+        const [allHazards, allSigs] = await Promise.all([
+          db.select().from(swmsHazards).where(inArray(swmsHazards.swmsId, swmsIds)).orderBy(asc(swmsHazards.sortOrder)),
+          db.select().from(swmsSignatures).where(inArray(swmsSignatures.swmsId, swmsIds)).orderBy(asc(swmsSignatures.signedAt)),
+        ]);
+        const hazardsBySwms = new Map<string, any[]>();
+        for (const h of allHazards) {
+          if (!hazardsBySwms.has(h.swmsId)) hazardsBySwms.set(h.swmsId, []);
+          hazardsBySwms.get(h.swmsId)!.push(h);
+        }
+        const sigsBySwms = new Map<string, any[]>();
+        for (const s of allSigs) {
+          if (!sigsBySwms.has(s.swmsId)) sigsBySwms.set(s.swmsId, []);
+          sigsBySwms.get(s.swmsId)!.push(s);
+        }
         const ppeLabels: Record<string, string> = { hard_hat: 'Hard Hat', safety_glasses: 'Safety Glasses', hi_vis: 'Hi-Vis Vest', steel_caps: 'Steel Cap Boots', hearing_protection: 'Hearing Protection', dust_mask: 'Dust Mask', gloves: 'Gloves', fall_harness: 'Fall Harness', face_shield: 'Face Shield', sun_protection: 'Sun Protection' };
-        swmsList.push({
-          title: sdoc.title,
-          status: sdoc.status,
-          siteAddress: sdoc.siteAddress,
-          workActivity: sdoc.workActivityDescription,
-          ppe: (sdoc.ppeRequirements as string[] || []).map((p: string) => ppeLabels[p] || p),
-          hazards: hazards.map(h => ({
-            activity: h.activityTask,
-            hazard: h.hazard,
-            riskBefore: h.riskBefore,
-            controlMeasures: h.controlMeasures,
-            riskAfter: h.riskAfter,
-          })),
-          signatures: sigs.map(s => ({
-            name: s.workerName,
-            signedAt: s.signedAt ? new Date(s.signedAt).toLocaleString('en-AU') : '-',
-            location: s.address || (s.latitude ? `${s.latitude}, ${s.longitude}` : null),
-          })),
-          createdAt: sdoc.createdAt ? new Date(sdoc.createdAt).toLocaleDateString('en-AU') : '-',
-        });
+        for (const sdoc of swmsDocs) {
+          const hazards = hazardsBySwms.get(sdoc.id) || [];
+          const sigs = sigsBySwms.get(sdoc.id) || [];
+          swmsList.push({
+            title: sdoc.title,
+            status: sdoc.status,
+            siteAddress: sdoc.siteAddress,
+            workActivity: sdoc.workActivityDescription,
+            ppe: (sdoc.ppeRequirements as string[] || []).map((p: string) => ppeLabels[p] || p),
+            hazards: hazards.map((h: any) => ({
+              activity: h.activityTask,
+              hazard: h.hazard,
+              riskBefore: h.riskBefore,
+              controlMeasures: h.controlMeasures,
+              riskAfter: h.riskAfter,
+            })),
+            signatures: sigs.map((s: any) => ({
+              name: s.workerName,
+              signedAt: s.signedAt ? new Date(s.signedAt).toLocaleString('en-AU') : '-',
+              location: s.address || (s.latitude ? `${s.latitude}, ${s.longitude}` : null),
+            })),
+            createdAt: sdoc.createdAt ? new Date(sdoc.createdAt).toLocaleDateString('en-AU') : '-',
+          });
+        }
       }
     } catch (e) {
       console.error('Error fetching SWMS for proof pack:', e);
@@ -8807,40 +8842,47 @@ Be specific about materials, colors, and features that would be included.`
     let safetyForms: any[] = [];
     try {
       const submissions = await storage.getFormSubmissionsByJob(jobId, userId);
-      for (const sub of submissions) {
-        const form = await storage.getCustomForm(sub.formId, userId);
-        if (!form) continue;
-        const formType = form.formType || 'general';
-        const isJobCardForm = !!(form as any).isJobCard;
-        const fields = (form.fields || []) as Array<{id: string; label: string; type: string}>;
-        const data = (sub.submissionData || {}) as Record<string, any>;
-        const responses: Array<{label: string; value: string; type: string}> = [];
-        for (const field of fields) {
-          const val = data[field.id];
-          if (val === undefined || val === null || val === '') continue;
-          let displayVal = String(val);
-          if (typeof val === 'boolean') displayVal = val ? 'Yes' : 'No';
-          if (Array.isArray(val)) displayVal = val.join(', ');
-          responses.push({ label: field.label, value: displayVal, type: field.type || 'text' });
-        }
-        let submittedByName: string | undefined;
-        if (sub.submittedBy) {
-          try {
-            const subUser = await storage.getUser(sub.submittedBy);
+      if (submissions.length > 0) {
+        // Batch-fetch all referenced custom forms and submitting users in 2 round trips
+        const formIds = [...new Set(submissions.map((s: any) => s.formId))];
+        const submitterIds = [...new Set(submissions.filter((s: any) => s.submittedBy).map((s: any) => s.submittedBy))] as string[];
+        const [formsMap, submitterMap] = await Promise.all([
+          storage.getCustomFormsByIds(formIds, userId),
+          storage.getUsersByIds(submitterIds),
+        ]);
+        for (const sub of submissions) {
+          const form = formsMap.get(sub.formId);
+          if (!form) continue;
+          const formType = form.formType || 'general';
+          const isJobCardForm = !!(form as any).isJobCard;
+          const fields = (form.fields || []) as Array<{id: string; label: string; type: string}>;
+          const data = (sub.submissionData || {}) as Record<string, any>;
+          const responses: Array<{label: string; value: string; type: string}> = [];
+          for (const field of fields) {
+            const val = data[field.id];
+            if (val === undefined || val === null || val === '') continue;
+            let displayVal = String(val);
+            if (typeof val === 'boolean') displayVal = val ? 'Yes' : 'No';
+            if (Array.isArray(val)) displayVal = val.join(', ');
+            responses.push({ label: field.label, value: displayVal, type: field.type || 'text' });
+          }
+          let submittedByName: string | undefined;
+          if (sub.submittedBy) {
+            const subUser = submitterMap.get(sub.submittedBy);
             if (subUser) submittedByName = [subUser.firstName, subUser.lastName].filter(Boolean).join(' ') || subUser.email || undefined;
-          } catch {}
+          }
+          safetyForms.push({
+            formName: form.name,
+            formType,
+            isJobCard: isJobCardForm,
+            description: form.description || undefined,
+            status: sub.status || 'submitted',
+            submittedAt: sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('en-AU', { timeZone: 'Australia/Sydney' }) : '-',
+            submittedBy: submittedByName || undefined,
+            notes: sub.notes || undefined,
+            responses,
+          });
         }
-        safetyForms.push({
-          formName: form.name,
-          formType,
-          isJobCard: isJobCardForm,
-          description: form.description || undefined,
-          status: sub.status || 'submitted',
-          submittedAt: sub.submittedAt ? new Date(sub.submittedAt).toLocaleString('en-AU', { timeZone: 'Australia/Sydney' }) : '-',
-          submittedBy: submittedByName || undefined,
-          notes: sub.notes || undefined,
-          responses,
-        });
       }
     } catch (e) {
       console.error('Error fetching safety forms for proof pack:', e);
