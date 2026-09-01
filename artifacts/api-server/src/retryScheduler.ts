@@ -49,69 +49,83 @@ export async function processFailedSmsMessages() {
     logger.info('background', `Processing ${failedMessages.length} failed SMS for retry`);
 
     for (const msg of failedMessages) {
-      const currentRetry = (msg.retryCount ?? 0) + 1;
-
-      const claimed = await db.update(smsMessages).set({
-        status: 'retrying' as any,
-        retryCount: currentRetry,
-      }).where(and(
-        eq(smsMessages.id, msg.id),
-        eq(smsMessages.status, 'failed'),
-      )).returning({ id: smsMessages.id });
-
-      if (claimed.length === 0) continue;
-
       try {
-        // Business SMS must only ever send from the business's own dedicated
-        // number - never the shared platform number.
-        const { storage } = await import("./storage");
-        const settings = await storage.getBusinessSettings(msg.businessOwnerId);
-        if (!settings?.dedicatedPhoneNumber) {
-          await db.update(smsMessages).set({
-            status: 'failed',
-            errorMessage: 'No dedicated business number configured',
-            nextRetryAt: null,
-            retryCount: MAX_RETRY_ATTEMPTS,
-          }).where(eq(smsMessages.id, msg.id));
+        const currentRetry = (msg.retryCount ?? 0) + 1;
+
+        let claimed: { id: string }[] = [];
+        try {
+          claimed = await db.update(smsMessages).set({
+            status: 'retrying' as any,
+            retryCount: currentRetry,
+          }).where(and(
+            eq(smsMessages.id, msg.id),
+            eq(smsMessages.status, 'failed'),
+          )).returning({ id: smsMessages.id });
+        } catch (claimErr) {
+          logger.error('sms', `Failed to claim SMS message ${msg.id} for retry`, { error: claimErr });
           continue;
         }
-        const result = await sendSMS({
-          to: msg.clientPhone,
-          message: msg.body,
-          fromNumber: settings.dedicatedPhoneNumber,
-        });
 
-        if (result.success) {
-          await db.update(smsMessages).set({
-            status: 'sent',
-            twilioSid: result.messageId,
-            errorMessage: null,
-            nextRetryAt: null,
-          }).where(eq(smsMessages.id, msg.id));
+        if (claimed.length === 0) continue;
 
-          logger.info('sms', `SMS retry #${currentRetry} succeeded`, { metadata: { messageId: msg.id } });
-        } else {
+        try {
+          // Business SMS must only ever send from the business's own dedicated
+          // number - never the shared platform number.
+          const { storage } = await import("./storage");
+          const settings = await storage.getBusinessSettings(msg.businessOwnerId);
+          if (!settings?.dedicatedPhoneNumber) {
+            await db.update(smsMessages).set({
+              status: 'failed',
+              errorMessage: 'No dedicated business number configured',
+              nextRetryAt: null,
+              retryCount: MAX_RETRY_ATTEMPTS,
+            }).where(eq(smsMessages.id, msg.id));
+            continue;
+          }
+          const result = await sendSMS({
+            to: msg.clientPhone,
+            message: msg.body,
+            fromNumber: settings.dedicatedPhoneNumber,
+          });
+
+          if (result.success) {
+            await db.update(smsMessages).set({
+              status: 'sent',
+              twilioSid: result.messageId,
+              errorMessage: null,
+              nextRetryAt: null,
+            }).where(eq(smsMessages.id, msg.id));
+
+            logger.info('sms', `SMS retry #${currentRetry} succeeded`, { metadata: { messageId: msg.id } });
+          } else {
+            const nextRetryAt = currentRetry < MAX_RETRY_ATTEMPTS ? scheduleRetry(currentRetry) : null;
+            await db.update(smsMessages).set({
+              status: 'failed',
+              nextRetryAt,
+              errorMessage: result.error || 'Retry failed',
+            }).where(eq(smsMessages.id, msg.id));
+
+            if (currentRetry >= MAX_RETRY_ATTEMPTS) {
+              logger.warn('sms', `SMS permanently failed after ${MAX_RETRY_ATTEMPTS} attempts`, {
+                metadata: { messageId: msg.id, error: result.error },
+              });
+            }
+          }
+        } catch (error) {
+          logger.error('sms', `SMS retry error for message ${msg.id}`, { error });
           const nextRetryAt = currentRetry < MAX_RETRY_ATTEMPTS ? scheduleRetry(currentRetry) : null;
-          await db.update(smsMessages).set({
-            status: 'failed',
-            nextRetryAt,
-            errorMessage: result.error || 'Retry failed',
-          }).where(eq(smsMessages.id, msg.id));
-
-          if (currentRetry >= MAX_RETRY_ATTEMPTS) {
-            logger.warn('sms', `SMS permanently failed after ${MAX_RETRY_ATTEMPTS} attempts`, {
-              metadata: { messageId: msg.id, error: result.error },
-            });
+          try {
+            await db.update(smsMessages).set({
+              status: 'failed',
+              nextRetryAt,
+              errorMessage: error instanceof Error ? error.message : 'Unknown retry error',
+            }).where(eq(smsMessages.id, msg.id));
+          } catch (recoveryErr) {
+            logger.error('sms', `Failed to record SMS retry failure for message ${msg.id}`, { error: recoveryErr });
           }
         }
-      } catch (error) {
-        logger.error('sms', `SMS retry error for message ${msg.id}`, { error });
-        const nextRetryAt = currentRetry < MAX_RETRY_ATTEMPTS ? scheduleRetry(currentRetry) : null;
-        await db.update(smsMessages).set({
-          status: 'failed',
-          nextRetryAt,
-          errorMessage: error instanceof Error ? error.message : 'Unknown retry error',
-        }).where(eq(smsMessages.id, msg.id));
+      } catch (msgErr) {
+        logger.error('sms', `Unexpected error processing SMS message ${msg.id} — skipping`, { error: msgErr });
       }
     }
   } catch (error: any) {
@@ -180,59 +194,75 @@ export async function processFailedEmailMessages() {
     logger.info('background', `Processing ${failed.length} failed emails for retry`);
 
     for (const row of failed) {
-      const currentRetry = (row.retryCount ?? 0) + 1;
-      const claimed = await db.update(emailDeliveryLogs).set({
-        status: 'retrying' as any,
-        retryCount: currentRetry,
-      }).where(and(
-        eq(emailDeliveryLogs.id, row.id),
-        eq(emailDeliveryLogs.status, 'failed'),
-      )).returning({ id: emailDeliveryLogs.id });
-      if (claimed.length === 0) continue;
-
-      const payload: any = row.payloadJson;
-      if (!payload || !payload.to) {
-        await db.update(emailDeliveryLogs).set({
-          status: 'failed',
-          permanentlyFailed: true,
-          errorMessage: 'Missing payload for retry',
-          nextRetryAt: null,
-        }).where(eq(emailDeliveryLogs.id, row.id));
-        continue;
-      }
-
       try {
-        // Restore base64 attachments to Buffer for SendGrid
-        if (Array.isArray(payload.attachments)) {
-          payload.attachments = payload.attachments.map((a: any) =>
-            a.content ? { ...a, content: Buffer.from(a.content, 'base64') } : a,
-          );
+        const currentRetry = (row.retryCount ?? 0) + 1;
+
+        let claimed: { id: string }[] = [];
+        try {
+          claimed = await db.update(emailDeliveryLogs).set({
+            status: 'retrying' as any,
+            retryCount: currentRetry,
+          }).where(and(
+            eq(emailDeliveryLogs.id, row.id),
+            eq(emailDeliveryLogs.status, 'failed'),
+          )).returning({ id: emailDeliveryLogs.id });
+        } catch (claimErr) {
+          logger.error('background', `Failed to claim email ${row.id} for retry`, { error: claimErr });
+          continue;
         }
-        await sendViaSendGrid(payload);
-        await db.update(emailDeliveryLogs).set({
-          status: 'sent',
-          sentVia: 'sendgrid',
-          sentAt: new Date(),
-          errorMessage: null,
-          nextRetryAt: null,
-          payloadJson: null, // free up storage on success
-        }).where(eq(emailDeliveryLogs.id, row.id));
-        logger.info('background', `Email retry #${currentRetry} succeeded`, { metadata: { id: row.id } });
-      } catch (err: unknown) {
-        const permanent = isPermanentEmailFailure(err);
-        const max = row.maxRetries ?? 5;
-        const nextRetryAt = (!permanent && currentRetry < max) ? scheduleEmailRetry(currentRetry) : null;
-        await db.update(emailDeliveryLogs).set({
-          status: 'failed',
-          nextRetryAt,
-          errorMessage: getErrorMessage(err) || 'Retry failed',
-          permanentlyFailed: permanent || currentRetry >= max,
-        }).where(eq(emailDeliveryLogs.id, row.id));
-        if (permanent || currentRetry >= max) {
-          logger.warn('background', `Email permanently failed`, {
-            metadata: { id: row.id, error: getErrorMessage(err), retries: currentRetry },
-          });
+
+        if (claimed.length === 0) continue;
+
+        const payload: any = row.payloadJson;
+        if (!payload || !payload.to) {
+          await db.update(emailDeliveryLogs).set({
+            status: 'failed',
+            permanentlyFailed: true,
+            errorMessage: 'Missing payload for retry',
+            nextRetryAt: null,
+          }).where(eq(emailDeliveryLogs.id, row.id));
+          continue;
         }
+
+        try {
+          // Restore base64 attachments to Buffer for SendGrid
+          if (Array.isArray(payload.attachments)) {
+            payload.attachments = payload.attachments.map((a: any) =>
+              a.content ? { ...a, content: Buffer.from(a.content, 'base64') } : a,
+            );
+          }
+          await sendViaSendGrid(payload);
+          await db.update(emailDeliveryLogs).set({
+            status: 'sent',
+            sentVia: 'sendgrid',
+            sentAt: new Date(),
+            errorMessage: null,
+            nextRetryAt: null,
+            payloadJson: null, // free up storage on success
+          }).where(eq(emailDeliveryLogs.id, row.id));
+          logger.info('background', `Email retry #${currentRetry} succeeded`, { metadata: { id: row.id } });
+        } catch (err: unknown) {
+          const permanent = isPermanentEmailFailure(err);
+          const max = row.maxRetries ?? 5;
+          const nextRetryAt = (!permanent && currentRetry < max) ? scheduleEmailRetry(currentRetry) : null;
+          try {
+            await db.update(emailDeliveryLogs).set({
+              status: 'failed',
+              nextRetryAt,
+              errorMessage: getErrorMessage(err) || 'Retry failed',
+              permanentlyFailed: permanent || currentRetry >= max,
+            }).where(eq(emailDeliveryLogs.id, row.id));
+          } catch (recoveryErr) {
+            logger.error('background', `Failed to record email retry failure for ${row.id}`, { error: recoveryErr });
+          }
+          if (permanent || currentRetry >= max) {
+            logger.warn('background', `Email permanently failed`, {
+              metadata: { id: row.id, error: getErrorMessage(err), retries: currentRetry },
+            });
+          }
+        }
+      } catch (rowErr) {
+        logger.error('background', `Unexpected error processing email ${row.id} — skipping`, { error: rowErr });
       }
     }
   } catch (err: any) {

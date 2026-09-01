@@ -42420,7 +42420,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.json({ success: true, member: newMember });
     } catch (error: any) {
       console.error('Error admin invite:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -42433,7 +42433,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error admin delete team member:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -42448,7 +42448,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.json({ success: true, seatCount });
     } catch (error: any) {
       console.error('Error updating seats:', error);
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
@@ -42491,7 +42491,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       res.json({ success: true, message: `User ${userToDelete.email} deleted successfully` });
     } catch (error: any) {
       console.error('Error deleting user:', error);
-      res.status(500).json({ error: error.message || 'Failed to delete user' });
+      res.status(500).json({ error: 'Internal server error' });
     }
   });
 
