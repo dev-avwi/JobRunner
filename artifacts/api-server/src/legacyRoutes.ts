@@ -6366,27 +6366,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://buy.itunes.apple.com/verifyReceipt'
         : 'https://sandbox.itunes.apple.com/verifyReceipt';
 
-      const appleResponse = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          'receipt-data': receiptData,
-          password: process.env.APP_STORE_SHARED_SECRET || '',
-        }),
-      });
-
-      const appleResult = await appleResponse.json();
-
-      if (appleResult.status === 21007) {
-        const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+      const appleController1 = new AbortController();
+      const appleTimeout1 = setTimeout(() => appleController1.abort(), 30000);
+      let appleResult: any;
+      try {
+        const appleResponse = await fetch(verifyUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             'receipt-data': receiptData,
             password: process.env.APP_STORE_SHARED_SECRET || '',
           }),
+          signal: appleController1.signal,
         });
-        const sandboxResult = await sandboxResponse.json();
+        appleResult = await appleResponse.json();
+      } finally {
+        clearTimeout(appleTimeout1);
+      }
+
+      if (appleResult.status === 21007) {
+        const appleSandboxController1 = new AbortController();
+        const appleSandboxTimeout1 = setTimeout(() => appleSandboxController1.abort(), 30000);
+        let sandboxResult: any;
+        try {
+          const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              'receipt-data': receiptData,
+              password: process.env.APP_STORE_SHARED_SECRET || '',
+            }),
+            signal: appleSandboxController1.signal,
+          });
+          sandboxResult = await sandboxResponse.json();
+        } finally {
+          clearTimeout(appleSandboxTimeout1);
+        }
         if (sandboxResult.status !== 0) {
           return res.status(400).json({ success: false, message: 'Receipt verification failed (sandbox)' });
         }
@@ -6448,20 +6463,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const verifyUrl = process.env.NODE_ENV === 'production'
         ? 'https://buy.itunes.apple.com/verifyReceipt'
         : 'https://sandbox.itunes.apple.com/verifyReceipt';
-      const appleResponse = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 'receipt-data': receiptData, password: process.env.APP_STORE_SHARED_SECRET || '' }),
-      });
-      let appleResult: any = await appleResponse.json();
-      let verified = appleResult.status === 0;
-      if (!verified && appleResult.status === 21007) {
-        const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+      const appleController2 = new AbortController();
+      const appleTimeout2 = setTimeout(() => appleController2.abort(), 30000);
+      let appleResult: any;
+      try {
+        const appleResponse2 = await fetch(verifyUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 'receipt-data': receiptData, password: process.env.APP_STORE_SHARED_SECRET || '' }),
+          signal: appleController2.signal,
         });
-        appleResult = await sandboxResponse.json();
+        appleResult = await appleResponse2.json();
+      } finally {
+        clearTimeout(appleTimeout2);
+      }
+      let verified = appleResult.status === 0;
+      if (!verified && appleResult.status === 21007) {
+        const appleSandboxController2 = new AbortController();
+        const appleSandboxTimeout2 = setTimeout(() => appleSandboxController2.abort(), 30000);
+        try {
+          const sandboxResponse2 = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 'receipt-data': receiptData, password: process.env.APP_STORE_SHARED_SECRET || '' }),
+            signal: appleSandboxController2.signal,
+          });
+          appleResult = await sandboxResponse2.json();
+        } finally {
+          clearTimeout(appleSandboxTimeout2);
+        }
         verified = appleResult.status === 0;
       }
       if (!verified) {
@@ -6604,27 +6634,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? 'https://buy.itunes.apple.com/verifyReceipt'
         : 'https://sandbox.itunes.apple.com/verifyReceipt';
 
-      const appleResponse = await fetch(verifyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          'receipt-data': receiptData,
-          password: process.env.APP_STORE_SHARED_SECRET || '',
-        }),
-      });
-
-      const appleResult = await appleResponse.json();
-
-      if (appleResult.status === 21007) {
-        const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+      const appleController3 = new AbortController();
+      const appleTimeout3 = setTimeout(() => appleController3.abort(), 30000);
+      let appleResult: any;
+      try {
+        const appleResponse3 = await fetch(verifyUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             'receipt-data': receiptData,
             password: process.env.APP_STORE_SHARED_SECRET || '',
           }),
+          signal: appleController3.signal,
         });
-        const sandboxResult = await sandboxResponse.json();
+        appleResult = await appleResponse3.json();
+      } finally {
+        clearTimeout(appleTimeout3);
+      }
+
+      if (appleResult.status === 21007) {
+        const appleSandboxController3 = new AbortController();
+        const appleSandboxTimeout3 = setTimeout(() => appleSandboxController3.abort(), 30000);
+        let sandboxResult: any;
+        try {
+          const sandboxResponse3 = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              'receipt-data': receiptData,
+              password: process.env.APP_STORE_SHARED_SECRET || '',
+            }),
+            signal: appleSandboxController3.signal,
+          });
+          sandboxResult = await sandboxResponse3.json();
+        } finally {
+          clearTimeout(appleSandboxTimeout3);
+        }
         if (sandboxResult.status !== 0) {
           return res.status(400).json({ success: false, message: 'Receipt verification failed during restore' });
         }
@@ -6777,8 +6822,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const waypoints = `optimize:true|${waypointsJobs.map(j => `${j.lat},${j.lng}`).join('|')}`;
             const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${origin}&waypoints=${waypoints}&key=${apiKey}`;
             
-            const response = await fetch(url);
-            const data = await response.json();
+            const directionsController = new AbortController();
+            const directionsTimeout = setTimeout(() => directionsController.abort(), 10000);
+            let data: any;
+            try {
+              const response = await fetch(url, { signal: directionsController.signal });
+              data = await response.json();
+            } finally {
+              clearTimeout(directionsTimeout);
+            }
             
             if (data.status === 'OK') {
               const route = data.routes[0];
@@ -8439,7 +8491,15 @@ No text, no watermarks, no people.`;
       }
       
       // Download the generated image and upload to object storage
-      const imageBuffer = Buffer.from(await (await fetch(generatedImageUrl)).arrayBuffer());
+      const imageDownloadController = new AbortController();
+      const imageDownloadTimeout = setTimeout(() => imageDownloadController.abort(), 30000);
+      let imageBuffer: Buffer;
+      try {
+        const imageDownloadResponse = await fetch(generatedImageUrl, { signal: imageDownloadController.signal });
+        imageBuffer = Buffer.from(await imageDownloadResponse.arrayBuffer());
+      } finally {
+        clearTimeout(imageDownloadTimeout);
+      }
       
       const objectStorage = new ObjectStorageService();
       const fileName = `visualizations/${userContext.effectiveUserId}/${Date.now()}.png`;
@@ -9252,12 +9312,18 @@ Be specific about materials, colors, and features that would be included.`
       // Fetch from Open-Meteo API (free, no API key required)
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,is_day&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max&timezone=Australia%2FSydney&forecast_days=3`;
       
-      const response = await fetch(weatherUrl);
-      if (!response.ok) {
-        throw new Error('Weather API request failed');
+      const weatherController = new AbortController();
+      const weatherTimeout = setTimeout(() => weatherController.abort(), 10000);
+      let weatherData: any;
+      try {
+        const response = await fetch(weatherUrl, { signal: weatherController.signal });
+        if (!response.ok) {
+          throw new Error('Weather API request failed');
+        }
+        weatherData = await response.json();
+      } finally {
+        clearTimeout(weatherTimeout);
       }
-      
-      const weatherData = await response.json();
       
       // Transform to our format
       const result = {
@@ -10560,9 +10626,17 @@ Be specific about materials, colors, and features that would be included.`
         const { getSendGridCredentials } = await import('./emailService');
         const creds = await getSendGridCredentials();
         if (creds.apiKey) {
-          const sgRes = await fetch('https://api.sendgrid.com/v3/scopes', {
-            headers: { 'Authorization': `Bearer ${creds.apiKey}` }
-          });
+          const sgController1 = new AbortController();
+          const sgTimeout1 = setTimeout(() => sgController1.abort(), 10000);
+          let sgRes: globalThis.Response;
+          try {
+            sgRes = await fetch('https://api.sendgrid.com/v3/scopes', {
+              headers: { 'Authorization': `Bearer ${creds.apiKey}` },
+              signal: sgController1.signal,
+            });
+          } finally {
+            clearTimeout(sgTimeout1);
+          }
           if (sgRes.ok) {
             emailVerified = true;
           } else {
@@ -23376,11 +23450,19 @@ Be specific about materials, colors, and features that would be included.`
             const { getSendGridCredentials } = await import('./emailService');
             const creds = await getSendGridCredentials();
             if (creds.apiKey) {
-              const sgRes = await fetch('https://api.sendgrid.com/v3/scopes', {
-                headers: { 'Authorization': `Bearer ${creds.apiKey}` },
-              });
-              if (sgRes.ok) emailVerified = true;
-              else emailError = sgRes.status === 401 ? 'SendGrid API key is expired or invalid' : `SendGrid returned ${sgRes.status}`;
+              const sgController2 = new AbortController();
+              const sgTimeout2 = setTimeout(() => sgController2.abort(), 10000);
+              let sgRes2: globalThis.Response;
+              try {
+                sgRes2 = await fetch('https://api.sendgrid.com/v3/scopes', {
+                  headers: { 'Authorization': `Bearer ${creds.apiKey}` },
+                  signal: sgController2.signal,
+                });
+              } finally {
+                clearTimeout(sgTimeout2);
+              }
+              if (sgRes2.ok) emailVerified = true;
+              else emailError = sgRes2.status === 401 ? 'SendGrid API key is expired or invalid' : `SendGrid returned ${sgRes2.status}`;
             }
           } catch (e: any) { emailError = e.message || 'SendGrid not configured'; }
           if (!emailVerified) {
@@ -35099,20 +35181,21 @@ Respond with JSON in this format:
 
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 30000);
-        let audioResponse: globalThis.Response;
         try {
-          audioResponse = await fetch(audioUrl, { signal: controller.signal });
+          const audioResponse = await fetch(audioUrl, { signal: controller.signal });
+          if (!audioResponse.ok) {
+            clearTimeout(timeout);
+            return res.status(500).json({ error: 'Failed to download audio file' });
+          }
+          const contentLength = parseInt(audioResponse.headers.get('content-length') || '0', 10);
+          if (contentLength > MAX_SIZE) {
+            clearTimeout(timeout);
+            return res.status(400).json({ error: 'Audio file too large (max 25MB)' });
+          }
+          audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
         } finally {
           clearTimeout(timeout);
         }
-        if (!audioResponse.ok) {
-          return res.status(500).json({ error: 'Failed to download audio file' });
-        }
-        const contentLength = parseInt(audioResponse.headers.get('content-length') || '0', 10);
-        if (contentLength > MAX_SIZE) {
-          return res.status(400).json({ error: 'Audio file too large (max 25MB)' });
-        }
-        audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
         fileName = parsedUrl.pathname.split('/').pop() || 'voice.m4a';
       }
 
@@ -35857,20 +35940,24 @@ Respond with JSON in this format:
       
       // Use OpenStreetMap Nominatim for geocoding (free, no API key needed)
       const encodedAddress = encodeURIComponent(address);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
-        {
-          headers: {
-            'User-Agent': 'JobRunner/1.0'
+      const nominatimController = new AbortController();
+      const nominatimTimeout = setTimeout(() => nominatimController.abort(), 10000);
+      let results: any;
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1`,
+          {
+            headers: { 'User-Agent': 'JobRunner/1.0' },
+            signal: nominatimController.signal,
           }
+        );
+        if (!response.ok) {
+          throw new Error('Geocoding request failed');
         }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Geocoding request failed');
+        results = await response.json();
+      } finally {
+        clearTimeout(nominatimTimeout);
       }
-      
-      const results = await response.json();
       
       if (results.length === 0) {
         return res.status(404).json({ error: 'Address not found' });
@@ -37946,19 +38033,30 @@ Respond with JSON in this format:
         method: 'GET',
         expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
-      const signResponse = await fetch(
-        'http://127.0.0.1:1106/object-storage/signed-object-url',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(signRequest),
+      const signController = new AbortController();
+      const signTimeout = setTimeout(() => signController.abort(), 5000);
+      let signedObjectUrl: string | null = null;
+      try {
+        const signResponse = await fetch(
+          'http://127.0.0.1:1106/object-storage/signed-object-url',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(signRequest),
+            signal: signController.signal,
+          }
+        );
+        if (signResponse.ok) {
+          const { signed_url } = await signResponse.json();
+          signedObjectUrl = signed_url;
         }
-      );
+      } finally {
+        clearTimeout(signTimeout);
+      }
 
       let mediaUrl: string;
-      if (signResponse.ok) {
-        const { signed_url } = await signResponse.json();
-        mediaUrl = signed_url;
+      if (signedObjectUrl) {
+        mediaUrl = signedObjectUrl;
       } else {
         const bucket = objectStorageClient.bucket(bucketName);
         const gcsFile = bucket.file(objectName);
@@ -45629,41 +45727,55 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       
       if (googleApiKey) {
         const encoded = encodeURIComponent(query);
-        const response = await fetch(
-          `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encoded}&components=country:au&types=address&key=${googleApiKey}`
-        );
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'OK' && data.predictions) {
-            const results = data.predictions.map((p: any) => ({
-              description: p.description,
-              place_id: p.place_id,
-              provider: 'google',
-            }));
-            return res.json(results);
-          } else if (data.status === 'ZERO_RESULTS') {
-            return res.json([]);
+        const placesController = new AbortController();
+        const placesTimeout = setTimeout(() => placesController.abort(), 10000);
+        try {
+          const placesResponse = await fetch(
+            `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encoded}&components=country:au&types=address&key=${googleApiKey}`,
+            { signal: placesController.signal }
+          );
+          if (placesResponse.ok) {
+            const data = await placesResponse.json();
+            if (data.status === 'OK' && data.predictions) {
+              const results = data.predictions.map((p: any) => ({
+                description: p.description,
+                place_id: p.place_id,
+                provider: 'google',
+              }));
+              clearTimeout(placesTimeout);
+              return res.json(results);
+            } else if (data.status === 'ZERO_RESULTS') {
+              clearTimeout(placesTimeout);
+              return res.json([]);
+            }
           }
+        } finally {
+          clearTimeout(placesTimeout);
         }
       }
       
       // Fallback to Nominatim (free, no key needed)
       const encoded = encodeURIComponent(query);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=au&limit=5&addressdetails=1`,
-        {
-          headers: {
-            "User-Agent": "JobRunner/1.0 (jobrunner.com.au)",
-          },
+      const nominatimSearchController = new AbortController();
+      const nominatimSearchTimeout = setTimeout(() => nominatimSearchController.abort(), 10000);
+      let nominatimData: any;
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&countrycodes=au&limit=5&addressdetails=1`,
+          {
+            headers: { "User-Agent": "JobRunner/1.0 (jobrunner.com.au)" },
+            signal: nominatimSearchController.signal,
+          }
+        );
+        if (!response.ok) {
+          clearTimeout(nominatimSearchTimeout);
+          return res.status(response.status).json({ error: "Address search failed" });
         }
-      );
-      
-      if (!response.ok) {
-        return res.status(response.status).json({ error: "Address search failed" });
+        nominatimData = await response.json();
+      } finally {
+        clearTimeout(nominatimSearchTimeout);
       }
-      
-      const data = await response.json();
+      const data = nominatimData;
       const userNumberMatch = query.trim().match(/^(\d+[a-zA-Z]?(?:\/\d+[a-zA-Z]?)?)\s+/);
       const userStreetNumber = userNumberMatch ? userNumberMatch[1] : null;
       
@@ -45707,18 +45819,25 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.json({});
       }
       
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${googleApiKey}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.result?.geometry?.location) {
-          return res.json({
-            lat: data.result.geometry.location.lat,
-            lng: data.result.geometry.location.lng,
-          });
+      const placeDetailsController = new AbortController();
+      const placeDetailsTimeout = setTimeout(() => placeDetailsController.abort(), 10000);
+      let placeData: any = null;
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=geometry&key=${googleApiKey}`,
+          { signal: placeDetailsController.signal }
+        );
+        if (response.ok) {
+          placeData = await response.json();
         }
+      } finally {
+        clearTimeout(placeDetailsTimeout);
+      }
+      if (placeData?.result?.geometry?.location) {
+        return res.json({
+          lat: placeData.result.geometry.location.lat,
+          lng: placeData.result.geometry.location.lng,
+        });
       }
       res.json({});
     } catch (error) {
@@ -47038,10 +47157,16 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           try {
             const { url } = await getSignedPhotoUrl(photo.objectStorageKey);
             if (url) {
-              const photoResponse = await fetch(url);
-              if (photoResponse.ok) {
-                const arrayBuffer = await photoResponse.arrayBuffer();
-                imageBuffers.push(Buffer.from(arrayBuffer));
+              const photoController = new AbortController();
+              const photoTimeout = setTimeout(() => photoController.abort(), 15000);
+              try {
+                const photoResponse = await fetch(url, { signal: photoController.signal });
+                if (photoResponse.ok) {
+                  const arrayBuffer = await photoResponse.arrayBuffer();
+                  imageBuffers.push(Buffer.from(arrayBuffer));
+                }
+              } finally {
+                clearTimeout(photoTimeout);
               }
             }
           } catch (e) {
