@@ -238,7 +238,7 @@ const HELP_CHAT_STARTERS = [
   "How do I set up payments?",
 ];
 
-const HELP_CHAT_SESSION_KEY = "help_chat_history";
+import { HELP_CHAT_SESSION_KEY, clearChatHistory, getSessionGeneration } from "@/lib/helpChatStorage";
 
 interface ChatSession {
   route: string | null;
@@ -272,7 +272,15 @@ function HelpChat({
   }, [initialQuery]);
 
   const chatMutation = useMutation({
-    mutationFn: async ({ message, history }: { message: string; history: HelpChatMessage[] }) => {
+    mutationFn: async ({
+      message,
+      history,
+    }: {
+      message: string;
+      history: HelpChatMessage[];
+      /** Session generation captured at send-time; used to skip persistence after logout. */
+      sessionGen: number;
+    }) => {
       const res = await apiRequest("POST", "/api/help/chat", {
         message,
         history: history.map((m) => ({ role: m.role, content: m.content })),
@@ -280,7 +288,7 @@ function HelpChat({
       });
       return res.json();
     },
-    onSuccess: (data, { message }) => {
+    onSuccess: (data, { message, sessionGen }) => {
       setMessages((prev) => {
         const next = [
           ...prev,
@@ -293,12 +301,16 @@ function HelpChat({
             confidence: data.confidence,
           },
         ];
-        saveChatHistory(next, currentRoute ?? null);
+        // Guard: skip persistence if the user logged out while the request was
+        // in flight (clearChatHistory bumps the generation on logout).
+        if (sessionGen === getSessionGeneration()) {
+          saveChatHistory(next, currentRoute ?? null);
+        }
         return next;
       });
       setInputValue("");
     },
-    onError: () => {
+    onError: (_, { sessionGen }) => {
       setMessages((prev) => {
         const next = [
           ...prev,
@@ -308,7 +320,10 @@ function HelpChat({
             confidence: "low" as const,
           },
         ];
-        saveChatHistory(next, currentRoute ?? null);
+        // Same guard: don't restore history if the session was cleared.
+        if (sessionGen === getSessionGeneration()) {
+          saveChatHistory(next, currentRoute ?? null);
+        }
         return next;
       });
       setInputValue("");
@@ -330,7 +345,7 @@ function HelpChat({
   const handleSend = () => {
     const msg = inputValue.trim();
     if (!msg || chatMutation.isPending) return;
-    chatMutation.mutate({ message: msg, history: messages });
+    chatMutation.mutate({ message: msg, history: messages, sessionGen: getSessionGeneration() });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -341,7 +356,7 @@ function HelpChat({
   };
 
   const handleStarter = (text: string) => {
-    chatMutation.mutate({ message: text, history: [] });
+    chatMutation.mutate({ message: text, history: [], sessionGen: getSessionGeneration() });
   };
 
   return (
@@ -994,10 +1009,3 @@ function saveChatHistory(messages: HelpChatMessage[], route: string | null) {
   }
 }
 
-function clearChatHistory() {
-  try {
-    sessionStorage.removeItem(HELP_CHAT_SESSION_KEY);
-  } catch {
-    // ignore
-  }
-}

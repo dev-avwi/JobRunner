@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
+import { clearChatHistory } from "@/lib/helpChatStorage";
 
 interface DemoModeBannerProps {
   isVisitorDemo?: boolean;
@@ -30,6 +31,7 @@ export default function DemoModeBanner({ isVisitorDemo }: DemoModeBannerProps) {
     try {
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch {}
+    clearChatHistory();
     window.location.href = '/auth';
   }, []);
   

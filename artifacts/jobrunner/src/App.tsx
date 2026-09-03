@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback, Suspense } from "react
 import { RefreshCw, WifiOff, X } from "lucide-react";
 import { Switch, Route, useLocation, Redirect, Router as WouterRouter } from "wouter";
 import { queryClient, clearSessionToken, getSessionToken, apiRequest } from "./lib/queryClient";
+import { clearChatHistory } from "@/lib/helpChatStorage";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { NetworkProvider } from "@/contexts/NetworkContext";
 import OfflineIndicator from "@/components/OfflineIndicator";
@@ -1491,6 +1492,9 @@ function AppLayout() {
     } finally {
       // Clear session token from localStorage (for iOS/Safari fallback)
       clearSessionToken();
+      // Clear Help Center chat history so a subsequent user on the same device
+      // cannot see the previous user's conversation.
+      clearChatHistory();
       // Reset the sync flag so the next login will sync from backend
       hasInitialSynced.current = false;
       // Invalidate all queries

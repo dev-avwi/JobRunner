@@ -21,6 +21,7 @@ import { useBusinessSettings } from "@/hooks/use-business-settings";
 import { useTheme } from "@/components/ThemeProvider";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { clearChatHistory } from "@/lib/helpChatStorage";
 import { useAppMode } from "@/hooks/use-app-mode";
 import { 
   Building, 
@@ -448,6 +449,7 @@ export default function Settings({
 
   function handleSignOut() {
     apiRequest('POST', '/api/auth/logout').then(() => {
+      clearChatHistory();
       window.location.href = '/';
     }).catch(() => {
       toast({ title: 'Failed to sign out', variant: 'destructive' });
