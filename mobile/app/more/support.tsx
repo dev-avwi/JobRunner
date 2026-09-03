@@ -110,19 +110,19 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       paddingVertical: 0,
     },
     // Category chips
-    chipRow: {
+    chipScrollContent: {
       paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.sm,
+      paddingBottom: spacing.md,
+      paddingTop: spacing.xs,
       flexDirection: 'row',
-      flexWrap: 'wrap',
       gap: spacing.sm,
     },
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: spacing.xs,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.xs,
+      gap: 5,
+      paddingHorizontal: spacing.md + 2,
+      paddingVertical: spacing.xs + 2,
       borderRadius: radius.full,
       backgroundColor: colors.muted,
     },
@@ -132,10 +132,50 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
     chipText: {
       ...typography.caption,
       color: colors.mutedForeground,
-      fontWeight: fontWeights.medium,
+      fontWeight: fontWeights.semibold,
     },
     chipTextActive: {
       color: colors.primaryForeground,
+    },
+    // Category group
+    categoryGroupHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    categoryGroupLabel: {
+      ...typography.label,
+      color: colors.mutedForeground,
+    },
+    categoryGroupSeeAll: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: fontWeights.semibold,
+    },
+    // Grouped article list card
+    articleListCard: {
+      backgroundColor: colors.card,
+      marginHorizontal: spacing.lg,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...shadows.sm,
+    },
+    articleListRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+    },
+    articleListDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginLeft: spacing.lg,
     },
     // Section title
     sectionTitle: {
@@ -837,9 +877,13 @@ export default function SupportScreen() {
             </View>
           </View>
 
-          {/* Category chips */}
+          {/* Category chips — horizontal scroll, single row */}
           {!search && (
-            <View style={styles.chipRow}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipScrollContent}
+            >
               <TouchableOpacity
                 style={[styles.chip, activeCategory === 'all' && styles.chipActive]}
                 onPress={() => setActiveCategory('all')}
@@ -856,17 +900,15 @@ export default function SupportScreen() {
                 >
                   <Feather
                     name={CATEGORY_ICONS[cat.id] ?? 'help-circle'}
-                    size={12}
+                    size={11}
                     color={activeCategory === cat.id ? colors.primaryForeground : colors.mutedForeground}
                   />
-                  <Text
-                    style={[styles.chipText, activeCategory === cat.id && styles.chipTextActive]}
-                  >
+                  <Text style={[styles.chipText, activeCategory === cat.id && styles.chipTextActive]}>
                     {cat.label}
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           )}
 
           {/* App Tour card — shown only on home with no search */}
@@ -884,11 +926,7 @@ export default function SupportScreen() {
           )}
 
           {/* Articles */}
-          {isLoading ? (
-            <View style={{ alignItems: 'center', paddingVertical: spacing.xl * 2 }}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : filteredArticles.length === 0 ? (
+          {filteredArticles.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Feather name="help-circle" size={48} color={colors.mutedForeground + '60'} />
               <Text style={styles.emptyTitle}>No articles found</Text>
@@ -906,28 +944,81 @@ export default function SupportScreen() {
                 </TouchableOpacity>
               )}
             </View>
+          ) : activeCategory === 'all' && !search ? (
+            /* ── Grouped view: one card per category ── */
+            <>
+              {categories.map((cat) => {
+                const catArticles = allArticles.filter(a => a.category === cat.id);
+                if (catArticles.length === 0) return null;
+                const preview = catArticles.slice(0, 3);
+                const remaining = catArticles.length - preview.length;
+                return (
+                  <View key={cat.id}>
+                    <View style={styles.categoryGroupHeader}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={13} color={colors.mutedForeground} />
+                        <Text style={styles.categoryGroupLabel}>{cat.label.toUpperCase()}</Text>
+                      </View>
+                      {remaining > 0 && (
+                        <TouchableOpacity onPress={() => setActiveCategory(cat.id)}>
+                          <Text style={styles.categoryGroupSeeAll}>See all {catArticles.length} →</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    <View style={styles.articleListCard}>
+                      {preview.map((article, idx) => (
+                        <View key={article.id}>
+                          {idx > 0 && <View style={styles.articleListDivider} />}
+                          <PressableRow style={styles.articleListRow} onPress={() => openArticle(article)}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.articleTitle} numberOfLines={1}>{article.title}</Text>
+                              <Text style={styles.articleSummary} numberOfLines={1}>{article.summary}</Text>
+                            </View>
+                            <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                          </PressableRow>
+                        </View>
+                      ))}
+                      {remaining > 0 && (
+                        <>
+                          <View style={styles.articleListDivider} />
+                          <TouchableOpacity
+                            style={[styles.articleListRow, { justifyContent: 'center' }]}
+                            onPress={() => setActiveCategory(cat.id)}
+                          >
+                            <Text style={{ ...typography.caption, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                              {remaining} more article{remaining === 1 ? '' : 's'}
+                            </Text>
+                            <Feather name="chevron-right" size={12} color={colors.primary} style={{ marginLeft: 2 }} />
+                          </TouchableOpacity>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </>
           ) : (
+            /* ── Flat view: search results or single category ── */
             <>
               <Text style={styles.sectionTitle}>
                 {search
                   ? `${filteredArticles.length} RESULT${filteredArticles.length === 1 ? '' : 'S'}`
-                  : activeCategory === 'all'
-                  ? 'HELP ARTICLES'
                   : (categories.find(c => c.id === activeCategory)?.label ?? 'ARTICLES').toUpperCase()}
               </Text>
-              {filteredArticles.map((article) => (
-                <View key={article.id} style={styles.articleCard}>
-                  <PressableRow style={styles.articleRow} onPress={() => openArticle(article)}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.articleTitle}>{article.title}</Text>
-                      <Text style={styles.articleSummary} numberOfLines={2}>
-                        {article.summary}
-                      </Text>
-                    </View>
-                    <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
-                  </PressableRow>
-                </View>
-              ))}
+              <View style={styles.articleListCard}>
+                {filteredArticles.map((article, idx) => (
+                  <View key={article.id}>
+                    {idx > 0 && <View style={styles.articleListDivider} />}
+                    <PressableRow style={styles.articleListRow} onPress={() => openArticle(article)}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.articleTitle}>{article.title}</Text>
+                        <Text style={styles.articleSummary} numberOfLines={2}>{article.summary}</Text>
+                      </View>
+                      <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                    </PressableRow>
+                  </View>
+                ))}
+              </View>
             </>
           )}
 
