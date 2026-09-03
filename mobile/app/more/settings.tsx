@@ -51,7 +51,6 @@ const SETTINGS_TABS = [
   { key: 'money', label: 'Money', icon: 'credit-card' },
   { key: 'teamcomms', label: 'Team & Comms', icon: 'users' },
   { key: 'plan', label: 'Plan', icon: 'award' },
-  { key: 'help', label: 'Help', icon: 'help-circle' },
 ];
 
 const GEOFENCE_STORAGE_KEY = '@jobrunner/global_geofence_settings';
@@ -866,45 +865,6 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     borderColor: colors.border,
     marginBottom: spacing.md,
   },
-  exportRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.sm,
-  },
-  exportRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-  },
-  exportIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.muted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  exportButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-  },
-  exportButtonText: {
-    fontSize: typography.sizes.sm,
-    fontWeight: fontWeights.semibold,
-    color: colors.primary,
-  },
   businessInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1097,9 +1057,6 @@ export default function SettingsScreen() {
     aiAutoCategorizephotos: false,
     aiSuggestions: false,
   });
-
-  // Data export state
-  const [exportingKey, setExportingKey] = useState<string | null>(null);
 
   // Password change state
   const [passwordData, setPasswordData] = useState({
@@ -1365,37 +1322,6 @@ export default function SettingsScreen() {
     }
     setPasswordSaving(false);
   }, [passwordData]);
-
-  const handleExport = useCallback(async (key: string) => {
-    setExportingKey(key);
-    try {
-      const authToken = await api.getToken();
-      const filename = `jobrunner-${key}-export.csv`;
-      const fileUri = `${FileSystem.documentDirectory}${filename}`;
-      const downloadResult = await FileSystem.downloadAsync(
-        `${API_URL}/api/export/${key}`,
-        fileUri,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      if (downloadResult.status === 200) {
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(downloadResult.uri, {
-            mimeType: 'text/csv',
-            dialogTitle: `Export ${key}`,
-            UTI: 'public.comma-separated-values-text',
-          });
-        } else {
-          showToast({ type: 'success', message: `File saved to ${filename}` });
-        }
-      } else {
-        showToast({ type: 'error', message: 'Failed to download export file' });
-      }
-    } catch (error: any) {
-      showToast({ type: 'error', message: error.message || 'Could not export data' });
-    }
-    setExportingKey(null);
-  }, []);
 
   // Templates handlers
   const loadTemplates = useCallback(async () => {
@@ -3072,216 +2998,6 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          {activeTab === 'help' && (
-            <View style={styles.tabContentSection}>
-              <PressableRow 
-                style={[styles.settingsCard, { borderColor: colors.primary, borderWidth: 2 }]}
-                onPress={() => setShowTour(true)}
-                data-testid="button-start-tour"
-              >
-                <View style={styles.settingsCardHeader}>
-                  <Feather name="compass" size={20} color={colors.primary} />
-                  <View style={styles.settingsCardInfo}>
-                    <Text style={styles.settingsCardTitle}>Start App Tour</Text>
-                    <Text style={styles.settingsCardSubtitle}>Quick walkthrough of the app</Text>
-                  </View>
-                </View>
-                <Feather name="play-circle" size={18} color={colors.primary} />
-              </PressableRow>
-
-              {Platform.OS === 'ios' && (
-                <>
-                  <Text style={styles.sectionLabel}>TAP TO PAY ON IPHONE</Text>
-
-                  <PressableRow
-                    style={styles.settingsCard}
-                    onPress={() => router.push('/more/tap-to-pay-setup')}
-                    data-testid="row-tap-to-pay-setup"
-                  >
-                    <View style={styles.settingsCardHeader}>
-                      <Feather name="radio" size={20} color={colors.primary} />
-                      <View style={styles.settingsCardInfo}>
-                        <Text style={styles.settingsCardTitle}>Set Up Tap to Pay on iPhone</Text>
-                        <Text style={styles.settingsCardSubtitle}>Accept contactless cards and Apple Pay right on your iPhone. No extra hardware needed.</Text>
-                      </View>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-                  </PressableRow>
-
-                  <PressableRow
-                    style={styles.settingsCard}
-                    onPress={() => router.push('/more/tap-to-pay-setup?mode=education')}
-                    data-testid="row-tap-to-pay-guide"
-                  >
-                    <View style={styles.settingsCardHeader}>
-                      <Feather name="book-open" size={20} color={colors.primary} />
-                      <View style={styles.settingsCardInfo}>
-                        <Text style={styles.settingsCardTitle}>How to Accept Payments</Text>
-                        <Text style={styles.settingsCardSubtitle}>Learn how to take contactless cards, Apple Pay, and other digital wallets with Tap to Pay on iPhone.</Text>
-                      </View>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-                  </PressableRow>
-
-                  <PressableRow
-                    style={styles.settingsCard}
-                    onPress={async () => {
-                      const ok = await confirm({
-                        title: 'Reset Tap to Pay Setup?',
-                        message: 'This clears the accepted terms and tutorial progress so you can run the full setup again from the start.',
-                        confirmText: 'Reset',
-                        destructive: true,
-                      });
-                      if (!ok) return;
-                      const response = await api.post('/api/tap-to-pay/reset-setup', {});
-                      if (response.error) {
-                        Alert.alert('Reset Failed', typeof response.error === 'string' ? response.error : 'Only the business owner or an admin can reset Tap to Pay setup.');
-                      } else {
-                        Alert.alert('Setup Reset', 'Tap to Pay setup has been reset. Open "Set Up Tap to Pay on iPhone" to run the full flow.');
-                      }
-                    }}
-                    data-testid="row-tap-to-pay-reset"
-                  >
-                    <View style={styles.settingsCardHeader}>
-                      <Feather name="rotate-ccw" size={20} color={colors.mutedForeground} />
-                      <View style={styles.settingsCardInfo}>
-                        <Text style={styles.settingsCardTitle}>Reset Tap to Pay Setup</Text>
-                        <Text style={styles.settingsCardSubtitle}>Clear accepted terms and tutorial progress to run the setup flow again from the start.</Text>
-                      </View>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-                  </PressableRow>
-                </>
-              )}
-
-              <Text style={styles.sectionLabel}>SUPPORT</Text>
-
-              <PressableRow 
-                style={[styles.settingsCard, { borderColor: colors.destructive, borderWidth: 1 }]}
-                onPress={() => router.push('/more/report-bug')}
-                data-testid="button-report-bug"
-              >
-                <View style={styles.settingsCardHeader}>
-                  <Feather name="alert-circle" size={20} color={colors.destructive} />
-                  <View style={styles.settingsCardInfo}>
-                    <Text style={styles.settingsCardTitle}>Report a Bug</Text>
-                    <Text style={styles.settingsCardSubtitle}>Something not working? Let us know!</Text>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </PressableRow>
-
-              <PressableRow 
-                style={styles.settingsCard}
-                onPress={() => Linking.openURL('mailto:admin@avwebinnovation.com')}
-                data-testid="button-contact-support"
-              >
-                <View style={styles.settingsCardHeader}>
-                  <Feather name="mail" size={20} color={colors.primary} />
-                  <View style={styles.settingsCardInfo}>
-                    <Text style={styles.settingsCardTitle}>Contact Support</Text>
-                    <Text style={styles.settingsCardSubtitle}>admin@avwebinnovation.com</Text>
-                  </View>
-                </View>
-                <Feather name="external-link" size={18} color={colors.mutedForeground} />
-              </PressableRow>
-
-              <PressableRow 
-                style={styles.settingsCard}
-                onPress={() => router.push('/more/support')}
-                data-testid="button-help-centre"
-              >
-                <View style={styles.settingsCardHeader}>
-                  <Feather name="help-circle" size={20} color={colors.primary} />
-                  <View style={styles.settingsCardInfo}>
-                    <Text style={styles.settingsCardTitle}>Help & FAQs</Text>
-                    <Text style={styles.settingsCardSubtitle}>Browse support articles</Text>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-              </PressableRow>
-
-              {isOwner() && (
-                <>
-                  <Text style={styles.sectionLabel}>YOUR DATA</Text>
-                  <PressableRow
-                    style={styles.settingsCard}
-                    onPress={() => router.push('/more/bring-your-business')}
-                    data-testid="button-bring-your-business"
-                  >
-                    <View style={styles.settingsCardHeader}>
-                      <Feather name="briefcase" size={20} color={colors.primary} />
-                      <View style={styles.settingsCardInfo}>
-                        <Text style={styles.settingsCardTitle}>Bring My Existing Business Across</Text>
-                        <Text style={styles.settingsCardSubtitle}>Import clients, set trade defaults & more</Text>
-                      </View>
-                    </View>
-                    <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
-                  </PressableRow>
-                </>
-              )}
-
-              <Text style={styles.sectionLabel}>DATA EXPORT</Text>
-
-              <View style={styles.subscriptionCard}>
-                <View style={styles.subscriptionHeader}>
-                  <Feather name="download" size={20} color={colors.primary} />
-                  <Text style={styles.subscriptionTitle}>Export Your Data</Text>
-                </View>
-                <Text style={[styles.planDescription, { marginBottom: spacing.md }]}>
-                  Download your business data as CSV files for accounting or backup purposes.
-                </Text>
-
-                {[
-                  { key: 'clients', label: 'Clients', description: 'Names, contact details, addresses', icon: 'users' },
-                  { key: 'jobs', label: 'Jobs', description: 'Job titles, statuses, addresses, dates', icon: 'briefcase' },
-                  { key: 'quotes', label: 'Quotes', description: 'Quote numbers, amounts, GST, statuses', icon: 'file-text' },
-                  { key: 'invoices', label: 'Invoices', description: 'Invoice numbers, amounts, payment status', icon: 'file' },
-                  { key: 'time-entries', label: 'Time Entries', description: 'Hours, rates, jobs, billing status', icon: 'clock' },
-                ].map((item) => (
-                  <View key={item.key} style={styles.exportRow}>
-                    <View style={styles.exportRowLeft}>
-                      <View style={styles.exportIconContainer}>
-                        <Feather name={item.icon as any} size={16} color={colors.mutedForeground} />
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.settingsCardTitle}>{item.label}</Text>
-                        <Text style={[styles.settingsCardSubtitle, { marginTop: 1 }]}>{item.description}</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.exportButton}
-                      onPress={() => handleExport(item.key)}
-                      disabled={exportingKey === item.key}
-                    >
-                      {exportingKey === item.key ? (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                      ) : (
-                        <>
-                          <Feather name="download" size={14} color={colors.primary} />
-                          <Text style={styles.exportButtonText}>CSV</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.settingsInfoCard}>
-                <Text style={styles.settingsInfoTitle}>Need Help?</Text>
-                <Text style={styles.settingsInfoText}>
-                  Our support team is available Monday to Friday, 9am-5pm AEST. We typically respond within 24 hours.
-                </Text>
-              </View>
-
-              <View style={[styles.settingsInfoCard, { marginTop: spacing.sm }]}>
-                <Text style={styles.settingsInfoTitle}>Data Responsibility</Text>
-                <Text style={styles.settingsInfoText}>
-                  We recommend exporting your data at least monthly as a backup. Exported CSV files can be opened in Excel, Google Sheets, or any spreadsheet application.
-                </Text>
-              </View>
-            </View>
-          )}
         </ScrollView>
 
         <AppBottomSheet

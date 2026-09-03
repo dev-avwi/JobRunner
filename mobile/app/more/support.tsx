@@ -25,12 +25,16 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { useOfflineStore } from '../../src/lib/offline-storage';
 import { useAuthStore } from '../../src/lib/store';
-import api from '../../src/lib/api';
+import api, { API_URL } from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import FeedbackBottomSheet from '../../src/components/FeedbackBottomSheet';
 import type { AppBottomSheetRef } from '../../src/components/ui/AppBottomSheet';
+import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
+import { showToast } from '../../src/lib/toast';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -633,6 +637,40 @@ export default function SupportScreen() {
 
   const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
   const user = useAuthStore((state: any) => state.user);
+  const { isOwner } = useAuthStore() as any;
+  const confirm = useConfirmDialog();
+  const [exportingKey, setExportingKey] = useState<string | null>(null);
+
+  const handleExport = useCallback(async (key: string) => {
+    setExportingKey(key);
+    try {
+      const authToken = await api.getToken();
+      const filename = `jobrunner-${key}-export.csv`;
+      const fileUri = `${FileSystem.documentDirectory}${filename}`;
+      const downloadResult = await FileSystem.downloadAsync(
+        `${API_URL}/api/export/${key}`,
+        fileUri,
+        { headers: { Authorization: `Bearer ${authToken}` } },
+      );
+      if (downloadResult.status === 200) {
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(downloadResult.uri, {
+            mimeType: 'text/csv',
+            dialogTitle: `Export ${key}`,
+            UTI: 'public.comma-separated-values-text',
+          });
+        } else {
+          showToast({ type: 'success', message: `File saved to ${filename}` });
+        }
+      } else {
+        showToast({ type: 'error', message: 'Failed to download export file' });
+      }
+    } catch (error: any) {
+      showToast({ type: 'error', message: error.message || 'Could not export data' });
+    }
+    setExportingKey(null);
+  }, []);
 
   const debugInfo = useMemo(() => {
     const appVersion = Application.nativeApplicationVersion || '1.1.0';
@@ -923,6 +961,143 @@ export default function SupportScreen() {
               </View>
               <Feather name="external-link" size={iconSizes.md} color={colors.mutedForeground} />
             </PressableRow>
+          </View>
+
+          {/* Tap to Pay — iOS only */}
+          {Platform.OS === 'ios' && (
+            <>
+              <Text style={styles.sectionTitle}>TAP TO PAY ON IPHONE</Text>
+              <View style={styles.contactCard}>
+                <PressableRow
+                  style={[styles.contactItem, styles.contactItemBorder]}
+                  onPress={() => router.push('/more/tap-to-pay-setup' as any)}
+                >
+                  <View style={styles.contactIconContainer}>
+                    <Feather name="radio" size={iconSizes.lg} color={colors.primary} />
+                  </View>
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactTitle}>Set Up Tap to Pay on iPhone</Text>
+                    <Text style={styles.contactSubtitle}>Accept contactless cards and Apple Pay right on your iPhone</Text>
+                  </View>
+                  <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                </PressableRow>
+                <PressableRow
+                  style={[styles.contactItem, styles.contactItemBorder]}
+                  onPress={() => router.push('/more/tap-to-pay-setup?mode=education' as any)}
+                >
+                  <View style={styles.contactIconContainer}>
+                    <Feather name="book-open" size={iconSizes.lg} color={colors.primary} />
+                  </View>
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactTitle}>How to Accept Payments</Text>
+                    <Text style={styles.contactSubtitle}>Learn to take cards, Apple Pay, and digital wallets</Text>
+                  </View>
+                  <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                </PressableRow>
+                <PressableRow
+                  style={styles.contactItem}
+                  onPress={async () => {
+                    const ok = await confirm({
+                      title: 'Reset Tap to Pay Setup?',
+                      message: 'This clears accepted terms and tutorial progress so you can run the full setup again.',
+                      confirmText: 'Reset',
+                      destructive: true,
+                    });
+                    if (!ok) return;
+                    const response = await api.post('/api/tap-to-pay/reset-setup', {});
+                    if (response.error) {
+                      Alert.alert('Reset Failed', typeof response.error === 'string' ? response.error : 'Only the business owner or an admin can reset Tap to Pay setup.');
+                    } else {
+                      Alert.alert('Setup Reset', 'Tap to Pay setup has been reset. Open "Set Up Tap to Pay on iPhone" to run the full flow.');
+                    }
+                  }}
+                >
+                  <View style={[styles.contactIconContainer, { backgroundColor: colors.muted }]}>
+                    <Feather name="rotate-ccw" size={iconSizes.lg} color={colors.mutedForeground} />
+                  </View>
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactTitle}>Reset Tap to Pay Setup</Text>
+                    <Text style={styles.contactSubtitle}>Clear terms and progress to run the setup again</Text>
+                  </View>
+                  <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                </PressableRow>
+              </View>
+            </>
+          )}
+
+          {/* Bring Your Business — owner only */}
+          {isOwner?.() && (
+            <>
+              <Text style={styles.sectionTitle}>YOUR DATA</Text>
+              <View style={styles.contactCard}>
+                <PressableRow
+                  style={styles.contactItem}
+                  onPress={() => router.push('/more/bring-your-business' as any)}
+                >
+                  <View style={styles.contactIconContainer}>
+                    <Feather name="briefcase" size={iconSizes.lg} color={colors.primary} />
+                  </View>
+                  <View style={styles.contactContent}>
+                    <Text style={styles.contactTitle}>Bring My Existing Business Across</Text>
+                    <Text style={styles.contactSubtitle}>Import clients, set trade defaults and more</Text>
+                  </View>
+                  <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                </PressableRow>
+              </View>
+            </>
+          )}
+
+          {/* Data Export */}
+          <Text style={styles.sectionTitle}>DATA EXPORT</Text>
+          <View style={[styles.contactCard, { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm }]}>
+            <Text style={{ ...typography.caption, color: colors.mutedForeground, marginBottom: spacing.md }}>
+              Download your business data as CSV files for accounting or backup.
+            </Text>
+            {([
+              { key: 'clients',      label: 'Clients',      description: 'Names, contact details, addresses',     icon: 'users'      },
+              { key: 'jobs',         label: 'Jobs',         description: 'Titles, statuses, addresses, dates',    icon: 'briefcase'  },
+              { key: 'quotes',       label: 'Quotes',       description: 'Numbers, amounts, GST, statuses',       icon: 'file-text'  },
+              { key: 'invoices',     label: 'Invoices',     description: 'Numbers, amounts, payment status',      icon: 'file'       },
+              { key: 'time-entries', label: 'Time Entries', description: 'Hours, rates, jobs, billing status',    icon: 'clock'      },
+            ] as const).map((item, index) => (
+              <View
+                key={item.key}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+                  paddingVertical: spacing.sm,
+                  borderTopWidth: index > 0 ? 1 : 0,
+                  borderTopColor: colors.border,
+                }}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name={item.icon} size={iconSizes.md} color={colors.mutedForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.medium, color: colors.foreground }}>{item.label}</Text>
+                  <Text style={{ ...typography.caption, color: colors.mutedForeground }}>{item.description}</Text>
+                </View>
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', gap: 4,
+                    paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
+                    borderRadius: radius.md, borderWidth: 1,
+                    borderColor: exportingKey === item.key ? colors.border : `${colors.primary}40`,
+                    backgroundColor: exportingKey === item.key ? colors.muted : `${colors.primary}10`,
+                  }}
+                  onPress={() => handleExport(item.key)}
+                  disabled={exportingKey === item.key}
+                >
+                  {exportingKey === item.key ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <>
+                      <Feather name="download" size={12} color={colors.primary} />
+                      <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.primary }}>CSV</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ))}
           </View>
 
           {/* Debug Info */}
