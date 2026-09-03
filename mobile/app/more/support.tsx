@@ -29,6 +29,8 @@ import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import FeedbackBottomSheet from '../../src/components/FeedbackBottomSheet';
+import type { AppBottomSheetRef } from '../../src/components/ui/AppBottomSheet';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -565,6 +567,7 @@ export default function SupportScreen() {
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showTour, setShowTour] = useState(false);
+  const feedbackSheetRef = useRef<AppBottomSheetRef>(null);
 
   const { data, isLoading } = useQuery<HelpData>({
     queryKey: ['/api/help/articles'],
@@ -837,8 +840,24 @@ export default function SupportScreen() {
             </>
           )}
 
+          {/* Send Feedback */}
+          <Text style={styles.sectionTitle}>FEEDBACK</Text>
+          <PressableRow
+            style={[styles.tourCard, { borderColor: colors.primary, marginHorizontal: spacing.lg, marginTop: 0 }]}
+            onPress={() => feedbackSheetRef.current?.present()}
+          >
+            <View style={styles.tourIconContainer}>
+              <Feather name="message-square" size={iconSizes.xl} color={colors.primary} />
+            </View>
+            <View style={styles.tourContent}>
+              <Text style={styles.tourTitle}>Send Feedback</Text>
+              <Text style={styles.tourSubtitle}>Share ideas, report bugs, or leave a rating</Text>
+            </View>
+            <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
+          </PressableRow>
+
           {/* Report a Bug */}
-          <Text style={styles.sectionTitle}>REPORT A PROBLEM</Text>
+          <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>REPORT A PROBLEM</Text>
           <PressableRow
             style={[styles.tourCard, { borderColor: colors.destructive, marginHorizontal: spacing.lg, marginTop: 0 }]}
             onPress={() => router.push('/more/report-bug')}
@@ -914,6 +933,7 @@ export default function SupportScreen() {
       </ScrollView>
 
       <AppTour visible={showTour} onClose={() => setShowTour(false)} />
+      <FeedbackBottomSheet sheetRef={feedbackSheetRef} currentScreen="more/support" />
     </>
   );
 }

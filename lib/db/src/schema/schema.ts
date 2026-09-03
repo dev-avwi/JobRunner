@@ -5922,3 +5922,39 @@ export const vapiEvents = pgTable("vapi_events", {
 
 export type VapiEvent = typeof vapiEvents.$inferSelect;
 export type InsertVapiEvent = typeof vapiEvents.$inferInsert;
+
+export const FEEDBACK_TYPES = ['bug', 'feature', 'general'] as const;
+
+export type FeedbackPlatform = typeof FEEDBACK_PLATFORMS[number];
+
+export const feedback = pgTable("feedback", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  businessId: varchar("business_id"),
+  feedbackType: text("feedback_type").notNull().default('general'), // bug | feature | general
+  message: text("message").notNull(),
+  rating: integer("rating"),            // 1–5 star rating, optional
+  photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
+  platform: text("platform"),           // web | ios | android
+  appVersion: text("app_version"),
+  currentRoute: text("current_route"),
+  deviceInfo: jsonb("device_info").$type<Record<string, string>>(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_feedback_user_id").on(table.userId),
+  index("idx_feedback_created_at").on(table.createdAt),
+  index("idx_feedback_type").on(table.feedbackType),
+]);
+
+export type Feedback = typeof feedback.$inferSelect;
+
+export const FEEDBACK_PLATFORMS = ['web', 'ios', 'android'] as const;
+
+export type FeedbackType = typeof FEEDBACK_TYPES[number];
+
+export type InsertFeedback = typeof feedback.$inferInsert;
+
+export const insertFeedbackSchema = createInsertSchema(feedback).omit({
+  id: true,
+  createdAt: true,
+});

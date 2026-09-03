@@ -8,17 +8,19 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  Image,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Device from 'expo-device';
+import * as ImagePicker from 'expo-image-picker';
 import Constants from 'expo-constants';
 import NetInfo from '@react-native-community/netinfo';
 import { useAuthStore } from '../../src/lib/store';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
-import { API_URL } from '../../src/lib/api';
+import api, { API_URL } from '../../src/lib/api';
 import { spacing, radius, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
@@ -246,6 +248,24 @@ export default function ReportBugScreen() {
   const [reproductionSteps, setReproductionSteps] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [networkStatus, setNetworkStatus] = useState<string>('unknown');
+  const [photos, setPhotos] = useState<Array<{ uri: string; type?: string }>>([]);
+
+  const MAX_PHOTOS = 3;
+
+  const pickPhoto = async () => {
+    if (photos.length >= MAX_PHOTOS) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      selectionLimit: MAX_PHOTOS - photos.length,
+      quality: 0.7,
+    });
+    if (!result.canceled) {
+      setPhotos(prev => [...prev, ...result.assets.map(a => ({ uri: a.uri, type: a.mimeType || 'image/jpeg' }))].slice(0, MAX_PHOTOS));
+    }
+  };
   
   const prefilledError = params.errorMessage as string | undefined;
   const prefilledStack = params.stackTrace as string | undefined;
@@ -275,11 +295,23 @@ export default function ReportBugScreen() {
     setIsSubmitting(true);
 
     try {
+      // Upload any attached photos first, then include URLs in the JSON body
+      let photoUrls: string[] = [];
+      if (photos.length > 0) {
+        const uploadForm = new FormData();
+        photos.forEach((photo, i) => {
+          const ext = (photo.type || 'image/jpeg').split('/')[1] || 'jpg';
+          uploadForm.append('photos', { uri: photo.uri, name: `photo_${i}.${ext}`, type: photo.type || 'image/jpeg' } as any);
+        });
+        const uploadRes = await api.uploadFile('/api/feedback/upload-photos', uploadForm);
+        if (!uploadRes.error) {
+          photoUrls = (uploadRes.data as any)?.urls ?? [];
+        }
+      }
+
       const response = await fetch(`${API_URL}/api/bug-reports`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: category || 'other',
           severity,
@@ -290,10 +322,11 @@ export default function ReportBugScreen() {
           deviceInfo,
           appVersion: Constants.expoConfig?.version || '1.1.0',
           userEmail: user?.email,
-          userName: user?.firstName ? `${user.firstName} ${user?.lastName || ''}`.trim() : user?.name,
+          userName: user?.firstName ? `${user.firstName} ${user?.lastName || ''}`.trim() : (user as any)?.name,
           userId: user?.id,
           screenName: prefilledScreen,
           networkStatus,
+          photoUrls,
         }),
       });
 
@@ -428,6 +461,31 @@ export default function ReportBugScreen() {
               <Text style={styles.deviceInfoLabel}>Network</Text>
               <Text style={styles.deviceInfoValue}>{networkStatus}</Text>
             </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>ATTACH PHOTOS (OPTIONAL)</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+            {photos.map((photo, i) => (
+              <View key={i} style={{ width: 72, height: 72, borderRadius: radius.md, overflow: 'hidden', position: 'relative' }}>
+                <Image source={{ uri: photo.uri }} style={{ width: '100%', height: '100%' }} />
+                <TouchableOpacity
+                  style={{ position: 'absolute', top: 4, right: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 8, padding: 2 }}
+                  onPress={() => setPhotos(prev => prev.filter((_, idx) => idx !== i))}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <TouchableOpacity
+                style={{ width: 72, height: 72, borderRadius: radius.md, borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 4 }}
+                onPress={pickPhoto}
+                activeOpacity={0.7}
+              >
+                <Feather name="image" size={iconSizes.lg} color={colors.mutedForeground} />
+                <Text style={{ ...typography.captionSmall, color: colors.mutedForeground }}>Add Photo</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <PressableRow style={[ styles.submitButton, (isSubmitting || !description.trim()) && styles.submitButtonDisabled ]} onPress={handleSubmit} disabled={isSubmitting || !description.trim()} >

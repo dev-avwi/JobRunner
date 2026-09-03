@@ -289,6 +289,7 @@ import { registerTeamGroupsRoutes } from "./routes/team-groups";
 import { registerSheetSyncRoutes } from "./routes/sheet-sync";
 import { registerClaimsRoutes } from "./routes/claims";
 import { registerHelpRoutes } from "./routes/help";
+import { registerFeedbackRoutes } from "./routes/feedback";
 
 // Mass-assignment guard: strip server-controlled identity/ownership/timestamp
 // fields from a client-supplied update payload before it reaches a storage
@@ -588,12 +589,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         userName,
         userId,
         screenName,
-        networkStatus
+        networkStatus,
+        photoUrls,
       } = req.body;
 
       if (!description) {
         return res.status(400).json({ error: 'Description is required' });
       }
+
+      // HTML-escape helper — prevents XSS from user-controlled bug report fields.
+      const escBug = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+      // Resolve absolute base URL for photo attachment links.
+      const bugBaseUrl = process.env.APP_DOMAIN ? `https://${process.env.APP_DOMAIN}` : (process.env.VITE_APP_URL || 'https://jobrunner.com.au');
+      const absPhotoUrl = (u: string) => u.startsWith('http') ? u : `${bugBaseUrl}${u.startsWith('/') ? u : `/${u}`}`;
 
       // Format the bug report email
       const emailHtml = `
@@ -607,55 +616,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           <div style="background: #dc2626; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
             <h1 style="color: white; margin: 0; font-size: 20px;">Bug Report - JobRunner</h1>
             <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 14px;">
-              Severity: <strong>${severity || 'Not specified'}</strong> | Category: <strong>${category || 'General'}</strong>
+              Severity: <strong>${escBug(severity || 'Not specified')}</strong> | Category: <strong>${escBug(category || 'General')}</strong>
             </p>
           </div>
 
           <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
             <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">User Information</h2>
-            <p style="margin: 4px 0;"><strong>Name:</strong> ${userName || 'Anonymous'}</p>
-            <p style="margin: 4px 0;"><strong>Email:</strong> ${userEmail || 'Not provided'}</p>
-            <p style="margin: 4px 0;"><strong>User ID:</strong> ${userId || 'Not logged in'}</p>
-            <p style="margin: 4px 0;"><strong>Screen:</strong> ${screenName || 'Unknown'}</p>
+            <p style="margin: 4px 0;"><strong>Name:</strong> ${escBug(userName || 'Anonymous')}</p>
+            <p style="margin: 4px 0;"><strong>Email:</strong> ${escBug(userEmail || 'Not provided')}</p>
+            <p style="margin: 4px 0;"><strong>User ID:</strong> ${escBug(userId || 'Not logged in')}</p>
+            <p style="margin: 4px 0;"><strong>Screen:</strong> ${escBug(screenName || 'Unknown')}</p>
           </div>
 
           <div style="background: #fef2f2; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #fee2e2;">
             <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #991b1b;">Problem Description</h2>
-            <p style="margin: 0; white-space: pre-wrap;">${description}</p>
+            <p style="margin: 0; white-space: pre-wrap;">${escBug(description)}</p>
           </div>
 
           ${reproductionSteps ? `
           <div style="background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
             <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">Steps to Reproduce</h2>
-            <p style="margin: 0; white-space: pre-wrap;">${reproductionSteps}</p>
+            <p style="margin: 0; white-space: pre-wrap;">${escBug(reproductionSteps)}</p>
           </div>
           ` : ''}
 
           ${errorMessage ? `
           <div style="background: #1f2937; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
             <h2 style="margin: 0 0 8px 0; font-size: 14px; color: #f87171;">Error Message</h2>
-            <pre style="margin: 0; color: #fca5a5; font-size: 12px; white-space: pre-wrap; overflow-x: auto;">${errorMessage}</pre>
+            <pre style="margin: 0; color: #fca5a5; font-size: 12px; white-space: pre-wrap; overflow-x: auto;">${escBug(errorMessage)}</pre>
           </div>
           ` : ''}
 
           ${stackTrace ? `
           <div style="background: #1f2937; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
             <h2 style="margin: 0 0 8px 0; font-size: 14px; color: #9ca3af;">Stack Trace</h2>
-            <pre style="margin: 0; color: #d1d5db; font-size: 11px; white-space: pre-wrap; overflow-x: auto; max-height: 300px;">${stackTrace}</pre>
+            <pre style="margin: 0; color: #d1d5db; font-size: 11px; white-space: pre-wrap; overflow-x: auto; max-height: 300px;">${escBug(stackTrace)}</pre>
           </div>
           ` : ''}
 
           <div style="background: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
             <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">Device & Environment</h2>
-            <p style="margin: 4px 0;"><strong>App Version:</strong> ${appVersion || 'Unknown'}</p>
-            <p style="margin: 4px 0;"><strong>Network:</strong> ${networkStatus || 'Unknown'}</p>
+            <p style="margin: 4px 0;"><strong>App Version:</strong> ${escBug(appVersion || 'Unknown')}</p>
+            <p style="margin: 4px 0;"><strong>Network:</strong> ${escBug(networkStatus || 'Unknown')}</p>
             ${deviceInfo ? `
-            <p style="margin: 4px 0;"><strong>Platform:</strong> ${deviceInfo.platform || 'Unknown'}</p>
-            <p style="margin: 4px 0;"><strong>Device:</strong> ${deviceInfo.deviceName || 'Unknown'}</p>
-            <p style="margin: 4px 0;"><strong>OS Version:</strong> ${deviceInfo.osVersion || 'Unknown'}</p>
-            <p style="margin: 4px 0;"><strong>App Build:</strong> ${deviceInfo.buildNumber || 'Unknown'}</p>
+            <p style="margin: 4px 0;"><strong>Platform:</strong> ${escBug(deviceInfo.platform || 'Unknown')}</p>
+            <p style="margin: 4px 0;"><strong>Device:</strong> ${escBug(deviceInfo.deviceName || 'Unknown')}</p>
+            <p style="margin: 4px 0;"><strong>OS Version:</strong> ${escBug(deviceInfo.osVersion || 'Unknown')}</p>
+            <p style="margin: 4px 0;"><strong>App Build:</strong> ${escBug(deviceInfo.buildNumber || 'Unknown')}</p>
             ` : ''}
           </div>
+
+          ${Array.isArray(photoUrls) && photoUrls.length > 0 ? `
+          <div style="background: #fff; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #e5e7eb;">
+            <h2 style="margin: 0 0 8px 0; font-size: 16px; color: #374151;">Attached Screenshots (${photoUrls.length})</h2>
+            ${photoUrls.map((u: string) => { const abs = escBug(absPhotoUrl(u)); return `<p style="margin: 4px 0;"><a href="${abs}" style="color:#2563eb;">${abs}</a></p>`; }).join('')}
+          </div>
+          ` : ''}
 
           <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px;">
             <p style="margin: 0;">Submitted: ${new Date().toLocaleString('en-AU', { timeZone: 'Australia/Sydney' })} AEST</p>
@@ -16013,6 +16029,7 @@ Be specific about materials, colors, and features that would be included.`
   registerSheetSyncRoutes(app);
   registerClaimsRoutes(app);
   registerHelpRoutes(app);
+  registerFeedbackRoutes(app);
   // Get site photos for all jobs (for chat list display)
   // Optimized: batches photo lookups and generates signed URLs in parallel
   const sitePhotoCache = new Map<string, { url: string; expires: number }>();

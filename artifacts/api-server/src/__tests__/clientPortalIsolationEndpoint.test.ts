@@ -64,16 +64,16 @@ const mockStorage = {
     return { id: 'sess-1', phone, sessionToken, userId: userId ?? null, expiresAt: new Date() };
   }),
   // Batch helpers used by the full portal data handler
-  getQuotesForClientIds:       vi.fn(async () => []),
-  getInvoicesForClientIds:     vi.fn(async () => []),
-  getReceiptsForClientIds:     vi.fn(async () => []),
-  getJobsForClientIds:         vi.fn(async () => []),
-  getBusinessSettingsBatch:    vi.fn(async () => new Map()),
-  getJobPortalTokensByJobIds:  vi.fn(async () => new Map()),
-  getJobAssignmentsByJobIds:   vi.fn(async () => new Map()),
-  getTeamMembersByIds:         vi.fn(async () => new Map()),
-  getJobVariationsByJobIds:    vi.fn(async () => new Map()),
-  getJobVariationById:         vi.fn(async () => null),
+  getQuotesForClientIds:       vi.fn(async (_ids: string[]) => []),
+  getInvoicesForClientIds:     vi.fn(async (_ids: string[]) => []),
+  getReceiptsForClientIds:     vi.fn(async (_ids: string[]) => []),
+  getJobsForClientIds:         vi.fn(async (_ids: string[]) => []),
+  getBusinessSettingsBatch:    vi.fn(async (_ids: string[]) => new Map()),
+  getJobPortalTokensByJobIds:  vi.fn(async (_ids: string[]) => new Map()),
+  getJobAssignmentsByJobIds:   vi.fn(async (_ids: string[]) => new Map()),
+  getTeamMembersByIds:         vi.fn(async (_ids: string[]) => new Map()),
+  getJobVariationsByJobIds:    vi.fn(async (_ids: string[]) => new Map()),
+  getJobVariationById:         vi.fn(async (_id: string) => null),
   deletePortalSession:         vi.fn(async () => {}),
 };
 
