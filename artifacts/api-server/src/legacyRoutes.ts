@@ -17,6 +17,7 @@ import {
 import { AuthService, sanitizeUserResponse } from "./auth";
 import { setupGoogleAuth } from "./googleAuth";
 import { verifyAppleIdentityToken, type AppleTokenPayload } from "./appleAuth";
+import { verifyGoogleMobileToken, GoogleTokenError } from "./googleMobileAuth";
 import { setupXeroAuth } from "./xeroAuth";
 import {
   requireAuth,
@@ -4989,23 +4990,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mobile Google Sign-In endpoint (accepts Google ID token from mobile app)
   app.post("/api/auth/google/mobile", authRateLimiter, async (req: any, res) => {
     try {
-      const { idToken, accessToken, email, firstName, lastName, googleId, profileImageUrl } = req.body;
-      
-      // For mobile, we trust the data from the Google OAuth response since it came through
-      // Expo AuthSession which validates with Google's servers
-      if (!email || !googleId) {
-        return res.status(400).json({ error: "Email and Google ID are required" });
+      const { idToken, firstName, lastName, profileImageUrl } = req.body;
+
+      // Require a Google ID token — the server MUST verify it with Google's
+      // servers before trusting any identity data.  Accepting caller-supplied
+      // email/googleId fields without token verification would let an attacker
+      // submit a victim's email and obtain their session.
+      if (!idToken) {
+        return res.status(400).json({ error: "Google ID token is required" });
+      }
+
+      // Verify the token with Google's tokeninfo endpoint.  This is the
+      // authoritative server-side check; Expo AuthSession validation on the
+      // client is not a server-side control and can be bypassed by direct HTTP
+      // requests.
+      let verifiedGoogleId: string;
+      let verifiedEmail: string;
+      let verifiedEmailVerified: boolean;
+      try {
+        const expectedClientId = process.env.GOOGLE_CLIENT_ID ?? '';
+        const claims = await verifyGoogleMobileToken(idToken, expectedClientId);
+        verifiedGoogleId = claims.sub;
+        verifiedEmail = claims.email;
+        verifiedEmailVerified = claims.emailVerified;
+      } catch (err: any) {
+        if (err instanceof GoogleTokenError) {
+          console.error("Mobile Google auth: token verification failed:", err.message);
+          return res.status(err.httpStatus).json({ error: err.message });
+        }
+        console.error("Mobile Google auth: unexpected error during token verification:", err?.message);
+        return res.status(503).json({ error: "Could not verify Google token" });
       }
 
       // Track if this is a new user for onboarding
       let isNewUser = false;
 
+      // All identity values below come from the Google-verified token claims.
+      const googleId = verifiedGoogleId;
+      const email = verifiedEmail;
+
       // Check if user already exists by Google ID
       let user = await AuthService.findUserByGoogleId(googleId);
       
       if (!user) {
-        // Check by email as fallback
-        user = await AuthService.findUserByEmail(email);
+        // Email-based fallback: only attempt when Google has verified the
+        // address.  An unverified email is not a reliable identity signal and
+        // must not be used to locate or link an existing account.
+        if (verifiedEmailVerified) {
+          user = await AuthService.findUserByEmail(email);
+        } else {
+          console.warn("Mobile Google auth: email not verified by Google, skipping email-based account lookup");
+        }
       }
       
       if (!user) {
@@ -5017,7 +5052,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: firstName || email.split('@')[0],
           lastName: lastName || '',
           profileImageUrl: profileImageUrl || null,
-          emailVerified: true
+          emailVerified: verifiedEmailVerified
         });
         isNewUser = true;
 
@@ -5099,13 +5134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const tokenAud = claims.aud || '';
-      if (!validAudiences.includes(tokenAud) && !tokenAud.startsWith('com.jobrunner.')) {
+      // Enforce exact audience match only.  A prefix-based bypass
+      // (e.g. any string starting with 'com.jobrunner.') would let a token
+      // minted for an unrelated client pass validation.
+      if (!validAudiences.includes(tokenAud)) {
         console.error('Apple auth: Invalid audience:', tokenAud, 'expected one of:', validAudiences);
         return res.status(400).json({ error: "Invalid token audience" });
-      }
-      
-      if (!validAudiences.includes(tokenAud)) {
-        console.log('Apple auth: Accepted audience via prefix match:', tokenAud);
       }
       
       // Validate token expiry (required claim)
@@ -5126,7 +5160,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isWebRequest = claims.aud === expectedWebServiceId;
       
       const appleUserId = claims.sub;
-      const userEmail = email || claims.email;
+      // Always use the email from the cryptographically-verified Apple JWT.
+      // Never trust the caller-supplied email field — an attacker could
+      // supply a victim's email while presenting their own valid Apple token.
+      const userEmail = claims.email;
       
       // Track if this is a new user for onboarding
       let isNewUser = false;
@@ -5135,10 +5172,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let user = await AuthService.findUserByAppleId(appleUserId);
       
       if (!user && userEmail) {
-        // Check if user exists with this email
+        // Check if user exists with this email (Apple includes email in the
+        // JWT only on the user's first sign-in; subsequent sign-ins omit it,
+        // so we only reach here when the JWT itself contains the email).
         user = await AuthService.findUserByEmail(userEmail);
         if (user) {
-          // Link Apple auth to existing user
+          if (user.appleId) {
+            // The existing account is already bound to a different Apple ID.
+            // Refuse to overwrite it — this would let an attacker steal the account.
+            console.error(`🍎 Apple link refused: user ${userEmail} already has a different Apple ID`);
+            return res.status(409).json({ error: "This account is already linked to a different Apple ID" });
+          }
+          // Link Apple auth to existing user (email verified by Apple JWT)
           console.log(`🍎 Linking Apple account to existing user: ${userEmail}`);
           await AuthService.linkAppleAccount(user.id, appleUserId);
         }
@@ -51678,33 +51723,17 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       }
       const details = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
       if (!details) return res.json(null);
-      // Return only the fields a manager needs to execute payment. Every
-      // sensitive identifier is masked so the manager can confirm which account
-      // they are paying without receiving the full value.
-      //
-      // maskEnd4  — keeps last 4 chars of numeric identifiers (BSB, account)
-      // maskName  — keeps first 2 chars of account holder name for confirmation
-      // maskPayId — payId can be email, phone, or ABN; always mask to last 4
-      //             chars so the format is obscured regardless of its type
-      const maskEnd4 = (v: string | null | undefined): string | null => {
-        if (!v) return null;
-        const s = String(v).replace(/\s/g, '');
-        return s.length <= 4 ? '****' : `****${s.slice(-4)}`;
-      };
-      const maskName = (v: string | null | undefined): string | null => {
-        if (!v) return null;
-        const s = String(v).trim();
-        return s.length <= 2 ? '***' : `${s.slice(0, 2)}***`;
-      };
+      // Return the full payment details to the authorized manager — they need
+      // the exact BSB, account number, and account name to execute the bank
+      // transfer.  This endpoint is already guarded by requireAuth,
+      // requirePaidTier, and ownerOrManagerOnly so only business owners and
+      // their managers can reach it.
       res.json({
-        // Masked financial identifiers
-        bankBsb: maskEnd4(details.bankBsb),
-        bankAccountNumber: maskEnd4(details.bankAccountNumber),
-        bankAccountName: maskName(details.bankAccountName),
-        payId: maskEnd4(details.payId),
-        // ABN is a semi-public business identifier needed for remittance; not masked
+        bankBsb: details.bankBsb || null,
+        bankAccountNumber: details.bankAccountNumber || null,
+        bankAccountName: details.bankAccountName || null,
+        payId: details.payId || null,
         abn: details.abn || null,
-        // Expose only whether each payment method is configured, not the value
         hasBankTransfer: !!(details.bankBsb && details.bankAccountNumber),
         hasPayId: !!details.payId,
       });

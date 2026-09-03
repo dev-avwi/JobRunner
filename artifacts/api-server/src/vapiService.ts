@@ -2120,7 +2120,7 @@ async function handleCreateBooking(args: any, userId: string, callId: string): P
         bNotes || null,
         `Source: AI Receptionist booking (${callId})`,
       ].filter(Boolean).join('\n'),
-      followUpDate: bDate || null,
+      followUpDate: bDate ? (isNaN(Date.parse(bDate)) ? null : new Date(bDate)) : null,
       wonLostReason: null,
     });
 
