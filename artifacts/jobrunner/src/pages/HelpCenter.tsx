@@ -238,6 +238,7 @@ const HELP_CHAT_STARTERS = [
   "How do I set up payments?",
 ];
 
+const HELP_CHAT_SESSION_KEY = "help_chat_history";
 function HelpChat({
   onNavigate,
   onViewArticle,
@@ -248,7 +249,7 @@ function HelpChat({
   initialQuery?: string;
 }) {
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
-  const [messages, setMessages] = useState<HelpChatMessage[]>([]);
+  const [messages, setMessages] = useState<HelpChatMessage[]>(() => loadChatHistory());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync input when a new initial query is injected (e.g. from article search empty state)
@@ -265,31 +266,44 @@ function HelpChat({
       return res.json();
     },
     onSuccess: (data, { message }) => {
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", content: message },
-        {
-          role: "assistant",
-          content: data.response,
-          relatedArticles: data.relatedArticles ?? [],
-          deeplink: data.deeplink,
-          confidence: data.confidence,
-        },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          { role: "user" as const, content: message },
+          {
+            role: "assistant" as const,
+            content: data.response,
+            relatedArticles: data.relatedArticles ?? [],
+            deeplink: data.deeplink,
+            confidence: data.confidence,
+          },
+        ];
+        saveChatHistory(next);
+        return next;
+      });
       setInputValue("");
     },
     onError: () => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Something went wrong. Please try again or contact support at admin@avwebinnovation.com.",
-          confidence: "low",
-        },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          {
+            role: "assistant" as const,
+            content: "Something went wrong. Please try again or contact support at admin@avwebinnovation.com.",
+            confidence: "low" as const,
+          },
+        ];
+        saveChatHistory(next);
+        return next;
+      });
       setInputValue("");
     },
   });
+
+  const handleClear = () => {
+    setMessages([]);
+    clearChatHistory();
+  };
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -337,8 +351,9 @@ function HelpChat({
         </div>
         {messages.length > 0 && (
           <button
-            onClick={() => setMessages([])}
+            onClick={handleClear}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            title="Clear conversation"
           >
             <X className="h-3 w-3" />
             Clear
@@ -917,4 +932,34 @@ export default function HelpCenter({
       </SheetContent>
     </Sheet>
   );
+}
+
+function loadChatHistory(): HelpChatMessage[] {
+  try {
+    const raw = sessionStorage.getItem(HELP_CHAT_SESSION_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveChatHistory(messages: HelpChatMessage[]) {
+  try {
+    const toSave = messages.slice(-HELP_CHAT_MAX_MESSAGES);
+    sessionStorage.setItem(HELP_CHAT_SESSION_KEY, JSON.stringify(toSave));
+  } catch {
+    // sessionStorage may be unavailable in some environments
+  }
+}
+
+const HELP_CHAT_MAX_MESSAGES = 50;
+
+function clearChatHistory() {
+  try {
+    sessionStorage.removeItem(HELP_CHAT_SESSION_KEY);
+  } catch {
+    // ignore
+  }
 }

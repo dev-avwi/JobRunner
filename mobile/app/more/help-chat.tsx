@@ -13,12 +13,16 @@ import {
 } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, iconSizes, shadows } from '../../src/lib/design-tokens';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import api from '../../src/lib/api';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Persistence ──────────────────────────────────────────────────────────────
+
+const CHAT_STORAGE_KEY = '@help_chat_history';
+const MAX_STORED_MESSAGES = 50;
 
 interface RelatedArticle {
   id: string;
@@ -276,8 +280,37 @@ export default function HelpChatScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState(query ?? '');
   const [isSending, setIsSending] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
+
+  // Load persisted history on mount
+  useEffect(() => {
+    AsyncStorage.getItem(CHAT_STORAGE_KEY)
+      .then((raw) => {
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setMessages(parsed);
+            }
+          } catch {
+            // ignore malformed data
+          }
+        }
+      })
+      .catch(() => {
+        // ignore storage errors
+      })
+      .finally(() => setHistoryLoaded(true));
+  }, []);
+
+  // Persist messages whenever they change (after initial load)
+  useEffect(() => {
+    if (!historyLoaded) return;
+    const toSave = messages.slice(-MAX_STORED_MESSAGES);
+    AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave)).catch(() => {});
+  }, [messages, historyLoaded]);
 
   // Pre-fill input when launched with a query param from the article search empty state
   useEffect(() => {
@@ -342,6 +375,11 @@ export default function HelpChatScreen() {
     router.push(path as any);
   };
 
+  const handleClear = () => {
+    setMessages([]);
+    AsyncStorage.removeItem(CHAT_STORAGE_KEY).catch(() => {});
+  };
+
   return (
     <>
       <Stack.Screen
@@ -357,7 +395,7 @@ export default function HelpChatScreen() {
           headerRight: messages.length > 0
             ? () => (
                 <TouchableOpacity
-                  onPress={() => setMessages([])}
+                  onPress={handleClear}
                   style={{ paddingHorizontal: spacing.md }}
                 >
                   <Text style={{ ...typography.body, color: colors.primary, fontWeight: fontWeights.medium }}>
