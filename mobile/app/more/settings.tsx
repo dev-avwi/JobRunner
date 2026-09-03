@@ -982,7 +982,7 @@ export default function SettingsScreen() {
   const isSubcontractor = subRoleName === 'subcontractor' || subRoleName === 'sub_contractor';
   const visibleTabs = useMemo(() => (
     isSubcontractor
-      ? SETTINGS_TABS.filter(t => t.key === 'account' || t.key === 'teamcomms' || t.key === 'help')
+      ? SETTINGS_TABS.filter(t => t.key === 'account' || t.key === 'teamcomms')
       : SETTINGS_TABS
   ), [isSubcontractor]);
   const [isLoading, setIsLoading] = useState(false);
@@ -2997,6 +2997,41 @@ export default function SettingsScreen() {
               )}
             </View>
           )}
+
+          <PressableRow
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              marginTop: spacing.xl,
+              padding: spacing.lg,
+              backgroundColor: colors.card,
+              borderRadius: radius.xl,
+              borderWidth: 1,
+              borderColor: colors.cardBorder,
+            }}
+            onPress={() => router.push('/more/support')}
+          >
+            <View style={{
+              width: 36,
+              height: 36,
+              borderRadius: radius.lg,
+              backgroundColor: colors.primaryLight,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Feather name="help-circle" size={18} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ ...typography.body, fontWeight: fontWeights.medium, color: colors.foreground }}>
+                Help & Support
+              </Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: 2 }}>
+                FAQs, guides, and contact us
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+          </PressableRow>
 
         </ScrollView>
 
