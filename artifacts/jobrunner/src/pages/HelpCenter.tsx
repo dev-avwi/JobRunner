@@ -241,13 +241,20 @@ const HELP_CHAT_STARTERS = [
 function HelpChat({
   onNavigate,
   onViewArticle,
+  initialQuery,
 }: {
   onNavigate: (path: string) => void;
   onViewArticle: (article: HelpArticle) => void;
+  initialQuery?: string;
 }) {
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [messages, setMessages] = useState<HelpChatMessage[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync input when a new initial query is injected (e.g. from article search empty state)
+  useEffect(() => {
+    if (initialQuery) setInputValue(initialQuery);
+  }, [initialQuery]);
 
   const chatMutation = useMutation({
     mutationFn: async ({ message, history }: { message: string; history: HelpChatMessage[] }) => {
@@ -583,9 +590,13 @@ function ArticleDetail({
 function ArticleList({
   articles,
   onSelect,
+  searchQuery,
+  onAskAssistant,
 }: {
   articles: HelpArticle[];
   onSelect: (article: HelpArticle) => void;
+  searchQuery?: string;
+  onAskAssistant?: (query: string) => void;
 }) {
   if (articles.length === 0) {
     return (
@@ -593,12 +604,22 @@ function ArticleList({
         <HelpCircle className="h-10 w-10 text-muted-foreground/40" />
         <p className="text-sm font-medium text-foreground">No articles found</p>
         <p className="text-sm text-muted-foreground">
-          Try different keywords, or contact support.
+          Try different keywords, or ask the Help Assistant.
         </p>
+        {searchQuery && onAskAssistant && (
+          <Button
+            size="sm"
+            className="gap-2 mt-2"
+            onClick={() => onAskAssistant(searchQuery)}
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Ask the Help Assistant
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 mt-2"
+          className="gap-2"
           onClick={() => window.open("mailto:admin@avwebinnovation.com")}
         >
           <MessageCircle className="h-3.5 w-3.5" />
@@ -666,6 +687,7 @@ export default function HelpCenter({
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
+  const [chatInitialQuery, setChatInitialQuery] = useState<string | undefined>(undefined);
 
   // Pre-select category based on current route
   const initialCategory = useMemo(() => {
@@ -720,6 +742,11 @@ export default function HelpCenter({
     onOpenChange(false);
   };
 
+  const handleAskAssistant = (query: string) => {
+    setChatInitialQuery(query);
+    setActiveTab("chat");
+  };
+
   const handleViewArticle = (article: HelpArticle) => {
     setSelectedArticle(article);
     setActiveTab("articles");
@@ -772,7 +799,7 @@ export default function HelpCenter({
         {/* ─── Chat tab ─── */}
         {activeTab === "chat" && (
           <div className="flex-1 overflow-hidden flex flex-col">
-            <HelpChat onNavigate={handleNavigate} onViewArticle={handleViewArticle} />
+            <HelpChat onNavigate={handleNavigate} onViewArticle={handleViewArticle} initialQuery={chatInitialQuery} />
           </div>
         )}
 
@@ -855,6 +882,8 @@ export default function HelpCenter({
                   <ArticleList
                     articles={filteredArticles}
                     onSelect={setSelectedArticle}
+                    searchQuery={search.trim() || undefined}
+                    onAskAssistant={handleAskAssistant}
                   />
 
                   {/* Contact footer */}

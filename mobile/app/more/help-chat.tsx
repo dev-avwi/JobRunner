@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Animated,
 } from 'react-native';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, iconSizes, shadows } from '../../src/lib/design-tokens';
@@ -271,12 +271,18 @@ export default function HelpChatScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const bottomInset = useBottomInset(12);
+  const { query } = useLocalSearchParams<{ query?: string }>();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState(query ?? '');
   const [isSending, setIsSending] = useState(false);
 
   const scrollRef = useRef<ScrollView>(null);
+
+  // Pre-fill input when launched with a query param from the article search empty state
+  useEffect(() => {
+    if (query) setInputValue(query);
+  }, [query]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);

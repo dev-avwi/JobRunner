@@ -283,6 +283,21 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       color: colors.mutedForeground,
       textAlign: 'center',
     },
+    askAssistantBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.primary,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      marginTop: spacing.lg,
+    },
+    askAssistantText: {
+      ...typography.body,
+      fontWeight: fontWeights.semibold,
+      color: colors.primaryForeground,
+    },
     // Tour card
     tourCard: {
       backgroundColor: colors.card,
@@ -812,8 +827,18 @@ export default function SupportScreen() {
               <Feather name="help-circle" size={48} color={colors.mutedForeground + '60'} />
               <Text style={styles.emptyTitle}>No articles found</Text>
               <Text style={styles.emptySubtitle}>
-                Try different keywords, or contact support below.
+                Try different keywords, or ask the Help Assistant.
               </Text>
+              {search.trim().length > 0 && (
+                <TouchableOpacity
+                  style={styles.askAssistantBtn}
+                  onPress={() => router.push({ pathname: '/more/help-chat', params: { query: search.trim() } } as any)}
+                  activeOpacity={0.75}
+                >
+                  <Feather name="message-circle" size={iconSizes.md} color={colors.primaryForeground} />
+                  <Text style={styles.askAssistantText}>Ask a question</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <>
