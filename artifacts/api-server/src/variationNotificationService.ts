@@ -177,7 +177,7 @@ export async function notifyClientVariationSent(opts: {
 
         await sendSystemEmail({
           to: client.email,
-          from: { email: 'noreply@jobrunner.com.au', name: businessName },
+          from: { email: process.env.PLATFORM_FROM_EMAIL || 'noreply@jobrunner.com.au', name: businessName },
           replyTo: inboundReplyAddress,
           subject: `Variation ${variationNumber} submitted for your approval — ${escapeHtml(businessName)}`,
           html: emailHtml,

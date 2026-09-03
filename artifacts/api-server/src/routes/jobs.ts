@@ -5330,7 +5330,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         
         sgMail.default.setApiKey(process.env.SENDGRID_API_KEY);
         
-        const fromEmail = business.email || 'noreply@jobrunner.com.au';
+        const fromEmail = business.email || process.env.PLATFORM_FROM_EMAIL || 'noreply@jobrunner.com.au';
         const businessName = business.businessName || 'JobRunner';
         
         await sgMail.default.send({

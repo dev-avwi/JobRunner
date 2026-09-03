@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/node";
 import type { Request, Response, NextFunction } from "express";
 import { randomUUID } from "crypto";
+import { logger } from "../lib/logger";
 
 /**
  * Global Express error middleware.
@@ -23,19 +24,20 @@ export function errorHandler(
     Sentry.captureException(err);
   }
 
-  const logEntry = {
-    level: statusCode >= 500 ? 'error' : 'warn',
-    timestamp: new Date().toISOString(),
+  const logCtx = {
     requestId,
     method: req.method,
     path: req.path,
     statusCode,
-    message: err.message || 'Internal server error',
-    stack: err.stack,
+    err,
     userId: (req as any).session?.userId || 'anonymous',
   };
 
-  console.error(JSON.stringify(logEntry));
+  if (statusCode >= 500) {
+    logger.error(logCtx, err.message || 'Internal server error');
+  } else {
+    logger.warn(logCtx, err.message || 'Client error');
+  }
 
   if (!res.headersSent) {
     const safeMessage = statusCode >= 500

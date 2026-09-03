@@ -6,6 +6,8 @@ import { logger } from './logger';
 import { getProductionBaseUrl } from './urlHelper';
 
 const BRAND_BLUE = '#2563EB';
+// Configurable support email — set SUPPORT_EMAIL in production for white-label
+const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'admin@avwebinnovation.com';
 
 // Absolute logo URL — relative URLs do not work in email clients
 function lifecycleLogoUrl(): string {
@@ -129,7 +131,7 @@ const LIFECYCLE_EMAILS = [
               </table>
               <p style="margin: 0 0 8px 0; color: #475569; font-size: 15px; line-height: 1.6;">Once you've got a job in there, everything else &mdash; quotes, invoices, scheduling &mdash; flows from that.</p>
               ${lifecycleButton('Open JobRunner', 'https://jobrunner.com.au')}
-              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Stuck? Email us at admin@avwebinnovation.com and we'll personally help you get set up.<br/>&mdash; The JobRunner Team</p>
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Stuck? Email us at ${SUPPORT_EMAIL} and we'll personally help you get set up.<br/>&mdash; The JobRunner Team</p>
     `),
   },
   {
@@ -153,7 +155,7 @@ const LIFECYCLE_EMAILS = [
                 </tr>
               </table>
               ${lifecycleButton('Create a Quote', 'https://jobrunner.com.au')}
-              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Need a hand? Email us at admin@avwebinnovation.com.<br/>&mdash; The JobRunner Team</p>
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Need a hand? Email us at ${SUPPORT_EMAIL}.<br/>&mdash; The JobRunner Team</p>
     `),
   },
   {
@@ -174,7 +176,7 @@ const LIFECYCLE_EMAILS = [
                 </tr>
               </table>
               ${lifecycleButton('Send Your First Invoice', 'https://jobrunner.com.au')}
-              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Questions about getting paid through JobRunner? Email us at admin@avwebinnovation.com &mdash; happy to walk you through it.<br/>&mdash; The JobRunner Team</p>
+              <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Questions about getting paid through JobRunner? Email us at ${SUPPORT_EMAIL} &mdash; happy to walk you through it.<br/>&mdash; The JobRunner Team</p>
     `),
   },
   {
@@ -191,13 +193,13 @@ const LIFECYCLE_EMAILS = [
                 <tr>
                   <td style="padding: 18px 20px;">
                     <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"I'm too busy right now"</strong> &mdash; Fair enough. The app is always here when you're ready. It takes 5 minutes to set up properly.</p>
-                    <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"I'm not sure how to use it"</strong> &mdash; Email us at admin@avwebinnovation.com and we'll personally walk you through it.</p>
+                    <p style="margin: 0 0 12px 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"I'm not sure how to use it"</strong> &mdash; Email us at ${SUPPORT_EMAIL} and we'll personally walk you through it.</p>
                     <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">"It's missing something I need"</strong> &mdash; Tell us what and we'll see what we can do.</p>
                   </td>
                 </tr>
               </table>
               <p style="margin: 0 0 16px 0; color: #475569; font-size: 15px; line-height: 1.6;">Either way, your account is here whenever you need it. No pressure.</p>
-              <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">P.S.</strong> If you want, I can jump on a quick call and set the whole thing up for you in 10 minutes. Just email admin@avwebinnovation.com and we'll sort a time.</p>
+              <p style="margin: 0; color: #475569; font-size: 15px; line-height: 1.6;"><strong style="color: #0f172a;">P.S.</strong> If you want, I can jump on a quick call and set the whole thing up for you in 10 minutes. Just email ${SUPPORT_EMAIL} and we'll sort a time.</p>
               <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">&mdash; The JobRunner Team</p>
     `),
   },

@@ -24,7 +24,10 @@ import { logger } from "./lib/logger";
 
 process.on('uncaughtException', (error: Error) => {
   Sentry.captureException(error);
-  logger.fatal({ err: error }, 'uncaughtException');
+  logger.fatal({ err: error }, 'uncaughtException — flushing and exiting');
+  // Flush Sentry (and allow the pino transport to drain) before hard exit so
+  // the fatal event is reliably captured. process.exit(1) runs regardless.
+  Sentry.flush(2000).finally(() => process.exit(1));
 });
 
 process.on('unhandledRejection', (reason: unknown) => {
@@ -39,10 +42,23 @@ if (Number.isNaN(port) || port <= 0) throw new Error(`Invalid PORT value: "${raw
 
 const app = express();
 
-// Session configuration
+// ── Startup environment validation ──────────────────────────────────────────
+// Fail fast in production if any required env var is absent so a misconfigured
+// deploy is immediately obvious rather than silently broken at runtime.
 if (process.env.NODE_ENV === 'production') {
-  if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET required in production');
-  if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL required in production');
+  // Only include vars that are universally required regardless of which
+  // optional integrations (connector-based email, Gmail, SMTP) are configured.
+  // SENDGRID_API_KEY is intentionally omitted: the email service supports
+  // connector-based and Gmail-based delivery paths that don't use it.
+  const REQUIRED_PRODUCTION_ENV: string[] = [
+    'SESSION_SECRET',
+    'DATABASE_URL',
+    'ENCRYPTION_SECRET',
+  ];
+  const missing = REQUIRED_PRODUCTION_ENV.filter((k) => !process.env[k]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+  }
 }
 
 let sessionStore: any;

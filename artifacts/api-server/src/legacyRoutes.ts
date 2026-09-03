@@ -437,12 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.on('finish', () => {
       const duration = Date.now() - start;
       if (duration > 2000) {
-        console.warn('[SLOW]', JSON.stringify({
-          method: req.method,
-          path: req.path,
-          duration: `${duration}ms`,
-          status: res.statusCode
-        }));
+        logger.warn({ method: req.method, path: req.path, duration, status: res.statusCode }, '[SLOW] request exceeded 2s');
       }
     });
     next();
