@@ -15980,7 +15980,7 @@ export default function JobDetailScreen() {
               source={{ html: proofPackPreviewHtml }}
               style={{ flex: 1, backgroundColor: '#ffffff' }}
               scalesPageToFit
-              javaScriptEnabled
+              javaScriptEnabled={false}
             />
           ) : (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

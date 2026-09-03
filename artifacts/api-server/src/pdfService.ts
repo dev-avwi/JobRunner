@@ -1012,6 +1012,21 @@ interface TemplateCustomization {
   accentColor?: string;
 }
 
+/**
+ * Validate a CSS color value to prevent CSS context injection.
+ * Only strict 3- or 6-digit hex colors are accepted; any other value
+ * (including strings containing `</style>` or `<script>`) is replaced
+ * with the safe default accent color.
+ */
+function sanitizeCssColor(color: string | null | undefined): string {
+  if (!color) return DOCUMENT_ACCENT_COLOR;
+  const trimmed = color.trim();
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
+    return trimmed;
+  }
+  return DOCUMENT_ACCENT_COLOR;
+}
+
 // Apply customizations to base template
 function getCustomizedTemplate(templateId: TemplateId, customization?: TemplateCustomization): { template: DocumentTemplate; accentColor: string } {
   const baseTemplate = DOCUMENT_TEMPLATES[templateId] || DOCUMENT_TEMPLATES.minimal;
@@ -1019,18 +1034,31 @@ function getCustomizedTemplate(templateId: TemplateId, customization?: TemplateC
   if (!customization) {
     return { template: baseTemplate, accentColor: DOCUMENT_ACCENT_COLOR };
   }
+
+  // Allow only known-safe enum values for properties interpolated into CSS.
+  const safeTableStyle = (['bordered', 'striped', 'minimal'] as const).includes(customization.tableStyle as any)
+    ? customization.tableStyle : baseTemplate.tableStyle;
+  const safeNoteStyle = (['bordered', 'highlighted', 'simple'] as const).includes(customization.noteStyle as any)
+    ? customization.noteStyle : baseTemplate.noteStyle;
+  const safeHeaderBorderWidth = (['1px', '2px', '3px', '4px'] as const).includes(customization.headerBorderWidth as any)
+    ? customization.headerBorderWidth : baseTemplate.headerBorderWidth;
+  const safeBodyWeight = ([400, 500, 600, 700] as const).includes(customization.bodyWeight as any)
+    ? customization.bodyWeight : baseTemplate.bodyWeight;
+  const safeHeadingWeight = ([600, 700, 800] as const).includes(customization.headingWeight as any)
+    ? customization.headingWeight : baseTemplate.headingWeight;
   
   const template: DocumentTemplate = {
     ...baseTemplate,
-    tableStyle: customization.tableStyle ?? baseTemplate.tableStyle,
-    noteStyle: customization.noteStyle ?? baseTemplate.noteStyle,
-    headerBorderWidth: customization.headerBorderWidth ?? baseTemplate.headerBorderWidth,
-    showHeaderDivider: customization.showHeaderDivider ?? baseTemplate.showHeaderDivider,
-    bodyWeight: customization.bodyWeight ?? baseTemplate.bodyWeight,
-    headingWeight: customization.headingWeight ?? baseTemplate.headingWeight,
+    tableStyle: safeTableStyle ?? baseTemplate.tableStyle,
+    noteStyle: safeNoteStyle ?? baseTemplate.noteStyle,
+    headerBorderWidth: safeHeaderBorderWidth ?? baseTemplate.headerBorderWidth,
+    showHeaderDivider: typeof customization.showHeaderDivider === 'boolean' ? customization.showHeaderDivider : baseTemplate.showHeaderDivider,
+    bodyWeight: safeBodyWeight ?? baseTemplate.bodyWeight,
+    headingWeight: safeHeadingWeight ?? baseTemplate.headingWeight,
   };
   
-  const accentColor = customization.accentColor || DOCUMENT_ACCENT_COLOR;
+  // Sanitize to a strict hex color to prevent CSS context injection.
+  const accentColor = sanitizeCssColor(customization.accentColor) || DOCUMENT_ACCENT_COLOR;
   
   return { template, accentColor };
 }
@@ -4603,7 +4631,9 @@ export const generateJobProofPackPDF = (data: {
   const proofSectionTitle = (title: string) => `${++proofSectionNumber}. ${title}`;
 
   const { template, accentColor: templateColor } = getTemplateFromBusinessSettings(business);
-  const brandColor = overrideColor || templateColor;
+  // Resolve override → stored color, then sanitize to a strict hex to prevent
+  // CSS context injection (e.g. `</style><script>…`).
+  const brandColor = sanitizeCssColor(overrideColor || templateColor);
 
   const formatProofDate = (date: Date | string | null | undefined): string => {
     if (!date) return '-';
@@ -4642,7 +4672,7 @@ export const generateJobProofPackPDF = (data: {
   };
 
   const logoHtml = business.logoUrl
-    ? `<img src="${business.logoUrl}" class="logo" alt="${business.businessName || 'Business'}" />`
+    ? `<img src="${escapeHtml(business.logoUrl)}" class="logo" alt="${escapeHtml(business.businessName || 'Business')}" />`
     : '';
 
   const statusLabel = (s: string) => {
@@ -4689,7 +4719,7 @@ export const generateJobProofPackPDF = (data: {
         <tbody>
           ${timeEntries.map(e => `
           <tr>
-            <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
+            <td>${escapeHtml(ensureDisplayName(e.workerName, 'Owner'))}</td>
             <td>${formatShortDate(e.startTime)}</td>
             <td>${formatShortTime(e.startTime)}</td>
             <td>${e.endTime ? formatShortTime(e.endTime) : '-'}</td>
@@ -4722,12 +4752,12 @@ export const generateJobProofPackPDF = (data: {
         <tbody>
           ${materials.map(m => `
           <tr>
-            <td>${m.name || '-'}</td>
-            <td style="text-align:right">${m.quantity || '-'}</td>
+            <td>${escapeHtml(m.name) || '-'}</td>
+            <td style="text-align:right">${escapeHtml(m.quantity) || '-'}</td>
             <td style="text-align:right">${m.unitCost ? `$${parseFloat(m.unitCost).toFixed(2)}` : '-'}</td>
             <td style="text-align:right">${m.totalCost ? `$${parseFloat(m.totalCost).toFixed(2)}` : '-'}</td>
-            <td>${m.supplier || '-'}</td>
-            <td><span class="status-pill">${m.status || '-'}</span></td>
+            <td>${escapeHtml(m.supplier) || '-'}</td>
+            <td><span class="status-pill">${escapeHtml(m.status) || '-'}</span></td>
           </tr>`).join('')}
         </tbody>
         <tfoot>
@@ -4759,16 +4789,16 @@ export const generateJobProofPackPDF = (data: {
             const statusBg = v.status === 'approved' ? '#dcfce7' : v.status === 'rejected' ? '#fecaca' : '#fef3c7';
             return `
           <tr>
-            <td style="font-weight:600">${v.number}</td>
+            <td style="font-weight:600">${escapeHtml(v.number)}</td>
             <td>
-              <strong>${v.title}</strong>
-              ${v.description ? `<br/><span style="color:#666;font-size:9px">${v.description}</span>` : ''}
-              ${v.reason ? `<br/><span style="color:#888;font-size:9px">Reason: ${v.reason}</span>` : ''}
+              <strong>${escapeHtml(v.title)}</strong>
+              ${v.description ? `<br/><span style="color:#666;font-size:9px">${escapeHtml(v.description)}</span>` : ''}
+              ${v.reason ? `<br/><span style="color:#888;font-size:9px">Reason: ${escapeHtml(v.reason)}</span>` : ''}
             </td>
-            <td><span class="status-pill" style="background:${statusBg};color:${statusColor}">${v.status}</span></td>
+            <td><span class="status-pill" style="background:${statusBg};color:${statusColor}">${escapeHtml(v.status)}</span></td>
             <td style="text-align:right">${parseFloat(v.totalAmount) >= 0 ? '' : '-'}$${Math.abs(parseFloat(v.totalAmount)).toFixed(2)}</td>
-            <td>${v.approvedByName || '-'}</td>
-            <td>${v.approvedAt || v.createdAt || '-'}</td>
+            <td>${escapeHtml(v.approvedByName) || '-'}</td>
+            <td>${escapeHtml(v.approvedAt || v.createdAt) || '-'}</td>
           </tr>`;
           }).join('')}
         </tbody>
@@ -4786,12 +4816,12 @@ export const generateJobProofPackPDF = (data: {
     ? `<div class="photo-grid">
         ${photos.map(p => `
         <div class="photo-card">
-          <img src="${p.url}" alt="${p.caption || 'Job photo'}" class="photo-img" />
+          <img src="${escapeHtml(p.url)}" alt="${escapeHtml(p.caption || 'Job photo')}" class="photo-img" />
           <div class="photo-meta">
-            <span class="photo-category">${p.category || 'general'}</span>
-            ${p.caption ? `<span class="photo-caption">${p.caption}</span>` : ''}
+            <span class="photo-category">${escapeHtml(p.category || 'general')}</span>
+            ${p.caption ? `<span class="photo-caption">${escapeHtml(p.caption)}</span>` : ''}
             ${p.createdAt ? `<span class="photo-date">${formatShortDate(p.createdAt)}</span>` : ''}
-            ${p.latitude != null && p.longitude != null ? `<span class="photo-location"><span class="gps-badge verified">GPS</span> ${p.address || `${Number(p.latitude).toFixed(5)}, ${Number(p.longitude).toFixed(5)}`}</span>` : ''}
+            ${p.latitude != null && p.longitude != null ? `<span class="photo-location"><span class="gps-badge verified">GPS</span> ${escapeHtml(p.address || `${Number(p.latitude).toFixed(5)}, ${Number(p.longitude).toFixed(5)}`)}</span>` : ''}
           </div>
         </div>`).join('')}
       </div>`
@@ -4800,11 +4830,11 @@ export const generateJobProofPackPDF = (data: {
   const invoiceHtml = invoice
     ? `<table class="proof-table">
         <tbody>
-          <tr><td style="font-weight:600;width:180px">Invoice Number</td><td>${invoice.number}</td></tr>
-          <tr><td style="font-weight:600">Date</td><td>${invoice.date}</td></tr>
+          <tr><td style="font-weight:600;width:180px">Invoice Number</td><td>${escapeHtml(invoice.number)}</td></tr>
+          <tr><td style="font-weight:600">Date</td><td>${escapeHtml(invoice.date)}</td></tr>
           <tr><td style="font-weight:600">Total (inc GST)</td><td>$${parseFloat(invoice.total).toFixed(2)}</td></tr>
           <tr><td style="font-weight:600">GST</td><td>$${parseFloat(invoice.gstAmount).toFixed(2)}</td></tr>
-          <tr><td style="font-weight:600">Payment Status</td><td><span class="status-pill" style="background:${invoice.status === 'paid' ? '#dcfce7' : '#fef3c7'};color:${invoice.status === 'paid' ? '#166534' : '#92400e'}">${invoice.status === 'paid' ? 'Paid' : invoice.status}</span></td></tr>
+          <tr><td style="font-weight:600">Payment Status</td><td><span class="status-pill" style="background:${invoice.status === 'paid' ? '#dcfce7' : '#fef3c7'};color:${invoice.status === 'paid' ? '#166534' : '#92400e'}">${invoice.status === 'paid' ? 'Paid' : escapeHtml(invoice.status)}</span></td></tr>
         </tbody>
       </table>`
     : `<p class="empty-message">No invoice generated</p>`;
@@ -4851,7 +4881,7 @@ export const generateJobProofPackPDF = (data: {
           const durationStr = w.totalMs > 0 ? `${Math.floor(w.totalMs / 3600000)}h ${Math.floor((w.totalMs % 3600000) / 60000)}m` : (w.firstIn && w.lastOut ? `${Math.floor((new Date(w.lastOut).getTime() - new Date(w.firstIn).getTime()) / 3600000)}h ${Math.floor(((new Date(w.lastOut).getTime() - new Date(w.firstIn).getTime()) % 3600000) / 60000)}m` : '-');
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #dcfce7">
             <div>
-              <span style="font-weight:600;color:#14532d">${ensureDisplayName(w.worker, 'Team member')}</span>
+              <span style="font-weight:600;color:#14532d">${escapeHtml(ensureDisplayName(w.worker, 'Team member'))}</span>
               ${w.verified ? '<span class="gps-badge verified" style="margin-left:6px;font-size:9px">GPS Verified</span>' : ''}
             </div>
             <div style="text-align:right;font-size:11px;color:#166534">
@@ -4859,7 +4889,7 @@ export const generateJobProofPackPDF = (data: {
               <span style="font-weight:600;margin-left:8px">(${durationStr})</span>
             </div>
           </div>
-          ${w.address ? `<div style="font-size:10px;color:#15803d;padding:2px 0 4px 0">${w.address}</div>` : ''}`;
+          ${w.address ? `<div style="font-size:10px;color:#15803d;padding:2px 0 4px 0">${escapeHtml(w.address)}</div>` : ''}`;
         }).join('')}
       </div>`
     : '';
@@ -4881,25 +4911,25 @@ export const generateJobProofPackPDF = (data: {
             const rows = [];
             if (e.clockInLatitude || e.clockInAddress) {
               rows.push(`<tr>
-                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
+                <td>${escapeHtml(ensureDisplayName(e.workerName, 'Owner'))}</td>
                 <td>Clock In</td>
                 <td>${formatShortTime(e.startTime)}, ${formatShortDate(e.startTime)}</td>
-                <td>${e.clockInAddress || `${e.clockInLatitude}, ${e.clockInLongitude}`}</td>
+                <td>${escapeHtml(e.clockInAddress || `${e.clockInLatitude}, ${e.clockInLongitude}`)}</td>
                 <td style="text-align:center"><span class="gps-badge verified">GPS</span></td>
               </tr>`);
             }
             if (e.clockOutLatitude || e.clockOutAddress) {
               rows.push(`<tr>
-                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
+                <td>${escapeHtml(ensureDisplayName(e.workerName, 'Owner'))}</td>
                 <td>Clock Out</td>
                 <td>${e.endTime ? `${formatShortTime(e.endTime)}, ${formatShortDate(e.endTime)}` : '-'}</td>
-                <td>${e.clockOutAddress || `${e.clockOutLatitude}, ${e.clockOutLongitude}`}</td>
+                <td>${escapeHtml(e.clockOutAddress || `${e.clockOutLatitude}, ${e.clockOutLongitude}`)}</td>
                 <td style="text-align:center"><span class="gps-badge verified">GPS</span></td>
               </tr>`);
             }
             if (rows.length === 0 && e.origin === 'geofence') {
               rows.push(`<tr>
-                <td>${ensureDisplayName(e.workerName, 'Owner')}</td>
+                <td>${escapeHtml(ensureDisplayName(e.workerName, 'Owner'))}</td>
                 <td>Geofence</td>
                 <td>${formatShortTime(e.startTime)}, ${formatShortDate(e.startTime)}</td>
                 <td>Auto-detected by geofence</td>
@@ -4909,10 +4939,10 @@ export const generateJobProofPackPDF = (data: {
             return rows.join('');
           }).join('')}
           ${geofenceAlerts.map(a => `<tr>
-            <td>${ensureDisplayName(a.workerName, 'Team member')}</td>
+            <td>${escapeHtml(ensureDisplayName(a.workerName, 'Team member'))}</td>
             <td>${a.alertType === 'arrival' ? 'Geofence Arrival' : 'Geofence Departure'}</td>
             <td>${formatShortTime(a.createdAt)}, ${formatShortDate(a.createdAt)}</td>
-            <td>${a.address || (a.latitude ? `${a.latitude}, ${a.longitude}` : '-')}${a.distanceFromSite ? ` (${parseFloat(a.distanceFromSite).toFixed(0)}m from site)` : ''}</td>
+            <td>${escapeHtml(a.address || (a.latitude ? `${a.latitude}, ${a.longitude}` : '-'))}${a.distanceFromSite ? ` (${parseFloat(a.distanceFromSite).toFixed(0)}m from site)` : ''}</td>
             <td style="text-align:center"><span class="gps-badge verified">GPS</span></td>
           </tr>`).join('')}
         </tbody>
@@ -4947,17 +4977,17 @@ export const generateJobProofPackPDF = (data: {
         <tbody>
           ${complianceDocs.map(d => `
           <tr>
-            <td>${complianceTypeLabel(d.type)}</td>
-            <td style="font-weight:600">${d.title}</td>
-            <td>${d.documentNumber || '-'}</td>
-            <td>${d.holderName || '-'}</td>
-            <td>${d.issuer || '-'}</td>
-            <td>${d.expiryDate || 'No expiry'}</td>
+            <td>${escapeHtml(complianceTypeLabel(d.type))}</td>
+            <td style="font-weight:600">${escapeHtml(d.title)}</td>
+            <td>${escapeHtml(d.documentNumber) || '-'}</td>
+            <td>${escapeHtml(d.holderName) || '-'}</td>
+            <td>${escapeHtml(d.issuer) || '-'}</td>
+            <td>${escapeHtml(d.expiryDate) || 'No expiry'}</td>
             <td style="text-align:center"><span class="status-pill" style="${complianceStatusColor(d.status)}">${d.status === 'current' ? 'Current' : d.status === 'expiring' ? 'Expiring' : 'Expired'}</span></td>
           </tr>`).join('')}
         </tbody>
       </table>
-      ${complianceDocs.some(d => d.coverageAmount) ? `<p style="font-size:9px;color:#888;margin-top:4px;font-style:italic">Insurance coverage: ${complianceDocs.filter(d => d.coverageAmount).map(d => `${d.title} — ${d.coverageAmount}`).join(', ')}</p>` : ''}`
+      ${complianceDocs.some(d => d.coverageAmount) ? `<p style="font-size:9px;color:#888;margin-top:4px;font-style:italic">Insurance coverage: ${complianceDocs.filter(d => d.coverageAmount).map(d => `${escapeHtml(d.title)} — ${escapeHtml(d.coverageAmount)}`).join(', ')}</p>` : ''}`
     : `<p class="empty-message">No compliance documents on file</p>`;
 
   const subStatusLabel = (s: string) => {
@@ -4985,11 +5015,11 @@ export const generateJobProofPackPDF = (data: {
         <tbody>
           ${subcontractors.map(s => `
           <tr>
-            <td style="font-weight:600">${s.name}</td>
-            <td>${s.invitedAt || '-'}</td>
-            <td>${s.acceptedAt || '-'}</td>
-            <td>${s.lastAccessed || '-'}</td>
-            <td style="text-align:center"><span class="status-pill" style="${subStatusColor(s.status)}">${subStatusLabel(s.status)}</span></td>
+            <td style="font-weight:600">${escapeHtml(s.name)}</td>
+            <td>${escapeHtml(s.invitedAt) || '-'}</td>
+            <td>${escapeHtml(s.acceptedAt) || '-'}</td>
+            <td>${escapeHtml(s.lastAccessed) || '-'}</td>
+            <td style="text-align:center"><span class="status-pill" style="${subStatusColor(s.status)}">${escapeHtml(subStatusLabel(s.status))}</span></td>
           </tr>`).join('')}
         </tbody>
       </table>`
@@ -5109,20 +5139,20 @@ export const generateJobProofPackPDF = (data: {
     <div class="header">
       <div class="company-info">
         ${logoHtml}
-        <div class="company-name">${business.businessName || 'Business'}</div>
+        <div class="company-name">${escapeHtml(business.businessName || 'Business')}</div>
         <div class="company-details">
-          ${business.abn ? `<p>ABN: ${business.abn}</p>` : ''}
-          ${business.address ? `<p>${business.address}</p>` : ''}
-          ${business.phone ? `<p>${business.phone}</p>` : ''}
-          ${business.email ? `<p>${business.email}</p>` : ''}
+          ${business.abn ? `<p>ABN: ${escapeHtml(business.abn)}</p>` : ''}
+          ${business.address ? `<p>${escapeHtml(business.address)}</p>` : ''}
+          ${business.phone ? `<p>${escapeHtml(business.phone)}</p>` : ''}
+          ${business.email ? `<p>${escapeHtml(business.email)}</p>` : ''}
         </div>
       </div>
       <div class="document-type">
         <div class="document-title">Job Proof Pack</div>
         <div class="job-meta">
-          <p><strong>${job.title || 'Untitled Job'}</strong></p>
-          ${job.number ? `<p>Job #${job.number}</p>` : `<p>Job ID: ${job.id?.slice(0, 8)}</p>`}
-          <p><span class="status-badge" style="background:${statusColor(job.status)}">${statusLabel(job.status)}</span></p>
+          <p><strong>${escapeHtml(job.title || 'Untitled Job')}</strong></p>
+          ${job.number ? `<p>Job #${escapeHtml(job.number)}</p>` : `<p>Job ID: ${escapeHtml(job.id?.slice(0, 8))}</p>`}
+          <p><span class="status-badge" style="background:${statusColor(job.status)}">${escapeHtml(statusLabel(job.status))}</span></p>
           <p style="margin-top:4px">${dateRangeStr}</p>
         </div>
       </div>
@@ -5132,17 +5162,17 @@ export const generateJobProofPackPDF = (data: {
       <div class="info-block">
         <div class="info-label">Client</div>
         <div class="info-value">
-          <strong>${getClientDisplayName(client, 'Unknown Client')}</strong>
-          ${client?.email ? `<br/>${client.email}` : ''}
-          ${client?.phone ? `<br/>${client.phone}` : ''}
-          ${client?.address ? `<br/>${client.address}` : ''}
+          <strong>${escapeHtml(getClientDisplayName(client, 'Unknown Client'))}</strong>
+          ${client?.email ? `<br/>${escapeHtml(client.email)}` : ''}
+          ${client?.phone ? `<br/>${escapeHtml(client.phone)}` : ''}
+          ${client?.address ? `<br/>${escapeHtml(client.address)}` : ''}
         </div>
       </div>
       <div class="info-block">
         <div class="info-label">Job Site</div>
         <div class="info-value">
-          ${job.address || job.location || client?.address || 'Not specified'}
-          ${job.description ? `<br/><span style="color:#666;font-size:10px">${job.description.substring(0, 120)}${job.description.length > 120 ? '...' : ''}</span>` : ''}
+          ${escapeHtml(job.address || job.location || client?.address || 'Not specified')}
+          ${job.description ? `<br/><span style="color:#666;font-size:10px">${escapeHtml(job.description.substring(0, 120))}${job.description.length > 120 ? '...' : ''}</span>` : ''}
         </div>
       </div>
     </div>
@@ -5240,26 +5270,26 @@ export const generateJobProofPackPDF = (data: {
         ${swmsList.map(s => `
           <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <div style="font-weight:700;font-size:13px">${s.title}</div>
-              <span class="status-pill" style="${s.status === 'active' ? 'background:#dcfce7;color:#166534' : s.status === 'completed' ? 'background:#dbeafe;color:#1e40af' : 'background:#f3f4f6;color:#6b7280'}">${(s.status || 'draft').toUpperCase()}</span>
+              <div style="font-weight:700;font-size:13px">${escapeHtml(s.title)}</div>
+              <span class="status-pill" style="${s.status === 'active' ? 'background:#dcfce7;color:#166534' : s.status === 'completed' ? 'background:#dbeafe;color:#1e40af' : 'background:#f3f4f6;color:#6b7280'}">${escapeHtml((s.status || 'draft').toUpperCase())}</span>
             </div>
-            ${s.workActivity ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${s.workActivity}</p>` : ''}
+            ${s.workActivity ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${escapeHtml(s.workActivity)}</p>` : ''}
             ${s.hazards.length > 0 ? `
             <table class="proof-table" style="margin-bottom:8px">
               <thead><tr><th>Activity</th><th>Hazard</th><th style="text-align:center">Risk</th><th>Controls</th><th style="text-align:center">Residual</th></tr></thead>
               <tbody>${s.hazards.map(h => {
                 const rc = (r: string) => r === 'low' ? 'background:#dcfce7;color:#166534' : r === 'medium' ? 'background:#fef3c7;color:#92400e' : r === 'high' ? 'background:#fee2e2;color:#991b1b' : 'background:#7f1d1d;color:#fff';
                 return `<tr>
-                  <td>${h.activity}</td>
-                  <td>${h.hazard}</td>
-                  <td style="text-align:center"><span class="status-pill" style="${rc(h.riskBefore)}">${h.riskBefore.toUpperCase()}</span></td>
-                  <td>${h.controlMeasures || '-'}</td>
-                  <td style="text-align:center"><span class="status-pill" style="${rc(h.riskAfter)}">${h.riskAfter.toUpperCase()}</span></td>
+                  <td>${escapeHtml(h.activity)}</td>
+                  <td>${escapeHtml(h.hazard)}</td>
+                  <td style="text-align:center"><span class="status-pill" style="${rc(h.riskBefore)}">${escapeHtml(h.riskBefore.toUpperCase())}</span></td>
+                  <td>${escapeHtml(h.controlMeasures) || '-'}</td>
+                  <td style="text-align:center"><span class="status-pill" style="${rc(h.riskAfter)}">${escapeHtml(h.riskAfter.toUpperCase())}</span></td>
                 </tr>`;
               }).join('')}</tbody>
             </table>` : ''}
-            ${s.ppe.length > 0 ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>PPE:</strong> ${s.ppe.join(', ')}</p>` : ''}
-            ${s.signatures.length > 0 ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Signed by:</strong> ${s.signatures.map(sig => `${sig.name} (${sig.signedAt})`).join(', ')}</p>` : '<p style="font-size:9px;color:#cc6600;margin:4px 0"><strong>No worker signatures recorded</strong></p>'}
+            ${s.ppe.length > 0 ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>PPE:</strong> ${escapeHtml(s.ppe.join(', '))}</p>` : ''}
+            ${s.signatures.length > 0 ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Signed by:</strong> ${s.signatures.map(sig => `${escapeHtml(sig.name)} (${escapeHtml(sig.signedAt)})`).join(', ')}</p>` : '<p style="font-size:9px;color:#cc6600;margin:4px 0"><strong>No worker signatures recorded</strong></p>'}
           </div>
         `).join('')}
       </div>` : ''}
@@ -5273,12 +5303,12 @@ export const generateJobProofPackPDF = (data: {
           <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
               <div>
-                <div style="font-weight:700;font-size:13px">${f.formName}</div>
-                <div style="font-size:9px;color:#888;margin-top:2px">${typeLabel} &bull; Submitted ${f.submittedAt}${f.submittedBy ? ` by ${f.submittedBy}` : ''}</div>
+                <div style="font-weight:700;font-size:13px">${escapeHtml(f.formName)}</div>
+                <div style="font-size:9px;color:#888;margin-top:2px">${escapeHtml(typeLabel)} &bull; Submitted ${escapeHtml(f.submittedAt)}${f.submittedBy ? ` by ${escapeHtml(f.submittedBy)}` : ''}</div>
               </div>
-              <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${f.status.toUpperCase()}</span>
+              <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${escapeHtml(f.status.toUpperCase())}</span>
             </div>
-            ${f.description ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${f.description}</p>` : ''}
+            ${f.description ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${escapeHtml(f.description)}</p>` : ''}
             ${f.responses.length > 0 ? `
             <table class="proof-table" style="margin-bottom:4px">
               <thead><tr><th style="width:40%">Item</th><th>Response</th></tr></thead>
@@ -5286,12 +5316,12 @@ export const generateJobProofPackPDF = (data: {
                 const isPassFail = r.value === 'Yes' || r.value === 'No' || r.value === 'Pass' || r.value === 'Fail' || r.value === 'N/A';
                 const pillStyle = r.value === 'Yes' || r.value === 'Pass' ? 'background:#dcfce7;color:#166534' : r.value === 'No' || r.value === 'Fail' ? 'background:#fee2e2;color:#991b1b' : r.value === 'N/A' ? 'background:#f3f4f6;color:#6b7280' : '';
                 return `<tr>
-                  <td style="font-weight:500">${r.label}</td>
-                  <td>${isPassFail ? `<span class="status-pill" style="${pillStyle}">${r.value}</span>` : r.value}</td>
+                  <td style="font-weight:500">${escapeHtml(r.label)}</td>
+                  <td>${isPassFail ? `<span class="status-pill" style="${pillStyle}">${escapeHtml(r.value)}</span>` : escapeHtml(r.value)}</td>
                 </tr>`;
               }).join('')}</tbody>
             </table>` : '<p style="font-size:10px;color:#888">No responses recorded</p>'}
-            ${f.notes ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Notes:</strong> ${f.notes}</p>` : ''}
+            ${f.notes ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Notes:</strong> ${escapeHtml(f.notes)}</p>` : ''}
           </div>`;
         }).join('')}
       </div>` : ''}
@@ -5307,12 +5337,12 @@ export const generateJobProofPackPDF = (data: {
         <div style="margin-bottom:12px;border:1px solid #e2e8f0;border-radius:6px;padding:12px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
-              <div style="font-weight:700;font-size:13px">${f.formName}</div>
-              <div style="font-size:9px;color:#888;margin-top:2px">${typeLabel} &bull; Submitted ${f.submittedAt}${f.submittedBy ? ` by ${f.submittedBy}` : ''}</div>
+              <div style="font-weight:700;font-size:13px">${escapeHtml(f.formName)}</div>
+              <div style="font-size:9px;color:#888;margin-top:2px">${escapeHtml(typeLabel)} &bull; Submitted ${escapeHtml(f.submittedAt)}${f.submittedBy ? ` by ${escapeHtml(f.submittedBy)}` : ''}</div>
             </div>
-            <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${f.status.toUpperCase()}</span>
+            <span class="status-pill" style="${f.status === 'approved' ? 'background:#dcfce7;color:#166534' : f.status === 'reviewed' ? 'background:#dbeafe;color:#1e40af' : f.status === 'rejected' ? 'background:#fee2e2;color:#991b1b' : 'background:#fef3c7;color:#92400e'}">${escapeHtml(f.status.toUpperCase())}</span>
           </div>
-          ${f.description ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${f.description}</p>` : ''}
+          ${f.description ? `<p style="font-size:10px;color:#555;margin:0 0 8px 0">${escapeHtml(f.description)}</p>` : ''}
           ${f.responses.length > 0 ? `
           <table class="proof-table" style="margin-bottom:4px">
             <thead><tr><th style="width:40%">Item</th><th>Response</th></tr></thead>
@@ -5320,12 +5350,12 @@ export const generateJobProofPackPDF = (data: {
               const isPassFail = r.value === 'Yes' || r.value === 'No' || r.value === 'Pass' || r.value === 'Fail' || r.value === 'N/A';
               const pillStyle = r.value === 'Yes' || r.value === 'Pass' ? 'background:#dcfce7;color:#166534' : r.value === 'No' || r.value === 'Fail' ? 'background:#fee2e2;color:#991b1b' : r.value === 'N/A' ? 'background:#f3f4f6;color:#6b7280' : '';
               return `<tr>
-                <td style="font-weight:500">${r.label}</td>
-                <td>${isPassFail ? `<span class="status-pill" style="${pillStyle}">${r.value}</span>` : r.value}</td>
+                <td style="font-weight:500">${escapeHtml(r.label)}</td>
+                <td>${isPassFail ? `<span class="status-pill" style="${pillStyle}">${escapeHtml(r.value)}</span>` : escapeHtml(r.value)}</td>
               </tr>`;
             }).join('')}</tbody>
           </table>` : '<p style="font-size:10px;color:#888">No responses recorded</p>'}
-          ${f.notes ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Notes:</strong> ${f.notes}</p>` : ''}
+          ${f.notes ? `<p style="font-size:9px;color:#666;margin:4px 0"><strong>Notes:</strong> ${escapeHtml(f.notes)}</p>` : ''}
         </div>`;
       }).join('')}
     </div>` : ''}
