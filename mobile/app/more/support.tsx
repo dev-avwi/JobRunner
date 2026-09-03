@@ -613,23 +613,10 @@ export default function SupportScreen() {
 
   const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
 
-  // Bundled articles load instantly and work offline.
-  // Only attempt the network fetch when the device is online; when offline the
-  // bundled placeholder data is used immediately without any loading state.
-  const { data, isLoading } = useQuery<HelpData | null>({
-    queryKey: ['/api/help/articles'],
-    queryFn: async () => {
-      const r = await api.get<HelpData>('/api/help/articles');
-      if (r.error || !(r.data as HelpData)?.articles?.length) return null;
-      return r.data as HelpData;
-    },
-    enabled: isOnline,
-    staleTime: 5 * 60 * 1000,
-    placeholderData: { categories: HELP_CATEGORIES as HelpCategory[], articles: HELP_ARTICLES as HelpArticle[] },
-  });
-
-  const categories: HelpCategory[] = (data?.categories?.length ? data.categories : HELP_CATEGORIES) as HelpCategory[];
-  const allArticles: HelpArticle[] = (data?.articles?.length ? data.articles : HELP_ARTICLES) as HelpArticle[];
+  // Articles are bundled locally — loads instantly, works offline, no API needed.
+  const isLoading = false;
+  const categories = HELP_CATEGORIES as HelpCategory[];
+  const allArticles = HELP_ARTICLES as HelpArticle[];
 
   const filteredArticles = useMemo(() => {
     let list = allArticles;
