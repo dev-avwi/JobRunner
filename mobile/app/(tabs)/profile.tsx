@@ -562,9 +562,7 @@ export default function MoreScreen() {
     actions.push({ icon: 'plus-circle', label: 'New Job', route: '/more/create-job', bg: colors.primaryLight, fg: colors.primary });
     actions.push({ icon: 'file-text', label: 'Invoice', route: '/more/invoices', bg: colors.successLight, fg: colors.success });
     actions.push({ icon: 'clock', label: 'Time', route: '/more/time-tracking', bg: colors.infoLight, fg: colors.info });
-    if ((isOwner || isManager) && !isSolo && hasTeamSubscription) {
-      actions.push({ icon: 'activity', label: 'Team Ops', route: '/more/team-operations', bg: colors.warningLight, fg: colors.warning });
-    }
+    actions.push({ icon: 'help-circle', label: 'Help', route: '/more/support', bg: colors.muted, fg: colors.mutedForeground });
     return actions;
   }, [isStaff, isOwner, isManager, isSolo, hasTeamSubscription, colors]);
 
