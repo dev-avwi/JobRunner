@@ -629,6 +629,7 @@ function ArticleList({
             size="sm"
             className="gap-2 mt-2"
             onClick={() => onAskAssistant(searchQuery)}
+            data-testid="help-ask-assistant-btn"
           >
             <Sparkles className="h-3.5 w-3.5" />
             Ask the Help Assistant
