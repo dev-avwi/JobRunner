@@ -1,15 +1,16 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
+  TextInput,
   Animated,
   Linking,
-  LayoutAnimation,
   Platform,
   UIManager,
+  ActivityIndicator,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
@@ -27,543 +28,580 @@ import { useAuthStore } from '../../src/lib/store';
 import api from '../../src/lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-interface FAQItem {
-  question: string;
-  answer: string;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-interface FAQCategory {
+interface HelpCategory {
   id: string;
+  label: string;
+  icon: string;
+}
+
+interface HelpArticle {
+  id: string;
+  category: string;
   title: string;
-  icon: keyof typeof Feather.glyphMap;
-  items: FAQItem[];
+  body: string;
+  summary: string;
+  deeplink?: string;
+  mobileDeeplink?: string;
 }
 
-const FAQ_CATEGORIES: FAQCategory[] = [
-  {
-    id: 'getting-started',
-    title: 'Getting Started',
-    icon: 'play-circle',
-    items: [
-      {
-        question: 'How do I create my first job?',
-        answer: 'Go to the Jobs tab and tap the + button. Fill in the job details including client, address, and description. You can also add photos and notes as you work.',
-      },
-      {
-        question: 'How do I add my first client?',
-        answer: 'Navigate to Profile > Clients and tap "Add Client". Enter their name, contact details, and address. Clients are automatically created when you add them to a new job too.',
-      },
-      {
-        question: 'How do I set up my business details?',
-        answer: 'Go to Profile > Business Settings to add your business name, ABN, contact details, and logo. This information appears on your quotes and invoices.',
-      },
-      {
-        question: 'Can I customise my branding?',
-        answer: 'Yes! Go to Profile > Branding to set your primary colour, upload your logo, and customise how your documents look to clients.',
-      },
-    ],
-  },
-  {
-    id: 'jobs-scheduling',
-    title: 'Jobs & Scheduling',
-    icon: 'briefcase',
-    items: [
-      {
-        question: 'What do the job statuses mean?',
-        answer: 'Jobs flow through stages: Pending (new), Scheduled (date set), In Progress (started), Done (completed), and Invoiced (payment sent). You can update status with a tap.',
-      },
-      {
-        question: 'How do I add photos to a job?',
-        answer: 'Open any job and tap the camera icon or "Add Photos". You can take new photos or select from your gallery. Photos are organised as before/after for documentation.',
-      },
-      {
-        question: 'How do I schedule a job?',
-        answer: 'Open a job and tap "Schedule" to set a date and time. You can also drag jobs on the calendar view or use the dispatch board for team scheduling.',
-      },
-      {
-        question: 'How do I mark a job as complete?',
-        answer: 'Open the job and tap "Mark Complete" or swipe to change status. You can add completion notes, final photos, and get the client signature if needed.',
-      },
-    ],
-  },
-  {
-    id: 'quotes',
-    title: 'Quotes',
-    icon: 'file-text',
-    items: [
-      {
-        question: 'How do I create a quote?',
-        answer: 'Go to Profile > Quotes and tap + to create a new quote. Select a client, add line items with descriptions and prices, then preview before sending.',
-      },
-      {
-        question: 'How do I send a quote to a client?',
-        answer: 'After creating a quote, tap "Send" to email it directly to your client. They\'ll receive a professional PDF with your branding.',
-      },
-      {
-        question: 'Can I request a deposit on quotes?',
-        answer: 'Yes! When creating a quote, you can set a deposit percentage or fixed amount. Clients will see this clearly when they view the quote.',
-      },
-      {
-        question: 'How do I convert a quote to an invoice?',
-        answer: 'Once a quote is accepted, open it and tap "Convert to Invoice". All the details will be copied over, ready for you to send.',
-      },
-    ],
-  },
-  {
-    id: 'invoices-payments',
-    title: 'Invoices & Payments',
-    icon: 'dollar-sign',
-    items: [
-      {
-        question: 'How do I create an invoice?',
-        answer: 'Go to Profile > Invoices and tap + to create one, or convert an accepted quote. Add your line items, payment terms, and send to the client.',
-      },
-      {
-        question: 'How do I send an invoice?',
-        answer: 'After creating an invoice, tap "Send" to email it to your client. They\'ll receive a professional PDF with payment instructions.',
-      },
-      {
-        question: 'How do I connect Stripe for payments?',
-        answer: 'Go to Profile > Payments and tap "Connect Stripe". Follow the setup wizard to link your bank account. Clients can then pay online.',
-      },
-      {
-        question: 'How do I record a payment?',
-        answer: 'Open an invoice and tap "Record Payment". Enter the amount, date, and payment method. The invoice status will update automatically.',
-      },
-      {
-        question: 'How do I handle overdue invoices?',
-        answer: 'JobRunner can send automatic reminders. Go to Profile > Automations to set up overdue payment reminders. You can also manually send reminders from any invoice.',
-      },
-    ],
-  },
-  {
-    id: 'team-management',
-    title: 'Team Management',
-    icon: 'users',
-    items: [
-      {
-        question: 'How do I add team members?',
-        answer: 'Go to Profile > Team Management and tap "Invite Member". Enter their email and select their role. They\'ll receive an invitation to join your team.',
-      },
-      {
-        question: 'What are the different team roles?',
-        answer: 'Admin has full access, Tradies can manage their assigned jobs, and Office Staff can handle quotes and invoices. Customise permissions for each role.',
-      },
-      {
-        question: 'How do I assign jobs to team members?',
-        answer: 'When creating or editing a job, use the "Assign to" field to select a team member. They\'ll be notified and can see the job in their dashboard.',
-      },
-    ],
-  },
-  {
-    id: 'troubleshooting',
-    title: 'Troubleshooting',
-    icon: 'tool',
-    items: [
-      {
-        question: 'Emails aren\'t sending - what do I do?',
-        answer: 'Check Profile > Integrations to verify your email is connected. Make sure your internet connection is stable and try resending. Contact support if issues persist.',
-      },
-      {
-        question: 'Stripe connection issues?',
-        answer: 'Go to Profile > Payments and check your connection status. You may need to re-authenticate. Ensure your Stripe account is fully verified.',
-      },
-      {
-        question: 'Data isn\'t syncing across devices?',
-        answer: 'Make sure you\'re signed in with the same account on all devices. Check your internet connection. Pull down to refresh any screen to force a sync.',
-      },
-      {
-        question: 'PDF quotes/invoices look wrong?',
-        answer: 'Check your business settings and branding are complete. Try regenerating the PDF. If issues persist, contact support with a screenshot.',
-      },
-      {
-        question: 'How do I request a new feature?',
-        answer: 'We love feedback! Email us at admin@avwebinnovation.com with your feature request. We review all suggestions for future updates.',
-      },
-    ],
-  },
-];
+interface HelpData {
+  categories: HelpCategory[];
+  articles: HelpArticle[];
+}
 
-const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing.lg,
-    paddingBottom: bottomNavHeight,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  headerIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  headerTitle: {
-    ...typography.pageTitle,
-    color: colors.foreground,
-    textAlign: 'center',
-  },
-  headerSubtitle: {
-    ...typography.body,
-    color: colors.mutedForeground,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-  },
-  tourCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.xl,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    ...shadows.sm,
-  },
-  tourIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tourContent: {
-    flex: 1,
-  },
-  tourTitle: {
-    ...typography.subtitle,
-    color: colors.foreground,
-    marginBottom: 2,
-  },
-  tourSubtitle: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-  },
-  sectionTitle: {
-    ...typography.label,
-    color: colors.mutedForeground,
-    marginBottom: spacing.sm,
-    paddingLeft: spacing.xs,
-  },
-  faqSection: {
-    marginBottom: spacing.xl,
-  },
-  categoryCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.md,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  categoryIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryTitle: {
-    flex: 1,
-    ...typography.body,
-    fontWeight: fontWeights.semibold,
-    color: colors.foreground,
-  },
-  categoryItems: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  faqItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  faqItemLast: {
-    borderBottomWidth: 0,
-  },
-  faqQuestion: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.lg,
-    paddingLeft: spacing.xl,
-    gap: spacing.md,
-  },
-  faqQuestionText: {
-    flex: 1,
-    ...typography.body,
-    color: colors.foreground,
-  },
-  faqAnswer: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  faqAnswerText: {
-    ...typography.body,
-    color: colors.mutedForeground,
-    lineHeight: 22,
-  },
-  contactSection: {
-    marginBottom: spacing.xl,
-  },
-  contactCard: {
-    backgroundColor: colors.card,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  contactItemBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  contactIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  contactContent: {
-    flex: 1,
-  },
-  contactTitle: {
-    ...typography.body,
-    fontWeight: fontWeights.medium,
-    color: colors.foreground,
-  },
-  contactSubtitle: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    marginTop: 2,
-  },
-  footer: {
-    alignItems: 'center',
-    marginTop: spacing.lg,
-    paddingTop: spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  footerText: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-  },
-  versionText: {
-    ...typography.captionSmall,
-    color: colors.mutedForeground,
-    marginTop: spacing.xs,
-  },
-  debugRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  debugLabel: {
-    ...typography.caption,
-    color: colors.mutedForeground,
-    flex: 1,
-  },
-  debugValue: {
-    ...typography.caption,
-    color: colors.foreground,
-    flex: 1,
-    textAlign: 'right',
-  },
-  copyDebugButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.md,
-    marginTop: spacing.md,
-  },
-  copyDebugText: {
-    ...typography.bodySmall,
-    fontWeight: fontWeights.semibold,
-  },
-});
+type ViewState = 'home' | 'article';
 
-interface AccordionCategoryProps {
-  category: FAQCategory;
-  isExpanded: boolean;
-  onToggle: () => void;
-  expandedItems: Set<string>;
-  onToggleItem: (itemKey: string) => void;
-  colors: ThemeColors;
+// ─── Icon map ─────────────────────────────────────────────────────────────────
+
+const CATEGORY_ICONS: Record<string, keyof typeof Feather.glyphMap> = {
+  'getting-started': 'play-circle',
+  jobs: 'briefcase',
+  'quotes-invoices': 'file-text',
+  team: 'users',
+  payments: 'dollar-sign',
+  settings: 'settings',
+};
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingBottom: bottomNavHeight + spacing.xl,
+    },
+    // Search bar
+    searchContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.sm,
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.muted,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      gap: spacing.sm,
+      height: 44,
+    },
+    searchInput: {
+      flex: 1,
+      ...typography.body,
+      color: colors.foreground,
+      paddingVertical: 0,
+    },
+    // Category chips
+    chipRow: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.sm,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      borderRadius: radius.full,
+      backgroundColor: colors.muted,
+    },
+    chipActive: {
+      backgroundColor: colors.primary,
+    },
+    chipText: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+      fontWeight: fontWeights.medium,
+    },
+    chipTextActive: {
+      color: colors.primaryForeground,
+    },
+    // Section title
+    sectionTitle: {
+      ...typography.label,
+      color: colors.mutedForeground,
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+      marginTop: spacing.lg,
+    },
+    // Article rows
+    articleCard: {
+      backgroundColor: colors.card,
+      marginHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...shadows.sm,
+    },
+    articleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    articleTitle: {
+      ...typography.body,
+      fontWeight: fontWeights.medium,
+      color: colors.foreground,
+      flex: 1,
+    },
+    articleSummary: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+      marginTop: 2,
+      lineHeight: 18,
+    },
+    // Article detail
+    detailContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    detailContent: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl * 2,
+    },
+    detailTitle: {
+      ...typography.pageTitle,
+      color: colors.foreground,
+      marginBottom: spacing.lg,
+      lineHeight: 30,
+    },
+    detailBody: {
+      ...typography.body,
+      color: colors.mutedForeground,
+      lineHeight: 24,
+    },
+    detailHeading: {
+      ...typography.subtitle,
+      color: colors.foreground,
+      marginTop: spacing.xl,
+      marginBottom: spacing.sm,
+    },
+    detailBold: {
+      fontWeight: fontWeights.semibold,
+      color: colors.foreground,
+    },
+    detailListItem: {
+      ...typography.body,
+      color: colors.mutedForeground,
+      lineHeight: 24,
+      marginLeft: spacing.md,
+    },
+    deeplinkButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.primary,
+      borderRadius: radius.lg,
+      paddingVertical: spacing.md,
+      marginTop: spacing.xl,
+    },
+    deeplinkButtonText: {
+      ...typography.body,
+      fontWeight: fontWeights.semibold,
+      color: colors.primaryForeground,
+    },
+    // Feedback
+    feedbackContainer: {
+      marginTop: spacing.xl,
+      paddingTop: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      alignItems: 'center',
+    },
+    feedbackLabel: {
+      ...typography.body,
+      color: colors.mutedForeground,
+      marginBottom: spacing.md,
+    },
+    feedbackRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    feedbackBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.card,
+    },
+    feedbackBtnActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    feedbackBtnText: {
+      ...typography.body,
+      fontWeight: fontWeights.medium,
+      color: colors.foreground,
+    },
+    feedbackBtnTextActive: {
+      color: colors.primaryForeground,
+    },
+    feedbackThanks: {
+      ...typography.body,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    // Empty state
+    emptyContainer: {
+      alignItems: 'center',
+      paddingVertical: spacing.xl * 2,
+      paddingHorizontal: spacing.xl,
+    },
+    emptyTitle: {
+      ...typography.subtitle,
+      color: colors.foreground,
+      marginTop: spacing.lg,
+      marginBottom: spacing.sm,
+      textAlign: 'center',
+    },
+    emptySubtitle: {
+      ...typography.body,
+      color: colors.mutedForeground,
+      textAlign: 'center',
+    },
+    // Tour card
+    tourCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.xl,
+      padding: spacing.lg,
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      borderWidth: 2,
+      borderColor: colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      ...shadows.sm,
+    },
+    tourIconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: radius.lg,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tourContent: { flex: 1 },
+    tourTitle: {
+      ...typography.subtitle,
+      color: colors.foreground,
+      marginBottom: 2,
+    },
+    tourSubtitle: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+    },
+    // Contact / support section
+    contactCard: {
+      backgroundColor: colors.card,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      marginHorizontal: spacing.lg,
+      ...shadows.sm,
+    },
+    contactItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing.lg,
+      gap: spacing.md,
+    },
+    contactItemBorder: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    contactIconContainer: {
+      width: 40,
+      height: 40,
+      borderRadius: radius.lg,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    contactContent: { flex: 1 },
+    contactTitle: {
+      ...typography.body,
+      fontWeight: fontWeights.medium,
+      color: colors.foreground,
+    },
+    contactSubtitle: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+      marginTop: 2,
+    },
+    // Debug info
+    debugRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    debugLabel: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+      flex: 1,
+    },
+    debugValue: {
+      ...typography.caption,
+      color: colors.foreground,
+      flex: 1,
+      textAlign: 'right',
+    },
+    copyDebugButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.md,
+      marginTop: spacing.md,
+      marginHorizontal: spacing.lg,
+    },
+    copyDebugText: {
+      ...typography.bodySmall,
+      fontWeight: fontWeights.semibold,
+    },
+    footer: {
+      alignItems: 'center',
+      marginTop: spacing.xl,
+      paddingTop: spacing.lg,
+      marginHorizontal: spacing.lg,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    footerText: {
+      ...typography.caption,
+      color: colors.mutedForeground,
+    },
+    versionText: {
+      ...typography.captionSmall,
+      color: colors.mutedForeground,
+      marginTop: spacing.xs,
+    },
+  });
+
+// ─── Markdown renderer (plain text blocks) ────────────────────────────────────
+
+function MarkdownBody({ text, styles, colors }: {
+  text: string;
   styles: ReturnType<typeof createStyles>;
+  colors: ThemeColors;
+}) {
+  const lines = text.split('\n');
+  const nodes: React.ReactNode[] = [];
+  let key = 0;
+
+  const renderInline = (s: string) => {
+    const parts = s.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((p, i) =>
+      p.startsWith('**') && p.endsWith('**') ? (
+        <Text key={i} style={styles.detailBold}>{p.slice(2, -2)}</Text>
+      ) : (
+        p
+      )
+    );
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith('## ')) {
+      nodes.push(
+        <Text key={key++} style={styles.detailHeading}>{line.slice(3)}</Text>
+      );
+      i++; continue;
+    }
+    if (line.startsWith('# ')) {
+      nodes.push(
+        <Text key={key++} style={[styles.detailHeading, { fontSize: 18 }]}>{line.slice(2)}</Text>
+      );
+      i++; continue;
+    }
+    // Skip table rows — render as plain text
+    if (line.startsWith('|')) {
+      const cells = line.split('|').slice(1, -1).map(c => c.trim()).join('  ');
+      if (!/^[-| ]+$/.test(cells)) {
+        nodes.push(
+          <Text key={key++} style={styles.detailBody}>{renderInline(cells)}</Text>
+        );
+      }
+      i++; continue;
+    }
+    if (line.startsWith('- ')) {
+      nodes.push(
+        <Text key={key++} style={styles.detailListItem}>{'• '}{renderInline(line.slice(2))}</Text>
+      );
+      i++; continue;
+    }
+    if (/^\d+\./.test(line)) {
+      nodes.push(
+        <Text key={key++} style={styles.detailListItem}>{renderInline(line)}</Text>
+      );
+      i++; continue;
+    }
+    if (line.trim() === '') { i++; continue; }
+
+    nodes.push(
+      <Text key={key++} style={styles.detailBody}>{renderInline(line)}</Text>
+    );
+    i++;
+  }
+
+  return <View style={{ gap: spacing.xs }}>{nodes}</View>;
 }
 
-function AccordionCategory({ 
-  category, 
-  isExpanded, 
-  onToggle, 
-  expandedItems, 
-  onToggleItem,
+// ─── ArticleDetail ────────────────────────────────────────────────────────────
+
+function ArticleDetail({
+  article,
+  styles,
   colors,
-  styles 
-}: AccordionCategoryProps) {
-  const rotateAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
-
-  const handleToggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    Animated.timing(rotateAnim, {
-      toValue: isExpanded ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    onToggle();
-  };
-
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
-  });
-
-  return (
-    <View style={styles.categoryCard}>
-      <PressableRow style={styles.categoryHeader} onPress={handleToggle} >
-        <View style={styles.categoryIconContainer}>
-          <Feather name={category.icon} size={iconSizes.lg} color={colors.primary} />
-        </View>
-        <Text style={styles.categoryTitle}>{category.title}</Text>
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Feather name="chevron-down" size={iconSizes.lg} color={colors.mutedForeground} />
-        </Animated.View>
-      </PressableRow>
-
-      {isExpanded && (
-        <View style={styles.categoryItems}>
-          {category.items.map((item, index) => {
-            const itemKey = `${category.id}-${index}`;
-            const isItemExpanded = expandedItems.has(itemKey);
-            
-            return (
-              <FAQItemComponent
-                key={itemKey}
-                item={item}
-                isExpanded={isItemExpanded}
-                onToggle={() => onToggleItem(itemKey)}
-                isLast={index === category.items.length - 1}
-                colors={colors}
-                styles={styles}
-              />
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-}
-
-interface FAQItemComponentProps {
-  item: FAQItem;
-  isExpanded: boolean;
-  onToggle: () => void;
-  isLast: boolean;
-  colors: ThemeColors;
+}: {
+  article: HelpArticle;
   styles: ReturnType<typeof createStyles>;
-}
+  colors: ThemeColors;
+}) {
+  const [feedback, setFeedback] = useState<'yes' | 'no' | null>(null);
 
-function FAQItemComponent({ item, isExpanded, onToggle, isLast, colors, styles }: FAQItemComponentProps) {
-  const rotateAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
-
-  const handleToggle = () => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    Animated.timing(rotateAnim, {
-      toValue: isExpanded ? 0 : 1,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    onToggle();
-  };
-
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
+  const feedbackMutation = useMutation({
+    mutationFn: (helpful: boolean) =>
+      api.post(`/api/help/articles/${article.id}/feedback`, { helpful }),
   });
 
+  const handleFeedback = (helpful: boolean) => {
+    if (feedback) return;
+    setFeedback(helpful ? 'yes' : 'no');
+    feedbackMutation.mutate(helpful);
+  };
+
+  const handleDeeplink = () => {
+    if (article.mobileDeeplink) {
+      router.push(article.mobileDeeplink as any);
+    }
+  };
+
   return (
-    <View style={[styles.faqItem, isLast && styles.faqItemLast]}>
-      <PressableRow style={styles.faqQuestion} onPress={handleToggle} >
-        <Text style={styles.faqQuestionText}>{item.question}</Text>
-        <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-          <Feather name="chevron-down" size={iconSizes.md} color={colors.mutedForeground} />
-        </Animated.View>
-      </PressableRow>
-      
-      {isExpanded && (
-        <View style={styles.faqAnswer}>
-          <Text style={styles.faqAnswerText}>{item.answer}</Text>
-        </View>
+    <ScrollView style={styles.detailContainer} contentContainerStyle={styles.detailContent}>
+      <Text style={styles.detailTitle}>{article.title}</Text>
+
+      <MarkdownBody text={article.body} styles={styles} colors={colors} />
+
+      {article.mobileDeeplink && (
+        <TouchableOpacity style={styles.deeplinkButton} onPress={handleDeeplink} activeOpacity={0.8}>
+          <Feather name="external-link" size={iconSizes.md} color={colors.primaryForeground} />
+          <Text style={styles.deeplinkButtonText}>Take me there</Text>
+        </TouchableOpacity>
       )}
-    </View>
+
+      <View style={styles.feedbackContainer}>
+        {!feedback ? (
+          <>
+            <Text style={styles.feedbackLabel}>Was this helpful?</Text>
+            <View style={styles.feedbackRow}>
+              <TouchableOpacity
+                style={styles.feedbackBtn}
+                onPress={() => handleFeedback(true)}
+                activeOpacity={0.8}
+              >
+                <Feather name="thumbs-up" size={iconSizes.md} color={colors.foreground} />
+                <Text style={styles.feedbackBtnText}>Yes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.feedbackBtn}
+                onPress={() => handleFeedback(false)}
+                activeOpacity={0.8}
+              >
+                <Feather name="thumbs-down" size={iconSizes.md} color={colors.foreground} />
+                <Text style={styles.feedbackBtnText}>No</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.feedbackThanks}>
+            {feedback === 'yes' ? 'Thanks for the feedback!' : 'Thanks, we will work on improving this.'}
+          </Text>
+        )}
+      </View>
+    </ScrollView>
   );
 }
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function SupportScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+
+  const [viewState, setViewState] = useState<ViewState>('home');
+  const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
+  const [search, setSearch] = useState('');
+  const [activeCategory, setActiveCategory] = useState<string>('all');
   const [showTour, setShowTour] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
-  const toggleCategory = (categoryId: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(categoryId)) {
-        next.delete(categoryId);
-      } else {
-        next.add(categoryId);
-      }
-      return next;
-    });
+  const { data, isLoading } = useQuery<HelpData>({
+    queryKey: ['/api/help/articles'],
+    queryFn: () => api.get('/api/help/articles').then((r: any) => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categories = data?.categories ?? [];
+  const allArticles = data?.articles ?? [];
+
+  const filteredArticles = useMemo(() => {
+    let list = allArticles;
+    if (activeCategory !== 'all') {
+      list = list.filter(a => a.category === activeCategory);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        a =>
+          a.title.toLowerCase().includes(q) ||
+          a.summary.toLowerCase().includes(q) ||
+          a.body.toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [allArticles, activeCategory, search]);
+
+  const openArticle = (article: HelpArticle) => {
+    setSelectedArticle(article);
+    setViewState('article');
   };
 
-  const toggleItem = (itemKey: string) => {
-    setExpandedItems(prev => {
-      const next = new Set(prev);
-      if (next.has(itemKey)) {
-        next.delete(itemKey);
-      } else {
-        next.add(itemKey);
-      }
-      return next;
-    });
+  const goBack = () => {
+    setViewState('home');
+    setSelectedArticle(null);
   };
+
+  // ─── Debug info ───────────────────────────────────────────────────────────
 
   const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
   const user = useAuthStore((state: any) => state.user);
@@ -577,7 +615,7 @@ export default function SupportScreen() {
     const osVersion = Platform.Version?.toString() || 'unknown';
     const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'default';
     const lastSync = lastSyncTime ? new Date(lastSyncTime).toLocaleString('en-AU') : 'Never';
-    
+
     return {
       'App Version': `${appVersion} (${buildNumber})`,
       'Expo SDK': sdkVersion,
@@ -607,98 +645,198 @@ export default function SupportScreen() {
     Linking.openURL('https://jobrunner.com.au/docs');
   };
 
+  // ─── Article detail view ──────────────────────────────────────────────────
+
+  if (viewState === 'article' && selectedArticle) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            title: selectedArticle.title.length > 30
+              ? selectedArticle.title.slice(0, 30) + '...'
+              : selectedArticle.title,
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.foreground,
+            headerLeft: () => (
+              <TouchableOpacity onPress={goBack} style={{ paddingHorizontal: spacing.md }}>
+                <Feather name="arrow-left" size={iconSizes.lg} color={colors.foreground} />
+              </TouchableOpacity>
+            ),
+          }}
+        />
+        <ArticleDetail article={selectedArticle} styles={styles} colors={colors} />
+      </>
+    );
+  }
+
+  // ─── Home view ────────────────────────────────────────────────────────────
+
   return (
     <>
-      <Stack.Screen 
-        options={{ 
+      <Stack.Screen
+        options={{
           title: 'Help & Support',
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.foreground,
-        }} 
+        }}
       />
-      
+
       <ScrollView style={styles.container}>
         <View style={styles.content}>
-          <View style={styles.header}>
-            <View style={styles.headerIcon}>
-              <Feather name="help-circle" size={28} color={colors.primary} />
+          {/* Search bar */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchRow}>
+              <Feather name="search" size={iconSizes.md} color={colors.mutedForeground} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search help articles..."
+                placeholderTextColor={colors.mutedForeground}
+                value={search}
+                onChangeText={(t) => {
+                  setSearch(t);
+                  if (t) setActiveCategory('all');
+                }}
+                returnKeyType="search"
+                autoCorrect={false}
+              />
+              {search.length > 0 && (
+                <TouchableOpacity onPress={() => setSearch('')}>
+                  <Feather name="x" size={iconSizes.md} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              )}
             </View>
-            <Text style={styles.headerTitle}>Help & Support</Text>
-            <Text style={styles.headerSubtitle}>
-              Get help and find answers to common questions
-            </Text>
           </View>
 
-          <PressableRow style={styles.tourCard} onPress={() => setShowTour(true)} >
-            <View style={styles.tourIconContainer}>
-              <Feather name="navigation" size={iconSizes.xl} color={colors.primary} />
+          {/* Category chips */}
+          {!search && (
+            <View style={styles.chipRow}>
+              <TouchableOpacity
+                style={[styles.chip, activeCategory === 'all' && styles.chipActive]}
+                onPress={() => setActiveCategory('all')}
+              >
+                <Text style={[styles.chipText, activeCategory === 'all' && styles.chipTextActive]}>
+                  All
+                </Text>
+              </TouchableOpacity>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[styles.chip, activeCategory === cat.id && styles.chipActive]}
+                  onPress={() => setActiveCategory(cat.id)}
+                >
+                  <Feather
+                    name={CATEGORY_ICONS[cat.id] ?? 'help-circle'}
+                    size={12}
+                    color={activeCategory === cat.id ? colors.primaryForeground : colors.mutedForeground}
+                  />
+                  <Text
+                    style={[styles.chipText, activeCategory === cat.id && styles.chipTextActive]}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* App Tour card — shown only on home with no search */}
+          {!search && activeCategory === 'all' && (
+            <PressableRow style={styles.tourCard} onPress={() => setShowTour(true)}>
+              <View style={styles.tourIconContainer}>
+                <Feather name="navigation" size={iconSizes.xl} color={colors.primary} />
+              </View>
+              <View style={styles.tourContent}>
+                <Text style={styles.tourTitle}>Start App Tour</Text>
+                <Text style={styles.tourSubtitle}>Take a guided walkthrough of the app</Text>
+              </View>
+              <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
+            </PressableRow>
+          )}
+
+          {/* Articles */}
+          {isLoading ? (
+            <View style={{ alignItems: 'center', paddingVertical: spacing.xl * 2 }}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : filteredArticles.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Feather name="help-circle" size={48} color={colors.mutedForeground + '60'} />
+              <Text style={styles.emptyTitle}>No articles found</Text>
+              <Text style={styles.emptySubtitle}>
+                Try different keywords, or contact support below.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={styles.sectionTitle}>
+                {search
+                  ? `${filteredArticles.length} RESULT${filteredArticles.length === 1 ? '' : 'S'}`
+                  : activeCategory === 'all'
+                  ? 'HELP ARTICLES'
+                  : (categories.find(c => c.id === activeCategory)?.label ?? 'ARTICLES').toUpperCase()}
+              </Text>
+              {filteredArticles.map((article) => (
+                <View key={article.id} style={styles.articleCard}>
+                  <PressableRow style={styles.articleRow} onPress={() => openArticle(article)}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.articleTitle}>{article.title}</Text>
+                      <Text style={styles.articleSummary} numberOfLines={2}>
+                        {article.summary}
+                      </Text>
+                    </View>
+                    <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+                  </PressableRow>
+                </View>
+              ))}
+            </>
+          )}
+
+          {/* Report a Bug */}
+          <Text style={styles.sectionTitle}>REPORT A PROBLEM</Text>
+          <PressableRow
+            style={[styles.tourCard, { borderColor: colors.destructive, marginHorizontal: spacing.lg, marginTop: 0 }]}
+            onPress={() => router.push('/more/report-bug')}
+          >
+            <View style={[styles.tourIconContainer, { backgroundColor: colors.destructive + '20' }]}>
+              <Feather name="alert-circle" size={iconSizes.xl} color={colors.destructive} />
             </View>
             <View style={styles.tourContent}>
-              <Text style={styles.tourTitle}>Start App Tour</Text>
-              <Text style={styles.tourSubtitle}>Take a guided walkthrough of the app</Text>
+              <Text style={styles.tourTitle}>Report a Bug</Text>
+              <Text style={styles.tourSubtitle}>Something not working? Let us know!</Text>
             </View>
             <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
           </PressableRow>
 
-          <View style={styles.faqSection}>
-            <Text style={styles.sectionTitle}>FREQUENTLY ASKED QUESTIONS</Text>
-            
-            {FAQ_CATEGORIES.map(category => (
-              <AccordionCategory
-                key={category.id}
-                category={category}
-                isExpanded={expandedCategories.has(category.id)}
-                onToggle={() => toggleCategory(category.id)}
-                expandedItems={expandedItems}
-                onToggleItem={toggleItem}
-                colors={colors}
-                styles={styles}
-              />
-            ))}
-          </View>
-
-          <View style={styles.contactSection}>
-            <Text style={styles.sectionTitle}>REPORT A PROBLEM</Text>
-            
-            <PressableRow style={[styles.tourCard, { borderColor: colors.destructive }]} onPress={() => router.push('/more/report-bug')} >
-              <View style={[styles.tourIconContainer, { backgroundColor: colors.destructive + '20' }]}>
-                <Feather name="alert-circle" size={iconSizes.xl} color={colors.destructive} />
+          {/* Contact */}
+          <Text style={styles.sectionTitle}>CONTACT US</Text>
+          <View style={styles.contactCard}>
+            <PressableRow
+              style={[styles.contactItem, styles.contactItemBorder]}
+              onPress={handleEmailSupport}
+            >
+              <View style={styles.contactIconContainer}>
+                <Feather name="mail" size={iconSizes.lg} color={colors.primary} />
               </View>
-              <View style={styles.tourContent}>
-                <Text style={styles.tourTitle}>Report a Bug</Text>
-                <Text style={styles.tourSubtitle}>Something not working? Let us know!</Text>
+              <View style={styles.contactContent}>
+                <Text style={styles.contactTitle}>Email Support</Text>
+                <Text style={styles.contactSubtitle}>admin@avwebinnovation.com</Text>
               </View>
-              <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
+              <Feather name="external-link" size={iconSizes.md} color={colors.mutedForeground} />
             </PressableRow>
-
-            <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>CONTACT US</Text>
-            
-            <View style={styles.contactCard}>
-              <PressableRow style={[styles.contactItem, styles.contactItemBorder]} onPress={handleEmailSupport} >
-                <View style={styles.contactIconContainer}>
-                  <Feather name="mail" size={iconSizes.lg} color={colors.primary} />
-                </View>
-                <View style={styles.contactContent}>
-                  <Text style={styles.contactTitle}>Email Support</Text>
-                  <Text style={styles.contactSubtitle}>admin@avwebinnovation.com</Text>
-                </View>
-                <Feather name="external-link" size={iconSizes.md} color={colors.mutedForeground} />
-              </PressableRow>
-
-              <PressableRow style={styles.contactItem} onPress={handleOpenDocs} >
-                <View style={styles.contactIconContainer}>
-                  <Feather name="book-open" size={iconSizes.lg} color={colors.primary} />
-                </View>
-                <View style={styles.contactContent}>
-                  <Text style={styles.contactTitle}>Documentation</Text>
-                  <Text style={styles.contactSubtitle}>Browse guides and tutorials</Text>
-                </View>
-                <Feather name="external-link" size={iconSizes.md} color={colors.mutedForeground} />
-              </PressableRow>
-            </View>
+            <PressableRow style={styles.contactItem} onPress={handleOpenDocs}>
+              <View style={styles.contactIconContainer}>
+                <Feather name="book-open" size={iconSizes.lg} color={colors.primary} />
+              </View>
+              <View style={styles.contactContent}>
+                <Text style={styles.contactTitle}>Documentation</Text>
+                <Text style={styles.contactSubtitle}>Browse guides and tutorials</Text>
+              </View>
+              <Feather name="external-link" size={iconSizes.md} color={colors.mutedForeground} />
+            </PressableRow>
           </View>
 
-          <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>DEBUG INFO</Text>
+          {/* Debug Info */}
+          <Text style={styles.sectionTitle}>DEBUG INFO</Text>
           <View style={styles.contactCard}>
             {Object.entries(debugInfo).map(([key, value], index, arr) => (
               <View
@@ -713,10 +851,14 @@ export default function SupportScreen() {
               </View>
             ))}
           </View>
-          <PressableRow style={[styles.copyDebugButton, { backgroundColor: colors.primary }]} onPress={handleCopyDebugInfo} >
+          <TouchableOpacity
+            style={[styles.copyDebugButton, { backgroundColor: colors.primary }]}
+            onPress={handleCopyDebugInfo}
+            activeOpacity={0.8}
+          >
             <Feather name="copy" size={iconSizes.md} color={colors.primaryForeground} />
             <Text style={[styles.copyDebugText, { color: colors.primaryForeground }]}>Copy Debug Info</Text>
-          </PressableRow>
+          </TouchableOpacity>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>JobRunner Mobile</Text>

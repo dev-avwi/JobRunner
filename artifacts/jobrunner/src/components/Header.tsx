@@ -10,7 +10,8 @@ import {
   Sun, 
   Moon,
   Plus,
-  Map
+  Map,
+  HelpCircle,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useAppMode } from "@/hooks/use-app-mode";
@@ -38,6 +39,7 @@ interface HeaderProps {
   onProfileClick?: () => void;
   onSettingsClick?: () => void;
   onLogoutClick?: () => void;
+  onHelpClick?: () => void;
 }
 
 export default function Header({ 
@@ -50,7 +52,8 @@ export default function Header({
   isDarkMode = false,
   onProfileClick,
   onSettingsClick,
-  onLogoutClick
+  onLogoutClick,
+  onHelpClick,
 }: HeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [location, setLocation] = useLocation();
@@ -200,6 +203,16 @@ export default function Header({
         )}
 
         <SyncStatusIndicator />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onHelpClick}
+          title="Help Center"
+          data-testid="button-help"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
 
         <Button
           variant="ghost"

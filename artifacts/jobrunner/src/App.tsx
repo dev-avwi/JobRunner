@@ -115,6 +115,7 @@ const PaymentHub = lazyWithReload(() => import("@/pages/PaymentHub"));
 const ExpensesPage = lazyWithReload(() => import("@/pages/ExpensesPage"));
 const WorkPage = lazyWithReload(() => import("@/pages/WorkPage"));
 const AdminDashboard = lazyWithReload(() => import("@/pages/AdminDashboard"));
+const HelpCenter = lazyWithReload(() => import("@/pages/HelpCenter"));
 
 // Shared admin sub-paths, rendered in both the main tradie Router (so
 // /admin/* doesn't fall through to NotFound — AdminDashboard handles 403s)
@@ -1272,6 +1273,7 @@ function AppLayout() {
       prevWsConnected.current = wsConnected;
     }
   }, [collaborationCtx, wsSendMessage, wsConnected]);
+  const [showHelpCenter, setShowHelpCenter] = useState(false);
   const [showReconnecting, setShowReconnecting] = useState(false);
   const [reconnectingDismissed, setReconnectingDismissed] = useState(false);
   useEffect(() => {
@@ -1782,6 +1784,7 @@ function AppLayout() {
                 onProfileClick={() => setLocation('/settings')}
                 onSettingsClick={() => setLocation('/settings')}
                 onLogoutClick={handleLogout}
+                onHelpClick={() => setShowHelpCenter(true)}
               />
               {/* Business Picker for multi-business users */}
               {userCheck && <BusinessPicker userId={userCheck.id} />}
@@ -1899,6 +1902,15 @@ function AppLayout() {
         onComplete={completeTour}
         audience={tourAudience}
       />
+
+      {/* Help Center slide-over panel */}
+      <Suspense fallback={null}>
+        <HelpCenter
+          open={showHelpCenter}
+          onOpenChange={setShowHelpCenter}
+          currentRoute={location}
+        />
+      </Suspense>
       
       
       {/* Keyboard Shortcuts */}
