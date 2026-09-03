@@ -47161,12 +47161,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         <div class="info-value">${doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('en-AU') : '-'}</div>
       </div>
     </div>
-    ${doc.description ? `<div class="note-block">${doc.description}</div>` : ''}
+    ${doc.description ? `<div class="note-block">${escapeHtml(doc.description)}</div>` : ''}
   </div>
 
   <div class="section">
     <div class="section-title">Work Activity Description</div>
-    <div class="note-block">${doc.workActivityDescription || 'Not specified'}</div>
+    <div class="note-block">${escapeHtml(doc.workActivityDescription) || 'Not specified'}</div>
   </div>
 
   <div class="section">
@@ -47184,13 +47184,13 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
       </tr></thead>
       <tbody>${hazards.map((h, i) => `<tr>
         <td>${i + 1}</td>
-        <td>${h.activityTask}</td>
-        <td>${h.hazard}</td>
-        <td>${h.likelihood.replace('_', ' ')}</td>
-        <td>${h.consequence}</td>
-        <td><span class="risk-badge" style="${riskColor(h.riskBefore)}">${h.riskBefore}</span></td>
-        <td>${h.controlMeasures || '-'}</td>
-        <td><span class="risk-badge" style="${riskColor(h.riskAfter)}">${h.riskAfter}</span></td>
+        <td>${escapeHtml(h.activityTask)}</td>
+        <td>${escapeHtml(h.hazard)}</td>
+        <td>${escapeHtml(h.likelihood.replace('_', ' '))}</td>
+        <td>${escapeHtml(h.consequence)}</td>
+        <td><span class="risk-badge" style="${riskColor(h.riskBefore)}">${escapeHtml(h.riskBefore)}</span></td>
+        <td>${escapeHtml(h.controlMeasures) || '-'}</td>
+        <td><span class="risk-badge" style="${riskColor(h.riskAfter)}">${escapeHtml(h.riskAfter)}</span></td>
       </tr>`).join('')}</tbody>
     </table>` : '<p>No hazards identified</p>'}
   </div>
