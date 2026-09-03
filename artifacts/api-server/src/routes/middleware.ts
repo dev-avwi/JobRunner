@@ -459,8 +459,14 @@ export const requireAuth = async (req: any, res: any, next: any) => {
     username: [user.firstName, user.lastName].filter(Boolean).join(' ') || undefined,
   });
 
-  // Demo sessions are now fully writable (the demo owner account behaves like
-  // a real account for live demos). Read-only enforcement has been removed.
+  // Demo sessions are read-only. Any state-changing method is rejected here so
+  // the restriction is enforced at the server boundary regardless of which
+  // route or client makes the request.
+  if (isDemoSession && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return res.status(403).json({
+      error: 'Demo sessions are read-only. Sign up for a free account to make changes.',
+    });
+  }
 
   next();
 };
