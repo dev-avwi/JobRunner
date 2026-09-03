@@ -1953,10 +1953,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const { title, description, preferredDate, urgency, clientNotes, clientId, preferredWorkerId, preferredWorkerName, referenceJobId, referenceJobTitle } = req.body;
-      if (!title) {
-        return res.status(400).json({ error: 'Title is required' });
+      const portalJobRequestSchema = z.object({
+        title: z.string().min(1).max(255),
+        description: z.string().max(5000).optional().nullable(),
+        preferredDate: z.string().max(50).optional().nullable(),
+        urgency: z.enum(['urgent', 'normal', 'low', 'flexible']).optional().nullable(),
+        clientNotes: z.string().max(5000).optional().nullable(),
+        clientId: z.string().uuid().optional().nullable(),
+        preferredWorkerId: z.string().uuid().optional().nullable(),
+        preferredWorkerName: z.string().max(255).optional().nullable(),
+        referenceJobId: z.string().uuid().optional().nullable(),
+        referenceJobTitle: z.string().max(255).optional().nullable(),
+      });
+      const parsed = portalJobRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message ?? 'Invalid input' });
       }
+      const { title, description, preferredDate, urgency, clientNotes, clientId, preferredWorkerId, preferredWorkerName, referenceJobId, referenceJobTitle } = parsed.data;
 
       const allClients = await storage.getClientsByPhone(session.phone);
       if (!allClients || allClients.length === 0) {
@@ -2048,7 +2061,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const clientIds = allClients.map((c: any) => c.id);
-      const { title, description, preferredDate, urgency, clientNotes } = req.body;
+      const portalJobRequestPatchSchema = z.object({
+        title: z.string().min(1).max(255).optional(),
+        description: z.string().max(5000).optional().nullable(),
+        preferredDate: z.string().max(50).optional().nullable(),
+        urgency: z.enum(['urgent', 'normal', 'low', 'flexible']).optional(),
+        clientNotes: z.string().max(5000).optional().nullable(),
+      });
+      const parsedPatch = portalJobRequestPatchSchema.safeParse(req.body);
+      if (!parsedPatch.success) {
+        return res.status(400).json({ error: parsedPatch.error.errors[0]?.message ?? 'Invalid input' });
+      }
+      const { title, description, preferredDate, urgency, clientNotes } = parsedPatch.data;
 
       let updated;
       for (const clientId of clientIds) {
@@ -36580,7 +36604,19 @@ Respond with JSON in this format:
     try {
       const userId = req.userId!;
       const { recipientId } = req.params;
-      const { content, attachmentUrl, attachmentType } = req.body;
+      const dmSchema = z.object({
+        content: z.string().max(5000).optional(),
+        // attachmentUrl must be a well-formed URL (https only) to prevent SSRF
+        // and stored-XSS via javascript: or data: URIs. The URL is set by the
+        // server-side upload endpoint in normal use; this guards direct API callers.
+        attachmentUrl: z.string().url().regex(/^https:\/\//, 'attachmentUrl must use HTTPS').max(2048).optional().nullable(),
+        attachmentType: z.enum(['image', 'video', 'file']).optional().nullable(),
+      });
+      const dmParsed = dmSchema.safeParse(req.body);
+      if (!dmParsed.success) {
+        return res.status(400).json({ error: dmParsed.error.errors[0]?.message ?? 'Invalid input' });
+      }
+      const { content, attachmentUrl, attachmentType } = dmParsed.data;
       
       if (!content?.trim() && !attachmentUrl) {
         return res.status(400).json({ error: 'Message content or attachment is required' });
@@ -37167,7 +37203,18 @@ Respond with JSON in this format:
         return res.status(404).json({ error: 'Template not found' });
       }
       
-      const { name, category, body, isDefault } = req.body;
+      // Validate update payload — mirrors create schema but all fields optional
+      const updateSchema = z.object({
+        name: z.string().min(1).max(255).optional(),
+        category: z.string().max(100).optional(),
+        body: z.string().min(1).max(1600).optional(), // 1600 = 10 SMS segments
+        isDefault: z.boolean().optional(),
+      });
+      const parsed = updateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ error: parsed.error.errors[0]?.message ?? 'Invalid input' });
+      }
+      const { name, category, body, isDefault } = parsed.data;
       const template = await storage.updateSmsTemplate(id, userId, { 
         name, 
         category, 
@@ -46708,8 +46755,33 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
     try {
       const userContext = await getUserContext(req.userId);
       const userId = userContext.effectiveUserId;
-      const { title, description, jobId, siteAddress, workActivityDescription, ppeRequirements, emergencyContact, firstAidLocation, status, hazards, attachmentUrl, attachmentType } = req.body;
-      if (!title) return res.status(400).json({ error: 'Title is required' });
+      const swmsSchema = z.object({
+        title: z.string().min(1).max(255),
+        description: z.string().max(5000).optional().nullable(),
+        jobId: z.string().uuid().optional().nullable(),
+        siteAddress: z.string().max(500).optional().nullable(),
+        workActivityDescription: z.string().max(5000).optional().nullable(),
+        ppeRequirements: z.array(z.string().max(255)).max(50).optional().nullable(),
+        emergencyContact: z.string().max(255).optional().nullable(),
+        firstAidLocation: z.string().max(500).optional().nullable(),
+        status: z.enum(['draft', 'active', 'archived']).optional().nullable(),
+        hazards: z.array(z.object({
+          activityTask: z.string().max(500).optional(),
+          hazard: z.string().max(500).optional(),
+          likelihood: z.string().max(100).optional(),
+          consequence: z.string().max(100).optional(),
+          riskBefore: z.string().max(100).optional(),
+          controlMeasures: z.string().max(2000).optional().nullable(),
+          riskAfter: z.string().max(100).optional(),
+        })).max(100).optional().nullable(),
+        attachmentUrl: z.string().url().regex(/^https:\/\//, 'attachmentUrl must use HTTPS').max(2048).optional().nullable(),
+        attachmentType: z.string().max(50).optional().nullable(),
+      });
+      const swmsParsed = swmsSchema.safeParse(req.body);
+      if (!swmsParsed.success) {
+        return res.status(400).json({ error: swmsParsed.error.errors[0]?.message ?? 'Invalid input' });
+      }
+      const { title, description, jobId, siteAddress, workActivityDescription, ppeRequirements, emergencyContact, firstAidLocation, status, hazards, attachmentUrl, attachmentType } = swmsParsed.data;
 
       let resolvedAddress = siteAddress;
       if (jobId && !siteAddress) {
