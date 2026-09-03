@@ -4,6 +4,81 @@ import { errorLogs } from "@workspace/db";
 export type LogLevel = 'info' | 'warn' | 'error' | 'fatal';
 export type LogCategory = 'sms' | 'email' | 'billing' | 'webhook' | 'auth' | 'api' | 'background' | 'system' | 'frontend';
 
+// ---------------------------------------------------------------------------
+// PII sanitisation helpers
+// ---------------------------------------------------------------------------
+
+/** Field names whose values must never appear in plaintext in logs or the DB. */
+const PII_FIELD_NAMES = new Set([
+  'password', 'passwordHash', 'emailVerificationToken', 'passwordResetToken',
+  'email', 'phone', 'phoneNormalized',
+  'bankBsb', 'bankAccountNumber', 'bankAccountName',
+  'abn', 'tfn', 'payId',
+  'appleReceiptData', 'stripeCustomerId', 'stripePaymentIntentId',
+]);
+
+/**
+ * Recursively walk a plain-object metadata value and replace any key that is
+ * in the PII_FIELD_NAMES set with "[REDACTED]".  Non-plain-object values
+ * (strings, numbers, arrays) are returned unchanged so callers can still log
+ * counts, IDs, and other non-sensitive data safely.
+ *
+ * Exported for unit testing.
+ */
+export function sanitizeMetadata(value: unknown, depth = 0): unknown {
+  if (depth > 5 || value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((v) => sanitizeMetadata(v, depth + 1));
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    out[k] = PII_FIELD_NAMES.has(k) ? '[REDACTED]' : sanitizeMetadata(v, depth + 1);
+  }
+  return out;
+}
+
+/**
+ * Strip common PII patterns from a string so that callers who accidentally
+ * interpolate an email address or phone number don't persist them.
+ * Patterns replaced with "[REDACTED]":
+ *   - Email addresses (RFC-5321 local@domain)
+ *   - Australian mobile/landline numbers (10+ digits, optional +61 prefix)
+ *
+ * Exported for unit testing.
+ */
+export function sanitizeMessage(msg: string): string {
+  return msg
+    // email addresses
+    .replace(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g, '[REDACTED]')
+    // phone numbers: optional +61/0, 9-15 digits, optional spaces/dashes
+    .replace(/(\+?61[\s\-]?|0)[\d][\d\s\-]{7,13}\d/g, '[REDACTED]');
+}
+
+/**
+ * Produce a safe, sanitized summary of an error value suitable for storing in
+ * the DB or emitting to stdout/email.
+ *
+ * - Error.message and stack frames are passed through sanitizeMessage so PII
+ *   patterns (emails, phone numbers) embedded in HTTP response bodies or
+ *   provider error payloads are redacted before they reach any sink.
+ * - Stacks are truncated to the first 8 lines to limit volume.
+ * - Non-Error values are coerced to a sanitized string.
+ *
+ * Exported for unit testing.
+ */
+export function sanitizeError(error: unknown): { name: string; message: string; stack: string } | { raw: string } | undefined {
+  if (error === undefined || error === null) return undefined;
+  if (error instanceof Error) {
+    const safeMsg = sanitizeMessage(error.message);
+    const rawStack = error.stack ?? '';
+    const safeStack = rawStack
+      .split('\n')
+      .slice(0, 8)
+      .map((line) => sanitizeMessage(line))
+      .join('\n');
+    return { name: error.name, message: safeMsg, stack: safeStack };
+  }
+  return { raw: sanitizeMessage(String(error)) };
+}
+
 interface LogEntry {
   level: LogLevel;
   category: LogCategory;
@@ -48,17 +123,22 @@ function isTransientInfraError(entry: { message?: unknown; error?: unknown }): b
 class Logger {
   private async persist(entry: LogEntry) {
     try {
-      const errorDetails = entry.error instanceof Error
-        ? { name: entry.error.name, message: entry.error.message, stack: entry.error.stack }
-        : entry.error ? { raw: String(entry.error) } : undefined;
+      // Sanitize the error object before persisting — error messages and stack
+      // frames from third-party providers (Stripe, Twilio, SendGrid, etc.) can
+      // contain PII such as email addresses or phone numbers embedded in request
+      // or response payloads.
+      const errorDetails = sanitizeError(entry.error) ?? null;
 
       await db.insert(errorLogs).values({
         level: entry.level,
         category: entry.category,
-        message: entry.message,
+        // Sanitize the message before it hits the DB in case the caller
+        // interpolated an email address or phone number inline.
+        message: sanitizeMessage(entry.message),
         userId: entry.userId || null,
-        metadata: entry.metadata || null,
-        errorDetails: errorDetails || null,
+        // Deep-sanitize metadata so no PII field survives to the DB row.
+        metadata: entry.metadata ? sanitizeMetadata(entry.metadata) as Record<string, any> : null,
+        errorDetails,
       });
     } catch (dbError) {
       console.error('[Logger] Failed to persist log entry:', dbError);
@@ -78,14 +158,19 @@ class Logger {
     try {
       const { sendEmail } = await import('./emailService');
       const adminEmail = process.env.ADMIN_ALERT_EMAIL || 'admin@avwebinnovation.com';
-      const errorMsg = entry.error instanceof Error ? entry.error.message : String(entry.error || '');
-      const stack = entry.error instanceof Error ? entry.error.stack : '';
+      // Sanitize the error before embedding it in the alert email — provider
+      // error payloads can contain recipient addresses and request bodies.
+      const safeErr = sanitizeError(entry.error);
+      const errorMsg = safeErr && 'message' in safeErr ? safeErr.message : safeErr?.raw ?? '';
+      const stack = safeErr && 'stack' in safeErr ? safeErr.stack : '';
       // Defensive: callers occasionally pass non-strings (Error objects, arrays
       // built from console.error spreads). Coerce so .substring/template literals
       // don't blow up the alerter and silently drop the alert.
-      const safeMessage = typeof entry.message === 'string'
-        ? entry.message
-        : (entry.message == null ? '' : String(entry.message));
+      const safeMessage = sanitizeMessage(
+        typeof entry.message === 'string'
+          ? entry.message
+          : (entry.message == null ? '' : String(entry.message)),
+      );
 
       await sendEmail({
         to: adminEmail,
@@ -110,7 +195,19 @@ class Logger {
     const ts = new Date().toISOString();
     const prefix = `[${ts}] [${entry.level.toUpperCase()}] [${entry.category}]`;
     const userStr = entry.userId ? ` user=${entry.userId}` : '';
-    return `${prefix}${userStr} ${entry.message}`;
+    // Sanitize before writing to stdout so CI/cloud log aggregators never
+    // capture raw email addresses or phone numbers.
+    return `${prefix}${userStr} ${sanitizeMessage(entry.message)}`;
+  }
+
+  /** Emit a sanitized string representation of an error to the console. */
+  private consoleError(error: unknown): void {
+    const safe = sanitizeError(error);
+    if (!safe) return;
+    const text = 'message' in safe
+      ? `${safe.name}: ${safe.message}\n${safe.stack}`
+      : safe.raw;
+    console.error(text);
   }
 
   info(category: LogCategory, message: string, opts?: { userId?: string; metadata?: Record<string, any> }) {
@@ -122,14 +219,14 @@ class Logger {
   warn(category: LogCategory, message: string, opts?: { userId?: string; metadata?: Record<string, any>; error?: Error | unknown }) {
     const entry: LogEntry = { level: 'warn', category, message, ...opts };
     console.warn(this.formatConsole(entry));
-    if (entry.error) console.warn(entry.error);
+    if (entry.error) this.consoleError(entry.error);
     this.persist(entry);
   }
 
   error(category: LogCategory, message: string, opts?: { userId?: string; metadata?: Record<string, any>; error?: Error | unknown }) {
     const entry: LogEntry = { level: 'error', category, message, ...opts };
     console.error(this.formatConsole(entry));
-    if (entry.error) console.error(entry.error);
+    if (entry.error) this.consoleError(entry.error);
     this.persist(entry);
     this.sendAlertEmail(entry);
   }
@@ -137,7 +234,7 @@ class Logger {
   fatal(category: LogCategory, message: string, opts?: { userId?: string; metadata?: Record<string, any>; error?: Error | unknown }) {
     const entry: LogEntry = { level: 'fatal', category, message, ...opts };
     console.error(this.formatConsole(entry));
-    if (entry.error) console.error(entry.error);
+    if (entry.error) this.consoleError(entry.error);
     this.persist(entry);
     this.sendAlertEmail(entry);
   }

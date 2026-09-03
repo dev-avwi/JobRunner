@@ -51506,6 +51506,8 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
   });
 
   // Owner/manager views a subcontractor's payment details to actually pay an invoice.
+  // Bank BSB and account number are partially masked — managers see only the last 4
+  // digits of each so they can identify the account without exposing the full number.
   app.get("/api/business/subcontractor-invoices/:id/payment-details", requireAuth, requirePaidTier(), ownerOrManagerOnly(), async (req: any, res) => {
     try {
       const ctx = await getUserContext(req.userId);
@@ -51515,7 +51517,37 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         return res.status(403).json({ error: 'Not authorized' });
       }
       const details = await storage.getWorkerPaymentDetails(invoice.subcontractorUserId);
-      res.json(details || null);
+      if (!details) return res.json(null);
+      // Return only the fields a manager needs to execute payment. Every
+      // sensitive identifier is masked so the manager can confirm which account
+      // they are paying without receiving the full value.
+      //
+      // maskEnd4  — keeps last 4 chars of numeric identifiers (BSB, account)
+      // maskName  — keeps first 2 chars of account holder name for confirmation
+      // maskPayId — payId can be email, phone, or ABN; always mask to last 4
+      //             chars so the format is obscured regardless of its type
+      const maskEnd4 = (v: string | null | undefined): string | null => {
+        if (!v) return null;
+        const s = String(v).replace(/\s/g, '');
+        return s.length <= 4 ? '****' : `****${s.slice(-4)}`;
+      };
+      const maskName = (v: string | null | undefined): string | null => {
+        if (!v) return null;
+        const s = String(v).trim();
+        return s.length <= 2 ? '***' : `${s.slice(0, 2)}***`;
+      };
+      res.json({
+        // Masked financial identifiers
+        bankBsb: maskEnd4(details.bankBsb),
+        bankAccountNumber: maskEnd4(details.bankAccountNumber),
+        bankAccountName: maskName(details.bankAccountName),
+        payId: maskEnd4(details.payId),
+        // ABN is a semi-public business identifier needed for remittance; not masked
+        abn: details.abn || null,
+        // Expose only whether each payment method is configured, not the value
+        hasBankTransfer: !!(details.bankBsb && details.bankAccountNumber),
+        hasPayId: !!details.payId,
+      });
     } catch (error) {
       console.error('[SubInvoice PaymentDetails] Error:', error);
       res.status(500).json({ error: 'Failed to load payment details' });

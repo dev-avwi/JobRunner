@@ -330,10 +330,11 @@ async function sendLifecycleEmail(user: UserWithMilestones, emailConfig: typeof 
     const { invalidateUser } = await import('./cache');
     invalidateUser(user.id);
 
-    logger.info('email', `[Lifecycle] Sent ${emailConfig.key} to ${user.email}`);
+    // Log the user ID rather than the email address so PII never enters logs.
+    logger.info('email', `[Lifecycle] Sent ${emailConfig.key} to user ${user.id}`);
     return true;
   } catch (error) {
-    logger.error('email', `[Lifecycle] Failed to send ${emailConfig.key} to ${user.email}`, { error });
+    logger.error('email', `[Lifecycle] Failed to send ${emailConfig.key} for user ${user.id}`, { error });
     return false;
   }
 }
