@@ -239,6 +239,12 @@ const HELP_CHAT_STARTERS = [
 ];
 
 const HELP_CHAT_SESSION_KEY = "help_chat_history";
+
+interface ChatSession {
+  route: string | null;
+  messages: HelpChatMessage[];
+}
+
 function HelpChat({
   onNavigate,
   onViewArticle,
@@ -251,7 +257,13 @@ function HelpChat({
   currentRoute?: string;
 }) {
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
-  const [messages, setMessages] = useState<HelpChatMessage[]>(() => loadChatHistory());
+  // Load the session once on mount so we can compare its stored route
+  const [session] = useState<ChatSession>(() => loadChatSession());
+  const isFromDifferentRoute =
+    session.messages.length > 0 &&
+    session.route !== null &&
+    session.route !== (currentRoute ?? null);
+  const [messages, setMessages] = useState<HelpChatMessage[]>(() => session.messages);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Sync input when a new initial query is injected (e.g. from article search empty state)
@@ -281,7 +293,7 @@ function HelpChat({
             confidence: data.confidence,
           },
         ];
-        saveChatHistory(next);
+        saveChatHistory(next, currentRoute ?? null);
         return next;
       });
       setInputValue("");
@@ -296,7 +308,7 @@ function HelpChat({
             confidence: "low" as const,
           },
         ];
-        saveChatHistory(next);
+        saveChatHistory(next, currentRoute ?? null);
         return next;
       });
       setInputValue("");
@@ -363,6 +375,17 @@ function HelpChat({
           </button>
         )}
       </div>
+
+      {/* Stale-session notice — shown when the stored conversation is from a different route */}
+      {isFromDifferentRoute && (
+        <div
+          className="mx-4 mt-3 flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/60 border border-border text-xs text-muted-foreground"
+          data-testid="help-chat-stale-session-notice"
+        >
+          <HelpCircle className="h-3 w-3 shrink-0" />
+          Conversation from a different page
+        </div>
+      )}
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
@@ -723,6 +746,9 @@ export default function HelpCenter({
       setActiveCategory(initialCategory);
       setSelectedArticle(null);
       setActiveTab("articles");
+      // Always clear the pre-fill query on open so a query set during a
+      // previous session on a different route never survives a close/reopen.
+      setChatInitialQuery(undefined);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -938,27 +964,35 @@ export default function HelpCenter({
   );
 }
 
-function loadChatHistory(): HelpChatMessage[] {
+const HELP_CHAT_MAX_MESSAGES = 50;
+
+function loadChatSession(): ChatSession {
   try {
     const raw = sessionStorage.getItem(HELP_CHAT_SESSION_KEY);
-    if (!raw) return [];
+    if (!raw) return { route: null, messages: [] };
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    // Backwards-compat: old format was a plain array
+    if (Array.isArray(parsed)) return { route: null, messages: parsed };
+    if (parsed && Array.isArray(parsed.messages)) {
+      return { route: parsed.route ?? null, messages: parsed.messages };
+    }
+    return { route: null, messages: [] };
   } catch {
-    return [];
+    return { route: null, messages: [] };
   }
 }
 
-function saveChatHistory(messages: HelpChatMessage[]) {
+function saveChatHistory(messages: HelpChatMessage[], route: string | null) {
   try {
-    const toSave = messages.slice(-HELP_CHAT_MAX_MESSAGES);
-    sessionStorage.setItem(HELP_CHAT_SESSION_KEY, JSON.stringify(toSave));
+    const session: ChatSession = {
+      route,
+      messages: messages.slice(-HELP_CHAT_MAX_MESSAGES),
+    };
+    sessionStorage.setItem(HELP_CHAT_SESSION_KEY, JSON.stringify(session));
   } catch {
     // sessionStorage may be unavailable in some environments
   }
 }
-
-const HELP_CHAT_MAX_MESSAGES = 50;
 
 function clearChatHistory() {
   try {
