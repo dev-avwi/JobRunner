@@ -7196,6 +7196,17 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
   app.delete("/api/jobs/:id/portal-link/:tokenId", requireAuth, async (req: any, res) => {
     try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const job = await storage.getJob(req.params.id, effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+      // Verify the token belongs to this job before revoking
+      const tokens = await storage.getJobPortalTokensByJobId(job.id);
+      const tokenBelongsToJob = tokens.some((t: any) => t.id === req.params.tokenId);
+      if (!tokenBelongsToJob) {
+        return res.status(404).json({ error: 'Portal link not found' });
+      }
       await storage.revokeJobPortalToken(req.params.tokenId);
       res.json({ success: true });
     } catch (error: any) {
@@ -7205,7 +7216,12 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
   app.get("/api/jobs/:id/portal-links", requireAuth, async (req: any, res) => {
     try {
-      const tokens = await storage.getJobPortalTokensByJobId(req.params.id);
+      const effectiveUserId = req.effectiveUserId || req.userId;
+      const job = await storage.getJob(req.params.id, effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+      const tokens = await storage.getJobPortalTokensByJobId(job.id);
       const baseUrl = getProductionBaseUrl(req);
       const withUrls = (tokens || []).map((t: any) => ({
         ...t,
