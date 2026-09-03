@@ -154,6 +154,41 @@ test.describe('Help Center – Ask the Help Assistant button visibility', () => 
     });
   });
 
+  test('clearing the search input after a no-results search restores the article list', async ({
+    page,
+  }) => {
+    await mockBaseApis(page);
+    await page.goto('/', { waitUntil: 'networkidle' });
+
+    // Open the Help Center panel
+    await page.locator('[data-testid="button-help"]').click();
+    await expect(page.locator('[data-testid="help-center-panel"]')).toBeVisible({
+      timeout: 10000,
+    });
+
+    // Wait for the search input to be ready
+    const searchInput = page.locator('[data-testid="help-search-input"]');
+    await expect(searchInput).toBeVisible({ timeout: 10000 });
+
+    // Type a query that matches none of the seeded articles
+    await searchInput.fill('xyzzy-no-match-12345');
+
+    // Confirm the empty state with the assistant button is visible
+    const assistantBtn = page.locator('[data-testid="help-ask-assistant-btn"]');
+    await expect(assistantBtn).toBeVisible({ timeout: 5000 });
+
+    // Clear the search input
+    await searchInput.fill('');
+
+    // The assistant button must now be gone
+    await expect(assistantBtn).not.toBeVisible({ timeout: 5000 });
+
+    // At least one article from the seeded set must be visible again
+    await expect(page.locator('text=How to create your first job')).toBeVisible({
+      timeout: 5000,
+    });
+  });
+
   test('clicking the button switches to the chat tab with the query pre-filled', async ({
     page,
   }) => {
