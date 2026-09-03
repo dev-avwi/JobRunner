@@ -243,10 +243,12 @@ function HelpChat({
   onNavigate,
   onViewArticle,
   initialQuery,
+  currentRoute,
 }: {
   onNavigate: (path: string) => void;
   onViewArticle: (article: HelpArticle) => void;
   initialQuery?: string;
+  currentRoute?: string;
 }) {
   const [inputValue, setInputValue] = useState(initialQuery ?? "");
   const [messages, setMessages] = useState<HelpChatMessage[]>(() => loadChatHistory());
@@ -262,6 +264,7 @@ function HelpChat({
       const res = await apiRequest("POST", "/api/help/chat", {
         message,
         history: history.map((m) => ({ role: m.role, content: m.content })),
+        currentRoute: currentRoute ?? null,
       });
       return res.json();
     },
@@ -814,7 +817,7 @@ export default function HelpCenter({
         {/* ─── Chat tab ─── */}
         {activeTab === "chat" && (
           <div className="flex-1 overflow-hidden flex flex-col">
-            <HelpChat onNavigate={handleNavigate} onViewArticle={handleViewArticle} initialQuery={chatInitialQuery} />
+            <HelpChat onNavigate={handleNavigate} onViewArticle={handleViewArticle} initialQuery={chatInitialQuery} currentRoute={currentRoute} />
           </div>
         )}
 

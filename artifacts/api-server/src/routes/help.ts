@@ -64,6 +64,7 @@ interface HelpChatMessage {
 interface HelpChatRequest {
   message: string;
   history?: HelpChatMessage[];
+  currentRoute?: string | null;
 }
 
 interface HelpChatResponse {
@@ -80,9 +81,35 @@ interface HelpChatResponse {
   confidence: 'high' | 'medium' | 'low';
 }
 
-async function callHelpAI(message: string, history: HelpChatMessage[]): Promise<HelpChatResponse> {
+function buildRouteContext(currentRoute: string | null | undefined): string {
+  if (!currentRoute) return '';
+  // Map raw routes to human-readable page names for clearer AI context
+  const ROUTE_LABELS: Record<string, string> = {
+    '/jobs': 'Jobs',
+    '/quotes': 'Quotes',
+    '/invoices': 'Invoices',
+    '/clients': 'Clients',
+    '/settings': 'Settings',
+    '/integrations': 'Integrations',
+    '/dispatch': 'Dispatch',
+    '/calendar': 'Calendar',
+    '/map': 'Map',
+    '/reports': 'Reports',
+    '/': 'Dashboard',
+  };
+
+  const label = Object.entries(ROUTE_LABELS).find(([prefix]) =>
+    prefix !== '/' ? currentRoute.startsWith(prefix) : currentRoute === '/'
+  )?.[1] ?? currentRoute;
+
+  return `\n\n## Current User Context\nThe user is currently on the **${label}** page (route: ${currentRoute}). Tailor your answer to be relevant to what they can see and do from this page when applicable.`;
+}
+
+async function callHelpAI(message: string, history: HelpChatMessage[], currentRoute?: string | null): Promise<HelpChatResponse> {
+  const systemPrompt = HELP_SYSTEM_PROMPT + buildRouteContext(currentRoute);
+
   const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-    { role: 'system', content: HELP_SYSTEM_PROMPT },
+    { role: 'system', content: systemPrompt },
     // Include up to the last 6 turns of conversation history for context
     ...history.slice(-6).map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user', content: message },
@@ -133,7 +160,7 @@ export function registerHelpRoutes(app: Express): void {
 
   app.post("/api/help/chat", requireAuth, aiPerUserLimiter, async (req: any, res) => {
     try {
-      const { message, history = [] } = req.body as HelpChatRequest;
+      const { message, history = [], currentRoute } = req.body as HelpChatRequest;
 
       if (!message || typeof message !== 'string' || !message.trim()) {
         return res.status(400).json({ error: "message is required" });
@@ -143,7 +170,7 @@ export function registerHelpRoutes(app: Express): void {
         return res.status(400).json({ error: "Message too long (max 1000 characters)" });
       }
 
-      const result = await aiQueue.run(() => callHelpAI(message.trim(), history));
+      const result = await aiQueue.run(() => callHelpAI(message.trim(), history, currentRoute));
 
       if (!result) {
         return res.status(503).json({ error: "Service busy, please try again" });
