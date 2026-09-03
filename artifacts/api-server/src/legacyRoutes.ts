@@ -6455,10 +6455,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clearTimeout(appleTimeout1);
       }
 
-      if (appleResult.status === 21007) {
+      let verified = appleResult.status === 0;
+      if (!verified && appleResult.status === 21007) {
         const appleSandboxController1 = new AbortController();
         const appleSandboxTimeout1 = setTimeout(() => appleSandboxController1.abort(), 30000);
-        let sandboxResult: any;
         try {
           const sandboxResponse = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
             method: 'POST',
@@ -6469,15 +6469,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }),
             signal: appleSandboxController1.signal,
           });
-          sandboxResult = await sandboxResponse.json();
+          appleResult = await sandboxResponse.json();
         } finally {
           clearTimeout(appleSandboxTimeout1);
         }
-        if (sandboxResult.status !== 0) {
-          return res.status(400).json({ success: false, message: 'Receipt verification failed (sandbox)' });
-        }
-      } else if (appleResult.status !== 0) {
+        verified = appleResult.status === 0;
+      }
+      if (!verified) {
         return res.status(400).json({ success: false, message: `Receipt verification failed: status ${appleResult.status}` });
+      }
+
+      // The receipt MUST contain an active transaction for the exact product the client
+      // claims to have purchased. Accepting any verified receipt regardless of its
+      // product list would allow a low-tier or expired receipt to grant a higher tier.
+      let originalTransactionId: string | undefined;
+      try {
+        const latestInfo = appleResult?.latest_receipt_info;
+        if (Array.isArray(latestInfo) && latestInfo.length > 0) {
+          const now = Date.now();
+          const matching = latestInfo
+            .filter((t: any) => t.product_id === productId && Number(t.expires_date_ms || 0) > now)
+            .sort((a: any, b: any) => Number(b.purchase_date_ms || 0) - Number(a.purchase_date_ms || 0));
+          originalTransactionId = matching[0]?.original_transaction_id;
+        }
+      } catch (e) {
+        console.warn('[IAP] Could not extract tier originalTransactionId:', e);
+      }
+      if (!originalTransactionId) {
+        console.warn(`[IAP] Tier receipt for user ${userId} has no active transaction for product ${productId}`);
+        return res.status(400).json({ success: false, message: 'This receipt does not contain an active purchase for that subscription.' });
+      }
+
+      // Replay / cross-account guard: an Apple transaction belongs to exactly one account.
+      // Reject the receipt if it is already bound to a different user.
+      const existingByTxn = await storage.getUserByAppleOriginalTransactionId(originalTransactionId);
+      if (existingByTxn && existingByTxn.id !== userId) {
+        console.warn(`[IAP] Tier txn ${originalTransactionId} already linked to user ${existingByTxn.id}, rejected for ${userId}`);
+        return res.status(400).json({ success: false, message: 'This purchase is already linked to another account.' });
       }
 
       await storage.updateUser(userId, {
@@ -6486,6 +6514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionSource: 'apple',
         appleProductId: productId,
         appleReceiptData: receiptData,
+        appleOriginalTransactionId: originalTransactionId,
       } as any);
 
       if (newTier === 'team' || newTier === 'business') {
@@ -6495,7 +6524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log(`[IAP] User ${userId} upgraded to ${newTier} via Apple IAP (product: ${productId})`);
+      console.log(`[IAP] User ${userId} upgraded to ${newTier} via Apple IAP (product: ${productId}, txn: ${originalTransactionId})`);
 
       res.json({
         success: true,
@@ -6723,10 +6752,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         clearTimeout(appleTimeout3);
       }
 
-      if (appleResult.status === 21007) {
+      let verified = appleResult.status === 0;
+      if (!verified && appleResult.status === 21007) {
         const appleSandboxController3 = new AbortController();
         const appleSandboxTimeout3 = setTimeout(() => appleSandboxController3.abort(), 30000);
-        let sandboxResult: any;
         try {
           const sandboxResponse3 = await fetch('https://sandbox.itunes.apple.com/verifyReceipt', {
             method: 'POST',
@@ -6737,15 +6766,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }),
             signal: appleSandboxController3.signal,
           });
-          sandboxResult = await sandboxResponse3.json();
+          appleResult = await sandboxResponse3.json();
         } finally {
           clearTimeout(appleSandboxTimeout3);
         }
-        if (sandboxResult.status !== 0) {
-          return res.status(400).json({ success: false, message: 'Receipt verification failed during restore' });
+        verified = appleResult.status === 0;
+      }
+      if (!verified) {
+        return res.status(400).json({ success: false, message: `Receipt verification failed during restore: status ${appleResult.status}` });
+      }
+
+      // The receipt MUST contain an active transaction for the exact product the client
+      // claims to be restoring. Accepting any verified receipt regardless of its product
+      // list would allow a lower-tier or expired receipt to restore a higher tier.
+      let originalTransactionId: string | undefined;
+      try {
+        const latestInfo = appleResult?.latest_receipt_info;
+        if (Array.isArray(latestInfo) && latestInfo.length > 0) {
+          const now = Date.now();
+          const matching = latestInfo
+            .filter((t: any) => t.product_id === productId && Number(t.expires_date_ms || 0) > now)
+            .sort((a: any, b: any) => Number(b.purchase_date_ms || 0) - Number(a.purchase_date_ms || 0));
+          originalTransactionId = matching[0]?.original_transaction_id;
         }
-      } else if (appleResult.status !== 0) {
-        return res.status(400).json({ success: false, message: `Receipt verification failed: status ${appleResult.status}` });
+      } catch (e) {
+        console.warn('[IAP] Could not extract tier originalTransactionId during restore:', e);
+      }
+      if (!originalTransactionId) {
+        console.warn(`[IAP] Restore receipt for user ${userId} has no active transaction for product ${productId}`);
+        return res.status(400).json({ success: false, message: 'This receipt does not contain an active purchase for that subscription.' });
+      }
+
+      // Replay / cross-account guard: an Apple transaction belongs to exactly one account.
+      // Reject the receipt if it is already bound to a different user.
+      const existingByTxn = await storage.getUserByAppleOriginalTransactionId(originalTransactionId);
+      if (existingByTxn && existingByTxn.id !== userId) {
+        console.warn(`[IAP] Tier restore txn ${originalTransactionId} already linked to user ${existingByTxn.id}, rejected for ${userId}`);
+        return res.status(400).json({ success: false, message: 'This purchase is already linked to another account.' });
       }
 
       await storage.updateUser(userId, {
@@ -6754,6 +6811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subscriptionSource: 'apple',
         appleProductId: productId,
         appleReceiptData: receiptData,
+        appleOriginalTransactionId: originalTransactionId,
       } as any);
 
       if (newTier === 'team' || newTier === 'business') {
@@ -6763,7 +6821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log(`[IAP] User ${userId} restored to ${newTier} via Apple IAP (verified)`);
+      console.log(`[IAP] User ${userId} restored to ${newTier} via Apple IAP (product: ${productId}, txn: ${originalTransactionId})`);
 
       res.json({
         success: true,
