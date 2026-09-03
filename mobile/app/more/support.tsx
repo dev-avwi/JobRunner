@@ -424,6 +424,26 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) =>
       color: colors.mutedForeground,
       marginTop: spacing.xs,
     },
+    // Offline notice
+    offlineBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      backgroundColor: colors.warning + '20',
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      borderColor: colors.warning + '50',
+      marginHorizontal: spacing.lg,
+      marginTop: spacing.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    offlineBannerText: {
+      ...typography.caption,
+      color: colors.warning,
+      flex: 1,
+      fontWeight: fontWeights.medium,
+    },
   });
 
 // ─── Markdown renderer (plain text blocks) ────────────────────────────────────
@@ -589,8 +609,13 @@ export default function SupportScreen() {
   const [showTour, setShowTour] = useState(false);
   const feedbackSheetRef = useRef<AppBottomSheetRef>(null);
 
+  // ─── Offline / sync state ─────────────────────────────────────────────────
+
+  const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
+
   // Bundled articles load instantly and work offline.
-  // A background fetch will swap in fresher content once the production API has the route.
+  // Only attempt the network fetch when the device is online; when offline the
+  // bundled placeholder data is used immediately without any loading state.
   const { data, isLoading } = useQuery<HelpData | null>({
     queryKey: ['/api/help/articles'],
     queryFn: async () => {
@@ -598,6 +623,7 @@ export default function SupportScreen() {
       if (r.error || !(r.data as HelpData)?.articles?.length) return null;
       return r.data as HelpData;
     },
+    enabled: isOnline,
     staleTime: 5 * 60 * 1000,
     placeholderData: { categories: HELP_CATEGORIES as HelpCategory[], articles: HELP_ARTICLES as HelpArticle[] },
   });
@@ -641,9 +667,6 @@ export default function SupportScreen() {
     setSelectedArticle(null);
   };
 
-  // ─── Debug info ───────────────────────────────────────────────────────────
-
-  const { isOnline, isSyncing, pendingSyncCount, lastSyncTime } = useOfflineStore();
   const user = useAuthStore((state: any) => state.user);
   const { isOwner } = useAuthStore() as any;
   const confirm = useConfirmDialog();
@@ -757,6 +780,16 @@ export default function SupportScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.content}>
+          {/* Offline notice */}
+          {!isOnline && (
+            <View style={styles.offlineBanner}>
+              <Feather name="wifi-off" size={iconSizes.md} color={colors.warning} />
+              <Text style={styles.offlineBannerText}>
+                You're offline. Showing cached help content. Contact info below is still available.
+              </Text>
+            </View>
+          )}
+
           {/* Ask a question (Help Assistant) */}
           <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}>
             <TouchableOpacity
