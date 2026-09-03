@@ -2,7 +2,7 @@
 import * as Sentry from "@sentry/node";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { randomBytes, randomUUID, createHash, randomInt } from "crypto";
+import { randomBytes, randomUUID, createHash, randomInt, timingSafeEqual } from "crypto";
 import { z } from "zod";
 import multer from "multer";
 import jwt from "jsonwebtoken";
@@ -1090,8 +1090,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Per-IP rate limiters for the SMS auth flow.
+  // request-code: max 5 sends per 15 min per IP (backs the existing per-phone limit).
+  // verify-code:  max 10 attempts per 15 min per IP (primary brute-force defence).
+  const portalRequestCodeIpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many verification requests. Please try again later.' },
+    skipSuccessfulRequests: false,
+  });
+
+  const portalVerifyCodeIpLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many verification attempts. Please try again later.' },
+    skipSuccessfulRequests: false,
+  });
+
   // CLIENT PORTAL: Request verification code via SMS
-  app.post("/api/portal/request-code", async (req, res) => {
+  app.post("/api/portal/request-code", portalRequestCodeIpLimiter, async (req, res) => {
     try {
       const { phone } = req.body;
       
@@ -1143,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CLIENT PORTAL: Verify code and create session
-  app.post("/api/portal/verify-code", async (req, res) => {
+  app.post("/api/portal/verify-code", portalVerifyCodeIpLimiter, async (req, res) => {
     try {
       const { phone, code } = req.body;
       
@@ -1158,34 +1179,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Normalize phone number to E.164 format
       const { formatPhoneNumber } = await import('./services/smsService');
       const normalizedPhone = formatPhoneNumber(phone);
-      
-      // Get verification code record
-      const verificationRecord = await storage.getPortalVerificationCode(normalizedPhone, code);
-      
-      if (!verificationRecord) {
-        return res.status(400).json({ error: 'Invalid code' });
+
+      const MAX_ATTEMPTS = 5;
+
+      // STEP 1 — Atomically reserve an attempt slot.
+      //
+      // claimVerificationAttempt issues a single UPDATE … WHERE attempts < MAX
+      // … RETURNING, so concurrent requests each increment independently; only
+      // those that fit under the cap receive a row back.  This closes the
+      // read-then-increment race that existed when we read attempts, checked
+      // the limit, and then incremented in separate statements.
+      const claimed = await storage.claimVerificationAttempt(normalizedPhone, MAX_ATTEMPTS);
+
+      if (!claimed) {
+        // Distinguish "code is exhausted / locked out" from "no active code at
+        // all" so the UI can give the right guidance.  This extra read is safe
+        // because we're on the error path — we never act on the returned value.
+        const existing = await storage.getActivePortalVerificationCodeByPhone(normalizedPhone);
+        if (existing) {
+          return res.status(429).json({ error: 'Too many attempts. Please request a new code.' });
+        }
+        return res.status(400).json({ error: 'Invalid or expired code' });
       }
-      
-      // Check if code is already used
-      if (verificationRecord.verified) {
+
+      // STEP 2 — Compare the user-supplied code against the stored code using
+      // a constant-time comparison to prevent timing-based enumeration.
+      const suppliedCode = code.trim();
+      const storedCode  = claimed.code;
+      const codesMatch  = suppliedCode.length === storedCode.length &&
+        timingSafeEqual(Buffer.from(suppliedCode), Buffer.from(storedCode));
+
+      if (!codesMatch) {
+        return res.status(400).json({ error: 'Invalid or expired code' });
+      }
+
+      // STEP 3 — Atomically mark the code as consumed.
+      //
+      // consumeVerificationCode issues UPDATE … WHERE id = ? AND code = ? AND
+      // verified = false … RETURNING.  Only the first concurrent correct-code
+      // submission wins; all subsequent callers (or replay attempts) see
+      // verified = true in the WHERE clause and get nothing back.
+      const consumed = await storage.consumeVerificationCode(claimed.id, storedCode);
+
+      if (!consumed) {
+        // Another concurrent request already consumed this code — treat as
+        // already-used to prevent duplicate sessions.
         return res.status(400).json({ error: 'Code has already been used' });
       }
-      
-      // Check if code is expired
-      if (new Date() > verificationRecord.expiresAt) {
-        return res.status(400).json({ error: 'Code has expired' });
-      }
-      
-      // Check attempt count
-      if ((verificationRecord.attempts ?? 0) >= 5) {
-        return res.status(429).json({ error: 'Too many attempts. Please request a new code.' });
-      }
-      
-      // Increment attempts
-      await storage.incrementVerificationAttempts(verificationRecord.id);
-      
-      // Mark code as used
-      await storage.markVerificationCodeUsed(verificationRecord.id);
       
       // Create session token (32 bytes hex = 64 character string)
       const sessionToken = randomBytes(32).toString('hex');

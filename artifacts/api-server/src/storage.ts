@@ -1218,6 +1218,25 @@ export interface IStorage {
   // Client Portal Verification (OTP-based access)
   createPortalVerificationCode(phone: string, code: string, expiresAt: Date): Promise<PortalVerificationCode>;
   getPortalVerificationCode(phone: string, code: string): Promise<PortalVerificationCode | undefined>;
+  /** Fetch the latest active (unverified, unexpired) code record by phone only — used so attempts can be incremented before the code is compared. */
+  getActivePortalVerificationCodeByPhone(phone: string): Promise<PortalVerificationCode | undefined>;
+  /**
+   * Atomically increment the attempt counter for the latest active code for
+   * `phone`, but only when `attempts < maxAttempts`.  Returns the updated
+   * record (with the incremented attempts value and the stored code) when the
+   * slot was successfully reserved, or `undefined` when either no active code
+   * exists or the limit was already reached.  The single-statement
+   * compare-and-swap prevents concurrent requests from reading the same
+   * attempts value and all passing the limit check.
+   */
+  claimVerificationAttempt(phone: string, maxAttempts: number): Promise<PortalVerificationCode | undefined>;
+  /**
+   * Atomically mark the code record as verified, but only when it is still
+   * unverified and the stored code matches `expectedCode`.  Returns the
+   * consumed record on success, or `undefined` if another concurrent request
+   * already consumed it (or the id / code don't match).
+   */
+  consumeVerificationCode(id: string, expectedCode: string): Promise<PortalVerificationCode | undefined>;
   incrementVerificationAttempts(id: string): Promise<void>;
   markVerificationCodeUsed(id: string): Promise<void>;
   cleanupExpiredVerificationCodes(): Promise<void>;
@@ -9397,6 +9416,74 @@ Thank you for your prompt attention to this matter.`,
       ))
       .limit(1);
     return result;
+  }
+
+  async getActivePortalVerificationCodeByPhone(phone: string): Promise<PortalVerificationCode | undefined> {
+    const [result] = await db
+      .select()
+      .from(portalVerificationCodes)
+      .where(and(
+        eq(portalVerificationCodes.phone, phone),
+        eq(portalVerificationCodes.verified, false),
+        gt(portalVerificationCodes.expiresAt, new Date())
+      ))
+      .orderBy(sql`${portalVerificationCodes.expiresAt} DESC`)
+      .limit(1);
+    return result;
+  }
+
+  async claimVerificationAttempt(phone: string, maxAttempts: number): Promise<PortalVerificationCode | undefined> {
+    // Single atomic UPDATE … RETURNING that reserves an attempt slot only when
+    // the limit has not yet been reached.  Because the WHERE clause includes
+    // `attempts < maxAttempts`, concurrent requests that read the same initial
+    // value will each produce a separate UPDATE; only those whose attempt fits
+    // under the cap will see a returned row — the rest get nothing and must
+    // reject.  We target the most-recently-issued unexpired+unverified code for
+    // the phone so stale codes from earlier request-code calls are ignored.
+    const subquery = db
+      .select({ id: portalVerificationCodes.id })
+      .from(portalVerificationCodes)
+      .where(and(
+        eq(portalVerificationCodes.phone, phone),
+        eq(portalVerificationCodes.verified, false),
+        gt(portalVerificationCodes.expiresAt, new Date()),
+        sql`${portalVerificationCodes.attempts} < ${maxAttempts}`
+      ))
+      .orderBy(sql`${portalVerificationCodes.expiresAt} DESC`)
+      .limit(1);
+
+    const [updated] = await db
+      .update(portalVerificationCodes)
+      .set({ attempts: sql`${portalVerificationCodes.attempts} + 1` })
+      .where(
+        and(
+          eq(portalVerificationCodes.phone, phone),
+          eq(portalVerificationCodes.verified, false),
+          gt(portalVerificationCodes.expiresAt, new Date()),
+          sql`${portalVerificationCodes.attempts} < ${maxAttempts}`,
+          // Tie-break: only update the row selected by the subquery so the
+          // LIMIT 1 is respected even if multiple rows match the conditions.
+          sql`${portalVerificationCodes.id} = (${subquery})`
+        )
+      )
+      .returning();
+    return updated;
+  }
+
+  async consumeVerificationCode(id: string, expectedCode: string): Promise<PortalVerificationCode | undefined> {
+    // Single atomic UPDATE that wins only for the first concurrent caller whose
+    // code matches and the row is still unverified.  Subsequent callers (or
+    // replay attempts) see verified = true in the WHERE clause and get nothing.
+    const [consumed] = await db
+      .update(portalVerificationCodes)
+      .set({ verified: true })
+      .where(and(
+        eq(portalVerificationCodes.id, id),
+        eq(portalVerificationCodes.code, expectedCode),
+        eq(portalVerificationCodes.verified, false)
+      ))
+      .returning();
+    return consumed;
   }
 
   async incrementVerificationAttempts(id: string): Promise<void> {
