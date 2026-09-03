@@ -11932,14 +11932,10 @@ export default function JobDetailScreen() {
               };
               const st = statusMap[phase.status] ?? statusMap.not_started;
 
-              // Left accent border for active/in-progress phase
-              const accentBorderColor = isActivePhase ? colors.success : isInProgress ? colors.primary : undefined;
+              // Card style — no left border; status conveyed via dot + badge
               const cardStyle: any[] = [
                 styles.photosCard,
                 { marginBottom: spacing.md, overflow: 'hidden' },
-                accentBorderColor
-                  ? { borderLeftWidth: 3, borderLeftColor: accentBorderColor, paddingLeft: spacing.md - 2 }
-                  : {},
               ];
 
               // Collapsed completed phase — compact single row
@@ -11974,21 +11970,25 @@ export default function JobDetailScreen() {
               return (
                 <View key={phase.id} style={cardStyle}>
                   {/* Phase header row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.sm }}>
-                    <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
-                        {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
-                      </Text>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 3 }}>
-                        {(phase.scheduledStart || phase.scheduledEnd) && (
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
-                            {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
-                          </Text>
-                        )}
-                        {phase.bookedHours ? (
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
-                        ) : null}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1, marginRight: spacing.sm, gap: spacing.xs }}>
+                      {/* Status dot */}
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: st.text, marginTop: 5 }} />
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                          {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 2 }}>
+                          {(phase.scheduledStart || phase.scheduledEnd) && (
+                            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                              {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
+                              {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
+                            </Text>
+                          )}
+                          {phase.bookedHours ? (
+                            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
+                          ) : null}
+                        </View>
                       </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -12009,15 +12009,17 @@ export default function JobDetailScreen() {
                   </View>
 
                   {phase.description ? (
-                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>{phase.description}</Text>
+                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm, marginLeft: 8 + spacing.xs }}>{phase.description}</Text>
                   ) : null}
 
                   {/* Timer and status controls — hidden for expanded completed phases */}
                   {!isComplete && (
                     <>
+                      <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.sm, marginHorizontal: -(spacing.md) }} />
+
                       {/* Per-phase timer control */}
                       {isActivePhase ? (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: `${colors.success}10`, borderRadius: radius.md, padding: spacing.sm }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: `${colors.success}12`, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm }}>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                             <Feather name={isOnBreak() ? 'coffee' : 'clock'} size={15} color={colors.success} />
                             <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.success }}>
@@ -12051,11 +12053,11 @@ export default function JobDetailScreen() {
                             }
                           }}
                           disabled={timerLoading || otherJobTimer}
-                          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: phaseOtherActive ? colors.border : `${colors.primary}40`, backgroundColor: phaseOtherActive ? colors.muted : `${colors.primary}08`, opacity: otherJobTimer ? 0.4 : 1 }}
-                          activeOpacity={0.7}
+                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 11, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: phaseOtherActive ? colors.muted : colors.primary, opacity: otherJobTimer ? 0.4 : 1, marginBottom: spacing.sm }}
+                          activeOpacity={0.8}
                         >
-                          <Feather name="play" size={14} color={phaseOtherActive ? colors.mutedForeground : colors.primary} />
-                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: phaseOtherActive ? colors.mutedForeground : colors.primary }}>
+                          <Feather name="play" size={14} color={phaseOtherActive ? colors.mutedForeground : colors.primaryForeground} />
+                          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: phaseOtherActive ? colors.mutedForeground : colors.primaryForeground }}>
                             {phaseOtherActive ? 'Switch to this phase' : 'Start timer for this phase'}
                           </Text>
                         </TouchableOpacity>
@@ -12071,11 +12073,11 @@ export default function JobDetailScreen() {
                           <TouchableOpacity
                             onPress={() => handleAdvancePhaseStatus(phase.id, phase.status)}
                             disabled={isAdvancing}
-                            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: `${btnColor}40`, backgroundColor: `${btnColor}08`, opacity: isAdvancing ? 0.6 : 1 }}
-                            activeOpacity={0.7}
+                            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 11, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: btnColor, opacity: isAdvancing ? 0.6 : 1 }}
+                            activeOpacity={0.8}
                           >
-                            <Feather name={isAdvancing ? 'loader' : nextIcon} size={14} color={btnColor} />
-                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: btnColor }}>
+                            <Feather name={isAdvancing ? 'loader' : nextIcon} size={14} color={colors.primaryForeground} />
+                            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
                               {isAdvancing ? 'Updating...' : nextLabel}
                             </Text>
                           </TouchableOpacity>
