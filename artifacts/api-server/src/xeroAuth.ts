@@ -88,6 +88,10 @@ export function setupXeroAuth(app: Express) {
     const state = crypto.randomBytes(16).toString('hex');
     pendingStates.set(state, { platform: isMobile ? 'mobile' : 'web', createdAt: Date.now() });
 
+    // Bind the state to the initiating session so the callback can verify
+    // that it is responding to the same browser that started the flow.
+    req.session.xeroOAuthState = state;
+
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: XERO_CLIENT_ID!,
@@ -98,7 +102,15 @@ export function setupXeroAuth(app: Express) {
 
     const consentUrl = `https://login.xero.com/identity/connect/authorize?${params.toString()}`;
     console.log(`Xero Auth: Starting OAuth flow - platform: ${isMobile ? 'mobile' : 'web'}`);
-    res.redirect(consentUrl);
+
+    req.session.save((saveErr: any) => {
+      if (saveErr) {
+        console.error('Xero Auth: Failed to save session before redirect:', saveErr);
+        pendingStates.delete(state);
+        return res.redirect('/?error=xero_auth_failed');
+      }
+      res.redirect(consentUrl);
+    });
   });
 
   app.get('/api/auth/xero/callback', async (req: any, res) => {
@@ -122,6 +134,16 @@ export function setupXeroAuth(app: Express) {
         console.error('Xero Auth: Invalid or expired state');
         return redirect(res, isMobile, '/?error=xero_auth_expired');
       }
+
+      // Verify the state was issued to the browser that initiated this flow.
+      const sessionState = req.session.xeroOAuthState;
+      if (!sessionState || sessionState !== (state as string)) {
+        console.error('Xero Auth: State does not match initiating session (possible CSRF)');
+        pendingStates.delete(state as string);
+        return redirect(res, isMobile, '/?error=xero_auth_failed');
+      }
+      delete req.session.xeroOAuthState;
+
       pendingStates.delete(state as string);
 
       const tokenRes = await fetch('https://identity.xero.com/connect/token', {

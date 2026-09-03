@@ -2,6 +2,7 @@ import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { AuthService } from './auth';
 import type { Express } from 'express';
+import crypto from 'crypto';
 
 // Google OAuth configuration
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -221,22 +222,46 @@ export function setupGoogleAuth(app: Express) {
   // Google OAuth routes - use state parameter to track mobile requests
   app.get('/api/auth/google', (req: any, res, next) => {
     const isMobile = req.query.mobile === 'true';
-    // Use state parameter to pass mobile flag through OAuth flow
-    const state = isMobile ? 'mobile' : 'web';
-    console.log(`🔐 Starting Google OAuth - platform: ${state}`);
-    
-    passport.authenticate('google', { 
-      scope: ['profile', 'email'],
-      prompt: 'select_account',
-      state: state
-    })(req, res, next);
+    // Generate a cryptographically random nonce and bind it to the initiating
+    // session so the callback can verify the request originated here.
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const platform = isMobile ? 'mobile' : 'web';
+    // Encode both nonce and platform in state; nonce is hex so ':' is safe.
+    const state = `${nonce}:${platform}`;
+    req.session.oauthNonce = nonce;
+    console.log(`🔐 Starting Google OAuth - platform: ${platform}`);
+
+    req.session.save((saveErr: any) => {
+      if (saveErr) {
+        console.error('🔐 Failed to save session before Google OAuth redirect:', saveErr);
+        return res.redirect('/?error=session_failed');
+      }
+      passport.authenticate('google', {
+        scope: ['profile', 'email'],
+        prompt: 'select_account',
+        state: state
+      })(req, res, next);
+    });
   });
 
   app.get('/api/auth/google/callback', (req: any, res, next) => {
-    // Get mobile flag from state parameter (preserved through OAuth flow)
-    const state = req.query.state;
-    const isMobile = state === 'mobile';
-    console.log(`🔐 Google OAuth callback - state: ${state}, isMobile: ${isMobile}`);
+    // Parse state: <nonce>:<platform>
+    const rawState = (req.query.state as string) || '';
+    const colonIdx = rawState.indexOf(':');
+    const returnedNonce = colonIdx !== -1 ? rawState.slice(0, colonIdx) : '';
+    const platform = colonIdx !== -1 ? rawState.slice(colonIdx + 1) : '';
+    const isMobile = platform === 'mobile';
+
+    // Verify the nonce matches the one stored in the initiating session.
+    const expectedNonce = req.session.oauthNonce;
+    if (!returnedNonce || !expectedNonce || returnedNonce !== expectedNonce) {
+      console.error('🔐 Google OAuth callback: state nonce mismatch (possible CSRF)');
+      return res.redirect('/?error=auth_failed');
+    }
+    // Consume the nonce so it cannot be reused.
+    delete req.session.oauthNonce;
+
+    console.log(`🔐 Google OAuth callback - platform: ${platform}, isMobile: ${isMobile}`);
     
     passport.authenticate('google', (err: any, user: any, info: any) => {
       if (err || !user) {
