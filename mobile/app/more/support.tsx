@@ -26,6 +26,7 @@ import Constants from 'expo-constants';
 import { useOfflineStore } from '../../src/lib/offline-storage';
 import { useAuthStore } from '../../src/lib/store';
 import api, { API_URL } from '../../src/lib/api';
+import { HELP_ARTICLES, HELP_CATEGORIES } from '../../src/data/helpArticles';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getBottomNavHeight } from '../../src/components/BottomNav';
 import { useQuery, useMutation } from '@tanstack/react-query';
@@ -588,14 +589,21 @@ export default function SupportScreen() {
   const [showTour, setShowTour] = useState(false);
   const feedbackSheetRef = useRef<AppBottomSheetRef>(null);
 
-  const { data, isLoading } = useQuery<HelpData>({
+  // Bundled articles load instantly and work offline.
+  // A background fetch will swap in fresher content once the production API has the route.
+  const { data, isLoading } = useQuery<HelpData | null>({
     queryKey: ['/api/help/articles'],
-    queryFn: () => api.get('/api/help/articles').then((r: any) => r.data),
+    queryFn: async () => {
+      const r = await api.get<HelpData>('/api/help/articles');
+      if (r.error || !(r.data as HelpData)?.articles?.length) return null;
+      return r.data as HelpData;
+    },
     staleTime: 5 * 60 * 1000,
+    placeholderData: { categories: HELP_CATEGORIES as HelpCategory[], articles: HELP_ARTICLES as HelpArticle[] },
   });
 
-  const categories = data?.categories ?? [];
-  const allArticles = data?.articles ?? [];
+  const categories: HelpCategory[] = (data?.categories?.length ? data.categories : HELP_CATEGORIES) as HelpCategory[];
+  const allArticles: HelpArticle[] = (data?.articles?.length ? data.articles : HELP_ARTICLES) as HelpArticle[];
 
   const filteredArticles = useMemo(() => {
     let list = allArticles;
