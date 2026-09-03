@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, shadows, typography, iconSizes, fontWeights } from '../../src/lib/design-tokens';
@@ -558,6 +558,7 @@ export default function SupportScreen() {
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
   const styles = useMemo(() => createStyles(colors, bottomNavHeight), [colors, bottomNavHeight]);
+  const { openArticleId } = useLocalSearchParams<{ openArticleId?: string }>();
 
   const [viewState, setViewState] = useState<ViewState>('home');
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
@@ -591,10 +592,19 @@ export default function SupportScreen() {
     return list;
   }, [allArticles, activeCategory, search]);
 
-  const openArticle = (article: HelpArticle) => {
+  const openArticle = useCallback((article: HelpArticle) => {
     setSelectedArticle(article);
     setViewState('article');
-  };
+  }, []);
+
+  // When navigating from the Help Chat with a specific article ID, open it once
+  // articles are loaded.
+  useEffect(() => {
+    if (openArticleId && allArticles.length > 0) {
+      const target = allArticles.find(a => a.id === openArticleId);
+      if (target) openArticle(target);
+    }
+  }, [openArticleId, allArticles, openArticle]);
 
   const goBack = () => {
     setViewState('home');
@@ -683,6 +693,42 @@ export default function SupportScreen() {
 
       <ScrollView style={styles.container}>
         <View style={styles.content}>
+          {/* Ask a question (Help Assistant) */}
+          <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                backgroundColor: colors.card,
+                borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.primary + '40',
+                padding: spacing.lg,
+                ...shadows.sm,
+              }}
+              onPress={() => router.push('/more/help-chat' as any)}
+              activeOpacity={0.7}
+            >
+              <View style={{
+                width: 40, height: 40, borderRadius: radius.lg,
+                backgroundColor: colors.primaryLight,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Feather name="help-circle" size={iconSizes.xl} color={colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>
+                  Ask a question
+                </Text>
+                <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                  Get instant answers from the Help Assistant
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
+            </TouchableOpacity>
+          </View>
+
           {/* Search bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchRow}>

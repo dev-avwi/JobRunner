@@ -462,7 +462,18 @@ export const requireAuth = async (req: any, res: any, next: any) => {
   // Demo sessions are read-only. Any state-changing method is rejected here so
   // the restriction is enforced at the server boundary regardless of which
   // route or client makes the request.
-  if (isDemoSession && !['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+  //
+  // Paths listed here are explicitly safe for demo users: they call external
+  // services (AI) or record non-destructive signals (feedback) but do NOT
+  // write or mutate any business-owned data.
+  const DEMO_ALLOWED_WRITES = new Set([
+    '/api/help/chat',
+    '/api/help/articles',
+  ]);
+  const isDemoAllowedPath = DEMO_ALLOWED_WRITES.has(req.path) ||
+    req.path.startsWith('/api/help/articles/') && req.path.endsWith('/feedback');
+
+  if (isDemoSession && !['GET', 'HEAD', 'OPTIONS'].includes(req.method) && !isDemoAllowedPath) {
     return res.status(403).json({
       error: 'Demo sessions are read-only. Sign up for a free account to make changes.',
     });
