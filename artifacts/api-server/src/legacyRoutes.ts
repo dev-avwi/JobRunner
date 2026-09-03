@@ -1232,7 +1232,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionToken = randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
       
-      await storage.createPortalSession(normalizedPhone, sessionToken, expiresAt);
+      // Scope the preview session to this business owner so the portal data
+      // endpoint shows the same restricted view the client would see.
+      await storage.createPortalSession(normalizedPhone, sessionToken, expiresAt, userId);
       
       return res.json({
         success: true,
@@ -1269,8 +1271,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session has expired' });
       }
       
-      // Get all clients with this phone number
-      const clients = await storage.getClientsByPhone(session.phone);
+      // Resolve clients for this session. When the session was created via a
+      // document bearer token (auto-auth) it carries a userId that limits scope
+      // to the issuing business; phone-OTP sessions (userId null) fall back to
+      // the existing phone-global lookup.
+      const clients = session.userId
+        ? await storage.getClientsByPhoneForUser(session.phone, session.userId)
+        : await storage.getClientsByPhone(session.phone);
       
       if (clients.length === 0) {
         return res.json({
@@ -1483,6 +1490,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper: resolve the client list for a portal session.
+  // When the session was created via a document bearer token (auto-auth) it
+  // carries a userId that limits scope to the issuing business; phone-OTP
+  // sessions (userId null/undefined) fall back to the phone-global lookup.
+  async function resolvePortalClients(session: { phone: string; userId?: string | null }): Promise<any[]> {
+    return session.userId
+      ? storage.getClientsByPhoneForUser(session.phone, session.userId)
+      : storage.getClientsByPhone(session.phone);
+  }
+
   // CLIENT PORTAL: Approve or reject a variation using the portal session token.
   // The variation must belong to a job owned by one of the clients matching the
   // session phone, and must be in 'sent' status.
@@ -1505,7 +1522,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     const variationId = (req.params as any).variationId;
-    const clients = await storage.getClientsByPhone(session.phone);
+    // Apply the same business-scope rule as GET /api/portal/data: if the
+    // session was created from a document bearer token it carries a userId and
+    // we must restrict lookup to that business only.
+    const clients = session.userId
+      ? await storage.getClientsByPhoneForUser(session.phone, session.userId)
+      : await storage.getClientsByPhone(session.phone);
     if (clients.length === 0) {
       return { error: { status: 404, message: 'Variation not found' } };
     }
@@ -1673,31 +1695,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       let clientPhone: string | null = null;
-      
+      // userId of the business that owns the document — used to scope the
+      // resulting portal session so it cannot read data from other businesses.
+      let documentUserId: string | null = null;
+
       // Look up document based on type to get client phone
       if (documentType === 'quote') {
         const quote = await storage.getQuoteByToken(documentToken);
         if (quote) {
           const client = await storage.getClientById(quote.clientId);
           clientPhone = client?.phone || null;
+          documentUserId = quote.userId || null;
         }
       } else if (documentType === 'invoice') {
         const invoice = await storage.getInvoiceByPaymentToken(documentToken);
         if (invoice) {
           const client = await storage.getClientById(invoice.clientId);
           clientPhone = client?.phone || null;
+          documentUserId = invoice.userId || null;
         }
       } else if (documentType === 'receipt') {
         const receipt = await storage.getReceiptByViewToken(documentToken);
         if (receipt) {
           const client = receipt.clientId ? await storage.getClientById(receipt.clientId) : null;
           clientPhone = client?.phone || null;
+          documentUserId = receipt.userId || null;
         }
       } else {
         return res.status(400).json({ error: 'Invalid document type' });
       }
       
       if (!clientPhone) {
+        return res.status(404).json({ error: 'Document not found or client has no phone number' });
+      }
+
+      if (!documentUserId) {
+        // The document exists but carries no owner — refuse rather than
+        // creating an unbounded session.
         return res.status(404).json({ error: 'Document not found or client has no phone number' });
       }
       
@@ -1711,8 +1745,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate expiry (24 hours from now)
       const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
       
-      // Create portal session
-      await storage.createPortalSession(normalizedPhone, sessionToken, expiresAt);
+      // Create portal session scoped to the issuing business so the holder of
+      // this bearer link cannot reach records belonging to other businesses.
+      await storage.createPortalSession(normalizedPhone, sessionToken, expiresAt, documentUserId);
       
       return res.json({
         success: true,
@@ -1743,7 +1778,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Worker ID and name are required' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.status(404).json({ error: 'Client not found' });
       }
@@ -1792,7 +1827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.json({ requests: [] });
       }
@@ -1966,7 +2001,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const { title, description, preferredDate, urgency, clientNotes, clientId, preferredWorkerId, preferredWorkerName, referenceJobId, referenceJobTitle } = parsed.data;
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.status(404).json({ error: 'Client not found' });
       }
@@ -2019,7 +2054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.json({ requests: [] });
       }
@@ -2050,7 +2085,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.status(404).json({ error: 'Client not found' });
       }
@@ -2105,7 +2140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.status(404).json({ error: 'Client not found' });
       }
@@ -2140,7 +2175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session expired' });
       }
 
-      const allClients = await storage.getClientsByPhone(session.phone);
+      const allClients = await resolvePortalClients(session);
       if (!allClients || allClients.length === 0) {
         return res.json({ jobs: [] });
       }

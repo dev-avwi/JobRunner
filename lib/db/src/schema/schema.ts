@@ -4527,6 +4527,9 @@ export const portalSessions = pgTable("portal_sessions", {
   sessionToken: varchar("session_token", { length: 64 }).notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // Populated by auto-auth (document bearer token) to bound the session to the
+  // issuing business only. NULL on phone-OTP sessions (phone-global scope).
+  userId: varchar("user_id"),
 });
 
 export const insertPortalSessionSchema = createInsertSchema(portalSessions).omit({ id: true, createdAt: true });

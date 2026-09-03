@@ -1224,13 +1224,17 @@ export interface IStorage {
   countRecentVerificationCodes(phone: string, windowMs: number): Promise<number>;
   
   // Client Portal Sessions
-  createPortalSession(phone: string, sessionToken: string, expiresAt: Date): Promise<PortalSession>;
+  createPortalSession(phone: string, sessionToken: string, expiresAt: Date, userId?: string | null): Promise<PortalSession>;
   getPortalSessionByToken(token: string): Promise<PortalSession | undefined>;
   deletePortalSession(token: string): Promise<void>;
   cleanupExpiredPortalSessions(): Promise<void>;
   
   // Client Portal Data Access (find all clients by phone)
   getClientsByPhone(phone: string): Promise<Client[]>;
+  // Scoped variant: only returns clients belonging to a specific business owner.
+  // Use this when the portal session was established via a document bearer token
+  // (auto-auth) so the result set is bounded to the issuing business.
+  getClientsByPhoneForUser(phone: string, userId: string): Promise<Client[]>;
   getQuotesForClientIds(clientIds: string[]): Promise<Quote[]>;
   getQuotesByClient(clientId: string): Promise<Quote[]>;
   getInvoicesForClientIds(clientIds: string[]): Promise<any[]>;
@@ -9428,7 +9432,7 @@ Thank you for your prompt attention to this matter.`,
   }
 
   // Client Portal Sessions
-  async createPortalSession(phone: string, sessionToken: string, expiresAt: Date): Promise<PortalSession> {
+  async createPortalSession(phone: string, sessionToken: string, expiresAt: Date, userId?: string | null): Promise<PortalSession> {
     const [created] = await db
       .insert(portalSessions)
       .values({
@@ -9436,6 +9440,7 @@ Thank you for your prompt attention to this matter.`,
         phone,
         sessionToken,
         expiresAt,
+        ...(userId ? { userId } : {}),
       })
       .returning();
     return created;
@@ -9485,6 +9490,31 @@ Thank you for your prompt attention to this matter.`,
         REPLACE(REPLACE(REPLACE(REPLACE(${clients.phone}, ' ', ''), '-', ''), '(', ''), ')', '') 
         IN (${normalizedPhone}, ${localFormat})
       `);
+    return results;
+  }
+
+  // Scoped variant used for document-token portal sessions: returns only the
+  // client rows that belong to the specified business owner, preventing
+  // cross-tenant data exposure.
+  async getClientsByPhoneForUser(phone: string, userId: string): Promise<Client[]> {
+    let normalizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+    if (normalizedPhone.startsWith('0')) {
+      normalizedPhone = '+61' + normalizedPhone.slice(1);
+    } else if (!normalizedPhone.startsWith('+')) {
+      normalizedPhone = '+61' + normalizedPhone.replace(/^61/, '');
+    }
+    const localFormat = '0' + normalizedPhone.replace(/^\+61/, '');
+
+    const results = await db
+      .select()
+      .from(clients)
+      .where(and(
+        eq(clients.userId, userId),
+        sql`
+          REPLACE(REPLACE(REPLACE(REPLACE(${clients.phone}, ' ', ''), '-', ''), '(', ''), ')', '')
+          IN (${normalizedPhone}, ${localFormat})
+        `
+      ));
     return results;
   }
 

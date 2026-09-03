@@ -4710,6 +4710,12 @@ export const portalSessions = pgTable("portal_sessions", {
   sessionToken: varchar("session_token", { length: 64 }).notNull().unique(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // When a session is created via a document bearer token (auto-auth), this is
+  // set to the userId (business) that owns that document.  A non-null value
+  // means the session is scoped to that single business; null means the session
+  // was created via phone-OTP verification and covers all businesses whose
+  // client list includes this phone.
+  userId: varchar("user_id"),
 });
 
 export const insertPortalSessionSchema = createInsertSchema(portalSessions).omit({ id: true, createdAt: true });
