@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { X, MessageSquarePlus, Star, ImagePlus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,38 @@ type FeedbackType = (typeof TYPES)[number]["value"];
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+const STORAGE_KEY = "feedbackTab:pos";
+const BTN_W = 112; // approximate pill width
+const BTN_H = 36;
+const PANEL_W = 320;
+const PANEL_H = 480; // approx panel height
+const MARGIN = 12;
+
+function defaultPos() {
+  return {
+    x: window.innerWidth - BTN_W - MARGIN,
+    y: window.innerHeight - BTN_H - MARGIN - 80, // above FAB
+  };
+}
+
+function loadPos(): { x: number; y: number } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clamp(pos: { x: number; y: number }) {
+  const maxX = window.innerWidth - BTN_W - MARGIN;
+  const maxY = window.innerHeight - BTN_H - MARGIN;
+  return {
+    x: Math.max(MARGIN, Math.min(pos.x, maxX)),
+    y: Math.max(MARGIN, Math.min(pos.y, maxY)),
+  };
+}
 
 export default function FeedbackTab() {
   const [isOpen, setIsOpen] = useState(false);
@@ -34,9 +66,86 @@ export default function FeedbackTab() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Drag-to-reposition state
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === "undefined") return { x: 0, y: 0 };
+    return clamp(loadPos() ?? defaultPos());
+  });
+  const dragState = useRef<{
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Clamp on resize
+  useEffect(() => {
+    const onResize = () => setPos((p) => clamp(p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Save position to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(pos));
+    } catch {}
+  }, [pos]);
+
+  // Global pointer move / up for drag
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const ds = dragState.current;
+      if (!ds) return;
+      const dx = e.clientX - ds.startX;
+      const dy = e.clientY - ds.startY;
+      if (!ds.moved && Math.hypot(dx, dy) < 5) return;
+      ds.moved = true;
+      setPos(clamp({ x: ds.originX + dx, y: ds.originY + dy }));
+    };
+    const onUp = () => {
+      dragState.current = null;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  const handleButtonPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragState.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      originX: pos.x,
+      originY: pos.y,
+      moved: false,
+    };
+  };
+
+  const handleButtonClick = () => {
+    // Only toggle if we didn't drag
+    if (dragState.current?.moved) return;
+    setIsOpen((o) => !o);
+  };
+
+  // Panel position: prefer opening upward; fall back to downward if near top
+  const panelAbove = pos.y > PANEL_H + MARGIN;
+  const panelStyle: React.CSSProperties = {
+    position: "fixed",
+    left: Math.max(MARGIN, Math.min(pos.x, window.innerWidth - PANEL_W - MARGIN)),
+    top: panelAbove ? pos.y - PANEL_H - 8 : pos.y + BTN_H + 8,
+    width: PANEL_W,
+    zIndex: 50,
+  };
 
   const addPhotos = useCallback(
     (files: FileList | File[]) => {
@@ -54,7 +163,6 @@ export default function FeedbackTab() {
       }
       const newPhotos = [...photos, ...toAdd];
       setPhotos(newPhotos);
-      // Generate object URL previews
       const newPreviews = [...photoPreviews];
       for (const f of toAdd) newPreviews.push(URL.createObjectURL(f));
       setPhotoPreviews(newPreviews);
@@ -139,12 +247,14 @@ export default function FeedbackTab() {
         />
       )}
 
-      {/* Floating pill button — bottom-right, above the AI chat FAB */}
+      {/* Draggable pill button */}
       <button
-        onClick={() => setIsOpen((o) => !o)}
+        onPointerDown={handleButtonPointerDown}
+        onClick={handleButtonClick}
         aria-label={isOpen ? "Close feedback" : "Send feedback"}
         aria-expanded={isOpen}
-        className="fixed bottom-40 md:bottom-20 right-4 z-50 flex items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-transform duration-150 hover:scale-105"
+        style={{ left: pos.x, top: pos.y, touchAction: "none" }}
+        className="fixed z-50 flex cursor-grab items-center gap-1.5 rounded-full bg-primary px-3 py-2 text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors active:cursor-grabbing select-none"
       >
         <MessageSquarePlus className="h-4 w-4 shrink-0" />
         <span className="text-xs font-medium">Feedback</span>
@@ -153,7 +263,8 @@ export default function FeedbackTab() {
       {/* Modal panel */}
       {isOpen && (
         <div
-          className="fixed bottom-56 md:bottom-32 right-4 z-50 w-80 rounded-xl border bg-background shadow-2xl"
+          style={panelStyle}
+          className="rounded-xl border bg-background shadow-2xl"
           onClick={(e) => e.stopPropagation()}
         >
           <form onSubmit={handleSubmit} className="flex flex-col p-4 gap-3">
@@ -239,7 +350,6 @@ export default function FeedbackTab() {
               <Label className="text-xs">
                 Screenshots (optional, up to {MAX_PHOTOS})
               </Label>
-              {/* Drag-and-drop zone */}
               {photos.length < MAX_PHOTOS && (
                 <div
                   onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -266,7 +376,6 @@ export default function FeedbackTab() {
                   />
                 </div>
               )}
-              {/* Previews */}
               {photoPreviews.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {photoPreviews.map((src, i) => (

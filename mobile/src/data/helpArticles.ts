@@ -52,7 +52,7 @@ The link expires after 24 hours. If you do not see the email, check your spam fo
 ## Switching Accounts
 
 If you work for more than one business, each business sends its own invitation. Log out first (More > Settings > Log Out), then sign in with the credentials for the other account.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=account',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -73,7 +73,7 @@ If you work for more than one business, each business sends its own invitation. 
 ## Before You Contact Support
 
 Check the help articles first: search for your question using the search bar at the top of the Help Centre. The Help Assistant can answer most common how-to questions instantly without waiting for a reply.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=support',
     mobileDeeplink: '/more/support',
   },
   {
@@ -126,7 +126,7 @@ Your business details appear on every quote, invoice, and receipt you send.
 4. Save changes.
 
 Your details will be reflected immediately on any new documents you generate.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=mybusiness',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -144,7 +144,7 @@ You can customise:
 - **Document style** – choose between classic, modern, and minimal layouts
 
 Changes apply to all future documents. Already-sent PDFs are not changed.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=mybusiness',
     mobileDeeplink: '/more/settings',
   },
 
@@ -469,7 +469,7 @@ Open a job and go to the **Costs** tab. Tap **Add Subcontractor Invoice** to rec
 
 ### Compliance and documents
 You can store subcontractor licences, insurance certificates, and SWMS documents in their team profile under **Documents**. JobRunner can alert you when a document is close to expiry.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=teamcomms',
     mobileDeeplink: '/more/team-management',
   },
   {
@@ -485,7 +485,7 @@ You can store subcontractor licences, insurance certificates, and SWMS documents
 4. Click **Send Invite**.
 
 They will receive an email with a link to create their account and join your team. Once they accept, they appear in your team list and can log in on the mobile app.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=teamcomms',
     mobileDeeplink: '/more/team-management',
   },
   {
@@ -503,7 +503,7 @@ They will receive an email with a link to create their account and join your tea
 | **Office Staff** | Create quotes and invoices, view reports, manage clients |
 
 You can customise individual permissions on any role from **Settings > Team > Roles**.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=teamcomms',
     mobileDeeplink: '/more/team-management',
   },
   {
@@ -590,7 +590,7 @@ Both Stripe and manual refunds support partial amounts. The invoice status chang
 Once connected, clients can pay invoices and quote deposits online with any major credit card.
 
 **Note:** Stripe charges a processing fee (typically 1.7% + 30c for Australian cards). This fee is taken from the payment before it reaches your bank.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=money',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -676,7 +676,7 @@ Tap **Cancel Subscription** at the bottom of the subscription page. Your account
 
 ### Receipts and invoices
 Billing receipts are emailed to your account email address after each charge. You can also download past receipts from the subscription page.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=billing',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -719,7 +719,7 @@ You can control when emails are sent for:
 - Team member activity
 
 Each notification can be enabled or disabled independently. Workers can also manage their own notification preferences from the mobile app.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=teamcomms',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -738,7 +738,7 @@ Available automations:
 - **Completion follow-up** – ask for a review after a job is marked complete
 
 Each automation lets you customise the timing (e.g. "3 days before due date") and the email template.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=workflow',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -838,7 +838,7 @@ When adding a line item to a quote or job cost, tap **Add from Price List** and 
 Update prices from **Settings > Price List** at any time. Changes apply to new quotes only; existing quotes are not affected.
 
 **Tip:** Regular reviews of your price list keep your quoting accurate and ensure you are not underselling labour or materials.`,
-    deeplink: '/settings',
+    deeplink: '/settings?tab=money',
     mobileDeeplink: '/more/settings',
   },
   {

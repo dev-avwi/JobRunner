@@ -118,10 +118,20 @@ function renderMarkdown(text: string): React.ReactNode[] {
   while (i < lines.length) {
     const line = lines[i];
 
+    if (line.startsWith("### ")) {
+      nodes.push(
+        <h3 key={i} className="text-sm font-semibold mt-3 mb-1 text-foreground">
+          {renderInline(line.slice(4))}
+        </h3>,
+      );
+      i++;
+      continue;
+    }
+
     if (line.startsWith("## ")) {
       nodes.push(
         <h2 key={i} className="text-base font-semibold mt-4 mb-2 text-foreground">
-          {line.slice(3)}
+          {renderInline(line.slice(3))}
         </h2>,
       );
       i++;
@@ -131,7 +141,7 @@ function renderMarkdown(text: string): React.ReactNode[] {
     if (line.startsWith("# ")) {
       nodes.push(
         <h1 key={i} className="text-lg font-bold mt-4 mb-2 text-foreground">
-          {line.slice(2)}
+          {renderInline(line.slice(2))}
         </h1>,
       );
       i++;
