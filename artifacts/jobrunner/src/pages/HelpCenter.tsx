@@ -95,15 +95,24 @@ function renderMarkdown(text: string): React.ReactNode[] {
   let i = 0;
 
   const renderInline = (s: string): React.ReactNode => {
-    // Bold **text**
-    const parts = s.split(/(\*\*[^*]+\*\*)/g);
-    return parts.map((p, idx) =>
-      p.startsWith("**") && p.endsWith("**") ? (
-        <strong key={idx}>{p.slice(2, -2)}</strong>
-      ) : (
-        p
-      ),
-    );
+    // Split on bold (**text**) and inline code (`code`)
+    const parts = s.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+    return parts.map((p, idx) => {
+      if (p.startsWith("**") && p.endsWith("**")) {
+        return <strong key={idx}>{p.slice(2, -2)}</strong>;
+      }
+      if (p.startsWith("`") && p.endsWith("`")) {
+        return (
+          <code
+            key={idx}
+            className="px-1 py-0.5 rounded text-xs font-mono bg-muted text-foreground"
+          >
+            {p.slice(1, -1)}
+          </code>
+        );
+      }
+      return p;
+    });
   };
 
   while (i < lines.length) {
@@ -126,6 +135,26 @@ function renderMarkdown(text: string): React.ReactNode[] {
         </h1>,
       );
       i++;
+      continue;
+    }
+
+    // Fenced code block (```)
+    if (line.startsWith("```")) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      i++; // skip closing ```
+      nodes.push(
+        <pre
+          key={`code-${i}`}
+          className="my-3 rounded-md bg-muted p-3 overflow-x-auto text-xs font-mono text-foreground leading-relaxed"
+        >
+          <code>{codeLines.join("\n")}</code>
+        </pre>,
+      );
       continue;
     }
 
