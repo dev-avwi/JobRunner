@@ -858,9 +858,9 @@ export default function SupportScreen() {
                 </View>
                 <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
               </View>
-              {/* Sample chips */}
-              <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
-                {['Create a quote', 'Schedule a job', 'Add a team member'].map((q) => (
+              {/* Sample chips — single scrollable row */}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: spacing.sm }} contentContainerStyle={{ gap: spacing.xs }}>
+                {['Create a quote', 'Schedule a job', 'Add a team member', 'Invite a worker'].map((q) => (
                   <TouchableOpacity
                     key={q}
                     onPress={() => router.push({ pathname: '/more/help-chat', params: { query: `How do I ${q.toLowerCase()}?` } } as any)}
@@ -875,7 +875,7 @@ export default function SupportScreen() {
                     <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>{q}</Text>
                   </TouchableOpacity>
                 ))}
-              </View>
+              </ScrollView>
             </TouchableOpacity>
           </View>
 
@@ -973,7 +973,7 @@ export default function SupportScreen() {
           ) : activeCategory === 'all' && !search ? (
             /* ── Category overview: 2-column grid, tap to drill in ── */
             <View style={{ paddingHorizontal: spacing.lg }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                 {categories.map((cat) => {
                   const count = allArticles.filter(a => a.category === cat.id).length;
                   if (count === 0) return null;
@@ -981,12 +981,15 @@ export default function SupportScreen() {
                     <TouchableOpacity
                       key={cat.id}
                       style={{
-                        width: '48%',
+                        width: '48.5%',
                         backgroundColor: colors.card,
                         borderRadius: radius.xl,
                         borderWidth: 1,
                         borderColor: colors.border,
-                        padding: spacing.lg,
+                        paddingHorizontal: spacing.md,
+                        paddingVertical: spacing.md,
+                        flexDirection: 'row',
+                        alignItems: 'center',
                         gap: spacing.sm,
                         ...shadows.sm,
                       }}
@@ -994,18 +997,21 @@ export default function SupportScreen() {
                       activeOpacity={0.7}
                     >
                       <View style={{
-                        width: 36, height: 36, borderRadius: 10,
+                        width: 32, height: 32, borderRadius: 9,
                         backgroundColor: colors.primaryLight,
                         alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0,
                       }}>
-                        <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={17} color={colors.primary} />
+                        <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={15} color={colors.primary} />
                       </View>
-                      <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                        {cat.label}
-                      </Text>
-                      <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                        {count} article{count === 1 ? '' : 's'}
-                      </Text>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                          {cat.label}
+                        </Text>
+                        <Text style={{ ...typography.caption, fontSize: 11, color: colors.mutedForeground }}>
+                          {count} article{count === 1 ? '' : 's'}
+                        </Text>
+                      </View>
                     </TouchableOpacity>
                   );
                 })}
