@@ -973,7 +973,7 @@ export default function SupportScreen() {
           ) : activeCategory === 'all' && !search ? (
             /* ── Category overview: 2-column grid, tap to drill in ── */
             <View style={{ paddingHorizontal: spacing.lg }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                 {categories.map((cat) => {
                   const count = allArticles.filter(a => a.category === cat.id).length;
                   if (count === 0) return null;
@@ -981,7 +981,7 @@ export default function SupportScreen() {
                     <TouchableOpacity
                       key={cat.id}
                       style={{
-                        width: '48.5%',
+                        width: '47.5%',
                         backgroundColor: colors.card,
                         borderRadius: radius.xl,
                         borderWidth: 1,

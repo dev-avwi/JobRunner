@@ -506,10 +506,11 @@ export default function HelpChatScreen() {
       });
       const data = response.data as any;
       const content: string = data.response ?? '';
-      const apiRelated: RelatedArticle[] = data.relatedArticles ?? [];
+      const apiRelated: RelatedArticle[] = Array.isArray(data.relatedArticles) ? data.relatedArticles : [];
 
-      // If the AI couldn't answer, surface locally-matched articles instead
-      const needsFallback = SORRY_PATTERN.test(content) || data.confidence === 'low';
+      // Treat API errors (404, network), empty response, low confidence, or sorry text as fallback
+      const hasApiError = !!data.error || !content;
+      const needsFallback = hasApiError || SORRY_PATTERN.test(content) || data.confidence === 'low';
       const relatedArticles = (apiRelated.length > 0)
         ? apiRelated
         : (needsFallback ? localSearch(trimmed) : []);
