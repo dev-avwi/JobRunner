@@ -18,6 +18,7 @@ import { useTheme, ThemeColors } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, iconSizes, shadows } from '../../src/lib/design-tokens';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import api from '../../src/lib/api';
+import { HELP_ARTICLES } from '../../src/data/helpArticles';
 
 // ─── Persistence ──────────────────────────────────────────────────────────────
 
@@ -39,6 +40,37 @@ interface ChatMessage {
   deeplink?: string;
   mobileDeeplink?: string;
   confidence?: 'high' | 'medium' | 'low';
+}
+
+// ─── Local keyword fallback ───────────────────────────────────────────────────
+
+const SORRY_PATTERN = /sorry|could not find|don't know|unable to|not sure|can't help/i;
+
+function localSearch(query: string, limit = 3): RelatedArticle[] {
+  const words = query.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  if (words.length === 0) return [];
+
+  return HELP_ARTICLES
+    .map(a => {
+      const hay = `${a.title} ${a.summary} ${a.body}`.toLowerCase();
+      const score = words.reduce((acc, w) => {
+        // Title match counts more
+        const titleHits = (a.title.toLowerCase().match(new RegExp(w, 'g')) ?? []).length * 3;
+        const bodyHits  = (hay.match(new RegExp(w, 'g')) ?? []).length;
+        return acc + titleHits + bodyHits;
+      }, 0);
+      return { article: a, score };
+    })
+    .filter(({ score }) => score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit)
+    .map(({ article: a }) => ({
+      id: a.id,
+      title: a.title,
+      summary: a.summary,
+      deeplink: a.deeplink,
+      mobileDeeplink: a.mobileDeeplink,
+    }));
 }
 
 // ─── Starter prompts ──────────────────────────────────────────────────────────
@@ -473,23 +505,35 @@ export default function HelpChatScreen() {
         history: currentMessages.map((m) => ({ role: m.role, content: m.content })),
       });
       const data = response.data as any;
+      const content: string = data.response ?? '';
+      const apiRelated: RelatedArticle[] = data.relatedArticles ?? [];
+
+      // If the AI couldn't answer, surface locally-matched articles instead
+      const needsFallback = SORRY_PATTERN.test(content) || data.confidence === 'low';
+      const relatedArticles = (apiRelated.length > 0)
+        ? apiRelated
+        : (needsFallback ? localSearch(trimmed) : []);
+
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: data.response ?? 'Sorry, I could not find an answer. Please try rephrasing or contact support.',
-          relatedArticles: data.relatedArticles ?? [],
+          content: content || 'Sorry, I could not find an answer. Please try rephrasing or contact support.',
+          relatedArticles,
           deeplink: data.deeplink,
           mobileDeeplink: data.mobileDeeplink,
           confidence: data.confidence ?? 'medium',
         },
       ]);
     } catch {
+      // Network/server error — still show locally matched articles
+      const fallbackArticles = localSearch(trimmed);
       setMessages((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: 'Something went wrong. Please try again or email support at admin@avwebinnovation.com.',
+          content: 'I couldn\'t reach the server right now. Here are some articles that might help:',
+          relatedArticles: fallbackArticles,
           confidence: 'low',
         },
       ]);

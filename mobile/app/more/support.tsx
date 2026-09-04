@@ -971,76 +971,46 @@ export default function SupportScreen() {
               )}
             </View>
           ) : activeCategory === 'all' && !search ? (
-            /* ── Grouped view: one card per category, expand/collapse ── */
-            <>
-              {categories.map((cat) => {
-                const catArticles = allArticles.filter(a => a.category === cat.id);
-                if (catArticles.length === 0) return null;
-                const isExpanded = expandedCategories.has(cat.id);
-                const PREVIEW = 3;
-                const shown = isExpanded ? catArticles : catArticles.slice(0, PREVIEW);
-                const hiddenCount = catArticles.length - PREVIEW;
-                return (
-                  <View key={cat.id}>
-                    <View style={styles.categoryGroupHeader}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={13} color={colors.mutedForeground} />
-                        <Text style={styles.categoryGroupLabel}>{cat.label.toUpperCase()}</Text>
+            /* ── Category overview: 2-column grid, tap to drill in ── */
+            <View style={{ paddingHorizontal: spacing.lg }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                {categories.map((cat) => {
+                  const count = allArticles.filter(a => a.category === cat.id).length;
+                  if (count === 0) return null;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={{
+                        width: '48%',
+                        backgroundColor: colors.card,
+                        borderRadius: radius.xl,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        padding: spacing.lg,
+                        gap: spacing.sm,
+                        ...shadows.sm,
+                      }}
+                      onPress={() => setActiveCategory(cat.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{
+                        width: 36, height: 36, borderRadius: 10,
+                        backgroundColor: colors.primaryLight,
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={17} color={colors.primary} />
                       </View>
-                      {hiddenCount > 0 && (
-                        <TouchableOpacity onPress={() => toggleCategory(cat.id)}>
-                          <Text style={styles.categoryGroupSeeAll}>
-                            {isExpanded ? 'Show less' : `Show all ${catArticles.length}`}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                    <View style={styles.articleListCard}>
-                      {shown.map((article, idx) => (
-                        <View key={article.id}>
-                          {idx > 0 && <View style={styles.articleListDivider} />}
-                          <PressableRow style={styles.articleListRow} onPress={() => openArticle(article)}>
-                            <View style={{ flex: 1 }}>
-                              <Text style={styles.articleTitle} numberOfLines={1}>{article.title}</Text>
-                              <Text style={styles.articleSummary} numberOfLines={1}>{article.summary}</Text>
-                            </View>
-                            <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
-                          </PressableRow>
-                        </View>
-                      ))}
-                      {!isExpanded && hiddenCount > 0 && (
-                        <>
-                          <View style={styles.articleListDivider} />
-                          <TouchableOpacity
-                            style={[styles.articleListRow, { justifyContent: 'center', gap: spacing.xs }]}
-                            onPress={() => toggleCategory(cat.id)}
-                          >
-                            <Feather name="chevron-down" size={13} color={colors.primary} />
-                            <Text style={{ ...typography.caption, color: colors.primary, fontWeight: fontWeights.semibold }}>
-                              {hiddenCount} more article{hiddenCount === 1 ? '' : 's'}
-                            </Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                      {isExpanded && hiddenCount > 0 && (
-                        <>
-                          <View style={styles.articleListDivider} />
-                          <TouchableOpacity
-                            style={[styles.articleListRow, { justifyContent: 'center', gap: spacing.xs }]}
-                            onPress={() => toggleCategory(cat.id)}
-                          >
-                            <Feather name="chevron-up" size={13} color={colors.mutedForeground} />
-                            <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>
-                              Show less
-                            </Text>
-                          </TouchableOpacity>
-                        </>
-                      )}
-                    </View>
-                  </View>
-                );
-              })}
-            </>
+                      <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                        {cat.label}
+                      </Text>
+                      <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                        {count} article{count === 1 ? '' : 's'}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
           ) : (
             /* ── Flat view: search results or single category ── */
             <>
