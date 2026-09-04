@@ -830,47 +830,49 @@ export default function SupportScreen() {
           <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}>
             <TouchableOpacity
               style={{
-                backgroundColor: colors.primary,
+                backgroundColor: colors.card,
                 borderRadius: radius.xl,
+                borderWidth: 1,
+                borderColor: colors.border,
                 padding: spacing.lg,
-                ...shadows.md,
+                ...shadows.sm,
               }}
               onPress={() => router.push('/more/help-chat' as any)}
-              activeOpacity={0.85}
+              activeOpacity={0.75}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
                 <View style={{
-                  width: 40, height: 40, borderRadius: 20,
-                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  width: 38, height: 38, borderRadius: 19,
+                  backgroundColor: colors.primaryLight,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Feather name="message-circle" size={iconSizes.xl} color="#fff" />
+                  <Feather name="message-circle" size={iconSizes.lg} color={colors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ ...typography.body, fontWeight: fontWeights.bold, color: '#fff', marginBottom: 2 }}>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>
                     Help Assistant
                   </Text>
-                  <Text style={{ ...typography.caption, color: 'rgba(255,255,255,0.75)' }}>
+                  <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
                     Instant answers to any question
                   </Text>
                 </View>
-                <Feather name="arrow-right" size={iconSizes.md} color="rgba(255,255,255,0.7)" />
+                <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
               </View>
               {/* Sample chips */}
               <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
-                {['How do I create a quote?', 'How do I schedule a job?', 'How do I add a team member?'].map((q) => (
+                {['Create a quote', 'Schedule a job', 'Add a team member'].map((q) => (
                   <TouchableOpacity
                     key={q}
-                    onPress={() => router.push({ pathname: '/more/help-chat', params: { query: q } } as any)}
-                    activeOpacity={0.75}
+                    onPress={() => router.push({ pathname: '/more/help-chat', params: { query: `How do I ${q.toLowerCase()}?` } } as any)}
+                    activeOpacity={0.7}
                     style={{
-                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      backgroundColor: colors.muted,
                       borderRadius: radius.full,
                       paddingHorizontal: spacing.md,
                       paddingVertical: 5,
                     }}
                   >
-                    <Text style={{ ...typography.caption, color: '#fff', fontWeight: fontWeights.medium }}>{q}</Text>
+                    <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>{q}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
