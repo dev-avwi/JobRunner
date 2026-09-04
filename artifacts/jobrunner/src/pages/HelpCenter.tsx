@@ -839,8 +839,10 @@ export default function HelpCenter({
   }, [allArticles, activeCategory, search]);
 
   const handleNavigate = (path: string) => {
-    setLocation(path);
+    // Close the sheet first, then navigate on the next tick so Wouter's
+    // setLocation isn't racing with the Sheet portal unmounting.
     onOpenChange(false);
+    setTimeout(() => setLocation(path), 0);
   };
 
   const handleAskAssistant = (query: string) => {

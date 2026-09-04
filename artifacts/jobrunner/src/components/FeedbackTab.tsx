@@ -29,11 +29,17 @@ const BTN_H = 36;
 const PANEL_W = 320;
 const PANEL_H = 480; // approx panel height
 const MARGIN = 12;
+// FloatingAIChat FAB: right-4 (16px), md:bottom-6 (24px), w-14 (56px wide)
+const AI_FAB_RIGHT = 16;
+const AI_FAB_W = 56;
+const AI_FAB_BOTTOM = 24;
+const GAP = 8; // gap between Feedback pill and AI FAB
 
 function defaultPos() {
+  // Place pill to the left of the AI FAB, at the same vertical level
   return {
-    x: window.innerWidth - BTN_W - MARGIN,
-    y: window.innerHeight - BTN_H - MARGIN - 80, // above FAB
+    x: window.innerWidth - AI_FAB_RIGHT - AI_FAB_W - GAP - BTN_W,
+    y: window.innerHeight - AI_FAB_BOTTOM - BTN_H,
   };
 }
 
@@ -79,6 +85,8 @@ export default function FeedbackTab() {
     originY: number;
     moved: boolean;
   } | null>(null);
+  // Separate ref that survives through to onClick (pointerup clears dragState before click fires)
+  const didDragRef = useRef(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -107,10 +115,13 @@ export default function FeedbackTab() {
       const dy = e.clientY - ds.startY;
       if (!ds.moved && Math.hypot(dx, dy) < 5) return;
       ds.moved = true;
+      didDragRef.current = true;
       setPos(clamp({ x: ds.originX + dx, y: ds.originY + dy }));
     };
     const onUp = () => {
       dragState.current = null;
+      // Reset after a tick so onClick can read it first
+      setTimeout(() => { didDragRef.current = false; }, 0);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -122,6 +133,7 @@ export default function FeedbackTab() {
 
   const handleButtonPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    didDragRef.current = false;
     dragState.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -132,8 +144,8 @@ export default function FeedbackTab() {
   };
 
   const handleButtonClick = () => {
-    // Only toggle if we didn't drag
-    if (dragState.current?.moved) return;
+    // Suppress click when the gesture was a drag (didDragRef persists through onClick)
+    if (didDragRef.current) return;
     setIsOpen((o) => !o);
   };
 
