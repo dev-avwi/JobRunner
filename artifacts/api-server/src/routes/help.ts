@@ -105,6 +105,46 @@ function buildRouteContext(currentRoute: string | null | undefined): string {
   return `\n\n## Current User Context\nThe user is currently on the **${label}** page (route: ${currentRoute}). Tailor your answer to be relevant to what they can see and do from this page when applicable.`;
 }
 
+/**
+ * Extract the `response` field from model output that may be truncated mid-stream.
+ *
+ * Handles three cases:
+ *   1. Valid JSON with a response field       → JSON.parse path
+ *   2. JSON truncated after the string closes → regex matches the closing quote
+ *   3. JSON truncated inside the string       → regex matches end-of-string instead
+ *
+ * The pattern (?:"|$) makes the closing quote optional so case 3 works.
+ * A trailing backslash (truncation right after an escape leader) causes the
+ * quantifier to stop before it; we lose at most one character in that edge case.
+ *
+ * Raw model output is never persisted to logs because it may contain user PII.
+ */
+function extractPartialResponse(raw: string): string | null {
+  // Case 1: complete valid JSON
+  try {
+    const obj = JSON.parse(raw);
+    if (typeof obj.response === 'string') return obj.response;
+    return null;
+  } catch {
+    // fall through to partial extraction
+  }
+
+  // Cases 2 & 3: locate the response string value even when JSON is incomplete.
+  // (?:[^"\\]|\\.)*  – any non-quote non-backslash char, or a backslash + any char
+  // (?:"|$)          – terminated by a closing quote OR end of string
+  const match = raw.match(/"response"\s*:\s*"((?:[^"\\]|\\.)*)(?:"|$)/);
+  if (!match) return null;
+
+  // Decode the most common JSON escape sequences from the (possibly partial) value.
+  // We do not use JSON.parse() here because the content may end mid-escape sequence.
+  return match[1]
+    .replace(/\\"/g, '"')
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '\r')
+    .replace(/\\t/g, '\t')
+    .replace(/\\\\/g, '\\');
+}
+
 async function callHelpAI(message: string, history: HelpChatMessage[], currentRoute?: string | null): Promise<HelpChatResponse> {
   const systemPrompt = HELP_SYSTEM_PROMPT + buildRouteContext(currentRoute);
 
@@ -119,16 +159,39 @@ async function callHelpAI(message: string, history: HelpChatMessage[], currentRo
     model: 'gpt-4o-mini',
     messages,
     temperature: 0.3,
-    max_tokens: 600,
+    max_tokens: 1200,
     response_format: { type: 'json_object' },
   });
 
-  const raw = completion.choices[0]?.message?.content ?? '{}';
+  const choice = completion.choices[0];
+  const raw = choice?.message?.content ?? '{}';
+  const finishReason = choice?.finish_reason;
+
+  // Warn when the model hit the token limit — truncated JSON always fails to parse.
+  if (finishReason === 'length') {
+    logger.warn('api', '[help/chat] response truncated by max_tokens', {
+      metadata: { rawLength: raw.length, finishReason },
+    });
+  }
+
   let parsed: any = {};
   try {
     parsed = JSON.parse(raw);
   } catch {
-    parsed = { response: raw, confidence: 'low' };
+    // Attempt to salvage a partial response from truncated JSON.
+    // The closing quote is made optional with (?:"|$) so this also matches when
+    // generation was cut off mid-string, e.g. {"response":"partial answ
+    const salvaged = extractPartialResponse(raw);
+    if (salvaged !== null) {
+      parsed = { response: salvaged, confidence: 'low' };
+    } else {
+      // Log only structural diagnostics — never log raw model output which may
+      // contain user-supplied content and PII.
+      logger.warn('api', '[help/chat] JSON parse failed and response field not found', {
+        metadata: { rawLength: raw.length, finishReason },
+      });
+      parsed = {};
+    }
   }
 
   // Resolve article IDs to full article objects
