@@ -52,6 +52,93 @@ const STARTERS: { icon: string; label: string; question: string }[] = [
   { icon: 'briefcase',   label: 'Manage jobs',       question: 'How do I create and manage jobs?' },
 ];
 
+// ─── Simple markdown renderer ─────────────────────────────────────────────────
+
+function renderMarkdown(text: string, colors: ThemeColors): React.ReactNode[] {
+  const lines = text.split('\n');
+  const nodes: React.ReactNode[] = [];
+  let key = 0;
+
+  const renderInline = (line: string, baseStyle: any): React.ReactNode => {
+    // Parse **bold** inline
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    if (parts.length === 1) return <Text style={baseStyle}>{line}</Text>;
+    return (
+      <Text style={baseStyle}>
+        {parts.map((part, i) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return <Text key={i} style={[baseStyle, { fontWeight: fontWeights.semibold }]}>{part.slice(2, -2)}</Text>;
+          }
+          return <Text key={i}>{part}</Text>;
+        })}
+      </Text>
+    );
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    if (line.startsWith('## ')) {
+      nodes.push(
+        <Text key={key++} style={{
+          ...typography.body,
+          fontWeight: fontWeights.semibold,
+          color: colors.foreground,
+          marginTop: i === 0 ? 0 : spacing.sm,
+          marginBottom: 2,
+        }}>
+          {line.slice(3)}
+        </Text>
+      );
+    } else if (line.startsWith('### ')) {
+      nodes.push(
+        <Text key={key++} style={{
+          ...typography.bodySmall,
+          fontWeight: fontWeights.semibold,
+          color: colors.foreground,
+          marginTop: i === 0 ? 0 : spacing.xs,
+          marginBottom: 1,
+        }}>
+          {line.slice(4)}
+        </Text>
+      );
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      nodes.push(
+        <View key={key++} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
+          <Text style={{ ...typography.body, color: colors.mutedForeground, marginRight: 6, marginTop: 1 }}>•</Text>
+          <View style={{ flex: 1 }}>
+            {renderInline(line.slice(2), { ...typography.body, color: colors.foreground, lineHeight: 22 })}
+          </View>
+        </View>
+      );
+    } else if (line.trim() === '') {
+      if (i > 0 && i < lines.length - 1) {
+        nodes.push(<View key={key++} style={{ height: spacing.xs }} />);
+      }
+    } else if (line.match(/^\d+\.\s/)) {
+      const num = line.match(/^(\d+)\.\s(.*)/)!;
+      nodes.push(
+        <View key={key++} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
+          <Text style={{ ...typography.body, color: colors.mutedForeground, marginRight: 6, minWidth: 16 }}>{num[1]}.</Text>
+          <View style={{ flex: 1 }}>
+            {renderInline(num[2], { ...typography.body, color: colors.foreground, lineHeight: 22 })}
+          </View>
+        </View>
+      );
+    } else {
+      nodes.push(
+        <View key={key++} style={{ marginBottom: 1 }}>
+          {renderInline(line, { ...typography.body, color: colors.foreground, lineHeight: 22 })}
+        </View>
+      );
+    }
+    i++;
+  }
+
+  return nodes;
+}
+
 // ─── Thinking dots animation ──────────────────────────────────────────────────
 
 function ThinkingDots({ colors }: { colors: ThemeColors }) {
@@ -77,18 +164,34 @@ function ThinkingDots({ colors }: { colors: ThemeColors }) {
   }, []);
 
   const dotStyle = (val: Animated.Value) => ({
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: colors.primary,
-    marginHorizontal: 3,
+    width: 7, height: 7, borderRadius: 3.5,
+    backgroundColor: colors.mutedForeground,
+    marginHorizontal: 2.5,
     opacity: val.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
-    transform: [{ scale: val.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.2] }) }],
+    transform: [{ translateY: val.interpolate({ inputRange: [0, 1], outputRange: [0, -3] }) }],
   });
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 }}>
       <Animated.View style={dotStyle(dot1)} />
       <Animated.View style={dotStyle(dot2)} />
       <Animated.View style={dotStyle(dot3)} />
+    </View>
+  );
+}
+
+// ─── Assistant avatar ─────────────────────────────────────────────────────────
+
+function AssistantAvatar({ colors }: { colors: ThemeColors }) {
+  return (
+    <View style={{
+      width: 28, height: 28, borderRadius: 14,
+      backgroundColor: colors.primaryLight,
+      alignItems: 'center', justifyContent: 'center',
+      marginRight: spacing.sm,
+      flexShrink: 0,
+    }}>
+      <Feather name="cpu" size={13} color={colors.primary} />
     </View>
   );
 }
@@ -98,19 +201,13 @@ function ThinkingDots({ colors }: { colors: ThemeColors }) {
 const createStyles = (colors: ThemeColors) =>
   StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
-    scrollContent: { flexGrow: 1, paddingVertical: spacing.lg },
+    scrollContent: { flexGrow: 1, paddingTop: spacing.md, paddingBottom: spacing.lg },
 
     // Empty state
     emptyContainer: {
       flex: 1,
       paddingHorizontal: spacing.lg,
       paddingTop: spacing.md,
-    },
-    emptyIntro: {
-      ...typography.body,
-      color: colors.mutedForeground,
-      lineHeight: 22,
-      marginBottom: spacing.xl,
     },
     starterLabel: {
       ...typography.label,
@@ -137,67 +234,75 @@ const createStyles = (colors: ThemeColors) =>
       flex: 1,
     },
 
-    // Chat bubbles
+    // Chat rows
     bubbleRow: {
       paddingHorizontal: spacing.lg,
       marginBottom: spacing.sm,
     },
+
+    // User bubble
     userBubble: {
       alignSelf: 'flex-end',
       backgroundColor: colors.primary,
-      borderRadius: radius.xl,
-      borderBottomRightRadius: radius.sm,
+      borderRadius: 20,
+      borderBottomRightRadius: 5,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      maxWidth: '80%',
+      paddingVertical: 10,
+      maxWidth: '82%',
     },
     userBubbleText: {
       ...typography.body,
       color: colors.primaryForeground,
-    },
-    assistantBubble: {
-      alignSelf: 'flex-start',
-      backgroundColor: colors.card,
-      borderRadius: radius.xl,
-      borderBottomLeftRadius: radius.sm,
-      borderWidth: 1,
-      borderColor: colors.border,
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      maxWidth: '85%',
-      ...shadows.sm,
-    },
-    bubbleLabel: {
-      ...typography.captionSmall,
-      color: colors.mutedForeground,
-      fontWeight: fontWeights.medium,
-      marginBottom: 4,
-    },
-    assistantBubbleText: {
-      ...typography.body,
-      color: colors.foreground,
       lineHeight: 22,
     },
-    thinkingBubble: {
-      alignSelf: 'flex-start',
+
+    // Assistant bubble
+    assistantRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    assistantBubble: {
+      flex: 1,
       backgroundColor: colors.card,
-      borderRadius: radius.xl,
-      borderBottomLeftRadius: radius.sm,
+      borderRadius: 20,
+      borderBottomLeftRadius: 5,
       borderWidth: 1,
       borderColor: colors.border,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
-      marginHorizontal: spacing.lg,
-      marginBottom: spacing.sm,
+      paddingVertical: 12,
+      maxWidth: '100%',
       ...shadows.sm,
     },
 
-    // Deeplink button
+    // Thinking bubble (matches assistant bubble)
+    thinkingRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.sm,
+    },
+    thinkingBubble: {
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      borderBottomLeftRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: 0,
+      ...shadows.sm,
+    },
+
+    // Deeplink button inside bubble
     deeplinkBtn: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
       marginTop: spacing.sm,
+      backgroundColor: colors.primaryLight,
+      borderRadius: radius.lg,
+      alignSelf: 'flex-start',
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
     },
     deeplinkText: {
       ...typography.bodySmall,
@@ -206,43 +311,59 @@ const createStyles = (colors: ThemeColors) =>
     },
 
     // Low confidence note
+    lowConfidenceNote: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
     lowConfidenceText: {
       ...typography.caption,
       color: colors.mutedForeground,
-      marginTop: spacing.sm,
-      fontStyle: 'italic',
+      flex: 1,
+      lineHeight: 16,
     },
 
-    // Related articles
+    // Related articles — chips
+    relatedSection: {
+      marginTop: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing.xs,
+    },
     relatedLabel: {
       ...typography.caption,
       color: colors.mutedForeground,
-      marginTop: spacing.sm,
-      marginBottom: spacing.xs,
+      fontWeight: fontWeights.medium,
+      marginBottom: 2,
     },
-    relatedRow: {
+    relatedChip: {
       flexDirection: 'row',
       alignItems: 'center',
+      gap: 5,
       backgroundColor: colors.muted,
-      borderRadius: radius.lg,
-      paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
-      marginBottom: spacing.xs,
-      gap: spacing.sm,
+      borderRadius: radius.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 5,
+      alignSelf: 'flex-start',
     },
-    relatedText: {
-      ...typography.bodySmall,
+    relatedChipText: {
+      ...typography.caption,
       color: colors.foreground,
-      flex: 1,
+      fontWeight: fontWeights.medium,
     },
 
     // Input bar
     inputBar: {
       flexDirection: 'row',
       alignItems: 'flex-end',
-      paddingHorizontal: spacing.lg,
-      paddingTop: spacing.md,
-      paddingBottom: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.sm,
+      paddingBottom: spacing.sm,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       backgroundColor: colors.background,
@@ -251,9 +372,9 @@ const createStyles = (colors: ThemeColors) =>
     inputWrapper: {
       flex: 1,
       backgroundColor: colors.muted,
-      borderRadius: radius.xl,
+      borderRadius: 22,
       paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.sm,
+      paddingVertical: Platform.OS === 'ios' ? 10 : 6,
       minHeight: 44,
       justifyContent: 'center',
     },
@@ -261,15 +382,16 @@ const createStyles = (colors: ThemeColors) =>
       ...typography.body,
       color: colors.foreground,
       paddingVertical: 0,
-      maxHeight: 100,
+      maxHeight: 120,
     },
     sendBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: radius.full,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
       backgroundColor: colors.primary,
       alignItems: 'center',
       justifyContent: 'center',
+      marginBottom: 2,
     },
     sendBtnDisabled: {
       backgroundColor: colors.muted,
@@ -306,9 +428,7 @@ export default function HelpChatScreen() {
           }
         }
       })
-      .catch(() => {
-        // ignore storage errors
-      })
+      .catch(() => {})
       .finally(() => setHistoryLoaded(true));
   }, []);
 
@@ -344,7 +464,6 @@ export default function HelpChatScreen() {
     setInputValue('');
     setIsSending(true);
 
-    // Optimistically add user message
     const currentMessages = messages;
     setMessages((prev) => [...prev, { role: 'user', content: trimmed }]);
 
@@ -370,7 +489,7 @@ export default function HelpChatScreen() {
         ...prev,
         {
           role: 'assistant',
-          content: 'Something went wrong. Please try again or contact support at admin@avwebinnovation.com.',
+          content: 'Something went wrong. Please try again or email support at admin@avwebinnovation.com.',
           confidence: 'low',
         },
       ]);
@@ -380,13 +499,8 @@ export default function HelpChatScreen() {
   }, [messages, isSending]);
 
   const handleSend = () => sendMessage(inputValue);
-
   const handleStarter = (text: string) => sendMessage(text);
-
-  const handleDeeplink = (path: string) => {
-    router.push(path as any);
-  };
-
+  const handleDeeplink = (path: string) => { router.push(path as any); };
   const handleClear = () => {
     setMessages([]);
     AsyncStorage.removeItem(CHAT_STORAGE_KEY).catch(() => {});
@@ -488,48 +602,53 @@ export default function HelpChatScreen() {
                     </View>
                   </View>
                 ) : (
-                  <View style={{ alignItems: 'flex-start' }}>
-                    <Text style={styles.bubbleLabel}>Help Assistant</Text>
+                  <View style={styles.assistantRow}>
+                    <AssistantAvatar colors={colors} />
                     <View style={styles.assistantBubble}>
-                      <Text style={styles.assistantBubbleText}>{msg.content}</Text>
+                      {/* Rendered markdown content */}
+                      {renderMarkdown(msg.content, colors)}
 
-                      {/* Deeplink */}
+                      {/* Deeplink CTA */}
                       {msg.mobileDeeplink && (
                         <TouchableOpacity
                           style={styles.deeplinkBtn}
                           onPress={() => handleDeeplink(msg.mobileDeeplink!)}
                           activeOpacity={0.7}
                         >
-                          <Feather name="arrow-right" size={14} color={colors.primary} />
+                          <Feather name="map-pin" size={13} color={colors.primary} />
                           <Text style={styles.deeplinkText}>Take me there</Text>
                         </TouchableOpacity>
                       )}
 
-                      {/* Low confidence note */}
-                      {msg.confidence === 'low' && (
-                        <Text style={styles.lowConfidenceText}>
-                          Not sure about this one. Contact support at admin@avwebinnovation.com if you need more help.
-                        </Text>
+                      {/* Related articles as chips */}
+                      {msg.relatedArticles && msg.relatedArticles.length > 0 && (
+                        <View style={styles.relatedSection}>
+                          <Text style={styles.relatedLabel}>RELATED ARTICLES</Text>
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+                            {msg.relatedArticles.map((article) => (
+                              <TouchableOpacity
+                                key={article.id}
+                                style={styles.relatedChip}
+                                onPress={() => router.push({ pathname: '/more/support', params: { openArticleId: article.id } } as any)}
+                                activeOpacity={0.7}
+                              >
+                                <Feather name="file-text" size={11} color={colors.mutedForeground} />
+                                <Text style={styles.relatedChipText} numberOfLines={1}>
+                                  {article.title}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        </View>
                       )}
 
-                      {/* Related articles */}
-                      {msg.relatedArticles && msg.relatedArticles.length > 0 && (
-                        <View style={{ marginTop: spacing.sm }}>
-                          <Text style={styles.relatedLabel}>Related articles:</Text>
-                          {msg.relatedArticles.map((article) => (
-                            <TouchableOpacity
-                              key={article.id}
-                              style={styles.relatedRow}
-                              onPress={() => router.push({ pathname: '/more/support', params: { openArticleId: article.id } } as any)}
-                              activeOpacity={0.7}
-                            >
-                              <Feather name="file-text" size={14} color={colors.mutedForeground} />
-                              <Text style={styles.relatedText} numberOfLines={2}>
-                                {article.title}
-                              </Text>
-                              <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-                            </TouchableOpacity>
-                          ))}
+                      {/* Low confidence note */}
+                      {msg.confidence === 'low' && (
+                        <View style={styles.lowConfidenceNote}>
+                          <Feather name="alert-circle" size={12} color={colors.mutedForeground} />
+                          <Text style={styles.lowConfidenceText}>
+                            Not fully confident in this answer. Email support@avwebinnovation.com for more help.
+                          </Text>
                         </View>
                       )}
                     </View>
@@ -541,7 +660,7 @@ export default function HelpChatScreen() {
 
           {/* Start-over nudge — shown below the last AI message */}
           {messages.length > 0 && !isSending && messages[messages.length - 1]?.role === 'assistant' && (
-            <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+            <View style={{ alignItems: 'center', paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
               <TouchableOpacity
                 onPress={handleClear}
                 style={{
@@ -561,10 +680,13 @@ export default function HelpChatScreen() {
             </View>
           )}
 
-          {/* Thinking indicator */}
+          {/* Thinking indicator — aligned with avatar */}
           {isSending && (
-            <View style={styles.thinkingBubble}>
-              <ThinkingDots colors={colors} />
+            <View style={styles.thinkingRow}>
+              <AssistantAvatar colors={colors} />
+              <View style={styles.thinkingBubble}>
+                <ThinkingDots colors={colors} />
+              </View>
             </View>
           )}
         </ScrollView>
@@ -594,7 +716,7 @@ export default function HelpChatScreen() {
             {isSending ? (
               <ActivityIndicator size="small" color={colors.primaryForeground} />
             ) : (
-              <Feather name="send" size={iconSizes.md} color={inputValue.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              <Feather name="send" size={16} color={inputValue.trim() ? colors.primaryForeground : colors.mutedForeground} />
             )}
           </TouchableOpacity>
         </View>

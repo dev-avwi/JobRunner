@@ -730,7 +730,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const segments = useSegments();
   const globalSearchParams = useGlobalSearchParams<{ resume?: string }>();
-  const isChatScreen = pathname?.includes('/chat') || pathname?.includes('/direct-messages') || pathname?.includes('/sms-conversation') || pathname?.includes('/team-chat');
+  const isChatScreen = pathname?.includes('/chat') || pathname?.includes('help-chat') || pathname?.includes('/direct-messages') || pathname?.includes('/sms-conversation') || pathname?.includes('/team-chat');
   const isOnboardingScreen = segments.includes('(onboarding)' as never) || pathname === '/setup';
   const isOpsScreen = pathname === '/more/dispatch-board' || pathname === '/more/team-operations';
   const isTapToPaySetupScreen = pathname === '/more/tap-to-pay-setup';
