@@ -658,6 +658,15 @@ export default function SupportScreen() {
   const categories = HELP_CATEGORIES as HelpCategory[];
   const allArticles = HELP_ARTICLES as HelpArticle[];
 
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const toggleCategory = useCallback((id: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
   const filteredArticles = useMemo(() => {
     let list = allArticles;
     if (activeCategory !== 'all') {
@@ -945,13 +954,15 @@ export default function SupportScreen() {
               )}
             </View>
           ) : activeCategory === 'all' && !search ? (
-            /* ── Grouped view: one card per category ── */
+            /* ── Grouped view: one card per category, expand/collapse ── */
             <>
               {categories.map((cat) => {
                 const catArticles = allArticles.filter(a => a.category === cat.id);
                 if (catArticles.length === 0) return null;
-                const preview = catArticles.slice(0, 3);
-                const remaining = catArticles.length - preview.length;
+                const isExpanded = expandedCategories.has(cat.id);
+                const PREVIEW = 3;
+                const shown = isExpanded ? catArticles : catArticles.slice(0, PREVIEW);
+                const hiddenCount = catArticles.length - PREVIEW;
                 return (
                   <View key={cat.id}>
                     <View style={styles.categoryGroupHeader}>
@@ -959,14 +970,16 @@ export default function SupportScreen() {
                         <Feather name={CATEGORY_ICONS[cat.id] ?? 'help-circle'} size={13} color={colors.mutedForeground} />
                         <Text style={styles.categoryGroupLabel}>{cat.label.toUpperCase()}</Text>
                       </View>
-                      {remaining > 0 && (
-                        <TouchableOpacity onPress={() => setActiveCategory(cat.id)}>
-                          <Text style={styles.categoryGroupSeeAll}>See all {catArticles.length} →</Text>
+                      {hiddenCount > 0 && (
+                        <TouchableOpacity onPress={() => toggleCategory(cat.id)}>
+                          <Text style={styles.categoryGroupSeeAll}>
+                            {isExpanded ? 'Show less' : `Show all ${catArticles.length}`}
+                          </Text>
                         </TouchableOpacity>
                       )}
                     </View>
                     <View style={styles.articleListCard}>
-                      {preview.map((article, idx) => (
+                      {shown.map((article, idx) => (
                         <View key={article.id}>
                           {idx > 0 && <View style={styles.articleListDivider} />}
                           <PressableRow style={styles.articleListRow} onPress={() => openArticle(article)}>
@@ -978,17 +991,31 @@ export default function SupportScreen() {
                           </PressableRow>
                         </View>
                       ))}
-                      {remaining > 0 && (
+                      {!isExpanded && hiddenCount > 0 && (
                         <>
                           <View style={styles.articleListDivider} />
                           <TouchableOpacity
-                            style={[styles.articleListRow, { justifyContent: 'center' }]}
-                            onPress={() => setActiveCategory(cat.id)}
+                            style={[styles.articleListRow, { justifyContent: 'center', gap: spacing.xs }]}
+                            onPress={() => toggleCategory(cat.id)}
                           >
+                            <Feather name="chevron-down" size={13} color={colors.primary} />
                             <Text style={{ ...typography.caption, color: colors.primary, fontWeight: fontWeights.semibold }}>
-                              {remaining} more article{remaining === 1 ? '' : 's'}
+                              {hiddenCount} more article{hiddenCount === 1 ? '' : 's'}
                             </Text>
-                            <Feather name="chevron-right" size={12} color={colors.primary} style={{ marginLeft: 2 }} />
+                          </TouchableOpacity>
+                        </>
+                      )}
+                      {isExpanded && hiddenCount > 0 && (
+                        <>
+                          <View style={styles.articleListDivider} />
+                          <TouchableOpacity
+                            style={[styles.articleListRow, { justifyContent: 'center', gap: spacing.xs }]}
+                            onPress={() => toggleCategory(cat.id)}
+                          >
+                            <Feather name="chevron-up" size={13} color={colors.mutedForeground} />
+                            <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.semibold }}>
+                              Show less
+                            </Text>
                           </TouchableOpacity>
                         </>
                       )}

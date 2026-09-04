@@ -43,11 +43,13 @@ interface ChatMessage {
 
 // ─── Starter prompts ──────────────────────────────────────────────────────────
 
-const STARTERS = [
-  'How do I create a quote?',
-  'How do I add a team member?',
-  'Where do I find my invoices?',
-  'How do I schedule a job?',
+const STARTERS: { icon: string; label: string; question: string }[] = [
+  { icon: 'file-text',   label: 'Create a quote',    question: 'How do I create and send a quote?' },
+  { icon: 'users',       label: 'Add team members',  question: 'How do I add a team member?' },
+  { icon: 'clock',       label: 'Track time',        question: 'How do I track time on a job?' },
+  { icon: 'credit-card', label: 'Take payment',      question: 'How do I take a payment from a client?' },
+  { icon: 'calendar',    label: 'Schedule a job',    question: 'How do I schedule a job?' },
+  { icon: 'briefcase',   label: 'Manage jobs',       question: 'How do I create and manage jobs?' },
 ];
 
 // ─── Thinking dots animation ──────────────────────────────────────────────────
@@ -116,18 +118,23 @@ const createStyles = (colors: ThemeColors) =>
       marginBottom: spacing.sm,
     },
     starterBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
       backgroundColor: colors.card,
       borderRadius: radius.xl,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingHorizontal: spacing.lg,
+      paddingHorizontal: spacing.md,
       paddingVertical: spacing.md,
-      marginBottom: spacing.sm,
+      width: '48%',
       ...shadows.sm,
     },
     starterText: {
-      ...typography.body,
+      ...typography.bodySmall,
       color: colors.foreground,
+      fontWeight: fontWeights.medium,
+      flex: 1,
     },
 
     // Chat bubbles
@@ -423,51 +430,46 @@ export default function HelpChatScreen() {
         >
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
-              {/* Branding banner */}
-              <View style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.md,
-                backgroundColor: colors.card,
-                borderRadius: radius.xl,
-                borderWidth: 1,
-                borderColor: colors.border,
-                padding: spacing.lg,
-                marginBottom: spacing.xl,
-                ...shadows.sm,
-              }}>
+              {/* Hero */}
+              <View style={{ alignItems: 'center', paddingVertical: spacing.xl }}>
                 <View style={{
-                  width: 40, height: 40, borderRadius: radius.lg,
+                  width: 72, height: 72, borderRadius: 36,
                   backgroundColor: colors.primaryLight,
                   alignItems: 'center', justifyContent: 'center',
+                  marginBottom: spacing.lg,
                 }}>
-                  <Feather name="help-circle" size={iconSizes.xl} color={colors.primary} />
+                  <Feather name="message-circle" size={36} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ ...typography.subtitle, color: colors.foreground, marginBottom: 2 }}>
-                    Help Assistant
-                  </Text>
-                  <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                    App usage questions only
-                  </Text>
-                </View>
+                <Text style={{ ...typography.subtitle, color: colors.foreground, textAlign: 'center', marginBottom: spacing.xs }}>
+                  What can I help you with?
+                </Text>
+                <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22 }}>
+                  Ask me anything about using JobRunner — features, settings, and workflows.
+                </Text>
               </View>
 
-              <Text style={styles.emptyIntro}>
-                Ask me anything about how to use JobRunner: features, navigation, settings, and workflows.
-              </Text>
+              {/* 2-column topic grid */}
+              <Text style={styles.starterLabel}>QUICK TOPICS</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                {STARTERS.map((s) => (
+                  <TouchableOpacity
+                    key={s.label}
+                    style={styles.starterBtn}
+                    onPress={() => handleStarter(s.question)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name={s.icon as any} size={18} color={colors.primary} />
+                    <Text style={styles.starterText}>{s.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
-              <Text style={styles.starterLabel}>TRY ASKING</Text>
-              {STARTERS.map((s) => (
-                <TouchableOpacity
-                  key={s}
-                  style={styles.starterBtn}
-                  onPress={() => handleStarter(s)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.starterText}>{s}</Text>
-                </TouchableOpacity>
-              ))}
+              <Text style={{
+                ...typography.caption, color: colors.mutedForeground,
+                textAlign: 'center', marginTop: spacing.xl, lineHeight: 18,
+              }}>
+                Or type your own question below
+              </Text>
             </View>
           ) : (
             messages.map((msg, idx) => (

@@ -517,6 +517,35 @@ Each automation lets you customise the timing (e.g. "3 days before due date") an
     mobileDeeplink: '/more/settings',
   },
   {
+    id: 'pay-05',
+    category: 'payments',
+    title: 'How do I use Tap to Pay on iPhone?',
+    summary: 'Accept contactless cards and Apple Pay without any extra hardware.',
+    body: `## Tap to Pay on iPhone
+
+Tap to Pay on iPhone lets you accept contactless payments — credit cards, debit cards, and Apple Pay — right on your iPhone. No card reader or extra hardware needed.
+
+### How to set it up
+1. Open **More > Help & Support** and scroll to the **Tap to Pay on iPhone** section.
+2. Tap **Set Up Tap to Pay on iPhone** and follow the prompts to accept the terms.
+3. Your Stripe account is linked automatically.
+
+### How to accept a payment
+1. Open a job or invoice.
+2. Tap **Collect Payment** and choose **Tap to Pay**.
+3. Ask the customer to hold their card or device near the top of your iPhone.
+4. The payment processes instantly and the invoice is marked paid.
+
+### Requirements
+- iPhone XS or later running iOS 16 or later
+- A Stripe account connected in Settings > Payments
+- The customer's card must support contactless payments
+
+### Troubleshooting
+If Tap to Pay is not working, tap **Reset Tap to Pay Setup** in More > Help & Support to clear the terms and run the setup again.`,
+    mobileDeeplink: '/more/tap-to-pay-setup',
+  },
+  {
     id: 'set-04',
     category: 'settings',
     title: 'How do I back up or export my data?',
