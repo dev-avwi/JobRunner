@@ -30,6 +30,49 @@ export const HELP_CATEGORIES: { id: string; label: string; icon: string }[] = [
 export const HELP_ARTICLES: HelpArticle[] = [
   // ─── Getting Started ─────────────────────────────────────────────────────────
   {
+    id: 'gs-05',
+    category: 'getting-started',
+    title: 'How do I log in or reset my password?',
+    summary: 'Sign in to your account or recover access if you forgot your password.',
+    body: `## Logging In
+
+Open the JobRunner app and enter your email address and password. Tap **Sign In**.
+
+If you were invited by your business owner you would have set your password through the email link — use those same credentials here.
+
+## Resetting Your Password
+
+1. On the login screen tap **Forgot password?**
+2. Enter your email address and tap **Send reset link**.
+3. Check your inbox for an email from JobRunner and tap the link inside.
+4. Enter and confirm a new password.
+
+The link expires after 24 hours. If you do not see the email, check your spam folder.
+
+## Switching Accounts
+
+If you work for more than one business, each business sends its own invitation. Log out first (More > Settings > Log Out), then sign in with the credentials for the other account.`,
+    mobileDeeplink: '/more/settings',
+  },
+  {
+    id: 'gs-06',
+    category: 'getting-started',
+    title: 'How do I contact support?',
+    summary: 'Get help from the JobRunner team via email or the in-app support page.',
+    body: `## Contacting Support
+
+**In the app:** Go to **More > Help & Support** and scroll down to **Contact Us**. Tap **Email Support** to open a pre-addressed email, or use **Report a Bug** to send a detailed bug report with device information automatically included.
+
+**By email:** Send a message to admin@avwebinnovation.com. Include a description of what you were doing, what you expected to happen, and what actually happened.
+
+**Response times:** Most queries are answered within one business day (Monday to Friday, Australian Eastern Time).
+
+## Before You Contact Support
+
+Check the help articles first — search for your question at the top of the Help & Support page. The Help Assistant can also answer common how-to questions instantly.`,
+    mobileDeeplink: '/more/support',
+  },
+  {
     id: 'gs-01',
     category: 'getting-started',
     title: 'How do I create my first job?',
@@ -102,6 +145,55 @@ Changes apply to all future documents. Already-sent PDFs are not changed.`,
   },
 
   // ─── Jobs ────────────────────────────────────────────────────────────────────
+  {
+    id: 'job-07',
+    category: 'jobs',
+    title: 'What is the difference between a Service Call and a Project?',
+    summary: 'Choose the right job type for simple one-off visits vs multi-phase projects.',
+    body: `## Service Call vs Project
+
+**Service Call** is for simple, one-off jobs: a single visit, a fixed scope, one invoice. Use it for routine maintenance, emergency repairs, or any work that is done and dusted in a single trip.
+
+**Project** is for larger jobs that span multiple visits or phases. Projects let you:
+- Break work into phases (e.g. Rough-in, Fit-off, Commissioning)
+- Schedule different team members for each phase
+- Track costs and progress per phase
+- Send progress invoices or a final invoice when everything is complete
+
+## How to choose
+
+When creating a job, tap **Job Type** and select either **Service Call** or **Project**.
+
+If you start a Service Call and it grows into a multi-phase project, you can convert it from the job detail screen by tapping **...** > **Convert to Project**.`,
+    deeplink: '/jobs',
+    mobileDeeplink: '/jobs',
+  },
+  {
+    id: 'job-08',
+    category: 'jobs',
+    title: 'How do I track materials and expenses on a job?',
+    summary: 'Record parts, materials, and out-of-pocket costs against a job for accurate costing.',
+    body: `## Tracking Materials and Expenses
+
+Open a job and go to the **Costs** tab.
+
+### Adding a material or part
+Tap **Add Cost** and choose **Material**. Enter the item name, quantity, unit cost, and whether it is billable to the client.
+
+### Adding an expense
+Tap **Add Cost** and choose **Expense**. Enter a description, amount, and attach a photo of the receipt.
+
+### Adding from your price list
+If you have set up a price list (Settings > Price List), tap **Add from Price List** to pick items with pre-filled quantities and prices.
+
+### Using costs on invoices
+When you create an invoice from the job, all billable costs are automatically included as line items. You can remove or adjust any item before sending.
+
+### Reports
+Job costs appear in the **Job Report** and in the **Expenses** section of your financial reports.`,
+    deeplink: '/jobs',
+    mobileDeeplink: '/jobs',
+  },
   {
     id: 'job-01',
     category: 'jobs',
@@ -218,6 +310,33 @@ Workers can also start and stop the timer from their mobile app when on site.`,
 
   // ─── Quotes & Invoices ───────────────────────────────────────────────────────
   {
+    id: 'qi-06',
+    category: 'quotes-invoices',
+    title: 'How do I add a variation to a quote or job?',
+    summary: 'Capture extra scope or change orders and get client approval before doing the work.',
+    body: `## Raising a Variation
+
+A variation covers work that was not in the original quote: extra scope, change of materials, unforeseen conditions, or client-requested additions.
+
+### From a job
+1. Open the job and tap the **Docs** tab.
+2. Tap **New Variation**.
+3. Describe the change and add any line items with quantities and prices.
+4. Send it to the client for approval, or mark it as verbally approved if they agreed on site.
+
+### From a quote
+1. Open the quote and tap **Add Variation**.
+2. Enter the variation details and send for review.
+
+### After approval
+Once the client approves the variation (online or manually), the amounts are added to the job total and will appear on the final invoice automatically.
+
+### Tracking variations
+All variations appear under the **Docs** tab of the job so you always have a clear change-order trail.`,
+    deeplink: '/jobs',
+    mobileDeeplink: '/jobs',
+  },
+  {
     id: 'qi-01',
     category: 'quotes-invoices',
     title: 'How do I create and send a quote?',
@@ -300,6 +419,56 @@ If you collect the deposit offline, record it manually on the converted invoice 
 
   // ─── Team ────────────────────────────────────────────────────────────────────
   {
+    id: 'team-05',
+    category: 'team',
+    title: 'How do I view and run payroll?',
+    summary: 'See labour hours and costs per team member, then export for your payroll system.',
+    body: `## Payroll Reports
+
+Go to **Reports > Payroll**.
+
+The payroll report shows, for each team member:
+- Total hours worked in the selected period
+- Hours by job or phase
+- Calculated pay (if you have set hourly rates in their profile)
+- Any allowances or penalties
+
+### Setting hourly rates
+Go to **Settings > Team**, open a team member's profile, and enter their hourly rate. You can set a standard rate and a separate overtime rate.
+
+### Exporting for payroll
+Click **Export CSV** to download a spreadsheet formatted for most payroll providers. You can also export a summary PDF to keep on file.
+
+### Filtering
+Use the date range picker to select the pay period (weekly, fortnightly, or custom). Filter by team member or job type.
+
+### Time entry approval
+Admins and managers can review and approve time entries before running payroll from the **Time Entries** section.`,
+    deeplink: '/reports',
+    mobileDeeplink: '/more/reports',
+  },
+  {
+    id: 'team-06',
+    category: 'team',
+    title: 'How do I manage subcontractors?',
+    summary: 'Invite subbies, assign them to jobs, and track their invoices in one place.',
+    body: `## Working with Subcontractors
+
+### Inviting a subcontractor
+Go to **Settings > Team** and invite them with the **Subcontractor** role. They get their own login and can view their assigned jobs, upload photos, and log time — but cannot see your other business data.
+
+### Assigning a subcontractor to a job
+Open the job and add them in the **Assign to** field just like a regular team member. They will receive a push notification.
+
+### Tracking subcontractor invoices
+Open a job and go to the **Costs** tab. Tap **Add Subcontractor Invoice** to record what you owe them. These costs appear in job costing reports so you can see your margin.
+
+### Compliance and documents
+You can store subcontractor licences, insurance certificates, and SWMS documents in their team profile under **Documents**. JobRunner can alert you when a document is close to expiry.`,
+    deeplink: '/settings',
+    mobileDeeplink: '/more/team-management',
+  },
+  {
     id: 'team-01',
     category: 'team',
     title: 'How do I invite a team member?',
@@ -375,6 +544,32 @@ The board shows:
   },
 
   // ─── Payments ────────────────────────────────────────────────────────────────
+  {
+    id: 'pay-06',
+    category: 'payments',
+    title: 'How do I issue a refund to a client?',
+    summary: 'Refund all or part of a payment made through Stripe or recorded manually.',
+    body: `## Issuing a Refund
+
+### Stripe payments (online)
+1. Open the paid invoice.
+2. Tap **...** > **Issue Refund**.
+3. Enter the amount to refund (full or partial) and an optional reason.
+4. Tap **Confirm Refund**.
+
+The refund is processed through Stripe and typically reaches the client's card within 5 to 10 business days. A refund record is added to the invoice automatically.
+
+### Manually recorded payments
+For cash, bank transfer, or cheque payments you recorded manually, you cannot process a refund through JobRunner. You will need to return the money directly to the client and then:
+1. Open the invoice.
+2. Tap **Record Refund** to log the amount and method.
+3. The invoice balance is updated accordingly.
+
+### Partial refunds
+Both Stripe and manual refunds support partial amounts. The invoice status changes to **Partially Refunded** and the remaining balance is shown.`,
+    deeplink: '/invoices',
+    mobileDeeplink: '/more/invoice/new',
+  },
   {
     id: 'pay-01',
     category: 'payments',
@@ -454,6 +649,32 @@ You can filter all reports by date range and export to CSV for your accountant.`
   },
 
   // ─── Settings ────────────────────────────────────────────────────────────────
+  {
+    id: 'set-06',
+    category: 'settings',
+    title: 'How do I manage my subscription and billing?',
+    summary: 'View your plan, update payment details, or cancel your subscription.',
+    body: `## Subscription and Billing
+
+Go to **Settings > Subscription** (web) or **More > Settings > Subscription** (mobile).
+
+### Viewing your plan
+The subscription page shows your current plan, next billing date, and the features included.
+
+### Upgrading or downgrading
+Tap **Change Plan** to see available plans. Upgrades take effect immediately and you are charged a prorated amount. Downgrades take effect at the end of your current billing period.
+
+### Updating payment details
+Tap **Update Payment Method** to change the card on file. JobRunner uses Stripe for secure payment processing — your card details are never stored on our servers.
+
+### Cancelling
+Tap **Cancel Subscription** at the bottom of the subscription page. Your account remains active until the end of the paid period, after which it switches to read-only mode. Your data is retained for 90 days.
+
+### Receipts and invoices
+Billing receipts are emailed to your account email address after each charge. You can also download past receipts from the subscription page.`,
+    deeplink: '/settings',
+    mobileDeeplink: '/more/settings',
+  },
   {
     id: 'set-01',
     category: 'settings',

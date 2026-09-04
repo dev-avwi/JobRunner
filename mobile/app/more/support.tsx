@@ -830,35 +830,50 @@ export default function SupportScreen() {
           <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.sm }}>
             <TouchableOpacity
               style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.md,
-                backgroundColor: colors.card,
+                backgroundColor: colors.primary,
                 borderRadius: radius.xl,
-                borderWidth: 1,
-                borderColor: colors.primary + '40',
                 padding: spacing.lg,
-                ...shadows.sm,
+                ...shadows.md,
               }}
               onPress={() => router.push('/more/help-chat' as any)}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
             >
-              <View style={{
-                width: 40, height: 40, borderRadius: radius.lg,
-                backgroundColor: colors.primaryLight,
-                alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Feather name="help-circle" size={iconSizes.xl} color={colors.primary} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginBottom: spacing.md }}>
+                <View style={{
+                  width: 40, height: 40, borderRadius: 20,
+                  backgroundColor: 'rgba(255,255,255,0.2)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Feather name="message-circle" size={iconSizes.xl} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ ...typography.body, fontWeight: fontWeights.bold, color: '#fff', marginBottom: 2 }}>
+                    Help Assistant
+                  </Text>
+                  <Text style={{ ...typography.caption, color: 'rgba(255,255,255,0.75)' }}>
+                    Instant answers to any question
+                  </Text>
+                </View>
+                <Feather name="arrow-right" size={iconSizes.md} color="rgba(255,255,255,0.7)" />
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ ...typography.body, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 2 }}>
-                  Ask a question
-                </Text>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
-                  Get instant answers from the Help Assistant
-                </Text>
+              {/* Sample chips */}
+              <View style={{ flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' }}>
+                {['How do I create a quote?', 'How do I schedule a job?', 'How do I add a team member?'].map((q) => (
+                  <TouchableOpacity
+                    key={q}
+                    onPress={() => router.push({ pathname: '/more/help-chat', params: { query: q } } as any)}
+                    activeOpacity={0.75}
+                    style={{
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      borderRadius: radius.full,
+                      paddingHorizontal: spacing.md,
+                      paddingVertical: 5,
+                    }}
+                  >
+                    <Text style={{ ...typography.caption, color: '#fff', fontWeight: fontWeights.medium }}>{q}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-              <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
             </TouchableOpacity>
           </View>
 

@@ -319,10 +319,15 @@ export default function HelpChatScreen() {
     AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave)).catch(() => {});
   }, [messages, historyLoaded]);
 
-  // Pre-fill input when launched with a query param from the article search empty state
+  // Auto-send when launched with a query param (e.g. from support page chips).
+  // Only fires once history is confirmed empty so we don't double-send on re-mount.
   useEffect(() => {
-    if (query) setInputValue(query);
-  }, [query]);
+    if (query && historyLoaded && messages.length === 0) {
+      sendMessage(query);
+    } else if (query) {
+      setInputValue(query);
+    }
+  }, [historyLoaded]);
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
@@ -403,10 +408,12 @@ export default function HelpChatScreen() {
             ? () => (
                 <TouchableOpacity
                   onPress={handleClear}
-                  style={{ paddingHorizontal: spacing.md }}
+                  style={{ paddingHorizontal: spacing.md, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text style={{ ...typography.body, color: colors.primary, fontWeight: fontWeights.medium }}>
-                    Clear
+                  <Feather name="edit" size={iconSizes.md} color={colors.primary} />
+                  <Text style={{ ...typography.bodySmall, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                    New chat
                   </Text>
                 </TouchableOpacity>
               )
@@ -530,6 +537,28 @@ export default function HelpChatScreen() {
                 )}
               </View>
             ))
+          )}
+
+          {/* Start-over nudge — shown below the last AI message */}
+          {messages.length > 0 && !isSending && messages[messages.length - 1]?.role === 'assistant' && (
+            <View style={{ alignItems: 'center', paddingTop: spacing.md, paddingBottom: spacing.sm }}>
+              <TouchableOpacity
+                onPress={handleClear}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+                  backgroundColor: colors.muted,
+                  borderRadius: radius.full,
+                  paddingHorizontal: spacing.lg,
+                  paddingVertical: spacing.sm,
+                }}
+                activeOpacity={0.7}
+              >
+                <Feather name="rotate-ccw" size={12} color={colors.mutedForeground} />
+                <Text style={{ ...typography.caption, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                  Start a new conversation
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
 
           {/* Thinking indicator */}
