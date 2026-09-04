@@ -519,6 +519,12 @@ function MarkdownBody({ text, styles, colors }: {
       );
       i++; continue;
     }
+    if (line.startsWith('### ')) {
+      nodes.push(
+        <Text key={key++} style={[styles.detailHeading, { fontSize: 15, marginTop: spacing.md }]}>{line.slice(4)}</Text>
+      );
+      i++; continue;
+    }
     if (line.startsWith('# ')) {
       nodes.push(
         <Text key={key++} style={[styles.detailHeading, { fontSize: 18 }]}>{line.slice(2)}</Text>
@@ -535,19 +541,31 @@ function MarkdownBody({ text, styles, colors }: {
       }
       i++; continue;
     }
-    if (line.startsWith('- ')) {
+    if (line.startsWith('- ') || line.startsWith('* ')) {
       nodes.push(
-        <Text key={key++} style={styles.detailListItem}>{'• '}{renderInline(line.slice(2))}</Text>
+        <View key={key++} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <Text style={[styles.detailListItem, { marginLeft: 0, marginRight: 6, marginTop: 1, color: colors.mutedForeground }]}>{'•'}</Text>
+          <Text style={[styles.detailListItem, { flex: 1, marginLeft: 0 }]}>{renderInline(line.slice(2))}</Text>
+        </View>
       );
       i++; continue;
     }
-    if (/^\d+\./.test(line)) {
+    if (/^\d+\.\s/.test(line)) {
+      const num = line.match(/^(\d+)\.\s(.*)/)!;
       nodes.push(
-        <Text key={key++} style={styles.detailListItem}>{renderInline(line)}</Text>
+        <View key={key++} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+          <Text style={[styles.detailListItem, { marginLeft: 0, marginRight: 6, minWidth: 20, color: colors.mutedForeground }]}>{num[1]}.</Text>
+          <Text style={[styles.detailListItem, { flex: 1, marginLeft: 0 }]}>{renderInline(num[2])}</Text>
+        </View>
       );
       i++; continue;
     }
-    if (line.trim() === '') { i++; continue; }
+    if (line.trim() === '') {
+      if (i > 0 && i < lines.length - 1) {
+        nodes.push(<View key={key++} style={{ height: spacing.xs }} />);
+      }
+      i++; continue;
+    }
 
     nodes.push(
       <Text key={key++} style={styles.detailBody}>{renderInline(line)}</Text>
