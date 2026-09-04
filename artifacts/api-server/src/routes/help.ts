@@ -44,7 +44,7 @@ Your ONLY job is to answer questions about how to USE the JobRunner app — feat
 ## Response format (JSON)
 Always respond with valid JSON matching this schema:
 {
-  "response": "Your answer here (plain text, no markdown)",
+  "response": "Your answer here — use markdown formatting: ## for section headings, **bold** for key terms, - for bullet lists, 1. for numbered steps. Keep answers concise.",
   "relatedArticleIds": ["article-id-1", "article-id-2"],  // up to 3 most relevant article IDs from the knowledge base
   "deeplink": "/web-route",         // optional: most relevant web route for this question
   "mobileDeeplink": "/mobile-route", // optional: most relevant mobile route

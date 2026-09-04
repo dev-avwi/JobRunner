@@ -447,7 +447,9 @@ function HelpChat({
                   <p className="text-[11px] font-medium text-muted-foreground mb-1">
                     {msg.role === "user" ? "You" : "Help Assistant"}
                   </p>
-                  <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                  {msg.role === "assistant"
+                    ? <div>{renderMarkdown(msg.content)}</div>
+                    : <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
 
                   {/* Deeplink button */}
                   {msg.role === "assistant" && msg.deeplink && (
