@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  useWindowDimensions,
   StyleSheet,
   TouchableOpacity,
   TextInput,
@@ -636,6 +637,7 @@ function ArticleDetail({
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function SupportScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomNavHeight = getBottomNavHeight(insets.bottom);
@@ -973,7 +975,7 @@ export default function SupportScreen() {
           ) : activeCategory === 'all' && !search ? (
             /* ── Category overview: 2-column grid, tap to drill in ── */
             <View style={{ paddingHorizontal: spacing.lg }}>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md }}>
                 {categories.map((cat) => {
                   const count = allArticles.filter(a => a.category === cat.id).length;
                   if (count === 0) return null;
@@ -981,7 +983,7 @@ export default function SupportScreen() {
                     <TouchableOpacity
                       key={cat.id}
                       style={{
-                        width: '47.5%',
+                        width: (screenWidth - spacing.lg * 2 - spacing.md) / 2,
                         backgroundColor: colors.card,
                         borderRadius: radius.xl,
                         borderWidth: 1,
