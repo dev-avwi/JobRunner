@@ -38,7 +38,7 @@ export const HELP_ARTICLES: HelpArticle[] = [
 
 Open the JobRunner app and enter your email address and password. Tap **Sign In**.
 
-If you were invited by your business owner you would have set your password through the email link — use those same credentials here.
+If you were invited by your business owner you would have set your password through the email link; use those same credentials here.
 
 ## Resetting Your Password
 
@@ -52,6 +52,7 @@ The link expires after 24 hours. If you do not see the email, check your spam fo
 ## Switching Accounts
 
 If you work for more than one business, each business sends its own invitation. Log out first (More > Settings > Log Out), then sign in with the credentials for the other account.`,
+    deeplink: '/settings',
     mobileDeeplink: '/more/settings',
   },
   {
@@ -61,7 +62,9 @@ If you work for more than one business, each business sends its own invitation. 
     summary: 'Get help from the JobRunner team via email or the in-app support page.',
     body: `## Contacting Support
 
-**In the app:** Go to **More > Help & Support** and scroll down to **Contact Us**. Tap **Email Support** to open a pre-addressed email, or use **Report a Bug** to send a detailed bug report with device information automatically included.
+**On the web:** Click the help icon in the top navigation bar to open the Help Centre. Use the search bar to find articles, or switch to the **Ask AI** tab for instant answers. For direct support, scroll to the bottom of the Help Centre and click **Email Support**.
+
+**On mobile:** Go to **More > Help & Support** and scroll down to **Contact Us**. Tap **Email Support** to open a pre-addressed email, or tap **Report a Bug** to send a detailed bug report with device information automatically included.
 
 **By email:** Send a message to admin@avwebinnovation.com. Include a description of what you were doing, what you expected to happen, and what actually happened.
 
@@ -69,7 +72,8 @@ If you work for more than one business, each business sends its own invitation. 
 
 ## Before You Contact Support
 
-Check the help articles first — search for your question at the top of the Help & Support page. The Help Assistant can also answer common how-to questions instantly.`,
+Check the help articles first: search for your question using the search bar at the top of the Help Centre. The Help Assistant can answer most common how-to questions instantly without waiting for a reply.`,
+    deeplink: '/settings',
     mobileDeeplink: '/more/support',
   },
   {
@@ -455,7 +459,7 @@ Admins and managers can review and approve time entries before running payroll f
     body: `## Working with Subcontractors
 
 ### Inviting a subcontractor
-Go to **Settings > Team** and invite them with the **Subcontractor** role. They get their own login and can view their assigned jobs, upload photos, and log time — but cannot see your other business data.
+Go to **Settings > Team** and invite them with the **Subcontractor** role. They get their own login and can view their assigned jobs, upload photos, and log time, but cannot see your other business data.
 
 ### Assigning a subcontractor to a job
 Open the job and add them in the **Assign to** field just like a regular team member. They will receive a push notification.
@@ -581,7 +585,7 @@ Both Stripe and manual refunds support partial amounts. The invoice status chang
 2. Click **Connect Stripe**.
 3. You will be redirected to Stripe to create or connect an existing account.
 4. Complete the Stripe onboarding (takes about 5 minutes).
-5. Return to JobRunner — your account will be linked automatically.
+5. Return to JobRunner; your account will be linked automatically.
 
 Once connected, clients can pay invoices and quote deposits online with any major credit card.
 
@@ -665,7 +669,7 @@ The subscription page shows your current plan, next billing date, and the featur
 Tap **Change Plan** to see available plans. Upgrades take effect immediately and you are charged a prorated amount. Downgrades take effect at the end of your current billing period.
 
 ### Updating payment details
-Tap **Update Payment Method** to change the card on file. JobRunner uses Stripe for secure payment processing — your card details are never stored on our servers.
+Tap **Update Payment Method** to change the card on file. JobRunner uses Stripe for secure payment processing; your card details are never stored on our servers.
 
 ### Cancelling
 Tap **Cancel Subscription** at the bottom of the subscription page. Your account remains active until the end of the paid period, after which it switches to read-only mode. Your data is retained for 90 days.
@@ -744,7 +748,7 @@ Each automation lets you customise the timing (e.g. "3 days before due date") an
     summary: 'Accept contactless cards and Apple Pay without any extra hardware.',
     body: `## Tap to Pay on iPhone
 
-Tap to Pay on iPhone lets you accept contactless payments — credit cards, debit cards, and Apple Pay — right on your iPhone. No card reader or extra hardware needed.
+Tap to Pay on iPhone lets you accept contactless payments (credit cards, debit cards, and Apple Pay) right on your iPhone. No card reader or extra hardware needed.
 
 ### How to set it up
 1. Open **More > Help & Support** and scroll to the **Tap to Pay on iPhone** section.
@@ -766,6 +770,77 @@ Tap to Pay on iPhone lets you accept contactless payments — credit cards, debi
 If Tap to Pay is not working, tap **Reset Tap to Pay Setup** in More > Help & Support to clear the terms and run the setup again.`,
     mobileDeeplink: '/more/tap-to-pay-setup',
   },
+  // ─── Client Portal ───────────────────────────────────────────────────────────
+  {
+    id: 'qi-07',
+    category: 'quotes-invoices',
+    title: 'How does the client portal work?',
+    summary: 'Clients can view, accept, decline, and pay quotes and invoices online without creating an account.',
+    body: `## The Client Portal
+
+When you send a quote or invoice, your client receives an email with a secure link. Clicking it opens the client portal: a branded page where they can review the document, ask questions, and take action.
+
+No login or account is required for your client.
+
+## What clients can do
+
+**On quotes:**
+- Review line items, totals, and your terms and conditions
+- Accept or decline with a single click
+- Add a comment or question back to you
+- Pay a deposit online (if you have Stripe connected and a deposit is set)
+
+**On invoices:**
+- View the full invoice and any attached job photos
+- Pay by credit card or direct payment link
+- Download a PDF copy
+
+## Accepting a quote
+
+When the client clicks **Accept Quote**, the quote status in JobRunner updates to **Accepted** automatically and you receive a notification. If a deposit is required, they are taken to payment before acceptance is confirmed.
+
+## Branding the portal
+
+The portal uses your business name, logo, and primary colour from **Settings > Branding**. A professional branded experience builds trust and improves acceptance rates.
+
+## Resending the link
+
+If your client loses the email, open the quote or invoice in JobRunner and click **Resend** or **Copy Link** to share it again. Each link is unique and secure.`,
+    deeplink: '/quotes',
+    mobileDeeplink: '/more/quote/new',
+  },
+  // ─── Price List ───────────────────────────────────────────────────────────────
+  {
+    id: 'set-05',
+    category: 'settings',
+    title: 'How do I set up and use the price list?',
+    summary: 'Create a catalogue of services and materials with preset prices to speed up quoting.',
+    body: `## Setting Up the Price List
+
+Go to **Settings > Price List**.
+
+Click **Add Item** and enter:
+- **Name** – what you call the item or service
+- **Description** – optional detail that appears on quotes and invoices
+- **Unit** – each, hour, m, m2, kg, etc.
+- **Unit price** – your standard charge
+- **Cost price** – optional, used to calculate your margin
+- **Tax** – whether this item includes GST
+
+Save the item. You can add as many items as you like, and group them into categories (e.g. Labour, Materials, Call-out Fees).
+
+## Using the Price List on a Quote or Job
+
+When adding a line item to a quote or job cost, click **Add from Price List** and search or browse your catalogue. Select an item and it fills in with the preset name, description, and price. You can override the quantity and price before saving.
+
+## Keeping It Up to Date
+
+Update prices from **Settings > Price List** at any time. Changes apply to new quotes only; existing quotes are not affected.
+
+**Tip:** Regular reviews of your price list keep your quoting accurate and ensure you are not underselling labour or materials.`,
+    deeplink: '/settings',
+    mobileDeeplink: '/more/settings',
+  },
   {
     id: 'set-04',
     category: 'settings',
@@ -781,7 +856,7 @@ For a full data export:
 3. JobRunner will prepare a ZIP file with CSVs for all major data types.
 4. You will receive an email with a download link when it is ready.
 
-Your data is yours — exports include clients, jobs, quotes, invoices, time entries, and expenses.`,
+Your data is yours: exports include clients, jobs, quotes, invoices, time entries, and expenses.`,
     deeplink: '/reports',
     mobileDeeplink: '/more/reports',
   },
