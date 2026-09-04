@@ -1008,6 +1008,8 @@ function Router({
       <Route path="/ai-visualization" component={GatedAIVisualizationPage} />
       
       <Route path="/more" component={More} />
+
+      <Route path="/support" component={Support} />
       
       {/* Root route must be near the end to avoid prefix matching issues */}
       <Route path="/" component={() => roleLoading ? (
@@ -1771,7 +1773,7 @@ function AppLayout() {
       <SidebarProvider style={style as React.CSSProperties}>
         <div className="flex h-screen w-full">
           {/* Desktop Sidebar */}
-          <AppSidebar onNavigate={handleNavigation} onLogout={handleLogout} />
+          <AppSidebar onNavigate={handleNavigation} onLogout={handleLogout} onShowHelp={() => setShowHelpCenter(true)} />
           
           {/* Main Content - takes full remaining width */}
           <div className="flex flex-col flex-1 min-w-0 w-full">

@@ -32,6 +32,7 @@ import {
   ShieldCheck,
   CalendarDays,
   Columns3,
+  HelpCircle,
   type LucideIcon
 } from "lucide-react";
 
@@ -445,6 +446,18 @@ export const settingsMenuItems: NavItem[] = [
     showInMore: true,
     allowedRoles: ['owner', 'solo_owner', 'manager', 'staff_tradie'],
   },
+  {
+    title: "Help & Support",
+    url: "/support",
+    icon: HelpCircle,
+    description: "Guides, FAQs, and support",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    hideForStaff: false,
+    showInSidebar: false,  // rendered separately in AppSidebar with onShowHelp handler
+    showInMore: true,
+    allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'],
+  },
 ];
 
 export const moreNavItem: NavItem = {
@@ -523,7 +536,8 @@ export function getSidebarMenuItems(options: FilterOptions): NavItem[] {
 }
 
 export function getSidebarSettingsItems(options: FilterOptions): NavItem[] {
-  return filterNavItems(settingsMenuItems, options);
+  const filtered = filterNavItems(settingsMenuItems, options);
+  return filtered.filter(item => item.showInSidebar !== false);
 }
 
 export function getMorePageItems(options: FilterOptions): NavItem[] {

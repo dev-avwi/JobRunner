@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LogOut, User, LayoutDashboard, Zap, Receipt, Briefcase, Calendar, Clock, Shield, MessageCircle } from "lucide-react";
+import { LogOut, User, LayoutDashboard, Zap, Receipt, Briefcase, Calendar, Clock, Shield, MessageCircle, HelpCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -40,9 +40,10 @@ interface UnreadCounts {
 interface AppSidebarProps {
   onLogout?: () => void;
   onNavigate?: (path: string) => void;
+  onShowHelp?: () => void;
 }
 
-export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
+export default function AppSidebar({ onLogout, onNavigate, onShowHelp }: AppSidebarProps) {
   const [location, setLocation] = useLocation();
   const { data: businessSettings } = useBusinessSettings();
   const { isTeam, isTradie, isOwner, isManager, userRole, permissionNavUrls } = useAppMode();
@@ -209,7 +210,7 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
             ));
         })()}
 
-        {visibleSettingsItems.length > 0 && (
+        {(visibleSettingsItems.length > 0 || onShowHelp) && (
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
@@ -233,6 +234,18 @@ export default function AppSidebar({ onLogout, onNavigate }: AppSidebarProps) {
                     </SidebarMenuItem>
                   );
                 })}
+                {onShowHelp && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      data-testid="sidebar-help-support"
+                      onClick={onShowHelp}
+                      className="text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                      <span>Help &amp; Support</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

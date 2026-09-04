@@ -188,6 +188,9 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // More page - all roles
   { path: '/more', label: 'More', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: true },
 
+  // Support / Help Centre - all roles (also available unauthenticated, but must pass RouteGuard when logged in)
+  { path: '/support', label: 'Support', allowedRoles: ['owner', 'solo_owner', 'manager', 'office_admin', 'staff_tradie'], showInNav: false },
+
   // Email Setup - owner/manager (settings-related)
   { path: '/email-setup', label: 'Email Setup', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 
