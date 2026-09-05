@@ -2063,6 +2063,19 @@ pool
     console.error('[Schema] Failed to add FK from inventory_items.supplier_id to suppliers:', err.message);
   });
 
+// Task #1219: Phase-level document management — add nullable phase_id to job_documents.
+// Intentionally omits the FK reference so this runs safely on every DB env
+// (some envs may not have the job_phases table yet at migration time).
+// The FK is enforced at the Drizzle schema layer.
+pool
+  .query(`
+    ALTER TABLE job_documents ADD COLUMN IF NOT EXISTS phase_id varchar;
+    CREATE INDEX IF NOT EXISTS idx_job_documents_phase_id ON job_documents (phase_id);
+  `)
+  .catch((err: any) => {
+    console.error('[Schema] Failed to add phase_id to job_documents:', err.message);
+  });
+
 export class PostgresStorage implements IStorage {
   // Replit Auth required methods
   async upsertUser(userData: UpsertUser): Promise<User> {

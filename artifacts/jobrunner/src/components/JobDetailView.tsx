@@ -3573,7 +3573,7 @@ export default function JobDetailView({
             <TabsContent value="docs" className="mt-0 space-y-6">
               {isProject && <ProjectDocumentRegister jobId={jobId} canUpload={job.status !== 'invoiced'} />}
               <SafetyFormsSection jobId={jobId} jobStatus={job.status} jobTitle={job.title} jobAddress={job.address} />
-              <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} />
+              <JobDocuments jobId={jobId} canUpload={job.status !== 'invoiced'} canDelete={!isTradie} phases={jobPhasesForPicker} />
               {(job.status === 'in_progress' || job.status === 'done' || job.status === 'invoiced') && <JobSignature jobId={jobId} />}
               {/* Purchase orders linked to this job */}
               {!isTradie && <JobPurchaseOrdersSection jobId={jobId} isTradie={isTradie} />}

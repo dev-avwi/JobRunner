@@ -322,6 +322,8 @@ interface JobExpense {
 interface JobDocument {
   id: string;
   jobId: string;
+  phaseId?: string | null;
+  phaseLabel?: string | null;
   title: string;
   documentType?: string;
   fileName?: string;
@@ -2230,6 +2232,9 @@ export default function JobDetailScreen() {
   const [uploadedDocuments, setUploadedDocuments] = useState<JobDocument[]>([]);
   const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
+  const [showDocumentPhasePicker, setShowDocumentPhasePicker] = useState(false);
+  const [pendingDocumentFile, setPendingDocumentFile] = useState<{ uri: string; name: string; type: string } | null>(null);
+  const [selectedDocumentPhaseId, setSelectedDocumentPhaseId] = useState<string>('');
 
   interface JobVariation {
     id: string;
@@ -3386,7 +3391,7 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
-  const uploadDocumentFile = useCallback(async (file: { uri: string; name: string; type: string }) => {
+  const uploadDocumentFile = useCallback(async (file: { uri: string; name: string; type: string }, phaseId?: string) => {
     if (!id) return;
     try {
       setIsUploadingDocument(true);
@@ -3400,7 +3405,8 @@ export default function JobDetailScreen() {
         type: file.type,
       } as any);
       formData.append('title', title);
-      formData.append('documentType', 'general');
+      formData.append('documentType', 'other');
+      if (phaseId) formData.append('phaseId', phaseId);
 
       const response = await fetch(`${API_URL}/api/jobs/${id}/documents`, {
         method: 'POST',
@@ -3435,8 +3441,15 @@ export default function JobDetailScreen() {
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
     const name = asset.fileName || asset.uri.split('/').pop() || `photo-${Date.now()}.jpg`;
-    await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' });
-  }, [uploadDocumentFile]);
+    const file = { uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' };
+    if (phases.length > 0) {
+      setPendingDocumentFile(file);
+      setSelectedDocumentPhaseId('');
+      setShowDocumentPhasePicker(true);
+    } else {
+      await uploadDocumentFile(file);
+    }
+  }, [uploadDocumentFile, phases]);
 
   const pickDocumentFromLibrary = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -3447,8 +3460,15 @@ export default function JobDetailScreen() {
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
     const name = asset.fileName || asset.uri.split('/').pop() || 'document.jpg';
-    await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' });
-  }, [uploadDocumentFile]);
+    const file = { uri: asset.uri, name, type: asset.mimeType || 'image/jpeg' };
+    if (phases.length > 0) {
+      setPendingDocumentFile(file);
+      setSelectedDocumentPhaseId('');
+      setShowDocumentPhasePicker(true);
+    } else {
+      await uploadDocumentFile(file);
+    }
+  }, [uploadDocumentFile, phases]);
 
   const pickDocumentFile = useCallback(async () => {
     const DocumentPicker = getDocumentPicker();
@@ -3467,11 +3487,18 @@ export default function JobDetailScreen() {
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
       const name = asset.name || asset.uri.split('/').pop() || 'document';
-      await uploadDocumentFile({ uri: asset.uri, name, type: asset.mimeType || 'application/octet-stream' });
+      const file = { uri: asset.uri, name, type: asset.mimeType || 'application/octet-stream' };
+      if (phases.length > 0) {
+        setPendingDocumentFile(file);
+        setSelectedDocumentPhaseId('');
+        setShowDocumentPhasePicker(true);
+      } else {
+        await uploadDocumentFile(file);
+      }
     } catch (e: any) {
       showToast({ type: 'error', message: e?.message || 'Could not open the file picker' });
     }
-  }, [uploadDocumentFile]);
+  }, [uploadDocumentFile, phases]);
 
   const handleUploadDocument = useCallback(() => {
     showActionSheet({
@@ -11207,81 +11234,133 @@ export default function JobDetailScreen() {
                 No documents uploaded yet
               </Text>
             </View>
-          ) : (
-            <View style={{ gap: spacing.sm }}>
-              {uploadedDocuments.map((doc) => (
-                <TouchableOpacity
-                  key={doc.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    padding: spacing.md,
-                    backgroundColor: colors.muted,
-                    borderRadius: radius.lg,
-                    gap: spacing.md,
-                  }}
-                  onPress={() => handleOpenDocument(doc)}
-                  activeOpacity={0.7}
-                >
-                  <View style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: radius.md,
-                    backgroundColor: `${colors.primary}15`,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}>
-                    <Feather name={getDocTypeIcon(doc.mimeType) as any} size={18} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-                      {doc.title}
-                    </Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxs }}>
-                      <View style={{
-                        backgroundColor: `${colors.primary}20`,
-                        paddingHorizontal: 6,
-                        paddingVertical: 1,
-                        borderRadius: radius.sm,
-                      }}>
-                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primary }}>
-                          {getDocTypeBadge(doc.mimeType)}
-                        </Text>
-                      </View>
-                      {doc.fileSize ? (
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                          {formatFileSize(doc.fileSize)}
-                        </Text>
-                      ) : null}
-                      {doc.createdAt ? (
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                          {new Date(doc.createdAt).toLocaleDateString()}
-                        </Text>
-                      ) : null}
+          ) : (() => {
+            // Group documents by phase; docs without a phase go under "General"
+            const phaseGroups: { key: string; label: string; docs: typeof uploadedDocuments }[] = [];
+            const hasPhaseDoc = uploadedDocuments.some(d => d.phaseId);
+
+            if (hasPhaseDoc) {
+              // General (no phase)
+              const generalDocs = uploadedDocuments.filter(d => !d.phaseId);
+              if (generalDocs.length > 0) {
+                phaseGroups.push({ key: 'general', label: 'General', docs: generalDocs });
+              }
+              // One group per phase (preserve phase sort order from phases state)
+              const seenPhaseIds = new Set<string>();
+              // Add phases in order from the phases array
+              for (const phase of phases) {
+                const phaseDocs = uploadedDocuments.filter(d => d.phaseId === phase.id);
+                if (phaseDocs.length > 0) {
+                  seenPhaseIds.add(phase.id);
+                  phaseGroups.push({ key: phase.id, label: `${phase.phaseCode} — ${phase.name}`, docs: phaseDocs });
+                }
+              }
+              // Any docs with a phaseId not in the phases array (orphaned)
+              const orphaned = uploadedDocuments.filter(d => d.phaseId && !seenPhaseIds.has(d.phaseId));
+              if (orphaned.length > 0) {
+                phaseGroups.push({ key: 'orphaned', label: orphaned[0].phaseLabel || 'Phase', docs: orphaned });
+              }
+            } else {
+              // No phase data — single flat group (no header)
+              phaseGroups.push({ key: 'all', label: '', docs: uploadedDocuments });
+            }
+
+            const renderDocRow = (doc: typeof uploadedDocuments[0]) => (
+              <TouchableOpacity
+                key={doc.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  padding: spacing.md,
+                  backgroundColor: colors.muted,
+                  borderRadius: radius.lg,
+                  gap: spacing.md,
+                }}
+                onPress={() => handleOpenDocument(doc)}
+                activeOpacity={0.7}
+              >
+                <View style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: radius.md,
+                  backgroundColor: `${colors.primary}15`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Feather name={getDocTypeIcon(doc.mimeType) as any} size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                    {doc.title}
+                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xxs }}>
+                    <View style={{
+                      backgroundColor: `${colors.primary}20`,
+                      paddingHorizontal: 6,
+                      paddingVertical: 1,
+                      borderRadius: radius.sm,
+                    }}>
+                      <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.primary }}>
+                        {getDocTypeBadge(doc.mimeType)}
+                      </Text>
                     </View>
-                    {doc.uploadedByName ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xxs }}>
-                        <Feather name="user" size={10} color={colors.mutedForeground} />
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                          {doc.uploadedByName}
-                        </Text>
-                      </View>
+                    {doc.fileSize ? (
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                        {formatFileSize(doc.fileSize)}
+                      </Text>
+                    ) : null}
+                    {doc.createdAt ? (
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                        {new Date(doc.createdAt).toLocaleDateString()}
+                      </Text>
                     ) : null}
                   </View>
-                  {(isOwnerOrManager || isSoloOwner) && (
-                    <TouchableOpacity
-                      onPress={() => handleDeleteDocument(doc)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      style={{ padding: spacing.xs }}
-                    >
-                      <Feather name="trash-2" size={16} color={colors.destructive} />
-                    </TouchableOpacity>
-                  )}
-                  <Feather name="external-link" size={16} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+                  {doc.uploadedByName ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs, marginTop: spacing.xxs }}>
+                      <Feather name="user" size={10} color={colors.mutedForeground} />
+                      <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                        {doc.uploadedByName}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+                {(isOwnerOrManager || isSoloOwner) && (
+                  <TouchableOpacity
+                    onPress={() => handleDeleteDocument(doc)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: spacing.xs }}
+                  >
+                    <Feather name="trash-2" size={16} color={colors.destructive} />
+                  </TouchableOpacity>
+                )}
+                <Feather name="external-link" size={16} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            );
+
+            return (
+              <View style={{ gap: spacing.md }}>
+                {phaseGroups.map(group => (
+                  <View key={group.key}>
+                    {group.label ? (
+                      <Text style={{
+                        fontSize: typography.sizes.xs,
+                        fontWeight: fontWeights.semibold,
+                        color: colors.mutedForeground,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        marginBottom: spacing.xs,
+                      }}>
+                        {group.label}
+                      </Text>
+                    ) : null}
+                    <View style={{ gap: spacing.sm }}>
+                      {group.docs.map(renderDocRow)}
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
 
           <TouchableOpacity
             style={{
@@ -13139,6 +13218,91 @@ export default function JobDetailScreen() {
               </TouchableOpacity>
             </View>
           )}
+          </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* Document phase picker */}
+      <AppBottomSheet
+        visible={showDocumentPhasePicker}
+        onDismiss={() => { setShowDocumentPhasePicker(false); setPendingDocumentFile(null); setSelectedDocumentPhaseId(''); }}
+        title="Attach to phase"
+        showCloseButton
+        snapPoints={['50%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton
+              variant="outline"
+              label="No phase"
+              onPress={async () => {
+                setShowDocumentPhasePicker(false);
+                if (pendingDocumentFile) {
+                  const f = pendingDocumentFile;
+                  setPendingDocumentFile(null);
+                  await uploadDocumentFile(f);
+                }
+              }}
+              style={{ flex: 1 }}
+            />
+            <SheetButton
+              label="Attach"
+              disabled={!selectedDocumentPhaseId}
+              onPress={async () => {
+                setShowDocumentPhasePicker(false);
+                if (pendingDocumentFile) {
+                  const f = pendingDocumentFile;
+                  const phaseId = selectedDocumentPhaseId;
+                  setPendingDocumentFile(null);
+                  setSelectedDocumentPhaseId('');
+                  await uploadDocumentFile(f, phaseId || undefined);
+                }
+              }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
+      >
+        <View style={{ paddingVertical: spacing.sm }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
+            Which phase does this document belong to?
+          </Text>
+          <View style={{ gap: spacing.sm }}>
+            {phases.map(phase => (
+              <TouchableOpacity
+                key={phase.id}
+                onPress={() => setSelectedDocumentPhaseId(phase.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  padding: spacing.md,
+                  borderRadius: radius.lg,
+                  borderWidth: 1.5,
+                  borderColor: selectedDocumentPhaseId === phase.id ? colors.primary : colors.border,
+                  backgroundColor: selectedDocumentPhaseId === phase.id ? `${colors.primary}10` : colors.card,
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: radius.md,
+                  backgroundColor: selectedDocumentPhaseId === phase.id ? `${colors.primary}20` : colors.muted,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: selectedDocumentPhaseId === phase.id ? colors.primary : colors.mutedForeground }}>
+                    {phase.phaseCode}
+                  </Text>
+                </View>
+                <Text style={{ flex: 1, fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground }}>
+                  {phase.name}
+                </Text>
+                {selectedDocumentPhaseId === phase.id && (
+                  <Feather name="check-circle" size={18} color={colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </AppBottomSheet>

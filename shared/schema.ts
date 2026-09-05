@@ -3407,6 +3407,7 @@ export const jobDocuments = pgTable("job_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
   jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   title: text("title").notNull(),
   documentType: text("document_type").notNull().default('other'), // 'quote', 'invoice', 'other'
   fileName: text("file_name").notNull(),
@@ -3419,6 +3420,7 @@ export const jobDocuments = pgTable("job_documents", {
   index("idx_job_documents_user_id").on(table.userId),
   index("idx_job_documents_job_id").on(table.jobId),
   index("idx_job_documents_uploaded_by").on(table.uploadedBy),
+  index("idx_job_documents_phase_id").on(table.phaseId),
 ]);
 
 export const insertJobDocumentSchema = createInsertSchema(jobDocuments).omit({

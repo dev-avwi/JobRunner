@@ -10832,13 +10832,14 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         return res.status(404).json({ error: 'Job not found or access denied' });
       }
       
-      // Fetch documents with uploader name via left join
+      // Fetch documents with uploader name and phase name via left join
       const uploaderAlias = aliasedTable(users, 'uploader');
       const rawDocuments = await db
         .select({
           id: jobDocuments.id,
           userId: jobDocuments.userId,
           jobId: jobDocuments.jobId,
+          phaseId: jobDocuments.phaseId,
           title: jobDocuments.title,
           documentType: jobDocuments.documentType,
           fileName: jobDocuments.fileName,
@@ -10849,24 +10850,28 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           createdAt: jobDocuments.createdAt,
           uploaderFirstName: uploaderAlias.firstName,
           uploaderLastName: uploaderAlias.lastName,
+          phaseCode: jobPhases.phaseCode,
+          phaseName: jobPhases.name,
         })
         .from(jobDocuments)
         .leftJoin(uploaderAlias, eq(jobDocuments.uploadedBy, uploaderAlias.id))
+        .leftJoin(jobPhases, eq(jobDocuments.phaseId, jobPhases.id))
         .where(and(eq(jobDocuments.jobId, jobId), eq(jobDocuments.userId, userContext.effectiveUserId)))
         .orderBy(desc(jobDocuments.createdAt));
 
       const objectStorage = new ObjectStorageService();
       const documentsWithUrls = await Promise.all(rawDocuments.map(async (doc) => {
-        const { uploaderFirstName, uploaderLastName, ...rest } = doc;
+        const { uploaderFirstName, uploaderLastName, phaseCode, phaseName, ...rest } = doc;
         const uploadedByName = uploaderFirstName || uploaderLastName
           ? [uploaderFirstName, uploaderLastName].filter(Boolean).join(' ')
           : null;
+        const phaseLabel = phaseCode && phaseName ? `${phaseCode} — ${phaseName}` : null;
         try {
           const signedUrl = await objectStorage.getSignedReadURLFromKey(doc.objectStorageKey, 3600);
-          return { ...rest, uploadedByName, fileUrl: signedUrl };
+          return { ...rest, uploadedByName, fileUrl: signedUrl, phaseLabel };
         } catch (error) {
           console.error('Error getting signed URL for document:', error);
-          return { ...rest, uploadedByName, fileUrl: null };
+          return { ...rest, uploadedByName, fileUrl: null, phaseLabel };
         }
       }));
       
@@ -10899,9 +10904,20 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         return res.status(400).json({ error: 'No file uploaded' });
       }
       
-      const { title, documentType } = req.body;
+      const { title, documentType, phaseId } = req.body;
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
+      }
+      
+      // Validate phaseId if provided
+      if (phaseId) {
+        const phase = await db.select({ id: jobPhases.id })
+          .from(jobPhases)
+          .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId)))
+          .limit(1);
+        if (phase.length === 0) {
+          return res.status(400).json({ error: 'Invalid phase ID for this job' });
+        }
       }
       
       const allowedTypes = [
@@ -10947,6 +10963,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const document = await storage.createJobDocument({
         userId: userContext.effectiveUserId,
         jobId,
+        phaseId: phaseId || null,
         title,
         documentType: documentType || 'other',
         fileName: file.originalname,
@@ -11006,6 +11023,75 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting job document:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Convenience endpoint: documents for a specific phase
+  app.get("/api/jobs/:jobId/phases/:phaseId/documents", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, phaseId } = req.params;
+      const userContext = await getUserContext(userId);
+
+      if (userContext.isSubcontractor) {
+        return res.status(403).json({ error: 'Subcontractors cannot access job documents.' });
+      }
+
+      const job = await storage.getJob(jobId, userContext.effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found or access denied' });
+      }
+
+      const uploaderAlias = aliasedTable(users, 'uploader');
+      const rawDocuments = await db
+        .select({
+          id: jobDocuments.id,
+          userId: jobDocuments.userId,
+          jobId: jobDocuments.jobId,
+          phaseId: jobDocuments.phaseId,
+          title: jobDocuments.title,
+          documentType: jobDocuments.documentType,
+          fileName: jobDocuments.fileName,
+          objectStorageKey: jobDocuments.objectStorageKey,
+          fileSize: jobDocuments.fileSize,
+          mimeType: jobDocuments.mimeType,
+          uploadedBy: jobDocuments.uploadedBy,
+          createdAt: jobDocuments.createdAt,
+          uploaderFirstName: uploaderAlias.firstName,
+          uploaderLastName: uploaderAlias.lastName,
+          phaseCode: jobPhases.phaseCode,
+          phaseName: jobPhases.name,
+        })
+        .from(jobDocuments)
+        .leftJoin(uploaderAlias, eq(jobDocuments.uploadedBy, uploaderAlias.id))
+        .leftJoin(jobPhases, eq(jobDocuments.phaseId, jobPhases.id))
+        .where(and(
+          eq(jobDocuments.jobId, jobId),
+          eq(jobDocuments.userId, userContext.effectiveUserId),
+          eq(jobDocuments.phaseId, phaseId),
+        ))
+        .orderBy(desc(jobDocuments.createdAt));
+
+      const objectStorage = new ObjectStorageService();
+      const documentsWithUrls = await Promise.all(rawDocuments.map(async (doc) => {
+        const { uploaderFirstName, uploaderLastName, phaseCode, phaseName, ...rest } = doc;
+        const uploadedByName = uploaderFirstName || uploaderLastName
+          ? [uploaderFirstName, uploaderLastName].filter(Boolean).join(' ')
+          : null;
+        const phaseLabel = phaseCode && phaseName ? `${phaseCode} — ${phaseName}` : null;
+        try {
+          const signedUrl = await objectStorage.getSignedReadURLFromKey(doc.objectStorageKey, 3600);
+          return { ...rest, uploadedByName, fileUrl: signedUrl, phaseLabel };
+        } catch (error) {
+          console.error('Error getting signed URL for document:', error);
+          return { ...rest, uploadedByName, fileUrl: null, phaseLabel };
+        }
+      }));
+
+      res.json(documentsWithUrls);
+    } catch (error: any) {
+      console.error('Error getting phase documents:', error);
       res.status(500).json({ error: error.message });
     }
   });

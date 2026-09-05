@@ -3,10 +3,11 @@
  * Phases give large jobs (construction, engineering) a way to break work
  * into coded billable milestones (e.g., P01 Site Prep, P02 Footings).
  */
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import {
   Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, Crown, Users, Clock,
+  FileText, Upload, Download, Eye, File, FileImage, FileSpreadsheet, FileArchive,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -32,7 +33,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-
 export type PhaseStatus = "not_started" | "in_progress" | "complete" | "invoiced";
 
 // ─── Claim types (minimal, for cross-referencing) ─────────────────────────────
@@ -291,6 +291,19 @@ function PhaseMemberPicker({ phase, workers, onSave, isPending, open, onOpenChan
   );
 }
 
+interface PhaseDocument {
+  id: string;
+  jobId: string;
+  phaseId: string | null;
+  title: string;
+  documentType: string;
+  fileName: string;
+  fileUrl: string | null;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+  phaseLabel?: string | null;
+}
 interface Props {
   jobId: string;
   isTradie?: boolean;
@@ -308,6 +321,18 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
   const [claimPromptPhase, setClaimPromptPhase] = useState<JobPhase | null>(null);
   // Inline member picker state: which phase's popover is open
   const [memberPickerPhaseId, setMemberPickerPhaseId] = useState<string | null>(null);
+  // Phase docs section: which phases have docs expanded
+  const [expandedDocPhaseIds, setExpandedDocPhaseIds] = useState<Set<string>>(new Set());
+
+  const toggleDocSection = (phaseId: string) => {
+    setExpandedDocPhaseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(phaseId)) next.delete(phaseId);
+      else next.add(phaseId);
+      return next;
+    });
+  };
+
   // Inline "Add Time Entry" state
   const [addTimePhaseId, setAddTimePhaseId] = useState<string | null>(null);
   const [timeForm, setTimeForm] = useState({ date: new Date().toISOString().substring(0, 10), hours: "", description: "" });
@@ -513,11 +538,11 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                 : []);
 
             return (
-              <div
-                key={phase.id}
-                className="flex items-start gap-2 p-3 rounded-lg border bg-background hover:bg-muted/20 transition-colors"
+                <div key={phase.id} className="rounded-lg border overflow-hidden">
+                <div
+                  className="flex items-start gap-2 p-3 bg-background hover:bg-muted/20 transition-colors"
                 data-testid={`phase-row-${phase.id}`}
-              >
+                >
                 {/* Reorder arrows */}
                 {!isTradie && (
                   <div className="flex flex-col gap-0.5 shrink-0 mt-0.5">
@@ -728,8 +753,21 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
                   )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleDocSection(phase.id); }}
+                    className={`p-1 transition-colors ${expandedDocPhaseIds.has(phase.id) ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    title={expandedDocPhaseIds.has(phase.id) ? 'Hide documents' : 'Show documents'}
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                  </button>
                 </div>
               </div>
+                {expandedDocPhaseIds.has(phase.id) && (
+                  <div className="px-3 pb-2">
+                    <PhaseDocumentsSection jobId={jobId} phase={phase} isTradie={isTradie} />
+                  </div>
+                )}
+                </div>
             );
           })}
         </div>
@@ -965,3 +1003,157 @@ function PhaseForm({ form, setForm, onSubmit, onCancel, isPending, submitLabel, 
 }
 
 export default JobPhasesSection;
+
+function PhaseDocumentsSection({
+  jobId,
+  phase,
+  isTradie,
+}: {
+  jobId: string;
+  phase: JobPhase;
+  isTradie: boolean;
+}) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const { data: docs = [], isLoading, refetch } = useQuery<PhaseDocument[]>({
+    queryKey: ['/api/jobs', jobId, 'phases', phase.id, 'documents'],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/phases/${phase.id}/documents`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load documents');
+      return res.json();
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      const res = await fetch(`/api/jobs/${jobId}/documents/${docId}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Delete failed');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'phases', phase.id, 'documents'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'documents'] });
+      toast({ title: 'Document removed' });
+    },
+    onError: (e: any) => toast({ title: 'Delete failed', description: e.message, variant: 'destructive' }),
+  });
+
+  const handleFileUpload = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('title', file.name.replace(/\.[^/.]+$/, ''));
+      fd.append('documentType', 'other');
+      fd.append('phaseId', phase.id);
+      const res = await fetch(`/api/jobs/${jobId}/documents`, { method: 'POST', body: fd, credentials: 'include' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'phases', phase.id, 'documents'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'documents'] });
+      toast({ title: 'Document uploaded' });
+    } catch (e: any) {
+      toast({ title: 'Upload failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 border-t border-dashed pt-2 space-y-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          <FileText className="h-3 w-3" /> Documents {docs.length > 0 && `(${docs.length})`}
+        </span>
+        {!isTradie && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
+            title="Upload document to this phase"
+          >
+            {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            <span>Upload</span>
+          </button>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) { handleFileUpload(file); e.target.value = ''; }
+          }}
+        />
+      </div>
+      {isLoading ? (
+        <div className="flex justify-center py-1"><Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /></div>
+      ) : docs.length === 0 ? (
+        <p className="text-[10px] text-muted-foreground italic">No documents attached to this phase yet.</p>
+      ) : (
+        <div className="space-y-1">
+          {docs.map((doc) => (
+            <div key={doc.id} className="flex items-center gap-1.5 text-xs bg-muted/40 rounded px-2 py-1">
+              {getPhaseDocIcon(doc.mimeType)}
+              <span className="flex-1 truncate text-[11px]">{doc.title}</span>
+              {doc.fileUrl && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => window.open(doc.fileUrl!, '_blank')}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Preview"
+                  >
+                    <Eye className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const a = document.createElement('a');
+                      a.href = doc.fileUrl!;
+                      a.download = doc.fileName;
+                      a.click();
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    title="Download"
+                  >
+                    <Download className="h-3 w-3" />
+                  </button>
+                </>
+              )}
+              {!isTradie && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Delete "${doc.title}"?`)) deleteMutation.mutate(doc.id);
+                  }}
+                  className="text-muted-foreground hover:text-destructive"
+                  title="Delete"
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function getPhaseDocIcon(mimeType: string) {
+  if (mimeType === 'application/pdf') return <FileText className="h-3.5 w-3.5 text-red-500" />;
+  if (mimeType.startsWith('image/')) return <FileImage className="h-3.5 w-3.5 text-blue-500" />;
+  if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || mimeType === 'text/csv')
+    return <FileSpreadsheet className="h-3.5 w-3.5 text-green-600" />;
+  if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed')
+    return <FileArchive className="h-3.5 w-3.5 text-yellow-600" />;
+  return <File className="h-3.5 w-3.5 text-muted-foreground" />;
+}

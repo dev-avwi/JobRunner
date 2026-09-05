@@ -120,6 +120,13 @@
       "when": 1788100000000,
       "tag": "0022_checklist_phase_id",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1788200000000,
+      "tag": "0023_job_document_phase_id",
+      "breakpoints": true
     }
   ]
 }

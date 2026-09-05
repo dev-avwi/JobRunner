@@ -29,16 +29,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, Upload, Plus, Loader2, Trash2, Download, Eye, File, FileImage, FileSpreadsheet, FileArchive } from 'lucide-react';
+import { FileText, Upload, Plus, Loader2, Trash2, Download, Eye, File, FileImage, FileSpreadsheet, FileArchive, Layers } from 'lucide-react';
 import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-
 interface JobDocument {
   id: string;
   jobId: string;
   userId: string;
+  phaseId?: string | null;
+  phaseLabel?: string | null;
   title: string;
   documentType: 'quote' | 'invoice' | 'other';
   fileName: string;
@@ -48,18 +49,28 @@ interface JobDocument {
   createdAt: string;
 }
 
+export interface JobPhaseOption {
+  id: string;
+  phaseCode: string;
+  name: string;
+}
 interface JobDocumentsProps {
   jobId: string;
   canUpload?: boolean;
   canDelete?: boolean;
+  phases?: JobPhaseOption[];
+  /** Pre-select a phase in the upload dialog */
+  defaultPhaseId?: string;
 }
 
-export function JobDocuments({ jobId, canUpload = true, canDelete = false }: JobDocumentsProps) {
+export function JobDocuments({ jobId, canUpload = true, canDelete = false, phases = [], defaultPhaseId }: JobDocumentsProps) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [documentType, setDocumentType] = useState<'quote' | 'invoice' | 'other'>('other');
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string>('');
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [phaseFilter, setPhaseFilter] = useState<string>('all');
   const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string; mimeType?: string; fileName?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -69,11 +80,12 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, title, documentType }: { file: File; title: string; documentType: string }) => {
+    mutationFn: async ({ file, title, documentType, phaseId }: { file: File; title: string; documentType: string; phaseId?: string }) => {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title);
       formData.append('documentType', documentType);
+      if (phaseId) formData.append('phaseId', phaseId);
 
       const response = await fetch(`/api/jobs/${jobId}/documents`, {
         method: 'POST',
@@ -94,6 +106,7 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
       setSelectedFile(null);
       setTitle('');
       setDocumentType('other');
+      setSelectedPhaseId('');
       toast({
         title: 'Document uploaded',
         description: 'Your document has been uploaded successfully.',
@@ -189,7 +202,7 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
       });
       return;
     }
-    uploadMutation.mutate({ file: selectedFile, title: title.trim(), documentType });
+    uploadMutation.mutate({ file: selectedFile, title: title.trim(), documentType, phaseId: selectedPhaseId || undefined });
   };
 
   const openUploadDialog = () => {
@@ -197,6 +210,7 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
     setSelectedFile(null);
     setTitle('');
     setDocumentType('other');
+    setSelectedPhaseId(defaultPhaseId || '');
   };
 
   const getDocumentIcon = (mimeType: string, fileName?: string) => {
@@ -240,6 +254,16 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  // Build phase filter options from both the phases prop and documents that have phase data
+  const phasesWithDocs = phases.filter(p => documents.some(d => d.phaseId === p.id));
+  const hasPhaseFilter = phasesWithDocs.length > 0 || documents.some(d => d.phaseId);
+
+  const filteredDocuments = phaseFilter === 'all'
+    ? documents
+    : phaseFilter === 'none'
+      ? documents.filter(d => !d.phaseId)
+      : documents.filter(d => d.phaseId === phaseFilter);
+
   return (
     <>
       <Card data-testid="card-uploaded-documents">
@@ -263,13 +287,57 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Phase filter chips */}
+          {hasPhaseFilter && documents.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setPhaseFilter('all')}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  phaseFilter === 'all'
+                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                    : 'border-border text-muted-foreground hover:border-primary/40'
+                }`}
+              >
+                All ({documents.length})
+              </button>
+              <button
+                onClick={() => setPhaseFilter('none')}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  phaseFilter === 'none'
+                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                    : 'border-border text-muted-foreground hover:border-primary/40'
+                }`}
+              >
+                General ({documents.filter(d => !d.phaseId).length})
+              </button>
+              {phases.map(p => {
+                const count = documents.filter(d => d.phaseId === p.id).length;
+                if (count === 0) return null;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => setPhaseFilter(p.id)}
+                    className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                      phaseFilter === p.id
+                        ? 'border-primary bg-primary/10 text-primary font-medium'
+                        : 'border-border text-muted-foreground hover:border-primary/40'
+                    }`}
+                  >
+                    <Layers className="h-3 w-3" />
+                    {p.phaseCode} — {p.name} ({count})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
             </div>
-          ) : documents.length > 0 ? (
+          ) : filteredDocuments.length > 0 ? (
             <div className="space-y-2">
-              {documents.map((doc) => (
+              {filteredDocuments.map((doc) => (
                 <div
                   key={doc.id}
                   className="flex items-center gap-3 p-3 rounded-lg border bg-card hover-elevate"
@@ -284,6 +352,12 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
                       <Badge variant={getTypeBadgeVariant(doc.documentType)} className="text-xs">
                         {doc.documentType}
                       </Badge>
+                      {doc.phaseLabel && (
+                        <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded font-medium bg-primary/8 text-primary">
+                          <Layers className="h-2.5 w-2.5" />
+                          {doc.phaseLabel}
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       {formatFileSize(doc.fileSize)} &middot; {format(new Date(doc.createdAt), 'MMM d, yyyy')}
@@ -335,8 +409,10 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
           ) : (
             <div className="text-center py-6 text-muted-foreground">
               <Upload className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No documents uploaded</p>
-              <p className="text-xs mt-1">Upload quotes, invoices, or other documents</p>
+              <p className="text-sm">{phaseFilter !== 'all' ? 'No documents for this filter' : 'No documents uploaded'}</p>
+              {phaseFilter === 'all' && (
+                <p className="text-xs mt-1">Upload quotes, invoices, or other documents</p>
+              )}
             </div>
           )}
         </CardContent>
@@ -404,6 +480,24 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
                 </SelectContent>
               </Select>
             </div>
+            {phases.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="phase">Phase (optional)</Label>
+                <Select value={selectedPhaseId || 'none'} onValueChange={(v) => setSelectedPhaseId(v === 'none' ? '' : v)}>
+                  <SelectTrigger data-testid="select-document-phase">
+                    <SelectValue placeholder="No specific phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific phase</SelectItem>
+                    {phases.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.phaseCode} — {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
