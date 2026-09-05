@@ -12311,37 +12311,34 @@ export default function JobDetailScreen() {
 
               return (
                 <View key={phase.id} style={cardStyle}>
-                  {/* Phase header row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs }}>
-                    <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'flex-start', flex: 1, marginRight: spacing.sm, gap: spacing.xs }}
-                      onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
-                      activeOpacity={0.7}
-                    >
-                      {/* Status dot */}
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: st.text, marginTop: 5 }} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                  {/* Phase header row — info display only, no touch */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      {/* Name row with status dot */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 3 }}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: st.text, flexShrink: 0 }} />
+                        <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
                           {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
                         </Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: 2 }}>
-                          {(phase.scheduledStart || phase.scheduledEnd) && (
-                            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                              {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
-                              {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
-                            </Text>
-                          )}
-                          {phase.bookedHours ? (
-                            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
-                          ) : null}
-                        </View>
                       </View>
-                    </TouchableOpacity>
+                      {/* Date + hours */}
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginLeft: 8 + spacing.xs }}>
+                        {(phase.scheduledStart || phase.scheduledEnd) && (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
+                            {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
+                          </Text>
+                        )}
+                        {phase.bookedHours ? (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
+                        ) : null}
+                      </View>
+                    </View>
+                    {/* Status badge + collapse (complete only) */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
+                      <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
                         <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>{st.label}</Text>
                       </View>
-                      {/* Collapse button for expanded complete phase */}
                       {isComplete && isCompletedExpanded && (
                         <TouchableOpacity
                           onPress={() => { expandedCompletedPhasesRef.current.delete(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
@@ -12351,14 +12348,6 @@ export default function JobDetailScreen() {
                           <Feather name="chevron-up" size={14} color={colors.mutedForeground} />
                         </TouchableOpacity>
                       )}
-                      {/* Navigate to phase detail */}
-                      <TouchableOpacity
-                        onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        activeOpacity={0.7}
-                      >
-                        <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-                      </TouchableOpacity>
                     </View>
                   </View>
 
@@ -12439,6 +12428,16 @@ export default function JobDetailScreen() {
                       })()}
                     </>
                   )}
+
+                  {/* View phase details — always shown at bottom of expanded cards */}
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, paddingTop: spacing.sm, marginTop: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: fontWeights.medium }}>View phase details</Text>
+                    <Feather name="arrow-right" size={12} color={colors.primary} />
+                  </TouchableOpacity>
                 </View>
               );
             }) : (

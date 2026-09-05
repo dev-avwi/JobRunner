@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Animated, TextInput, Alert, Platform,
+  StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useUserRole } from '../../src/hooks/use-user-role';
+import { useTimeTrackingStore } from '../../src/lib/store';
 import api, { API_URL } from '../../src/lib/api';
 import { getDocumentPicker } from '../../src/lib/document-picker';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
@@ -70,10 +71,10 @@ interface PhaseDoc {
 // ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<PhaseStatus, { label: string; color: string; bg: string; lightBg: string }> = {
-  not_started: { label: 'Not Started', color: '#6B7280', bg: '#F3F4F6', lightBg: '#F9FAFB' },
-  in_progress:  { label: 'In Progress', color: '#1E40AF', bg: '#DBEAFE', lightBg: '#EFF6FF' },
-  complete:     { label: 'Complete',    color: '#065F46', bg: '#D1FAE5', lightBg: '#ECFDF5' },
-  invoiced:     { label: 'Invoiced',   color: '#6D28D9', bg: '#EDE9FE', lightBg: '#F5F3FF' },
+  not_started: { label: 'Not Started', color: '#6B7280', bg: '#E5E7EB', lightBg: '#F9FAFB' },
+  in_progress:  { label: 'In Progress', color: '#1D4ED8', bg: '#DBEAFE', lightBg: '#EFF6FF' },
+  complete:     { label: 'Complete',    color: '#059669', bg: '#D1FAE5', lightBg: '#ECFDF5' },
+  invoiced:     { label: 'Invoiced',   color: '#7C3AED', bg: '#EDE9FE', lightBg: '#F5F3FF' },
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,14 +98,14 @@ function fmtHours(h: number): string {
 function AnimatedBar({ pct, color }: { pct: number; color: string }) {
   const anim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(anim, { toValue: Math.min(pct, 1), duration: 600, useNativeDriver: false }).start();
+    Animated.timing(anim, { toValue: Math.min(pct, 1), duration: 700, useNativeDriver: false }).start();
   }, [pct]);
   return (
-    <View style={{ height: 7, borderRadius: 4, backgroundColor: `${color}25`, overflow: 'hidden' }}>
+    <View style={{ height: 6, borderRadius: 3, backgroundColor: `${color}30`, overflow: 'hidden' }}>
       <Animated.View
         style={{
           height: '100%',
-          borderRadius: 4,
+          borderRadius: 3,
           backgroundColor: color,
           width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
         }}
@@ -147,20 +148,37 @@ function SectionTitle({ icon, title, right }: { icon: string; title: string; rig
   );
 }
 
+// ─── Inline field label ───────────────────────────────────────────────────────
+
+function FieldLabel({ children }: { children: string }) {
+  const { colors } = useTheme();
+  return (
+    <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6, marginTop: spacing.sm }}>
+      {children}
+    </Text>
+  );
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function PhaseDetailScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { jobId, phaseId } = useLocalSearchParams<{ jobId: string; phaseId: string }>();
-  const { isStaff } = useUserRole();
+  const { isStaff, isOwner, isManager } = useUserRole();
+  // Workers are read-only. Owners and managers have full write access.
   const isReadOnly = isStaff;
 
-  // ── State ─────────────────────────────────────────────────────────────────
+  // ── Timer store ───────────────────────────────────────────────────────────
+  const { activeTimer, startTimer, stopTimer } = useTimeTrackingStore();
+  const isActivePhaseTimer = !!((activeTimer as any)?.phaseId === phaseId && activeTimer?.jobId === jobId);
+
+  // ── Phase state ───────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<JobPhase | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Tasks state ───────────────────────────────────────────────────────────
   const [tasks, setTasks] = useState<ChecklistItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
@@ -168,11 +186,21 @@ export default function PhaseDetailScreen() {
   const [addingTask, setAddingTask] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
 
+  // ── Documents state ───────────────────────────────────────────────────────
   const [docs, setDocs] = useState<PhaseDoc[]>([]);
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
-  const [showNotesSheet, setShowNotesSheet] = useState(false);
+  // ── Log Time sheet ────────────────────────────────────────────────────────
+  const [showLogTimeSheet, setShowLogTimeSheet] = useState(false);
+  const [timerLoading, setTimerLoading] = useState(false);
+  const [timerElapsed, setTimerElapsed] = useState('0:00');
+
+  // ── Log Expense sheet ─────────────────────────────────────────────────────
+  const [showLogExpenseSheet, setShowLogExpenseSheet] = useState(false);
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [savingExpense, setSavingExpense] = useState(false);
 
   // ── Data loading ──────────────────────────────────────────────────────────
 
@@ -221,6 +249,27 @@ export default function PhaseDetailScreen() {
   useEffect(() => { loadPhase(); }, [loadPhase]);
   useEffect(() => { loadTasks(); }, [loadTasks]);
   useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  // ── Timer elapsed ticker ──────────────────────────────────────────────────
+
+  useEffect(() => {
+    const startedAt = (activeTimer as any)?.startedAt ?? activeTimer?.startTime;
+    if (!isActivePhaseTimer || !startedAt) { setTimerElapsed('0:00'); return; }
+    const tick = () => {
+      const diff = Math.max(0, Date.now() - new Date(startedAt).getTime());
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimerElapsed(
+        h > 0
+          ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+          : `${m}:${String(s).padStart(2, '0')}`
+      );
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [isActivePhaseTimer, (activeTimer as any)?.startedAt, activeTimer?.startTime]);
 
   // ── Task actions ──────────────────────────────────────────────────────────
 
@@ -290,7 +339,74 @@ export default function PhaseDetailScreen() {
     }
   }, [jobId, phaseId, loadDocs]);
 
-  // ── Derived values ─────────────────────────────────────────────────────────
+  // ── Timer actions ─────────────────────────────────────────────────────────
+
+  const handleStartTimer = async () => {
+    if (!jobId || !phaseId || !phase) return;
+    setTimerLoading(true);
+    try {
+      const ok = await startTimer(jobId, `Phase: ${phase.name}`, false, phaseId);
+      if (ok) {
+        setShowLogTimeSheet(false);
+        showToast({ type: 'success', message: 'Timer started' });
+      } else {
+        showToast({ type: 'error', message: 'Could not start timer. Stop any active timer first.' });
+      }
+    } catch {
+      showToast({ type: 'error', message: 'Could not start timer' });
+    } finally {
+      setTimerLoading(false);
+    }
+  };
+
+  const handleStopTimer = async () => {
+    setTimerLoading(true);
+    try {
+      await stopTimer();
+      setShowLogTimeSheet(false);
+      showToast({ type: 'success', message: 'Timer stopped and hours logged' });
+    } catch {
+      showToast({ type: 'error', message: 'Could not stop timer' });
+    } finally {
+      setTimerLoading(false);
+    }
+  };
+
+  // ── Expense actions ───────────────────────────────────────────────────────
+
+  const handleLogExpense = async () => {
+    const parsed = parseFloat(expenseAmount.replace(/[^0-9.]/g, ''));
+    if (!parsed || parsed <= 0) {
+      showToast({ type: 'error', message: 'Enter a valid dollar amount' });
+      return;
+    }
+    if (!expenseDescription.trim()) {
+      showToast({ type: 'error', message: 'Description is required' });
+      return;
+    }
+    setSavingExpense(true);
+    try {
+      const res = await api.post(`/api/jobs/${jobId}/expenses`, {
+        description: expenseDescription.trim(),
+        amount: String(parsed),
+        expenseDate: new Date().toISOString().split('T')[0],
+        isBillable: true,
+        categoryId: '_worker_receipt_',
+        phaseId,
+      });
+      if (res.error) throw new Error(res.error);
+      setShowLogExpenseSheet(false);
+      setExpenseAmount('');
+      setExpenseDescription('');
+      showToast({ type: 'success', message: 'Expense logged', description: 'Sent to owner for approval.' });
+    } catch (err: any) {
+      showToast({ type: 'error', message: 'Could not log expense', description: err?.message });
+    } finally {
+      setSavingExpense(false);
+    }
+  };
+
+  // ── Loading / error states ────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -299,7 +415,7 @@ export default function PhaseDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="arrow-left" size={20} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase Detail</Text>
+          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase</Text>
         </View>
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -315,7 +431,7 @@ export default function PhaseDetailScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="arrow-left" size={20} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase Detail</Text>
+          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase</Text>
         </View>
         <View style={styles.center}>
           <Feather name="alert-circle" size={40} color={colors.destructive} />
@@ -329,6 +445,8 @@ export default function PhaseDetailScreen() {
       </View>
     );
   }
+
+  // ── Derived values ─────────────────────────────────────────────────────────
 
   const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
 
@@ -351,65 +469,81 @@ export default function PhaseDetailScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
-      {/* ── Navigation header ────────────────────────────────────────── */}
+
+      {/* ── Top nav bar ──────────────────────────────────────────────── */}
       <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
           <Feather name="arrow-left" size={20} color={colors.foreground} />
         </TouchableOpacity>
+
+        {/* Phase code label in nav — smaller, muted */}
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>Phase</Text>
-          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }} numberOfLines={1}>
-            {phase.phaseCode} · {phase.name}
+          <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: fontWeights.medium, letterSpacing: 0.3 }}>Phase</Text>
+          <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+            {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
           </Text>
         </View>
-        {!isReadOnly && (
+
+        {/* Edit — owners and managers only */}
+        {(isOwner || isManager) && (
           <TouchableOpacity
             onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
-            style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border }}
+            style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border }}
             activeOpacity={0.7}
           >
-            <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.medium, color: colors.primary }}>Edit</Text>
+            <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.primary }}>Edit</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <ScrollView
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: 40 }}
+        contentContainerStyle={{ paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* ── Hero card ───────────────────────────────────────────────── */}
-        <View style={[styles.heroCard, { backgroundColor: cfg.lightBg, borderColor: `${cfg.color}25` }]}>
-          {/* Badges row */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
-            <View style={{ borderWidth: 1, borderColor: `${cfg.color}50`, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, backgroundColor: colors.card }}>
-              <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: cfg.color, letterSpacing: 0.3 }}>
-                {phase.phaseCode}
-              </Text>
-            </View>
-            <View style={{ backgroundColor: cfg.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 }}>
+
+        {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
+        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
+
+          {/* Badge row */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 14 }}>
+            {phase.phaseCode ? (
+              <View style={{ borderRadius: 7, paddingHorizontal: 9, paddingVertical: 4, backgroundColor: colors.card, borderWidth: 1, borderColor: cfg.color + '50' }}>
+                <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: cfg.color, letterSpacing: 0.5 }}>
+                  {phase.phaseCode}
+                </Text>
+              </View>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: cfg.color + '22' }}>
+              <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: cfg.color }} />
               <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: cfg.color }}>{cfg.label}</Text>
             </View>
+            {isActivePhaseTimer && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#DC262622' }}>
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#DC2626' }} />
+                <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: '#DC2626' }}>{timerElapsed}</Text>
+              </View>
+            )}
           </View>
 
-          {/* Phase name */}
-          <Text style={{ fontSize: 22, fontWeight: fontWeights.bold, color: colors.foreground, marginBottom: spacing.xs, lineHeight: 28 }}>
+          {/* Phase name — large */}
+          <Text style={{ fontSize: 26, fontWeight: fontWeights.bold, color: colors.foreground, lineHeight: 32, marginBottom: 12 }}>
             {phase.name}
           </Text>
 
           {/* Date range */}
           {(startStr || endStr) && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: primaryHrsBudget > 0 || actualHrs > 0 ? 14 : 6 }}>
               <Feather name="calendar" size={13} color={colors.mutedForeground} />
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                {startStr ?? '?'}  →  {endStr ?? '?'}
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
+                {startStr && endStr ? `${startStr} – ${endStr}` : startStr ?? endStr}
               </Text>
             </View>
           )}
 
-          {/* Hours progress */}
+          {/* Hours progress bar */}
           {(primaryHrsBudget > 0 || actualHrs > 0) && (
-            <View style={{ marginTop: spacing.xs }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Feather name="clock" size={12} color={colors.mutedForeground} />
                   <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
@@ -432,273 +566,449 @@ export default function PhaseDetailScreen() {
             </View>
           )}
 
-          {/* Task progress pill */}
-          {tasks.length > 0 && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
-              <Feather name="check-square" size={12} color={colors.mutedForeground} />
-              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                {tasksDone} of {tasks.length} task{tasks.length !== 1 ? 's' : ''} done
-              </Text>
+          {/* Task + description summary row */}
+          {(tasks.length > 0 || phase.description) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 12 }}>
+              {tasks.length > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Feather name="check-square" size={12} color={colors.mutedForeground} />
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                    {tasksDone}/{tasks.length} task{tasks.length !== 1 ? 's' : ''} done
+                  </Text>
+                </View>
+              )}
+              {phase.description ? (
+                <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic' }} numberOfLines={1}>
+                  {phase.description}
+                </Text>
+              ) : null}
             </View>
           )}
         </View>
 
-        {/* ── Team ────────────────────────────────────────────────────── */}
-        <Card>
-          <SectionTitle icon="users" title="Team" />
-          {phaseMembers.length === 0 ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
-              <Feather name="user-x" size={16} color={colors.mutedForeground} />
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                No team members assigned to this phase yet.
-              </Text>
-            </View>
-          ) : (
-            <View style={{ gap: spacing.sm }}>
-              {phaseMembers.map((member) => (
-                <View key={member.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <TeamAvatar
-                    name={member.name}
-                    email={member.email}
-                    userId={member.id}
-                    themeColor={member.themeColor}
-                    size={40}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                      {member.name}
-                    </Text>
-                    {member.isLead && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
-                        <Feather name="star" size={10} color="#F59E0B" />
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Phase Lead</Text>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
-        </Card>
+        <View style={{ paddingHorizontal: spacing.md }}>
 
-        {/* ── Tasks ───────────────────────────────────────────────────── */}
-        <Card>
-          <SectionTitle
-            icon="check-square"
-            title="Tasks"
-            right={
-              tasks.length > 0 ? (
-                <View style={{ paddingHorizontal: 8, paddingVertical: 2, backgroundColor: colors.muted, borderRadius: radius.full }}>
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
-                    {tasksDone}/{tasks.length}
-                  </Text>
-                </View>
-              ) : null
-            }
-          />
-
-          {tasksLoading ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
-              <ActivityIndicator size="small" color={colors.primary} />
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Loading tasks...</Text>
-            </View>
-          ) : tasks.length === 0 && !showAddTask ? (
-            <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm }}>
-              <Feather name="check-circle" size={28} color={colors.border} />
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
-                No tasks linked to this phase yet.
-              </Text>
-              {!isReadOnly && (
-                <TouchableOpacity
-                  onPress={() => setShowAddTask(true)}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed' }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="plus" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.medium, color: colors.primary }}>Add first task</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <View style={{ gap: spacing.sm }}>
-              {tasks.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  onPress={() => !isReadOnly && handleToggleTask(item)}
-                  style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}
-                  activeOpacity={isReadOnly ? 1 : 0.7}
-                >
-                  <View style={{ marginTop: 2, width: 20, height: 20, borderRadius: 5, borderWidth: 2,
-                    borderColor: item.isCompleted ? colors.primary : colors.border,
-                    backgroundColor: item.isCompleted ? colors.primary : 'transparent',
-                    alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {togglingId === item.id
-                      ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.primary} style={{ width: 12, height: 12 }} />
-                      : item.isCompleted
-                        ? <Feather name="check" size={12} color={colors.primaryForeground} />
-                        : null}
-                  </View>
-                  <Text style={{
-                    flex: 1,
-                    fontSize: typography.body.fontSize,
-                    color: item.isCompleted ? colors.mutedForeground : colors.foreground,
-                    textDecorationLine: item.isCompleted ? 'line-through' : 'none',
-                    lineHeight: 22,
-                  }}>
-                    {item.text}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              {/* Add task input */}
-              {!isReadOnly && (
-                showAddTask ? (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
-                    <TextInput
-                      style={[styles.taskInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                      placeholder="Task description..."
-                      placeholderTextColor={colors.mutedForeground}
-                      value={newTaskText}
-                      onChangeText={setNewTaskText}
-                      onSubmitEditing={handleAddTask}
-                      returnKeyType="done"
-                      autoFocus
-                      editable={!addingTask}
+          {/* ── Team ──────────────────────────────────────────────────── */}
+          <Card>
+            <SectionTitle icon="users" title="Team" />
+            {phaseMembers.length === 0 ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+                <Feather name="user-x" size={16} color={colors.mutedForeground} />
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                  No team members assigned to this phase yet.
+                </Text>
+              </View>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {phaseMembers.map((member) => (
+                  <View key={member.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <TeamAvatar
+                      name={member.name}
+                      email={member.email}
+                      userId={member.id}
+                      themeColor={member.themeColor}
+                      size={40}
                     />
-                    <TouchableOpacity
-                      onPress={handleAddTask}
-                      disabled={!newTaskText.trim() || addingTask}
-                      style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', opacity: !newTaskText.trim() ? 0.5 : 1 }}
-                      activeOpacity={0.8}
-                    >
-                      {addingTask
-                        ? <ActivityIndicator size="small" color={colors.primaryForeground} />
-                        : <Feather name="check" size={16} color={colors.primaryForeground} />}
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { setShowAddTask(false); setNewTaskText(''); }} style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
-                      <Feather name="x" size={16} color={colors.mutedForeground} />
-                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                        {member.name}
+                      </Text>
+                      {member.isLead && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                          <Feather name="star" size={10} color="#F59E0B" />
+                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Phase Lead</Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                ) : (
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* ── Tasks ─────────────────────────────────────────────────── */}
+          <Card>
+            <SectionTitle
+              icon="check-square"
+              title="Tasks"
+              right={
+                tasks.length > 0 ? (
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 2, backgroundColor: colors.muted, borderRadius: radius.full }}>
+                    <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                      {tasksDone}/{tasks.length}
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+
+            {tasksLoading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Loading tasks...</Text>
+              </View>
+            ) : tasks.length === 0 && !showAddTask ? (
+              <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm }}>
+                <Feather name="check-circle" size={28} color={colors.border} />
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
+                  No tasks linked to this phase yet.
+                </Text>
+                {!isReadOnly && (
                   <TouchableOpacity
                     onPress={() => setShowAddTask(true)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, marginTop: spacing.xs }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed' }}
                     activeOpacity={0.7}
                   >
-                    <Feather name="plus-circle" size={14} color={colors.primary} />
-                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Add task</Text>
+                    <Feather name="plus" size={14} color={colors.primary} />
+                    <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.medium, color: colors.primary }}>Add first task</Text>
                   </TouchableOpacity>
-                )
-              )}
-            </View>
-          )}
-        </Card>
-
-        {/* ── Documents ───────────────────────────────────────────────── */}
-        <Card>
-          <SectionTitle
-            icon="file-text"
-            title="Documents"
-            right={
-              !isReadOnly ? (
-                <TouchableOpacity
-                  onPress={handleAttachDoc}
-                  disabled={uploadingDoc}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.md, backgroundColor: `${colors.primary}15` }}
-                  activeOpacity={0.7}
-                >
-                  {uploadingDoc
-                    ? <ActivityIndicator size="small" color={colors.primary} style={{ width: 14, height: 14 }} />
-                    : <Feather name="paperclip" size={13} color={colors.primary} />}
-                  <Text style={{ fontSize: 12, color: colors.primary, fontWeight: fontWeights.semibold }}>
-                    {uploadingDoc ? 'Uploading...' : 'Attach'}
-                  </Text>
-                </TouchableOpacity>
-              ) : null
-            }
-          />
-
-          {docsLoading ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : docs.length === 0 ? (
-            <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-              No documents attached to this phase yet.
-            </Text>
-          ) : (
-            <View style={{ gap: spacing.sm }}>
-              {docs.map((doc) => (
-                <TouchableOpacity
-                  key={doc.id}
-                  onPress={() => doc.latestRevision?.fileUrl
-                    ? router.push({ pathname: '/job/document-viewer' as any, params: { url: doc.latestRevision.fileUrl, title: doc.title, mimeType: doc.latestRevision.mimeType ?? '' } })
-                    : null}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background }}
-                  activeOpacity={doc.latestRevision?.fileUrl ? 0.7 : 1}
-                >
-                  <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
-                    <Feather name="file-text" size={16} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>
-                      {doc.title}
+                )}
+              </View>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {tasks.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    onPress={() => !isReadOnly && handleToggleTask(item)}
+                    style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}
+                    activeOpacity={isReadOnly ? 1 : 0.7}
+                  >
+                    <View style={{ marginTop: 2, width: 20, height: 20, borderRadius: 5, borderWidth: 2,
+                      borderColor: item.isCompleted ? colors.primary : colors.border,
+                      backgroundColor: item.isCompleted ? colors.primary : 'transparent',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {togglingId === item.id
+                        ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.primary} style={{ width: 12, height: 12 }} />
+                        : item.isCompleted
+                          ? <Feather name="check" size={12} color={colors.primaryForeground} />
+                          : null}
+                    </View>
+                    <Text style={{
+                      flex: 1,
+                      fontSize: typography.body.fontSize,
+                      color: item.isCompleted ? colors.mutedForeground : colors.foreground,
+                      textDecorationLine: item.isCompleted ? 'line-through' : 'none',
+                      lineHeight: 22,
+                    }}>
+                      {item.text}
                     </Text>
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-                      {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
-                    </Text>
-                  </View>
-                  {doc.latestRevision?.fileUrl && (
-                    <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </Card>
+                  </TouchableOpacity>
+                ))}
 
-        {/* ── Notes ───────────────────────────────────────────────────── */}
-        {(phase.notes || phase.description) ? (
-          <Card>
-            <SectionTitle icon="file" title="Notes" />
-            {phase.notes ? (
-              <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22, marginBottom: phase.description ? spacing.sm : 0 }}>
-                {phase.notes}
-              </Text>
-            ) : null}
-            {phase.description ? (
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, lineHeight: 20 }}>
-                {phase.description}
-              </Text>
-            ) : null}
+                {/* Add task row */}
+                {!isReadOnly && (
+                  showAddTask ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
+                      <TextInput
+                        style={[styles.taskInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                        placeholder="Task description..."
+                        placeholderTextColor={colors.mutedForeground}
+                        value={newTaskText}
+                        onChangeText={setNewTaskText}
+                        onSubmitEditing={handleAddTask}
+                        returnKeyType="done"
+                        autoFocus
+                        editable={!addingTask}
+                      />
+                      <TouchableOpacity
+                        onPress={handleAddTask}
+                        disabled={!newTaskText.trim() || addingTask}
+                        style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', opacity: !newTaskText.trim() ? 0.5 : 1 }}
+                        activeOpacity={0.8}
+                      >
+                        {addingTask
+                          ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                          : <Feather name="check" size={16} color={colors.primaryForeground} />}
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setShowAddTask(false); setNewTaskText(''); }} style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
+                        <Feather name="x" size={16} color={colors.mutedForeground} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setShowAddTask(true)}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, marginTop: spacing.xs }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="plus-circle" size={14} color={colors.primary} />
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Add task</Text>
+                    </TouchableOpacity>
+                  )
+                )}
+              </View>
+            )}
           </Card>
-        ) : null}
 
-        {/* ── Quick actions ────────────────────────────────────────────── */}
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, _logTime: phaseId } })}
-            style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            activeOpacity={0.8}
-          >
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs }}>
-              <Feather name="clock" size={16} color={colors.primary} />
-            </View>
-            <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Time</Text>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center', marginTop: 2 }}>Record hours</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, _logExpense: phaseId } })}
-            style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-            activeOpacity={0.8}
-          >
-            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.xs }}>
-              <Feather name="dollar-sign" size={16} color={colors.success} />
-            </View>
-            <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Expense</Text>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center', marginTop: 2 }}>Add cost</Text>
-          </TouchableOpacity>
+          {/* ── Documents ─────────────────────────────────────────────── */}
+          <Card>
+            <SectionTitle
+              icon="file-text"
+              title="Documents"
+              right={
+                !isReadOnly ? (
+                  <TouchableOpacity
+                    onPress={handleAttachDoc}
+                    disabled={uploadingDoc}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.md, backgroundColor: `${colors.primary}15` }}
+                    activeOpacity={0.7}
+                  >
+                    {uploadingDoc
+                      ? <ActivityIndicator size="small" color={colors.primary} style={{ width: 14, height: 14 }} />
+                      : <Feather name="paperclip" size={13} color={colors.primary} />}
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                      {uploadingDoc ? 'Uploading...' : 'Attach'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null
+              }
+            />
+
+            {docsLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : docs.length === 0 ? (
+              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                No documents attached to this phase yet.
+              </Text>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {docs.map((doc) => (
+                  <TouchableOpacity
+                    key={doc.id}
+                    onPress={() => doc.latestRevision?.fileUrl
+                      ? router.push({ pathname: '/job/document-viewer' as any, params: { url: doc.latestRevision.fileUrl, title: doc.title, mimeType: doc.latestRevision.mimeType ?? '' } })
+                      : null}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background }}
+                    activeOpacity={doc.latestRevision?.fileUrl ? 0.7 : 1}
+                  >
+                    <View style={{ width: 36, height: 36, borderRadius: 8, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="file-text" size={16} color={colors.primary} />
+                    </View>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>
+                        {doc.title}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                        {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
+                      </Text>
+                    </View>
+                    {doc.latestRevision?.fileUrl && (
+                      <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </Card>
+
+          {/* ── Notes ─────────────────────────────────────────────────── */}
+          {(phase.notes || phase.description) ? (
+            <Card>
+              <SectionTitle icon="file" title="Notes" />
+              {phase.notes ? (
+                <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22, marginBottom: phase.description ? spacing.sm : 0 }}>
+                  {phase.notes}
+                </Text>
+              ) : null}
+              {phase.description ? (
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, lineHeight: 20 }}>
+                  {phase.description}
+                </Text>
+              ) : null}
+            </Card>
+          ) : null}
+
+          {/* ── Quick actions — Log Time / Log Expense (inline sheets) ── */}
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
+
+            {/* Log Time */}
+            <TouchableOpacity
+              onPress={() => setShowLogTimeSheet(true)}
+              style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.8}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: isActivePhaseTimer ? '#DC262618' : `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                {isActivePhaseTimer
+                  ? <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#DC2626' }} />
+                  : <Feather name="clock" size={17} color={colors.primary} />}
+              </View>
+              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                {isActivePhaseTimer ? 'Timer Running' : 'Log Time'}
+              </Text>
+              <Text style={{ fontSize: 11, color: isActivePhaseTimer ? '#DC2626' : colors.mutedForeground, textAlign: 'center', marginTop: 2, fontWeight: isActivePhaseTimer ? fontWeights.semibold : fontWeights.regular }}>
+                {isActivePhaseTimer ? timerElapsed : 'Start or stop timer'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Log Expense */}
+            <TouchableOpacity
+              onPress={() => setShowLogExpenseSheet(true)}
+              style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+              activeOpacity={0.8}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                <Feather name="dollar-sign" size={17} color={colors.success} />
+              </View>
+              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Expense</Text>
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center', marginTop: 2 }}>Add a cost</Text>
+            </TouchableOpacity>
+
+          </View>
         </View>
       </ScrollView>
+
+      {/* ── Log Time bottom sheet ─────────────────────────────────────── */}
+      <AppBottomSheet
+        visible={showLogTimeSheet}
+        onDismiss={() => { if (!timerLoading) setShowLogTimeSheet(false); }}
+        title="Log Time"
+        showCloseButton
+        snapPoints={['40%']}
+      >
+        <View style={{ padding: spacing.md, gap: spacing.md }}>
+          {isActivePhaseTimer ? (
+            <>
+              {/* Active timer for this phase */}
+              <View style={{ alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm }}>
+                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#DC262618', alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: '#DC2626' }} />
+                </View>
+                <Text style={{ fontSize: 32, fontWeight: fontWeights.bold, color: '#DC2626', fontVariant: ['tabular-nums'] as any }}>
+                  {timerElapsed}
+                </Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Timer running for {phase.name}</Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleStopTimer}
+                disabled={timerLoading}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: '#DC2626', opacity: timerLoading ? 0.6 : 1 }}
+                activeOpacity={0.8}
+              >
+                {timerLoading
+                  ? <ActivityIndicator size="small" color="#fff" />
+                  : <Feather name="square" size={15} color="#fff" />}
+                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: '#fff' }}>Stop Timer</Text>
+              </TouchableOpacity>
+            </>
+          ) : activeTimer ? (
+            <>
+              {/* Different timer active */}
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: `${colors.warning}15` }}>
+                <Feather name="alert-triangle" size={16} color={colors.warning} style={{ marginTop: 1 }} />
+                <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground, lineHeight: 19 }}>
+                  You have a timer running for another job or phase. Stop it first to start a new one.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleStartTimer}
+                disabled={timerLoading}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: colors.primary, opacity: timerLoading ? 0.6 : 1 }}
+                activeOpacity={0.8}
+              >
+                {timerLoading
+                  ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  : <Feather name="play" size={15} color={colors.primaryForeground} />}
+                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Switch to this phase</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {/* No active timer */}
+              <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs }}>
+                <Feather name="clock" size={32} color={colors.primary} />
+                <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>
+                  Start a timer to track hours for {phase.name}.
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={handleStartTimer}
+                disabled={timerLoading}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: colors.primary, opacity: timerLoading ? 0.6 : 1 }}
+                activeOpacity={0.8}
+              >
+                {timerLoading
+                  ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                  : <Feather name="play" size={15} color={colors.primaryForeground} />}
+                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Start Timer</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </AppBottomSheet>
+
+      {/* ── Log Expense bottom sheet ──────────────────────────────────── */}
+      <AppBottomSheet
+        visible={showLogExpenseSheet}
+        onDismiss={() => { if (!savingExpense) { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); } }}
+        title="Log Expense"
+        showCloseButton
+        snapPoints={['60%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <TouchableOpacity
+              onPress={() => { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); }}
+              disabled={savingExpense}
+              style={{ flex: 1, paddingVertical: 13, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.medium, color: colors.foreground }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleLogExpense}
+              disabled={savingExpense || !expenseAmount.trim() || !expenseDescription.trim()}
+              style={{ flex: 2, paddingVertical: 13, borderRadius: radius.lg, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', opacity: (savingExpense || !expenseAmount.trim() || !expenseDescription.trim()) ? 0.5 : 1 }}
+              activeOpacity={0.8}
+            >
+              {savingExpense
+                ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                : <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Log Expense</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={{ padding: spacing.md, gap: spacing.xs }}>
+            <FieldLabel>Amount ($) *</FieldLabel>
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+              value={expenseAmount}
+              onChangeText={setExpenseAmount}
+              keyboardType="decimal-pad"
+              placeholder="0.00"
+              placeholderTextColor={colors.mutedForeground}
+              editable={!savingExpense}
+            />
+
+            <FieldLabel>Description *</FieldLabel>
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+              value={expenseDescription}
+              onChangeText={setExpenseDescription}
+              placeholder="e.g. Electrical fittings from Bunnings"
+              placeholderTextColor={colors.mutedForeground}
+              editable={!savingExpense}
+              returnKeyType="done"
+            />
+
+            {/* Phase context chip */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.primary}10` }}>
+              <Feather name="layers" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 12, color: colors.primary }}>
+                Linked to: {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
+              </Text>
+            </View>
+
+            {/* Info note */}
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.warning}15`, marginTop: spacing.xs }}>
+              <Feather name="info" size={13} color={colors.warning} style={{ marginTop: 1 }} />
+              <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
+                This expense will be sent to the owner for review and approval.
+              </Text>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </AppBottomSheet>
+
     </View>
   );
 }
@@ -719,11 +1029,12 @@ const styles = StyleSheet.create({
   },
   backBtn: { padding: 4, marginRight: 2 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
-  heroCard: {
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    padding: spacing.lg,
+  heroBanner: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
     marginBottom: spacing.md,
+    borderBottomWidth: 1,
   },
   taskInput: {
     flex: 1,
@@ -733,11 +1044,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     fontSize: typography.body.fontSize,
   },
+  input: {
+    height: 44,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.body.fontSize,
+  },
   quickBtn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing.md,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.sm,
     borderRadius: radius.xl,
     borderWidth: 1,
     ...shadows.sm,
