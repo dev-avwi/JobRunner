@@ -364,7 +364,7 @@ export default function PhaseDetailScreen() {
         </View>
         {!isReadOnly && (
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, _openEditPhase: phaseId } })}
+            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
             style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border }}
             activeOpacity={0.7}
           >
@@ -676,7 +676,7 @@ export default function PhaseDetailScreen() {
         {/* ── Quick actions ────────────────────────────────────────────── */}
         <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, _logTime: phaseId } })}
+            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId } })}
             style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
           >
@@ -687,7 +687,7 @@ export default function PhaseDetailScreen() {
             <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center', marginTop: 2 }}>Record hours</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, _logExpense: phaseId } })}
+            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId } })}
             style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
             activeOpacity={0.8}
           >

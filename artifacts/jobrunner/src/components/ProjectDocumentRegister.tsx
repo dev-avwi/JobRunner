@@ -61,6 +61,7 @@ import {
   ShoppingCart,
   ExternalLink,
   Package,
+  Layers,
 } from 'lucide-react';
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -79,10 +80,18 @@ interface ProjectDocument {
   category: string;
   currentRevision: string;
   isClientVisible: boolean;
+  phaseId: string | null;
+  phaseName?: string | null;
   createdAt: string;
   updatedAt: string;
   latestRevision: RevisionRecord | null;
   revisionCount: number;
+}
+
+interface PhaseOption {
+  id: string;
+  phaseCode: string;
+  name: string;
 }
 
 interface RevisionRecord {
@@ -169,17 +178,21 @@ function DocumentRow({
   canUpload,
   onDelete,
   teamMembers,
+  phases,
 }: {
   doc: ProjectDocument;
   jobId: string;
   canUpload: boolean;
   onDelete: (id: string) => void;
   teamMembers: TeamMember[];
+  phases: PhaseOption[];
 }) {
   const { toast } = useToast();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [showRevisionDialog, setShowRevisionDialog] = useState(false);
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
+  const [showPhaseDialog, setShowPhaseDialog] = useState(false);
+  const [selectedPhaseId, setSelectedPhaseId] = useState<string>(doc.phaseId ?? '__none__');
   const [revisionFile, setRevisionFile] = useState<File | null>(null);
   const [revisionLabel, setRevisionLabel] = useState('');
   const [revisionNotes, setRevisionNotes] = useState('');
@@ -267,6 +280,27 @@ function DocumentRow({
     onError: (err: any) => toast({ title: 'Notification failed', description: err.message, variant: 'destructive' }),
   });
 
+  const assignPhaseMutation = useMutation({
+    mutationFn: async (phaseId: string | null) => {
+      const res = await fetch(`/api/jobs/${jobId}/project-documents/${doc.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ phaseId }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: selectedPhaseId === '__none__' ? 'Phase tag removed' : 'Phase updated' });
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'project-documents'] });
+      // Also invalidate any phase-scoped doc lists
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`] });
+      setShowPhaseDialog(false);
+    },
+    onError: (err: any) => toast({ title: 'Failed to update phase', description: err.message, variant: 'destructive' }),
+  });
+
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       <div className="flex items-center gap-3 p-3 bg-card hover:bg-muted/30 transition-colors">
@@ -288,6 +322,15 @@ function DocumentRow({
                 {format(new Date(doc.latestRevision.uploadedAt), 'dd MMM yyyy')}
               </span>
             )}
+            {doc.phaseId && (() => {
+              const ph = phases.find(p => p.id === doc.phaseId);
+              const label = ph ? `${ph.phaseCode} — ${ph.name}` : null;
+              return label ? (
+                <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 px-1.5 py-0.5 rounded">
+                  {label}
+                </span>
+              ) : null;
+            })()}
           </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -326,6 +369,17 @@ function DocumentRow({
               {teamMembers.length > 0 && (
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setShowNotifyDialog(true)} title="Notify team">
                   <Bell className="h-3.5 w-3.5" />
+                </Button>
+              )}
+              {phases.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-7 w-7 ${doc.phaseId ? 'text-blue-600 hover:text-blue-700' : 'text-muted-foreground'}`}
+                  onClick={() => { setSelectedPhaseId(doc.phaseId ?? '__none__'); setShowPhaseDialog(true); }}
+                  title={doc.phaseId ? 'Edit phase tag' : 'Assign to phase'}
+                >
+                  <Layers className="h-3.5 w-3.5" />
                 </Button>
               )}
               <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => onDelete(doc.id)} title="Delete">
@@ -454,6 +508,43 @@ function DocumentRow({
             <Button onClick={() => notifyMutation.mutate()} disabled={selectedNotifyUsers.length === 0 || notifyMutation.isPending}>
               {notifyMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Send Notification
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move to phase dialog */}
+      <Dialog open={showPhaseDialog} onOpenChange={(open) => { if (!open) setShowPhaseDialog(false); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Phase — {doc.title}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1">
+              <Label>Phase</Label>
+              <Select value={selectedPhaseId} onValueChange={setSelectedPhaseId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No phase (remove tag)</SelectItem>
+                  {phases.map(p => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.phaseCode} — {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPhaseDialog(false)}>Cancel</Button>
+            <Button
+              onClick={() => assignPhaseMutation.mutate(selectedPhaseId === '__none__' ? null : selectedPhaseId)}
+              disabled={assignPhaseMutation.isPending}
+            >
+              {assignPhaseMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -767,6 +858,18 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
     queryKey: ['/api/team/members'],
   });
 
+  const { data: phases = [] } = useQuery<PhaseOption[]>({
+    queryKey: ['/api/jobs', jobId, 'phases'],
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/phases`, {
+        credentials: 'include',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error('Failed to load phases');
+      return res.json();
+    },
+  });
+
   const uploadDocMutation = useMutation({
     mutationFn: async () => {
       if (!selectedFile || !docTitle) throw new Error('Missing required fields');
@@ -960,6 +1063,7 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
                   canUpload={canUpload}
                   onDelete={setDeleteDocId}
                   teamMembers={teamMembers}
+                  phases={phases}
                 />
               ))}
             </div>

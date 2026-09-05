@@ -10,7 +10,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Pencil, X, Crown, Loader2, Layers, Users, FileText, StickyNote,
-  CheckSquare, ChevronRight, Clock, ExternalLink, Upload,
+  CheckSquare, ChevronRight, Clock, ExternalLink, Upload, Unlink,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -281,6 +281,26 @@ export function PhaseDetailPanel({
     queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }],
     queryFn: getQueryFn({ on401: "throw" }),
     enabled: !!jobId && !!phase.id,
+  });
+
+  // ── Remove document from phase ────────────────────────────────────────────
+  const removeDocFromPhaseMutation = useMutation({
+    mutationFn: async (docId: string) => {
+      const res = await fetch(`/api/jobs/${jobId}/project-documents/${docId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+        body: JSON.stringify({ phaseId: null }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs", jobId, "project-documents"] });
+      toast({ title: "Document removed from phase" });
+    },
+    onError: (e: any) => toast({ title: "Failed to remove document", description: e.message, variant: "destructive" }),
   });
 
   // ── Phase document upload ──────────────────────────────────────────────────
@@ -575,17 +595,33 @@ export function PhaseDetailPanel({
                               {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
                             </p>
                           </div>
-                          {doc.latestRevision?.fileUrl ? (
-                            <a
-                              href={doc.latestRevision.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="shrink-0 p-1 rounded hover:bg-muted transition-colors"
-                              title="View document"
-                            >
-                              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
-                            </a>
-                          ) : null}
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            {doc.latestRevision?.fileUrl ? (
+                              <a
+                                href={doc.latestRevision.fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1 rounded hover:bg-muted transition-colors"
+                                title="View document"
+                              >
+                                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                              </a>
+                            ) : null}
+                            {!isTradie && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                                title="Remove from phase"
+                                disabled={removeDocFromPhaseMutation.isPending}
+                                onClick={() => removeDocFromPhaseMutation.mutate(doc.id)}
+                              >
+                                {removeDocFromPhaseMutation.isPending
+                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  : <Unlink className="h-3.5 w-3.5" />}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

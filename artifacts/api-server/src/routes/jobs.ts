@@ -7411,6 +7411,19 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  app.patch("/api/jobs/:jobId/checklist/:itemId", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { itemId } = req.params;
+      const updated = await storage.updateChecklistItem(itemId, userContext.effectiveUserId, req.body);
+      if (!updated) return res.status(404).json({ error: "Checklist item not found" });
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating checklist item:", error);
+      res.status(500).json({ error: error.message || "Failed to update checklist item" });
+    }
+  });
+
   app.post("/api/jobs/:id/generate-quote", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
@@ -12614,12 +12627,34 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const [doc] = await db.select().from(pd).where(and(eq(pd.id, docId), eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)));
       if (!doc) return res.status(404).json({ error: 'Document not found' });
 
-      const schema = z.object({ isClientVisible: z.boolean() });
+      const schema = z.object({
+        isClientVisible: z.boolean().optional(),
+        phaseId: z.string().min(1).nullable().optional(),
+      }).refine(d => d.isClientVisible !== undefined || 'phaseId' in d, {
+        message: 'At least one field must be provided',
+      });
       const parsed = schema.safeParse(req.body);
       if (!parsed.success) return res.status(400).json({ error: parsed.error.errors[0].message });
 
+      // Validate phaseId if provided and non-null — scope by tenant to prevent cross-business access
+      if (parsed.data.phaseId) {
+        const { jobPhases } = await import("@workspace/db");
+        const [phase] = await db.select({ id: jobPhases.id })
+          .from(jobPhases)
+          .where(and(
+            eq(jobPhases.id, parsed.data.phaseId),
+            eq(jobPhases.jobId, jobId),
+            eq(jobPhases.userId, effectiveUserId),
+          ));
+        if (!phase) return res.status(400).json({ error: 'Invalid phase ID for this job' });
+      }
+
+      const updateFields: Record<string, any> = { updatedAt: new Date() };
+      if (parsed.data.isClientVisible !== undefined) updateFields.isClientVisible = parsed.data.isClientVisible;
+      if ('phaseId' in parsed.data) updateFields.phaseId = parsed.data.phaseId ?? null;
+
       const [updated] = await db.update(pd)
-        .set({ isClientVisible: parsed.data.isClientVisible, updatedAt: new Date() })
+        .set(updateFields)
         .where(eq(pd.id, docId))
         .returning();
 
