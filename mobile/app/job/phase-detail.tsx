@@ -9,7 +9,7 @@ import {
   StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../src/lib/design-tokens';
@@ -413,11 +413,11 @@ export default function PhaseDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Feather name="arrow-left" size={20} color={colors.foreground} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase</Text>
         </View>
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
@@ -429,11 +429,11 @@ export default function PhaseDetailScreen() {
   if (error || !phase) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Feather name="arrow-left" size={20} color={colors.foreground} />
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={22} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Phase</Text>
         </View>
         <View style={styles.center}>
           <Feather name="alert-circle" size={40} color={colors.destructive} />
@@ -471,6 +471,7 @@ export default function PhaseDetailScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}
