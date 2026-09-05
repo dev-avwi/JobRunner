@@ -72,6 +72,7 @@ import {
   GripVertical,
   ExternalLink,
   UserPlus,
+  ListChecks,
 } from "lucide-react";
 import {
   Dialog,
@@ -288,6 +289,91 @@ const STATUS_COLORS: Record<string, { bg: string; border: string; text: string; 
   invoiced:    { bg: "bg-purple-100 dark:bg-purple-900/30",border: "border-purple-400",text: "text-purple-700 dark:text-purple-300",solid: "#a855f7" },
   cancelled:   { bg: "bg-slate-100 dark:bg-slate-800/50",  border: "border-slate-300", text: "text-slate-500",                      solid: "#94a3b8" },
 };
+
+/** Phase-scoped checklist tasks shown inline in the phase detail dialog. */
+function PhaseChecklistItems({ jobId, phaseId }: { jobId: string; phaseId: string }) {
+  const [newText, setNewText] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const queryKey = ["/api/jobs", jobId, "checklist", { phaseId }];
+  const { data: items = [], isLoading, refetch } = useQuery<Array<{ id: string; text: string; isCompleted: boolean }>>({
+    queryKey,
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/checklist?phaseId=${phaseId}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!jobId && !!phaseId,
+  });
+
+  async function handleAdd() {
+    const text = newText.trim();
+    if (!text) return;
+    setIsAdding(true);
+    try {
+      await fetch(`/api/jobs/${jobId}/checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text, phaseId, isCompleted: false }),
+      });
+      setNewText("");
+      refetch();
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  if (isLoading) return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+      <Loader2 className="h-3 w-3 animate-spin" />
+      Loading tasks...
+    </div>
+  );
+
+  const doneCount = items.filter((i) => i.isCompleted).length;
+
+  return (
+    <div className="space-y-2 pt-1" data-testid="phase-checklist-items">
+      <div className="flex items-center gap-1.5">
+        <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tasks</span>
+        {items.length > 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">{doneCount}/{items.length} done</span>
+        )}
+      </div>
+      {items.length > 0 && (
+        <div className="space-y-1">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center gap-2 text-sm">
+              <Checkbox checked={item.isCompleted} disabled className="h-3.5 w-3.5 shrink-0" />
+              <span className={item.isCompleted ? "line-through text-muted-foreground" : "text-foreground"}>
+                {item.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-1.5 pt-0.5">
+        <input
+          className="flex-1 h-7 text-xs border border-input rounded-md px-2 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          placeholder="Add a task to this phase..."
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+          disabled={isAdding}
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!newText.trim() || isAdding}
+          className="h-7 w-7 inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isAdding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function getStatusColor(status: string) {
   return STATUS_COLORS[status?.toLowerCase().replace(" ", "_")] ?? STATUS_COLORS.pending;
@@ -4251,6 +4337,9 @@ function JobView({
               {selectedPhase.description && (
                 <p className="text-sm text-muted-foreground">{selectedPhase.description}</p>
               )}
+
+              {/* Phase-linked checklist tasks */}
+              <PhaseChecklistItems jobId={selectedPhase.jobId} phaseId={selectedPhase.id} />
             </div>
             <DialogFooter className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={() => setSelectedPhase(null)}>Close</Button>

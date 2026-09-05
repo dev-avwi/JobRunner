@@ -19221,6 +19221,9 @@ Be specific about materials, colors, and features that would be included.`
       if (error instanceof Error && error.message.includes("Invalid sortOrder")) {
         return res.status(400).json({ error: error.message });
       }
+      if (error instanceof Error && error.message.includes("does not belong to this job")) {
+        return res.status(400).json({ error: error.message });
+      }
       console.error("Error updating checklist item:", error);
       res.status(500).json({ error: "Failed to update checklist item" });
     }

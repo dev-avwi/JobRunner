@@ -7374,7 +7374,12 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
   app.get("/api/jobs/:jobId/checklist", requireAuth, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const items = await storage.getChecklistItems(req.params.jobId, userContext.effectiveUserId);
+      // Optional ?phaseId= filter: pass the raw query value (string or "null") to storage
+      let phaseIdFilter: string | null | undefined = undefined;
+      if (typeof req.query.phaseId === 'string') {
+        phaseIdFilter = req.query.phaseId === 'null' ? null : req.query.phaseId;
+      }
+      const items = await storage.getChecklistItems(req.params.jobId, userContext.effectiveUserId, phaseIdFilter);
       res.json(items);
     } catch (error) {
       console.error("Error fetching checklist items:", error);
@@ -7397,6 +7402,9 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       }
       if (error instanceof Error && error.message === "Job not found or access denied") {
         return res.status(404).json({ error: "Job not found" });
+      }
+      if (error instanceof Error && error.message.includes("does not belong to this job")) {
+        return res.status(400).json({ error: error.message });
       }
       console.error("Error creating checklist item:", error);
       res.status(500).json({ error: "Failed to create checklist item" });

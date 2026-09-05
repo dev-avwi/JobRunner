@@ -78,6 +78,7 @@ import {
   Moon,
   Coffee,
   HelpCircle,
+  ListChecks,
 } from "lucide-react";
 import {
   Popover,
@@ -438,6 +439,93 @@ function getTimeElapsed(scheduledAt?: string, scheduledTime?: string): string | 
 }
 
 const TERMINAL_STATUSES = ['done', 'completed', 'invoiced', 'cancelled'];
+
+/** Inline checklist items linked to a specific phase, shown in the phase detail dialog. */
+function PhaseChecklistItems({ jobId, phaseId }: { jobId: string; phaseId: string }) {
+  const [newText, setNewText] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
+
+  const queryKey = ["/api/jobs", jobId, "checklist", { phaseId }];
+  const { data: items = [], isLoading, refetch } = useQuery<Array<{ id: string; text: string; isCompleted: boolean }>>({
+    queryKey,
+    queryFn: async () => {
+      const res = await fetch(`/api/jobs/${jobId}/checklist?phaseId=${phaseId}`, { credentials: "include" });
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!jobId && !!phaseId,
+  });
+
+  async function handleAdd() {
+    const text = newText.trim();
+    if (!text) return;
+    setIsAdding(true);
+    try {
+      await fetch(`/api/jobs/${jobId}/checklist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ text, phaseId, isCompleted: false }),
+      });
+      setNewText("");
+      refetch();
+    } finally {
+      setIsAdding(false);
+    }
+  }
+
+  if (isLoading) return (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+      <Loader2 className="h-3 w-3 animate-spin" />
+      Loading tasks...
+    </div>
+  );
+
+  const doneCount = items.filter((i) => i.isCompleted).length;
+
+  return (
+    <div className="space-y-2 pt-1" data-testid="phase-checklist-items">
+      <div className="flex items-center gap-1.5">
+        <ListChecks className="h-3.5 w-3.5 text-muted-foreground" />
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Tasks</span>
+        {items.length > 0 && (
+          <span className="ml-auto text-xs text-muted-foreground">{doneCount}/{items.length} done</span>
+        )}
+      </div>
+      {items.length > 0 && (
+        <div className="space-y-1">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center gap-2 text-sm">
+              <Checkbox checked={item.isCompleted} disabled className="h-3.5 w-3.5 shrink-0" />
+              <span className={item.isCompleted ? "line-through text-muted-foreground" : "text-foreground"}>
+                {item.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-1.5 pt-0.5">
+        <input
+          className="flex-1 h-7 text-xs border border-input rounded-md px-2 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          placeholder="Add a task to this phase..."
+          value={newText}
+          onChange={(e) => setNewText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAdd(); } }}
+          disabled={isAdding}
+          data-testid="input-phase-task"
+        />
+        <button
+          onClick={handleAdd}
+          disabled={!newText.trim() || isAdding}
+          className="h-7 w-7 inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          data-testid="button-add-phase-task"
+        >
+          {isAdding ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function KanbanBoard({ dispatchJobs, teamMembers: kanbanTeam }: { dispatchJobs: DispatchJob[]; teamMembers?: TeamMember[] }) {
   const [kanbanFilter, setKanbanFilter] = useState<string>('all');
@@ -3728,6 +3816,9 @@ export default function DispatchBoard() {
                   <p className="whitespace-pre-wrap leading-relaxed">{selectedPhase.notes}</p>
                 </div>
               )}
+
+              {/* Phase-linked checklist items */}
+              <PhaseChecklistItems jobId={selectedPhase.jobId} phaseId={selectedPhase.id} />
             </div>
           )}
 

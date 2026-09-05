@@ -3339,15 +3339,21 @@ export class PostgresStorage implements IStorage {
   }
 
   // Checklist Items
-  async getChecklistItems(jobId: string, userId: string): Promise<ChecklistItem[]> {
+  async getChecklistItems(jobId: string, userId: string, phaseId?: string | null): Promise<ChecklistItem[]> {
     // First verify the job belongs to the user
     const job = await this.getJob(jobId, userId);
     if (!job) return [];
+
+    const conditions = [eq(checklistItems.jobId, jobId)];
+    if (phaseId !== undefined) {
+      // phaseId=null means "unassigned" items; phaseId=string means items for that phase
+      conditions.push(phaseId === null ? isNull(checklistItems.phaseId) : eq(checklistItems.phaseId, phaseId));
+    }
     
     return await db
       .select()
       .from(checklistItems)
-      .where(eq(checklistItems.jobId, jobId))
+      .where(and(...conditions))
       .orderBy(asc(checklistItems.sortOrder), asc(checklistItems.createdAt));
   }
 
@@ -3356,6 +3362,18 @@ export class PostgresStorage implements IStorage {
     const job = await this.getJob(item.jobId, userId);
     if (!job) {
       throw new Error("Job not found or access denied");
+    }
+
+    // If a phaseId is supplied, verify it belongs to the same job (prevents cross-job tagging)
+    if (item.phaseId) {
+      const phase = await db
+        .select({ id: jobPhases.id })
+        .from(jobPhases)
+        .where(and(eq(jobPhases.id, item.phaseId), eq(jobPhases.jobId, item.jobId)))
+        .limit(1);
+      if (!phase[0]) {
+        throw new Error("Phase not found or does not belong to this job");
+      }
     }
     
     // Auto-calculate sortOrder server-side to prevent ordering manipulation
@@ -3372,6 +3390,7 @@ export class PostgresStorage implements IStorage {
     // Ignore client-provided sortOrder and use server-calculated value
     const safeItem = {
       jobId: item.jobId,
+      phaseId: item.phaseId ?? null,
       text: item.text,
       isCompleted: item.isCompleted ?? false,
       sortOrder: serverSortOrder,
@@ -3400,6 +3419,7 @@ export class PostgresStorage implements IStorage {
       text: string;
       isCompleted: boolean;
       sortOrder: number;
+      phaseId: string | null;
     }> = {};
     
     if (item.text !== undefined) safeUpdates.text = item.text;
@@ -3412,6 +3432,21 @@ export class PostgresStorage implements IStorage {
         throw new Error("Invalid sortOrder: must be between 0 and 9999");
       }
       safeUpdates.sortOrder = item.sortOrder;
+    }
+    if ('phaseId' in item) {
+      const newPhaseId = (item as any).phaseId ?? null;
+      // If a non-null phaseId is supplied, verify it belongs to the item's job
+      if (newPhaseId) {
+        const phase = await db
+          .select({ id: jobPhases.id })
+          .from(jobPhases)
+          .where(and(eq(jobPhases.id, newPhaseId), eq(jobPhases.jobId, existingItem[0].jobId)))
+          .limit(1);
+        if (!phase[0]) {
+          throw new Error("Phase not found or does not belong to this job");
+        }
+      }
+      safeUpdates.phaseId = newPhaseId;
     }
     
     const result = await db

@@ -857,6 +857,7 @@ export type InsertServiceReminder = z.infer<typeof insertServiceReminderSchema>;
 export const checklistItems = pgTable("checklist_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   text: text("text").notNull(),
   isCompleted: boolean("is_completed").default(false),
   sortOrder: integer("sort_order").default(0),
@@ -864,6 +865,7 @@ export const checklistItems = pgTable("checklist_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   index("idx_checklist_items_job_id").on(table.jobId),
+  index("idx_checklist_items_phase_id").on(table.phaseId),
 ]);
 
 // Job Check-ins for location tracking

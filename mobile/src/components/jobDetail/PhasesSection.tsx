@@ -3,8 +3,8 @@
  * Tapping a phase opens a read-only detail sheet; owners/managers can tap
  * "Edit" inside the sheet or cycle the status badge directly.
  */
-import { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated, ScrollView } from 'react-native';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Animated, ScrollView, TextInput } from 'react-native';
 import { SkeletonSection } from '../Skeleton';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,14 @@ import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { TeamAvatar } from '../TeamAvatar';
+import { api } from '../../lib/api';
+
+interface PhaseChecklistItem {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  sortOrder: number;
+}
 
 export type PhaseStatus = 'not_started' | 'in_progress' | 'complete' | 'invoiced';
 
@@ -175,6 +183,49 @@ export function PhasesSection({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [flashingId, setFlashingId] = useState<string | null>(null);
   const [viewingPhase, setViewingPhase] = useState<JobPhase | null>(null);
+  const [phaseChecklistItems, setPhaseChecklistItems] = useState<PhaseChecklistItem[]>([]);
+  const [phaseChecklistLoading, setPhaseChecklistLoading] = useState(false);
+  const [newPhaseTaskText, setNewPhaseTaskText] = useState('');
+  const [addingPhaseTask, setAddingPhaseTask] = useState(false);
+
+  // Add a new checklist item tagged to the viewing phase
+  const handleAddPhaseTask = useCallback(async () => {
+    const text = newPhaseTaskText.trim();
+    if (!text || !viewingPhase) return;
+    setAddingPhaseTask(true);
+    try {
+      const res = await api.post<PhaseChecklistItem>(`/api/jobs/${viewingPhase.jobId}/checklist`, {
+        text,
+        phaseId: viewingPhase.id,
+        isCompleted: false,
+      });
+      if (!res.error && res.data) {
+        setPhaseChecklistItems((prev) => [...prev, res.data!].sort((a, b) => a.sortOrder - b.sortOrder));
+        setNewPhaseTaskText('');
+      }
+    } finally {
+      setAddingPhaseTask(false);
+    }
+  }, [newPhaseTaskText, viewingPhase]);
+
+  // Fetch checklist items tagged to the current viewing phase
+  useEffect(() => {
+    if (!viewingPhase) {
+      setPhaseChecklistItems([]);
+      return;
+    }
+    let cancelled = false;
+    setPhaseChecklistLoading(true);
+    api.get<PhaseChecklistItem[]>(`/api/jobs/${viewingPhase.jobId}/checklist?phaseId=${viewingPhase.id}`)
+      .then((res) => {
+        if (cancelled) return;
+        if (!res.error && Array.isArray(res.data)) {
+          setPhaseChecklistItems([...res.data].sort((a, b) => a.sortOrder - b.sortOrder));
+        }
+      })
+      .finally(() => { if (!cancelled) setPhaseChecklistLoading(false); });
+    return () => { cancelled = true; };
+  }, [viewingPhase?.id, viewingPhase?.jobId]);
 
   const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -427,6 +478,83 @@ export function PhasesSection({
             </Text>
           </View>
         ) : null}
+
+        {/* Phase-linked checklist tasks */}
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+            <Feather name="check-square" size={13} color={colors.mutedForeground} />
+            <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Tasks
+            </Text>
+            {phaseChecklistItems.length > 0 && (
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginLeft: 'auto' }}>
+                {phaseChecklistItems.filter(i => i.isCompleted).length}/{phaseChecklistItems.length} done
+              </Text>
+            )}
+          </View>
+          {phaseChecklistLoading ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+              <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Loading...</Text>
+            </View>
+          ) : (
+            <>
+              {phaseChecklistItems.map((item) => (
+                <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                  <View style={{
+                    width: 16, height: 16, borderRadius: 3, borderWidth: 1.5,
+                    borderColor: item.isCompleted ? colors.primary : colors.border,
+                    backgroundColor: item.isCompleted ? colors.primary : 'transparent',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {item.isCompleted && <Feather name="check" size={10} color={colors.primaryForeground} />}
+                  </View>
+                  <Text style={{
+                    fontSize: 13, flex: 1,
+                    color: item.isCompleted ? colors.mutedForeground : colors.foreground,
+                    textDecorationLine: item.isCompleted ? 'line-through' : 'none',
+                  }}>
+                    {item.text}
+                  </Text>
+                </View>
+              ))}
+              {/* Add task to phase */}
+              {!isTradie && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
+                  <TextInput
+                    style={{
+                      flex: 1, height: 34, borderWidth: 1, borderColor: colors.border,
+                      borderRadius: radius.md, paddingHorizontal: spacing.sm,
+                      fontSize: 13, color: colors.foreground, backgroundColor: colors.background,
+                    }}
+                    placeholder="Add a task to this phase..."
+                    placeholderTextColor={colors.mutedForeground}
+                    value={newPhaseTaskText}
+                    onChangeText={setNewPhaseTaskText}
+                    onSubmitEditing={handleAddPhaseTask}
+                    returnKeyType="done"
+                    editable={!addingPhaseTask}
+                  />
+                  <TouchableOpacity
+                    onPress={handleAddPhaseTask}
+                    disabled={!newPhaseTaskText.trim() || addingPhaseTask}
+                    style={{
+                      width: 34, height: 34, borderRadius: radius.md,
+                      backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center',
+                      opacity: !newPhaseTaskText.trim() || addingPhaseTask ? 0.5 : 1,
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    {addingPhaseTask
+                      ? <ActivityIndicator size="small" color={colors.primaryForeground} />
+                      : <Feather name="plus" size={16} color={colors.primaryForeground} />
+                    }
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+        </View>
 
         {/* Divider */}
         <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />
