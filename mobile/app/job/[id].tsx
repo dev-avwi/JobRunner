@@ -12637,6 +12637,7 @@ export default function JobDetailScreen() {
                       });
                       setShowEditPhaseModal(true);
                     } : undefined}
+                    onViewPhase={(phase) => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
                   />
                 </View>
                 {/* Project Timeline (Gantt) — owners/managers only, when phases have dates */}

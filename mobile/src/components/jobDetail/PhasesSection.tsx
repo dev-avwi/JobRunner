@@ -166,6 +166,11 @@ export interface PhasesSectionProps {
   claimedPhaseIds?: Set<string>;
   /** Profitability costs used to show each phase's budget vs actual state */
   phaseCosts?: PhaseCostBreakdown[];
+  /**
+   * When provided, tapping a phase row calls this instead of opening the
+   * inline bottom sheet. Use it to navigate to the dedicated phase screen.
+   */
+  onViewPhase?: (phase: JobPhase) => void;
 }
 
 export function PhasesSection({
@@ -179,6 +184,7 @@ export function PhasesSection({
   onPhaseCompleted,
   claimedPhaseIds,
   phaseCosts,
+  onViewPhase,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [flashingId, setFlashingId] = useState<string | null>(null);
@@ -689,7 +695,7 @@ export function PhasesSection({
                   <SuccessFlash visible={isFlashing} onDone={() => setFlashingId(null)} />
                   <TouchableOpacity
                     style={styles.phaseContent}
-                    onPress={() => setViewingPhase(phase)}
+                    onPress={() => onViewPhase ? onViewPhase(phase) : setViewingPhase(phase)}
                     activeOpacity={0.7}
                   >
                     <View style={styles.phaseTopRow}>
@@ -834,16 +840,18 @@ export function PhasesSection({
         </>
       )}
 
-      {/* Phase detail bottom sheet */}
-      <AppBottomSheet
-        visible={viewingPhase !== null}
-        title={viewingPhase?.name ?? 'Phase Details'}
-        showCloseButton
-        onDismiss={() => setViewingPhase(null)}
-        autoHeight
-      >
-        {renderPhaseDetail()}
-      </AppBottomSheet>
+      {/* Phase detail bottom sheet — only shown when no navigation handler provided */}
+      {!onViewPhase && (
+        <AppBottomSheet
+          visible={viewingPhase !== null}
+          title={viewingPhase?.name ?? 'Phase Details'}
+          showCloseButton
+          onDismiss={() => setViewingPhase(null)}
+          autoHeight
+        >
+          {renderPhaseDetail()}
+        </AppBottomSheet>
+      )}
     </View>
   );
 }

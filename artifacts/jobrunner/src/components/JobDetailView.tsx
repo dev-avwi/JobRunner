@@ -51,6 +51,9 @@ import {
   JobPurchaseOrdersSection,
 } from "./JobDetailLazy";
 import { SignatureDisplay } from '@/components/ui/signature-pad';
+import { PhaseDetailPanel } from './PhaseDetailPanel';
+import { ProjectTeamModal } from './ProjectTeamModal';
+import type { JobPhase as PhaseDetailJobPhase } from './PhaseDetailPanel';
 import { PresenceIndicator } from './JobCollaborationUI';
 import { useJobCollaboration } from '@/hooks/use-job-collaboration';
 import { useAuth } from '@/hooks/useAuth';
@@ -244,6 +247,8 @@ export default function JobDetailView({
   });
   const [inspectionNotesInput, setInspectionNotesInput] = useState("");
   const [workerPopoverOpen, setWorkerPopoverOpen] = useState(false);
+  const [detailPanelPhase, setDetailPanelPhase] = useState<PhaseDetailJobPhase | null>(null);
+  const [showTeamModal, setShowTeamModal] = useState(false);
   // Time & Attendance expanded-worker state
   const [expandedWorkers, setExpandedWorkers] = useState<Set<string>>(new Set());
   const toggleWorkerSessions = (userId: string) => {
@@ -2875,52 +2880,70 @@ export default function JobDetailView({
                     )}
                   </div>
 
-                  {/* Assign Workers */}
+                  {/* Assign Workers / Manage Team */}
                   {!isTradie && !isSolo && teamMembers.length > 0 && (
                     <div className="pt-4 border-t">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-semibold">Assign Workers</span>
-                      </div>
-                      <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" role="combobox" aria-expanded={workerPopoverOpen} className="w-full justify-between font-normal h-auto min-h-9 py-2 text-left" disabled={assignBusy} data-testid="select-assign-worker">
-                            {(() => {
-                              const assigned = teamMembers.filter(m => isMemberAssigned(m.memberId));
-                              if (assigned.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
-                              if (assigned.length <= 2) return <span className="truncate">{assigned.map(m => getWorkerDisplayName(m)).join(', ')}</span>;
-                              return <span>{assigned.length} workers assigned</span>;
-                            })()}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-semibold">{isProject ? "Team" : "Assign Workers"}</span>
+                        </div>
+                        {isProject && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1"
+                            onClick={() => setShowTeamModal(true)}
+                            data-testid="button-manage-team"
+                          >
+                            <Users className="h-3 w-3" />
+                            Manage Team
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                          <Command>
-                            <CommandInput placeholder="Search workers..." />
-                            <CommandEmpty>No worker found.</CommandEmpty>
-                            <CommandList>
-                              <CommandGroup>
-                                {teamMembers.filter(m => m.isActive && m.roleName?.toLowerCase() !== 'administrator').map((member) => {
-                                  const onOtherJob = isWorkerOnOtherJob(member.memberId);
-                                  const checked = isMemberAssigned(member.memberId);
-                                  return (
-                                    <CommandItem key={member.memberId} value={`${getWorkerDisplayName(member)} ${member.roleName}`}
-                                      onSelect={() => { if (assignBusy || !member.memberId) return; if (checked) removeWorkerMutation.mutate(member.memberId); else addWorkersMutation.mutate([member.memberId]); }}
-                                      data-testid={`option-worker-${member.memberId}`}
-                                    >
-                                      <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
-                                      <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
-                                      {onOtherJob
-                                        ? <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 ml-2">On a job</Badge>
-                                        : <Badge variant="outline" className="text-xs text-green-600 border-green-300 ml-2">Available</Badge>}
-                                    </CommandItem>
-                                  );
-                                })}
-                              </CommandGroup>
-                            </CommandList>
-                          </Command>
-                        </PopoverContent>
-                      </Popover>
+                        )}
+                      </div>
+                      {/* Service call: show full worker picker combobox */}
+                      {!isProject && (
+                        <Popover open={workerPopoverOpen} onOpenChange={setWorkerPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" aria-expanded={workerPopoverOpen} className="w-full justify-between font-normal h-auto min-h-9 py-2 text-left" disabled={assignBusy} data-testid="select-assign-worker">
+                              {(() => {
+                                const assigned = teamMembers.filter(m => isMemberAssigned(m.memberId));
+                                if (assigned.length === 0) return <span className="text-muted-foreground">Unassigned</span>;
+                                if (assigned.length <= 2) return <span className="truncate">{assigned.map(m => getWorkerDisplayName(m)).join(', ')}</span>;
+                                return <span>{assigned.length} workers assigned</span>;
+                              })()}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                            <Command>
+                              <CommandInput placeholder="Search workers..." />
+                              <CommandEmpty>No worker found.</CommandEmpty>
+                              <CommandList>
+                                <CommandGroup>
+                                  {teamMembers.filter(m => m.isActive && m.roleName?.toLowerCase() !== 'administrator').map((member) => {
+                                    const onOtherJob = isWorkerOnOtherJob(member.memberId);
+                                    const checked = isMemberAssigned(member.memberId);
+                                    return (
+                                      <CommandItem key={member.memberId} value={`${getWorkerDisplayName(member)} ${member.roleName}`}
+                                        onSelect={() => { if (assignBusy || !member.memberId) return; if (checked) removeWorkerMutation.mutate(member.memberId); else addWorkersMutation.mutate([member.memberId]); }}
+                                        data-testid={`option-worker-${member.memberId}`}
+                                      >
+                                        <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                                        <span className="flex-1">{getWorkerDisplayName(member)} ({member.roleName})</span>
+                                        {onOtherJob
+                                          ? <Badge variant="outline" className="text-xs text-amber-600 border-amber-300 ml-2">On a job</Badge>
+                                          : <Badge variant="outline" className="text-xs text-green-600 border-green-300 ml-2">Available</Badge>}
+                                      </CommandItem>
+                                    );
+                                  })}
+                                </CommandGroup>
+                              </CommandList>
+                            </Command>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+                      {/* Assignment list — shown for both projects and service calls */}
                       {activeAssignments.length > 0 && (
                         <div className="mt-3 space-y-1">
                           {activeAssignments.map((assignment) => {
@@ -2937,7 +2960,7 @@ export default function JobDetailView({
                                     ? <span className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" />Done · {new Date(assignment.completedAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
                                     : <span className="text-xs text-muted-foreground">In progress</span>}
                                 </div>
-                                {!assignment.isPrimary && activeAssignments.length > 1 && (
+                                {!isProject && !assignment.isPrimary && activeAssignments.length > 1 && (
                                   <Button variant="ghost" size="sm" className="h-8" disabled={makeLeadMutation.isPending} onClick={() => makeLeadMutation.mutate(assignment.id)} data-testid={`button-make-lead-${assignment.userId}`}>
                                     <Star className="h-3.5 w-3.5 mr-1" />Make lead
                                   </Button>
@@ -3140,6 +3163,7 @@ export default function JobDetailView({
                   jobId={jobId}
                   isTradie={isTradie}
                   onCreateClaimForPhase={!isTradie ? (phase) => setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null }) : undefined}
+                  onOpenDetail={(phase) => setDetailPanelPhase(phase as PhaseDetailJobPhase)}
                 />
                 <ProjectGanttView jobId={jobId} isTradie={isTradie} />
                 <ClaimsSection
@@ -4925,6 +4949,47 @@ export default function JobDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Phase detail slide-over panel ─────────────────────────── */}
+      {detailPanelPhase && (
+        <PhaseDetailPanel
+          jobId={jobId}
+          phase={detailPanelPhase}
+          workers={activeAssignments
+            .filter((a) => a.isActive !== false)
+            .map((a) => ({
+              id: a.userId,
+              name: a.workerDisplayNameSnapshot || a.displayName || 'Worker',
+            }))}
+          isTradie={isTradie}
+          onClose={() => setDetailPanelPhase(null)}
+          onUpdated={() => {
+            queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/phases`] });
+          }}
+          onCreateClaim={!isTradie ? (phase) => {
+            setPendingClaimPhase({ id: phase.id, phaseCode: phase.phaseCode, name: phase.name, bookedHours: phase.bookedHours ?? null });
+            setDetailPanelPhase(null);
+            handleTabChange('phases');
+          } : undefined}
+        />
+      )}
+
+      {/* ── Unified Manage Team modal (projects only) ──────────────── */}
+      {showTeamModal && isProject && (
+        <ProjectTeamModal
+          jobId={jobId}
+          phases={(jobPhasesForPicker as any[])}
+          teamMembers={teamMembers}
+          activeAssignments={jobAssignments}
+          isWorkerOnOtherJob={isWorkerOnOtherJob}
+          getWorkerDisplayName={getWorkerDisplayName}
+          onClose={() => setShowTeamModal(false)}
+          onRefresh={() => {
+            queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/phases`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/assignments`] });
+          }}
+        />
+      )}
 
     </PageShell>
   );

@@ -6,7 +6,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import {
-  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, Crown, Users,
+  Plus, ChevronUp, ChevronDown, Trash2, Layers, Crown, Users, Loader2, Check, X,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -296,14 +296,14 @@ interface Props {
   isTradie?: boolean;
   /** Called when user accepts the "create claim" prompt after marking a phase complete */
   onCreateClaimForPhase?: (phase: JobPhase) => void;
+  /** Called when user clicks a phase row to open the detail panel */
+  onOpenDetail?: (phase: JobPhase) => void;
 }
 
-export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhase }: Props) {
+export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhase, onOpenDetail }: Props) {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [editForm, setEditForm] = useState({ ...EMPTY_FORM });
   // Phase-complete → claim prompt state
   const [claimPromptPhase, setClaimPromptPhase] = useState<JobPhase | null>(null);
   // Inline member picker state: which phase's popover is open
@@ -370,21 +370,6 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
     onError: (e: any) => toast({ title: "Failed to add phase", description: e.message, variant: "destructive" }),
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ phaseId, data }: { phaseId: string; data: Partial<typeof EMPTY_FORM> }) =>
-      apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, data),
-    onSuccess: (_data, variables) => {
-      invalidate();
-      setEditingId(null);
-      toast({ title: "Phase updated" });
-      if (variables.data.status === "complete" && onCreateClaimForPhase) {
-        const phase = sorted.find((p) => p.id === variables.phaseId) ?? null;
-        if (phase) setClaimPromptPhase(phase);
-      }
-    },
-    onError: (e: any) => toast({ title: "Failed to update phase", description: e.message, variant: "destructive" }),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (phaseId: string) =>
       apiRequest("DELETE", `/api/jobs/${jobId}/phases/${phaseId}`),
@@ -429,29 +414,12 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
   });
 
   const handleMove = (idx: number, direction: "up" | "down") => {
+
     const ids = sorted.map((p) => p.id);
     const target = direction === "up" ? idx - 1 : idx + 1;
     if (target < 0 || target >= ids.length) return;
     [ids[idx], ids[target]] = [ids[target], ids[idx]];
     reorderMutation.mutate(ids);
-  };
-
-  const startEdit = (phase: JobPhase) => {
-    setEditingId(phase.id);
-    const currentMembers = phase.assignedUsers ?? (phase.assignedUserId ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }] : []);
-    setEditForm({
-      phaseCode: phase.phaseCode,
-      name: phase.name,
-      description: phase.description ?? "",
-      scheduledStart: phase.scheduledStart ? phase.scheduledStart.substring(0, 10) : "",
-      scheduledEnd: phase.scheduledEnd ? phase.scheduledEnd.substring(0, 10) : "",
-      bookedHours: phase.bookedHours ?? "",
-      budgetedHours: phase.budgetedHours ?? "",
-      status: phase.status,
-      notes: phase.notes ?? "",
-      assignedUserId: phase.assignedUserId ?? "",
-      assignedUserIds: currentMembers.map((m) => m.id),
-    });
   };
 
   const fmtDate = (d?: string | null) => {
@@ -474,7 +442,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => { setShowAddForm(!showAddForm); setEditingId(null); }}
+              onClick={() => { setShowAddForm(!showAddForm); }}
               data-testid="button-add-phase"
             >
               <Plus className="h-4 w-4 mr-1" />
@@ -515,33 +483,15 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
         <div className="space-y-2">
           {sorted.map((phase, idx) => {
             const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
-            const isEditing = editingId === phase.id;
             const phaseMembers: PhaseAssignedUser[] = phase.assignedUsers
               ?? (phase.assignedUserId
                 ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }]
                 : []);
 
-            if (isEditing && !isTradie) {
-              return (
-                <div key={phase.id} className="rounded-lg border bg-muted/30 p-3 space-y-3">
-                  <PhaseForm
-                    form={editForm}
-                    setForm={setEditForm}
-                    onSubmit={() => updateMutation.mutate({ phaseId: phase.id, data: editForm })}
-                    onCancel={() => setEditingId(null)}
-                    isPending={updateMutation.isPending}
-                    submitLabel="Save"
-                    workers={workers}
-                    existingMembers={phaseMembers}
-                  />
-                </div>
-              );
-            }
-
             return (
               <div
                 key={phase.id}
-                className="flex items-start gap-2 p-3 rounded-lg border bg-background"
+                className="flex items-start gap-2 p-3 rounded-lg border bg-background hover:bg-muted/20 transition-colors"
                 data-testid={`phase-row-${phase.id}`}
               >
                 {/* Reorder arrows */}
@@ -564,18 +514,22 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                   </div>
                 )}
 
-                {/* Phase code badge */}
-                <span
-                  className="shrink-0 text-xs font-mono font-semibold px-1.5 py-0.5 rounded border mt-0.5"
-                  style={{ borderColor: "hsl(var(--trade) / 0.4)", color: "hsl(var(--trade))" }}
+                {/* Clickable summary area — opens the detail panel */}
+                <button
+                  type="button"
+                  className="flex-1 min-w-0 text-left"
+                  onClick={() => onOpenDetail?.(phase)}
                 >
-                  {phase.phaseCode}
-                </span>
-
-                {/* Main content */}
-                <div className="flex-1 min-w-0">
+                  {/* Phase code + name + badges row */}
                   <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className="shrink-0 text-xs font-mono font-semibold px-1.5 py-0.5 rounded border"
+                      style={{ borderColor: "hsl(var(--trade) / 0.4)", color: "hsl(var(--trade))" }}
+                    >
+                      {phase.phaseCode}
+                    </span>
                     <span className="text-sm font-medium">{phase.name}</span>
+
                     {/* Claimed badge */}
                     {claimedPhaseMap.has(phase.id) && (() => {
                       const claimStatus = claimedPhaseMap.get(phase.id)!;
@@ -586,90 +540,19 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                         </span>
                       );
                     })()}
-                    {/* Status selector or badge */}
-                    {!isTradie ? (
-                      <Select
-                        value={phase.status}
-                        onValueChange={(v) =>
-                          statusChangeMutation.mutate({ phaseId: phase.id, status: v as PhaseStatus })
-                        }
-                        disabled={statusChangeMutation.isPending}
-                      >
-                        <SelectTrigger className={`h-5 text-[10px] px-1.5 py-0.5 w-auto border-0 ${cfg.className}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-                            <SelectItem key={k} value={k} className="text-xs">{v.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.className}`}>
-                        {cfg.label}
-                      </span>
-                    )}
 
-                    {/* Assignee avatar stack — shows all members */}
+                    {/* Status badge (read-only in row — selector moved to actions) */}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${cfg.className}`}>
+                      {cfg.label}
+                    </span>
+
+                    {/* Assignee avatar stack */}
                     {phaseMembers.length > 0 && (
-                      <>
-                        {!isTradie ? (
-                          <PhaseMemberPicker
-                            phase={phase}
-                            workers={workers}
-                            open={memberPickerPhaseId === phase.id}
-                            onOpenChange={(o) => setMemberPickerPhaseId(o ? phase.id : null)}
-                            isPending={assignMembersMutation.isPending && memberPickerPhaseId === phase.id}
-                            onSave={(ids, leadId) =>
-                              assignMembersMutation.mutate({
-                                phaseId: phase.id,
-                                assignedUserIds: ids,
-                                assignedUserId: leadId,
-                              })
-                            }
-                          >
-                            <span>
-                              <PhaseAssigneeStack
-                                members={phaseMembers}
-                                onManage={() => setMemberPickerPhaseId(phase.id)}
-                                isTradie={false}
-                              />
-                            </span>
-                          </PhaseMemberPicker>
-                        ) : (
-                          <PhaseAssigneeStack members={phaseMembers} isTradie={true} />
-                        )}
-                      </>
-                    )}
-
-                    {/* "Manage team" button when no members yet (owner only) */}
-                    {phaseMembers.length === 0 && !isTradie && workers.length > 0 && (
-                      <PhaseMemberPicker
-                        phase={phase}
-                        workers={workers}
-                        open={memberPickerPhaseId === phase.id}
-                        onOpenChange={(o) => setMemberPickerPhaseId(o ? phase.id : null)}
-                        isPending={assignMembersMutation.isPending && memberPickerPhaseId === phase.id}
-                        onSave={(ids, leadId) =>
-                          assignMembersMutation.mutate({
-                            phaseId: phase.id,
-                            assignedUserIds: ids,
-                            assignedUserId: leadId,
-                          })
-                        }
-                      >
-                        <button
-                          type="button"
-                          className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground"
-                          title="Assign team members"
-                        >
-                          <Users className="h-3 w-3" />
-                          <span>Assign</span>
-                        </button>
-                      </PhaseMemberPicker>
+                      <PhaseAssigneeStack members={phaseMembers} isTradie={true} />
                     )}
                   </div>
 
+                  {/* Date + hours meta row */}
                   {(phase.scheduledStart || phase.scheduledEnd || phase.bookedHours || phase.budgetedHours) && (
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                       {(phase.scheduledStart || phase.scheduledEnd) && (
@@ -701,22 +584,34 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                   )}
 
                   {phase.description && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{phase.description}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{phase.description}</p>
                   )}
-                </div>
+                </button>
 
-                {/* Actions */}
-                {!isTradie && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => startEdit(phase)}
-                      className="p-1 text-muted-foreground hover:text-foreground"
-                      title="Edit"
+                {/* Row actions: status selector + delete (edit is now in the panel) */}
+                <div className="flex items-center gap-1 shrink-0 mt-0.5">
+                  {!isTradie && (
+                    <Select
+                      value={phase.status}
+                      onValueChange={(v) =>
+                        statusChangeMutation.mutate({ phaseId: phase.id, status: v as PhaseStatus })
+                      }
+                      disabled={statusChangeMutation.isPending}
                     >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
+                      <SelectTrigger className={`h-5 text-[10px] px-1.5 py-0.5 w-auto border-0 ${cfg.className}`} onClick={(e) => e.stopPropagation()}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                          <SelectItem key={k} value={k} className="text-xs">{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {!isTradie && (
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (confirm(`Delete phase "${phase.phaseCode} ${phase.name}"?`)) {
                           deleteMutation.mutate(phase.id);
                         }
@@ -727,8 +622,8 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             );
           })}
