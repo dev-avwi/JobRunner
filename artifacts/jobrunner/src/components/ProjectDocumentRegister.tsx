@@ -830,6 +830,9 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
   // Active category filter
   const [activeCategory, setActiveCategory] = useState<DocCategory | 'All'>('All');
 
+  // Active phase filter
+  const [activePhase, setActivePhase] = useState<string | 'All'>('All');
+
   const { data: documents = [], isLoading: docsLoading } = useQuery<ProjectDocument[]>({
     queryKey: ['/api/jobs', jobId, 'project-documents'],
     queryFn: async () => {
@@ -968,11 +971,24 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
     onError: (err: any) => toast({ title: 'Delete failed', description: err.message, variant: 'destructive' }),
   });
 
-  const filteredDocs = activeCategory === 'All' ? documents : documents.filter(d => d.category === activeCategory);
+  const filteredDocs = documents.filter(d => {
+    if (activeCategory !== 'All' && d.category !== activeCategory) return false;
+    if (activePhase !== 'All' && d.phaseId !== activePhase) return false;
+    return true;
+  });
 
   // Group docs by category for display
   const categoryCounts: Record<string, number> = {};
   documents.forEach(d => { categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1; });
+
+  // Phase counts (only docs that have a phaseId)
+  const phaseCounts: Record<string, number> = {};
+  documents.forEach(d => {
+    if (d.phaseId) {
+      phaseCounts[d.phaseId] = (phaseCounts[d.phaseId] || 0) + 1;
+    }
+  });
+  const hasPhaseTaggedDocs = Object.keys(phaseCounts).length > 0;
 
   const openRfiCount = rfis.filter(r => r.status === 'open').length;
 
@@ -1036,6 +1052,41 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
             </div>
           )}
 
+          {/* Phase filter chips — only shown when at least one document is tagged to a phase */}
+          {hasPhaseTaggedDocs && (
+            <div className="flex flex-wrap gap-1.5 items-center">
+              <span className="text-xs text-muted-foreground mr-0.5">Phase:</span>
+              <button
+                onClick={() => setActivePhase('All')}
+                className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                  activePhase === 'All'
+                    ? 'border-primary bg-primary/10 text-primary font-medium'
+                    : 'border-border text-muted-foreground hover:border-primary/40'
+                }`}
+              >
+                All
+              </button>
+              {phases
+                .filter(p => phaseCounts[p.id] !== undefined)
+                .map(p => {
+                  const count = phaseCounts[p.id] || 0;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setActivePhase(p.id)}
+                      className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+                        activePhase === p.id
+                          ? 'border-primary bg-primary/10 text-primary font-medium'
+                          : 'border-border text-muted-foreground hover:border-primary/40'
+                      }`}
+                    >
+                      {p.phaseCode} {p.name} <span className="opacity-70">({count})</span>
+                    </button>
+                  );
+                })}
+            </div>
+          )}
+
           {docsLoading ? (
             <div className="flex items-center justify-center py-6">
               <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -1044,7 +1095,11 @@ export function ProjectDocumentRegister({ jobId, canUpload = true }: ProjectDocu
             <div className="text-center py-8">
               <FileText className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">
-                {documents.length === 0 ? 'No documents registered yet' : `No ${activeCategory} documents`}
+                {documents.length === 0
+                  ? 'No documents registered yet'
+                  : activePhase !== 'All'
+                    ? `No ${activeCategory === 'All' ? '' : activeCategory + ' '}documents for this phase`
+                    : `No ${activeCategory} documents`}
               </p>
               {canUpload && documents.length === 0 && (
                 <Button size="sm" variant="outline" className="mt-3 h-7 text-xs gap-1" onClick={() => setShowUploadDialog(true)}>
