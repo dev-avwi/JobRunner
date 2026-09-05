@@ -2479,6 +2479,11 @@ export default function JobDetailScreen() {
   const [sendModalDefaultTab, setSendModalDefaultTab] = useState<'email' | 'sms'>('email');
   const smsLocked = useSmsLocked();
   const [previewImageDoc, setPreviewImageDoc] = useState<JobDocument | null>(null);
+  const [previewDocViewer, setPreviewDocViewer] = useState<{ url: string; title: string; mimeType?: string } | null>(null);
+  const [docViewerLoading, setDocViewerLoading] = useState(false);
+  const [docViewerError, setDocViewerError] = useState(false);
+  const [docViewerLocalUri, setDocViewerLocalUri] = useState<string | null>(null);
+  const [docViewerDownloading, setDocViewerDownloading] = useState(false);
 
   const [isGeneratingProofPack, setIsGeneratingProofPack] = useState(false);
   const [isExportingProofPackTsv, setIsExportingProofPackTsv] = useState(false);
@@ -3514,6 +3519,22 @@ export default function JobDetailScreen() {
     return false;
   }, []);
 
+  const isPdfDocument = useCallback((doc: JobDocument): boolean => {
+    return doc.mimeType === 'application/pdf';
+  }, []);
+
+  const isOfficeDocument = useCallback((doc: JobDocument): boolean => {
+    const officeMimes = [
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    ];
+    return !!doc.mimeType && officeMimes.includes(doc.mimeType);
+  }, []);
+
   const handleOpenDocument = useCallback((doc: JobDocument) => {
     if (!doc.fileUrl) {
       showToast({ type: 'error', message: 'Document URL not available' });
@@ -3521,10 +3542,37 @@ export default function JobDetailScreen() {
     }
     if (isImageDocument(doc)) {
       setPreviewImageDoc(doc);
+    } else if (isPdfDocument(doc)) {
+      // Download the PDF to local cache so we can render it in a WebView using a
+      // file:// URI — no third-party service ever receives the signed storage URL.
+      setDocViewerLocalUri(null);
+      setDocViewerError(false);
+      setDocViewerLoading(false);
+      setDocViewerDownloading(true);
+      setPreviewDocViewer({ url: doc.fileUrl, title: doc.title, mimeType: doc.mimeType });
+      const safeTitle = (doc.fileName || doc.title).replace(/[^a-zA-Z0-9._-]/g, '_');
+      const localUri = (FileSystem.cacheDirectory ?? '') + 'docpreview_' + safeTitle;
+      FileSystem.downloadAsync(doc.fileUrl, localUri)
+        .then(({ uri }) => {
+          setDocViewerLocalUri(uri);
+          setDocViewerDownloading(false);
+        })
+        .catch(() => {
+          setDocViewerDownloading(false);
+          setDocViewerError(true);
+        });
+    } else if (isOfficeDocument(doc)) {
+      // Office files can't be rendered locally without a third-party service.
+      // Show the viewer modal with an unsupported-format message + share/download option.
+      setDocViewerLocalUri(null);
+      setDocViewerError(false);
+      setDocViewerLoading(false);
+      setDocViewerDownloading(false);
+      setPreviewDocViewer({ url: doc.fileUrl, title: doc.title, mimeType: doc.mimeType });
     } else {
       Linking.openURL(doc.fileUrl);
     }
-  }, [isImageDocument]);
+  }, [isImageDocument, isPdfDocument, isOfficeDocument]);
 
   const formatFileSize = useCallback((bytes?: number) => {
     if (!bytes) return '';
@@ -16624,6 +16672,168 @@ export default function JobDetailScreen() {
           })()}
         </BottomSheetScrollView>
       </AppBottomSheet>
+
+      {/* In-app document viewer for PDF and Office files */}
+      <Modal
+        visible={!!previewDocViewer}
+        animationType="slide"
+        onRequestClose={() => setPreviewDocViewer(null)}
+        statusBarTranslucent
+      >
+        {previewDocViewer ? (
+          <View style={{ flex: 1, backgroundColor: '#000' }}>
+            {/* Header */}
+            <View style={{
+              paddingTop: insets.top + spacing.sm,
+              paddingBottom: spacing.md,
+              paddingHorizontal: spacing.lg,
+              backgroundColor: 'rgba(0,0,0,0.85)',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.sm,
+            }}>
+              <Text
+                numberOfLines={1}
+                style={{
+                  flex: 1,
+                  color: '#fff',
+                  fontSize: typography.sizes.md,
+                  fontWeight: fontWeights.semibold,
+                }}
+              >
+                {previewDocViewer.title}
+              </Text>
+              <TouchableOpacity
+                onPress={async () => {
+                  if (!previewDocViewer) return;
+                  try {
+                    const isAvailable = await Sharing.isAvailableAsync();
+                    if (!isAvailable) {
+                      showToast({ type: 'error', message: 'Sharing is not available on this device' });
+                      return;
+                    }
+                    const safeTitle = previewDocViewer.title.replace(/[^a-zA-Z0-9._-]/g, '_');
+                    const localUri = (FileSystem.cacheDirectory ?? '') + safeTitle;
+                    const { uri } = await FileSystem.downloadAsync(previewDocViewer.url, localUri);
+                    await Sharing.shareAsync(uri);
+                  } catch {
+                    showToast({ type: 'error', message: 'Could not share document' });
+                  }
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="share" size={22} color="#fff" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setPreviewDocViewer(null);
+                  setDocViewerLoading(false);
+                  setDocViewerError(false);
+                  setDocViewerLocalUri(null);
+                  setDocViewerDownloading(false);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Feather name="x" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Viewer */}
+            {docViewerError ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl }}>
+                <Feather name="alert-triangle" size={40} color="#f59e0b" />
+                <Text style={{ color: '#fff', fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, textAlign: 'center' }}>
+                  Could not load document
+                </Text>
+                <Text style={{ color: '#aaa', fontSize: typography.sizes.sm, textAlign: 'center' }}>
+                  The file may be unavailable or in an unsupported format.
+                </Text>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#333', borderRadius: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}
+                  onPress={async () => {
+                    if (!previewDocViewer) return;
+                    try {
+                      const safeTitle = previewDocViewer.title.replace(/[^a-zA-Z0-9._-]/g, '_');
+                      const dest = (FileSystem.cacheDirectory ?? '') + 'share_' + safeTitle;
+                      const { uri } = await FileSystem.downloadAsync(previewDocViewer.url, dest);
+                      const isAvailable = await Sharing.isAvailableAsync();
+                      if (isAvailable) await Sharing.shareAsync(uri);
+                      else await Linking.openURL(previewDocViewer.url);
+                    } catch {
+                      await Linking.openURL(previewDocViewer?.url ?? '');
+                    }
+                  }}
+                >
+                  <Feather name="download" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontSize: typography.sizes.sm }}>Download instead</Text>
+                </TouchableOpacity>
+              </View>
+            ) : previewDocViewer.mimeType === 'application/pdf' ? (
+              // PDF: downloaded locally first; WebView renders the local file — no third-party service sees the signed URL
+              <View style={{ flex: 1 }}>
+                {(docViewerDownloading || docViewerLoading) && (
+                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', zIndex: 10, backgroundColor: '#111' }}>
+                    <ActivityIndicator size="large" color="#fff" />
+                    {docViewerDownloading && (
+                      <Text style={{ color: '#aaa', fontSize: typography.sizes.sm, marginTop: spacing.sm }}>Loading PDF…</Text>
+                    )}
+                  </View>
+                )}
+                {docViewerLocalUri ? (
+                  <WebView
+                    key={docViewerLocalUri}
+                    source={{ uri: docViewerLocalUri }}
+                    style={{ flex: 1, backgroundColor: '#fff' }}
+                    onLoadStart={() => setDocViewerLoading(true)}
+                    onLoadEnd={() => setDocViewerLoading(false)}
+                    onError={() => { setDocViewerLoading(false); setDocViewerError(true); }}
+                    javaScriptEnabled
+                    allowsInlineMediaPlayback
+                    startInLoadingState={false}
+                    allowFileAccess
+                    allowFileAccessFromFileURLs
+                    allowUniversalAccessFromFileURLs
+                  />
+                ) : null}
+              </View>
+            ) : (
+              // Office files: in-browser rendering without sending the URL to an external service
+              // is not possible without a local rendering library. Offer share/download instead.
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl }}>
+                <Feather name="file-text" size={48} color="#666" />
+                <Text style={{ color: '#fff', fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, textAlign: 'center' }}>
+                  Preview not available
+                </Text>
+                <Text style={{ color: '#aaa', fontSize: typography.sizes.sm, textAlign: 'center', maxWidth: 280 }}>
+                  Office files cannot be previewed in-app. Use the Share button to open in Word, Excel, or another app.
+                </Text>
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: '#333', borderRadius: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, marginTop: spacing.sm }}
+                  onPress={async () => {
+                    if (!previewDocViewer) return;
+                    try {
+                      const isAvailable = await Sharing.isAvailableAsync();
+                      if (!isAvailable) {
+                        showToast({ type: 'error', message: 'Sharing is not available on this device' });
+                        return;
+                      }
+                      const safeTitle = previewDocViewer.title.replace(/[^a-zA-Z0-9._-]/g, '_');
+                      const dest = (FileSystem.cacheDirectory ?? '') + 'share_' + safeTitle;
+                      const { uri } = await FileSystem.downloadAsync(previewDocViewer.url, dest);
+                      await Sharing.shareAsync(uri);
+                    } catch {
+                      showToast({ type: 'error', message: 'Could not share document' });
+                    }
+                  }}
+                >
+                  <Feather name="share" size={16} color="#fff" />
+                  <Text style={{ color: '#fff', fontSize: typography.sizes.sm }}>Share / Open in app</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        ) : null}
+      </Modal>
 
       {/* In-app image lightbox for document attachments */}
       <Modal

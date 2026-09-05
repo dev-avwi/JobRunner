@@ -30,6 +30,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { FileText, Upload, Plus, Loader2, Trash2, Download, Eye, File, FileImage, FileSpreadsheet, FileArchive } from 'lucide-react';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 import { queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -59,6 +60,7 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
   const [title, setTitle] = useState('');
   const [documentType, setDocumentType] = useState<'quote' | 'invoice' | 'other'>('other');
   const [deleteDocId, setDeleteDocId] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string; mimeType?: string; fileName?: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -293,7 +295,7 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => window.open(doc.fileUrl!, '_blank')}
+                          onClick={() => setPreviewDoc({ url: doc.fileUrl!, title: doc.title, mimeType: doc.mimeType, fileName: doc.fileName })}
                           title="Preview"
                           data-testid={`button-preview-document-${doc.id}`}
                         >
@@ -453,6 +455,17 @@ export function JobDocuments({ jobId, canUpload = true, canDelete = false }: Job
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          open={!!previewDoc}
+          onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+          title={previewDoc.title}
+          url={previewDoc.url}
+          mimeType={previewDoc.mimeType}
+          fileName={previewDoc.fileName}
+        />
+      )}
     </>
   );
 }

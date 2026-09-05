@@ -65,6 +65,7 @@ import {
 import { queryClient, getAuthHeaders } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { DocumentPreviewModal } from '@/components/DocumentPreviewModal';
 
 const DOC_CATEGORIES = ['Drawings', 'Specifications', 'RFIs', 'SWMS', 'Certificates', 'Other'] as const;
 type DocCategory = typeof DOC_CATEGORIES[number];
@@ -184,6 +185,7 @@ function DocumentRow({
   const [revisionNotes, setRevisionNotes] = useState('');
   const [selectedNotifyUsers, setSelectedNotifyUsers] = useState<string[]>([]);
   const [notifyMessage, setNotifyMessage] = useState('');
+  const [previewDoc, setPreviewDoc] = useState<{ url: string; title: string; mimeType?: string | null; fileName?: string } | null>(null);
   const revFileRef = useRef<HTMLInputElement>(null);
 
   const { data: revisions = [], isLoading: revisionsLoading } = useQuery<RevisionRecord[]>({
@@ -265,10 +267,6 @@ function DocumentRow({
     onError: (err: any) => toast({ title: 'Notification failed', description: err.message, variant: 'destructive' }),
   });
 
-  const openFile = (url: string | null) => {
-    if (url) window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
   return (
     <div className="border border-border rounded-lg overflow-hidden">
       <div className="flex items-center gap-3 p-3 bg-card hover:bg-muted/30 transition-colors">
@@ -295,7 +293,7 @@ function DocumentRow({
         <div className="flex items-center gap-1 flex-shrink-0">
           {doc.latestRevision?.fileUrl && (
             <>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openFile(doc.latestRevision!.fileUrl)} title="Preview">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPreviewDoc({ url: doc.latestRevision!.fileUrl!, title: doc.title, mimeType: doc.latestRevision!.mimeType, fileName: doc.latestRevision!.fileName })} title="Preview">
                 <Eye className="h-3.5 w-3.5" />
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Download">
@@ -460,6 +458,17 @@ function DocumentRow({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {previewDoc && (
+        <DocumentPreviewModal
+          open={!!previewDoc}
+          onOpenChange={(open) => { if (!open) setPreviewDoc(null); }}
+          title={previewDoc.title}
+          url={previewDoc.url}
+          mimeType={previewDoc.mimeType}
+          fileName={previewDoc.fileName}
+        />
+      )}
     </div>
   );
 }
