@@ -89,6 +89,7 @@ import ExpensesSection from '../../src/components/jobDetail/ExpensesSection';
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { ManageTeamSheet } from '../../src/components/jobDetail/ManageTeamSheet';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
 import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components/jobDetail/ClaimsSection';
@@ -2435,6 +2436,7 @@ export default function JobDetailScreen() {
   // in-flight request cannot overwrite results from a newer one (race-condition guard).
   const availabilityRequestCountRef = useRef(0);
   const [isNudging, setIsNudging] = useState<string | null>(null);
+  const [showManageTeamSheet, setShowManageTeamSheet] = useState(false);
 
   const [jobMessages, setJobMessages] = useState<JobChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -12687,6 +12689,31 @@ export default function JobDetailScreen() {
             {/* Project-only sections: Phases, Gantt, Materials, POs, Claims, Variations */}
             {isProject && (
               <>
+                {/* Manage Team button — owners/managers only */}
+                {(isOwnerOrManager || isSoloOwner) && (
+                  <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: spacing.sm,
+                      backgroundColor: colors.card,
+                      borderRadius: radius.lg,
+                      borderWidth: 1,
+                      borderColor: colors.cardBorder,
+                      paddingVertical: spacing.md,
+                      marginBottom: spacing.md,
+                    }}
+                    onPress={() => setShowManageTeamSheet(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="users" size={16} color={colors.primary} />
+                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
+                      Manage Team
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md }}>
                   <PhasesSection
                     colors={colors}
@@ -17260,6 +17287,21 @@ export default function JobDetailScreen() {
           )}
         </View>
       </Modal>
+
+      {/* Manage Team bottom sheet — project jobs, owners/managers only */}
+      {isProject && (isOwnerOrManager || isSoloOwner) && (
+        <ManageTeamSheet
+          visible={showManageTeamSheet}
+          onDismiss={() => setShowManageTeamSheet(false)}
+          jobId={String(id)}
+          phases={phases}
+          teamMembers={teamMembers}
+          jobAssignments={jobAssignments}
+          onRefresh={async () => {
+            await Promise.all([loadPhases(), loadJobAssignments()]);
+          }}
+        />
+      )}
     </>
   );
 }
