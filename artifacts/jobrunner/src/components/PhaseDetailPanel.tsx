@@ -7,7 +7,7 @@
  * position in the Phases list. Closing the panel returns them to the list.
  */
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import {
   Pencil, X, Crown, Loader2, Layers, Users, FileText, StickyNote,
   CheckSquare, ChevronRight, Clock,
@@ -249,10 +249,28 @@ export function PhaseDetailPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<typeof EMPTY_FORM>({ ...EMPTY_FORM });
 
+  // Fetch the phases list so the team section stays current when workers are
+  // reassigned via ProjectTeamModal while the panel is open. Uses the same
+  // string query key as JobPhasesSection so cache invalidations propagate here.
+  const { data: livePhases = [] } = useQuery<Array<{
+    id: string;
+    assignedUsers?: PhaseAssignedUser[];
+    assignedUserId?: string | null;
+    assignedUserName?: string | null;
+  }>>({
+    queryKey: [`/api/jobs/${jobId}/phases`],
+    staleTime: 0,
+  });
+  const livePhaseData = livePhases.find((p) => p.id === phase.id);
+
   const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
-  const phaseMembers: PhaseAssignedUser[] = phase.assignedUsers
-    ?? (phase.assignedUserId
-      ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? "", isLead: true }]
+  // Prefer live data from cache/re-fetch; fall back to prop for instant display.
+  const resolvedAssignedUsers = livePhaseData?.assignedUsers ?? phase.assignedUsers;
+  const resolvedAssignedUserId = livePhaseData?.assignedUserId ?? phase.assignedUserId;
+  const resolvedAssignedUserName = livePhaseData?.assignedUserName ?? phase.assignedUserName;
+  const phaseMembers: PhaseAssignedUser[] = resolvedAssignedUsers
+    ?? (resolvedAssignedUserId
+      ? [{ id: resolvedAssignedUserId, name: resolvedAssignedUserName ?? "", isLead: true }]
       : []);
 
   const startEditing = () => {

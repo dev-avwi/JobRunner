@@ -39,7 +39,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import type { JobPhase, PhaseAssignedUser } from "./JobPhasesSection";
+import type { PhaseAssignedUser } from "./JobPhasesSection";
+
+/**
+ * Minimal phase shape required by ProjectTeamModal. Intentionally narrower than
+ * the full JobPhase so callers can pass jobPhasesForPicker without a cast.
+ */
+export interface PhaseForTeamModal {
+  id: string;
+  phaseCode: string;
+  name: string;
+  sortOrder?: number;
+  assignedUsers?: PhaseAssignedUser[];
+  assignedUserId?: string | null;
+  assignedUserName?: string | null;
+}
 
 // ─── Avatar helpers ───────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
@@ -79,7 +93,7 @@ interface JobAssignment {
 
 export interface ProjectTeamModalProps {
   jobId: string;
-  phases: JobPhase[];
+  phases: PhaseForTeamModal[];
   teamMembers: TeamMember[];
   activeAssignments: JobAssignment[];
   isWorkerOnOtherJob: (memberId: string) => boolean;
@@ -108,7 +122,7 @@ export function ProjectTeamModal({
     [activeAssignments],
   );
 
-  const sorted = [...phases].sort((a, b) => a.sortOrder - b.sortOrder);
+  const sorted = [...phases].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   // Current phase membership per worker
   const phaseAssignedIds = useMemo(() => {
@@ -162,7 +176,7 @@ export function ProjectTeamModal({
 
   const busy = addWorkerMutation.isPending || removeWorkerMutation.isPending || phaseAssignMutation.isPending;
 
-  const handleTogglePhaseWorker = async (phase: JobPhase, workerId: string) => {
+  const handleTogglePhaseWorker = async (phase: PhaseForTeamModal, workerId: string) => {
     const currentSet = phaseAssignedIds.get(phase.id) ?? new Set<string>();
     const isOnPhase = currentSet.has(workerId);
     const next = new Set(currentSet);

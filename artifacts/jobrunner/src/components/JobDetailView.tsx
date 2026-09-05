@@ -405,6 +405,7 @@ export default function JobDetailView({
   // Phases for the phase picker — loaded for project jobs only
   const { data: jobPhasesForPicker = [] } = useQuery<Array<{
     id: string; name: string; phaseCode: string; status: string;
+    sortOrder?: number;
     scheduledStart?: string | null; scheduledEnd?: string | null;
     budgetedHours?: string | null; actualHours?: number | null;
     assignedUsers?: Array<{ id: string; name: string; isLead: boolean }>;
@@ -4978,7 +4979,7 @@ export default function JobDetailView({
       {showTeamModal && isProject && (
         <ProjectTeamModal
           jobId={jobId}
-          phases={(jobPhasesForPicker as any[])}
+          phases={jobPhasesForPicker}
           teamMembers={teamMembers}
           activeAssignments={jobAssignments}
           isWorkerOnOtherJob={isWorkerOnOtherJob}
