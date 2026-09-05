@@ -2386,6 +2386,8 @@ export default function JobDetailScreen() {
   const [expenseReceiptUri, setExpenseReceiptUri] = useState<string | null>(null);
   const [isUploadingExpenseReceipt, setIsUploadingExpenseReceipt] = useState(false);
   const [isSavingExpense, setIsSavingExpense] = useState(false);
+  /** When set, the expense phase picker is locked to this phaseId (opened from a phase detail) */
+  const [lockedExpensePhaseId, setLockedExpensePhaseId] = useState<string | null>(null);
 
   const [isLoadingSwms, setIsLoadingSwms] = useState(false);
   const [expandedSwmsId, setExpandedSwmsId] = useState<string | null>(null);
@@ -4129,6 +4131,7 @@ export default function JobDetailScreen() {
       setShowLogExpenseModal(false);
       setExpenseForm({ amount: '', description: '', phaseId: '' });
       setExpenseReceiptUri(null);
+      setLockedExpensePhaseId(null);
       showToast({ type: 'success', message: 'Expense logged', description: 'The owner has been notified for approval.' });
     } catch (err: any) {
       showToast({ type: 'error', message: 'Could not log expense', description: err?.message || 'Please try again.' });
@@ -12638,6 +12641,33 @@ export default function JobDetailScreen() {
                       setShowEditPhaseModal(true);
                     } : undefined}
                     onViewPhase={(phase) => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
+                    onLogExpense={(phase) => {
+                      setExpenseForm({ amount: '', description: '', phaseId: phase.id });
+                      setExpenseReceiptUri(null);
+                      setLockedExpensePhaseId(phase.id);
+                      setShowLogExpenseModal(true);
+                    }}
+                    onLogTime={(phase) => {
+                      if (activeTimer && !isTimerForThisJob) {
+                        confirm({
+                          title: 'Timer Already Running',
+                          message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
+                          confirmText: 'Switch',
+                        }).then(async (ok) => {
+                          if (!ok) return;
+                          const stopped = await stopTimer();
+                          if (!stopped) {
+                            showToast({ type: 'error', message: 'Failed to stop existing timer' });
+                            return;
+                          }
+                          proceedWithTimerStart(false, phase.id);
+                        });
+                      } else if (activeTimer && isTimerForThisJob) {
+                        showToast({ type: 'info', message: 'Timer is already running for this job' });
+                      } else {
+                        proceedWithTimerStart(false, phase.id);
+                      }
+                    }}
                   />
                 </View>
                 {/* Project Timeline (Gantt) — owners/managers only, when phases have dates */}
@@ -13753,7 +13783,7 @@ export default function JobDetailScreen() {
       {/* Log Expense / Receipt Modal */}
       <AppBottomSheet
         visible={showLogExpenseModal}
-        onDismiss={() => { if (!isSavingExpense) { setShowLogExpenseModal(false); setExpenseReceiptUri(null); } }}
+        onDismiss={() => { if (!isSavingExpense) { setShowLogExpenseModal(false); setExpenseReceiptUri(null); setLockedExpensePhaseId(null); } }}
         title="Log Expense / Receipt"
         showCloseButton
         snapPoints={['80%']}
@@ -13762,7 +13792,7 @@ export default function JobDetailScreen() {
             <SheetButton
               variant="outline"
               label="Cancel"
-              onPress={() => { setShowLogExpenseModal(false); setExpenseReceiptUri(null); }}
+              onPress={() => { setShowLogExpenseModal(false); setExpenseReceiptUri(null); setLockedExpensePhaseId(null); }}
               style={{ flex: 1 }}
               disabled={isSavingExpense}
             />
@@ -13867,26 +13897,41 @@ export default function JobDetailScreen() {
           {/* Phase picker (projects only) */}
           {job.jobType === 'project' && phases.length > 0 && (
             <View style={{ marginBottom: spacing.md }}>
-              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(optional)</Text></Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-                <TouchableOpacity
-                  onPress={() => setExpenseForm(f => ({ ...f, phaseId: '' }))}
-                  style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: !expenseForm.phaseId ? colors.primary : colors.border, backgroundColor: !expenseForm.phaseId ? `${colors.primary}15` : 'transparent' }}
-                >
-                  <Text style={{ fontSize: typography.sizes.sm, color: !expenseForm.phaseId ? colors.primary : colors.mutedForeground }}>None</Text>
-                </TouchableOpacity>
-                {phases.map(p => (
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>{lockedExpensePhaseId ? '' : '(optional)'}</Text></Text>
+              {lockedExpensePhaseId ? (
+                /* Locked: phase pre-selected from phase detail screen */
+                (() => {
+                  const lockedPhase = phases.find(p => p.id === lockedExpensePhaseId);
+                  return lockedPhase ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: colors.primary, backgroundColor: `${colors.primary}15`, alignSelf: 'flex-start' }}>
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium as any }}>
+                        {lockedPhase.phaseCode ? `${lockedPhase.phaseCode} ` : ''}{lockedPhase.name}
+                      </Text>
+                      <Feather name="lock" size={10} color={colors.primary} />
+                    </View>
+                  ) : null;
+                })()
+              ) : (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
                   <TouchableOpacity
-                    key={p.id}
-                    onPress={() => setExpenseForm(f => ({ ...f, phaseId: p.id }))}
-                    style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: expenseForm.phaseId === p.id ? colors.primary : colors.border, backgroundColor: expenseForm.phaseId === p.id ? `${colors.primary}15` : 'transparent' }}
+                    onPress={() => setExpenseForm(f => ({ ...f, phaseId: '' }))}
+                    style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: !expenseForm.phaseId ? colors.primary : colors.border, backgroundColor: !expenseForm.phaseId ? `${colors.primary}15` : 'transparent' }}
                   >
-                    <Text style={{ fontSize: typography.sizes.sm, color: expenseForm.phaseId === p.id ? colors.primary : colors.mutedForeground }}>
-                      {p.phaseCode ? `${p.phaseCode} ` : ''}{p.name}
-                    </Text>
+                    <Text style={{ fontSize: typography.sizes.sm, color: !expenseForm.phaseId ? colors.primary : colors.mutedForeground }}>None</Text>
                   </TouchableOpacity>
-                ))}
-              </View>
+                  {phases.map(p => (
+                    <TouchableOpacity
+                      key={p.id}
+                      onPress={() => setExpenseForm(f => ({ ...f, phaseId: p.id }))}
+                      style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: expenseForm.phaseId === p.id ? colors.primary : colors.border, backgroundColor: expenseForm.phaseId === p.id ? `${colors.primary}15` : 'transparent' }}
+                    >
+                      <Text style={{ fontSize: typography.sizes.sm, color: expenseForm.phaseId === p.id ? colors.primary : colors.mutedForeground }}>
+                        {p.phaseCode ? `${p.phaseCode} ` : ''}{p.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 

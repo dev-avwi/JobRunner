@@ -154,23 +154,38 @@ function SuccessFlash({ visible, onDone }: { visible: boolean; onDone: () => voi
 
 export interface PhasesSectionProps {
   colors: ThemeColors;
+
   phases: JobPhase[];
+
   isLoading?: boolean;
+
   isTradie?: boolean;
+
   onStatusChange?: (phaseId: string, status: PhaseStatus) => Promise<void>;
+
   onAddPhase?: () => void;
+
   onEditPhase?: (phase: JobPhase) => void;
   /** Called when a phase is cycled to "complete" status */
+
   onPhaseCompleted?: (phase: JobPhase) => void;
   /** Set of phase IDs that already have a progress claim line item */
+
   claimedPhaseIds?: Set<string>;
   /** Profitability costs used to show each phase's budget vs actual state */
+
   phaseCosts?: PhaseCostBreakdown[];
   /**
    * When provided, tapping a phase row calls this instead of opening the
    * inline bottom sheet. Use it to navigate to the dedicated phase screen.
    */
+
   onViewPhase?: (phase: JobPhase) => void;
+
+  onLogTime?: (phase: JobPhase) => void;
+  /** Quick-log: open the expense sheet pre-filled with this phase */
+
+  onLogExpense?: (phase: JobPhase) => void;
 }
 
 export function PhasesSection({
@@ -185,6 +200,8 @@ export function PhasesSection({
   claimedPhaseIds,
   phaseCosts,
   onViewPhase,
+  onLogTime,
+  onLogExpense,
 }: PhasesSectionProps) {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [flashingId, setFlashingId] = useState<string | null>(null);
@@ -561,6 +578,60 @@ export function PhasesSection({
             </>
           )}
         </View>
+
+        {/* Quick-log actions — visible to all users */}
+        {(onLogTime || onLogExpense) && (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {onLogTime && (
+              <TouchableOpacity
+                onPress={() => {
+                  setViewingPhase(null);
+                  setTimeout(() => onLogTime(viewingPhase!), 350);
+                }}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 12,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.muted,
+                }}
+                activeOpacity={0.75}
+              >
+                <Feather name="clock" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Time</Text>
+              </TouchableOpacity>
+            )}
+            {onLogExpense && (
+              <TouchableOpacity
+                onPress={() => {
+                  setViewingPhase(null);
+                  setTimeout(() => onLogExpense(viewingPhase!), 350);
+                }}
+                style={{
+                  flex: 1,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  paddingVertical: 12,
+                  borderRadius: radius.md,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  backgroundColor: colors.muted,
+                }}
+                activeOpacity={0.75}
+              >
+                <Feather name="dollar-sign" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Expense</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Divider */}
         <View style={{ height: 1, backgroundColor: colors.border, marginVertical: spacing.xs }} />

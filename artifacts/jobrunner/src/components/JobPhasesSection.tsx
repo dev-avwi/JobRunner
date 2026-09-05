@@ -6,7 +6,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useQueries, useMutation } from "@tanstack/react-query";
 import {
-  Plus, ChevronUp, ChevronDown, Trash2, Layers, Crown, Users, Loader2, Check, X,
+  Plus, ChevronUp, ChevronDown, Pencil, Trash2, Check, X, Loader2, Layers, Crown, Users, Clock,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -308,6 +308,9 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
   const [claimPromptPhase, setClaimPromptPhase] = useState<JobPhase | null>(null);
   // Inline member picker state: which phase's popover is open
   const [memberPickerPhaseId, setMemberPickerPhaseId] = useState<string | null>(null);
+  // Inline "Add Time Entry" state
+  const [addTimePhaseId, setAddTimePhaseId] = useState<string | null>(null);
+  const [timeForm, setTimeForm] = useState({ date: new Date().toISOString().substring(0, 10), hours: "", description: "" });
 
   const { data: phases = [], isLoading } = useQuery<JobPhase[]>({
     queryKey: [`/api/jobs/${jobId}/phases`],
@@ -411,6 +414,27 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       toast({ title: "Team updated" });
     },
     onError: (e: any) => toast({ title: "Failed to update team", description: e.message, variant: "destructive" }),
+  });
+
+  const addTimeMutation = useMutation({
+    mutationFn: ({ phaseId, date, hours, description }: { phaseId: string; date: string; hours: number; description: string }) => {
+      const startTime = new Date(`${date}T08:00:00`);
+      const endTime = new Date(startTime.getTime() + hours * 3600 * 1000);
+      return apiRequest("POST", "/api/time-entries", {
+        jobId,
+        phaseId,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        description: description || undefined,
+      });
+    },
+    onSuccess: () => {
+      invalidate();
+      setAddTimePhaseId(null);
+      setTimeForm({ date: new Date().toISOString().substring(0, 10), hours: "", description: "" });
+      toast({ title: "Time entry added" });
+    },
+    onError: (e: any) => toast({ title: "Failed to add time entry", description: e.message, variant: "destructive" }),
   });
 
   const handleMove = (idx: number, direction: "up" | "down") => {
@@ -580,6 +604,87 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
                         }
                         return null;
                       })()}
+                      {/* Add Time Entry inline action */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddTimePhaseId(addTimePhaseId === phase.id ? null : phase.id);
+                          setTimeForm({ date: new Date().toISOString().substring(0, 10), hours: "", description: "" });
+                        }}
+                        className="flex items-center gap-0.5 text-[10px] text-muted-foreground hover:text-foreground ml-auto"
+                        title="Add time entry to this phase"
+                      >
+                        <Clock className="h-3 w-3" />
+                        <span>Add Time Entry</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Inline time entry form */}
+                  {addTimePhaseId === phase.id && (
+                    <div className="mt-2 p-2.5 rounded-md border bg-muted/30 space-y-2">
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Log time for {phase.phaseCode} {phase.name}</p>
+                      <div className="flex gap-2">
+                        <div className="flex-1 space-y-1">
+                          <label className="text-[10px] text-muted-foreground">Date</label>
+                          <input
+                            type="date"
+                            value={timeForm.date}
+                            onChange={(e) => setTimeForm((f) => ({ ...f, date: e.target.value }))}
+                            className="w-full h-7 rounded border border-input bg-background px-2 text-xs"
+                          />
+                        </div>
+                        <div className="w-20 space-y-1">
+                          <label className="text-[10px] text-muted-foreground">Hours *</label>
+                          <input
+                            type="number"
+                            min="0.25"
+                            step="0.25"
+                            placeholder="0.0"
+                            value={timeForm.hours}
+                            onChange={(e) => setTimeForm((f) => ({ ...f, hours: e.target.value }))}
+                            className="w-full h-7 rounded border border-input bg-background px-2 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-muted-foreground">Description (optional)</label>
+                        <input
+                          type="text"
+                          placeholder="What was done?"
+                          value={timeForm.description}
+                          onChange={(e) => setTimeForm((f) => ({ ...f, description: e.target.value }))}
+                          className="w-full h-7 rounded border border-input bg-background px-2 text-xs"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          style={{ backgroundColor: "hsl(var(--trade))", color: "white" }}
+                          disabled={!timeForm.hours || parseFloat(timeForm.hours) <= 0 || addTimeMutation.isPending}
+                          onClick={() =>
+                            addTimeMutation.mutate({
+                              phaseId: phase.id,
+                              date: timeForm.date,
+                              hours: parseFloat(timeForm.hours),
+                              description: timeForm.description,
+                            })
+                          }
+                        >
+                          {addTimeMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => setAddTimePhaseId(null)}
+                          disabled={addTimeMutation.isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
                   )}
 
