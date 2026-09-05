@@ -218,11 +218,17 @@ export async function sendSystemEmail(emailData: any): Promise<{ messageId: stri
 
   // Inject the Message-ID header for SendGrid (it becomes the RFC Message-ID
   // the client's email app will use when threading replies).
+  // Also inject List-Unsubscribe (RFC 2369) so Gmail/Yahoo don't flag the
+  // message as bulk spam. The mailto form satisfies basic compliance without
+  // needing an HTTPS unsubscribe endpoint.
+  const unsubscribeEmail = PLATFORM_FROM_EMAIL;
   const emailDataWithMsgId = {
     ...emailData,
     headers: {
       ...(emailData.headers ?? {}),
       'Message-ID': rfcMsgId,
+      'List-Unsubscribe': `<mailto:${unsubscribeEmail}?subject=Unsubscribe>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
     },
   };
 
@@ -316,7 +322,7 @@ const mockEmailService = {
 
 // Platform email settings — configurable via environment variables so a
 // white-label or rebrand doesn't require code changes.
-const PLATFORM_FROM_EMAIL = process.env.PLATFORM_FROM_EMAIL || 'noreply@jobrunner.com.au';
+const PLATFORM_FROM_EMAIL = process.env.PLATFORM_FROM_EMAIL || 'notifications@jobrunner.com.au';
 const PLATFORM_REPLY_TO_EMAIL = process.env.PLATFORM_REPLY_TO_EMAIL || process.env.SUPPORT_EMAIL || 'admin@avwebinnovation.com';
 const PLATFORM_FROM_NAME = 'JobRunner';
 
