@@ -1,0 +1,125 @@
+Twilio SendGrid Logo
+My SendGrid Account
+
+Friendly Name
+Trial:
+
+MC
+Upgrade
+
+
+Switch products
+
+ Dashboard
+ Email API
+ Marketing
+ Design Library
+ Stats
+ Activity
+ Validation
+ Suppressions
+ Settings
+Account Details
+Alert Settings
+API Keys
+Data Residency - EU
+Inbound Parse
+IP Access Management
+IP Addresses
+Mail Settings
+Sender Authentication
+Subuser Management
+Teammates
+Tracking
+Reputation98%
+Emails this month
+15
+Sender Authentication
+Sender Identity
+The type of Sender Identity you use to send email can impact your deliverability and what your recipients see in their inbox.
+Learn more about the differences between Domain Authentication and Single Sender Verification.
+Learn more for instructions on how to set up DMARC.
+
+Domain AuthenticationRECOMMENDED
+Improve deliverability by proving to inbox providers that you own the domain you're sending from. Learn more
+
+
+Authenticate Your Domain
+Status	Domain
+failed
+
+em6726.avwebinnovation.com
+verified
+
+em6857.avwebinnovation.com
+verified
+
+em9009.jobrunner.com.au
+Single Sender Verification
+Verify ownership of a single email address to use as a sender. Learn more
+
+
+Verify a Single Sender
+Status	Domain
+failed
+
+mail@avwebinnovation.com
+Link Branding
+Rewrite all tracking links to use the domain you choose - not sendgrid.net. Learn more
+
+
+Brand Your Links
+Status	Domain
+verified
+
+url2612.avwebinnovation.com
+failed
+
+url613.avwebinnovation.com
+verified
+
+url9318.jobrunner.com.au
+Reverse DNS
+Improve deliverability by proving to inbox providers that you control the IP address you're sending from. Learn more
+
+
+Create a Reverse DNS
+A package with at least one dedicated IP address is required for Reverse DNS. See packages.
+Create Your First Reverse DNS
+You (or a coworker) will need access to your DNS host to complete this.
+
+
+Get Started
+Sender Identity
+How you create your Sender Identity can impact your deliverability and what your recipients see in their inbox:
+
+Domain Authentication
+RECOMMENDED
+Authenticated domain improves deliverability and reputation
+
+Verify your sender and prevent malicious senders from damaging your
+sender reputation with DMARC
+
+Ideal for production sending and an industry best practice
+
+Send from any email address on your domain (DNS access required)
+
+What your recipients will see
+An authenticated domain proves to Inbox Service Providers you own the domain and removes the via sendgrid.net text that inbox providers would otherwise append to your from address.
+
+Domain Authentication Email
+
+Authenticate your Domain
+Single Sender Verification
+A quick method for getting started sending
+
+Recommended for testing only
+
+Send from a single email address you confirm ownership of
+
+What your recipients will see
+With a partial sending identity, Inbox Service Providers will append via sendgrid.net to your messages.
+
+Single Sender Verification Email
+
+Verify a Single Sender
