@@ -992,7 +992,7 @@ export default function SupportScreen() {
             </View>
           ) : activeCategory === 'all' && !search ? (
             /* ── Category overview: 2-column grid, tap to drill in ── */
-            <View style={{ paddingHorizontal: spacing.lg }}>
+            <View style={{ paddingHorizontal: spacing.lg, marginTop: spacing.xl }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.sm, columnGap: spacing.md }}>
                 {categories.map((cat) => {
                   const count = allArticles.filter(a => a.category === cat.id).length;
