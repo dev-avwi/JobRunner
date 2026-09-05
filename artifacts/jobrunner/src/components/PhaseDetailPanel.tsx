@@ -10,11 +10,14 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Pencil, X, Crown, Loader2, Layers, Users, FileText, StickyNote,
-  CheckSquare, ChevronRight, Clock, ExternalLink, Upload, Unlink,
+  CheckSquare, ChevronRight, Clock, ExternalLink, Upload, ArrowRightLeft,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -267,6 +270,8 @@ export function PhaseDetailPanel({
   // string query key as JobPhasesSection so cache invalidations propagate here.
   const { data: livePhases = [] } = useQuery<Array<{
     id: string;
+    phaseCode: string;
+    name: string;
     assignedUsers?: PhaseAssignedUser[];
     assignedUserId?: string | null;
     assignedUserName?: string | null;
@@ -276,6 +281,11 @@ export function PhaseDetailPanel({
   });
   const livePhaseData = livePhases.find((p) => p.id === phase.id);
 
+  // ── Move doc dialog state ──────────────────────────────────────────────────
+  const [moveDocDialog, setMoveDocDialog] = useState<{ open: boolean; docId: string | null; selectedPhaseId: string }>({
+    open: false, docId: null, selectedPhaseId: "__none__",
+  });
+
   // ── Phase documents query ──────────────────────────────────────────────────
   const { data: phaseDocs, isLoading: docsLoading } = useQuery<PhaseDocument[]>({
     queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }],
@@ -283,24 +293,26 @@ export function PhaseDetailPanel({
     enabled: !!jobId && !!phase.id,
   });
 
-  // ── Remove document from phase ────────────────────────────────────────────
-  const removeDocFromPhaseMutation = useMutation({
-    mutationFn: async (docId: string) => {
+  // ── Assign / move document to a phase (null = remove tag) ────────────────
+  const assignDocPhaseMutation = useMutation({
+    mutationFn: async ({ docId, phaseId }: { docId: string; phaseId: string | null }) => {
       const res = await fetch(`/api/jobs/${jobId}/project-documents/${docId}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ phaseId: null }),
+        body: JSON.stringify({ phaseId }),
       });
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }] });
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs", jobId, "project-documents"] });
-      toast({ title: "Document removed from phase" });
+    onSuccess: (_, { phaseId }) => {
+      // Invalidate the broad prefix so every phase-scoped variant (source, destination,
+      // and the flat document register) refetches — avoids stale caches in destination panels.
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`] });
+      setMoveDocDialog({ open: false, docId: null, selectedPhaseId: "__none__" });
+      toast({ title: phaseId ? "Document moved to phase" : "Document removed from phase" });
     },
-    onError: (e: any) => toast({ title: "Failed to remove document", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Failed to update document phase", description: e.message, variant: "destructive" }),
   });
 
   // ── Phase document upload ──────────────────────────────────────────────────
@@ -611,14 +623,11 @@ export function PhaseDetailPanel({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                                title="Remove from phase"
-                                disabled={removeDocFromPhaseMutation.isPending}
-                                onClick={() => removeDocFromPhaseMutation.mutate(doc.id)}
+                                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                                title="Move to another phase or remove"
+                                onClick={() => setMoveDocDialog({ open: true, docId: doc.id, selectedPhaseId: "__none__" })}
                               >
-                                {removeDocFromPhaseMutation.isPending
-                                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  : <Unlink className="h-3.5 w-3.5" />}
+                                <ArrowRightLeft className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </div>
@@ -673,6 +682,66 @@ export function PhaseDetailPanel({
           </div>
         </ScrollArea>
       </SheetContent>
+
+      {/* ── Move / Remove document phase dialog ──────────────────── */}
+      <Dialog
+        open={moveDocDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setMoveDocDialog({ open: false, docId: null, selectedPhaseId: "__none__" });
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Move or Remove Document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              Pick a phase to move this document to, or choose "No phase" to remove the tag.
+            </p>
+            <div className="space-y-1">
+              <Select
+                value={moveDocDialog.selectedPhaseId}
+                onValueChange={(v) => setMoveDocDialog((d) => ({ ...d, selectedPhaseId: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a phase" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No phase (remove tag)</SelectItem>
+                  {livePhases
+                    .filter((p) => p.id !== phase.id)
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.phaseCode} — {p.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMoveDocDialog({ open: false, docId: null, selectedPhaseId: "__none__" })}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!moveDocDialog.docId) return;
+                assignDocPhaseMutation.mutate({
+                  docId: moveDocDialog.docId,
+                  phaseId: moveDocDialog.selectedPhaseId === "__none__" ? null : moveDocDialog.selectedPhaseId,
+                });
+              }}
+              disabled={assignDocPhaseMutation.isPending}
+            >
+              {assignDocPhaseMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {moveDocDialog.selectedPhaseId === "__none__" ? "Remove from Phase" : "Move to Phase"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Sheet>
   );
 }
