@@ -398,7 +398,13 @@ export default function JobDetailView({
   });
 
   // Phases for the phase picker — loaded for project jobs only
-  const { data: jobPhasesForPicker = [] } = useQuery<Array<{ id: string; name: string; phaseCode: string; status: string }>>({
+  const { data: jobPhasesForPicker = [] } = useQuery<Array<{
+    id: string; name: string; phaseCode: string; status: string;
+    scheduledStart?: string | null; scheduledEnd?: string | null;
+    budgetedHours?: string | null; actualHours?: number | null;
+    assignedUsers?: Array<{ id: string; name: string; isLead: boolean }>;
+    assignedUserId?: string | null; assignedUserName?: string | null;
+  }>>({
     queryKey: ['/api/jobs', jobId, 'phases'],
     enabled: !!jobId && (job as any)?.jobType === 'project',
     staleTime: 30000,
@@ -2665,6 +2671,144 @@ export default function JobDetailView({
                 onViewInvoice={() => linkedInvoice && navigate(`/invoices/${linkedInvoice.id}`)}
                 onStatusChange={(newStatus) => { setRollbackTargetStatus(newStatus); setShowRollbackConfirm(true); }}
               />
+
+              {/* Phase Progress card — project jobs with phases */}
+              {isProject && jobPhasesForPicker.length > 0 && !isTradie && (() => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const AVATAR_COLORS = ['#4f7ddb','#e07b39','#5ba85f','#9b59b6','#e74c3c','#16a085','#d35400','#2c3e50'];
+                const avatarColorFn = (id: string) => {
+                  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+                  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+                };
+                const initialsFn = (name: string) => {
+                  const parts = name.trim().split(/\s+/);
+                  if (parts.length === 1) return (parts[0][0] ?? '').toUpperCase();
+                  return ((parts[0][0] ?? '') + (parts[parts.length - 1][0] ?? '')).toUpperCase();
+                };
+                const fmtD = (d?: string | null) => {
+                  if (!d) return null;
+                  try { return format(new Date(d), 'd MMM'); } catch { return null; }
+                };
+                const statusCfgMap: Record<string, { label: string; cls: string }> = {
+                  not_started: { label: 'Not Started', cls: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+                  in_progress:  { label: 'In Progress',  cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+                  complete:     { label: 'Complete',     cls: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+                  invoiced:     { label: 'Invoiced',     cls: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300' },
+                };
+
+                return (
+                  <Card data-testid="card-phase-progress">
+                    <CardHeader className="pb-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <CardTitle className="text-sm font-medium flex items-center gap-2">
+                          <Layers className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+                          Phase Progress
+                        </CardTitle>
+                        <button
+                          onClick={() => handleTabChange('phases')}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          View all
+                        </button>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0 space-y-1.5">
+                      {jobPhasesForPicker.map((phase) => {
+                        const isComplete = phase.status === 'complete' || phase.status === 'invoiced';
+                        const budgeted = phase.budgetedHours ? parseFloat(phase.budgetedHours) : 0;
+                        const actual = phase.actualHours ?? 0;
+                        const isOverBudget = budgeted > 0 && actual > budgeted;
+                        const isNearBudget = budgeted > 0 && actual >= budgeted * 0.8 && !isOverBudget;
+                        const isOverdue = !isComplete && !!phase.scheduledEnd && new Date(phase.scheduledEnd) < today;
+                        const pctUsed = budgeted > 0 ? Math.min((actual / budgeted) * 100, 100) : 0;
+                        const barColor = isOverBudget ? 'hsl(var(--destructive))' : isNearBudget ? '#f59e0b' : 'hsl(var(--trade))';
+                        const statusCfg = statusCfgMap[phase.status] ?? { label: phase.status, cls: 'bg-gray-100 text-gray-700' };
+                        const phaseMembers =
+                          phase.assignedUsers ??
+                          (phase.assignedUserId
+                            ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? '' }]
+                            : []);
+
+                        return (
+                          <button
+                            key={phase.id}
+                            onClick={() => handleTabChange('phases')}
+                            className="w-full text-left rounded-lg border bg-background hover:bg-muted/40 transition-colors p-2.5"
+                            data-testid={`phase-progress-row-${phase.id}`}
+                          >
+                            {/* Top row: code, name, status, flags, avatars */}
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <span
+                                className="shrink-0 text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border"
+                                style={{ borderColor: 'hsl(var(--trade) / 0.4)', color: 'hsl(var(--trade))' }}
+                              >
+                                {phase.phaseCode}
+                              </span>
+                              <span className="text-sm font-medium flex-1 min-w-0 truncate">{phase.name}</span>
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${statusCfg.cls}`}>
+                                {statusCfg.label}
+                              </span>
+                              {isOverdue && (
+                                <span className="flex items-center gap-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 shrink-0">
+                                  <AlertTriangle className="h-3 w-3" />Overdue
+                                </span>
+                              )}
+                              {isOverBudget && (
+                                <span className="flex items-center gap-0.5 text-[10px] font-medium text-red-600 dark:text-red-400 shrink-0">
+                                  <TrendingUp className="h-3 w-3" />Over budget
+                                </span>
+                              )}
+                              {phaseMembers.length > 0 && (
+                                <div className="flex -space-x-1 shrink-0">
+                                  {phaseMembers.slice(0, 3).map((m) => (
+                                    <span
+                                      key={m.id}
+                                      className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[8px] font-bold text-white border border-background"
+                                      style={{ backgroundColor: avatarColorFn(m.id) }}
+                                    >
+                                      {initialsFn(m.name)}
+                                    </span>
+                                  ))}
+                                  {phaseMembers.length > 3 && (
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[8px] font-bold text-muted-foreground bg-muted border border-background">
+                                      +{phaseMembers.length - 3}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                            {/* Second row: date range + hours progress bar */}
+                            {(phase.scheduledStart || phase.scheduledEnd || budgeted > 0) && (
+                              <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                                {(phase.scheduledStart || phase.scheduledEnd) && (
+                                  <span className="shrink-0">
+                                    {fmtD(phase.scheduledStart) ?? '?'} → {fmtD(phase.scheduledEnd) ?? '?'}
+                                  </span>
+                                )}
+                                {budgeted > 0 && (
+                                  <div className="flex-1 flex items-center gap-2 min-w-0">
+                                    <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-300"
+                                        style={{ width: `${pctUsed}%`, backgroundColor: barColor }}
+                                      />
+                                    </div>
+                                    <span className={`shrink-0 text-[10px] font-medium tabular-nums ${isOverBudget ? 'text-red-600 dark:text-red-400' : isNearBudget ? 'text-amber-600 dark:text-amber-400' : ''}`}>
+                                      {actual.toFixed(1)}/{budgeted.toFixed(1)}h
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Job Details card */}
               <Card>

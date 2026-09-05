@@ -8168,6 +8168,166 @@ export default function JobDetailScreen() {
         <JobProgressBar status={job.status} />
       )}
 
+      {/* Phase Progress: horizontal scroll of all phase cards — project jobs only */}
+      {isProject && phases.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingBottom: spacing.xs }}
+          style={{ marginHorizontal: -spacing.lg, marginBottom: spacing.md }}
+        >
+          {phases
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((phase, _phaseIdx) => {
+              const isPhaseComplete = phase.status === 'complete' || phase.status === 'invoiced';
+              const budgetedH = phase.budgetedHours ? parseFloat(phase.budgetedHours) : 0;
+              const actualH = phase.actualHours ?? 0;
+              const isPhaseOverBudget = budgetedH > 0 && actualH > budgetedH;
+              const isPhaseNearBudget = budgetedH > 0 && actualH >= budgetedH * 0.8 && !isPhaseOverBudget;
+              const nowDay = new Date(); nowDay.setHours(0, 0, 0, 0);
+              const isPhaseOverdue = !isPhaseComplete && !!phase.scheduledEnd && new Date(phase.scheduledEnd) < nowDay;
+
+              const phaseStatusCfg: Record<string, { label: string; bgColor: string; textColor: string }> = {
+                not_started: { label: 'Not Started', bgColor: colors.muted, textColor: colors.mutedForeground },
+                in_progress:  { label: 'In Progress',  bgColor: `${colors.primary}20`, textColor: colors.primary },
+                complete:     { label: 'Complete',     bgColor: `${colors.success}20`, textColor: colors.success },
+                invoiced:     { label: 'Invoiced',     bgColor: `${colors.secondary}20`, textColor: colors.foreground },
+              };
+              const phaseStatusStyle = phaseStatusCfg[phase.status] ?? phaseStatusCfg.not_started;
+              const phasePct = budgetedH > 0 ? Math.min((actualH / budgetedH) * 100, 100) : 0;
+              const phaseBarColor = isPhaseOverBudget ? colors.destructive : isPhaseNearBudget ? colors.warning : colors.primary;
+
+              const phaseCardMembers: Array<{ id: string; name: string }> =
+                phase.assignedUsers ??
+                (phase.assignedUserId
+                  ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? '' }]
+                  : []);
+
+              const fmtPhaseDate = (d?: string | null) => {
+                if (!d) return null;
+                try {
+                  const dt = new Date(d);
+                  return `${dt.getDate()} ${dt.toLocaleString('en-AU', { month: 'short' })}`;
+                } catch { return null; }
+              };
+
+              const canOpenPhaseCard = (isOwnerOrManager || isSoloOwner) && !!phase;
+
+              return (
+                <TouchableOpacity
+                  key={phase.id}
+                  activeOpacity={canOpenPhaseCard ? 0.75 : 1}
+                  onPress={() => {
+                    if (canOpenPhaseCard) {
+                      setEditingPhase(phase);
+                      setEditPhaseForm({
+                        phaseCode: phase.phaseCode,
+                        name: phase.name,
+                        description: phase.description ?? '',
+                        scheduledStart: phase.scheduledStart ?? '',
+                        scheduledEnd: phase.scheduledEnd ?? '',
+                        bookedHours: phase.bookedHours ?? '',
+                        status: phase.status,
+                        assignedUserId: phase.assignedUserId ?? '',
+                        assignedUserIds: phase.assignedUserIds?.length
+                          ? phase.assignedUserIds
+                          : phase.assignedUserId ? [phase.assignedUserId] : [],
+                      });
+                      setShowEditPhaseModal(true);
+                    }
+                  }}
+                  style={{
+                    width: 200,
+                    backgroundColor: colors.card,
+                    borderRadius: radius.lg,
+                    borderWidth: 1,
+                    borderColor: (isPhaseOverBudget || isPhaseOverdue) ? `${colors.destructive}50` : colors.cardBorder,
+                    padding: spacing.md,
+                    gap: spacing.xs,
+                  }}
+                >
+                  {/* Phase code + alert icon */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    <Text style={{
+                      fontSize: 10,
+                      fontWeight: fontWeights.semibold,
+                      color: colors.primary,
+                      backgroundColor: `${colors.primary}15`,
+                      paddingHorizontal: 6,
+                      paddingVertical: 2,
+                      borderRadius: radius.xs,
+                    }}>{phase.phaseCode}</Text>
+                    {(isPhaseOverBudget || isPhaseOverdue) && (
+                      <Feather name="alert-triangle" size={12} color={colors.destructive} />
+                    )}
+                  </View>
+
+                  {/* Phase name */}
+                  <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                    {phase.name}
+                  </Text>
+
+                  {/* Status badge */}
+                  <View style={{ alignSelf: 'flex-start', backgroundColor: phaseStatusStyle.bgColor, paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.sm }}>
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.medium, color: phaseStatusStyle.textColor }}>
+                      {phaseStatusStyle.label}
+                    </Text>
+                  </View>
+
+                  {/* Date range */}
+                  {(phase.scheduledStart || phase.scheduledEnd) && (
+                    <Text style={{ fontSize: 11, color: isPhaseOverdue ? colors.destructive : colors.mutedForeground }}>
+                      {fmtPhaseDate(phase.scheduledStart) ?? '?'} {'\u2192'} {fmtPhaseDate(phase.scheduledEnd) ?? '?'}
+                    </Text>
+                  )}
+
+                  {/* Hours progress bar */}
+                  {budgetedH > 0 && (
+                    <View style={{ gap: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
+                          {actualH.toFixed(1)}/{budgetedH.toFixed(1)}h
+                        </Text>
+                        {isPhaseOverBudget && (
+                          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.destructive }}>Over</Text>
+                        )}
+                        {isPhaseNearBudget && (
+                          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.warning }}>Near limit</Text>
+                        )}
+                      </View>
+                      <View style={{ height: 4, backgroundColor: colors.muted, borderRadius: 2, overflow: 'hidden' }}>
+                        <View style={{ height: 4, width: `${phasePct}%` as any, backgroundColor: phaseBarColor, borderRadius: 2 }} />
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Team avatars */}
+                  {phaseCardMembers.length > 0 && (
+                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                      {phaseCardMembers.slice(0, 4).map((m, i) => (
+                        <View key={m.id} style={{ marginLeft: i === 0 ? 0 : -6, zIndex: 4 - i }}>
+                          <TeamAvatar name={m.name} userId={m.id} size={20} />
+                        </View>
+                      ))}
+                      {phaseCardMembers.length > 4 && (
+                        <View style={{
+                          marginLeft: -6, width: 20, height: 20, borderRadius: 10,
+                          backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', zIndex: 0,
+                        }}>
+                          <Text style={{ fontSize: 9, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                            +{phaseCardMembers.length - 4}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+        </ScrollView>
+      )}
+
       {/* Job Card Section - primary view, leads the Job Card tab.
           The card container only shows when a job card form actually exists,
           otherwise JobForms renders nothing and we'd be left with an empty card. */}
