@@ -2120,7 +2120,7 @@ function SupplierPickerSheetContent({
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function JobDetailScreen() {
   console.log('[LA-DEBUG] LiveActivity module:', typeof LiveActivity, LiveActivity && Object.keys(LiveActivity));
-  const { id, action: navAction, tab: navTab } = useLocalSearchParams<{ id: string; action?: string; tab?: string }>();
+  const { id, action: navAction, tab: navTab, _logTime: navLogTimePhaseId, _logExpense: navLogExpensePhaseId } = useLocalSearchParams<{ id: string; action?: string; tab?: string; _logTime?: string; _logExpense?: string }>();
   const { colors, isDark } = useTheme();
   const confirm = useConfirmDialog();
   const showActionSheet = useActionSheet();
@@ -2779,6 +2779,49 @@ export default function JobDetailScreen() {
       setActiveTab(navTab as 'overview' | 'tasks' | 'files' | 'comms' | 'manage');
     }
   }, [job, isLoading, navTab]);
+
+  // Handle deep-link quick actions from the phase-detail screen.
+  // _logTime=<phaseId>  → start the job timer scoped to that phase.
+  // _logExpense=<phaseId> → open the Log Expense modal pre-scoped to that phase.
+  // Each fires at most once per page visit (ref guard matches navAction pattern).
+  const navLogTimeFiredRef    = useRef<string | null>(null);
+  const navLogExpenseFiredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!job || isLoading) return;
+    const handle = InteractionManager.runAfterInteractions(() => {
+      if (navLogTimePhaseId && navLogTimeFiredRef.current !== navLogTimePhaseId) {
+        navLogTimeFiredRef.current = navLogTimePhaseId;
+        if (activeTimer && !isTimerForThisJob) {
+          confirm({
+            title: 'Timer Already Running',
+            message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
+            confirmText: 'Switch',
+          }).then(async (ok) => {
+            if (!ok) return;
+            const stopped = await stopTimer();
+            if (!stopped) {
+              showToast({ type: 'error', message: 'Failed to stop existing timer' });
+              return;
+            }
+            proceedWithTimerStart(false, navLogTimePhaseId);
+          });
+        } else if (activeTimer && isTimerForThisJob) {
+          showToast({ type: 'info', message: 'Timer is already running for this job' });
+        } else {
+          proceedWithTimerStart(false, navLogTimePhaseId);
+        }
+      }
+      if (navLogExpensePhaseId && navLogExpenseFiredRef.current !== navLogExpensePhaseId) {
+        navLogExpenseFiredRef.current = navLogExpensePhaseId;
+        setExpenseForm({ amount: '', description: '', phaseId: navLogExpensePhaseId });
+        setExpenseReceiptUri(null);
+        setLockedExpensePhaseId(navLogExpensePhaseId);
+        setShowLogExpenseModal(true);
+      }
+    });
+    return () => handle.cancel();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [job, isLoading, navLogTimePhaseId, navLogExpensePhaseId]);
 
   useEffect(() => {
     if (timerError) {
