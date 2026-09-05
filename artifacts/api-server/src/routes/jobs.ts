@@ -12345,8 +12345,16 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
 
       const { projectDocuments: pd, projectDocumentRevisions: pdr } = await import("@workspace/db");
 
+      const phaseIdFilter = typeof req.query.phaseId === 'string' && req.query.phaseId
+        ? req.query.phaseId
+        : null;
+
+      const whereClause = phaseIdFilter
+        ? and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId), eq(pd.phaseId, phaseIdFilter))
+        : and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId));
+
       const docs = await db.select().from(pd)
-        .where(and(eq(pd.jobId, jobId), eq(pd.userId, effectiveUserId)))
+        .where(whereClause)
         .orderBy(asc(pd.docNumber));
 
       const result = await Promise.all(docs.map(async (doc: any) => {
@@ -12417,8 +12425,20 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const seq = (Number(existing[0]?.count) || 0) + 1;
       const docNumber = `DOC-${String(seq).padStart(3, '0')}`;
 
-      const { title, category = 'Other', revision = 'A', notes } = req.body;
+      const { title, category = 'Other', revision = 'A', notes, phaseId } = req.body;
       if (!title) return res.status(400).json({ error: 'Title is required' });
+
+      // Validate phaseId belongs to this job and tenant before persisting.
+      if (phaseId) {
+        const [phase] = await db
+          .select({ id: jobPhases.id })
+          .from(jobPhases)
+          .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId), eq(jobPhases.userId, effectiveUserId)))
+          .limit(1);
+        if (!phase) {
+          return res.status(400).json({ error: 'Invalid phaseId: phase not found on this job' });
+        }
+      }
 
       const ext = req.file.originalname.split('.').pop() ?? 'bin';
       const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
@@ -12440,6 +12460,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           title,
           category,
           currentRevision: revision,
+          phaseId: phaseId || null,
         }).returning();
 
         await tx.insert(pdr).values({

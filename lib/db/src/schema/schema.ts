@@ -5733,6 +5733,8 @@ export const projectDocuments = pgTable("project_documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Optional link to a job phase (added in task #1219)
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   // Stable mobile-side identifier used to make initial document upload retries safe.
   clientGeneratedId: varchar("client_generated_id", { length: 100 }),
   // Auto-generated sequential number within the job, e.g. "DOC-001"

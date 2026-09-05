@@ -7,7 +7,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator, StyleSheet, Linking, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -15,7 +15,8 @@ import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
 import { useUserRole } from '../../src/hooks/use-user-role';
-import api from '../../src/lib/api';
+import api, { API_URL } from '../../src/lib/api';
+import { getDocumentPicker } from '../../src/lib/document-picker';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type PhaseStatus = 'not_started' | 'in_progress' | 'complete' | 'invoiced';
@@ -103,6 +104,19 @@ export default function PhaseDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ── Phase documents ────────────────────────────────────────────────────────
+  interface PhaseDoc {
+    id: string;
+    docNumber: string;
+    title: string;
+    category: string;
+    currentRevision: string;
+    latestRevision?: { fileName: string; mimeType?: string | null; fileUrl?: string | null } | null;
+  }
+  const [phaseDocs, setPhaseDocs] = useState<PhaseDoc[]>([]);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+
   const loadPhase = useCallback(async () => {
     if (!jobId || !phaseId) return;
     setLoading(true);
@@ -120,7 +134,62 @@ export default function PhaseDetailScreen() {
     }
   }, [jobId, phaseId]);
 
+  const loadDocs = useCallback(async () => {
+    if (!jobId || !phaseId) return;
+    setDocsLoading(true);
+    try {
+      const res = await api.get<PhaseDoc[]>(
+        `/api/jobs/${jobId}/project-documents?phaseId=${encodeURIComponent(phaseId)}`,
+      );
+      setPhaseDocs(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      // Non-fatal: documents section just shows empty state
+      setPhaseDocs([]);
+    } finally {
+      setDocsLoading(false);
+    }
+  }, [jobId, phaseId]);
+
   useEffect(() => { loadPhase(); }, [loadPhase]);
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  const attachPhaseDoc = useCallback(async () => {
+    const DocumentPicker = getDocumentPicker();
+    if (!DocumentPicker) {
+      Alert.alert('Update required', 'Attaching documents needs the latest app build. Please update the app.');
+      return;
+    }
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!asset) return;
+
+      setIsUploadingDoc(true);
+      const token = await api.getToken();
+      const fd = new FormData();
+      fd.append('file', { uri: asset.uri, name: asset.name, type: asset.mimeType ?? 'application/octet-stream' } as any);
+      fd.append('title', asset.name.replace(/\.[^/.]+$/, ''));
+      fd.append('category', 'Other');
+      fd.append('revision', 'A');
+      fd.append('phaseId', phaseId);
+
+      const response = await fetch(`${API_URL}/api/jobs/${jobId}/project-documents`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'x-mobile-app': 'true' },
+        body: fd,
+      });
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+      await loadDocs();
+    } catch (e: any) {
+      Alert.alert('Upload failed', e.message || 'Could not upload document.');
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  }, [jobId, phaseId, loadDocs]);
 
   const cfg = phase ? (STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started) : null;
   const phaseMembers: PhaseAssignedUser[] = phase?.assignedUsers
@@ -292,20 +361,97 @@ export default function PhaseDetailScreen() {
 
           {/* ── Documents ────────────────────────────────────────────── */}
           <SectionCard>
-            <SectionHeader icon="file-text" title="Documents" />
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: spacing.sm,
-              padding: spacing.sm,
-              backgroundColor: colors.muted,
-              borderRadius: radius.md,
-            }}>
-              <Feather name="info" size={13} color={colors.mutedForeground} />
-              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, flex: 1 }}>
-                Documents attached to this phase will appear here.
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+              <SectionHeader icon="file-text" title="Documents" />
+              {!isTradie && (
+                <TouchableOpacity
+                  onPress={attachPhaseDoc}
+                  disabled={isUploadingDoc}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 4,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: radius.sm,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    opacity: isUploadingDoc ? 0.5 : 1,
+                  }}
+                >
+                  {isUploadingDoc
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <Feather name="paperclip" size={12} color={colors.primary} />}
+                  <Text style={{ fontSize: 11, color: colors.primary, fontWeight: fontWeights.medium }}>
+                    {isUploadingDoc ? 'Uploading…' : 'Attach'}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
+            {docsLoading ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs }}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                  Loading documents…
+                </Text>
+              </View>
+            ) : phaseDocs.length > 0 ? (
+              <View style={{ gap: spacing.xs }}>
+                {phaseDocs.map((doc) => (
+                  <View
+                    key={doc.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: spacing.sm,
+                      paddingHorizontal: spacing.sm,
+                      paddingVertical: spacing.xs,
+                      borderRadius: radius.md,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      backgroundColor: colors.background,
+                    }}
+                  >
+                    <Feather name="file-text" size={14} color={colors.mutedForeground} />
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text
+                        style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}
+                        numberOfLines={1}
+                      >
+                        {doc.title}
+                      </Text>
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                        {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
+                      </Text>
+                    </View>
+                    {doc.latestRevision?.fileUrl ? (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(doc.latestRevision!.fileUrl!)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="external-link" size={16} color={colors.mutedForeground} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.sm,
+                padding: spacing.sm,
+                backgroundColor: colors.muted,
+                borderRadius: radius.md,
+              }}>
+                <Feather name="file-text" size={13} color={colors.mutedForeground} />
+                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, flex: 1 }}>
+                  No documents attached to this phase yet.
+                </Text>
+              </View>
+            )}
           </SectionCard>
 
           {/* ── Notes ────────────────────────────────────────────────── */}

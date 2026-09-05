@@ -6,11 +6,11 @@
  * The panel does NOT navigate away — the URL stays stable, keeping the user's
  * position in the Phases list. Closing the panel returns them to the list.
  */
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState, useRef } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Pencil, X, Crown, Loader2, Layers, Users, FileText, StickyNote,
-  CheckSquare, ChevronRight, Clock,
+  CheckSquare, ChevronRight, Clock, ExternalLink, Upload,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, getQueryFn, getAuthHeaders } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { JobPhase, PhaseAssignedUser, PhaseStatus } from "./JobPhasesSection";
@@ -235,6 +235,19 @@ export interface PhaseDetailPanelProps {
   onCreateClaim?: (phase: JobPhase) => void;
 }
 
+interface PhaseDocument {
+  id: string;
+  docNumber: string;
+  title: string;
+  category: string;
+  currentRevision: string;
+  latestRevision?: {
+    fileName: string;
+    mimeType?: string | null;
+    fileUrl?: string | null;
+  } | null;
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 export function PhaseDetailPanel({
   jobId,
@@ -262,6 +275,43 @@ export function PhaseDetailPanel({
     staleTime: 0,
   });
   const livePhaseData = livePhases.find((p) => p.id === phase.id);
+
+  // ── Phase documents query ──────────────────────────────────────────────────
+  const { data: phaseDocs, isLoading: docsLoading } = useQuery<PhaseDocument[]>({
+    queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!jobId && !!phase.id,
+  });
+
+  // ── Phase document upload ──────────────────────────────────────────────────
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadTitle, setUploadTitle] = useState("");
+  const uploadMutation = useMutation({
+    mutationFn: async ({ file, title }: { file: File; title: string }) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("title", title);
+      fd.append("category", "Other");
+      fd.append("revision", "A");
+      fd.append("phaseId", phase.id);
+      const res = await fetch(`/api/jobs/${jobId}/project-documents`, {
+        method: "POST",
+        body: fd,
+        credentials: "include",
+        headers: getAuthHeaders() as HeadersInit,
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }] });
+      setUploadFile(null);
+      setUploadTitle("");
+      toast({ title: "Document attached to phase" });
+    },
+    onError: (e: any) => toast({ title: "Upload failed", description: e.message, variant: "destructive" }),
+  });
 
   const cfg = STATUS_CONFIG[phase.status] ?? STATUS_CONFIG.not_started;
   // Prefer live data from cache/re-fetch; fall back to prop for instant display.
@@ -448,11 +498,103 @@ export function PhaseDetailPanel({
 
                 {/* ── Documents ─────────────────────────────────────── */}
                 <div className="space-y-2">
-                  <SectionHeading icon={<FileText className="h-3.5 w-3.5" />} title="Documents" />
-                  <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30 text-xs text-muted-foreground">
-                    <FileText className="h-3.5 w-3.5 shrink-0" />
-                    <span>Documents tagged to this phase will appear here.</span>
+                  <div className="flex items-center justify-between">
+                    <SectionHeading icon={<FileText className="h-3.5 w-3.5" />} title="Documents" />
+                    {!isTradie && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-6 text-[10px] gap-1 px-2"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadMutation.isPending}
+                      >
+                        {uploadMutation.isPending
+                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          : <Upload className="h-3 w-3" />}
+                        Attach
+                      </Button>
+                    )}
                   </div>
+                  {/* Hidden file input — stages a file for upload */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      setUploadFile(f);
+                      setUploadTitle(f.name.replace(/\.[^/.]+$/, ""));
+                      e.target.value = "";
+                    }}
+                  />
+                  {/* Inline title confirm row (appears when a file is staged) */}
+                  {uploadFile && (
+                    <div className="flex items-center gap-2 p-2 rounded-lg border bg-muted/30">
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <p className="text-[10px] text-muted-foreground truncate">{uploadFile.name}</p>
+                        <input
+                          className="w-full text-xs border rounded px-2 py-1 bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                          placeholder="Document title"
+                          value={uploadTitle}
+                          onChange={(e) => setUploadTitle(e.target.value)}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          disabled={!uploadTitle.trim() || uploadMutation.isPending}
+                          onClick={() => uploadMutation.mutate({ file: uploadFile, title: uploadTitle.trim() })}
+                          style={{ backgroundColor: "hsl(var(--trade))", color: "white" }}
+                        >
+                          {uploadMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : "Upload"}
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => { setUploadFile(null); setUploadTitle(""); }}>
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  {docsLoading ? (
+                    <div className="flex items-center gap-2 p-3 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                      <span>Loading documents…</span>
+                    </div>
+                  ) : phaseDocs && phaseDocs.length > 0 ? (
+                    <div className="space-y-1">
+                      {phaseDocs.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="flex items-center gap-2 px-2.5 py-2 rounded-lg border bg-background hover:bg-muted/40 transition-colors"
+                        >
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{doc.title}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
+                            </p>
+                          </div>
+                          {doc.latestRevision?.fileUrl ? (
+                            <a
+                              href={doc.latestRevision.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="shrink-0 p-1 rounded hover:bg-muted transition-colors"
+                              title="View document"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                            </a>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30 text-xs text-muted-foreground">
+                      <FileText className="h-3.5 w-3.5 shrink-0" />
+                      <span>No documents attached to this phase yet.</span>
+                    </div>
+                  )}
                 </div>
 
                 {/* ── Notes ────────────────────────────────────────── */}
