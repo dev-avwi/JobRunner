@@ -8,6 +8,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
@@ -166,6 +167,7 @@ export default function PhaseDetailScreen() {
   const router = useRouter();
   const { jobId, phaseId } = useLocalSearchParams<{ jobId: string; phaseId: string }>();
   const { isStaff, isOwner, isManager } = useUserRole();
+  const insets = useSafeAreaInsets();
   // Workers are read-only. Owners and managers have full write access.
   const isReadOnly = isStaff;
 
@@ -470,39 +472,29 @@ export default function PhaseDetailScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
 
-      {/* ── Top nav bar ──────────────────────────────────────────────── */}
-      <View style={[styles.headerBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-          <Feather name="arrow-left" size={20} color={colors.foreground} />
-        </TouchableOpacity>
-
-        {/* Phase code label in nav — smaller, muted */}
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: fontWeights.medium, letterSpacing: 0.3 }}>Phase</Text>
-          <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-            {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
-          </Text>
-        </View>
-
-        {/* Edit — owners and managers only */}
-        {(isOwner || isManager) && (
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
-            style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border }}
-            activeOpacity={0.7}
-          >
-            <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.primary }}>Edit</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
       <ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
       >
 
         {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
-        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
+        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25', paddingTop: insets.top + 12 }]}>
+
+          {/* Nav row: back + edit — lives inside the banner, no separate strip */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <TouchableOpacity onPress={() => router.back()} style={{ padding: 6, marginLeft: -4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </TouchableOpacity>
+            {(isOwner || isManager) && (
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
+                style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card + 'CC' }}
+                activeOpacity={0.7}
+              >
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.primary }}>Edit</Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* Badge row */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 14 }}>

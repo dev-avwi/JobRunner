@@ -254,8 +254,9 @@ export function ManageTeamSheet({
 }: ManageTeamSheetProps) {
   const { colors } = useTheme();
   const [busy, setBusy] = useState<string | null>(null);
-  const [showAddWorkerPicker, setShowAddWorkerPicker] = useState(false);
+  const [pickerMode, setPickerMode] = useState<'main' | 'add-worker' | 'add-to-phase'>('main');
   const [addToPhase, setAddToPhase] = useState<JobPhase | null>(null);
+  const [pickerSelected, setPickerSelected] = useState<Set<string>>(new Set());
 
   // Active assignments only
   const activeAssignments = useMemo(
@@ -442,45 +443,169 @@ export function ManageTeamSheet({
 
   const isBusy = busy !== null;
 
+  // ── Inline picker (avoids stacked-Modal touch interception issues) ───────
+
+  const enterPicker = (mode: 'add-worker' | 'add-to-phase', phase?: JobPhase) => {
+    setPickerSelected(new Set());
+    if (mode === 'add-to-phase' && phase) setAddToPhase(phase);
+    setPickerMode(mode);
+  };
+
+  const exitPicker = () => {
+    setPickerMode('main');
+    setAddToPhase(null);
+    setPickerSelected(new Set());
+  };
+
+  const pickerExcludedIds =
+    pickerMode === 'add-to-phase' && addToPhase
+      ? phaseAssignedIds.get(addToPhase.id) ?? new Set<string>()
+      : assignedJobUserIds;
+
+  const pickerAvailable = eligibleMembers.filter(
+    (m) => !pickerExcludedIds.has(getMemberId(m)),
+  );
+
+  const pickerTitle =
+    pickerMode === 'add-worker'
+      ? 'Add Worker to Job'
+      : pickerMode === 'add-to-phase' && addToPhase
+      ? `Add to ${addToPhase.name}`
+      : 'Manage Team';
+
+  const handlePickerConfirm = async () => {
+    if (pickerSelected.size === 0) return;
+    const ids = Array.from(pickerSelected);
+    setBusy('picker');
+    try {
+      if (pickerMode === 'add-worker') {
+        await addWorkersToJob(ids);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        showToast({ type: 'success', message: `${ids.length} worker${ids.length !== 1 ? 's' : ''} added to job` });
+        await onRefresh();
+      } else if (pickerMode === 'add-to-phase' && addToPhase) {
+        const currentSet = phaseAssignedIds.get(addToPhase.id) ?? new Set<string>();
+        const combined = [...new Set([...currentSet, ...ids])];
+        const notOnJob = ids.filter((uid) => !assignedJobUserIds.has(uid));
+        if (notOnJob.length > 0) await addWorkersToJob(notOnJob);
+        await updatePhaseAssignment(addToPhase, combined);
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await onRefresh();
+      }
+      exitPicker();
+    } catch {
+      showToast({ type: 'error', message: 'Failed to add worker' });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const sheetTitle = pickerMode === 'main' ? 'Manage Team' : pickerTitle;
+
+  const sheetFooter =
+    pickerMode !== 'main' ? (
+      <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm, gap: spacing.sm }}>
+        <TouchableOpacity
+          style={{
+            backgroundColor: pickerSelected.size > 0 ? colors.primary : colors.muted,
+            borderRadius: radius.md,
+            paddingVertical: spacing.md,
+            alignItems: 'center',
+          }}
+          onPress={handlePickerConfirm}
+          disabled={pickerSelected.size === 0 || isBusy}
+          activeOpacity={0.8}
+        >
+          {busy === 'picker' ? (
+            <ActivityIndicator size="small" color={colors.primaryForeground} />
+          ) : (
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: pickerSelected.size > 0 ? colors.primaryForeground : colors.mutedForeground }}>
+              {pickerSelected.size > 0
+                ? `${pickerMode === 'add-worker' ? 'Add to Job' : 'Assign to Phase'} (${pickerSelected.size})`
+                : pickerMode === 'add-worker' ? 'Add to Job' : 'Assign to Phase'}
+            </Text>
+          )}
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ alignItems: 'center', paddingVertical: spacing.sm }}
+          onPress={exitPicker}
+          activeOpacity={0.7}
+        >
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    ) : (
+      <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm }}>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center' }}
+          onPress={onDismiss}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Done</Text>
+        </TouchableOpacity>
+      </View>
+    );
+
   return (
-    <>
-      <AppBottomSheet
-        visible={visible}
-        onDismiss={onDismiss}
-        title="Manage Team"
-        scrollable={false}
-        contentPadding={0}
-        snapPoints={['85%']}
-        footer={
-          <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm }}>
-            <TouchableOpacity
-              style={{
-                backgroundColor: colors.primary,
-                borderRadius: radius.md,
-                paddingVertical: spacing.md,
-                alignItems: 'center',
-              }}
-              onPress={onDismiss}
-              activeOpacity={0.8}
-            >
-              <Text
-                style={{
-                  fontSize: typography.button.fontSize,
-                  fontWeight: fontWeights.semibold,
-                  color: colors.primaryForeground,
-                }}
-              >
-                Done
-              </Text>
-            </TouchableOpacity>
-          </View>
-        }
-      >
+    <AppBottomSheet
+      visible={visible}
+      onDismiss={pickerMode !== 'main' ? exitPicker : onDismiss}
+      title={sheetTitle}
+      scrollable={false}
+      contentPadding={0}
+      snapPoints={['85%']}
+      footer={sheetFooter}
+    >
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingBottom: spacing.xl }}
           showsVerticalScrollIndicator={false}
         >
+          {/* ── Inline picker (add-worker or add-to-phase mode) ────── */}
+          {pickerMode !== 'main' && (
+            pickerAvailable.length === 0 ? (
+              <View style={{ padding: spacing.xl, alignItems: 'center' }}>
+                <Feather name="users" size={32} color={colors.mutedForeground} style={{ marginBottom: spacing.md }} />
+                <Text style={{ color: colors.mutedForeground, fontSize: typography.sizes.sm, textAlign: 'center' }}>
+                  No team members available to add.{'\n'}Add team members in Settings first.
+                </Text>
+              </View>
+            ) : (
+              pickerAvailable.map((member) => {
+                const memberId = getMemberId(member);
+                const name = getMemberName(member);
+                const isSelected = pickerSelected.has(memberId);
+                return (
+                  <TouchableOpacity
+                    key={memberId}
+                    style={[pickerRowStyle, isSelected && { backgroundColor: `${colors.primary}12` }]}
+                    onPress={() => {
+                      const next = new Set(pickerSelected);
+                      next.has(memberId) ? next.delete(memberId) : next.add(memberId);
+                      setPickerSelected(next);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ width: 22, height: 22, borderRadius: 4, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.border, backgroundColor: isSelected ? colors.primary : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                      {isSelected && <Feather name="check" size={13} color={colors.primaryForeground} />}
+                    </View>
+                    <TeamAvatar name={name} email={member.email} userId={memberId} themeColor={member.themeColor} size={36} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground }}>
+                        {name}
+                      </Text>
+                      {member.email ? (
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground }} numberOfLines={1}>{member.email}</Text>
+                      ) : null}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )
+          )}
+
+          {/* ── Section 1: Job Workers ─────────────────────────────── */}
+          {pickerMode === 'main' && <>
           {/* ── Section 1: Job Workers ─────────────────────────────── */}
           <View style={styles.sectionHeader}>
             <Feather name="users" size={14} color={colors.mutedForeground} />
@@ -559,7 +684,7 @@ export function ManageTeamSheet({
             {/* Add Worker button */}
             <TouchableOpacity
               style={[styles.addWorkerBtn, { borderColor: colors.border }]}
-              onPress={() => setShowAddWorkerPicker(true)}
+              onPress={() => enterPicker('add-worker')}
               disabled={isBusy}
               activeOpacity={0.7}
             >
@@ -738,7 +863,7 @@ export function ManageTeamSheet({
                         {canAddMore && (
                           <TouchableOpacity
                             style={[styles.addToPhaseBtn, { borderColor: colors.primary }]}
-                            onPress={() => setAddToPhase(phase)}
+                            onPress={() => enterPicker('add-to-phase', phase)}
                             disabled={isBusy}
                             activeOpacity={0.7}
                           >
@@ -760,35 +885,9 @@ export function ManageTeamSheet({
               </View>
             </>
           )}
+          </>}
         </ScrollView>
       </AppBottomSheet>
-
-      {/* Add worker to job picker */}
-      <WorkerPickerSheet
-        visible={showAddWorkerPicker}
-        onDismiss={() => setShowAddWorkerPicker(false)}
-        excludedIds={assignedJobUserIds}
-        eligibleMembers={eligibleMembers}
-        title="Add Worker to Job"
-        confirmLabel="Add to Job"
-        onConfirm={handleAddWorkersToJob}
-        colors={colors}
-      />
-
-      {/* Add worker to phase picker (includes members not yet on the job) */}
-      {addToPhase && (
-        <WorkerPickerSheet
-          visible={!!addToPhase}
-          onDismiss={() => setAddToPhase(null)}
-          excludedIds={phaseAssignedIds.get(addToPhase.id) ?? new Set()}
-          eligibleMembers={eligibleMembers}
-          title={`Add to ${addToPhase.name}`}
-          confirmLabel="Assign to Phase"
-          onConfirm={(ids) => handleAddWorkersToPhase(addToPhase, ids)}
-          colors={colors}
-        />
-      )}
-    </>
   );
 }
 
