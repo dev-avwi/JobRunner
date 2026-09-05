@@ -10,7 +10,7 @@ import { useState, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   Pencil, X, Crown, Loader2, Layers, Users, FileText, StickyNote,
-  CheckSquare, ChevronRight, Clock, ExternalLink, Upload, ArrowRightLeft,
+  CheckSquare, ChevronRight, Clock, ExternalLink, Upload, ArrowRightLeft, Link2, Search,
 } from "lucide-react";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
@@ -244,6 +244,7 @@ interface PhaseDocument {
   title: string;
   category: string;
   currentRevision: string;
+  phaseId?: string | null;
   latestRevision?: {
     fileName: string;
     mimeType?: string | null;
@@ -286,6 +287,10 @@ export function PhaseDetailPanel({
     open: false, docId: null, selectedPhaseId: "__none__",
   });
 
+  // ── Link existing doc dialog state ─────────────────────────────────────────
+  const [linkDocDialog, setLinkDocDialog] = useState(false);
+  const [linkDocSearch, setLinkDocSearch] = useState("");
+
   // ── Phase documents query ──────────────────────────────────────────────────
   const { data: phaseDocs, isLoading: docsLoading } = useQuery<PhaseDocument[]>({
     queryKey: [`/api/jobs/${jobId}/project-documents`, { phaseId: phase.id }],
@@ -293,9 +298,17 @@ export function PhaseDetailPanel({
     enabled: !!jobId && !!phase.id,
   });
 
-  // ── Assign / move document to a phase (null = remove tag) ────────────────
+  // ── All-docs query (for link-existing picker) ──────────────────────────────
+  const { data: allDocs } = useQuery<PhaseDocument[]>({
+    queryKey: [`/api/jobs/${jobId}/project-documents`],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: linkDocDialog && !!jobId,
+  });
+  const untaggedDocs = (allDocs ?? []).filter((d) => !d.phaseId);
+
+  // ── Assign / move / link document to a phase (null = remove tag) ──────────
   const assignDocPhaseMutation = useMutation({
-    mutationFn: async ({ docId, phaseId }: { docId: string; phaseId: string | null }) => {
+    mutationFn: async ({ docId, phaseId, mode }: { docId: string; phaseId: string | null; mode?: "link" | "move" }) => {
       const res = await fetch(`/api/jobs/${jobId}/project-documents/${docId}`, {
         method: "PATCH",
         credentials: "include",
@@ -305,14 +318,19 @@ export function PhaseDetailPanel({
       if (!res.ok) throw new Error(await res.text());
       return res.json();
     },
-    onSuccess: (_, { phaseId }) => {
+    onSuccess: (_, { phaseId, mode }) => {
       // Invalidate the broad prefix so every phase-scoped variant (source, destination,
       // and the flat document register) refetches — avoids stale caches in destination panels.
       queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/project-documents`] });
-      setMoveDocDialog({ open: false, docId: null, selectedPhaseId: "__none__" });
-      toast({ title: phaseId ? "Document moved to phase" : "Document removed from phase" });
+      if (mode === "link") {
+        setLinkDocDialog(false);
+        toast({ title: "Document linked to phase" });
+      } else {
+        setMoveDocDialog({ open: false, docId: null, selectedPhaseId: "__none__" });
+        toast({ title: phaseId ? "Document moved to phase" : "Document removed from phase" });
+      }
     },
-    onError: (e: any) => toast({ title: "Failed to update document phase", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast({ title: "Failed to update document", description: e.message, variant: "destructive" }),
   });
 
   // ── Phase document upload ──────────────────────────────────────────────────
@@ -533,18 +551,29 @@ export function PhaseDetailPanel({
                   <div className="flex items-center justify-between">
                     <SectionHeading icon={<FileText className="h-3.5 w-3.5" />} title="Documents" />
                     {!isTradie && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-6 text-[10px] gap-1 px-2"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadMutation.isPending}
-                      >
-                        {uploadMutation.isPending
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
-                          : <Upload className="h-3 w-3" />}
-                        Attach
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] gap-1 px-2"
+                          onClick={() => { setLinkDocSearch(""); setLinkDocDialog(true); }}
+                        >
+                          <Link2 className="h-3 w-3" />
+                          Link existing
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 text-[10px] gap-1 px-2"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadMutation.isPending}
+                        >
+                          {uploadMutation.isPending
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <Upload className="h-3 w-3" />}
+                          Attach
+                        </Button>
+                      </div>
                     )}
                   </div>
                   {/* Hidden file input — stages a file for upload */}
@@ -683,6 +712,67 @@ export function PhaseDetailPanel({
         </ScrollArea>
       </SheetContent>
 
+      {/* ── Link existing document dialog ─────────────────────────── */}
+      <Dialog open={linkDocDialog} onOpenChange={(open) => { if (!open) setLinkDocDialog(false); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Link existing document</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <p className="text-sm text-muted-foreground">
+              Choose a document from this job's register to attach to this phase.
+            </p>
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                className="w-full pl-8 pr-3 py-2 text-sm border rounded-md bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                placeholder="Search documents…"
+                value={linkDocSearch}
+                onChange={(e) => setLinkDocSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="max-h-64 overflow-y-auto space-y-1 rounded-md border bg-muted/20 p-1">
+              {untaggedDocs.length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  All documents are already linked to a phase.
+                </p>
+              ) : (() => {
+                const filtered = untaggedDocs.filter((d) =>
+                  !linkDocSearch.trim() ||
+                  d.title.toLowerCase().includes(linkDocSearch.toLowerCase()) ||
+                  d.docNumber.toLowerCase().includes(linkDocSearch.toLowerCase())
+                );
+                return filtered.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No documents match your search.</p>
+                ) : filtered.map((doc) => (
+                  <button
+                    key={doc.id}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md hover:bg-muted/60 transition-colors text-left"
+                    disabled={assignDocPhaseMutation.isPending}
+                    onClick={() => {
+                      assignDocPhaseMutation.mutate({ docId: doc.id, phaseId: phase.id, mode: "link" });
+                    }}
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{doc.title}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {doc.docNumber} · {doc.category} · Rev {doc.currentRevision}
+                      </p>
+                    </div>
+                    {assignDocPhaseMutation.isPending && <Loader2 className="h-3 w-3 animate-spin shrink-0 text-muted-foreground" />}
+                  </button>
+                ));
+              })()}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDocDialog(false)}>Cancel</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Move / Remove document phase dialog ──────────────────── */}
       <Dialog
         open={moveDocDialog.open}
@@ -732,6 +822,7 @@ export function PhaseDetailPanel({
                 assignDocPhaseMutation.mutate({
                   docId: moveDocDialog.docId,
                   phaseId: moveDocDialog.selectedPhaseId === "__none__" ? null : moveDocDialog.selectedPhaseId,
+                  mode: "move",
                 });
               }}
               disabled={assignDocPhaseMutation.isPending}
