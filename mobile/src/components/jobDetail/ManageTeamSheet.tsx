@@ -445,7 +445,7 @@ export function ManageTeamSheet({
   return (
     <>
       <AppBottomSheet
-        visible={visible}
+        visible={visible && !showAddWorkerPicker && !addToPhase}
         onDismiss={onDismiss}
         title="Manage Team"
         scrollable={false}
