@@ -8287,30 +8287,12 @@ export default function JobDetailScreen() {
                 } catch { return null; }
               };
 
-              const canOpenPhaseCard = (isOwnerOrManager || isSoloOwner) && !!phase;
-
               return (
                 <TouchableOpacity
                   key={phase.id}
-                  activeOpacity={canOpenPhaseCard ? 0.75 : 1}
+                  activeOpacity={0.75}
                   onPress={() => {
-                    if (canOpenPhaseCard) {
-                      setEditingPhase(phase);
-                      setEditPhaseForm({
-                        phaseCode: phase.phaseCode,
-                        name: phase.name,
-                        description: phase.description ?? '',
-                        scheduledStart: phase.scheduledStart ?? '',
-                        scheduledEnd: phase.scheduledEnd ?? '',
-                        bookedHours: phase.bookedHours ?? '',
-                        status: phase.status,
-                        assignedUserId: phase.assignedUserId ?? '',
-                        assignedUserIds: phase.assignedUserIds?.length
-                          ? phase.assignedUserIds
-                          : phase.assignedUserId ? [phase.assignedUserId] : [],
-                      });
-                      setShowEditPhaseModal(true);
-                    }
+                    router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } });
                   }}
                   style={{
                     width: 200,
