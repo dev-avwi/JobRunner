@@ -8,6 +8,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
@@ -18,6 +19,8 @@ import { useTimeTrackingStore } from '../../src/lib/store';
 import api, { API_URL } from '../../src/lib/api';
 import { getDocumentPicker } from '../../src/lib/document-picker';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { SheetButton } from '../../src/components/ui/SheetButton';
+import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { showToast } from '../../src/lib/toast';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -202,6 +205,23 @@ export default function PhaseDetailScreen() {
   const [expenseDescription, setExpenseDescription] = useState('');
   const [savingExpense, setSavingExpense] = useState(false);
 
+  // ── Edit Phase sheet ──────────────────────────────────────────────────────
+  const [showEditPhaseSheet, setShowEditPhaseSheet] = useState(false);
+  const [editPhaseForm, setEditPhaseForm] = useState({
+    phaseCode: '',
+    name: '',
+    description: '',
+    scheduledStart: '',
+    scheduledEnd: '',
+    bookedHours: '',
+    status: 'not_started' as PhaseStatus,
+    assignedUserId: '',
+    assignedUserIds: [] as string[],
+  });
+  const [phaseDateTarget, setPhaseDateTarget] = useState<'start' | 'end' | null>(null);
+  const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; email?: string; role?: string; memberId?: string; userId?: string; themeColor?: string }[]>([]);
+
   // ── Data loading ──────────────────────────────────────────────────────────
 
   const loadPhase = useCallback(async () => {
@@ -246,9 +266,19 @@ export default function PhaseDetailScreen() {
     }
   }, [jobId, phaseId]);
 
+  const loadTeamMembers = useCallback(async () => {
+    try {
+      const res = await api.get<any[]>('/api/team/members');
+      if (Array.isArray(res.data)) setTeamMembers(res.data);
+    } catch {
+      // silent — team picker still works, just empty
+    }
+  }, []);
+
   useEffect(() => { loadPhase(); }, [loadPhase]);
   useEffect(() => { loadTasks(); }, [loadTasks]);
   useEffect(() => { loadDocs(); }, [loadDocs]);
+  useEffect(() => { if (isOwner || isManager) loadTeamMembers(); }, [loadTeamMembers, isOwner, isManager]);
 
   // ── Timer elapsed ticker ──────────────────────────────────────────────────
 
@@ -406,6 +436,54 @@ export default function PhaseDetailScreen() {
     }
   };
 
+  // ── Edit Phase actions ────────────────────────────────────────────────────
+
+  const openEditPhaseSheet = useCallback(() => {
+    if (!phase) return;
+    setEditPhaseForm({
+      phaseCode: phase.phaseCode ?? '',
+      name: phase.name,
+      description: phase.description ?? '',
+      scheduledStart: phase.scheduledStart ?? '',
+      scheduledEnd: phase.scheduledEnd ?? '',
+      bookedHours: phase.bookedHours ?? '',
+      status: phase.status,
+      assignedUserId: phase.assignedUserId ?? '',
+      assignedUserIds: phase.assignedUsers?.map(u => u.id) ?? (phase.assignedUserId ? [phase.assignedUserId] : []),
+    });
+    setPhaseDateTarget(null);
+    setShowEditPhaseSheet(true);
+  }, [phase]);
+
+  const handleUpdatePhase = async () => {
+    if (!phase || !editPhaseForm.name.trim()) {
+      showToast({ type: 'error', message: 'Phase name is required' });
+      return;
+    }
+    setIsSavingEditPhase(true);
+    try {
+      const payload: Record<string, any> = {
+        phaseCode: editPhaseForm.phaseCode.trim().toUpperCase() || phase.phaseCode,
+        name: editPhaseForm.name.trim(),
+        description: editPhaseForm.description.trim() || null,
+        scheduledStart: editPhaseForm.scheduledStart.trim() || null,
+        scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
+        bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
+        status: editPhaseForm.status,
+        assignedUserId: editPhaseForm.assignedUserId || null,
+        assignedUserIds: editPhaseForm.assignedUserIds,
+      };
+      await api.patch(`/api/jobs/${jobId}/phases/${phase.id}`, payload);
+      setShowEditPhaseSheet(false);
+      showToast({ type: 'success', message: 'Phase updated' });
+      await loadPhase();
+    } catch (e: any) {
+      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to update phase' });
+    } finally {
+      setIsSavingEditPhase(false);
+    }
+  };
+
   // ── Loading / error states ────────────────────────────────────────────────
 
   if (loading) {
@@ -491,7 +569,7 @@ export default function PhaseDetailScreen() {
             </TouchableOpacity>
             {(isOwner || isManager) && (
               <TouchableOpacity
-                onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
+                onPress={openEditPhaseSheet}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 activeOpacity={0.7}
               >
@@ -1005,6 +1083,161 @@ export default function PhaseDetailScreen() {
         </KeyboardAvoidingView>
       </AppBottomSheet>
 
+      {/* ── Edit Phase bottom sheet ──────────────────────────────────── */}
+      <AppBottomSheet
+        visible={showEditPhaseSheet}
+        onDismiss={() => { if (!isSavingEditPhase) { setShowEditPhaseSheet(false); setPhaseDateTarget(null); } }}
+        title="Edit Phase"
+        showCloseButton
+        snapPoints={['85%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton
+              variant="outline"
+              label="Cancel"
+              onPress={() => { setShowEditPhaseSheet(false); setPhaseDateTarget(null); }}
+              style={{ flex: 1 }}
+            />
+            <SheetButton
+              onPress={handleUpdatePhase}
+              loading={isSavingEditPhase}
+              disabled={isSavingEditPhase || !editPhaseForm.name.trim()}
+              label="Save Changes"
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
+      >
+        <View style={{ padding: spacing.md }}>
+          {/* Phase Code */}
+          <Text style={[styles.formLabel, { color: colors.foreground }]}>Phase Code</Text>
+          <TextInput
+            style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: spacing.lg }]}
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.phaseCode}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, phaseCode: t.toUpperCase() }))}
+            maxLength={20}
+            autoCapitalize="characters"
+          />
+
+          {/* Name */}
+          <Text style={[styles.formLabel, { color: colors.foreground }]}>Name *</Text>
+          <TextInput
+            style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: spacing.lg }]}
+            placeholder="e.g. Foundation, Framing, Fit-out"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.name}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, name: t }))}
+          />
+
+          {/* Date range */}
+          <View style={{ flexDirection: 'row', gap: spacing.md, marginBottom: spacing.lg }}>
+            {(['start', 'end'] as const).map((field) => {
+              const iso = field === 'start' ? editPhaseForm.scheduledStart : editPhaseForm.scheduledEnd;
+              const isActive = phaseDateTarget === field;
+              return (
+                <View key={field} style={{ flex: 1 }}>
+                  <Text style={[styles.formLabel, { color: colors.foreground }]}>{field === 'start' ? 'Start Date' : 'End Date'}</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => setPhaseDateTarget(isActive ? null : field)}
+                    style={[styles.formInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderColor: isActive ? colors.primary : colors.border, backgroundColor: colors.background }]}
+                  >
+                    <Text style={{ fontSize: 14, color: iso ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
+                      {iso ? new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Set date'}
+                    </Text>
+                    <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
+                  </TouchableOpacity>
+                  {isActive && (
+                    <View style={{ marginTop: 4 }}>
+                      <DateTimePicker
+                        value={iso ? new Date(iso) : new Date()}
+                        mode="date"
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        onChange={(event, date) => {
+                          if (Platform.OS !== 'ios') setPhaseDateTarget(null);
+                          if (event.type !== 'dismissed' && date) {
+                            setEditPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
+                          }
+                        }}
+                      />
+                      {Platform.OS === 'ios' && (
+                        <TouchableOpacity
+                          style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
+                          onPress={() => setPhaseDateTarget(null)}
+                        >
+                          <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+
+          {/* Booked Hours */}
+          <Text style={[styles.formLabel, { color: colors.foreground }]}>Booked Hours</Text>
+          <TextInput
+            style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: spacing.lg }]}
+            placeholder="e.g. 40"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.bookedHours}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, bookedHours: t }))}
+            keyboardType="decimal-pad"
+          />
+
+          {/* Status */}
+          <Text style={[styles.formLabel, { color: colors.foreground }]}>Status</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+            {(['not_started', 'in_progress', 'complete', 'invoiced'] as PhaseStatus[]).map((s) => {
+              const labels: Record<PhaseStatus, string> = { not_started: 'Not Started', in_progress: 'In Progress', complete: 'Complete', invoiced: 'Invoiced' };
+              const isSelected = editPhaseForm.status === s;
+              return (
+                <TouchableOpacity
+                  key={s}
+                  onPress={() => setEditPhaseForm(f => ({ ...f, status: s }))}
+                  style={{
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderRadius: radius.full,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    backgroundColor: isSelected ? colors.primary : colors.card,
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? colors.primaryForeground : colors.foreground }}>
+                    {labels[s]}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Description */}
+          <Text style={[styles.formLabel, { color: colors.foreground }]}>Description</Text>
+          <TextInput
+            style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
+            placeholder="Optional notes about this phase"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseForm.description}
+            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, description: t }))}
+            multiline
+            numberOfLines={3}
+          />
+
+          {/* Team */}
+          <PhaseTeamPicker
+            selectedIds={editPhaseForm.assignedUserIds}
+            teamMembers={teamMembers}
+            onChange={(assignedUserIds) => setEditPhaseForm(f => ({ ...f, assignedUserIds, assignedUserId: assignedUserIds[0] || '' }))}
+            onManageTeam={() => { setShowEditPhaseSheet(false); router.push('/more/team-management' as any); }}
+            testID="phase-detail-edit-team"
+          />
+        </View>
+      </AppBottomSheet>
+
     </View>
   );
 }
@@ -1056,5 +1289,17 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     borderWidth: 1,
     ...shadows.sm,
+  },
+  formLabel: {
+    fontSize: 13,
+    fontWeight: fontWeights.semibold as any,
+    marginBottom: 6,
+  },
+  formInput: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.body.fontSize,
+    height: 44,
   },
 });
