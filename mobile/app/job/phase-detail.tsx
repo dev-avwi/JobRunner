@@ -8,9 +8,8 @@ import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
@@ -167,7 +166,6 @@ export default function PhaseDetailScreen() {
   const router = useRouter();
   const { jobId, phaseId } = useLocalSearchParams<{ jobId: string; phaseId: string }>();
   const { isStaff, isOwner, isManager } = useUserRole();
-  const insets = useSafeAreaInsets();
   // Workers are read-only. Owners and managers have full write access.
   const isReadOnly = isStaff;
 
@@ -413,10 +411,10 @@ export default function PhaseDetailScreen() {
   if (loading) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={22} color={colors.foreground} />
+        <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <Ionicons name="chevron-back" size={22} color={colors.primary} />
+            <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.center}>
@@ -429,10 +427,10 @@ export default function PhaseDetailScreen() {
   if (error || !phase) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-            <Feather name="arrow-left" size={22} color={colors.foreground} />
+        <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <Ionicons name="chevron-back" size={22} color={colors.primary} />
+            <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.center}>
@@ -471,7 +469,6 @@ export default function PhaseDetailScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
-      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}
@@ -479,20 +476,26 @@ export default function PhaseDetailScreen() {
       >
 
         {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
-        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25', paddingTop: insets.top + 12 }]}>
+        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
 
-          {/* Nav row: back + edit — lives inside the banner, no separate strip */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <TouchableOpacity onPress={() => router.back()} style={{ padding: 6, marginLeft: -4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7}>
-              <Feather name="arrow-left" size={22} color={colors.foreground} />
+          {/* Nav row — iOS-style: ‹ Back on left, Edit on right */}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: -6 }}
+            >
+              <Ionicons name="chevron-back" size={24} color={colors.primary} />
+              <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
             </TouchableOpacity>
             {(isOwner || isManager) && (
               <TouchableOpacity
                 onPress={() => router.push({ pathname: '/job/[id]' as any, params: { id: jobId, tab: 'manage' } })}
-                style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card + 'CC' }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 activeOpacity={0.7}
               >
-                <Text style={{ fontSize: 13, fontWeight: fontWeights.medium, color: colors.primary }}>Edit</Text>
+                <Text style={{ fontSize: 17, color: colors.primary }}>Edit</Text>
               </TouchableOpacity>
             )}
           </View>
