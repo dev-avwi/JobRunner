@@ -473,12 +473,13 @@ export default function PhaseDetailScreen() {
         assignedUserId: editPhaseForm.assignedUserId || null,
         assignedUserIds: editPhaseForm.assignedUserIds,
       };
-      await api.patch(`/api/jobs/${jobId}/phases/${phase.id}`, payload);
+      const res = await api.patch(`/api/jobs/${jobId}/phases/${phase.id}`, payload);
+      if (res.error) throw new Error(res.error);
       setShowEditPhaseSheet(false);
       showToast({ type: 'success', message: 'Phase updated' });
       await loadPhase();
     } catch (e: any) {
-      showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to update phase' });
+      showToast({ type: 'error', message: e?.message || 'Failed to update phase' });
     } finally {
       setIsSavingEditPhase(false);
     }
