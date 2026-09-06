@@ -2120,7 +2120,7 @@ function SupplierPickerSheetContent({
 // hint: Logic changed on both sides. Requires understanding intent of each change.
 export default function JobDetailScreen() {
   console.log('[LA-DEBUG] LiveActivity module:', typeof LiveActivity, LiveActivity && Object.keys(LiveActivity));
-  const { id, action: navAction, tab: navTab, _logTime: navLogTimePhaseId, _logExpense: navLogExpensePhaseId } = useLocalSearchParams<{ id: string; action?: string; tab?: string; _logTime?: string; _logExpense?: string }>();
+  const { id, action: navAction, tab: navTab, _logTime: navLogTimePhaseId, _logExpense: navLogExpensePhaseId, _claimPhaseId: navClaimPhaseId } = useLocalSearchParams<{ id: string; action?: string; tab?: string; _logTime?: string; _logExpense?: string; _claimPhaseId?: string }>();
   const { colors, isDark } = useTheme();
   const confirm = useConfirmDialog();
   const showActionSheet = useActionSheet();
@@ -2822,6 +2822,20 @@ export default function JobDetailScreen() {
     return () => handle.cancel();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job, isLoading, navLogTimePhaseId, navLogExpensePhaseId]);
+
+  // Deep-link from phase-detail "Draft Claim" button.
+  // action=addClaim + _claimPhaseId=<id>: open the claim modal prefilled with
+  // the phase that was just marked complete. We wait until both job AND phases
+  // have finished loading so the phase lookup is reliable.
+  const navClaimFiredRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!navClaimPhaseId || !job || isLoading || isLoadingPhases) return;
+    if (navClaimFiredRef.current === navClaimPhaseId) return;
+    navClaimFiredRef.current = navClaimPhaseId;
+    const matchedPhase = phases.find((p: JobPhase) => p.id === navClaimPhaseId) ?? null;
+    setClaimPrefillPhase(matchedPhase);
+    setShowAddClaimModal(true);
+  }, [navClaimPhaseId, job, isLoading, isLoadingPhases, phases]);
 
   useEffect(() => {
     if (timerError) {

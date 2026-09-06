@@ -222,6 +222,10 @@ export default function PhaseDetailScreen() {
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [teamMembers, setTeamMembers] = useState<{ id: string; name: string; email?: string; role?: string; memberId?: string; userId?: string; themeColor?: string }[]>([]);
 
+  // ── Phase-complete claim prompt ────────────────────────────────────────────
+  const [showPhaseClaimPrompt, setShowPhaseClaimPrompt] = useState(false);
+  const [claimPrefillPhase, setClaimPrefillPhase] = useState<JobPhase | null>(null);
+
   // ── Data loading ──────────────────────────────────────────────────────────
 
   const loadPhase = useCallback(async () => {
@@ -473,11 +477,18 @@ export default function PhaseDetailScreen() {
         assignedUserId: editPhaseForm.assignedUserId || null,
         assignedUserIds: editPhaseForm.assignedUserIds,
       };
+      const savedStatus = editPhaseForm.status;
+      const savedPhase = phase;
       const res = await api.patch(`/api/jobs/${jobId}/phases/${phase.id}`, payload);
       if (res.error) throw new Error(res.error);
       setShowEditPhaseSheet(false);
       showToast({ type: 'success', message: 'Phase updated' });
       await loadPhase();
+      // Only prompt when transitioning to complete for the first time in this edit
+      if (savedPhase.status !== 'complete' && savedStatus === 'complete' && (isOwner || isManager)) {
+        setClaimPrefillPhase(savedPhase);
+        setShowPhaseClaimPrompt(true);
+      }
     } catch (e: any) {
       showToast({ type: 'error', message: e?.message || 'Failed to update phase' });
     } finally {
@@ -1239,10 +1250,49 @@ export default function PhaseDetailScreen() {
         </View>
       </AppBottomSheet>
 
+
+      {/* Phase-complete → create claim prompt (owners/managers only) */}
+      <AppBottomSheet
+        visible={showPhaseClaimPrompt}
+        onDismiss={() => { setShowPhaseClaimPrompt(false); setClaimPrefillPhase(null); }}
+        title="Phase complete"
+        showCloseButton
+        snapPoints={['40%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton
+              variant="outline"
+              label="Skip"
+              onPress={() => { setShowPhaseClaimPrompt(false); setClaimPrefillPhase(null); }}
+              style={{ flex: 1 }}
+            />
+            <SheetButton
+              label={`Draft Claim for ${claimPrefillPhase?.name ?? 'Phase'}`}
+              onPress={() => {
+                setShowPhaseClaimPrompt(false);
+                router.push({
+                  pathname: '/job/[id]' as any,
+                  params: { id: jobId, action: 'addClaim', _claimPhaseId: claimPrefillPhase?.id ?? '' },
+                });
+              }}
+              style={{ flex: 1 }}
+            />
+          </View>
+        )}
+      >
+        <View style={{ paddingVertical: spacing.sm }}>
+          <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, lineHeight: 22 }}>
+            <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>
+              {claimPrefillPhase?.phaseCode} {claimPrefillPhase?.name}
+            </Text>
+            {' '}is now complete. Would you like to raise a progress claim for this phase?
+          </Text>
+        </View>
+      </AppBottomSheet>
+
     </View>
   );
 }
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
