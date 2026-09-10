@@ -2642,6 +2642,67 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  // ── Unassigned Phases (manager/owner) ─────────────────────────────────────
+  // Returns phases from active jobs that have no team members assigned, plus
+  // the business roster so the mobile caller can build an assignment picker
+  // without a second request. Team members are scoped to effectiveUserId so
+  // managers (whose req.userId is their own account) see the owner's roster.
+  //
+  // A phase is "unassigned" when it has neither a legacy assignedUserId nor any
+  // rows in job_phase_assignments. Results sorted by scheduled start (soonest
+  // first). Excludes terminal phases and non-active jobs (done, invoiced,
+  // cancelled, or archived).
+  app.get("/api/phases/unassigned", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
+    try {
+      const effectiveUserId = req.effectiveUserId || req.userId;
+
+      // LEFT JOIN job_phase_assignments: when no assignment rows exist for a
+      // phase, jpa.phaseId will be NULL — that IS the unassigned signal.
+      const [phases, roster] = await Promise.all([
+        db
+          .select({
+            id: jobPhases.id,
+            jobId: jobPhases.jobId,
+            phaseCode: jobPhases.phaseCode,
+            name: jobPhases.name,
+            description: jobPhases.description,
+            scheduledStart: jobPhases.scheduledStart,
+            scheduledEnd: jobPhases.scheduledEnd,
+            status: jobPhases.status,
+            sortOrder: jobPhases.sortOrder,
+            assignedUserId: jobPhases.assignedUserId,
+            jobTitle: jobs.title,
+          })
+          .from(jobPhases)
+          .innerJoin(jobs, eq(jobPhases.jobId, jobs.id))
+          .leftJoin(jobPhaseAssignments, eq(jobPhaseAssignments.phaseId, jobPhases.id))
+          .where(
+            and(
+              eq(jobPhases.userId, effectiveUserId),
+              // No legacy single-user assignment
+              isNull(jobPhases.assignedUserId),
+              // No multi-user assignment rows at all
+              isNull(jobPhaseAssignments.phaseId),
+              // Exclude terminal phase states
+              sql`${jobPhases.status} NOT IN ('complete', 'completed', 'invoiced', 'cancelled')`,
+              // Active jobs only: exclude done, invoiced, cancelled, and archived
+              sql`${jobs.status} NOT IN ('done', 'invoiced', 'cancelled')`,
+              isNull(jobs.archivedAt),
+            )
+          )
+          .orderBy(asc(jobPhases.scheduledStart)),
+
+        // Roster scoped to the business owner — correct for managers too
+        storage.getTeamMembers(effectiveUserId),
+      ]);
+
+      res.json({ phases, teamMembers: roster });
+    } catch (err: any) {
+      console.error("Error fetching unassigned phases:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   app.get("/api/jobs/:id", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), async (req: any, res) => {
     try {
       // Use effectiveUserId (business owner's ID) for multi-tenant data scoping

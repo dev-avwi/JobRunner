@@ -2929,6 +2929,10 @@ function OwnerDashboardScreen() {
   // AI receptionist calls taken today (shown on the AI Phone overview card)
   const [aiCallsToday, setAiCallsToday] = useState(0);
   
+  // Unassigned phases (manager/owner dashboard widget)
+  const [unassignedPhases, setUnassignedPhases] = useState<any[]>([]);
+  const [isUnassignedPhasesLoading, setIsUnassignedPhasesLoading] = useState(false);
+
   // Worker state
   const [workerState, setWorkerState] = useState<{ state: string; note: string | null }>({ state: 'available', note: null });
 
@@ -3047,6 +3051,25 @@ function OwnerDashboardScreen() {
       }
     } catch (error) {
       if (__DEV__) console.log('Error fetching daily summary:', error);
+    }
+  }, []);
+
+  const fetchUnassignedPhases = useCallback(async () => {
+    // Server enforces ownerOrManagerOnly; workers get 403 which we silently
+    // ignore. The endpoint returns { phases, teamMembers } — parse accordingly.
+    setIsUnassignedPhasesLoading(true);
+    try {
+      const { default: apiMod } = await import('../../src/lib/api');
+      const response = await apiMod.get<{ phases: any[]; teamMembers: any[] }>('/api/phases/unassigned');
+      if (response.data && Array.isArray(response.data.phases)) {
+        setUnassignedPhases(response.data.phases);
+      } else {
+        setUnassignedPhases([]);
+      }
+    } catch {
+      setUnassignedPhases([]);
+    } finally {
+      setIsUnassignedPhasesLoading(false);
     }
   }, []);
 
@@ -3394,6 +3417,7 @@ function OwnerDashboardScreen() {
   const fetchDailySummaryRef = useRef(fetchDailySummary);
   const fetchWorkerStateRef = useRef(fetchWorkerState);
   const fetchAiCallsTodayRef = useRef(fetchAiCallsToday);
+  const fetchUnassignedPhasesRef = useRef(fetchUnassignedPhases);
   
   // Keep refs updated
   fetchTodaysJobsRef.current = fetchTodaysJobs;
@@ -3407,6 +3431,7 @@ function OwnerDashboardScreen() {
   fetchDailySummaryRef.current = fetchDailySummary;
   fetchWorkerStateRef.current = fetchWorkerState;
   fetchAiCallsTodayRef.current = fetchAiCallsToday;
+  fetchUnassignedPhasesRef.current = fetchUnassignedPhases;
 
   const refreshData = useCallback(async () => {
     try {
@@ -3421,6 +3446,7 @@ function OwnerDashboardScreen() {
         fetchDailySummaryRef.current(),
         fetchWorkerStateRef.current(),
         fetchAiCallsTodayRef.current(),
+        fetchUnassignedPhasesRef.current(),
       ]);
     } finally {
       // Mark initial load complete even if a fetch rejected — the dashboard
@@ -4697,6 +4723,118 @@ function OwnerDashboardScreen() {
       {isOwnerUser && (
         <ComplianceAlerts isOwner={isOwnerUser} />
       )}
+
+      {/* Unassigned Phases - Owner and Manager */}
+      {(isOwnerUser || isManager) && (unassignedPhases.length > 0 || isUnassignedPhasesLoading) && (() => {
+        const now = new Date();
+        const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+        const urgentCount = unassignedPhases.filter((p: any) => {
+          if (!p.scheduledStart) return false;
+          const start = new Date(p.scheduledStart);
+          return start >= now && start <= in48h;
+        }).length;
+        const preview = unassignedPhases.slice(0, 5);
+
+        const formatPhaseDate = (dateStr?: string | null) => {
+          if (!dateStr) return 'No date set';
+          const d = new Date(dateStr);
+          const today = new Date();
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          if (d.toDateString() === today.toDateString()) return 'Today';
+          if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+          return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
+        };
+
+        return (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleRow}>
+                <View style={[styles.sectionTitleIcon, { backgroundColor: colorWithOpacity(colors.warning, 0.12) }]}>
+                  <Feather name="user-x" size={iconSizes.md} color={colors.warning} />
+                </View>
+                <Text style={styles.sectionTitle}>Unassigned Phases</Text>
+                {urgentCount > 0 && (
+                  <View style={{ marginLeft: spacing.sm, backgroundColor: colors.warning, borderRadius: radius.full, paddingHorizontal: 7, paddingVertical: 2, minWidth: 20, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: '#fff' }}>{urgentCount}</Text>
+                  </View>
+                )}
+              </View>
+              {unassignedPhases.length > 5 && (
+                <TouchableOpacity
+                  style={styles.viewAllButton}
+                  onPress={() => router.push(asHref('/more/unassigned-phases'))}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.viewAllText}>See all</Text>
+                  <Feather name="chevron-right" size={iconSizes.sm} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {isUnassignedPhasesLoading ? (
+              <View style={{ paddingVertical: spacing.lg, alignItems: 'center' }}>
+                <ActivityIndicator size="small" color={colors.warning} />
+              </View>
+            ) : (
+              <View style={{ gap: spacing.sm }}>
+                {preview.map((phase: any) => {
+                  const isUrgent = phase.scheduledStart && new Date(phase.scheduledStart) <= in48h && new Date(phase.scheduledStart) >= now;
+                  return (
+                    <TouchableOpacity
+                      key={phase.id}
+                      style={[
+                        {
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: spacing.md,
+                          paddingVertical: spacing.md,
+                          paddingHorizontal: spacing.md,
+                          borderRadius: radius.lg,
+                          backgroundColor: colors.card,
+                          borderWidth: 1,
+                          borderColor: isUrgent ? colorWithOpacity(colors.warning, 0.3) : colors.cardBorder,
+                        }
+                      ]}
+                      activeOpacity={0.75}
+                      onPress={() => router.push(asHref('/more/unassigned-phases'))}
+                    >
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                          {phase.name}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
+                          {phase.jobTitle || 'Untitled Job'}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 3 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Feather name="calendar" size={11} color={isUrgent ? colors.warning : colors.mutedForeground} />
+                          <Text style={{ fontSize: 11, color: isUrgent ? colors.warning : colors.mutedForeground, fontWeight: isUrgent ? fontWeights.semibold : fontWeights.regular }}>
+                            {formatPhaseDate(phase.scheduledStart)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                  );
+                })}
+                {unassignedPhases.length > 5 && (
+                  <TouchableOpacity
+                    style={{ alignItems: 'center', paddingVertical: spacing.sm }}
+                    onPress={() => router.push(asHref('/more/unassigned-phases'))}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>
+                      View all {unassignedPhases.length} unassigned phases
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        );
+      })()}
 
       {/* Job Scheduler - Team Owners Only (show loading state or content) */}
       {isOwnerUser && (hasActiveTeam || isTeamDataLoading) && (
