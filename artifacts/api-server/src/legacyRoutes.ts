@@ -49908,7 +49908,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
             }
           }
 
-          await storage.createLead({
+          const chatLead = await storage.createLead({
             userId: businessId,
             name: leadName,
             phone: leadPhone,
@@ -49921,6 +49921,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
               `Session: ${parsed.sessionId || 'unknown'}`,
             ].filter(Boolean).join('\n'),
           });
+          try {
+            const { notifyClientEnquiry } = await import('./pushNotifications');
+            await notifyClientEnquiry(businessId, leadName, 'website_chat', chatLead.id);
+          } catch (pushErr) {
+            console.error("Failed to push-notify owner of website chat lead:", pushErr);
+          }
         } catch (leadErr) {
           console.error("Failed to create lead from chat:", leadErr);
         }
@@ -49991,6 +49997,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         }
       } catch (notifErr) {
         console.error("Failed to notify owner of booking:", notifErr);
+      }
+      try {
+        const { notifyClientEnquiry } = await import('./pushNotifications');
+        await notifyClientEnquiry(businessId, parsed.name, 'website_booking', lead.id);
+      } catch (pushErr) {
+        console.error("Failed to push-notify owner of website booking:", pushErr);
       }
 
       res.json({ success: true, message: "Booking request submitted successfully" });
@@ -50188,7 +50200,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         followUpDate: requestedAt,
       });
 
-      // Notify the owner: in-app bell + email, pointing to the Leads pipeline.
+      // Notify the owner: in-app bell + push + email, pointing to the Leads pipeline.
       try {
         const { createNotification } = await import('./notifications');
         await createNotification(storage, {
@@ -50204,6 +50216,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         });
       } catch (notifErr) {
         console.error("Failed to create booking lead notification:", notifErr);
+      }
+      try {
+        const { notifyClientEnquiry } = await import('./pushNotifications');
+        await notifyClientEnquiry(ownerId, parsed.customerName, 'booking_page', lead.id);
+      } catch (pushErr) {
+        console.error("Failed to push-notify owner of booking lead:", pushErr);
       }
       try {
         const owner = await storage.getUser(ownerId);

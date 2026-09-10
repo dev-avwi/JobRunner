@@ -416,6 +416,14 @@ function ServicesInitializer() {
               router.push('/more/team-management');
               break;
 
+            case 'expense_submitted':
+              router.push('/more/expenses');
+              break;
+
+            case 'client_enquiry':
+              router.push('/more/leads');
+              break;
+
             case 'trial_expiring':
               router.push('/more/subscription');
               break;

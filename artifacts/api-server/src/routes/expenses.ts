@@ -7,6 +7,7 @@ import {
   ExpensePhaseValidationError,
 } from "../phaseExpenseAttribution";
 import { createNotification } from "../notifications";
+import { notifyExpenseSubmitted } from "../pushNotifications";
 import { insertExpenseSchema, db, expenses as expensesTable, expenseCategories, jobs } from "@workspace/db";
 import { eq, and, or, sql, desc } from "drizzle-orm";
 
@@ -262,6 +263,17 @@ export function registerExpenseRoutes(app: Express) {
           });
         } catch (_notifyErr) {
           // Non-fatal — expense was still created
+        }
+        try {
+          await notifyExpenseSubmitted(
+            effectiveUserId,
+            submitterName ?? "A worker",
+            parseFloat(String(data.amount)),
+            job.title,
+            jobId,
+          );
+        } catch (_pushErr) {
+          // Non-fatal — push is best-effort
         }
       }
 

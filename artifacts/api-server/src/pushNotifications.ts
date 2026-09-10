@@ -75,7 +75,10 @@ export type NotificationType =
   // Client interaction notifications
   | 'client_document_approved'
   | 'client_document_declined'
-  | 'client_email_reply';
+  | 'client_email_reply'
+  // Business event notifications
+  | 'expense_submitted'
+  | 'client_enquiry';
 
 interface SendNotificationOptions {
   userId: string;
@@ -153,6 +156,10 @@ async function shouldSendNotification(userId: string, type: NotificationType): P
       case 'client_document_declined':
       case 'client_email_reply':
         return settings.notifyQuoteResponses !== false;
+      case 'expense_submitted':
+        return settings.notifyJobUpdates !== false;
+      case 'client_enquiry':
+        return true;
       case 'trial_expiring':
       case 'automation':
       case 'general':
@@ -331,6 +338,8 @@ function getChannelId(type: NotificationType): string {
     case 'team_join_blocked':
       return 'messages';
     case 'ai_receptionist_call':
+    case 'expense_submitted':
+    case 'client_enquiry':
       return 'default';
     default:
       return 'default';
@@ -615,5 +624,53 @@ export async function notifyClientEmailReply(
     title: 'Client Replied',
     body: `${senderName}: ${subject.slice(0, 120)}`,
     data: { relatedId, docType, action: 'client_email_reply' },
+  });
+}
+
+// ─── Business event notifications ─────────────────────────────────────────────
+
+/**
+ * Notify a manager/owner that a worker submitted an expense for approval.
+ */
+export async function notifyExpenseSubmitted(
+  userId: string,
+  workerName: string,
+  amount: number,
+  jobTitle: string,
+  jobId: string,
+): Promise<void> {
+  const formattedAmount = `$${parseFloat(String(amount)).toFixed(2)}`;
+  await sendPushNotification({
+    userId,
+    type: 'expense_submitted',
+    title: 'Expense Needs Approval',
+    body: `${workerName} logged ${formattedAmount} on "${jobTitle}" — review now`,
+    data: { jobId, relatedType: 'job' },
+    skipInAppNotification: true, // caller already creates a DB notification
+  });
+}
+
+/**
+ * Notify an owner/manager that a new client enquiry or booking request arrived.
+ */
+export async function notifyClientEnquiry(
+  userId: string,
+  clientName: string,
+  source: 'website_booking' | 'booking_page' | 'website_chat' | 'other',
+  leadId?: string,
+): Promise<void> {
+  const sourceLabel: Record<typeof source, string> = {
+    website_booking: 'Website booking',
+    booking_page: 'Booking request',
+    website_chat: 'Website chat',
+    other: 'New enquiry',
+  };
+  await sendPushNotification({
+    userId,
+    type: 'client_enquiry',
+    title: sourceLabel[source],
+    body: `${clientName} submitted a ${source === 'booking_page' ? 'booking request' : 'new enquiry'} — check Leads`,
+    data: { leadId, relatedType: 'lead' },
+    skipInAppNotification: true, // caller creates a DB notification where applicable
   });
 }
