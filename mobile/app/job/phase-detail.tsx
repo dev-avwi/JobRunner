@@ -22,6 +22,7 @@ import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { showToast } from '../../src/lib/toast';
+import { shouldShowPhaseClaimPrompt } from '../../src/utils/phaseClaimPrompt';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -484,8 +485,8 @@ export default function PhaseDetailScreen() {
       setShowEditPhaseSheet(false);
       showToast({ type: 'success', message: 'Phase updated' });
       await loadPhase();
-      // Only prompt when transitioning to complete for the first time in this edit
-      if (savedPhase.status !== 'complete' && savedStatus === 'complete' && (isOwner || isManager)) {
+      // Prompt when transitioning to complete (fresh or re-completion after re-open)
+      if (shouldShowPhaseClaimPrompt({ previousStatus: savedPhase.status, newStatus: savedStatus, isOwner, isManager })) {
         setClaimPrefillPhase(savedPhase);
         setShowPhaseClaimPrompt(true);
       }
