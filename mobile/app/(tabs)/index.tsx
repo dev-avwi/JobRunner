@@ -1294,6 +1294,356 @@ function ThisWeekSection({ jobs, onViewJob }: { jobs: any[]; onViewJob: (id: str
   );
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// My Day Section — worker-focused start-of-day view
+// Shows today's assigned jobs in time order with one-tap timer start.
+// Rendered only for staff/worker users; owners and managers keep their
+// existing dashboard layout unchanged.
+// ──────────────────────────────────────────────────────────────────────────
+
+function MyDayJobCard({
+  job,
+  phases,
+  activeTimer,
+  onStartWork,
+  onResumeWork,
+  onNavigate,
+  isStarting,
+  isAnyOpRunning,
+}: {
+  job: any;
+  phases: any[];
+  activeTimer: any;
+  onStartWork: (job: any) => void;
+  /** Called when the worker is on break for this job and taps Resume Work. */
+  onResumeWork: (job: any) => void;
+  onNavigate: (job: any) => void;
+  /** True while ANY My Day timer operation is in progress; disables all CTAs. */
+  isStarting: boolean;
+  isAnyOpRunning: boolean;
+}) {
+  const { colors } = useTheme();
+
+  const isThisJobActive = activeTimer && activeTimer.jobId === job.id && !activeTimer.isBreak;
+  const isThisJobOnBreak = activeTimer && activeTimer.jobId === job.id && activeTimer.isBreak;
+  const activePhasesForJob = phases.filter(
+    (p: any) => p.status !== 'complete' && p.status !== 'invoiced'
+  );
+
+  const formatScheduledTime = (dateStr?: string) => {
+    if (!dateStr) return null;
+    return new Date(dateStr).toLocaleTimeString('en-AU', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const formatDuration = (minutes?: number) => {
+    if (!minutes) return null;
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
+  };
+
+  const scheduledTime = formatScheduledTime(job.scheduledAt);
+  const estimatedHours = formatDuration(job.estimatedDuration);
+  const hasAddress = !!(job.address || (job.latitude && job.longitude));
+
+  const handleNavigatePress = () => onNavigate(job);
+
+  return (
+    <TouchableOpacity
+      style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: isThisJobActive ? colorWithOpacity(colors.success, 0.4) : colors.cardBorder,
+        padding: spacing.md,
+        marginBottom: spacing.sm,
+        ...shadows.sm,
+      }}
+      onPress={() => router.push(`/job/${job.id}`)}
+      activeOpacity={0.75}
+    >
+      {/* Header row: scheduled time + status badge */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          {scheduledTime && (
+            <>
+              <Feather name="clock" size={12} color={colors.mutedForeground} />
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                {scheduledTime}
+              </Text>
+            </>
+          )}
+          {estimatedHours && scheduledTime && (
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
+              {'\u00b7'} {estimatedHours}
+            </Text>
+          )}
+        </View>
+        {isThisJobActive ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colorWithOpacity(colors.success, 0.12), borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.success }} />
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.success }}>Working</Text>
+          </View>
+        ) : job.status === 'in_progress' ? (
+          <View style={{ backgroundColor: colorWithOpacity(colors.warning, 0.1), borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.medium, color: colors.warning }}>In Progress</Text>
+          </View>
+        ) : (
+          <View style={{ backgroundColor: colorWithOpacity(colors.primary, 0.1), borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.medium, color: colors.primary }}>Scheduled</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Job title */}
+      <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: hasAddress ? spacing.xs : spacing.sm }} numberOfLines={2}>
+        {job.title}
+      </Text>
+
+      {/* Address — tapping opens Maps */}
+      {hasAddress && (
+        <TouchableOpacity
+          onPress={handleNavigatePress}
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.sm }}
+        >
+          <Feather name="map-pin" size={13} color={colors.info} />
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.info, flex: 1 }} numberOfLines={1}>
+            {job.address || 'View on map'}
+          </Text>
+          <Feather name="external-link" size={12} color={colors.info} />
+        </TouchableOpacity>
+      )}
+
+      {/* Today's assigned phases */}
+      {activePhasesForJob.length > 0 && (
+        <View style={{ marginBottom: spacing.sm, gap: spacing.xs }}>
+          {activePhasesForJob.slice(0, 3).map((phase: any) => (
+            <View
+              key={phase.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs }}
+            >
+              <Feather name="layers" size={11} color={colors.mutedForeground} />
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                {phase.name}
+              </Text>
+              {phase.status === 'in_progress' && (
+                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.warning }} />
+              )}
+            </View>
+          ))}
+          {activePhasesForJob.length > 3 && (
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, paddingLeft: spacing.xs }}>
+              +{activePhasesForJob.length - 3} more phases
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* CTA — four mutually exclusive states:
+          1. isThisJobActive (timer running, not a break) → "Timer Running" link to job
+          2. isThisJobOnBreak (break timer for THIS job) → "Resume Work" via resumeTimer
+          3. any OTHER active/break timer → "Stop current timer first" (blocked)
+          4. no active timer, job not done → "Start Work"
+          Blocking Start Work whenever any timer exists (cases 2 & 3) prevents
+          calling startTimer while an active entry already exists, which would
+          create overlapping time entries both online (409) and offline.
+      */}
+      {(() => {
+        if (isThisJobActive) {
+          return (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colorWithOpacity(colors.success, 0.1), borderRadius: radius.md, paddingVertical: spacing.sm, gap: spacing.xs }}
+              onPress={() => router.push(`/job/${job.id}`)}
+              activeOpacity={0.8}
+            >
+              <Feather name="activity" size={14} color={colors.success} />
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.success }}>
+                Timer Running — View Job
+              </Text>
+            </TouchableOpacity>
+          );
+        }
+        if (isThisJobOnBreak) {
+          return (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colorWithOpacity(colors.warning, 0.1), borderRadius: radius.md, paddingVertical: spacing.sm, gap: spacing.xs }}
+              onPress={() => onResumeWork(job)}
+              disabled={isStarting || isAnyOpRunning}
+              activeOpacity={0.8}
+              testID={`button-my-day-resume-${job.id}`}
+            >
+              {isStarting ? (
+                <ActivityIndicator size="small" color={colors.warning} />
+              ) : (
+                <>
+                  <Feather name="play" size={14} color={isAnyOpRunning ? colors.mutedForeground : colors.warning} />
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: isAnyOpRunning ? colors.mutedForeground : colors.warning }}>
+                    Resume Work
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          );
+        }
+        // Any other active timer (different job, or break on a different job) → blocked.
+        if (activeTimer) {
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.muted, borderRadius: radius.md, paddingVertical: spacing.sm, gap: spacing.xs }}>
+              <Feather name="clock" size={14} color={colors.mutedForeground} />
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
+                Stop current timer first
+              </Text>
+            </View>
+          );
+        }
+        if (job.status === 'done') return null;
+        return (
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: isAnyOpRunning ? colors.muted : colors.primary, borderRadius: radius.md, paddingVertical: spacing.sm, gap: spacing.xs }}
+            onPress={() => onStartWork(job)}
+            disabled={isStarting || isAnyOpRunning}
+            activeOpacity={0.8}
+            testID={`button-my-day-start-${job.id}`}
+          >
+            {isStarting ? (
+              <ActivityIndicator size="small" color={colors.primaryForeground} />
+            ) : (
+              <>
+                <Feather name="play" size={14} color={isAnyOpRunning ? colors.mutedForeground : colors.primaryForeground} />
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: isAnyOpRunning ? colors.mutedForeground : colors.primaryForeground }}>
+                  {job.status === 'in_progress' ? 'Resume Work' : 'Start Work'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        );
+      })()}
+    </TouchableOpacity>
+  );
+}
+
+function MyDaySection({
+  jobs,
+  phases,
+  activeTimer,
+  onStartWork,
+  onResumeWork,
+  onNavigate,
+  isStartingJobId,
+  allWorkerJobs,
+}: {
+  jobs: any[];
+  phases: any[];
+  activeTimer: any;
+  onStartWork: (job: any) => void;
+  onResumeWork: (job: any) => void;
+  onNavigate: (job: any) => void;
+  isStartingJobId: string | null;
+  /** Full assigned-job list for the worker — used to count upcoming jobs in the
+   *  empty state. `todaysJobs` from the store is date-filtered so it cannot
+   *  represent later days; pass `myAllJobs` here instead. */
+  allWorkerJobs: any[];
+}) {
+  const { colors } = useTheme();
+
+  const todayStr = new Date().toDateString();
+
+  // Today's jobs: scheduled for today (excludes done/invoiced — API already filters,
+  // but guard here too so re-opened jobs with stale status don't appear).
+  const todaysJobsSorted = jobs
+    .filter((job: any) => {
+      if (!job.scheduledAt) return false;
+      if (job.status === 'done' || job.status === 'invoiced') return false;
+      return new Date(job.scheduledAt).toDateString() === todayStr;
+    })
+    .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
+
+  // Upcoming count sourced from the full worker job list (not the date-filtered
+  // today store) so the empty state message accurately reflects future work.
+  const upcomingCount = allWorkerJobs.filter((job: any) => {
+    if (!job.scheduledAt || job.status === 'done' || job.status === 'invoiced') return false;
+    const d = new Date(job.scheduledAt);
+    return d.toDateString() !== todayStr && d > new Date();
+  }).length;
+
+  return (
+    <View style={{ marginBottom: spacing.md }}>
+      {/* Section header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: colorWithOpacity(colors.primary, 0.1), alignItems: 'center', justifyContent: 'center' }}>
+            <Feather name="sun" size={14} color={colors.primary} />
+          </View>
+          <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+            My Day
+          </Text>
+          {todaysJobsSorted.length > 0 && (
+            <View style={{ backgroundColor: colorWithOpacity(colors.primary, 0.1), borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 }}>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.primary }}>
+                {todaysJobsSorted.length}
+              </Text>
+            </View>
+          )}
+        </View>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/jobs')} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>All Jobs</Text>
+          <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+        </TouchableOpacity>
+      </View>
+
+      {todaysJobsSorted.length === 0 ? (
+        <View style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, padding: spacing.xl, alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colorWithOpacity(colors.success, 0.1), alignItems: 'center', justifyContent: 'center' }}>
+            <Feather name="check-circle" size={20} color={colors.success} />
+          </View>
+          <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+            No jobs today
+          </Text>
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, textAlign: 'center' }}>
+            {upcomingCount > 0
+              ? `You have ${upcomingCount} job${upcomingCount !== 1 ? 's' : ''} coming up soon.`
+              : 'Your schedule is clear. Check the Jobs tab for upcoming work.'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/jobs')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}
+          >
+            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.primary }}>
+              View upcoming jobs
+            </Text>
+            <Feather name="arrow-right" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        todaysJobsSorted.map((job: any) => {
+          const jobPhases = phases.filter((p: any) => p.jobId === job.id);
+          return (
+            <MyDayJobCard
+              key={job.id}
+              job={job}
+              phases={jobPhases}
+              activeTimer={activeTimer}
+              onStartWork={onStartWork}
+              onResumeWork={onResumeWork}
+              onNavigate={onNavigate}
+              isStarting={isStartingJobId === job.id}
+              isAnyOpRunning={isStartingJobId !== null}
+            />
+          );
+        })
+      )}
+    </View>
+  );
+}
+
 // KPI Stat Card Component - matches web feed-card styling
 interface MobileOperationalAlert {
   id: string;
@@ -2509,13 +2859,14 @@ function OwnerDashboardScreen() {
     }
   }, [scrollToTopTrigger]);
   
-  const { user, businessSettings, roleInfo, isOwner, isStaff, teamState, fetchTeamState, hasActiveTeam: storeHasActiveTeam, refreshUser, setDashboardReady } = useAuthStore();
+  const { user, businessSettings, roleInfo, isOwner, isStaff, isWorker: isWorkerRole, teamState, fetchTeamState, hasActiveTeam: storeHasActiveTeam, refreshUser, setDashboardReady } = useAuthStore();
   const { todaysJobs, fetchTodaysJobs, fetchJobs, isLoading: jobsLoading, updateJobStatus } = useJobsStore();
   const { stats, fetchStats, isLoading: statsLoading } = useDashboardStore();
   const { clients, fetchClients } = useClientsStore();
   const [isUpdating, setIsUpdating] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [myDayStartingJobId, setMyDayStartingJobId] = useState<string | null>(null);
   const [isClearingDemo, setIsClearingDemo] = useState(false);
   const [demoBannerDismissed, setDemoBannerDismissed] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
@@ -2975,6 +3326,10 @@ function OwnerDashboardScreen() {
   const isOwnerUser = isOwner();
   const isSubcontractorUser = roleInfo?.roleName?.toLowerCase() === 'subcontractor' || roleInfo?.roleName?.toLowerCase() === 'sub_contractor';
   const isManager = roleInfo?.roleName?.toLowerCase() === 'manager';
+  // My Day is shown only to workers specifically — managers are staff too (isStaff()
+  // returns true for any non-owner), so we use the store's explicit isWorker flag and
+  // exclude managers to avoid incorrectly replacing the manager dashboard.
+  const isWorkerOnlyUser = !serverSaysOwner && !isPlaceholderRole && isWorkerRole && !isManager;
   const canViewMap = isOwnerUser || isManager;
   // Use store's hasActiveTeam OR local teamMembers for the check (store may be ready before local fetch)
   const hasActiveTeam = storeHasActiveTeam() || teamMembers.length > 0 || teamState.hasActiveTeam;
@@ -3400,6 +3755,166 @@ function OwnerDashboardScreen() {
     );
   };
 
+  // Synchronous mutex — set to true while any My Day timer operation is in
+  // flight so that rapid taps or simultaneous card presses cannot queue multiple
+  // concurrent starts. Using a ref (not state) means the guard is checked and
+  // set in the same synchronous tick, before any await suspends execution.
+  const myDayTimerOpLock = useRef(false);
+
+  // My Day start-work handler — mirrors handleStartJob + TimeTrackingWidget
+  // logic but operates on a full job object so we can show a richer alert.
+  const handleMyDayStartWork = useCallback(async (job: any) => {
+    // Acquire the operation lock synchronously before any await.
+    if (myDayTimerOpLock.current) {
+      showToast({ type: 'info', message: 'Starting timer…', description: 'Please wait a moment.' });
+      return;
+    }
+    myDayTimerOpLock.current = true;
+
+    // Also block when ANY timer is already active (including break timers for
+    // this same job — those should use Resume Work, not Start Work).
+    const currentTimer = useTimeTrackingStore.getState().activeTimer;
+    if (currentTimer) {
+      myDayTimerOpLock.current = false;
+      showToast({ type: 'info', message: 'Timer already running', description: 'Stop the current timer before starting a new one.' });
+      return;
+    }
+
+    setMyDayStartingJobId(job.id);
+    try {
+      const { isOnline } = useOfflineStore.getState();
+
+      // Convenience: release both the lock and the loading state together.
+      const releaseOp = () => {
+        myDayTimerOpLock.current = false;
+        setMyDayStartingJobId(null);
+      };
+
+      // Offline path: re-check exclusivity synchronously before awaiting anything.
+      if (!isOnline) {
+        const existingTimer = useTimeTrackingStore.getState().activeTimer;
+        if (existingTimer) {
+          releaseOp();
+          showToast({ type: 'info', message: 'Timer already running', description: 'Stop the current timer before starting a new one.' });
+          return;
+        }
+        try {
+          const ok = await startTimer(job.id, job.title);
+          if (ok) {
+            showToast({ type: 'info', message: 'Timer Started Offline', description: `Tracking "${job.title}". Will sync when back online.` });
+            refreshData();
+          } else {
+            showToast({ type: 'error', message: 'Failed to start timer' });
+          }
+        } finally {
+          releaseOp();
+        }
+        return;
+      }
+
+      // Already in-progress: start timer directly without extra confirmation.
+      if (job.status === 'in_progress') {
+        try {
+          const ok = await startTimer(job.id, job.title);
+          if (ok) {
+            showToast({ type: 'info', message: 'Timer Started', description: `Now tracking "${job.title}"` });
+            refreshData();
+          } else {
+            showToast({ type: 'error', message: 'Failed to start timer' });
+          }
+        } finally {
+          releaseOp();
+        }
+        return;
+      }
+
+      // Helper: start timer then patch job status only on success, to avoid
+      // leaving the job stuck as in_progress if the server rejects the timer.
+      const doStart = async () => {
+        const ok = await startTimer(job.id, job.title);
+        if (ok) {
+          if (job.status === 'scheduled' || job.status === 'pending') {
+            // Best-effort — timer is already running so don't block on this.
+            api.patch(`/api/jobs/${job.id}/status`, { status: 'in_progress' }).catch(() => {});
+          }
+          showToast({ type: 'info', message: 'Job Started', description: `Tracking "${job.title}"` });
+          refreshData();
+        } else {
+          showToast({ type: 'error', message: 'Failed to start timer' });
+        }
+      };
+
+      // Safety gate: check for pending SWMS / safety forms before starting.
+      try {
+        const safetyRes = await api.get(`/api/jobs/${job.id}/safety-status`);
+        const safety = safetyRes.data as any;
+        const hasSafetyIssues = !safetyRes.error && safety && (
+          (safety.pendingForms && safety.pendingForms > 0) ||
+          (safety.draftSwms && safety.draftSwms > 0) ||
+          (safety.unsignedSwms && safety.unsignedSwms > 0)
+        );
+        if (hasSafetyIssues) {
+          const warnings: string[] = [];
+          if (safety.pendingForms > 0) warnings.push('Safety forms not completed');
+          if (safety.draftSwms > 0) warnings.push(`${safety.draftSwms} SWMS in draft`);
+          if (safety.unsignedSwms > 0) warnings.push(`${safety.unsignedSwms} SWMS unsigned`);
+          Alert.alert(
+            'Safety Check Required',
+            `${warnings.join(', ')}. Complete safety documentation before starting work.\n\nWHS Compliance: SWMS documents are legally required for high-risk construction work.`,
+            [
+              { text: 'View Job', onPress: () => { releaseOp(); router.push(`/job/${job.id}`); } },
+              {
+                text: 'Start Anyway', style: 'destructive', onPress: async () => {
+                  try { await doStart(); } finally { releaseOp(); }
+                }
+              },
+              { text: 'Cancel', style: 'cancel', onPress: releaseOp },
+            ]
+          );
+          return; // lock held until the user dismisses the alert
+        }
+      } catch { /* safety check failure is non-fatal */ }
+
+      Alert.alert(
+        'Start Job',
+        `Start "${job.title}"?\n\nThe timer will begin automatically.`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: releaseOp },
+          {
+            text: 'Start Job', onPress: async () => {
+              try { await doStart(); } finally { releaseOp(); }
+            }
+          },
+        ]
+      );
+      // lock held until the user dismisses the alert
+    } catch {
+      showToast({ type: 'error', message: 'Failed to start job' });
+      myDayTimerOpLock.current = false;
+      setMyDayStartingJobId(null);
+    }
+  }, [startTimer, refreshData]);
+
+  // My Day resume-work handler — wraps resumeTimer with the same mutex so
+  // rapid taps on "Resume Work" cannot create concurrent timer operations.
+  const handleMyDayResumeWork = useCallback(async (job: any) => {
+    if (myDayTimerOpLock.current) {
+      showToast({ type: 'info', message: 'Timer operation in progress', description: 'Please wait a moment.' });
+      return;
+    }
+    myDayTimerOpLock.current = true;
+    setMyDayStartingJobId(job.id);
+    try {
+      await resumeTimer();
+      refreshData();
+    } catch {
+      showToast({ type: 'error', message: 'Failed to resume timer' });
+    } finally {
+      myDayTimerOpLock.current = false;
+      setMyDayStartingJobId(null);
+    }
+  }, [resumeTimer, refreshData]);
+
   const userName = user?.firstName || 'there';
   const jobsToday = stats.jobsToday || todaysJobs.length;
   const overdueCount = stats.overdueJobs || 0;
@@ -3603,6 +4118,22 @@ function OwnerDashboardScreen() {
               })}
             </View>
           </View>
+        </View>
+      )}
+
+      {/* My Day — worker-only focused start-of-day view, shown above the timer */}
+      {isWorkerOnlyUser && (
+        <View style={styles.section}>
+          <MyDaySection
+            jobs={todaysJobs}
+            phases={myPhasesThisWeek}
+            activeTimer={activeTimer}
+            onStartWork={handleMyDayStartWork}
+            onResumeWork={handleMyDayResumeWork}
+            onNavigate={openDirections}
+            isStartingJobId={myDayStartingJobId}
+            allWorkerJobs={myAllJobs}
+          />
         </View>
       )}
 
@@ -3814,8 +4345,8 @@ function OwnerDashboardScreen() {
         )}
       </View>
 
-      {/* Today's Schedule */}
-      {<View style={styles.section}>
+      {/* Today's Schedule — owners and managers only; pure workers use My Day above */}
+      {!isWorkerOnlyUser && <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <View style={styles.sectionTitleIcon}>
