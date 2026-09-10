@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   StyleSheet,
+  TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -86,6 +87,10 @@ export default function UnassignedPhasesScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Filter state
+  const [dateFilter, setDateFilter] = useState<'all' | 'this_week'>('all');
+  const [jobSearch, setJobSearch] = useState('');
+
   // Assign sheet state
   const [assignPhase, setAssignPhase] = useState<UnassignedPhase | null>(null);
   const [selectedMemberIds, setSelectedMemberIds] = useState<Set<string>>(new Set());
@@ -93,6 +98,42 @@ export default function UnassignedPhasesScreen() {
 
   const now = new Date();
   const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+  // Compute week boundaries (Mon–Sun of current week)
+  const weekStart = useMemo(() => {
+    const d = new Date(now);
+    const day = d.getDay(); // 0=Sun
+    const diff = day === 0 ? -6 : 1 - day; // shift to Monday
+    d.setDate(d.getDate() + diff);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const weekEnd = useMemo(() => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + 6);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }, [weekStart]);
+
+  const filteredPhases = useMemo(() => {
+    let result = phases;
+
+    if (dateFilter === 'this_week') {
+      result = result.filter((p) => {
+        if (!p.scheduledStart) return false;
+        const start = new Date(p.scheduledStart);
+        return start >= weekStart && start <= weekEnd;
+      });
+    }
+
+    const q = jobSearch.trim().toLowerCase();
+    if (q) {
+      result = result.filter((p) => p.jobTitle.toLowerCase().includes(q));
+    }
+
+    return result;
+  }, [phases, dateFilter, jobSearch, weekStart, weekEnd]);
 
   const load = useCallback(async (showRefresh = false) => {
     if (showRefresh) setIsRefreshing(true);
@@ -221,10 +262,57 @@ export default function UnassignedPhasesScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Unassigned Phases</Text>
           {!isLoading && phases.length > 0 && (
-            <Text style={styles.headerSubtitle}>{phases.length} phase{phases.length !== 1 ? 's' : ''} need workers</Text>
+            <Text style={styles.headerSubtitle}>
+              {filteredPhases.length === phases.length
+                ? `${phases.length} phase${phases.length !== 1 ? 's' : ''} need workers`
+                : `${filteredPhases.length} of ${phases.length} phases`}
+            </Text>
           )}
         </View>
       </View>
+
+      {/* Filter bar */}
+      {!isLoading && phases.length > 0 && (
+        <View style={styles.filterBar}>
+          {/* Job search */}
+          <View style={styles.searchRow}>
+            <Feather name="search" size={14} color={colors.mutedForeground} style={{ marginRight: 6 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by job name"
+              placeholderTextColor={colors.mutedForeground}
+              value={jobSearch}
+              onChangeText={setJobSearch}
+              returnKeyType="search"
+              clearButtonMode="while-editing"
+              autoCorrect={false}
+            />
+            {jobSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setJobSearch('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="x" size={14} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* Date chips */}
+          <View style={styles.chipRow}>
+            <TouchableOpacity
+              style={[styles.chip, dateFilter === 'all' && styles.chipActive]}
+              onPress={() => setDateFilter('all')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, dateFilter === 'all' && styles.chipTextActive]}>All</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.chip, dateFilter === 'this_week' && styles.chipActive]}
+              onPress={() => setDateFilter('this_week')}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, dateFilter === 'this_week' && styles.chipTextActive]}>This week</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
@@ -233,7 +321,7 @@ export default function UnassignedPhasesScreen() {
       ) : (
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={[styles.scrollContent, phases.length === 0 && { flex: 1 }]}
+          contentContainerStyle={[styles.scrollContent, filteredPhases.length === 0 && { flex: 1 }]}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -243,10 +331,18 @@ export default function UnassignedPhasesScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {phases.length === 0 ? (
-            renderEmptyState()
+          {filteredPhases.length === 0 ? (
+            phases.length === 0 ? renderEmptyState() : (
+              <View style={styles.emptyState}>
+                <View style={[styles.emptyIcon, { backgroundColor: colorWithOpacity(colors.mutedForeground, 0.08) }]}>
+                  <Feather name="filter" size={32} color={colors.mutedForeground} />
+                </View>
+                <Text style={styles.emptyTitle}>No phases match</Text>
+                <Text style={styles.emptySubtitle}>Try a different job name or date range.</Text>
+              </View>
+            )
           ) : (
-            phases.map((phase) => {
+            filteredPhases.map((phase) => {
               const isUrgent = phase.scheduledStart
                 ? new Date(phase.scheduledStart) >= now && new Date(phase.scheduledStart) <= in48h
                 : false;
@@ -542,6 +638,54 @@ const createStyles = (colors: any) => StyleSheet.create({
   assignButtonText: {
     fontSize: typography.sizes.sm,
     fontWeight: fontWeights.semibold,
+    color: colors.primaryForeground,
+  },
+  filterBar: {
+    paddingHorizontal: pageShell.paddingHorizontal,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    gap: spacing.sm,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: typography.sizes.sm,
+    color: colors.foreground,
+    padding: 0,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: radius.full ?? 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  chipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  chipText: {
+    fontSize: typography.sizes.sm,
+    fontWeight: fontWeights.medium,
+    color: colors.mutedForeground,
+  },
+  chipTextActive: {
     color: colors.primaryForeground,
   },
 });
