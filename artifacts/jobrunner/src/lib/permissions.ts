@@ -238,6 +238,9 @@ export const PAGE_PERMISSIONS: PagePermission[] = [
   // office_admin and staff_tradie removed from main page; office_admin removed from calls page
   { path: '/ai-receptionist', label: 'AI Receptionist', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
   { path: '/ai-receptionist/calls', label: 'AI Receptionist Calls', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
+
+  // Unassigned Phases full-list page — mirrors the ownerOrManagerOnly() API guard
+  { path: '/phases/unassigned', label: 'Unassigned Phases', allowedRoles: ['owner', 'solo_owner', 'manager'], showInNav: false },
 ];
 
 // Check if a role can access a specific path

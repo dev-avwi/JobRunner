@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useUserRole } from "@/hooks/use-user-role";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ import {
   BarChart3,
   CircleDollarSign,
   Hammer,
+  UserX,
 } from "lucide-react";
 
 interface OwnerManagerDashboardProps {
@@ -77,6 +79,150 @@ function ConnectionBanner() {
         <p className="text-xs text-amber-600 dark:text-amber-400">Data may be out of date. Changes will sync when you're back online.</p>
       </div>
     </div>
+  );
+}
+
+interface UnassignedPhase {
+  id: string;
+  jobId: string;
+  phaseCode: string | null;
+  name: string;
+  scheduledStart: string | null;
+  scheduledEnd: string | null;
+  status: string;
+  jobTitle: string | null;
+}
+
+function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) => void }) {
+  const { isOwner, isManager } = useUserRole();
+  const isOwnerOrManager = isOwner || isManager;
+
+  const { data, isLoading } = useQuery<{ phases: UnassignedPhase[] }>({
+    queryKey: ["/api/phases/unassigned"],
+    staleTime: 2 * 60 * 1000,
+    enabled: isOwnerOrManager,
+  });
+
+  const phases = data?.phases ?? [];
+
+  if (!isOwnerOrManager) return null;
+
+  if (isLoading) {
+    return (
+      <Card className="mb-3" data-testid="unassigned-phases-widget-loading">
+        <CardHeader className="flex flex-row items-center justify-between gap-4 py-3 px-4">
+          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <UserX className="h-4 w-4 text-amber-500" />
+            Unassigned Phases
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0 px-4 pb-4 space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 p-2.5 rounded-md">
+              <Skeleton className="h-8 w-8 rounded-full flex-shrink-0" />
+              <div className="flex-1 space-y-1">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="h-4 w-4" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (phases.length === 0) return null;
+
+  const now = Date.now();
+  const URGENT_MS = 48 * 60 * 60 * 1000;
+
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return "No date set";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "No date set";
+    return d.toLocaleDateString("en-AU", { weekday: "short", day: "numeric", month: "short" });
+  };
+
+  const isUrgent = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr).getTime();
+    return !isNaN(d) && d - now <= URGENT_MS && d >= now;
+  };
+
+  const isPast = (dateStr: string | null) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr).getTime();
+    return !isNaN(d) && d < now;
+  };
+
+  const visible = phases.slice(0, 5);
+
+  return (
+    <Card className="mb-3" data-testid="unassigned-phases-widget">
+      <CardHeader className="flex flex-row items-center justify-between gap-4 py-3 px-4">
+        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <UserX className="h-4 w-4 text-amber-500" />
+          Unassigned Phases
+          <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs ml-1">
+            {phases.length}
+          </Badge>
+        </CardTitle>
+        {phases.length > 5 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onNavigate?.("/phases/unassigned")}
+            data-testid="button-view-all-unassigned"
+          >
+            View All <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent className="pt-0 px-4 pb-4 space-y-1">
+        {visible.map((phase) => {
+          const urgent = isUrgent(phase.scheduledStart);
+          const past = isPast(phase.scheduledStart);
+          return (
+            <div
+              key={phase.id}
+              className="flex items-center gap-3 p-2.5 rounded-md cursor-pointer hover-elevate"
+              onClick={() => onNavigate?.(`/jobs/${phase.jobId}?tab=phases`)}
+              data-testid={`unassigned-phase-row-${phase.id}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                  urgent || past
+                    ? "bg-red-500/10"
+                    : "bg-amber-500/10"
+                }`}
+              >
+                <UserX
+                  className={`h-4 w-4 ${
+                    urgent || past ? "text-red-500" : "text-amber-500"
+                  }`}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{phase.name}</p>
+                <p className="text-xs text-muted-foreground truncate">{phase.jobTitle}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                {(urgent || past) && (
+                  <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs">
+                    {past ? "Overdue" : "Urgent"}
+                  </Badge>
+                )}
+                <span className={`text-xs ${urgent || past ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+                  {formatDate(phase.scheduledStart)}
+                </span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -464,6 +610,8 @@ export default function OwnerManagerDashboard({
           </Card>
         </div>
       )}
+
+      <UnassignedPhasesWidget onNavigate={onNavigate} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
         <Card>

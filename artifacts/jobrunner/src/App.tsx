@@ -117,6 +117,7 @@ const ExpensesPage = lazyWithReload(() => import("@/pages/ExpensesPage"));
 const WorkPage = lazyWithReload(() => import("@/pages/WorkPage"));
 const AdminDashboard = lazyWithReload(() => import("@/pages/AdminDashboard"));
 const HelpCenter = lazyWithReload(() => import("@/pages/HelpCenter"));
+const UnassignedPhasesPage = lazyWithReload(() => import("@/pages/UnassignedPhases"));
 
 // Shared admin sub-paths, rendered in both the main tradie Router (so
 // /admin/* doesn't fall through to NotFound — AdminDashboard handles 403s)
@@ -861,6 +862,10 @@ function Router({
         }}
       </Route>
       
+      <Route path="/phases/unassigned" component={() => (
+        <UnassignedPhasesPage onNavigate={onNavigate} />
+      )} />
+
       <Route path="/action-center" component={() => (
         <ActionCenter onNavigate={onNavigate} />
       )} />
