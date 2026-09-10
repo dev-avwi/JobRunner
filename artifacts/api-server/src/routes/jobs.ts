@@ -7494,9 +7494,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
-  app.get("/api/jobs/:id/profitability", requireAuth, async (req: any, res) => {
+  app.get("/api/jobs/:id/profitability", requireAuth, ownerOrManagerOnly(), async (req: any, res) => {
     try {
-      const userId = req.userId!;
+      const userContext = await getUserContext(req.userId);
+      const userId = userContext.effectiveUserId;
       const { id: jobId } = req.params;
       
       // Get job details

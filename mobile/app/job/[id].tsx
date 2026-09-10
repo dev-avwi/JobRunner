@@ -89,6 +89,7 @@ import ExpensesSection from '../../src/components/jobDetail/ExpensesSection';
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { FinancialsSection } from '../../src/components/jobDetail/FinancialsSection';
 import { ManageTeamSheet } from '../../src/components/jobDetail/ManageTeamSheet';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { ProjectGanttMobile } from '../../src/components/jobDetail/ProjectGanttMobile';
@@ -2317,7 +2318,7 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'financials' | 'manage'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [activeChip, setActiveChip] = useState<string>('status');
 
@@ -2786,9 +2787,13 @@ export default function JobDetailScreen() {
     if (!job || isLoading || !navTab) return;
     if (navTabFiredRef.current === navTab) return;
     navTabFiredRef.current = navTab;
-    const validTabs = ['overview', 'tasks', 'files', 'comms', 'manage'];
+    const validTabs = ['overview', 'tasks', 'files', 'comms', 'financials', 'manage'];
     if (validTabs.includes(navTab)) {
-      setActiveTab(navTab as 'overview' | 'tasks' | 'files' | 'comms' | 'manage');
+      // Financials tab is owner/manager-only; non-privileged deep-links fall back to overview.
+      const isPrivilegedTab = navTab === 'financials' || navTab === 'manage';
+      const hasAccess = isOwnerOrManager || isSoloOwner;
+      const resolvedTab = (isPrivilegedTab && !hasAccess) ? 'overview' : navTab;
+      setActiveTab(resolvedTab as 'overview' | 'tasks' | 'files' | 'comms' | 'financials' | 'manage');
     }
   }, [job, isLoading, navTab]);
 
@@ -7837,6 +7842,8 @@ export default function JobDetailScreen() {
       files: safetyIssues,
       // Comms: unread messages only
       comms: chatCount,
+      // Financials: no badge — data loads silently in the background
+      financials: 0,
       // Manage: pending worker expenses awaiting owner approval
       manage: pendingExpenseCount,
     };
@@ -8066,6 +8073,7 @@ export default function JobDetailScreen() {
     { id: 'tasks' as const, label: 'Tasks', icon: 'check-square' as const },
     { id: 'files' as const, label: 'Files', icon: 'file-text' as const },
     { id: 'comms' as const, label: 'Comms', icon: 'message-circle' as const },
+    ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'financials' as const, label: 'Financials', icon: 'bar-chart-2' as const }] : []),
     ...((isOwnerOrManager || isSoloOwner) ? [{ id: 'manage' as const, label: 'Manage', icon: 'settings' as const }] : []),
   ];
 
@@ -12809,6 +12817,17 @@ export default function JobDetailScreen() {
 
         {/* ── Comms: chat only ── */}
         {activeTab === 'comms' && renderChatTab()}
+
+        {/* ── Financials: per-job profit/margin — owners/managers only ── */}
+        {activeTab === 'financials' && (isOwnerOrManager || isSoloOwner) && (
+          <FinancialsSection
+            profitabilityData={profitabilityData}
+            isLoading={isLoadingProfitability}
+            phases={phases}
+            colors={colors}
+          />
+        )}
+
         {activeTab === 'manage' && (
           <>
             {/* Pending expenses callout — owners/managers only, worker-submitted expenses only */}
