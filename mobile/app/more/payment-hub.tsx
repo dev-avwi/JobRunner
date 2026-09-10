@@ -158,6 +158,8 @@ function PaymentHubScreenInner() {
   const [invoiceFilter, setInvoiceFilter] = useState<InvoiceFilterType>('all');
   const [timeRange, setTimeRange] = useState<TimeRangeType>('30d');
 
+  const [pendingSubInvoiceCount, setPendingSubInvoiceCount] = useState(0);
+
   const [chaserData, setChaserData] = useState<ChaserResponse | null>(null);
   const [chaserLoading, setChaserLoading] = useState(false);
   const [chaserFilter, setChaserFilter] = useState<string>('all');
@@ -286,14 +288,16 @@ function PaymentHubScreenInner() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [invoicesRes, quotesRes, clientsRes] = await Promise.all([
+      const [invoicesRes, quotesRes, clientsRes, subInvRes] = await Promise.all([
         api.get<Invoice[]>('/api/invoices'),
         api.get<Quote[]>('/api/quotes'),
         api.get<Client[]>('/api/clients'),
+        api.get<{ status: string }[]>('/api/business/subcontractor-invoices?status=submitted').catch(() => ({ data: null, error: null })),
       ]);
       setInvoices(invoicesRes.error ? [] : (Array.isArray(invoicesRes.data) ? invoicesRes.data : []));
       setQuotes(quotesRes.error ? [] : (Array.isArray(quotesRes.data) ? quotesRes.data : []));
       setClients(clientsRes.error ? [] : (Array.isArray(clientsRes.data) ? clientsRes.data : []));
+      setPendingSubInvoiceCount(Array.isArray(subInvRes.data) ? subInvRes.data.length : 0);
 
       const isPermissionError = (e?: string) =>
         !!e && /access denied|permission|not authorized|forbidden/i.test(e);
@@ -741,6 +745,30 @@ function PaymentHubScreenInner() {
 
   const renderOverview = () => (
     <View style={styles.overviewContainer}>
+      {/* Subcontractor invoice review entry */}
+      <PressableRow
+        style={styles.subInvNavRow}
+        onPress={() => router.push('/more/sub-invoice-review' as any)}
+      >
+        <View style={[styles.subInvNavIcon, { backgroundColor: `${colors.info}15` }]}>
+          <Feather name="users" size={iconSizes.md} color={colors.info} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.subInvNavTitle}>Subcontractor Invoices</Text>
+          <Text style={styles.subInvNavSub}>
+            {pendingSubInvoiceCount > 0
+              ? `${pendingSubInvoiceCount} pending review`
+              : 'Review submitted invoices'}
+          </Text>
+        </View>
+        {pendingSubInvoiceCount > 0 && (
+          <View style={[styles.subInvBadge, { backgroundColor: colors.warning }]}>
+            <Text style={styles.subInvBadgeText}>{pendingSubInvoiceCount}</Text>
+          </View>
+        )}
+        <Feather name="chevron-right" size={iconSizes.md} color={colors.mutedForeground} />
+      </PressableRow>
+
       <View style={styles.sectionHeader}>
         <Feather name="alert-triangle" size={iconSizes.md} color={colors.destructive} />
         <Text style={styles.sectionTitle}>Needs Attention</Text>
@@ -1872,6 +1900,47 @@ const createStyles = (colors: ThemeColors) => StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.md,
     borderWidth: 1,
+  },
+  subInvNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    gap: spacing.md,
+  },
+  subInvNavIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subInvNavTitle: {
+    fontSize: typography.sizes.md,
+    fontWeight: fontWeights.semibold,
+    color: colors.foreground,
+  },
+  subInvNavSub: {
+    fontSize: typography.captionSmall.fontSize,
+    color: colors.mutedForeground,
+    marginTop: 1,
+  },
+  subInvBadge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  subInvBadgeText: {
+    fontSize: 12,
+    fontWeight: fontWeights.bold,
+    color: '#fff',
   },
 });
 
