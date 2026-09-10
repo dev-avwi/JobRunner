@@ -369,6 +369,8 @@ interface SwmsDocument {
   createdAt?: string;
   hazardCount?: number;
   signatureCount?: number;
+  /** True when the authenticated user has a signature row for this SWMS (set by the list endpoint). */
+  currentUserSigned?: boolean;
   hazards?: SwmsHazard[];
   signatures?: SwmsSignature[];
 }
@@ -2396,6 +2398,9 @@ export default function JobDetailScreen() {
   const [lockedExpensePhaseId, setLockedExpensePhaseId] = useState<string | null>(null);
 
   const [isLoadingSwms, setIsLoadingSwms] = useState(false);
+  // swmsDataReady is only set true after a successful fetch — unknown/error state is treated as unsafe.
+  const [swmsDataReady, setSwmsDataReady] = useState(false);
+  const [swmsLoadError, setSwmsLoadError] = useState(false);
   const [expandedSwmsId, setExpandedSwmsId] = useState<string | null>(null);
   const [showCreateSwmsModal, setShowCreateSwmsModal] = useState(false);
   const [showTemplatePickerModal, setShowTemplatePickerModal] = useState(false);
@@ -2408,6 +2413,9 @@ export default function JobDetailScreen() {
   const swmsSignWebViewRef = useRef<any>(null);
   const [isSigningSwms, setIsSigningSwms] = useState(false);
   const [isSavingSwms, setIsSavingSwms] = useState(false);
+  const [showSwmsGateSheet, setShowSwmsGateSheet] = useState(false);
+  const [swmsGateDocs, setSwmsGateDocs] = useState<SwmsDocument[]>([]);
+  const [pendingTimerStart, setPendingTimerStart] = useState<(() => void) | null>(null);
   const [swmsForm, setSwmsForm] = useState({
     title: '',
     description: '',
@@ -2592,6 +2600,10 @@ export default function JobDetailScreen() {
   const [subbieLocationStopped, setSubbieLocationStopped] = useState(false);
   const isSoloOwner = user && businessSettings && (!roleInfo || roleInfo.isOwner);
   const isSubcontractorUser = roleInfo?.roleName?.toLowerCase() === 'subcontractor' || roleInfo?.roleName?.toLowerCase() === 'sub_contractor';
+
+  const userDisplayName = useMemo(() => {
+    return user?.name || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || '';
+  }, [user]);
   const canDeleteJobs = isOwnerOrManager || isSoloOwner;
   
   // Check if user can collect payments (owners always can, workers need permission)
@@ -2790,25 +2802,34 @@ export default function JobDetailScreen() {
     if (!job || isLoading) return;
     const handle = InteractionManager.runAfterInteractions(() => {
       if (navLogTimePhaseId && navLogTimeFiredRef.current !== navLogTimePhaseId) {
-        navLogTimeFiredRef.current = navLogTimePhaseId;
+        // Only mark as fired once the gate callback actually executes so a
+        // failed/cancelled gate attempt can be retried without a screen refresh.
         if (activeTimer && !isTimerForThisJob) {
-          confirm({
-            title: 'Timer Already Running',
-            message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
-            confirmText: 'Switch',
-          }).then(async (ok) => {
-            if (!ok) return;
-            const stopped = await stopTimer();
-            if (!stopped) {
-              showToast({ type: 'error', message: 'Failed to stop existing timer' });
-              return;
-            }
-            proceedWithTimerStart(false, navLogTimePhaseId);
+          // Gate runs first so cancelling doesn't orphan the existing timer.
+          checkSwmsGateThenStart(() => {
+            navLogTimeFiredRef.current = navLogTimePhaseId;
+            confirm({
+              title: 'Timer Already Running',
+              message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
+              confirmText: 'Switch',
+            }).then(async (ok) => {
+              if (!ok) return;
+              const stopped = await stopTimer();
+              if (!stopped) {
+                showToast({ type: 'error', message: 'Failed to stop existing timer' });
+                return;
+              }
+              proceedWithTimerStart(false, navLogTimePhaseId);
+            });
           });
         } else if (activeTimer && isTimerForThisJob) {
+          navLogTimeFiredRef.current = navLogTimePhaseId;
           showToast({ type: 'info', message: 'Timer is already running for this job' });
         } else {
-          proceedWithTimerStart(false, navLogTimePhaseId);
+          checkSwmsGateThenStart(() => {
+            navLogTimeFiredRef.current = navLogTimePhaseId;
+            proceedWithTimerStart(false, navLogTimePhaseId);
+          });
         }
       }
       if (navLogExpensePhaseId && navLogExpenseFiredRef.current !== navLogExpensePhaseId) {
@@ -2820,8 +2841,10 @@ export default function JobDetailScreen() {
       }
     });
     return () => handle.cancel();
+  // swmsDataReady and swmsLoadError are intentionally included: if SWMS loads after the job,
+  // the effect must re-run to resume a pending _logTime deep-link that was blocked by the gate.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [job, isLoading, navLogTimePhaseId, navLogExpensePhaseId]);
+  }, [job, isLoading, navLogTimePhaseId, navLogExpensePhaseId, swmsDataReady, swmsLoadError]);
 
   // Deep-link from phase-detail "Draft Claim" button.
   // action=addClaim + _claimPhaseId=<id>: open the claim modal prefilled with
@@ -3429,9 +3452,18 @@ export default function JobDetailScreen() {
     setIsLoadingSwms(true);
     try {
       const res = await api.get<SwmsDocument[]>(`/api/jobs/${id}/swms`);
-      setSwmsDocuments(Array.isArray(res.data) ? res.data : []);
+      if (res.error) {
+        setSwmsLoadError(true);
+        setSwmsDataReady(false);
+      } else {
+        setSwmsDocuments(Array.isArray(res.data) ? res.data : []);
+        setSwmsDataReady(true);
+        setSwmsLoadError(false);
+      }
     } catch (e) {
       console.error('Error loading SWMS:', e);
+      setSwmsLoadError(true);
+      setSwmsDataReady(false);
     } finally {
       setIsLoadingSwms(false);
     }
@@ -3952,6 +3984,14 @@ export default function JobDetailScreen() {
             signatures: { worker: swmsSignatureData || 'mobile-text-signature' },
             status: 'pending_sync',
           });
+          // Optimistically mark this SWMS as signed by the current user in local state
+          // so the gate sheet can clear without waiting for a network sync.
+          const offlineSignedId = signingSwmsId;
+          setSwmsDocuments(prev => prev.map(d =>
+            d.id === offlineSignedId
+              ? { ...d, currentUserSigned: true, signatureCount: (d.signatureCount ?? 0) + 1 }
+              : d,
+          ));
           setShowSignSwmsModal(false);
           setSignWorkerName('');
           setSwmsSignatureData(null);
@@ -3974,6 +4014,14 @@ export default function JobDetailScreen() {
       if (res.error) {
         showToast({ type: 'error', message: res.error });
       } else {
+        // Optimistically mark signed in local state so the gate sheet clears immediately,
+        // then refresh from server to confirm.
+        const onlineSignedId = signingSwmsId;
+        setSwmsDocuments(prev => prev.map(d =>
+          d.id === onlineSignedId
+            ? { ...d, currentUserSigned: true, signatureCount: (d.signatureCount ?? 0) + 1 }
+            : d,
+        ));
         setShowSignSwmsModal(false);
         setSignWorkerName('');
         setSwmsSignatureData(null);
@@ -6542,6 +6590,57 @@ export default function JobDetailScreen() {
     }
   };
 
+  // Returns SWMS documents that are active and that the current worker has not yet signed.
+  const getUnsignedSwmsForCurrentUser = useCallback(() => {
+    // Only gate on explicitly active documents — draft and archived do not block workers.
+    const activeDocs = swmsDocuments.filter(s => s.status === 'active');
+    if (activeDocs.length === 0) return [];
+    return activeDocs.filter(doc => !doc.currentUserSigned);
+  }, [swmsDocuments]);
+
+  // Shows the SWMS gate sheet when the current worker has unsigned SWMS docs,
+  // otherwise runs the callback immediately.
+  // For workers, the gate is fail-safe: if SWMS data has not loaded successfully
+  // yet (due to an in-flight load or a previous error), we block and surface the
+  // reason rather than silently passing through.
+  const checkSwmsGateThenStart = useCallback((callback: () => void) => {
+    // Bypass only when role is positively confirmed — null roleInfo during auth
+    // hydration must NOT be treated as an owner-like bypass.
+    const roleConfirmedOwner = roleInfo != null
+      ? (roleInfo.isOwner || ['OWNER', 'ADMIN', 'MANAGER'].includes(roleInfo.roleName?.toUpperCase() || ''))
+      : false;
+    // Solo owners (no team set up) have no roleInfo, but the server sets user.isOwner = true.
+    const confirmedSoloOwner = roleInfo == null && user?.isOwner === true;
+    if (roleConfirmedOwner || confirmedSoloOwner) {
+      callback();
+      return;
+    }
+    if (isLoadingSwms) {
+      showToast({ type: 'info', message: 'Loading safety documents', description: 'Please wait a moment and try again.' });
+      return;
+    }
+    if (swmsLoadError) {
+      // Automatically retry so the next tap succeeds without a manual screen refresh.
+      loadSwmsDocuments();
+      showToast({ type: 'error', message: 'Could not load safety documents', description: 'Retrying — please try again in a moment.' });
+      return;
+    }
+    if (!swmsDataReady) {
+      // Data has never loaded — trigger a load and ask the worker to retry.
+      loadSwmsDocuments();
+      showToast({ type: 'info', message: 'Loading safety documents', description: 'Please try again in a moment.' });
+      return;
+    }
+    const unsigned = getUnsignedSwmsForCurrentUser();
+    if (unsigned.length > 0) {
+      setSwmsGateDocs(unsigned);
+      setPendingTimerStart(() => callback);
+      setShowSwmsGateSheet(true);
+    } else {
+      callback();
+    }
+  }, [roleInfo, user, isLoadingSwms, swmsLoadError, swmsDataReady, loadSwmsDocuments, getUnsignedSwmsForCurrentUser]);
+
   // For project jobs with phases, pick a phase before starting the timer.
   const startTimerWithOptionalPhase = async (callback: (phaseId?: string) => void) => {
     if (!job || !isProject || phases.length === 0) {
@@ -6566,18 +6665,22 @@ export default function JobDetailScreen() {
     if (!job) return;
     
     if (activeTimer && !isTimerForThisJob) {
-      confirm({
-        title: 'Timer Already Running',
-        message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
-        confirmText: 'Switch',
-      }).then(async (ok) => {
-        if (!ok) return;
-        const stopped = await stopTimer();
-        if (!stopped) {
-          showToast({ type: 'error', message: 'Error', description: 'Failed to stop the existing timer. Please try again.' });
-          return;
-        }
-        startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
+      // Run the SWMS gate check BEFORE stopping the existing timer so that
+      // cancelling the gate leaves the worker's current timer still running.
+      checkSwmsGateThenStart(() => {
+        confirm({
+          title: 'Timer Already Running',
+          message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
+          confirmText: 'Switch',
+        }).then(async (ok) => {
+          if (!ok) return;
+          const stopped = await stopTimer();
+          if (!stopped) {
+            showToast({ type: 'error', message: 'Error', description: 'Failed to stop the existing timer. Please try again.' });
+            return;
+          }
+          startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
+        });
       });
       return;
     }
@@ -6588,14 +6691,14 @@ export default function JobDetailScreen() {
         'Safety documentation is incomplete. Starting the timer will transition this job to "In Progress". Complete safety docs first?',
         [
           { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('files') },
-          { text: 'Start Anyway', style: 'secondary', onPress: () => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId)) },
+          { text: 'Start Anyway', style: 'secondary', onPress: () => checkSwmsGateThenStart(() => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId))) },
           { text: 'Cancel', style: 'plain' },
         ],
       );
       return;
     }
 
-    startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
+    checkSwmsGateThenStart(() => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId)));
   };
 
   const handleStopTimer = async () => {
@@ -6770,19 +6873,22 @@ export default function JobDetailScreen() {
           {
             text: 'Start Anyway',
             style: 'secondary',
-            onPress: async () => {
-              const success = await updateJobStatus(job.id, action.next as any);
-              if (success) {
-                setJob({ ...job, status: action.next as any });
-                if (action.next === 'in_progress') {
-                  LiveActivity.start({
-                    id: job.id,
-                    address: job.address ?? '',
-                    clientName: job.clientName ?? '',
-                  }).catch(() => {});
+            onPress: () => {
+              // Gate wraps the whole sequence so job status is only updated after SWMS gate clears.
+              checkSwmsGateThenStart(async () => {
+                const success = await updateJobStatus(job.id, action.next as any);
+                if (success) {
+                  setJob({ ...job, status: action.next as any });
+                  if (action.next === 'in_progress') {
+                    LiveActivity.start({
+                      id: job.id,
+                      address: job.address ?? '',
+                      clientName: job.clientName ?? '',
+                    }).catch(() => {});
+                  }
+                  await proceedWithTimerStart(true);
                 }
-                await proceedWithTimerStart(true);
-              }
+              });
             },
           },
           { text: 'Cancel', style: 'plain' },
@@ -6798,16 +6904,19 @@ export default function JobDetailScreen() {
         confirmText: 'Confirm',
       }).then(async (ok) => {
         if (!ok) return;
-        const success = await updateJobStatus(job.id, 'in_progress');
-        if (success) {
-          setJob({ ...job, status: 'in_progress' });
-          LiveActivity.start({
-            id: job.id,
-            address: job.address ?? '',
-            clientName: job.clientName ?? '',
-          }).catch(() => {});
-          await proceedWithTimerStart(true);
-        }
+        // Gate wraps the whole sequence so job status is only updated after SWMS gate clears.
+        checkSwmsGateThenStart(async () => {
+          const success = await updateJobStatus(job.id, 'in_progress');
+          if (success) {
+            setJob({ ...job, status: 'in_progress' });
+            LiveActivity.start({
+              id: job.id,
+              address: job.address ?? '',
+              clientName: job.clientName ?? '',
+            }).catch(() => {});
+            await proceedWithTimerStart(true);
+          }
+        });
       });
     } else {
       confirm({
@@ -12378,18 +12487,7 @@ export default function JobDetailScreen() {
                       ) : (
                         <TouchableOpacity
                           onPress={() => {
-                            if (swmsDocuments.length > 0 && (hasIncompleteSwms || pendingSafetyForms.length > 0)) {
-                              Alert.alert(
-                                'SWMS Not Signed',
-                                'The Safe Work Method Statement for this job has not been completed. Start work anyway?',
-                                [
-                                  { text: 'Review SWMS', style: 'cancel', onPress: () => setActiveTab('files') },
-                                  { text: 'Start Anyway', style: 'destructive', onPress: () => proceedWithTimerStart(false, phase.id) },
-                                ]
-                              );
-                            } else {
-                              proceedWithTimerStart(false, phase.id);
-                            }
+                            checkSwmsGateThenStart(() => proceedWithTimerStart(false, phase.id));
                           }}
                           disabled={timerLoading || otherJobTimer}
                           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 11, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: phaseOtherActive ? colors.muted : colors.primary, opacity: otherJobTimer ? 0.4 : 1, marginBottom: spacing.sm }}
@@ -12812,23 +12910,26 @@ export default function JobDetailScreen() {
                     }}
                     onLogTime={(phase) => {
                       if (activeTimer && !isTimerForThisJob) {
-                        confirm({
-                          title: 'Timer Already Running',
-                          message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
-                          confirmText: 'Switch',
-                        }).then(async (ok) => {
-                          if (!ok) return;
-                          const stopped = await stopTimer();
-                          if (!stopped) {
-                            showToast({ type: 'error', message: 'Failed to stop existing timer' });
-                            return;
-                          }
-                          proceedWithTimerStart(false, phase.id);
+                        // Gate runs before stopping so cancelling leaves the existing timer intact.
+                        checkSwmsGateThenStart(() => {
+                          confirm({
+                            title: 'Timer Already Running',
+                            message: 'You have an active timer on another job. Would you like to stop it and start timing this job?',
+                            confirmText: 'Switch',
+                          }).then(async (ok) => {
+                            if (!ok) return;
+                            const stopped = await stopTimer();
+                            if (!stopped) {
+                              showToast({ type: 'error', message: 'Failed to stop existing timer' });
+                              return;
+                            }
+                            proceedWithTimerStart(false, phase.id);
+                          });
                         });
                       } else if (activeTimer && isTimerForThisJob) {
                         showToast({ type: 'info', message: 'Timer is already running for this job' });
                       } else {
-                        proceedWithTimerStart(false, phase.id);
+                        checkSwmsGateThenStart(() => proceedWithTimerStart(false, phase.id));
                       }
                     }}
                   />
@@ -16216,6 +16317,112 @@ export default function JobDetailScreen() {
                 </View>
         </View>
       </AppBottomSheet>
+
+      {/* SWMS Gate Sheet — shown when a worker has unsigned SWMS docs before starting a timer */}
+      {(() => {
+        // Recompute from fresh swmsDocuments so the sheet updates after each signing.
+        const stillUnsigned = swmsGateDocs.filter(gateDoc => {
+          const fresh = swmsDocuments.find(d => d.id === gateDoc.id);
+          // If the doc disappeared from the list it can no longer block the gate.
+          if (!fresh) return false;
+          return !fresh.currentUserSigned;
+        });
+        const allSigned = stillUnsigned.length === 0;
+        return (
+          <AppBottomSheet
+            visible={showSwmsGateSheet}
+            onDismiss={() => {
+              setShowSwmsGateSheet(false);
+              setSwmsGateDocs([]);
+              setPendingTimerStart(null);
+            }}
+            title="Sign SWMS Before Starting"
+            showCloseButton
+            snapPoints={['60%']}
+            footer={(
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <SheetButton
+                  variant="outline"
+                  label="Cancel"
+                  onPress={() => {
+                    setShowSwmsGateSheet(false);
+                    setSwmsGateDocs([]);
+                    setPendingTimerStart(null);
+                  }}
+                  style={{ flex: 1 }}
+                />
+                <SheetButton
+                  label="Start Work"
+                  disabled={!allSigned}
+                  onPress={() => {
+                    setShowSwmsGateSheet(false);
+                    setSwmsGateDocs([]);
+                    const callback = pendingTimerStart;
+                    setPendingTimerStart(null);
+                    callback?.();
+                  }}
+                  style={{ flex: 1 }}
+                />
+              </View>
+            )}>
+            <View>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground, marginBottom: spacing.md }}>
+                You must sign the following Safe Work Method Statements before starting work on this job.
+              </Text>
+              {swmsGateDocs.map(gateDoc => {
+                const fresh = swmsDocuments.find(d => d.id === gateDoc.id) ?? gateDoc;
+                const signed = !!fresh.currentUserSigned;
+                return (
+                  <View
+                    key={gateDoc.id}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: colors.card,
+                      borderRadius: radius.md,
+                      padding: spacing.md,
+                      marginBottom: spacing.sm,
+                      gap: spacing.md,
+                    }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                        {gateDoc.title}
+                      </Text>
+                      {!!gateDoc.description && (
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={2}>
+                          {gateDoc.description}
+                        </Text>
+                      )}
+                    </View>
+                    {signed ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Feather name="check-circle" size={16} color={colors.success} />
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.success, fontWeight: fontWeights.medium }}>Signed</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => {
+                          setSigningSwmsId(gateDoc.id);
+                          setSignWorkerName(userDisplayName);
+                          setSwmsSignatureData(null);
+                          setShowSignSwmsModal(true);
+                        }}
+                        style={{
+                          backgroundColor: colors.primary,
+                          paddingVertical: 6,
+                          paddingHorizontal: spacing.md,
+                          borderRadius: radius.md,
+                        }}>
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Sign</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          </AppBottomSheet>
+        );
+      })()}
 
       {/* Proof Pack Section Toggle Modal */}
       <AppBottomSheet

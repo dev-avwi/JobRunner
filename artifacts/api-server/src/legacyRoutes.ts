@@ -47172,7 +47172,7 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (!teamCheck.rows || teamCheck.rows.length === 0) return res.status(403).json({ error: 'Not authorized to sign this SWMS' });
       }
 
-      const { workerName, signatureData, latitude, longitude, address, workerUserId, idempotencyKey } = req.body;
+      const { workerName, signatureData, latitude, longitude, address, idempotencyKey } = req.body;
       if (!workerName || !signatureData) return res.status(400).json({ error: 'Worker name and signature are required' });
 
       const idemKey: string | undefined = idempotencyKey || req.headers['idempotency-key'];
@@ -47181,10 +47181,12 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
         if (cached) return res.json({ ...cached, idempotentReplay: true });
       }
 
+      // Always use the authenticated user's ID — never trust a client-supplied workerUserId.
+      // currentUserSigned checks rely on this column matching req.userId exactly.
       const [sig] = await db.insert(swmsSignatures).values({
         swmsId: req.params.id,
         workerName,
-        workerUserId: workerUserId || req.userId || null,
+        workerUserId: req.userId || null,
         signatureData,
         signedAt: new Date(),
         latitude: latitude || null,

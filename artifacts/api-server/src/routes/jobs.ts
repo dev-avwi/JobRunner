@@ -12106,10 +12106,17 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const userContext = await getUserContext(req.userId);
       const userId = userContext.effectiveUserId;
       const docs = await db.select().from(swmsDocuments).where(and(eq(swmsDocuments.jobId, req.params.jobId), eq(swmsDocuments.userId, userId))).orderBy(desc(swmsDocuments.createdAt));
+      const requestingUserId = req.userId as string;
       const docsWithCounts = await Promise.all(docs.map(async (doc) => {
         const hazardCount = await db.select({ count: sql<number>`count(*)` }).from(swmsHazards).where(eq(swmsHazards.swmsId, doc.id));
         const sigCount = await db.select({ count: sql<number>`count(*)` }).from(swmsSignatures).where(eq(swmsSignatures.swmsId, doc.id));
-        return { ...doc, hazardCount: Number(hazardCount[0]?.count || 0), signatureCount: Number(sigCount[0]?.count || 0) };
+        const userSigCount = await db.select({ count: sql<number>`count(*)` }).from(swmsSignatures).where(and(eq(swmsSignatures.swmsId, doc.id), eq(swmsSignatures.workerUserId, requestingUserId)));
+        return {
+          ...doc,
+          hazardCount: Number(hazardCount[0]?.count || 0),
+          signatureCount: Number(sigCount[0]?.count || 0),
+          currentUserSigned: Number(userSigCount[0]?.count || 0) > 0,
+        };
       }));
       res.json(docsWithCounts);
     } catch (error: any) {
