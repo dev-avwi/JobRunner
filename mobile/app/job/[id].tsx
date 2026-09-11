@@ -2341,6 +2341,10 @@ export default function JobDetailScreen() {
   // the ref's Set is mutated so the phase list reflects the new expand state.
   const [, setExpandedCompletedPhasesVersion] = useState(0);
 
+  // Tracks whether we have already auto-expanded the in-progress phase on the
+  // Tasks tab so that re-visiting the tab doesn't collapse it again.
+  const autoExpandedInProgressPhaseRef = useRef(false);
+
   // Phase task expansion and inline view for Tasks tab
   const [expandedPhaseTasksSet, setExpandedPhaseTasksSet] = useState<Set<string>>(new Set());
   const [phaseTasksData, setPhaseTasksData] = useState<Record<string, PhaseTaskItem[]>>({});
@@ -4276,12 +4280,30 @@ export default function JobDetailScreen() {
     }
   }, [activeTab, id, job?.jobType]);
 
-  // Load phase task counts whenever phases are refreshed while on the Tasks tab
+  // Load phase task counts whenever phases are refreshed while on the Tasks tab.
+  // Also auto-expand the single in-progress phase the first time phases arrive.
   useEffect(() => {
     if (activeTab === 'tasks' && phases.length > 0 && !isLoadingPhases) {
       loadPhaseTaskCounts(phases);
+
+      // Auto-expand the in-progress phase if there is exactly one and we
+      // haven't done this yet (ref keeps it stable across tab switches).
+      if (!autoExpandedInProgressPhaseRef.current) {
+        const inProgressPhases = phases.filter(p => p.status === 'in_progress');
+        if (inProgressPhases.length === 1) {
+          const phaseId = inProgressPhases[0].id;
+          autoExpandedInProgressPhaseRef.current = true;
+          setExpandedPhaseTasksSet(prev => {
+            if (prev.has(phaseId)) return prev;
+            const next = new Set(prev);
+            next.add(phaseId);
+            return next;
+          });
+          loadPhaseTasksForPhase(phaseId);
+        }
+      }
     }
-  }, [phases, activeTab, isLoadingPhases]);
+  }, [phases, activeTab, isLoadingPhases, loadPhaseTasksForPhase]);
 
   const handleSendJobMessage = async () => {
     if (!newMessage.trim() || !id) return;
