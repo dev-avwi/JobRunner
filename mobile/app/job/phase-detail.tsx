@@ -6,11 +6,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
-  Modal,
+  StyleSheet, Animated, TextInput, Alert, Platform, Pressable,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
+import { getNestedHeaderOptions } from '../../src/lib/nested-header';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../src/lib/design-tokens';
@@ -598,6 +598,37 @@ export default function PhaseDetailScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: colors.background }]}>
 
+      {/* Native stack header — same pattern as job [id].tsx */}
+      <Stack.Screen
+        options={{
+          ...getNestedHeaderOptions(),
+          title: '',
+          headerBackVisible: false,
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.primary,
+          headerLeft: () => (
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
+            >
+              <Feather name="chevron-left" size={17} color={colors.primary} />
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
+            </Pressable>
+          ),
+          headerRight: () => (isOwner || isManager) ? (
+            <Pressable
+              onPress={openEditPhaseSheet}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Feather name="edit-2" size={18} color={colors.primary} />
+            </Pressable>
+          ) : null,
+        }}
+      />
+
       <ScrollView
         contentContainerStyle={{ paddingBottom: 48 }}
         showsVerticalScrollIndicator={false}
@@ -605,29 +636,6 @@ export default function PhaseDetailScreen() {
 
         {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
         <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
-
-          {/* Nav row — matches job view header style */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <TouchableOpacity
-              onPress={() => router.back()}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center' }}
-            >
-              <Feather name="chevron-left" size={17} color={colors.primary} />
-              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
-            </TouchableOpacity>
-            {(isOwner || isManager) && (
-              <TouchableOpacity
-                onPress={openEditPhaseSheet}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                activeOpacity={0.7}
-                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Feather name="edit-2" size={18} color={colors.primary} />
-              </TouchableOpacity>
-            )}
-          </View>
 
           {/* Badge row */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 14 }}>
@@ -1278,147 +1286,113 @@ export default function PhaseDetailScreen() {
       </AppBottomSheet>
 
 
-      {/* ── Add task modal ─────────────────────────────────────────────── */}
-      <Modal
+      {/* ── Add task sheet ─────────────────────────────────────────────── */}
+      <AppBottomSheet
         visible={showAddModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowAddModal(false)}
+        onDismiss={() => { setShowAddModal(false); setNewTaskText(''); setNewTaskDesc(''); }}
+        title="Add task"
+        showCloseButton
+        snapPoints={['75%']}
+        footer={(
+          <SheetButton
+            label="Add task"
+            onPress={handleAddTask}
+            disabled={!newTaskText.trim() || addingTask}
+            loading={addingTask}
+          />
+        )}
       >
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm, borderBottomWidth: 1, borderColor: colors.border }}>
-              <Text style={{ flex: 1, fontSize: 17, fontWeight: fontWeights.semibold, color: colors.foreground }}>Add task</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)} hitSlop={8}>
-                <Feather name="x" size={22} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
-              {/* Title field */}
-              <View>
-                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Task title</Text>
-                <TextInput
-                  style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  placeholder="e.g. Install safety barrier"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={newTaskText}
-                  onChangeText={setNewTaskText}
-                  autoFocus
-                  returnKeyType="next"
-                  editable={!addingTask}
-                />
-              </View>
-
-              {/* Description field with markdown toolbar */}
-              <View>
-                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description (optional)</Text>
-                <MarkdownToolbar
-                  value={newTaskDesc}
-                  selection={newTaskDescSel}
-                  onChange={setNewTaskDesc}
-                />
-                <TextInput
-                  style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 140, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
-                  placeholder="Add step-by-step instructions, headings, or bullet points..."
-                  placeholderTextColor={colors.mutedForeground}
-                  value={newTaskDesc}
-                  onChangeText={setNewTaskDesc}
-                  onSelectionChange={e => setNewTaskDescSel(e.nativeEvent.selection)}
-                  multiline
-                  editable={!addingTask}
-                />
-              </View>
-            </ScrollView>
-
-            {/* Footer */}
-            <View style={{ padding: spacing.md, borderTopWidth: 1, borderColor: colors.border }}>
-              <TouchableOpacity
-                onPress={handleAddTask}
-                disabled={!newTaskText.trim() || addingTask}
-                style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', opacity: !newTaskText.trim() ? 0.5 : 1 }}
-                activeOpacity={0.8}
-              >
-                {addingTask
-                  ? <ActivityIndicator color={colors.primaryForeground} />
-                  : <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 15 }}>Add task</Text>}
-              </TouchableOpacity>
-            </View>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+          {/* Title field */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Task title</Text>
+            <TextInput
+              style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+              placeholder="e.g. Install safety barrier"
+              placeholderTextColor={colors.mutedForeground}
+              value={newTaskText}
+              onChangeText={setNewTaskText}
+              autoFocus
+              returnKeyType="next"
+              editable={!addingTask}
+            />
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
 
-      {/* ── Edit description modal ─────────────────────────────────────── */}
-      <Modal
+          {/* Description field with markdown toolbar */}
+          <View>
+            <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description (optional)</Text>
+            <MarkdownToolbar
+              value={newTaskDesc}
+              selection={newTaskDescSel}
+              onChange={setNewTaskDesc}
+            />
+            <TextInput
+              style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 140, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+              placeholder="Add step-by-step instructions, headings, or bullet points..."
+              placeholderTextColor={colors.mutedForeground}
+              value={newTaskDesc}
+              onChangeText={setNewTaskDesc}
+              onSelectionChange={e => setNewTaskDescSel(e.nativeEvent.selection)}
+              multiline
+              editable={!addingTask}
+            />
+          </View>
+        </ScrollView>
+      </AppBottomSheet>
+
+      {/* ── Edit description sheet ─────────────────────────────────────── */}
+      <AppBottomSheet
         visible={!!editingItem}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setEditingItem(null)}
-      >
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
-            {/* Header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm, borderBottomWidth: 1, borderColor: colors.border }}>
-              <Text style={{ flex: 1, fontSize: 17, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-                {editingItem?.text ?? 'Description'}
-              </Text>
-              <TouchableOpacity onPress={() => setEditingItem(null)} hitSlop={8}>
-                <Feather name="x" size={22} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md }}>
-              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description</Text>
-              <MarkdownToolbar
-                value={editDesc}
-                selection={editDescSel}
-                onChange={setEditDesc}
-              />
-              <TextInput
-                style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 200, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
-                placeholder="Add headings, bullet points, numbered steps..."
-                placeholderTextColor={colors.mutedForeground}
-                value={editDesc}
-                onChangeText={setEditDesc}
-                onSelectionChange={e => setEditDescSel(e.nativeEvent.selection)}
-                multiline
-                autoFocus
-                editable={!savingDesc}
-              />
-              {!!editDesc.trim() && (
-                <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.muted, borderRadius: radius.md }}>
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview</Text>
-                  <MarkdownText>{editDesc}</MarkdownText>
-                </View>
-              )}
-            </ScrollView>
-
-            {/* Footer */}
-            <View style={{ padding: spacing.md, borderTopWidth: 1, borderColor: colors.border, gap: spacing.sm }}>
+        onDismiss={() => setEditingItem(null)}
+        title={editingItem?.text ?? 'Description'}
+        showCloseButton
+        snapPoints={['85%']}
+        footer={(
+          <View style={{ gap: spacing.sm }}>
+            <SheetButton
+              label="Save description"
+              onPress={handleSaveDescription}
+              disabled={savingDesc}
+              loading={savingDesc}
+            />
+            {!!editDesc.trim() && (
               <TouchableOpacity
-                onPress={handleSaveDescription}
-                disabled={savingDesc}
-                style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center' }}
-                activeOpacity={0.8}
+                onPress={() => setEditDesc('')}
+                style={{ alignItems: 'center', paddingVertical: spacing.sm }}
+                activeOpacity={0.7}
               >
-                {savingDesc
-                  ? <ActivityIndicator color={colors.primaryForeground} />
-                  : <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 15 }}>Save description</Text>}
+                <Text style={{ color: colors.destructive, fontSize: 14 }}>Clear description</Text>
               </TouchableOpacity>
-              {!!editDesc.trim() && (
-                <TouchableOpacity
-                  onPress={() => { setEditDesc(''); }}
-                  style={{ alignItems: 'center', paddingVertical: spacing.sm }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ color: colors.destructive, fontSize: 14 }}>Clear description</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            )}
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        )}
+      >
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md }}>
+          <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description</Text>
+          <MarkdownToolbar
+            value={editDesc}
+            selection={editDescSel}
+            onChange={setEditDesc}
+          />
+          <TextInput
+            style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 200, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+            placeholder="Add headings, bullet points, numbered steps..."
+            placeholderTextColor={colors.mutedForeground}
+            value={editDesc}
+            onChangeText={setEditDesc}
+            onSelectionChange={e => setEditDescSel(e.nativeEvent.selection)}
+            multiline
+            autoFocus
+            editable={!savingDesc}
+          />
+          {!!editDesc.trim() && (
+            <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.muted, borderRadius: radius.md }}>
+              <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview</Text>
+              <MarkdownText>{editDesc}</MarkdownText>
+            </View>
+          )}
+        </ScrollView>
+      </AppBottomSheet>
 
       {/* Phase-complete → create claim prompt (owners/managers only) */}
       <AppBottomSheet

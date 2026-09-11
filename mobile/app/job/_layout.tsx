@@ -28,8 +28,8 @@ export default function JobLayout() {
           header here double-stacks and leaves a big top gap on iOS. Keep it off
           and use the in-content header row, matching the SMS conversation screen. */}
       <Stack.Screen name="chat" options={{ headerShown: false }} />
-      {/* Phase detail — dedicated screen for a single job phase */}
-      <Stack.Screen name="phase-detail" options={{ headerShown: false }} />
+      {/* Phase detail — uses its own Stack.Screen inside the component (same pattern as [id].tsx) */}
+      <Stack.Screen name="phase-detail" />
     </Stack>
   );
 }
