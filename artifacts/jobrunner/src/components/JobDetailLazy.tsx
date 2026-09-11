@@ -138,6 +138,11 @@ export const JobChecklistSection = lazyWithSuspense(
   sectionFallback,
 );
 
+export const UnifiedWorkSection = lazyWithSuspense(
+  () => import("./UnifiedWorkSection").then((m) => ({ default: m.UnifiedWorkSection })),
+  sectionFallback,
+);
+
 export const JobRfisSection = lazyWithSuspense(
   () => import("./ProjectDocumentRegister").then((m) => ({ default: m.JobRfisSection })),
   sectionFallback,

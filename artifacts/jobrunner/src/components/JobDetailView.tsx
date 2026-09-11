@@ -29,7 +29,6 @@ import {
   SafetyCheckDialog,
   JobForms,
   JobCardSection,
-  JobTasksSection,
   EmailTemplateEditor,
   GeofenceSettingsCard,
   LinkedDocumentsCard,
@@ -46,7 +45,7 @@ import {
   ProjectDocumentRegister,
   DefectsSection,
   SiteDiarySection,
-  JobChecklistSection,
+  UnifiedWorkSection,
   JobRfisSection,
   JobPurchaseOrdersSection,
 } from "./JobDetailLazy";
@@ -3192,8 +3191,7 @@ export default function JobDetailView({
                   </CardContent>
                 </Card>
               )}
-              <JobChecklistSection jobId={jobId} readOnly={job.status === 'invoiced'} />
-              <JobTasksSection jobId={jobId} />
+              <UnifiedWorkSection jobId={jobId} readOnly={job.status === 'invoiced'} />
               <JobForms jobId={jobId} />
               <JobPhotoGallery jobId={jobId} canUpload={job.status !== 'invoiced'} />
               {canUseAIFeatures && jobPhotos.length > 0 && (

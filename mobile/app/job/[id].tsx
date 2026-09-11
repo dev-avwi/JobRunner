@@ -69,8 +69,7 @@ import { WorkspaceSwitcher } from '../../src/components/WorkspaceSwitcher';
 import { VoiceRecorder, VoiceNotePlayer } from '../../src/components/VoiceRecorder';
 import { SignaturePad } from '../../src/components/SignaturePad';
 import { JobForms } from '../../src/components/FormRenderer';
-import { JobTasksSection } from '../../src/components/JobTasksSection';
-import { ChecklistSection } from '../../src/components/ChecklistSection';
+import { UnifiedWorkSection } from '../../src/components/UnifiedWorkSection';
 import SmartActionsPanel, { SmartAction, getJobSmartActions } from '../../src/components/SmartActionsPanel';
 import { JobProgressBar, LinkedDocumentsCard, NextActionCard, PaymentCollectionCard } from '../../src/components/JobWorkflowComponents';
 import { CollapsibleSection } from '../../src/components/ui/CollapsibleSection';
@@ -12591,10 +12590,14 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
-              <ChecklistSection jobId={job.id} readOnly={job.status === 'invoiced'} onCountsChange={(completed, total) => setChecklistCounts({ completed, total })} />
-            </View>
-            <JobTasksSection jobId={job.id} readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)} canLogWork={job.status !== 'invoiced'} containerStyle={styles.photosCard} />
+            <UnifiedWorkSection
+              jobId={job.id}
+              readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              checklistReadOnly={job.status === 'invoiced'}
+              canLogWork={job.status !== 'invoiced'}
+              containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
+              onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
+            />
             {renderPhotosTab()}
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
@@ -12774,21 +12777,13 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
-              <ChecklistSection
-                jobId={job.id}
-                readOnly={job.status === 'invoiced'}
-                onCountsChange={(completed, total) =>
-                  setChecklistCounts({ completed, total })
-                }
-              />
-            </View>
-
-            <JobTasksSection
+            <UnifiedWorkSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
+              checklistReadOnly={job.status === 'invoiced'}
               canLogWork={job.status !== 'invoiced'}
-              containerStyle={styles.photosCard}
+              containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
+              onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
             />
             {renderPhotosTab()}
             <View style={styles.photosCard}>
