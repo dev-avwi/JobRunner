@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ActivityIndicator, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { api } from '../lib/api';
 import { showToast } from '../lib/toast';
 import { formatCurrency } from '../lib/format';
 import { spacing, typography, fontWeights, radius } from '../lib/design-tokens';
+import { MarkdownText } from './MarkdownText';
+import { MarkdownToolbar, applyMarkdownAction, MarkdownAction } from './MarkdownToolbar';
 
 interface JobTask {
   id: string;
@@ -97,6 +99,18 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
   const [adding, setAdding] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  // Create task modal (with rich description)
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createTitle, setCreateTitle] = useState('');
+  const [createDesc, setCreateDesc] = useState('');
+  const [createDescSel, setCreateDescSel] = useState({ start: 0, end: 0 });
+
+  // Edit description modal
+  const [editingDescTask, setEditingDescTask] = useState<JobTask | null>(null);
+  const [editDesc, setEditDesc] = useState('');
+  const [editDescSel, setEditDescSel] = useState({ start: 0, end: 0 });
+  const [savingDesc, setSavingDesc] = useState(false);
+
   // Cost edit state (owner)
   const [editingCostTask, setEditingCostTask] = useState<JobTask | null>(null);
   const [costForm, setCostForm] = useState<CostEditForm>({ estimatedHours: '', actualHours: '', estimatedMaterialCost: '', actualMaterialCost: '' });
@@ -159,6 +173,54 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
       return;
     }
     setNewTitle('');
+    load();
+  };
+
+  const openCreateModal = () => {
+    setCreateTitle(newTitle.trim());
+    setCreateDesc('');
+    setCreateDescSel({ start: 0, end: 0 });
+    setShowCreateModal(true);
+  };
+
+  const submitCreateModal = async () => {
+    const title = createTitle.trim();
+    if (!title) {
+      showToast({ type: 'error', message: 'Title is required' });
+      return;
+    }
+    setAdding(true);
+    const payload: any = { title, jobId };
+    if (createDesc.trim()) payload.description = createDesc.trim();
+    const res = await api.post<JobTask>('/api/tasks', payload);
+    setAdding(false);
+    if (res.error) {
+      showToast({ type: 'error', message: 'Could not add task' });
+      return;
+    }
+    setNewTitle('');
+    setShowCreateModal(false);
+    load();
+  };
+
+  const openEditDesc = (task: JobTask) => {
+    setEditDesc(task.description ?? '');
+    setEditDescSel({ start: 0, end: 0 });
+    setEditingDescTask(task);
+  };
+
+  const saveDesc = async () => {
+    if (!editingDescTask) return;
+    setSavingDesc(true);
+    const res = await api.patch(`/api/tasks/${editingDescTask.id}`, {
+      description: editDesc.trim() || null,
+    });
+    setSavingDesc(false);
+    if (res.error) {
+      showToast({ type: 'error', message: 'Could not save description' });
+      return;
+    }
+    setEditingDescTask(null);
     load();
   };
 
@@ -311,6 +373,7 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
     taskTitle: { fontSize: 14, color: colors.foreground },
     taskTitleDone: { textDecorationLine: 'line-through', color: colors.secondaryText },
     taskDesc: { fontSize: 12, color: colors.secondaryText, marginTop: 2 },
+    taskDescMd: { marginTop: 3 },
     taskTotals: {
       flexDirection: 'row',
       gap: 8,
@@ -413,6 +476,19 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
       borderTopRightRadius: 20,
       padding: spacing.lg,
       paddingBottom: spacing.xl,
+    },
+    descModalSheet: {
+      backgroundColor: colors.card,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      padding: spacing.lg,
+      paddingBottom: Platform.OS === 'ios' ? 36 : spacing.xl,
+    },
+    descInput: {
+      minHeight: 140,
+      paddingTop: 10,
+      borderTopLeftRadius: 0,
+      borderTopRightRadius: 0,
     },
     modalTitle: {
       fontSize: typography.subtitle.fontSize,
@@ -553,7 +629,11 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
 
               <View style={styles.taskContent}>
                 <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
-                {!!task.description && <Text style={styles.taskDesc}>{task.description}</Text>}
+                {!!task.description && (
+                  <MarkdownText style={styles.taskDescMd}>
+                    {task.description}
+                  </MarkdownText>
+                )}
                 {/* Totals from work-log entries */}
                 {(hasHours || hasMaterials) && (
                   <View style={styles.taskTotals}>
@@ -581,6 +661,11 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
                       size={18}
                       color={colors.secondaryText}
                     />
+                  </TouchableOpacity>
+                )}
+                {!readOnly && (
+                  <TouchableOpacity onPress={() => openEditDesc(task)} hitSlop={8} style={styles.editCostBtn}>
+                    <Feather name="file-text" size={15} color={task.description ? colors.primary : colors.secondaryText} />
                   </TouchableOpacity>
                 )}
                 {!readOnly && (
@@ -659,7 +744,12 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
             returnKeyType="done"
             onSubmitEditing={add}
           />
-          <TouchableOpacity style={styles.addBtn} onPress={add} disabled={adding || !newTitle.trim()}>
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={openCreateModal}
+            disabled={adding}
+            accessibilityLabel="Add task with description"
+          >
             {adding ? (
               <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
             ) : (
@@ -668,6 +758,146 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Create task modal with rich description */}
+      <Modal
+        visible={showCreateModal}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowCreateModal(false)}>
+            <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+              <View style={styles.descModalSheet}>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.modalTitle}>New Task</Text>
+
+                <Text style={styles.modalFieldLabel}>Title</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={createTitle}
+                  onChangeText={setCreateTitle}
+                  placeholder="Task title"
+                  placeholderTextColor={colors.secondaryText}
+                  returnKeyType="next"
+                  autoFocus={!createTitle}
+                />
+
+                <Text style={[styles.modalFieldLabel, { marginTop: spacing.md }]}>
+                  Description (optional)
+                </Text>
+                <MarkdownToolbar
+                  value={createDesc}
+                  selection={createDescSel}
+                  onChange={setCreateDesc}
+                />
+                <TextInput
+                  style={[styles.modalInput, styles.descInput]}
+                  value={createDesc}
+                  onChangeText={setCreateDesc}
+                  onSelectionChange={(e) => setCreateDescSel(e.nativeEvent.selection)}
+                  placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
+                  placeholderTextColor={colors.secondaryText}
+                  multiline
+                  textAlignVertical="top"
+                  scrollEnabled={false}
+                />
+
+                <View style={styles.modalRow}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.muted }]}
+                    onPress={() => setShowCreateModal(false)}
+                  >
+                    <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                    onPress={submitCreateModal}
+                    disabled={adding}
+                  >
+                    {adding ? (
+                      <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                    ) : (
+                      <Text style={{ color: colors.primaryForeground ?? '#fff', fontWeight: fontWeights.semibold }}>
+                        Add Task
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Edit description modal */}
+      <Modal
+        visible={!!editingDescTask}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setEditingDescTask(null)}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setEditingDescTask(null)}>
+            <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+              <View style={styles.descModalSheet}>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.modalTitle} numberOfLines={1}>
+                  {editingDescTask?.title}
+                </Text>
+
+                <Text style={styles.modalFieldLabel}>Description</Text>
+                <MarkdownToolbar
+                  value={editDesc}
+                  selection={editDescSel}
+                  onChange={setEditDesc}
+                />
+                <TextInput
+                  style={[styles.modalInput, styles.descInput]}
+                  value={editDesc}
+                  onChangeText={setEditDesc}
+                  onSelectionChange={(e) => setEditDescSel(e.nativeEvent.selection)}
+                  placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
+                  placeholderTextColor={colors.secondaryText}
+                  multiline
+                  textAlignVertical="top"
+                  scrollEnabled={false}
+                  autoFocus
+                />
+
+                <View style={styles.modalRow}>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.muted }]}
+                    onPress={() => setEditingDescTask(null)}
+                  >
+                    <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalBtn, { backgroundColor: colors.primary }]}
+                    onPress={saveDesc}
+                    disabled={savingDesc}
+                  >
+                    {savingDesc ? (
+                      <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                    ) : (
+                      <Text style={{ color: colors.primaryForeground ?? '#fff', fontWeight: fontWeights.semibold }}>
+                        Save
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
 
       {/* Cost edit bottom sheet (owner) */}
       <Modal

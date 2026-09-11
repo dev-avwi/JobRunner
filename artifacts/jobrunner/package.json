@@ -92,6 +92,7 @@
   "dependencies": {
     "@types/leaflet": "^1.9.22",
     "@types/react-leaflet": "^3.0.0",
+    "react-markdown": "^10.1.0",
     "tailwindcss-animate": "^1.0.7"
   }
 }

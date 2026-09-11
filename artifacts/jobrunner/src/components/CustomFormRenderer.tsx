@@ -51,7 +51,14 @@ import {
   ListTodo,
   Plus,
   Trash2,
+  Heading2,
+  Heading3,
+  List,
+  ListOrdered,
+  Bold,
+  Italic,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { format } from "date-fns";
 import type { CustomForm, FormSubmission, Job } from "@shared/schema";
 import type { FormField } from "./CustomFormBuilder";
@@ -1046,10 +1053,73 @@ interface JobTask {
   createdAt?: string;
 }
 
+// Markdown toolbar button helper
+function MdBtn({ icon: Icon, title, onClick }: { icon: React.ElementType; title: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <Icon className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+import { applyLinePrefix, applyInline } from "@/lib/markdownEditor";
+
+function useMarkdownEditor(initial = '') {
+  const [value, setValue] = useState(initial);
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const getSel = () => {
+    const el = ref.current;
+    if (!el) return { start: 0, end: 0 };
+    return { start: el.selectionStart, end: el.selectionEnd };
+  };
+
+  const apply = (fn: (v: string, sel: { start: number; end: number }) => string) => {
+    const sel = getSel();
+    setValue(v => fn(v, sel));
+    // Restore focus
+    setTimeout(() => ref.current?.focus(), 0);
+  };
+
+  const toolbar = (
+    <div className="flex items-center gap-0.5 border border-border rounded-t-md bg-muted/50 px-1.5 py-1">
+      <MdBtn icon={Heading2} title="Heading 2" onClick={() => apply((v, s) => applyLinePrefix(v, s, '## '))} />
+      <MdBtn icon={Heading3} title="Heading 3" onClick={() => apply((v, s) => applyLinePrefix(v, s, '### '))} />
+      <span className="w-px h-4 bg-border mx-0.5" />
+      <MdBtn icon={List} title="Bullet list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '- '))} />
+      <MdBtn icon={ListOrdered} title="Numbered list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '1. '))} />
+      <span className="w-px h-4 bg-border mx-0.5" />
+      <MdBtn icon={Bold} title="Bold" onClick={() => apply((v, s) => applyInline(v, s, '**'))} />
+      <MdBtn icon={Italic} title="Italic" onClick={() => apply((v, s) => applyInline(v, s, '*'))} />
+    </div>
+  );
+
+  return { value, setValue, ref, toolbar };
+}
+
+// Renders markdown task description safely (headings, bullets, bold, italic)
+function TaskMarkdown({ content }: { content: string }) {
+  return (
+    <div className="prose prose-xs max-w-none text-xs text-muted-foreground [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground [&_h2]:mt-1 [&_h2]:mb-0.5 [&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-1 [&_h3]:mb-0.5 [&_ul]:pl-4 [&_ol]:pl-4 [&_li]:my-0 [&_p]:my-0.5">
+      <ReactMarkdown>{content}</ReactMarkdown>
+    </div>
+  );
+}
+
 export function JobTasksSection({ jobId }: { jobId: string }) {
   const { toast } = useToast();
   const { isOwner } = useUserRole();
   const [newTitle, setNewTitle] = useState("");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createTitle, setCreateTitle] = useState("");
+  const [editingTask, setEditingTask] = useState<JobTask | null>(null);
+  const createDesc = useMarkdownEditor("");
+  const editDesc = useMarkdownEditor("");
 
   const { data: tasks = [], isLoading } = useQuery<JobTask[]>({
     queryKey: ['/api/jobs', jobId, 'tasks'],
@@ -1057,10 +1127,13 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (title: string) =>
-      apiRequest('POST', '/api/tasks', { title, jobId }),
+    mutationFn: async ({ title, description }: { title: string; description?: string }) =>
+      apiRequest('POST', '/api/tasks', { title, jobId, description: description || undefined }),
     onSuccess: () => {
       setNewTitle("");
+      setCreateTitle("");
+      createDesc.setValue("");
+      setShowCreateDialog(false);
       queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] });
     },
     onError: () => toast({ title: 'Could not add task', variant: 'destructive' }),
@@ -1073,11 +1146,32 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
     onError: () => toast({ title: 'Could not update task', variant: 'destructive' }),
   });
 
+  const updateDescMutation = useMutation({
+    mutationFn: async ({ id, description }: { id: string; description: string | null }) =>
+      apiRequest('PATCH', `/api/tasks/${id}`, { description }),
+    onSuccess: () => {
+      setEditingTask(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] });
+    },
+    onError: () => toast({ title: 'Could not save description', variant: 'destructive' }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => apiRequest('DELETE', `/api/tasks/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] }),
     onError: () => toast({ title: 'Could not delete task', variant: 'destructive' }),
   });
+
+  const openCreateDialog = () => {
+    setCreateTitle(newTitle.trim());
+    createDesc.setValue("");
+    setShowCreateDialog(true);
+  };
+
+  const openEditDesc = (task: JobTask) => {
+    editDesc.setValue(task.description ?? "");
+    setEditingTask(task);
+  };
 
   if (isLoading) return null;
   // Non-owners only see the card when there are tasks (read-only). Owners always
@@ -1087,6 +1181,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
   const openCount = tasks.filter(t => t.status !== 'done').length;
 
   return (
+    <>
     <Card data-testid="card-job-tasks">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1121,18 +1216,30 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
                 {task.title}
               </p>
               {task.description && (
-                <p className="text-xs text-muted-foreground whitespace-pre-line mt-0.5">{task.description}</p>
+                <TaskMarkdown content={task.description} />
               )}
             </div>
             {isOwner && (
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => deleteMutation.mutate(task.id)}
-                data-testid={`button-delete-task-${task.id}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-0.5">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => openEditDesc(task)}
+                  title="Edit description"
+                  data-testid={`button-edit-desc-task-${task.id}`}
+                  className={task.description ? "text-primary" : ""}
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => deleteMutation.mutate(task.id)}
+                  data-testid={`button-delete-task-${task.id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             )}
           </div>
         ))}
@@ -1143,14 +1250,16 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
               onChange={(e) => setNewTitle(e.target.value)}
               placeholder="Add a task"
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTitle.trim()) createMutation.mutate(newTitle.trim());
+                if (e.key === 'Enter' && newTitle.trim())
+                  createMutation.mutate({ title: newTitle.trim() });
               }}
               data-testid="input-new-task"
             />
             <Button
               size="icon"
-              onClick={() => newTitle.trim() && createMutation.mutate(newTitle.trim())}
-              disabled={!newTitle.trim() || createMutation.isPending}
+              onClick={openCreateDialog}
+              disabled={createMutation.isPending}
+              title="Add task with description"
               data-testid="button-add-task"
             >
               <Plus className="h-4 w-4" />
@@ -1159,5 +1268,96 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
         )}
       </CardContent>
     </Card>
+
+    {/* Create task dialog */}
+    <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New Task</DialogTitle>
+          <DialogDescription>
+            Add a title and optional rich description with headings, lists, and formatted steps.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 py-1">
+          <div className="space-y-1">
+            <Label>Title</Label>
+            <Input
+              value={createTitle}
+              onChange={(e) => setCreateTitle(e.target.value)}
+              placeholder="Task title"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && createTitle.trim()) {
+                  createMutation.mutate({ title: createTitle.trim(), description: createDesc.value.trim() || undefined });
+                }
+              }}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
+            {createDesc.toolbar}
+            <Textarea
+              ref={createDesc.ref}
+              value={createDesc.value}
+              onChange={(e) => createDesc.setValue(e.target.value)}
+              placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
+              className="min-h-[140px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+          <Button
+            onClick={() => createMutation.mutate({ title: createTitle.trim(), description: createDesc.value.trim() || undefined })}
+            disabled={!createTitle.trim() || createMutation.isPending}
+          >
+            {createMutation.isPending ? "Adding..." : "Add Task"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Edit description dialog */}
+    <Dialog open={!!editingTask} onOpenChange={(open) => { if (!open) setEditingTask(null); }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="truncate">{editingTask?.title}</DialogTitle>
+          <DialogDescription>
+            Edit the task description. Supports headings (## H2, ### H3), bullet lists, numbered lists, **bold**, and *italic*.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1 py-1">
+          <Label>Description</Label>
+          {editDesc.toolbar}
+          <Textarea
+            ref={editDesc.ref}
+            value={editDesc.value}
+            onChange={(e) => editDesc.setValue(e.target.value)}
+            placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
+            className="min-h-[180px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>
+          {editingTask && editDesc.value.trim() && (
+            <Button
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={() => updateDescMutation.mutate({ id: editingTask.id, description: null })}
+              disabled={updateDescMutation.isPending}
+            >
+              Clear
+            </Button>
+          )}
+          <Button
+            onClick={() => editingTask && updateDescMutation.mutate({ id: editingTask.id, description: editDesc.value.trim() || null })}
+            disabled={!editingTask || updateDescMutation.isPending}
+          >
+            {updateDescMutation.isPending ? "Saving..." : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
