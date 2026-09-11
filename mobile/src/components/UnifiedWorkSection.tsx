@@ -90,6 +90,14 @@ export interface UnifiedWorkSectionProps {
   containerStyle?: any;
   /** Called whenever the combined completion counts change */
   onCountsChange?: (completed: number, total: number) => void;
+  /** Show a status pill (To Do / In Progress / Done) on each full task row */
+  showStatusBadge?: boolean;
+  /**
+   * When true, fetches only unassigned (non-phase-linked) checklist items via
+   * `?phaseId=null`. Use for project jobs where phase-linked items are shown
+   * inline in each phase card, to avoid duplication.
+   */
+  unassignedChecklistOnly?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -323,6 +331,8 @@ export function UnifiedWorkSection({
   canLogWork,
   containerStyle,
   onCountsChange,
+  showStatusBadge,
+  unassignedChecklistOnly,
 }: UnifiedWorkSectionProps) {
   const { colors } = useTheme();
   // Checklist items can be edited by any non-read-only user (not owner-gated).
@@ -365,11 +375,24 @@ export function UnifiedWorkSection({
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
+  // Generation counter: increments each time load() is called. State updates
+  // from a previous (stale) call are dropped if the generation has since advanced.
+  const loadGenRef = useRef(0);
+
   const load = useCallback(async () => {
+    // When unassignedChecklistOnly is set, fetch only items that are not linked
+    // to a phase (?phaseId=null). This prevents duplication when phase-linked
+    // items are already shown inline in the phase cards on the Tasks tab.
+    const checklistUrl = unassignedChecklistOnly
+      ? `/api/jobs/${jobId}/checklist?phaseId=null`
+      : `/api/jobs/${jobId}/checklist`;
+    const gen = ++loadGenRef.current;
     const [clRes, taskRes] = await Promise.all([
-      api.get<ChecklistItem[]>(`/api/jobs/${jobId}/checklist`),
+      api.get<ChecklistItem[]>(checklistUrl),
       api.get<JobTask[]>(`/api/jobs/${jobId}/tasks`),
     ]);
+    // Discard stale responses — a newer load() has already been issued
+    if (gen !== loadGenRef.current) return;
     if (!clRes.error && Array.isArray(clRes.data)) {
       setChecklistItems([...clRes.data].sort((a, b) => a.sortOrder - b.sortOrder));
     }
@@ -377,7 +400,7 @@ export function UnifiedWorkSection({
       setTasks(taskRes.data);
     }
     setLoading(false);
-  }, [jobId]);
+  }, [jobId, unassignedChecklistOnly]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -742,7 +765,22 @@ export function UnifiedWorkSection({
                   </TouchableOpacity>
 
                   <View style={styles.taskContent}>
-                    <Text style={[styles.taskTitle, done && styles.taskTitleDone]}>{task.title}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <Text style={[styles.taskTitle, done && styles.taskTitleDone, { flexShrink: 1 }]}>{task.title}</Text>
+                      {showStatusBadge && (() => {
+                        const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+                          open:        { label: 'To Do',       bg: `${colors.mutedForeground}18`, text: colors.mutedForeground },
+                          in_progress: { label: 'In Progress', bg: `${colors.primary}15`,         text: colors.primary },
+                          done:        { label: 'Done',        bg: `${colors.success}15`,          text: colors.success },
+                        };
+                        const cfg = statusConfig[task.status] ?? statusConfig.open;
+                        return (
+                          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: cfg.bg }}>
+                            <Text style={{ fontSize: 10, fontWeight: '600', color: cfg.text }}>{cfg.label}</Text>
+                          </View>
+                        );
+                      })()}
+                    </View>
                     {!!task.description && <Text style={styles.taskDesc}>{task.description}</Text>}
                     {(hasHours || hasMaterials) && (
                       <View style={styles.taskTotals}>

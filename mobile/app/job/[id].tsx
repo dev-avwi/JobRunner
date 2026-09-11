@@ -282,6 +282,15 @@ interface ActivityItem {
   title?: string;
 }
 
+interface PhaseTaskItem {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+  description?: string | null;
+  sortOrder: number;
+  createdAt?: string;
+}
+
 interface VoiceNote {
   id: string;
   fileName: string;
@@ -2332,6 +2341,13 @@ export default function JobDetailScreen() {
   // the ref's Set is mutated so the phase list reflects the new expand state.
   const [, setExpandedCompletedPhasesVersion] = useState(0);
 
+  // Phase task expansion and inline view for Tasks tab
+  const [expandedPhaseTasksSet, setExpandedPhaseTasksSet] = useState<Set<string>>(new Set());
+  const [phaseTasksData, setPhaseTasksData] = useState<Record<string, PhaseTaskItem[]>>({});
+  const [phaseTasksLoading, setPhaseTasksLoading] = useState<Set<string>>(new Set());
+  const [phaseTaskCounts, setPhaseTaskCounts] = useState<Record<string, { completed: number; total: number }>>({});
+  const [phaseTaskToggling, setPhaseTaskToggling] = useState<Set<string>>(new Set());
+
   // Job task cost data — pre-loaded at job scope so the profitability card can link to the Tasks tab
   type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
   const [jobTasks, setJobTasks] = useState<JobTaskCost[]>([]);
@@ -2998,6 +3014,62 @@ export default function JobDetailScreen() {
       console.error('Error loading job phases:', e);
     } finally {
       setIsLoadingPhases(false);
+    }
+  }, [id]);
+
+  const loadPhaseTaskCounts = useCallback(async (phaseList: JobPhase[]) => {
+    if (!id || phaseList.length === 0) return;
+    const results = await Promise.all(
+      phaseList.map(p => api.get<PhaseTaskItem[]>(`/api/jobs/${id}/checklist?phaseId=${p.id}`))
+    );
+    const counts: Record<string, { completed: number; total: number }> = {};
+    phaseList.forEach((p, i) => {
+      const items = Array.isArray(results[i].data) ? results[i].data! : [];
+      counts[p.id] = { completed: items.filter(t => t.isCompleted).length, total: items.length };
+    });
+    setPhaseTaskCounts(counts);
+  }, [id]);
+
+  const loadPhaseTasksForPhase = useCallback(async (phaseId: string) => {
+    if (!id) return;
+    setPhaseTasksLoading(prev => new Set(prev).add(phaseId));
+    try {
+      const res = await api.get<PhaseTaskItem[]>(`/api/jobs/${id}/checklist?phaseId=${phaseId}`);
+      const items = Array.isArray(res.data) ? [...res.data].sort((a, b) => a.sortOrder - b.sortOrder) : [];
+      setPhaseTasksData(prev => ({ ...prev, [phaseId]: items }));
+      setPhaseTaskCounts(prev => ({ ...prev, [phaseId]: { completed: items.filter(t => t.isCompleted).length, total: items.length } }));
+    } finally {
+      setPhaseTasksLoading(prev => { const next = new Set(prev); next.delete(phaseId); return next; });
+    }
+  }, [id]);
+
+  const togglePhaseTask = useCallback(async (phaseId: string, item: PhaseTaskItem) => {
+    if (!id) return;
+    const next = !item.isCompleted;
+    setPhaseTasksData(prev => ({
+      ...prev,
+      [phaseId]: (prev[phaseId] ?? []).map(t => t.id === item.id ? { ...t, isCompleted: next } : t),
+    }));
+    setPhaseTaskCounts(prev => {
+      const old = prev[phaseId] ?? { completed: 0, total: 0 };
+      return { ...prev, [phaseId]: { ...old, completed: Math.max(0, old.completed + (next ? 1 : -1)) } };
+    });
+    setPhaseTaskToggling(prev => new Set(prev).add(item.id));
+    try {
+      const res = await api.patch(`/api/jobs/${id}/checklist/${item.id}`, { isCompleted: next });
+      if (res.error) {
+        setPhaseTasksData(prev => ({
+          ...prev,
+          [phaseId]: (prev[phaseId] ?? []).map(t => t.id === item.id ? { ...t, isCompleted: item.isCompleted } : t),
+        }));
+        setPhaseTaskCounts(prev => {
+          const old = prev[phaseId] ?? { completed: 0, total: 0 };
+          return { ...prev, [phaseId]: { ...old, completed: Math.max(0, old.completed + (next ? -1 : 1)) } };
+        });
+        showToast({ type: 'error', message: 'Could not update task' });
+      }
+    } finally {
+      setPhaseTaskToggling(prev => { const n = new Set(prev); n.delete(item.id); return n; });
     }
   }, [id]);
 
@@ -4183,6 +4255,13 @@ export default function JobDetailScreen() {
       loadSwmsDocuments();
     }
   }, [activeTab, id, job?.jobType]);
+
+  // Load phase task counts whenever phases are refreshed while on the Tasks tab
+  useEffect(() => {
+    if (activeTab === 'tasks' && phases.length > 0 && !isLoadingPhases) {
+      loadPhaseTaskCounts(phases);
+    }
+  }, [phases, activeTab, isLoadingPhases]);
 
   const handleSendJobMessage = async () => {
     if (!newMessage.trim() || !id) return;
@@ -7823,7 +7902,13 @@ export default function JobDetailScreen() {
 
   const tabBadgeCounts = useMemo(() => {
     const chatCount = jobMessages.length;
-    const checklistIncomplete = checklistCounts.total - checklistCounts.completed;
+    // For project jobs, phaseTaskCounts tracks phase-linked items shown inline in
+    // the phase cards (not included in checklistCounts when unassignedChecklistOnly=true).
+    // Sum both so the badge reflects ALL incomplete work.
+    const phaseTaskIncomplete = Object.values(phaseTaskCounts).reduce(
+      (sum, c) => sum + (c.total - c.completed), 0
+    );
+    const checklistIncomplete = (checklistCounts.total - checklistCounts.completed) + phaseTaskIncomplete;
     const safetyIssues = pendingSafetyForms.length + (hasIncompleteSwms ? 1 : 0);
     // Only count worker-submitted pending expenses — owner-created expenses default to 'pending'
     // but cannot be approved/rejected through this flow.
@@ -7846,7 +7931,7 @@ export default function JobDetailScreen() {
       // Manage: pending worker expenses awaiting owner approval
       manage: pendingExpenseCount,
     };
-  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts, jobExpenses, isOwnerOrManager, isSoloOwner]);
+  }, [jobMessages.length, pendingSafetyForms.length, hasIncompleteSwms, checklistCounts, phaseTaskCounts, jobExpenses, isOwnerOrManager, isSoloOwner]);
 
   // ─── Hooks that were previously after early returns — must be declared here
   // so the hook count is stable across every render (Rules of Hooks).
@@ -12386,6 +12471,7 @@ export default function JobDetailScreen() {
 
               // Collapsed completed phase — compact single row
               if (isComplete && !isCompletedExpanded) {
+                const countData = phaseTaskCounts[phase.id];
                 return (
                   <View key={phase.id} style={cardStyle}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 28, gap: spacing.sm }}>
@@ -12399,11 +12485,12 @@ export default function JobDetailScreen() {
                           {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
                         </Text>
                       </TouchableOpacity>
-                      {(phase.scheduledStart || phase.scheduledEnd) && (
-                        <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                          {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
-                          {phase.scheduledEnd ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
-                        </Text>
+                      {countData && (
+                        <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.muted }}>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                            {countData.completed}/{countData.total}
+                          </Text>
+                        </View>
                       )}
                       <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
                         <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>Complete</Text>
@@ -12445,8 +12532,19 @@ export default function JobDetailScreen() {
                         ) : null}
                       </View>
                     </View>
-                    {/* Status badge + collapse (complete only) */}
+                    {/* Status badge + task count + collapse (complete only) */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                      {(() => {
+                        const countData = phaseTaskCounts[phase.id];
+                        if (!countData) return null;
+                        return (
+                          <View style={{ paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.muted }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                              {countData.completed}/{countData.total} tasks
+                            </Text>
+                          </View>
+                        );
+                      })()}
                       <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
                         <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>{st.label}</Text>
                       </View>
@@ -12529,6 +12627,133 @@ export default function JobDetailScreen() {
                     </>
                   )}
 
+                  {/* Phase tasks — disclosure toggle + inline task list */}
+                  {(() => {
+                    const isTasksExpanded = expandedPhaseTasksSet.has(phase.id);
+                    const phaseTasks = phaseTasksData[phase.id] ?? [];
+                    const isLoadingPhaseTasks = phaseTasksLoading.has(phase.id);
+                    const countData = phaseTaskCounts[phase.id];
+                    // API returns entries newest-first; take first 3 to get the most recent ones
+                    const phaseEntries = timeEntries
+                      .filter(e => (e as any).phaseId === phase.id && e.startTime && e.endTime && e.endTime !== 'null' && e.endTime !== '')
+                      .slice(0, 3);
+
+                    return (
+                      <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, marginTop: spacing.sm, paddingTop: spacing.sm }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            if (!isTasksExpanded) loadPhaseTasksForPhase(phase.id);
+                            setExpandedPhaseTasksSet(prev => {
+                              const next = new Set(prev);
+                              if (isTasksExpanded) next.delete(phase.id); else next.add(phase.id);
+                              return next;
+                            });
+                          }}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+                          activeOpacity={0.7}
+                        >
+                          <Feather name="check-square" size={14} color={colors.mutedForeground} />
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
+                            {countData
+                              ? countData.total === 0
+                                ? '0 tasks'
+                                : `${countData.completed}/${countData.total} tasks done`
+                              : 'Show tasks'}
+                          </Text>
+                          <Feather name={isTasksExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
+                        </TouchableOpacity>
+
+                        {isTasksExpanded && (
+                          <View style={{ marginTop: spacing.sm }}>
+                            {isLoadingPhaseTasks ? (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+                                <ActivityIndicator size="small" color={colors.primary} />
+                                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Loading tasks...</Text>
+                              </View>
+                            ) : phaseTasks.length === 0 ? (
+                              <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
+                                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>No tasks linked to this phase yet.</Text>
+                              </View>
+                            ) : (
+                              <View style={{ gap: 2 }}>
+                                {phaseTasks.map(item => {
+                                  const isToggling = phaseTaskToggling.has(item.id);
+                                  const invoicedOrReadOnly = job.status === 'invoiced';
+                                  return (
+                                    <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 7 }}>
+                                      <TouchableOpacity
+                                        onPress={() => !invoicedOrReadOnly && !isToggling && togglePhaseTask(phase.id, item)}
+                                        disabled={invoicedOrReadOnly || isToggling}
+                                        style={{ width: 20, height: 20, borderRadius: 5, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+                                          borderColor: item.isCompleted ? colors.success : colors.border,
+                                          backgroundColor: item.isCompleted ? colors.success : 'transparent',
+                                        }}
+                                        hitSlop={8}
+                                        activeOpacity={0.7}
+                                      >
+                                        {isToggling
+                                          ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.success} style={{ width: 12, height: 12 }} />
+                                          : item.isCompleted
+                                            ? <Feather name="check" size={11} color={colors.primaryForeground} />
+                                            : null}
+                                      </TouchableOpacity>
+                                      <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: item.isCompleted ? colors.mutedForeground : colors.foreground,
+                                        textDecorationLine: item.isCompleted ? 'line-through' : 'none' }} numberOfLines={2}>
+                                        {item.text}
+                                      </Text>
+                                    </View>
+                                  );
+                                })}
+                              </View>
+                            )}
+
+                            {/* Compact time log for this phase */}
+                            {phaseEntries.length > 0 && (
+                              <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.xs }}>Recent Time</Text>
+                                {phaseEntries.map(entry => {
+                                  let durationText = '';
+                                  try {
+                                    const start = new Date(entry.startTime);
+                                    const end = new Date(entry.endTime!);
+                                    if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+                                      const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+                                      durationText = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+                                    }
+                                  } catch { /* skip */ }
+                                  return (
+                                    <View key={entry.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 4 }}>
+                                      <TeamAvatar name={entry.userName ?? '?'} userId={entry.userId} size={20} />
+                                      <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.mutedForeground }} numberOfLines={1}>
+                                        {entry.userName ?? 'Team member'}
+                                      </Text>
+                                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                                        {new Date(entry.startTime).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+                                      </Text>
+                                      {durationText ? (
+                                        <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                                          {durationText}
+                                        </Text>
+                                      ) : null}
+                                    </View>
+                                  );
+                                })}
+                                <TouchableOpacity
+                                  onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
+                                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: spacing.xs }}
+                                  activeOpacity={0.7}
+                                >
+                                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>View all time entries</Text>
+                                  <Feather name="arrow-right" size={11} color={colors.primary} />
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
+
                   {/* View phase details — always shown at bottom of expanded cards */}
                   <TouchableOpacity
                     onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
@@ -12585,6 +12810,8 @@ export default function JobDetailScreen() {
               </ScrollView>
             )}
 
+            {/* Job-level work items: shown below phase cards; uses phaseId=null filter when
+                phases exist so phase-linked checklist items only appear in their phase card */}
             <UnifiedWorkSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
@@ -12592,11 +12819,12 @@ export default function JobDetailScreen() {
               canLogWork={job.status !== 'invoiced'}
               containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
+              unassignedChecklistOnly={phases.length > 0}
             />
-            {renderPhotosTab()}
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
+            {renderPhotosTab()}
             <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
             {renderNotesTab()}
           </>
@@ -12744,6 +12972,49 @@ export default function JobDetailScreen() {
               </View>
             )}
 
+            {/* Recent time entries — last 3 completed entries for quick history */}
+            {(() => {
+              // API returns entries newest-first; take first 3 to get the most recent ones
+              const recentEntries = timeEntries
+                .filter(e => e.startTime && e.endTime && e.endTime !== 'null' && e.endTime !== '' && !e.isBreak)
+                .slice(0, 3);
+              if (recentEntries.length === 0) return null;
+              return (
+                <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+                  <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm }}>Recent Time Entries</Text>
+                  {recentEntries.map(entry => {
+                    let durationText = '';
+                    try {
+                      const start = new Date(entry.startTime);
+                      const end = new Date(entry.endTime!);
+                      if (!isNaN(start.getTime()) && !isNaN(end.getTime()) && end > start) {
+                        const mins = Math.round((end.getTime() - start.getTime()) / 60000);
+                        durationText = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins}m`;
+                      }
+                    } catch { /* skip */ }
+                    return (
+                      <View key={entry.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
+                        <TeamAvatar name={entry.userName ?? '?'} userId={entry.userId} size={28} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>
+                            {entry.userName ?? 'Team member'}
+                          </Text>
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                            {new Date(entry.startTime).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </Text>
+                        </View>
+                        {durationText ? (
+                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                            {durationText}
+                          </Text>
+                        ) : null}
+                      </View>
+                    );
+                  })}
+                </View>
+              );
+            })()}
+
             {/* Quick Field Actions — compact chip row */}
             {job.status !== 'invoiced' && (
               <ScrollView
@@ -12778,8 +13049,8 @@ export default function JobDetailScreen() {
               canLogWork={job.status !== 'invoiced'}
               containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
+              showStatusBadge
             />
-            {renderPhotosTab()}
             <View style={styles.photosCard}>
               <JobForms
                 jobId={job.id}
@@ -12788,6 +13059,7 @@ export default function JobDetailScreen() {
                 onFormsChange={setAvailableForms}
               />
             </View>
+            {renderPhotosTab()}
             <SiteDiarySection
               jobId={job.id}
               colors={colors}

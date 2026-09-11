@@ -101,7 +101,8 @@ async function mockBaseApis(page: Page) {
   await page.route('**/api/ai/schedule-suggestions**', (r) =>
     r.fulfill(json({ suggestions: [] }))
   );
-  await page.route('**/api/jobs', (r) => r.fulfill(json([])));
+  // Match /api/jobs and /api/jobs?... (query-param variants from the job list page)
+  await page.route('**/api/jobs**', (r) => r.fulfill(json([])));
 }
 
 /**
@@ -471,8 +472,10 @@ test('description is still visible after navigating away and returning (simulate
   await expect(taskRow).toBeVisible({ timeout: 10000 });
   await expect(taskRow.getByText('Sealant')).toBeVisible();
 
-  // Navigate away then back — triggers a full re-fetch
-  await page.goto('/jobs', { waitUntil: 'networkidle' });
+  // Navigate away then back — triggers a full re-fetch.
+  // Use 'load' (not 'networkidle') because the job list page may keep background
+  // requests open that prevent networkidle within the test timeout.
+  await page.goto('/jobs', { waitUntil: 'load' });
   await gotoActivityTab(page);
 
   const taskRowAfterReturn = page.locator(`[data-testid="job-task-${task.id}"]`);
