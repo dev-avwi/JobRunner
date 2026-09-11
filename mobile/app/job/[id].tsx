@@ -2345,6 +2345,10 @@ export default function JobDetailScreen() {
   // Tasks tab so that re-visiting the tab doesn't collapse it again.
   const autoExpandedInProgressPhaseRef = useRef(false);
 
+  // Records the layout Y-offset of each phase card within the Tasks tab
+  // ScrollView so we can scroll the auto-expanded phase into view.
+  const phaseLayoutYRef = useRef<Record<string, number>>({});
+
   // Phase task expansion and inline view for Tasks tab
   const [expandedPhaseTasksSet, setExpandedPhaseTasksSet] = useState<Set<string>>(new Set());
   const [phaseTasksData, setPhaseTasksData] = useState<Record<string, PhaseTaskItem[]>>({});
@@ -4300,6 +4304,15 @@ export default function JobDetailScreen() {
             return next;
           });
           loadPhaseTasksForPhase(phaseId);
+          // Scroll the phase into view after layout settles.
+          InteractionManager.runAfterInteractions(() => {
+            setTimeout(() => {
+              const y = phaseLayoutYRef.current[phaseId];
+              if (y !== undefined && scrollRef.current) {
+                scrollRef.current.scrollTo({ y: Math.max(0, y - 12), animated: true });
+              }
+            }, 150);
+          });
         }
       }
     }
@@ -12515,7 +12528,7 @@ export default function JobDetailScreen() {
               if (isComplete && !isCompletedExpanded) {
                 const countData = phaseTaskCounts[phase.id];
                 return (
-                  <View key={phase.id} style={cardStyle}>
+                  <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 28, gap: spacing.sm }}>
                       <Feather name="check-circle" size={14} color={colors.success} />
                       <TouchableOpacity
@@ -12550,7 +12563,7 @@ export default function JobDetailScreen() {
               }
 
               return (
-                <View key={phase.id} style={cardStyle}>
+                <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
                   {/* Phase header row — info display only, no touch */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
