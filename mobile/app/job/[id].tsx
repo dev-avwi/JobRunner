@@ -2341,9 +2341,22 @@ export default function JobDetailScreen() {
   // the ref's Set is mutated so the phase list reflects the new expand state.
   const [, setExpandedCompletedPhasesVersion] = useState(0);
 
-  // Tracks whether we have already auto-expanded the in-progress phase on the
-  // Tasks tab so that re-visiting the tab doesn't collapse it again.
-  const autoExpandedInProgressPhaseRef = useRef(false);
+  // Tracks the job ID for which we have already auto-expanded the in-progress
+  // phase on the Tasks tab. Storing the ID (rather than a plain boolean) means
+  // the guard resets automatically when the user navigates to a different job
+  // within the same component instance, so the second job's in-progress phase
+  // is still auto-expanded correctly.
+  const autoExpandedInProgressPhaseRef = useRef<string | null>(null);
+
+  // Tracks which job ID produced the current `phases` array. The auto-expand
+  // effect checks this before acting so it never expands stale phases that
+  // arrived from Job A's request while the route has already moved to Job B.
+  const phasesOwnerJobIdRef = useRef<string | null>(null);
+
+  // Always reflects the latest route `id` so async callbacks can detect
+  // whether the user navigated away while a request was still in flight.
+  const currentJobIdRef = useRef<string | undefined>(id);
+  currentJobIdRef.current = id;
 
   // Records the layout Y-offset of each phase card within the Tasks tab
   // ScrollView so we can scroll the auto-expanded phase into view.
@@ -2355,6 +2368,14 @@ export default function JobDetailScreen() {
   const [phaseTasksLoading, setPhaseTasksLoading] = useState<Set<string>>(new Set());
   const [phaseTaskCounts, setPhaseTaskCounts] = useState<Record<string, { completed: number; total: number }>>({});
   const [phaseTaskToggling, setPhaseTaskToggling] = useState<Set<string>>(new Set());
+
+  // Reset per-job phase-task expansion state when navigating to a different job
+  // so phase IDs from a previous job do not appear expanded on the new one.
+  useEffect(() => {
+    setExpandedPhaseTasksSet(new Set());
+    setPhaseTasksData({});
+    setPhaseTaskCounts({});
+  }, [id]);
 
   // Job task cost data — pre-loaded at job scope so the profitability card can link to the Tasks tab
   type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
@@ -3037,19 +3058,33 @@ export default function JobDetailScreen() {
     setIsLoadingPhases(true);
     try {
       const res = await api.get<JobPhase[]>(`/api/jobs/${id}/phases`);
+      // Only commit phases when this response still belongs to the current job.
+      // If the user navigated away while the request was in flight the route
+      // `id` will have changed and we discard the stale payload entirely.
+      if (currentJobIdRef.current !== id) return;
       setPhases(Array.isArray(res.data) ? res.data : []);
+      // Stamp which job produced these phases so the auto-expand effect can
+      // reject any render cycle where `phases` still holds Job A's data but
+      // `id` has already advanced to Job B.
+      phasesOwnerJobIdRef.current = id;
     } catch (e) {
       console.error('Error loading job phases:', e);
     } finally {
-      setIsLoadingPhases(false);
+      if (currentJobIdRef.current === id) {
+        setIsLoadingPhases(false);
+      }
     }
   }, [id]);
 
   const loadPhaseTaskCounts = useCallback(async (phaseList: JobPhase[]) => {
     if (!id || phaseList.length === 0) return;
+    // Capture the job ID at call time so we can detect a navigation that
+    // happened while these requests were in flight and discard stale results.
+    const requestedForJobId = id;
     const results = await Promise.all(
       phaseList.map(p => api.get<PhaseTaskItem[]>(`/api/jobs/${id}/checklist?phaseId=${p.id}`))
     );
+    if (currentJobIdRef.current !== requestedForJobId) return;
     const counts: Record<string, { completed: number; total: number }> = {};
     phaseList.forEach((p, i) => {
       const items = Array.isArray(results[i].data) ? results[i].data! : [];
@@ -3060,9 +3095,13 @@ export default function JobDetailScreen() {
 
   const loadPhaseTasksForPhase = useCallback(async (phaseId: string) => {
     if (!id) return;
+    // Capture the job ID at call time so stale responses from a prior job
+    // can be detected and discarded after an async navigation.
+    const requestedForJobId = id;
     setPhaseTasksLoading(prev => new Set(prev).add(phaseId));
     try {
       const res = await api.get<PhaseTaskItem[]>(`/api/jobs/${id}/checklist?phaseId=${phaseId}`);
+      if (currentJobIdRef.current !== requestedForJobId) return;
       const items = Array.isArray(res.data) ? [...res.data].sort((a, b) => a.sortOrder - b.sortOrder) : [];
       setPhaseTasksData(prev => ({ ...prev, [phaseId]: items }));
       setPhaseTaskCounts(prev => ({ ...prev, [phaseId]: { completed: items.filter(t => t.isCompleted).length, total: items.length } }));
@@ -4291,12 +4330,18 @@ export default function JobDetailScreen() {
       loadPhaseTaskCounts(phases);
 
       // Auto-expand the in-progress phase if there is exactly one and we
-      // haven't done this yet (ref keeps it stable across tab switches).
-      if (!autoExpandedInProgressPhaseRef.current) {
+      // haven't done this for the current job yet. Two guards work together:
+      // - phasesOwnerJobIdRef ensures the phases in state were loaded for THIS
+      //   job, not a stale response from a previous navigation that arrived
+      //   before Job B's loadPhases completed.
+      // - autoExpandedInProgressPhaseRef (keyed by job ID) prevents the
+      //   expansion from firing a second time on subsequent renders once it has
+      //   already run for the current job (e.g. on tab switches).
+      if (phasesOwnerJobIdRef.current === id && autoExpandedInProgressPhaseRef.current !== id) {
         const inProgressPhases = phases.filter(p => p.status === 'in_progress');
         if (inProgressPhases.length === 1) {
           const phaseId = inProgressPhases[0].id;
-          autoExpandedInProgressPhaseRef.current = true;
+          autoExpandedInProgressPhaseRef.current = id ?? null;
           setExpandedPhaseTasksSet(prev => {
             if (prev.has(phaseId)) return prev;
             const next = new Set(prev);
