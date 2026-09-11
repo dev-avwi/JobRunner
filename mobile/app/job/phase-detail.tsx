@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
   StyleSheet, Animated, TextInput, Alert, Platform, KeyboardAvoidingView,
+  Modal,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -23,6 +24,8 @@ import { SheetButton } from '../../src/components/ui/SheetButton';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { showToast } from '../../src/lib/toast';
 import { shouldShowPhaseClaimPrompt } from '../../src/utils/phaseClaimPrompt';
+import { MarkdownText } from '../../src/components/MarkdownText';
+import { MarkdownToolbar, applyMarkdownAction } from '../../src/components/MarkdownToolbar';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,6 +62,7 @@ interface JobPhase {
 interface ChecklistItem {
   id: string;
   text: string;
+  description?: string | null;
   isCompleted: boolean;
   sortOrder: number;
 }
@@ -186,9 +190,19 @@ export default function PhaseDetailScreen() {
   const [tasks, setTasks] = useState<ChecklistItem[]>([]);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [newTaskText, setNewTaskText] = useState('');
   const [addingTask, setAddingTask] = useState(false);
-  const [showAddTask, setShowAddTask] = useState(false);
+
+  // Add task modal
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskDesc, setNewTaskDesc] = useState('');
+  const [newTaskDescSel, setNewTaskDescSel] = useState({ start: 0, end: 0 });
+
+  // Edit description modal
+  const [editingItem, setEditingItem] = useState<ChecklistItem | null>(null);
+  const [editDesc, setEditDesc] = useState('');
+  const [editDescSel, setEditDescSel] = useState({ start: 0, end: 0 });
+  const [savingDesc, setSavingDesc] = useState(false);
 
   // ── Documents state ───────────────────────────────────────────────────────
   const [docs, setDocs] = useState<PhaseDoc[]>([]);
@@ -325,18 +339,41 @@ export default function PhaseDetailScreen() {
     if (!text || !phaseId) return;
     setAddingTask(true);
     try {
-      const res = await api.post<ChecklistItem>(`/api/jobs/${jobId}/checklist`, { text, phaseId, isCompleted: false });
+      const payload: any = { text, phaseId, isCompleted: false };
+      if (newTaskDesc.trim()) payload.description = newTaskDesc.trim();
+      const res = await api.post<ChecklistItem>(`/api/jobs/${jobId}/checklist`, payload);
       if (!res.error && res.data) {
         setTasks(prev => [...prev, res.data!].sort((a, b) => a.sortOrder - b.sortOrder));
         setNewTaskText('');
-        setShowAddTask(false);
+        setNewTaskDesc('');
+        setShowAddModal(false);
       }
     } catch {
       showToast({ type: 'error', message: 'Could not add task' });
     } finally {
       setAddingTask(false);
     }
-  }, [newTaskText, jobId, phaseId]);
+  }, [newTaskText, newTaskDesc, jobId, phaseId]);
+
+  const handleSaveDescription = useCallback(async () => {
+    if (!editingItem) return;
+    setSavingDesc(true);
+    try {
+      const res = await api.patch<ChecklistItem>(`/api/jobs/${jobId}/checklist/${editingItem.id}`, {
+        description: editDesc.trim() || null,
+      });
+      if (!res.error) {
+        setTasks(prev => prev.map(t => t.id === editingItem.id ? { ...t, description: editDesc.trim() || null } : t));
+        setEditingItem(null);
+      } else {
+        showToast({ type: 'error', message: 'Could not save description' });
+      }
+    } catch {
+      showToast({ type: 'error', message: 'Could not save description' });
+    } finally {
+      setSavingDesc(false);
+    }
+  }, [editingItem, editDesc, jobId]);
 
   // ── Document actions ──────────────────────────────────────────────────────
 
@@ -735,7 +772,7 @@ export default function PhaseDetailScreen() {
                 <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>Loading tasks...</Text>
               </View>
-            ) : tasks.length === 0 && !showAddTask ? (
+            ) : tasks.length === 0 ? (
               <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.sm }}>
                 <Feather name="check-circle" size={28} color={colors.border} />
                 <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, textAlign: 'center' }}>
@@ -743,7 +780,7 @@ export default function PhaseDetailScreen() {
                 </Text>
                 {!isReadOnly && (
                   <TouchableOpacity
-                    onPress={() => setShowAddTask(true)}
+                    onPress={() => { setNewTaskText(''); setNewTaskDesc(''); setShowAddModal(true); }}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, borderStyle: 'dashed' }}
                     activeOpacity={0.7}
                   >
@@ -755,74 +792,62 @@ export default function PhaseDetailScreen() {
             ) : (
               <View style={{ gap: spacing.sm }}>
                 {tasks.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    onPress={() => !isReadOnly && handleToggleTask(item)}
-                    style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}
-                    activeOpacity={isReadOnly ? 1 : 0.7}
-                  >
-                    <View style={{ marginTop: 2, width: 20, height: 20, borderRadius: 5, borderWidth: 2,
-                      borderColor: item.isCompleted ? colors.primary : colors.border,
-                      backgroundColor: item.isCompleted ? colors.primary : 'transparent',
-                      alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      {togglingId === item.id
-                        ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.primary} style={{ width: 12, height: 12 }} />
-                        : item.isCompleted
-                          ? <Feather name="check" size={12} color={colors.primaryForeground} />
-                          : null}
+                  <View key={item.id}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                      <TouchableOpacity
+                        onPress={() => !isReadOnly && handleToggleTask(item)}
+                        style={{ marginTop: 2, width: 20, height: 20, borderRadius: 5, borderWidth: 2,
+                          borderColor: item.isCompleted ? colors.primary : colors.border,
+                          backgroundColor: item.isCompleted ? colors.primary : 'transparent',
+                          alignItems: 'center', justifyContent: 'center',
+                        }}
+                        activeOpacity={isReadOnly ? 1 : 0.7}
+                        hitSlop={8}
+                      >
+                        {togglingId === item.id
+                          ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.primary} style={{ width: 12, height: 12 }} />
+                          : item.isCompleted
+                            ? <Feather name="check" size={12} color={colors.primaryForeground} />
+                            : null}
+                      </TouchableOpacity>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{
+                          fontSize: typography.body.fontSize,
+                          color: item.isCompleted ? colors.mutedForeground : colors.foreground,
+                          textDecorationLine: item.isCompleted ? 'line-through' : 'none',
+                          lineHeight: 22,
+                        }}>
+                          {item.text}
+                        </Text>
+                        {!!item.description && (
+                          <MarkdownText style={{ marginTop: 3 }}>
+                            {item.description}
+                          </MarkdownText>
+                        )}
+                      </View>
+                      {!isReadOnly && (
+                        <TouchableOpacity
+                          onPress={() => { setEditingItem(item); setEditDesc(item.description ?? ''); setEditDescSel({ start: 0, end: 0 }); }}
+                          hitSlop={8}
+                          style={{ paddingTop: 2 }}
+                        >
+                          <Feather name="file-text" size={15} color={item.description ? colors.primary : colors.border} />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <Text style={{
-                      flex: 1,
-                      fontSize: typography.body.fontSize,
-                      color: item.isCompleted ? colors.mutedForeground : colors.foreground,
-                      textDecorationLine: item.isCompleted ? 'line-through' : 'none',
-                      lineHeight: 22,
-                    }}>
-                      {item.text}
-                    </Text>
-                  </TouchableOpacity>
+                  </View>
                 ))}
 
-                {/* Add task row */}
+                {/* Add task button */}
                 {!isReadOnly && (
-                  showAddTask ? (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs }}>
-                      <TextInput
-                        style={[styles.taskInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                        placeholder="Task description..."
-                        placeholderTextColor={colors.mutedForeground}
-                        value={newTaskText}
-                        onChangeText={setNewTaskText}
-                        onSubmitEditing={handleAddTask}
-                        returnKeyType="done"
-                        autoFocus
-                        editable={!addingTask}
-                      />
-                      <TouchableOpacity
-                        onPress={handleAddTask}
-                        disabled={!newTaskText.trim() || addingTask}
-                        style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', opacity: !newTaskText.trim() ? 0.5 : 1 }}
-                        activeOpacity={0.8}
-                      >
-                        {addingTask
-                          ? <ActivityIndicator size="small" color={colors.primaryForeground} />
-                          : <Feather name="check" size={16} color={colors.primaryForeground} />}
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { setShowAddTask(false); setNewTaskText(''); }} style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center' }} activeOpacity={0.7}>
-                        <Feather name="x" size={16} color={colors.mutedForeground} />
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      onPress={() => setShowAddTask(true)}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, marginTop: spacing.xs }}
-                      activeOpacity={0.7}
-                    >
-                      <Feather name="plus-circle" size={14} color={colors.primary} />
-                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Add task</Text>
-                    </TouchableOpacity>
-                  )
+                  <TouchableOpacity
+                    onPress={() => { setNewTaskText(''); setNewTaskDesc(''); setShowAddModal(true); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, marginTop: spacing.xs }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="plus-circle" size={14} color={colors.primary} />
+                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Add task</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             )}
@@ -1253,6 +1278,148 @@ export default function PhaseDetailScreen() {
       </AppBottomSheet>
 
 
+      {/* ── Add task modal ─────────────────────────────────────────────── */}
+      <Modal
+        visible={showAddModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAddModal(false)}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm, borderBottomWidth: 1, borderColor: colors.border }}>
+              <Text style={{ flex: 1, fontSize: 17, fontWeight: fontWeights.semibold, color: colors.foreground }}>Add task</Text>
+              <TouchableOpacity onPress={() => setShowAddModal(false)} hitSlop={8}>
+                <Feather name="x" size={22} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
+              {/* Title field */}
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Task title</Text>
+                <TextInput
+                  style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                  placeholder="e.g. Install safety barrier"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newTaskText}
+                  onChangeText={setNewTaskText}
+                  autoFocus
+                  returnKeyType="next"
+                  editable={!addingTask}
+                />
+              </View>
+
+              {/* Description field with markdown toolbar */}
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description (optional)</Text>
+                <MarkdownToolbar
+                  value={newTaskDesc}
+                  selection={newTaskDescSel}
+                  onChange={setNewTaskDesc}
+                />
+                <TextInput
+                  style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 140, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+                  placeholder="Add step-by-step instructions, headings, or bullet points..."
+                  placeholderTextColor={colors.mutedForeground}
+                  value={newTaskDesc}
+                  onChangeText={setNewTaskDesc}
+                  onSelectionChange={e => setNewTaskDescSel(e.nativeEvent.selection)}
+                  multiline
+                  editable={!addingTask}
+                />
+              </View>
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={{ padding: spacing.md, borderTopWidth: 1, borderColor: colors.border }}>
+              <TouchableOpacity
+                onPress={handleAddTask}
+                disabled={!newTaskText.trim() || addingTask}
+                style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center', opacity: !newTaskText.trim() ? 0.5 : 1 }}
+                activeOpacity={0.8}
+              >
+                {addingTask
+                  ? <ActivityIndicator color={colors.primaryForeground} />
+                  : <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 15 }}>Add task</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Edit description modal ─────────────────────────────────────── */}
+      <Modal
+        visible={!!editingItem}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setEditingItem(null)}
+      >
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.lg, paddingBottom: spacing.sm, borderBottomWidth: 1, borderColor: colors.border }}>
+              <Text style={{ flex: 1, fontSize: 17, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
+                {editingItem?.text ?? 'Description'}
+              </Text>
+              <TouchableOpacity onPress={() => setEditingItem(null)} hitSlop={8}>
+                <Feather name="x" size={22} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md }}>
+              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: 6 }}>Description</Text>
+              <MarkdownToolbar
+                value={editDesc}
+                selection={editDescSel}
+                onChange={setEditDesc}
+              />
+              <TextInput
+                style={[styles.formInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card, height: 200, textAlignVertical: 'top', paddingTop: 10, borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+                placeholder="Add headings, bullet points, numbered steps..."
+                placeholderTextColor={colors.mutedForeground}
+                value={editDesc}
+                onChangeText={setEditDesc}
+                onSelectionChange={e => setEditDescSel(e.nativeEvent.selection)}
+                multiline
+                autoFocus
+                editable={!savingDesc}
+              />
+              {!!editDesc.trim() && (
+                <View style={{ marginTop: spacing.md, padding: spacing.md, backgroundColor: colors.muted, borderRadius: radius.md }}>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Preview</Text>
+                  <MarkdownText>{editDesc}</MarkdownText>
+                </View>
+              )}
+            </ScrollView>
+
+            {/* Footer */}
+            <View style={{ padding: spacing.md, borderTopWidth: 1, borderColor: colors.border, gap: spacing.sm }}>
+              <TouchableOpacity
+                onPress={handleSaveDescription}
+                disabled={savingDesc}
+                style={{ backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: 14, alignItems: 'center' }}
+                activeOpacity={0.8}
+              >
+                {savingDesc
+                  ? <ActivityIndicator color={colors.primaryForeground} />
+                  : <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 15 }}>Save description</Text>}
+              </TouchableOpacity>
+              {!!editDesc.trim() && (
+                <TouchableOpacity
+                  onPress={() => { setEditDesc(''); }}
+                  style={{ alignItems: 'center', paddingVertical: spacing.sm }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ color: colors.destructive, fontSize: 14 }}>Clear description</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
       {/* Phase-complete → create claim prompt (owners/managers only) */}
       <AppBottomSheet
         visible={showPhaseClaimPrompt}
@@ -1317,14 +1484,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     marginBottom: spacing.md,
     borderBottomWidth: 1,
-  },
-  taskInput: {
-    flex: 1,
-    height: 36,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.sm,
-    fontSize: typography.body.fontSize,
   },
   input: {
     height: 44,

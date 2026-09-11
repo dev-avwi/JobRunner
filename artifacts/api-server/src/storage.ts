@@ -3405,6 +3405,7 @@ export class PostgresStorage implements IStorage {
       jobId: item.jobId,
       phaseId: item.phaseId ?? null,
       text: item.text,
+      description: item.description ?? null,
       isCompleted: item.isCompleted ?? false,
       sortOrder: serverSortOrder,
     };
@@ -3430,12 +3431,14 @@ export class PostgresStorage implements IStorage {
     // Strict whitelist: only allow specific fields to prevent privilege escalation
     const safeUpdates: Partial<{
       text: string;
+      description: string | null;
       isCompleted: boolean;
       sortOrder: number;
       phaseId: string | null;
     }> = {};
     
     if (item.text !== undefined) safeUpdates.text = item.text;
+    if ('description' in item) safeUpdates.description = (item as any).description ?? null;
     if (item.isCompleted !== undefined && item.isCompleted !== null) {
       safeUpdates.isCompleted = item.isCompleted;
     }

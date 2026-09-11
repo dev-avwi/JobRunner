@@ -859,6 +859,7 @@ export const checklistItems = pgTable("checklist_items", {
   jobId: varchar("job_id").notNull().references(() => jobs.id, { onDelete: 'cascade' }),
   phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   text: text("text").notNull(),
+  description: text("description"),
   isCompleted: boolean("is_completed").default(false),
   sortOrder: integer("sort_order").default(0),
   createdAt: timestamp("created_at").defaultNow(),
