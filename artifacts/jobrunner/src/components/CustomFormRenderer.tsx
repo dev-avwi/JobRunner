@@ -1068,6 +1068,12 @@ function MdBtn({ icon: Icon, title, onClick }: { icon: React.ElementType; title:
 }
 
 import { applyLinePrefix, applyInline } from "@/lib/markdownEditor";
+import {
+  buildCreateTaskPayload,
+  descriptionSaveValue,
+  toggleNextStatus,
+  descriptionInitialValue,
+} from "@/lib/taskDescriptionUtils";
 
 function useMarkdownEditor(initial = '') {
   const [value, setValue] = useState(initial);
@@ -1128,7 +1134,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
 
   const createMutation = useMutation({
     mutationFn: async ({ title, description }: { title: string; description?: string }) =>
-      apiRequest('POST', '/api/tasks', { title, jobId, description: description || undefined }),
+      apiRequest('POST', '/api/tasks', buildCreateTaskPayload(title, jobId, description ?? '')),
     onSuccess: () => {
       setNewTitle("");
       setCreateTitle("");
@@ -1141,14 +1147,14 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
 
   const toggleMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) =>
-      apiRequest('PATCH', `/api/tasks/${id}`, { status: status === 'done' ? 'open' : 'done' }),
+      apiRequest('PATCH', `/api/tasks/${id}`, { status: toggleNextStatus(status) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] }),
     onError: () => toast({ title: 'Could not update task', variant: 'destructive' }),
   });
 
   const updateDescMutation = useMutation({
     mutationFn: async ({ id, description }: { id: string; description: string | null }) =>
-      apiRequest('PATCH', `/api/tasks/${id}`, { description }),
+      apiRequest('PATCH', `/api/tasks/${id}`, { description: description === null ? null : descriptionSaveValue(description) }),
     onSuccess: () => {
       setEditingTask(null);
       queryClient.invalidateQueries({ queryKey: ['/api/jobs', jobId, 'tasks'] });
@@ -1169,7 +1175,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
   };
 
   const openEditDesc = (task: JobTask) => {
-    editDesc.setValue(task.description ?? "");
+    editDesc.setValue(descriptionInitialValue(task));
     setEditingTask(task);
   };
 
@@ -1271,7 +1277,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
 
     {/* Create task dialog */}
     <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" data-testid="dialog-create-task">
         <DialogHeader>
           <DialogTitle>New Task</DialogTitle>
           <DialogDescription>
@@ -1286,6 +1292,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
               onChange={(e) => setCreateTitle(e.target.value)}
               placeholder="Task title"
               autoFocus
+              data-testid="input-create-task-title"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && createTitle.trim()) {
                   createMutation.mutate({ title: createTitle.trim(), description: createDesc.value.trim() || undefined });
@@ -1302,6 +1309,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
               onChange={(e) => createDesc.setValue(e.target.value)}
               placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
               className="min-h-[140px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+              data-testid="textarea-create-task-desc"
             />
           </div>
         </div>
@@ -1310,6 +1318,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
           <Button
             onClick={() => createMutation.mutate({ title: createTitle.trim(), description: createDesc.value.trim() || undefined })}
             disabled={!createTitle.trim() || createMutation.isPending}
+            data-testid="button-confirm-add-task"
           >
             {createMutation.isPending ? "Adding..." : "Add Task"}
           </Button>
@@ -1319,7 +1328,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
 
     {/* Edit description dialog */}
     <Dialog open={!!editingTask} onOpenChange={(open) => { if (!open) setEditingTask(null); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" data-testid="dialog-edit-desc">
         <DialogHeader>
           <DialogTitle className="truncate">{editingTask?.title}</DialogTitle>
           <DialogDescription>
@@ -1335,6 +1344,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
             onChange={(e) => editDesc.setValue(e.target.value)}
             placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
             className="min-h-[180px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+            data-testid="textarea-edit-task-desc"
           />
         </div>
         <DialogFooter>
@@ -1345,6 +1355,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
               className="text-destructive hover:text-destructive"
               onClick={() => updateDescMutation.mutate({ id: editingTask.id, description: null })}
               disabled={updateDescMutation.isPending}
+              data-testid="button-confirm-clear-desc"
             >
               Clear
             </Button>
@@ -1352,6 +1363,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
           <Button
             onClick={() => editingTask && updateDescMutation.mutate({ id: editingTask.id, description: editDesc.value.trim() || null })}
             disabled={!editingTask || updateDescMutation.isPending}
+            data-testid="button-confirm-save-desc"
           >
             {updateDescMutation.isPending ? "Saving..." : "Save"}
           </Button>
