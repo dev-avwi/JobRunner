@@ -1579,7 +1579,10 @@ export default function TimeTrackingScreen() {
                 </View>
                 <View style={styles.jobSelectContent}>
                   <Text style={styles.jobSelectTitle} numberOfLines={1}>{job.title}</Text>
-                  <Text style={styles.jobSelectStatus}>{(job.status || '').replace('_', ' ')}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: job.status === 'in_progress' ? colors.success : job.status === 'scheduled' ? colors.primary : colors.mutedForeground }} />
+                    <Text style={styles.jobSelectStatus}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                  </View>
                 </View>
                 <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
               </TouchableOpacity>

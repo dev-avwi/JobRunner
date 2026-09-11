@@ -12552,39 +12552,43 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            {/* Quick Field Actions — compact chip row replacing three full-width cards */}
+            {/* Quick Field Actions — full-width action rows */}
             {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
+              <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.warning}40`, backgroundColor: `${colors.warning}10`, minWidth: 120 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="alert-circle" size={14} color={colors.warning} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.warning }}>Flag Extra Work</Text>
+                  <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: `${colors.warning}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="alert-circle" size={16} color={colors.warning} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Flag Extra Work</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                  <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="package" size={16} color={colors.primary} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Log Material</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                  <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="camera" size={16} color={colors.success} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Log Expense</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
-              </ScrollView>
+              </View>
             )}
 
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
@@ -12742,31 +12746,32 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            {/* Quick Field Actions — compact chip row */}
+            {/* Quick Field Actions — full-width action rows */}
             {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
+              <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                  <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="package" size={16} color={colors.primary} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Log Material</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, backgroundColor: colors.card, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.cardBorder }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                  <View style={{ width: 34, height: 34, borderRadius: 9, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name="camera" size={16} color={colors.success} />
+                  </View>
+                  <Text style={{ flex: 1, fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>Log Expense</Text>
+                  <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
                 </TouchableOpacity>
-              </ScrollView>
+              </View>
             )}
 
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>

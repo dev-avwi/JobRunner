@@ -503,9 +503,9 @@ export default function PhaseDetailScreen() {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
         <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-            <Ionicons name="chevron-back" size={22} color={colors.primary} />
-            <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Feather name="chevron-left" size={17} color={colors.primary} />
+            <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.center}>
@@ -519,9 +519,9 @@ export default function PhaseDetailScreen() {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
         <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-            <Ionicons name="chevron-back" size={22} color={colors.primary} />
-            <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Feather name="chevron-left" size={17} color={colors.primary} />
+            <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.center}>
@@ -569,24 +569,25 @@ export default function PhaseDetailScreen() {
         {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
         <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
 
-          {/* Nav row — iOS-style: ‹ Back on left, Edit on right */}
+          {/* Nav row — matches job view header style */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <TouchableOpacity
               onPress={() => router.back()}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 2, marginLeft: -6 }}
+              style={{ flexDirection: 'row', alignItems: 'center' }}
             >
-              <Ionicons name="chevron-back" size={24} color={colors.primary} />
-              <Text style={{ fontSize: 17, color: colors.primary }}>Back</Text>
+              <Feather name="chevron-left" size={17} color={colors.primary} />
+              <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
             </TouchableOpacity>
             {(isOwner || isManager) && (
               <TouchableOpacity
                 onPress={openEditPhaseSheet}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                 activeOpacity={0.7}
+                style={{ width: 32, height: 30, alignItems: 'center', justifyContent: 'center' }}
               >
-                <Text style={{ fontSize: 17, color: colors.primary }}>Edit</Text>
+                <Feather name="edit-2" size={18} color={colors.primary} />
               </TouchableOpacity>
             )}
           </View>
