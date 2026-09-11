@@ -289,6 +289,39 @@ test.describe('UnassignedPhasesWidget on the dashboard', () => {
     await expect(page.locator('[data-testid="unassigned-phases-widget"]')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('[data-testid="badge-overdue-dash-phase-2"]')).toBeVisible();
   });
+
+  test('does not show "View All" button when there are exactly 5 unassigned phases', async ({ page }) => {
+    await mockDashboardApis(page);
+    const phases = Array.from({ length: 5 }, (_, i) =>
+      makePhase({ id: `dash-phase-${i + 1}`, jobId: `job-${i + 1}`, name: `Phase ${i + 1}` })
+    );
+    await page.route('**/api/phases/unassigned', (r) =>
+      r.fulfill(json({ phases }))
+    );
+
+    await gotoDashboard(page);
+
+    await expect(page.locator('[data-testid="unassigned-phases-widget"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('[data-testid="button-view-all-unassigned"]')).not.toBeVisible();
+  });
+
+  test('shows "View All" button and navigates to /phases/unassigned when there are 6 unassigned phases', async ({ page }) => {
+    await mockDashboardApis(page);
+    const phases = Array.from({ length: 6 }, (_, i) =>
+      makePhase({ id: `dash-phase-${i + 1}`, jobId: `job-${i + 1}`, name: `Phase ${i + 1}` })
+    );
+    await page.route('**/api/phases/unassigned', (r) =>
+      r.fulfill(json({ phases }))
+    );
+
+    await gotoDashboard(page);
+
+    await expect(page.locator('[data-testid="unassigned-phases-widget"]')).toBeVisible({ timeout: 10000 });
+    const viewAllBtn = page.locator('[data-testid="button-view-all-unassigned"]');
+    await expect(viewAllBtn).toBeVisible({ timeout: 10000 });
+    await viewAllBtn.click();
+    await expect(page).toHaveURL(/\/phases\/unassigned/, { timeout: 10000 });
+  });
 });
 
 test('search filters phase rows by phase name', async ({ page }) => {
