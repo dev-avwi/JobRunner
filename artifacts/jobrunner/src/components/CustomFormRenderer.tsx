@@ -1077,6 +1077,7 @@ import {
 
 function useMarkdownEditor(initial = '') {
   const [value, setValue] = useState(initial);
+  const [preview, setPreview] = useState(false);
   const ref = useRef<HTMLTextAreaElement>(null);
 
   const getSel = () => {
@@ -1093,19 +1094,35 @@ function useMarkdownEditor(initial = '') {
   };
 
   const toolbar = (
-    <div className="flex items-center gap-0.5 border border-border rounded-t-md bg-muted/50 px-1.5 py-1">
-      <MdBtn icon={Heading2} title="Heading 2" onClick={() => apply((v, s) => applyLinePrefix(v, s, '## '))} />
-      <MdBtn icon={Heading3} title="Heading 3" onClick={() => apply((v, s) => applyLinePrefix(v, s, '### '))} />
-      <span className="w-px h-4 bg-border mx-0.5" />
-      <MdBtn icon={List} title="Bullet list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '- '))} />
-      <MdBtn icon={ListOrdered} title="Numbered list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '1. '))} />
-      <span className="w-px h-4 bg-border mx-0.5" />
-      <MdBtn icon={Bold} title="Bold" onClick={() => apply((v, s) => applyInline(v, s, '**'))} />
-      <MdBtn icon={Italic} title="Italic" onClick={() => apply((v, s) => applyInline(v, s, '*'))} />
+    <div className="flex items-center justify-between border border-border rounded-t-md bg-muted/50 px-1.5 py-1">
+      <div className="flex items-center gap-0.5">
+        {!preview && (
+          <>
+            <MdBtn icon={Heading2} title="Heading 2" onClick={() => apply((v, s) => applyLinePrefix(v, s, '## '))} />
+            <MdBtn icon={Heading3} title="Heading 3" onClick={() => apply((v, s) => applyLinePrefix(v, s, '### '))} />
+            <span className="w-px h-4 bg-border mx-0.5" />
+            <MdBtn icon={List} title="Bullet list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '- '))} />
+            <MdBtn icon={ListOrdered} title="Numbered list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '1. '))} />
+            <span className="w-px h-4 bg-border mx-0.5" />
+            <MdBtn icon={Bold} title="Bold" onClick={() => apply((v, s) => applyInline(v, s, '**'))} />
+            <MdBtn icon={Italic} title="Italic" onClick={() => apply((v, s) => applyInline(v, s, '*'))} />
+          </>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => {
+          setPreview(p => !p);
+          if (preview) setTimeout(() => ref.current?.focus(), 0);
+        }}
+        className="text-xs px-2 py-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors ml-auto"
+      >
+        {preview ? 'Edit' : 'Preview'}
+      </button>
     </div>
   );
 
-  return { value, setValue, ref, toolbar };
+  return { value, setValue, preview, setPreview, ref, toolbar };
 }
 
 // Renders markdown task description safely (headings, bullets, bold, italic)
@@ -1171,11 +1188,13 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
   const openCreateDialog = () => {
     setCreateTitle(newTitle.trim());
     createDesc.setValue("");
+    createDesc.setPreview(false);
     setShowCreateDialog(true);
   };
 
   const openEditDesc = (task: JobTask) => {
     editDesc.setValue(descriptionInitialValue(task));
+    editDesc.setPreview(false);
     setEditingTask(task);
   };
 
@@ -1303,14 +1322,26 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
           <div className="space-y-1">
             <Label>Description <span className="text-muted-foreground font-normal">(optional)</span></Label>
             {createDesc.toolbar}
-            <Textarea
-              ref={createDesc.ref}
-              value={createDesc.value}
-              onChange={(e) => createDesc.setValue(e.target.value)}
-              placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
-              className="min-h-[140px] rounded-t-none border-t-0 font-mono text-xs resize-none"
-              data-testid="textarea-create-task-desc"
-            />
+            {createDesc.preview ? (
+              createDesc.value.trim() ? (
+                <div className="min-h-[140px] border border-border rounded-b-md border-t-0 px-3 py-2 overflow-auto">
+                  <TaskMarkdown content={createDesc.value} />
+                </div>
+              ) : (
+                <div className="min-h-[140px] border border-border rounded-b-md border-t-0 px-3 py-6 flex items-start">
+                  <span className="text-xs text-muted-foreground italic">No description yet.</span>
+                </div>
+              )
+            ) : (
+              <Textarea
+                ref={createDesc.ref}
+                value={createDesc.value}
+                onChange={(e) => createDesc.setValue(e.target.value)}
+                placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
+                className="min-h-[140px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+                data-testid="textarea-create-task-desc"
+              />
+            )}
           </div>
         </div>
         <DialogFooter>
@@ -1338,14 +1369,26 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
         <div className="space-y-1 py-1">
           <Label>Description</Label>
           {editDesc.toolbar}
-          <Textarea
-            ref={editDesc.ref}
-            value={editDesc.value}
-            onChange={(e) => editDesc.setValue(e.target.value)}
-            placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
-            className="min-h-[180px] rounded-t-none border-t-0 font-mono text-xs resize-none"
-            data-testid="textarea-edit-task-desc"
-          />
+          {editDesc.preview ? (
+            editDesc.value.trim() ? (
+              <div className="min-h-[180px] border border-border rounded-b-md border-t-0 px-3 py-2 overflow-auto">
+                <TaskMarkdown content={editDesc.value} />
+              </div>
+            ) : (
+              <div className="min-h-[180px] border border-border rounded-b-md border-t-0 px-3 py-6 flex items-start">
+                <span className="text-xs text-muted-foreground italic">No description yet.</span>
+              </div>
+            )
+          ) : (
+            <Textarea
+              ref={editDesc.ref}
+              value={editDesc.value}
+              onChange={(e) => editDesc.setValue(e.target.value)}
+              placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
+              className="min-h-[180px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+              data-testid="textarea-edit-task-desc"
+            />
+          )}
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => setEditingTask(null)}>Cancel</Button>

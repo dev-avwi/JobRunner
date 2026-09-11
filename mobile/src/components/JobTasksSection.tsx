@@ -104,12 +104,14 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
   const [createTitle, setCreateTitle] = useState('');
   const [createDesc, setCreateDesc] = useState('');
   const [createDescSel, setCreateDescSel] = useState({ start: 0, end: 0 });
+  const [createDescPreview, setCreateDescPreview] = useState(false);
 
   // Edit description modal
   const [editingDescTask, setEditingDescTask] = useState<JobTask | null>(null);
   const [editDesc, setEditDesc] = useState('');
   const [editDescSel, setEditDescSel] = useState({ start: 0, end: 0 });
   const [savingDesc, setSavingDesc] = useState(false);
+  const [editDescPreview, setEditDescPreview] = useState(false);
 
   // Cost edit state (owner)
   const [editingCostTask, setEditingCostTask] = useState<JobTask | null>(null);
@@ -180,6 +182,7 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
     setCreateTitle(newTitle.trim());
     setCreateDesc('');
     setCreateDescSel({ start: 0, end: 0 });
+    setCreateDescPreview(false);
     setShowCreateModal(true);
   };
 
@@ -206,6 +209,7 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
   const openEditDesc = (task: JobTask) => {
     setEditDesc(task.description ?? '');
     setEditDescSel({ start: 0, end: 0 });
+    setEditDescPreview(false);
     setEditingDescTask(task);
   };
 
@@ -787,25 +791,46 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
                   autoFocus={!createTitle}
                 />
 
-                <Text style={[styles.modalFieldLabel, { marginTop: spacing.md }]}>
-                  Description (optional)
-                </Text>
-                <MarkdownToolbar
-                  value={createDesc}
-                  selection={createDescSel}
-                  onChange={setCreateDesc}
-                />
-                <TextInput
-                  style={[styles.modalInput, styles.descInput]}
-                  value={createDesc}
-                  onChangeText={setCreateDesc}
-                  onSelectionChange={(e) => setCreateDescSel(e.nativeEvent.selection)}
-                  placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
-                  placeholderTextColor={colors.secondaryText}
-                  multiline
-                  textAlignVertical="top"
-                  scrollEnabled={false}
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, marginBottom: 0 }}>
+                  <Text style={styles.modalFieldLabel}>Description (optional)</Text>
+                  <TouchableOpacity
+                    onPress={() => setCreateDescPreview(p => !p)}
+                    hitSlop={8}
+                    style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.muted }}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.secondaryText, fontWeight: fontWeights.semibold }}>
+                      {createDescPreview ? 'Edit' : 'Preview'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {createDescPreview ? (
+                  <View style={[styles.modalInput, styles.descInput, { justifyContent: 'flex-start' }]}>
+                    {createDesc.trim() ? (
+                      <MarkdownText>{createDesc}</MarkdownText>
+                    ) : (
+                      <Text style={{ fontSize: 13, color: colors.secondaryText, fontStyle: 'italic' }}>No description yet.</Text>
+                    )}
+                  </View>
+                ) : (
+                  <>
+                    <MarkdownToolbar
+                      value={createDesc}
+                      selection={createDescSel}
+                      onChange={setCreateDesc}
+                    />
+                    <TextInput
+                      style={[styles.modalInput, styles.descInput]}
+                      value={createDesc}
+                      onChangeText={setCreateDesc}
+                      onSelectionChange={(e) => setCreateDescSel(e.nativeEvent.selection)}
+                      placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
+                      placeholderTextColor={colors.secondaryText}
+                      multiline
+                      textAlignVertical="top"
+                      scrollEnabled={false}
+                    />
+                  </>
+                )}
 
                 <View style={styles.modalRow}>
                   <TouchableOpacity
@@ -853,24 +878,47 @@ export function JobTasksSection({ jobId, readOnly, canLogWork, containerStyle, o
                   {editingDescTask?.title}
                 </Text>
 
-                <Text style={styles.modalFieldLabel}>Description</Text>
-                <MarkdownToolbar
-                  value={editDesc}
-                  selection={editDescSel}
-                  onChange={setEditDesc}
-                />
-                <TextInput
-                  style={[styles.modalInput, styles.descInput]}
-                  value={editDesc}
-                  onChangeText={setEditDesc}
-                  onSelectionChange={(e) => setEditDescSel(e.nativeEvent.selection)}
-                  placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
-                  placeholderTextColor={colors.secondaryText}
-                  multiline
-                  textAlignVertical="top"
-                  scrollEnabled={false}
-                  autoFocus
-                />
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 0 }}>
+                  <Text style={styles.modalFieldLabel}>Description</Text>
+                  <TouchableOpacity
+                    onPress={() => setEditDescPreview(p => !p)}
+                    hitSlop={8}
+                    style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.muted }}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.secondaryText, fontWeight: fontWeights.semibold }}>
+                      {editDescPreview ? 'Edit' : 'Preview'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {editDescPreview ? (
+                  <View style={[styles.modalInput, styles.descInput, { justifyContent: 'flex-start' }]}>
+                    {editDesc.trim() ? (
+                      <MarkdownText>{editDesc}</MarkdownText>
+                    ) : (
+                      <Text style={{ fontSize: 13, color: colors.secondaryText, fontStyle: 'italic' }}>No description yet.</Text>
+                    )}
+                  </View>
+                ) : (
+                  <>
+                    <MarkdownToolbar
+                      value={editDesc}
+                      selection={editDescSel}
+                      onChange={setEditDesc}
+                    />
+                    <TextInput
+                      style={[styles.modalInput, styles.descInput]}
+                      value={editDesc}
+                      onChangeText={setEditDesc}
+                      onSelectionChange={(e) => setEditDescSel(e.nativeEvent.selection)}
+                      placeholder={'## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions...'}
+                      placeholderTextColor={colors.secondaryText}
+                      multiline
+                      textAlignVertical="top"
+                      scrollEnabled={false}
+                      autoFocus
+                    />
+                  </>
+                )}
 
                 <View style={styles.modalRow}>
                   <TouchableOpacity
