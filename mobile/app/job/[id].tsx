@@ -10296,6 +10296,9 @@ export default function JobDetailScreen() {
         />
       )}
 
+      {/* Site Diary — all roles can view and add entries */}
+      <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+
     </>
   );
 
@@ -12126,23 +12129,6 @@ export default function JobDetailScreen() {
         )}
       </View>
 
-      {/* Activity Log Link - Full log is now in More tab */}
-      {activityLog.length > 0 && (
-        <PressableRow
-          style={styles.card}
-          onPress={() => setActiveTab('manage')}
-
-        >
-          <View style={[styles.cardIconContainer, { backgroundColor: `${colors.inProgress}15` }]}>
-            <Feather name="activity" size={iconSizes.xl} color={colors.inProgress} />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Activity Log</Text>
-            <Text style={styles.cardValue}>{activityLog.length} activit{activityLog.length === 1 ? 'y' : 'ies'} recorded</Text>
-          </View>
-          <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
-        </PressableRow>
-      )}
     </>
   );
 
@@ -12924,9 +12910,6 @@ export default function JobDetailScreen() {
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
-            {renderPhotosTab()}
-            <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
-            {renderNotesTab()}
           </>
         ) : (
           /* ═══════════════════════════════════════════════
@@ -13159,25 +13142,17 @@ export default function JobDetailScreen() {
                 onFormsChange={setAvailableForms}
               />
             </View>
-            {renderPhotosTab()}
-            <SiteDiarySection
-              jobId={job.id}
-              colors={colors}
-              styles={styles}
-              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-              currentUserId={user?.id}
-            />
-            {renderNotesTab()}
           </>
         ))}
 
-        {/* ── Files: linked docs, SWMS/safety, uploaded files ── */}
+        {/* ── Files: linked docs, SWMS/safety, photos, voice notes ── */}
         {activeTab === 'files' && (
           <>
             {renderDocumentsTab()}
             <View style={styles.photosCard}>
               {renderSafetyTab()}
             </View>
+            {renderPhotosTab()}
           </>
         )}
 
@@ -13401,6 +13376,7 @@ export default function JobDetailScreen() {
                 />
               </View>
             )}
+            {renderNotesTab()}
             {renderManageTab()}
           </>
         )}
