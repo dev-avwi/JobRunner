@@ -209,7 +209,10 @@ function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) =>
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                 {(urgent || past) && (
-                  <Badge className="bg-red-500/10 text-red-600 border-red-500/20 text-xs">
+                  <Badge
+                    className="bg-red-500/10 text-red-600 border-red-500/20 text-xs"
+                    data-testid={past ? `badge-overdue-${phase.id}` : `badge-urgent-${phase.id}`}
+                  >
                     {past ? "Overdue" : "Urgent"}
                   </Badge>
                 )}
