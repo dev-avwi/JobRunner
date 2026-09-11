@@ -95,6 +95,7 @@ interface WeeklyStats {
   hours: number;
 }
 
+const NON_JOB_CATEGORIES: TimeCategory[] = ['travel', 'admin', 'training', 'other'];
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
@@ -763,6 +764,7 @@ interface TimeStats {
   breakHours: number;
   weeklyEarnings: number;
   todayEarnings: number;
+  nonJobHours: number;
 }
 
 function formatDurationHM(minutes: number): string {
@@ -829,7 +831,8 @@ export default function TimeTrackingScreen() {
   const [activeTab, setActiveTab] = useState<TabKey>('timer');
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
-  const [timeStats, setTimeStats] = useState<TimeStats>({ todayHours: 0, weekHours: 0, totalEntries: 0, billableHours: 0, breakHours: 0, weeklyEarnings: 0, todayEarnings: 0 });
+  const [selectedTimerCategory, setSelectedTimerCategory] = useState<TimeCategory | null>(null);
+  const [timeStats, setTimeStats] = useState<TimeStats>({ todayHours: 0, weekHours: 0, totalEntries: 0, billableHours: 0, breakHours: 0, weeklyEarnings: 0, todayEarnings: 0, nonJobHours: 0 });
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
@@ -937,19 +940,25 @@ export default function TimeTrackingScreen() {
         let weeklyEarnings = 0;
         let todayEarnings = 0;
         
+        let nonJobMinutes = 0;
         entries.forEach((entry: any) => {
           if (entry.duration) {
             weekMinutes += entry.duration;
             if (entry.isBreak) {
               breakMinutes += entry.duration;
-            } else if (entry.isBillable !== false) {
-              billableMinutes += entry.duration;
-              const rate = getEffectiveRate(entry, jobs, userDefaultRate);
-              const earned = calculateEarnings(entry.duration, rate);
-              weeklyEarnings += earned;
-              const ed = new Date(entry.startTime).toISOString().split('T')[0];
-              if (ed === today) {
-                todayEarnings += earned;
+            } else {
+              if (NON_JOB_CATEGORIES.includes((entry.timeCategory || 'work') as any)) {
+                nonJobMinutes += entry.duration;
+              }
+              if (entry.isBillable !== false) {
+                billableMinutes += entry.duration;
+                const rate = getEffectiveRate(entry, jobs, userDefaultRate);
+                const earned = calculateEarnings(entry.duration, rate);
+                weeklyEarnings += earned;
+                const ed = new Date(entry.startTime).toISOString().split('T')[0];
+                if (ed === today) {
+                  todayEarnings += earned;
+                }
               }
             }
             const entryDate = new Date(entry.startTime).toISOString().split('T')[0];
@@ -967,6 +976,7 @@ export default function TimeTrackingScreen() {
           breakHours: Math.round((breakMinutes / 60) * 10) / 10,
           weeklyEarnings: Math.round(weeklyEarnings * 100) / 100,
           todayEarnings: Math.round(todayEarnings * 100) / 100,
+          nonJobHours: Math.round((nonJobMinutes / 60) * 10) / 10,
         });
       }
     } catch (error) {
@@ -1036,15 +1046,24 @@ export default function TimeTrackingScreen() {
   };
 
   const handleStartTimer = async () => {
-    if (!selectedJob) {
-      Alert.alert('Select a Job', 'Please select a job to track time for.');
+    if (!selectedJob && !selectedTimerCategory) {
+      Alert.alert('Select a Job or Category', 'Please select a job or a category to track time.');
       return;
     }
     setIsStarting(true);
     try {
-      const selectedJobData = jobs.find(j => j.id === selectedJob);
-      const description = selectedJobData ? `Working on: ${selectedJobData.title}` : 'Working on job';
-      const success = await startTimer(selectedJob, description);
+      const selectedJobData = selectedJob ? jobs.find(j => j.id === selectedJob) : null;
+      const catMeta = getCategoryMeta(selectedTimerCategory || 'work');
+      const description = selectedJob
+        ? (selectedJobData ? `Working on: ${selectedJobData.title}` : 'Working on job')
+        : catMeta.label;
+      const success = await startTimer(
+        selectedJob || null,
+        description,
+        false,
+        undefined,
+        selectedTimerCategory || 'work',
+      );
       if (!success) {
         Alert.alert('Error', 'Failed to start timer. Please try again.');
       }
@@ -1166,6 +1185,11 @@ export default function TimeTrackingScreen() {
 
   const handleSaveEditEntry = async () => {
     if (!editingEntry) return;
+    // Same invariant as creation: job required for non-job categories unless category is in NON_JOB_CATEGORIES
+    if (!entryJobId && !NON_JOB_CATEGORIES.includes(entryCategory)) {
+      Alert.alert('Select a Job', 'This category requires a job. Select a job or switch to a non-job category like Travel or Admin.');
+      return;
+    }
     const startDateTime = new Date(entryDate);
     startDateTime.setHours(entryStartTime.getHours(), entryStartTime.getMinutes(), 0, 0);
     const endDateTime = new Date(entryDate);
@@ -1244,8 +1268,9 @@ export default function TimeTrackingScreen() {
   };
 
   const handleAddEntry = async () => {
-    if (!entryJobId) {
-      Alert.alert('Select a Job', 'Please select a job for this time entry.');
+    // Job is required unless the selected category is a non-job category
+    if (!entryJobId && !NON_JOB_CATEGORIES.includes(entryCategory)) {
+      Alert.alert('Select a Job', 'Please select a job for this time entry, or choose a non-job category like Travel or Admin.');
       return;
     }
     const startDateTime = new Date(entryDate);
@@ -1394,7 +1419,9 @@ export default function TimeTrackingScreen() {
   };
 
   const inProgressJobs = jobs.filter(j => j.status === 'in_progress' || j.status === 'scheduled');
-  const activeJobName = activeTimer ? jobs.find(j => j.id === activeTimer.jobId)?.title : null;
+  const activeJobName = activeTimer
+    ? (jobs.find(j => j.id === activeTimer.jobId)?.title || (!activeTimer.jobId ? getCategoryMeta((activeTimer as any).timeCategory).label : null))
+    : null;
   const dayTotalMinutes = timeEntries.reduce((sum, e) => sum + (e.duration || 0), 0);
   const maxWeeklyHours = Math.max(8, ...weeklyData.map(d => d.hours));
 
@@ -1558,9 +1585,49 @@ export default function TimeTrackingScreen() {
 
       {!isTimerRunning && (
         <View style={styles.jobSelectSection}>
-          <Text style={styles.sectionTitle}>SELECT JOB</Text>
+          <Text style={styles.sectionTitle}>SELECT JOB OR CATEGORY</Text>
+
+          {/* Non-job category tiles */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
+            {NON_JOB_CATEGORIES.map(cat => {
+              const meta = getCategoryMeta(cat);
+              const chipColor = CATEGORY_COLORS[cat] || '#6B7280';
+              const isSelected = selectedTimerCategory === cat && !selectedJob;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => { setSelectedTimerCategory(cat); setSelectedJob(null); }}
+                  activeOpacity={0.7}
+                  style={{
+                    flex: 1,
+                    minWidth: '44%',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.sm,
+                    borderRadius: radius.lg,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? chipColor : colors.border,
+                    backgroundColor: isSelected ? chipColor + '18' : colors.card,
+                  }}
+                >
+                  <Text style={{ fontSize: 18 }}>{meta.emoji}</Text>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.foreground, flex: 1 }}>
+                    {meta.label}
+                  </Text>
+                  {isSelected && <Feather name="check-circle" size={14} color={chipColor} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Job list */}
+          {inProgressJobs.length > 0 && (
+            <Text style={[styles.sectionTitle, { fontSize: typography.sizes.xs, marginBottom: spacing.xs }]}>OR SELECT A JOB</Text>
+          )}
           {inProgressJobs.length === 0 ? (
-            <View style={styles.emptyState}>
+            <View style={[styles.emptyState, { marginTop: 0 }]}>
               <Text style={styles.emptyStateText}>No active or scheduled jobs to track</Text>
             </View>
           ) : (
@@ -1571,7 +1638,7 @@ export default function TimeTrackingScreen() {
                   styles.jobSelectCard,
                   selectedJob === job.id && styles.jobSelectCardActive
                 ]}
-                onPress={() => setSelectedJob(job.id)}
+                onPress={() => { setSelectedJob(job.id); setSelectedTimerCategory(null); }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.jobSelectRadio, selectedJob === job.id && { borderColor: colors.primary }]}>
@@ -1885,7 +1952,7 @@ export default function TimeTrackingScreen() {
         ) : (
           (() => {
             interface GroupedJob {
-              jobId: string;
+              jobId: string | null;
               jobTitle: string;
               workEntries: TimeEntry[];
               breakEntries: TimeEntry[];
@@ -1899,12 +1966,14 @@ export default function TimeTrackingScreen() {
             const jobMap = new Map<string, GroupedJob>();
 
             timeEntries.forEach(entry => {
-              const jId = entry.jobId;
-              if (!jobMap.has(jId)) {
-                const jobData = jobs.find(j => j.id === jId);
+              // Group job entries by jobId; group non-job entries by category
+              const groupKey = entry.jobId ? entry.jobId : `cat:${entry.timeCategory || 'work'}`;
+              if (!jobMap.has(groupKey)) {
+                const jobData = entry.jobId ? jobs.find(j => j.id === entry.jobId) : null;
+                const catMeta = !entry.jobId ? getCategoryMeta(entry.timeCategory) : null;
                 const group: GroupedJob = {
-                  jobId: jId,
-                  jobTitle: jobData?.title || 'Unknown Job',
+                  jobId: entry.jobId,
+                  jobTitle: jobData?.title || (catMeta ? `${catMeta.emoji} ${catMeta.label}` : 'Other'),
                   workEntries: [],
                   breakEntries: [],
                   totalWorkMinutes: 0,
@@ -1912,9 +1981,10 @@ export default function TimeTrackingScreen() {
                   earliestStart: entry.startTime,
                   latestEnd: entry.endTime,
                 };
-                jobMap.set(jId, group);
+                jobMap.set(groupKey, group);
                 grouped.push(group);
               }
+              const jId = groupKey;
               const group = jobMap.get(jId)!;
               if (entry.isBreak) {
                 group.breakEntries.push(entry);
@@ -1933,11 +2003,19 @@ export default function TimeTrackingScreen() {
               );
               const totalMinutes = group.totalWorkMinutes + group.totalBreakMinutes;
 
+              const isNonJobGroup = !group.jobId;
+              const groupCatMeta = isNonJobGroup && group.workEntries[0]
+                ? getCategoryMeta(group.workEntries[0].timeCategory)
+                : null;
+              const groupAccentColor = groupCatMeta ? (CATEGORY_COLORS[group.workEntries[0]?.timeCategory || 'work'] || colors.primary) : colors.primary;
+
               return (
-                <View key={group.jobId} style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, marginBottom: spacing.md, overflow: 'hidden' }}>
+                <View key={group.jobId ?? `cat-${group.jobTitle}`} style={{ backgroundColor: colors.card, borderRadius: radius.lg, borderWidth: 1, borderColor: isNonJobGroup ? groupAccentColor + '40' : colors.cardBorder, marginBottom: spacing.md, overflow: 'hidden' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border + '40' }}>
-                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary + '15', alignItems: 'center', justifyContent: 'center' }}>
-                      <Feather name="briefcase" size={16} color={colors.primary} />
+                    <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: groupAccentColor + '18', alignItems: 'center', justifyContent: 'center' }}>
+                      {isNonJobGroup
+                        ? <Text style={{ fontSize: 18 }}>{groupCatMeta?.emoji ?? '⚙️'}</Text>
+                        : <Feather name="briefcase" size={16} color={colors.primary} />}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>{group.jobTitle}</Text>
@@ -2136,6 +2214,18 @@ export default function TimeTrackingScreen() {
             <Text style={styles.statsMetricLabel}>Total Hours</Text>
             <Text style={styles.statsMetricValue}>{timeStats.weekHours}h</Text>
           </View>
+          {timeStats.nonJobHours > 0 && (
+            <View style={styles.statsMetricRow}>
+              <Text style={styles.statsMetricLabel}>Job Hours</Text>
+              <Text style={styles.statsMetricValue}>{Math.round((timeStats.weekHours - timeStats.breakHours - timeStats.nonJobHours) * 10) / 10}h</Text>
+            </View>
+          )}
+          {timeStats.nonJobHours > 0 && (
+            <View style={styles.statsMetricRow}>
+              <Text style={[styles.statsMetricLabel, { color: CATEGORY_COLORS.admin }]}>Admin / Travel / Other</Text>
+              <Text style={[styles.statsMetricValue, { color: CATEGORY_COLORS.admin }]}>{timeStats.nonJobHours}h</Text>
+            </View>
+          )}
           <View style={styles.statsMetricRow}>
             <Text style={styles.statsMetricLabel}>Billable Hours</Text>
             <Text style={[styles.statsMetricValue, { color: ttConfig.statusColors.active }]}>{timeStats.billableHours}h</Text>
@@ -2343,17 +2433,24 @@ export default function TimeTrackingScreen() {
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>
               {editingEntry ? 'Edit Time Entry' : 'Add Time Entry'}
             </Text>
-            <TouchableOpacity 
-              onPress={editingEntry ? handleSaveEditEntry : handleAddEntry}
-              disabled={(editingEntry ? isSavingEdit : isAddingEntry) || !entryJobId}
-              style={[styles.modalSaveButton, (!entryJobId || (editingEntry ? isSavingEdit : isAddingEntry)) && styles.modalSaveButtonDisabled]}
-            >
-              <Text style={[styles.modalSaveText, (!entryJobId || (editingEntry ? isSavingEdit : isAddingEntry)) && styles.modalSaveTextDisabled]}>
+            {(() => {
+              const needsJob = !entryJobId && !NON_JOB_CATEGORIES.includes(entryCategory);
+              const isBusy = editingEntry ? isSavingEdit : isAddingEntry;
+              const isDisabled = isBusy || needsJob;
+              return (
+              <TouchableOpacity 
+                onPress={editingEntry ? handleSaveEditEntry : handleAddEntry}
+                disabled={isDisabled}
+                style={[styles.modalSaveButton, isDisabled && styles.modalSaveButtonDisabled]}
+              >
+              <Text style={[styles.modalSaveText, isDisabled && styles.modalSaveTextDisabled]}>
                 {editingEntry 
                   ? (isSavingEdit ? 'Saving...' : 'Update')
                   : (isAddingEntry ? 'Saving...' : 'Save')}
               </Text>
-            </TouchableOpacity>
+              </TouchableOpacity>
+              );
+            })()}
           </View>
           
           <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}>
@@ -2513,7 +2610,7 @@ export default function TimeTrackingScreen() {
             )}
 
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Job</Text>
+              <Text style={styles.formLabel}>Job {NON_JOB_CATEGORIES.includes(entryCategory) ? '(optional)' : ''}</Text>
               {/* Selected job pill */}
               {entryJobId ? (() => {
                 const sel = jobs.find(j => j.id === entryJobId);

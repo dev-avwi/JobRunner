@@ -4709,13 +4709,27 @@ export class PostgresStorage implements IStorage {
   async getTeamTimeEntriesInRange(businessOwnerId: string, start: Date, end: Date): Promise<TimeEntry[]> {
     const members = await this.getTeamMembers(businessOwnerId);
     const userIds = [businessOwnerId, ...members.map(m => m.memberId).filter(Boolean)] as string[];
-    return await db.select().from(timeEntries)
+    // Left-join jobs so we can validate that job-linked entries actually belong
+    // to THIS business (jobs.userId = businessOwnerId). Without the join, a worker
+    // who is a team member in multiple businesses could expose entries from a
+    // different tenant's jobs in this owner's team report.
+    const rows = await db
+      .select({ te: timeEntries })
+      .from(timeEntries)
+      .leftJoin(jobs, eq(timeEntries.jobId, jobs.id))
       .where(and(
         inArray(timeEntries.userId, userIds),
         gte(timeEntries.startTime, start),
-        lte(timeEntries.startTime, end)
+        lte(timeEntries.startTime, end),
+        or(
+          // Job-linked entry: the linked job must belong to this business
+          eq(jobs.userId, businessOwnerId),
+          // Job-less entry: must be explicitly stamped with this business
+          and(isNull(timeEntries.jobId), eq((timeEntries as any).businessOwnerId, businessOwnerId))
+        )
       ))
       .orderBy(desc(timeEntries.startTime));
+    return rows.map(r => r.te as TimeEntry);
   }
 
   async getTimeEntry(id: string, userId: string): Promise<TimeEntry | undefined> {

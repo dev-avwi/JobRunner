@@ -1714,6 +1714,11 @@ export const timeEntries = pgTable("time_entries", {
   distanceKm: decimal("distance_km", { precision: 10, scale: 2 }),
   // Optional phase tag — when set, overrides date-window attribution in the profitability breakdown
   phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
+  // Business ownership for job-less entries (travel, admin, training, other).
+  // Entries linked to a job derive their tenant through job.ownerId; entries
+  // with no job must carry the business owner user-id explicitly so they can
+  // be scoped correctly in multi-business worker scenarios.
+  businessOwnerId: varchar("business_owner_id").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [

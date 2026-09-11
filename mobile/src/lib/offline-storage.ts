@@ -126,6 +126,7 @@ export interface CachedTimeEntry {
   endTime?: string;
   notes?: string;
   phaseId?: string;
+  timeCategory?: string;
   cachedAt: number;
   pendingSync: boolean;
   syncAction?: 'create' | 'update' | 'delete';
@@ -1745,12 +1746,13 @@ class OfflineStorageService {
     for (const entry of entries) {
       await this.db.runAsync(
         `INSERT OR REPLACE INTO time_entries 
-         (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action)
+         (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action, time_category)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?,
            COALESCE((SELECT pending_sync FROM time_entries WHERE id = ?), 0),
-           (SELECT sync_action FROM time_entries WHERE id = ?))`,
+           (SELECT sync_action FROM time_entries WHERE id = ?),
+           ?)`,
         [entry.id, entry.userId, entry.jobId, entry.description, entry.startTime, entry.endTime, entry.notes, now,
-         entry.id, entry.id]
+         entry.id, entry.id, entry.timeCategory || 'work']
       );
     }
     
@@ -1773,6 +1775,7 @@ class OfflineStorageService {
       startTime: row.start_time,
       endTime: row.end_time,
       notes: row.notes,
+      timeCategory: row.time_category || 'work',
       cachedAt: row.cached_at,
       pendingSync: row.pending_sync === 1,
       syncAction: row.sync_action,
@@ -1804,7 +1807,7 @@ class OfflineStorageService {
    * Start a time entry offline with local timestamp
    * Creates a new time entry with the current time as start time
    */
-  async startTimeEntryOffline(userId: string, jobId?: string, description?: string, phaseId?: string): Promise<CachedTimeEntry> {
+  async startTimeEntryOffline(userId: string, jobId?: string, description?: string, phaseId?: string, timeCategory?: string): Promise<CachedTimeEntry> {
     if (!this.db) throw new Error('Database not initialized');
     
     const now = Date.now();
@@ -1831,9 +1834,9 @@ class OfflineStorageService {
 
     await this.db.runAsync(
       `INSERT INTO time_entries 
-       (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action, local_id, start_lat, start_lng, phase_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'create', ?, ?, ?, ?)`,
-      [localId, userId, jobId ?? null, description ?? null, startTime, null, null, now, localId, startLat, startLng, phaseId ?? null]
+       (id, user_id, job_id, description, start_time, end_time, notes, cached_at, pending_sync, sync_action, local_id, start_lat, start_lng, phase_id, time_category)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 'create', ?, ?, ?, ?, ?)`,
+      [localId, userId, jobId ?? null, description ?? null, startTime, null, null, now, localId, startLat, startLng, phaseId ?? null, timeCategory ?? 'work']
     );
     
     const entry: CachedTimeEntry = {
@@ -1845,6 +1848,7 @@ class OfflineStorageService {
       endTime: undefined,
       notes: undefined,
       phaseId: phaseId || undefined,
+      timeCategory: timeCategory || 'work',
       cachedAt: now,
       pendingSync: true,
       syncAction: 'create',
@@ -4526,6 +4530,7 @@ class OfflineStorageService {
         startTime: r.start_time,
         endTime: r.end_time,
         notes: r.notes,
+        timeCategory: r.time_category || 'work',
         clockInLatitude: r.start_lat,
         clockInLongitude: r.start_lng,
         pendingSync: true,

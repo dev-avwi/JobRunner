@@ -201,6 +201,7 @@ interface TimeEntry {
   id: string;
   userId: string;
   jobId?: string;
+  timeCategory?: string;
   description?: string;
   startTime: string;
   endTime?: string;
@@ -2309,7 +2310,7 @@ interface TimeTrackingState {
   error: string | null;
 
   fetchActiveTimer: () => Promise<void>;
-  startTimer: (jobId: string, description?: string, isBreak?: boolean, phaseId?: string) => Promise<boolean>;
+  startTimer: (jobId: string | null | undefined, description?: string, isBreak?: boolean, phaseId?: string, timeCategory?: string) => Promise<boolean>;
   stopTimer: (options?: { keepLiveActivity?: boolean; distanceKm?: string }) => Promise<boolean>;
   pauseTimer: () => Promise<boolean>;
   resumeTimer: () => Promise<boolean>;
@@ -2336,6 +2337,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         userId: localPending.userId,
         description: localPending.description,
         startTime: localPending.startTime,
+        timeCategory: localPending.timeCategory || 'work',
         isBreak: false,
         pausedDuration: 0,
       } as any;
@@ -2373,7 +2375,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
     }
   },
 
-  startTimer: async (jobId: string, description?: string, isBreak?: boolean, phaseId?: string) => {
+  startTimer: async (jobId: string | null | undefined, description?: string, isBreak?: boolean, phaseId?: string, timeCategory?: string) => {
     set({ isLoading: true, error: null });
 
     // Offline path: write to local SQLite + queue, no network
@@ -2386,13 +2388,14 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
           return false;
         }
         const desc = description || (isBreak ? 'Taking a break' : 'Working on job');
-        const offlineEntry = await offlineStorage.startTimeEntryOffline(userId, jobId || undefined, desc, phaseId || undefined);
+        const offlineEntry = await offlineStorage.startTimeEntryOffline(userId, jobId || undefined, desc, phaseId || undefined, timeCategory);
         const localTimer: TimeEntry = {
           id: offlineEntry.id,
           jobId: offlineEntry.jobId,
           userId: offlineEntry.userId,
           description: offlineEntry.description || desc,
           startTime: offlineEntry.startTime,
+          timeCategory: offlineEntry.timeCategory || timeCategory || 'work',
           isBreak: !!isBreak,
           pausedDuration: 0,
         } as any;
@@ -2407,11 +2410,12 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
 
     try {
       const response = await api.post<TimeEntry>('/api/time-entries', {
-        jobId,
+        ...(jobId ? { jobId } : {}),
         description: description || (isBreak ? 'Taking a break' : 'Working on job'),
         startTime: new Date().toISOString(),
         isBreak: isBreak || false,
         ...(phaseId ? { phaseId } : {}),
+        ...(timeCategory ? { timeCategory } : {}),
       });
       
       if (response.data) {
@@ -2556,6 +2560,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
 
     const jobId = activeTimer.jobId;
     const description = activeTimer.description;
+    const timerCategory = activeTimer.timeCategory;
     set({ isLoading: true, error: null });
     
     try {
@@ -2567,11 +2572,13 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         return false;
       }
       
-      // Start a break timer for the same job
+      // Start a break timer for the same job, preserving the original category
       const started = await startTimer(
-        jobId || '', 
+        jobId || null,
         `Break - ${description || 'Work session'}`,
-        true
+        true,
+        undefined,
+        timerCategory,
       );
       
       set({ isLoading: false });
@@ -2592,6 +2599,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
 
     const jobId = activeTimer.jobId;
     const wasOnBreak = activeTimer.isBreak;
+    const timerCategory = activeTimer.timeCategory;
     set({ isLoading: true, error: null });
     
     try {
@@ -2605,11 +2613,18 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         }
       }
       
-      // Start a work timer for the same job
+      // Start a work timer for the same job, restoring the original category
+      const categoryLabels: Record<string, string> = {
+        travel: 'Driving / Travel', admin: 'Admin / Office',
+        training: 'Training', other: 'Other', meeting: 'Meeting',
+        materials: 'Supplies Run', work: 'Working on job',
+      };
       const started = await startTimer(
-        jobId || '', 
-        'Working on job',
-        false
+        jobId || null,
+        timerCategory ? (categoryLabels[timerCategory] ?? 'Working on job') : 'Working on job',
+        false,
+        undefined,
+        timerCategory,
       );
 
       // Flip the lock-screen Live Activity back to in_progress after a

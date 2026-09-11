@@ -28796,17 +28796,17 @@ Respond with JSON in this format:
       const jobCache = new Map<string, any>();
       const enrichedRaw = await Promise.all(activeEntries.map(async (entry: any) => {
         const isSelf = entry.userId === userId;
-        // Tenant isolation: time_entries has no business-owner column, so for any
-        // entry that is NOT the caller's own we require the linked job to belong to
-        // THIS business (resolved via getJob(..., effectiveUserId)). This prevents a
-        // worker who is a member of multiple businesses from leaking an active timer
-        // on another workspace's job into this owner's list.
+        // Tenant isolation: for any entry that is NOT the caller's own, we require
+        // either (a) the linked job belongs to THIS business, or (b) it is a job-less
+        // entry explicitly stamped with this business's owner ID. This prevents a
+        // worker with multiple business memberships from leaking timers across tenants.
         let job: any = null;
         if (entry.jobId) {
           if (!jobCache.has(entry.jobId)) jobCache.set(entry.jobId, await storage.getJob(entry.jobId, effectiveUserId));
           job = jobCache.get(entry.jobId);
         }
-        if (!isSelf && !job) return null;
+        const isOwnedByThisBusiness = job || (entry as any).businessOwnerId === effectiveUserId;
+        if (!isSelf && !isOwnedByThisBusiness) return null;
 
         let workerName = 'Unknown';
         let workerAvatar: string | null = null;
@@ -29200,15 +29200,15 @@ Respond with JSON in this format:
       }
 
       // Validate referenced job belongs to this business (cross-business write guard)
+      const jobValidationCtx = await getUserContext(userId);
       if (data.jobId) {
-        const tc = await getUserContext(userId);
-        const ownedJob = await storage.getJob(data.jobId, tc.effectiveUserId);
+        const ownedJob = await storage.getJob(data.jobId, jobValidationCtx.effectiveUserId);
         if (!ownedJob) {
           return res.status(404).json({ error: 'Job not found' });
         }
         // Validate phaseId belongs to this job — prevents cross-job/cross-business attribution
         if ((data as any).phaseId) {
-          const phases = await storage.getJobPhases(data.jobId, tc.effectiveUserId);
+          const phases = await storage.getJobPhases(data.jobId, jobValidationCtx.effectiveUserId);
           if (!phases.some((p: any) => p.id === (data as any).phaseId)) {
             return res.status(400).json({ error: 'Phase not found or does not belong to this job' });
           }
@@ -29269,6 +29269,9 @@ Respond with JSON in this format:
         isBreak: data.isBreak || false,
         isOvertime: data.isOvertime || false,
         hourlyRate: finalHourlyRate, // Ensure string format for decimal
+        // Stamp business ownership on job-less entries so they stay scoped to
+        // this tenant in multi-business worker scenarios.
+        ...(!data.jobId ? { businessOwnerId: jobValidationCtx.effectiveUserId } : {}),
       } as InsertTimeEntry & { userId: string });
       
       // Get user context for broadcasts - effectiveUserId is the business owner ID
@@ -29681,11 +29684,20 @@ Respond with JSON in this format:
               const job = await storage.getJob((anyEntry as any).jobId, tc.effectiveUserId);
               inBusiness = !!job;
             } else {
-              const member = await storage.getTeamMemberByOwnerAndMemberId(
-                tc.effectiveUserId,
-                (anyEntry as any).userId,
-              );
-              inBusiness = !!member;
+              // Job-less entry: use the explicit businessOwnerId stamp when present
+              // so a manager in Business A cannot edit a worker's Business B entry.
+              // Fall back to team membership only for legacy entries that pre-date
+              // the stamp (business_owner_id IS NULL on old rows).
+              const entryBizOwner = (anyEntry as any).businessOwnerId;
+              if (entryBizOwner) {
+                inBusiness = entryBizOwner === tc.effectiveUserId;
+              } else {
+                const member = await storage.getTeamMemberByOwnerAndMemberId(
+                  tc.effectiveUserId,
+                  (anyEntry as any).userId,
+                );
+                inBusiness = !!member;
+              }
             }
             if (inBusiness) {
               existingEntry = anyEntry;
@@ -29733,6 +29745,19 @@ Respond with JSON in this format:
         }
       }
       
+      // Maintain businessOwnerId consistency whenever jobId changes.
+      // • Clearing a job (null) → stamp the effective business owner so the job-less
+      //   entry remains tenant-scoped and does not leak across businesses.
+      // • Setting a job → tenant derived through job.userId; clear the explicit stamp.
+      if ('jobId' in req.body) {
+        const editCtx = await getUserContext(userId);
+        if (!data.jobId) {
+          (data as any).businessOwnerId = editCtx.effectiveUserId;
+        } else {
+          (data as any).businessOwnerId = null;
+        }
+      }
+
       // Scope the update to the entry's real owner, not the requester.
       const timeEntry = await storage.updateTimeEntry(id, (existingEntry as any).userId, data);
       if (!timeEntry) {
