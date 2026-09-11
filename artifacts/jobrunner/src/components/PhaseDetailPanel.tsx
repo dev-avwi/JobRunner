@@ -395,6 +395,7 @@ export function PhaseDetailPanel({
       apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phase.id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/phases`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/phases/unassigned"] });
       setIsEditing(false);
       onUpdated();
       toast({ title: "Phase updated" });

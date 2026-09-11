@@ -169,6 +169,7 @@ export function ProjectTeamModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/phases`] });
       queryClient.invalidateQueries({ queryKey: [`/api/jobs/${jobId}/assignments`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/phases/unassigned"] });
       onRefresh();
     },
     onError: (e: any) => toast({ title: "Phase assignment failed", description: e.message, variant: "destructive" }),

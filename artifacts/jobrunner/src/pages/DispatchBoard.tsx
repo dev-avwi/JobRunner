@@ -1538,6 +1538,7 @@ export default function DispatchBoard() {
     },
     onSuccess: async (res) => {
       queryClient.invalidateQueries({ queryKey: ['/api/dispatch/phases'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/phases/unassigned'] });
       // Optimistically update the selected phase in state so the read view refreshes
       try {
         const updated = await (res as Response).json();

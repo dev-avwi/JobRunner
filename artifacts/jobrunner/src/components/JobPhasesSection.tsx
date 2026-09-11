@@ -435,6 +435,7 @@ export function JobPhasesSection({ jobId, isTradie = false, onCreateClaimForPhas
       apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, { assignedUserIds, assignedUserId }),
     onSuccess: () => {
       invalidate();
+      queryClient.invalidateQueries({ queryKey: ["/api/phases/unassigned"] });
       setMemberPickerPhaseId(null);
       toast({ title: "Team updated" });
     },
