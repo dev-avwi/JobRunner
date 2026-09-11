@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import GettingStartedChecklist from "./GettingStartedChecklist";
 import TodayScheduleCard from "./TodayScheduleCard";
 import ActivityFeed from "./ActivityFeed";
@@ -13,7 +14,8 @@ import DashboardUpgradeCard from "./DashboardUpgradeCard";
 import { useDashboardKPIs, useTodaysJobs } from "@/hooks/use-dashboard-data";
 import { useUpdateJob } from "@/hooks/use-jobs";
 import { useToast } from "@/hooks/use-toast";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Briefcase, 
   DollarSign, 
@@ -41,6 +43,8 @@ import {
   CircleDollarSign,
   Hammer,
   UserX,
+  UserCheck,
+  Loader2,
 } from "lucide-react";
 
 interface OwnerManagerDashboardProps {
@@ -93,17 +97,46 @@ interface UnassignedPhase {
   jobTitle: string | null;
 }
 
+interface TeamMember {
+  id: string;
+  memberId: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  inviteStatus: string;
+  isActive: boolean | null;
+}
 function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) => void }) {
   const { isOwner, isManager } = useUserRole();
   const isOwnerOrManager = isOwner || isManager;
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<{ phases: UnassignedPhase[] }>({
+  const { data, isLoading } = useQuery<{ phases: UnassignedPhase[]; teamMembers: TeamMember[] }>({
     queryKey: ["/api/phases/unassigned"],
     staleTime: 2 * 60 * 1000,
     enabled: isOwnerOrManager,
   });
 
+  const assignMutation = useMutation({
+    mutationFn: async ({ jobId, phaseId, memberId }: { jobId: string; phaseId: string; memberId: string }) => {
+      return apiRequest("PATCH", `/api/jobs/${jobId}/phases/${phaseId}`, { assignedUserId: memberId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/phases/unassigned"] });
+      toast({ title: "Worker assigned", description: "Phase has been assigned successfully." });
+      setOpenPopover(null);
+    },
+    onError: () => {
+      toast({ title: "Assignment failed", description: "Could not assign the worker. Please try again.", variant: "destructive" });
+    },
+  });
+
   const phases = data?.phases ?? [];
+  const teamMembers = (data?.teamMembers ?? []).filter(
+    (m) => m.isActive && m.inviteStatus === "accepted" && m.memberId
+  );
 
   if (!isOwnerOrManager) return null;
 
@@ -124,7 +157,7 @@ function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) =>
                 <Skeleton className="h-3.5 w-32" />
                 <Skeleton className="h-3 w-24" />
               </div>
-              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-7 w-16 rounded-md" />
             </div>
           ))}
         </CardContent>
@@ -183,6 +216,7 @@ function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) =>
         {visible.map((phase) => {
           const urgent = isUrgent(phase.scheduledStart);
           const past = isPast(phase.scheduledStart);
+          const isAssigning = assignMutation.isPending && assignMutation.variables?.phaseId === phase.id;
           return (
             <div
               key={phase.id}
@@ -192,15 +226,11 @@ function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) =>
             >
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  urgent || past
-                    ? "bg-red-500/10"
-                    : "bg-amber-500/10"
+                  urgent || past ? "bg-red-500/10" : "bg-amber-500/10"
                 }`}
               >
                 <UserX
-                  className={`h-4 w-4 ${
-                    urgent || past ? "text-red-500" : "text-amber-500"
-                  }`}
+                  className={`h-4 w-4 ${urgent || past ? "text-red-500" : "text-amber-500"}`}
                 />
               </div>
               <div className="flex-1 min-w-0">
@@ -208,19 +238,80 @@ function UnassignedPhasesWidget({ onNavigate }: { onNavigate?: (path: string) =>
                 <p className="text-xs text-muted-foreground truncate">{phase.jobTitle}</p>
               </div>
               <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                {(urgent || past) && (
-                  <Badge
-                    className="bg-red-500/10 text-red-600 border-red-500/20 text-xs"
-                    data-testid={past ? `badge-overdue-${phase.id}` : `badge-urgent-${phase.id}`}
+                <div className="flex items-center gap-1">
+                  {(urgent || past) && (
+                    <Badge
+                      className="bg-red-500/10 text-red-600 border-red-500/20 text-xs"
+                      data-testid={past ? `badge-overdue-${phase.id}` : `badge-urgent-${phase.id}`}
+                    >
+                      {past ? "Overdue" : "Urgent"}
+                    </Badge>
+                  )}
+                  <span className={`text-xs ${urgent || past ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
+                    {formatDate(phase.scheduledStart)}
+                  </span>
+                </div>
+                {teamMembers.length > 0 ? (
+                  <Popover
+                    open={openPopover === phase.id}
+                    onOpenChange={(open) => setOpenPopover(open ? phase.id : null)}
                   >
-                    {past ? "Overdue" : "Urgent"}
-                  </Badge>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 text-xs gap-1"
+                        disabled={isAssigning}
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`button-assign-phase-${phase.id}`}
+                      >
+                        {isAssigning ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <UserCheck className="h-3 w-3" />
+                        )}
+                        Assign
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-56 p-1"
+                      align="end"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <p className="text-xs font-medium text-muted-foreground px-2 py-1.5">
+                        Assign to
+                      </p>
+                      <div className="space-y-0.5">
+                        {teamMembers.map((member) => (
+                          <button
+                            key={member.id}
+                            className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-sm hover:bg-accent hover:text-accent-foreground transition-colors text-left"
+                            disabled={isAssigning}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              assignMutation.mutate({
+                                jobId: phase.jobId,
+                                phaseId: phase.id,
+                                memberId: member.memberId!,
+                              });
+                            }}
+                            data-testid={`assign-member-${member.id}-phase-${phase.id}`}
+                          >
+                            <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                              <span className="text-[10px] font-semibold text-primary">
+                                {memberInitials(member)}
+                              </span>
+                            </div>
+                            <span className="truncate">{memberDisplayName(member)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
-                <span className={`text-xs ${urgent || past ? "text-red-500 font-medium" : "text-muted-foreground"}`}>
-                  {formatDate(phase.scheduledStart)}
-                </span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             </div>
           );
         })}
@@ -914,4 +1005,16 @@ export default function OwnerManagerDashboard({
       />
     </div>
   );
+}
+
+function memberInitials(m: TeamMember) {
+  const first = m.firstName?.[0] ?? "";
+  const last = m.lastName?.[0] ?? "";
+  const combined = (first + last).toUpperCase();
+  return combined !== "" ? combined : (m.email[0]?.toUpperCase() ?? "?");
+}
+
+function memberDisplayName(m: TeamMember) {
+  const full = [m.firstName, m.lastName].filter(Boolean).join(" ");
+  return full || m.email;
 }
