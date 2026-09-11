@@ -2742,6 +2742,17 @@ export default function JobDetailScreen() {
   // sub-screen). Skip the very first focus — the mount effect above already
   // loads everything.
   const initialFocusRef = useRef(true);
+
+  // "Latest value" refs so the focus callback can read current state without
+  // being added to its dependency array (which would cause the effect to
+  // re-register on every render).
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+  const phasesRef = useRef(phases);
+  phasesRef.current = phases;
+  const expandedPhaseTasksSetRef = useRef(expandedPhaseTasksSet);
+  expandedPhaseTasksSetRef.current = expandedPhaseTasksSet;
+
   useFocusEffect(
     useCallback(() => {
       if (initialFocusRef.current) {
@@ -2752,6 +2763,15 @@ export default function JobDetailScreen() {
       fetchActiveTimer();
       loadTimeEntries();
       loadTeamTimers();
+      // When returning to the Tasks tab, refresh phase task counts and any
+      // already-expanded inline checklists so they reflect changes made in
+      // phase-detail (or elsewhere) while this screen was in the background.
+      if (activeTabRef.current === 'tasks' && phasesRef.current.length > 0) {
+        loadPhaseTaskCounts(phasesRef.current);
+        expandedPhaseTasksSetRef.current.forEach(phaseId => {
+          loadPhaseTasksForPhase(phaseId);
+        });
+      }
     }, [id])
   );
 
