@@ -347,6 +347,7 @@ export function UnifiedWorkSection({
   // Add-row state
   const [addMode, setAddMode] = useState<'item' | 'task'>('item');
   const [newText, setNewText] = useState('');
+  const [newTaskInstructions, setNewTaskInstructions] = useState('');
   const [adding, setAdding] = useState(false);
 
   // Checklist drag state
@@ -495,11 +496,15 @@ export function UnifiedWorkSection({
       const res = await api.post<ChecklistItem>(`/api/jobs/${jobId}/checklist`, { text, sortOrder: maxOrder + 1 });
       if (res.error) showToast({ type: 'error', message: 'Could not add item' });
     } else {
-      const res = await api.post<JobTask>('/api/tasks', { title: text, jobId });
-      if (res.error) showToast({ type: 'error', message: 'Could not add task' });
+      const payload: any = { title: text, jobId };
+      const instructions = newTaskInstructions.trim();
+      if (instructions) payload.description = instructions;
+      const res = await api.post<JobTask>('/api/tasks', payload);
+      if (res.error) showToast({ type: 'error', message: 'Could not add work item' });
     }
     setAdding(false);
     setNewText('');
+    setNewTaskInstructions('');
     load();
   };
 
@@ -781,7 +786,7 @@ export function UnifiedWorkSection({
                         );
                       })()}
                     </View>
-                    {!!task.description && <Text style={styles.taskDesc}>{task.description}</Text>}
+                    {!!task.description && !isExpanded && <Text style={styles.taskDesc} numberOfLines={2}>{task.description}</Text>}
                     {(hasHours || hasMaterials) && (
                       <View style={styles.taskTotals}>
                         {hasHours && (
@@ -801,16 +806,9 @@ export function UnifiedWorkSection({
                   </View>
 
                   <View style={styles.rowActions}>
-                    {showLogWork && (
-                      <TouchableOpacity onPress={() => setExpanded((p) => ({ ...p, [task.id]: !p[task.id] }))} hitSlop={8} style={{ padding: 4 }}>
-                        <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
-                      </TouchableOpacity>
-                    )}
-                    {!readOnly && (
-                      <TouchableOpacity onPress={() => openCostEdit(task)} hitSlop={8} style={{ padding: 4 }}>
-                        <Feather name="dollar-sign" size={15} color={hasCostData ? (statusColor ?? colors.primary) : colors.mutedForeground} />
-                      </TouchableOpacity>
-                    )}
+                    <TouchableOpacity onPress={() => setExpanded((p) => ({ ...p, [task.id]: !p[task.id] }))} hitSlop={8} style={{ padding: 4 }}>
+                      <Feather name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                    </TouchableOpacity>
                     {!readOnly && (
                       <TouchableOpacity onPress={() => removeTask(task)} hitSlop={8} style={{ padding: 4 }}>
                         <Feather name="trash-2" size={16} color={colors.mutedForeground} />
@@ -850,17 +848,69 @@ export function UnifiedWorkSection({
                   </View>
                 )}
 
-                {isExpanded && showLogWork && (
-                  <View style={styles.expandPanel}>
-                    <View style={styles.logBtnRow}>
-                      <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'hours')}>
-                        <Feather name="clock" size={14} color={colors.foreground} />
-                        <Text style={styles.logBtnText}>Log hours</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'materials')}>
-                        <Feather name="package" size={14} color={colors.foreground} />
-                        <Text style={styles.logBtnText}>Log materials</Text>
-                      </TouchableOpacity>
+                {isExpanded && (
+                  <View style={[styles.expandPanel, { gap: spacing.sm }]}>
+                    {/* Full instructions text */}
+                    {!!task.description && (
+                      <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22 }}>
+                        {task.description}
+                      </Text>
+                    )}
+                    {!task.description && (
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, fontStyle: 'italic' }}>
+                        No instructions added.
+                      </Text>
+                    )}
+
+                    {/* Status + estimated hours row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
+                      {(() => {
+                        const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
+                          open:        { label: 'To Do',       bg: `${colors.mutedForeground}18`, text: colors.mutedForeground },
+                          in_progress: { label: 'In Progress', bg: `${colors.primary}15`,         text: colors.primary },
+                          done:        { label: 'Done',        bg: `${colors.success}15`,          text: colors.success },
+                        };
+                        const cfg = statusConfig[task.status] ?? statusConfig.open;
+                        return (
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: cfg.bg }}>
+                            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: cfg.text }}>{cfg.label}</Text>
+                          </View>
+                        );
+                      })()}
+                      {estH > 0 && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Feather name="clock" size={12} color={colors.mutedForeground} />
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{estH.toFixed(1)}h estimated</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Action buttons */}
+                    <View style={[styles.logBtnRow, { flexWrap: 'wrap' }]}>
+                      {!readOnly && !done && (
+                        <TouchableOpacity style={[styles.logBtn, { backgroundColor: `${colors.success}15`, borderColor: `${colors.success}30` }]} onPress={() => toggleTask(task)}>
+                          <Feather name="check-circle" size={14} color={colors.success} />
+                          <Text style={[styles.logBtnText, { color: colors.success }]}>Mark done</Text>
+                        </TouchableOpacity>
+                      )}
+                      {!readOnly && (
+                        <TouchableOpacity style={styles.logBtn} onPress={() => openCostEdit(task)}>
+                          <Feather name="dollar-sign" size={14} color={colors.foreground} />
+                          <Text style={styles.logBtnText}>Open</Text>
+                        </TouchableOpacity>
+                      )}
+                      {showLogWork && (
+                        <>
+                          <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'hours')}>
+                            <Feather name="clock" size={14} color={colors.foreground} />
+                            <Text style={styles.logBtnText}>Log hours</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.logBtn} onPress={() => openLogSheet(task, 'materials')}>
+                            <Feather name="package" size={14} color={colors.foreground} />
+                            <Text style={styles.logBtnText}>Log materials</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
                     </View>
                   </View>
                 )}
@@ -895,7 +945,7 @@ export function UnifiedWorkSection({
               >
                 <Feather name="check-square" size={13} color={addMode === 'item' ? colors.primary : colors.mutedForeground} />
                 <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: addMode === 'item' ? colors.primary : colors.mutedForeground }}>
-                  Checklist item
+                  Quick item
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -910,7 +960,7 @@ export function UnifiedWorkSection({
               >
                 <Feather name="list" size={13} color={addMode === 'task' ? colors.primary : colors.mutedForeground} />
                 <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: addMode === 'task' ? colors.primary : colors.mutedForeground }}>
-                  Full task
+                  Work item
                 </Text>
               </TouchableOpacity>
             </View>
@@ -918,27 +968,40 @@ export function UnifiedWorkSection({
 
           {/* Non-owners on active jobs can still add checklist items */}
           {(addMode === 'item' ? !clReadOnly : !readOnly) && (
-            <View style={styles.addRow}>
-              <TextInput
-                style={styles.input}
-                value={newText}
-                onChangeText={setNewText}
-                placeholder={addMode === 'item' ? 'Add a checklist item' : 'Add a task'}
-                placeholderTextColor={colors.mutedForeground}
-                returnKeyType="done"
-                onSubmitEditing={addItem}
-              />
-              <TouchableOpacity
-                style={[styles.addBtn, (!newText.trim() || adding) && { opacity: 0.5 }]}
-                onPress={addItem}
-                disabled={adding || !newText.trim()}
-              >
-                {adding ? (
-                  <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
-                ) : (
-                  <Feather name="plus" size={20} color={colors.primaryForeground ?? '#fff'} />
-                )}
-              </TouchableOpacity>
+            <View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.input}
+                  value={newText}
+                  onChangeText={setNewText}
+                  placeholder={addMode === 'item' ? 'Add a quick item' : 'Work item title'}
+                  placeholderTextColor={colors.mutedForeground}
+                  returnKeyType={addMode === 'item' ? 'done' : 'next'}
+                  onSubmitEditing={addMode === 'item' ? addItem : undefined}
+                />
+                <TouchableOpacity
+                  style={[styles.addBtn, (!newText.trim() || adding) && { opacity: 0.5 }]}
+                  onPress={addItem}
+                  disabled={adding || !newText.trim()}
+                >
+                  {adding ? (
+                    <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                  ) : (
+                    <Feather name="plus" size={20} color={colors.primaryForeground ?? '#fff'} />
+                  )}
+                </TouchableOpacity>
+              </View>
+              {addMode === 'task' && (
+                <TextInput
+                  style={[styles.input, { marginTop: 6, minHeight: 72, textAlignVertical: 'top', paddingTop: 10 }]}
+                  value={newTaskInstructions}
+                  onChangeText={setNewTaskInstructions}
+                  placeholder={'Instructions (optional) — what needs to be done'}
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  returnKeyType="default"
+                />
+              )}
             </View>
           )}
         </>

@@ -8524,17 +8524,6 @@ export default function JobDetailScreen() {
                     Phase cost data unavailable
                   </Text>
                 )}
-                {/* Progress summary */}
-                {totalPhases > 0 && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 2 }}>
-                    <View style={{ flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
-                      <View style={{ width: `${Math.round((completedPhases / totalPhases) * 100)}%` as any, height: '100%', backgroundColor: colors.primary, borderRadius: 2 }} />
-                    </View>
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
-                      {completedPhases}/{totalPhases} phases
-                    </Text>
-                  </View>
-                )}
               </View>
             ) : totalPhases > 0 ? (
               /* All phases done */
@@ -8557,147 +8546,6 @@ export default function JobDetailScreen() {
         <JobProgressBar status={job.status} />
       )}
 
-      {/* Phase Progress: horizontal scroll of all phase cards — project jobs only */}
-      {isProject && phases.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, gap: spacing.md, paddingBottom: spacing.xs }}
-          style={{ marginHorizontal: -spacing.lg, marginBottom: spacing.md }}
-        >
-          {phases
-            .slice()
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map((phase, _phaseIdx) => {
-              const isPhaseComplete = phase.status === 'complete' || phase.status === 'invoiced';
-              const budgetedH = phase.budgetedHours ? parseFloat(phase.budgetedHours) : 0;
-              const actualH = phase.actualHours ?? 0;
-              const isPhaseOverBudget = budgetedH > 0 && actualH > budgetedH;
-              const isPhaseNearBudget = budgetedH > 0 && actualH >= budgetedH * 0.8 && !isPhaseOverBudget;
-              const nowDay = new Date(); nowDay.setHours(0, 0, 0, 0);
-              const isPhaseOverdue = !isPhaseComplete && !!phase.scheduledEnd && new Date(phase.scheduledEnd) < nowDay;
-
-              const phaseStatusCfg: Record<string, { label: string; bgColor: string; textColor: string }> = {
-                not_started: { label: 'Not Started', bgColor: colors.muted, textColor: colors.mutedForeground },
-                in_progress:  { label: 'In Progress',  bgColor: `${colors.primary}20`, textColor: colors.primary },
-                complete:     { label: 'Complete',     bgColor: `${colors.success}20`, textColor: colors.success },
-                invoiced:     { label: 'Invoiced',     bgColor: `${colors.secondary}20`, textColor: colors.foreground },
-              };
-              const phaseStatusStyle = phaseStatusCfg[phase.status] ?? phaseStatusCfg.not_started;
-              const phasePct = budgetedH > 0 ? Math.min((actualH / budgetedH) * 100, 100) : 0;
-              const phaseBarColor = isPhaseOverBudget ? colors.destructive : isPhaseNearBudget ? colors.warning : colors.primary;
-
-              const phaseCardMembers: Array<{ id: string; name: string }> =
-                phase.assignedUsers ??
-                (phase.assignedUserId
-                  ? [{ id: phase.assignedUserId, name: phase.assignedUserName ?? '' }]
-                  : []);
-
-              const fmtPhaseDate = (d?: string | null) => {
-                if (!d) return null;
-                try {
-                  const dt = new Date(d);
-                  return `${dt.getDate()} ${dt.toLocaleString('en-AU', { month: 'short' })}`;
-                } catch { return null; }
-              };
-
-              return (
-                <TouchableOpacity
-                  key={phase.id}
-                  activeOpacity={0.75}
-                  onPress={() => {
-                    router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } });
-                  }}
-                  style={{
-                    width: 200,
-                    backgroundColor: colors.card,
-                    borderRadius: radius.lg,
-                    borderWidth: 1,
-                    borderColor: (isPhaseOverBudget || isPhaseOverdue) ? `${colors.destructive}50` : colors.cardBorder,
-                    padding: spacing.md,
-                    gap: spacing.xs,
-                  }}
-                >
-                  {/* Phase code + alert icon */}
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                    <Text style={{
-                      fontSize: 10,
-                      fontWeight: fontWeights.semibold,
-                      color: colors.primary,
-                      backgroundColor: `${colors.primary}15`,
-                      paddingHorizontal: 6,
-                      paddingVertical: 2,
-                      borderRadius: radius.xs,
-                    }}>{phase.phaseCode}</Text>
-                    {(isPhaseOverBudget || isPhaseOverdue) && (
-                      <Feather name="alert-triangle" size={12} color={colors.destructive} />
-                    )}
-                  </View>
-
-                  {/* Phase name */}
-                  <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-                    {phase.name}
-                  </Text>
-
-                  {/* Status badge */}
-                  <View style={{ alignSelf: 'flex-start', backgroundColor: phaseStatusStyle.bgColor, paddingHorizontal: 7, paddingVertical: 2, borderRadius: radius.sm }}>
-                    <Text style={{ fontSize: 10, fontWeight: fontWeights.medium, color: phaseStatusStyle.textColor }}>
-                      {phaseStatusStyle.label}
-                    </Text>
-                  </View>
-
-                  {/* Date range */}
-                  {(phase.scheduledStart || phase.scheduledEnd) && (
-                    <Text style={{ fontSize: 11, color: isPhaseOverdue ? colors.destructive : colors.mutedForeground }}>
-                      {fmtPhaseDate(phase.scheduledStart) ?? '?'} {'\u2192'} {fmtPhaseDate(phase.scheduledEnd) ?? '?'}
-                    </Text>
-                  )}
-
-                  {/* Hours progress bar */}
-                  {budgetedH > 0 && (
-                    <View style={{ gap: 4 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: 10, color: colors.mutedForeground }}>
-                          {actualH.toFixed(1)}/{budgetedH.toFixed(1)}h
-                        </Text>
-                        {isPhaseOverBudget && (
-                          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.destructive }}>Over</Text>
-                        )}
-                        {isPhaseNearBudget && (
-                          <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.warning }}>Near limit</Text>
-                        )}
-                      </View>
-                      <View style={{ height: 4, backgroundColor: colors.muted, borderRadius: 2, overflow: 'hidden' }}>
-                        <View style={{ height: 4, width: `${phasePct}%` as any, backgroundColor: phaseBarColor, borderRadius: 2 }} />
-                      </View>
-                    </View>
-                  )}
-
-                  {/* Team avatars */}
-                  {phaseCardMembers.length > 0 && (
-                    <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                      {phaseCardMembers.slice(0, 4).map((m, i) => (
-                        <View key={m.id} style={{ marginLeft: i === 0 ? 0 : -6, zIndex: 4 - i }}>
-                          <TeamAvatar name={m.name} userId={m.id} size={20} />
-                        </View>
-                      ))}
-                      {phaseCardMembers.length > 4 && (
-                        <View style={{
-                          marginLeft: -6, width: 20, height: 20, borderRadius: 10,
-                          backgroundColor: colors.muted, alignItems: 'center', justifyContent: 'center', zIndex: 0,
-                        }}>
-                          <Text style={{ fontSize: 9, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
-                            +{phaseCardMembers.length - 4}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-        </ScrollView>
-      )}
 
       {/* Job Card Section - primary view, leads the Job Card tab.
           The card container only shows when a job card form actually exists,
@@ -8985,158 +8833,6 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Time Tracking Card - prominent for in-progress jobs */}
-      {(job.status === 'in_progress') && (() => {
-        const isBreakActive = isTimerForThisJob && isOnBreak();
-        return (
-          <Animated.View 
-            style={[
-              styles.timerCard, 
-              isTimerForThisJob && (isBreakActive ? styles.timerBreakCard : styles.timerActiveCard),
-              { transform: [{ scale: isTimerForThisJob ? pulseAnim : 1 }] }
-            ]}
-          >
-            <View style={[
-              styles.timerIconContainer, 
-              isTimerForThisJob && (isBreakActive ? styles.timerBreakIcon : styles.timerActiveIcon)
-            ]}>
-              <Feather 
-                name={isBreakActive ? "coffee" : "clock"} 
-                size={iconSizes.xl} 
-                color={isTimerForThisJob ? colors.primaryForeground : colors.primary} 
-              />
-            </View>
-            <View style={styles.timerContent}>
-              <Text style={styles.timerLabel}>
-                {isBreakActive ? 'On Break' : 'Time Tracking'}
-              </Text>
-              {isTimerForThisJob ? (
-                <Text style={[
-                  styles.timerValue, 
-                  isBreakActive ? styles.timerBreakValue : styles.timerActiveValue
-                ]}>
-                  {isBreakActive ? 'Break: ' : 'Running: '}{formatElapsedTime(elapsedTime)}
-                </Text>
-              ) : activeTimer ? (
-                <Text style={styles.timerValue}>Timer on another job</Text>
-              ) : totalTrackedHours > 0 ? (
-                <Text style={styles.timerValue}>Total: {formatTrackedHours(totalTrackedHours)} tracked</Text>
-              ) : (
-                <Text style={styles.timerValue}>Not started</Text>
-              )}
-            </View>
-            
-            <View style={styles.timerButtonGroup}>
-              {isTimerForThisJob ? (
-                <>
-                  <TouchableOpacity
-                    onPress={isBreakActive ? handleResumeWork : handleTakeBreak}
-                    style={[
-                      styles.timerButton,
-                      isBreakActive ? styles.resumeButton : styles.breakButton
-                    ]}
-                    disabled={timerLoading}
-                  >
-                    {timerLoading ? (
-                      <ActivityIndicator size="small" color={colors.primaryForeground} />
-                    ) : isBreakActive ? (
-                      <Feather name="play" size={iconSizes.md} color={colors.primaryForeground} />
-                    ) : (
-                      <Feather name="coffee" size={iconSizes.md} color={colors.foreground} />
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={handleStopTimer}
-                    style={[styles.timerButton, styles.stopButton]}
-                    disabled={timerLoading}
-                  >
-                    <Feather name="square" size={iconSizes.md} color={colors.primaryForeground} />
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  onPress={handleStartTimer}
-                  style={[styles.timerButton, styles.startButton]}
-                  disabled={timerLoading}
-                >
-                  {timerLoading ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Feather name="play" size={iconSizes.md} color={colors.primaryForeground} />
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
-        );
-      })()}
-
-      {/* Time Entries List - shows individual completed entries */}
-      {timeEntries.length > 0 && !isTimerForThisJob && (
-        <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch', paddingVertical: spacing.md }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-            <View style={[styles.cardIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.12) }]}>
-              <Feather name="list" size={iconSizes.xl} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Time Entries</Text>
-              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
-                {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length} entr{timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length === 1 ? 'y' : 'ies'} logged
-              </Text>
-            </View>
-          </View>
-          {timeEntries
-            .filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '')
-            .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
-            .slice(0, 5)
-            .map((entry, idx) => {
-              const start = new Date(entry.startTime);
-              const end = new Date(entry.endTime!);
-              const durationMs = end.getTime() - start.getTime();
-              const durationMin = Math.round(durationMs / (1000 * 60));
-              const hrs = Math.floor(durationMin / 60);
-              const mins = durationMin % 60;
-              const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-              const dateStr = start.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' });
-              const startStr = start.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
-              const endStr = end.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true });
-              return (
-                <View
-                  key={entry.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: spacing.sm,
-                    borderTopWidth: 1,
-                    borderTopColor: colors.border,
-                    gap: spacing.sm,
-                  }}
-                >
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: entry.isBreak ? colors.warning : colors.success }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                      {entry.isBreak ? 'Break' : (entry.userName || 'You')}
-                    </Text>
-                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>
-                      {dateStr} {startStr} - {endStr}
-                    </Text>
-                  </View>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.bold, color: entry.isBreak ? colors.warning : colors.foreground }}>{timeStr}</Text>
-                    {entry.hourlyRate && !entry.isBreak && (
-                      <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>${parseFloat(entry.hourlyRate).toFixed(0)}/hr</Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length > 5 && (
-            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.sm }}>
-              + {timeEntries.filter(e => e.endTime && e.endTime !== 'null' && e.endTime !== '').length - 5} more entries
-            </Text>
-          )}
-        </View>
-      )}
 
       {/* Team on Job - shows all workers currently tracked on this job */}
       {teamTimers.length > 0 && (
@@ -9747,94 +9443,6 @@ export default function JobDetailScreen() {
         </PressableRow>
       )}
 
-      {/* Time Tracking Card - for scheduled jobs only (in_progress shown at top) */}
-      {(job.status === 'scheduled') && (() => {
-        const isBreakActive = isTimerForThisJob && isOnBreak();
-        return (
-          <Animated.View 
-            style={[
-              styles.timerCard, 
-              isTimerForThisJob && (isBreakActive ? styles.timerBreakCard : styles.timerActiveCard),
-              { transform: [{ scale: isTimerForThisJob ? pulseAnim : 1 }] }
-            ]}
-          >
-            <View style={[
-              styles.timerIconContainer, 
-              isTimerForThisJob && (isBreakActive ? styles.timerBreakIcon : styles.timerActiveIcon)
-            ]}>
-              <Feather 
-                name={isBreakActive ? "coffee" : "clock"} 
-                size={iconSizes.xl} 
-                color={isTimerForThisJob ? colors.primaryForeground : colors.primary} 
-              />
-            </View>
-            <View style={styles.timerContent}>
-              <Text style={styles.timerLabel}>
-                {isBreakActive ? 'On Break' : 'Time Tracking'}
-              </Text>
-              {isTimerForThisJob ? (
-                <Text style={[
-                  styles.timerValue, 
-                  isBreakActive ? styles.timerBreakValue : styles.timerActiveValue
-                ]}>
-                  {isBreakActive ? 'Break: ' : 'Running: '}{formatElapsedTime(elapsedTime)}
-                </Text>
-              ) : activeTimer ? (
-                <Text style={styles.timerValue}>Timer on another job</Text>
-              ) : totalTrackedHours > 0 ? (
-                <Text style={styles.timerValue}>Total: {formatTrackedHours(totalTrackedHours)} tracked</Text>
-              ) : (
-                <Text style={styles.timerValue}>Not started</Text>
-              )}
-            </View>
-            
-            {/* Timer action buttons */}
-            <View style={styles.timerButtonGroup}>
-              {isTimerForThisJob ? (
-                <>
-                  {/* Break / Resume button */}
-                  <TouchableOpacity
-                    onPress={isBreakActive ? handleResumeWork : handleTakeBreak}
-                    style={[
-                      styles.timerButton,
-                      isBreakActive ? styles.resumeButton : styles.breakButton
-                    ]}
-                    disabled={timerLoading}
-                  >
-                    {timerLoading ? (
-                      <ActivityIndicator size="small" color={colors.primaryForeground} />
-                    ) : isBreakActive ? (
-                      <Feather name="play" size={iconSizes.md} color={colors.primaryForeground} />
-                    ) : (
-                      <Feather name="coffee" size={iconSizes.md} color={colors.foreground} />
-                    )}
-                  </TouchableOpacity>
-                  {/* Stop button */}
-                  <TouchableOpacity
-                    onPress={handleStopTimer}
-                    style={[styles.timerButton, styles.stopButton]}
-                    disabled={timerLoading}
-                  >
-                    <Feather name="square" size={iconSizes.md} color={colors.primaryForeground} />
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <TouchableOpacity
-                  onPress={handleStartTimer}
-                  style={[styles.timerButton, styles.startButton]}
-                  disabled={timerLoading}
-                >
-                  {timerLoading ? (
-                    <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  ) : (
-                    <Feather name="play" size={iconSizes.md} color={colors.primaryForeground} />
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          </Animated.View>
-        );
-      })()}
 
       {/* ═══ More Details — Collapsible Layer 3 ═══ */}
       {(!isSubcontractorUser || linkedJobs.length > 0 || activityLog.length > 0 || isOwnerOrManager || isSoloOwner) && (
@@ -12471,64 +12079,6 @@ export default function JobDetailScreen() {
              PROJECT VIEW — phases are the primary organiser
           ═══════════════════════════════════════════════ */
           <>
-            {/* Team Time — collapsible per-member hours summary */}
-            {teamMemberSummaries.length > 0 && (
-              <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
-                <TouchableOpacity
-                  onPress={() => setTeamTimeExpanded(v => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colorWithOpacity(colors.info, 0.12), alignItems: 'center', justifyContent: 'center' }}>
-                      <Feather name="users" size={18} color={colors.info} />
-                    </View>
-                    <View>
-                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
-                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}&middot;{' '}
-                        {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
-                      </Text>
-                    </View>
-                  </View>
-                  <Feather name={teamTimeExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
-                </TouchableOpacity>
-                {teamTimeExpanded && (
-                  <View style={{ marginTop: spacing.md }}>
-                    {teamMemberSummaries.map(member => (
-                      <View
-                        key={member.userId}
-                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm }}
-                      >
-                        <TeamAvatar name={member.name} userId={String(member.userId)} themeColor={member.themeColor} size={32} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
-                            {member.name}{member.isCurrentUser ? ' (You)' : ''}
-                          </Text>
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                            Today: {member.todayMinutes > 0 ? formatElapsedTime(Math.round(member.todayMinutes)) : '0m'}
-                          </Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, fontVariant: ['tabular-nums'] }}>
-                            {formatElapsedTime(Math.round(member.totalMinutes))}
-                          </Text>
-                          {member.isActive && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: member.isPaused || member.isBreak ? colorWithOpacity(colors.warning, 0.12) : colorWithOpacity(colors.success, 0.12), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: spacing.xxs }}>
-                              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: member.isPaused || member.isBreak ? colors.warning : colors.success }} />
-                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: member.isPaused || member.isBreak ? colors.warning : colors.success }}>
-                                {member.isPaused ? 'Paused' : member.isBreak ? 'Break' : 'Active'}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
-
             {/* Phase cards — completed phases collapse to a compact row */}
             {isLoadingPhases ? (
               <View style={[styles.photosCard, { marginBottom: spacing.md }]}><SkeletonSection rows={3} /></View>
@@ -12555,21 +12105,33 @@ export default function JobDetailScreen() {
                 { marginBottom: spacing.md, overflow: 'hidden' },
               ];
 
-              // Collapsed completed phase — compact single row
+              // Collapsed completed phase — compact two-line row
               if (isComplete && !isCompletedExpanded) {
                 const countData = phaseTaskCounts[phase.id];
                 return (
                   <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 28, gap: spacing.sm }}>
-                      <Feather name="check-circle" size={14} color={colors.success} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                       <TouchableOpacity
                         style={{ flex: 1 }}
                         onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
                         activeOpacity={0.7}
                       >
-                        <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.mutedForeground }} numberOfLines={1}>
-                          {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
-                        </Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2 }}>
+                          {phase.phaseCode ? (
+                            <View style={{ paddingHorizontal: 5, paddingVertical: 1, borderRadius: radius.xs, backgroundColor: `${colors.success}15`, flexShrink: 0 }}>
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>{phase.phaseCode}</Text>
+                            </View>
+                          ) : null}
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.mutedForeground, flexShrink: 1 }} numberOfLines={1}>
+                            {phase.name}
+                          </Text>
+                        </View>
+                        {(phase.scheduledStart || phase.scheduledEnd) && (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
+                            {phase.scheduledEnd ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
+                          </Text>
+                        )}
                       </TouchableOpacity>
                       {countData && (
                         <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.pill, backgroundColor: colors.muted }}>
@@ -12598,11 +12160,16 @@ export default function JobDetailScreen() {
                   {/* Phase header row — info display only, no touch */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      {/* Name row with status dot */}
+                      {/* Name row with status dot and phase code badge */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 3 }}>
                         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: st.text, flexShrink: 0 }} />
+                        {phase.phaseCode ? (
+                          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, backgroundColor: `${st.text}15`, flexShrink: 0 }}>
+                            <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: st.text }}>{phase.phaseCode}</Text>
+                          </View>
+                        ) : null}
                         <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
-                          {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
+                          {phase.name}
                         </Text>
                       </View>
                       {/* Date + hours */}
@@ -12910,6 +12477,64 @@ export default function JobDetailScreen() {
             <View style={styles.photosCard}>
               <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
+
+            {/* Team Time — moved to bottom so work content appears first */}
+            {teamMemberSummaries.length > 0 && (
+              <View style={[styles.photosCard, { marginBottom: spacing.md, marginTop: spacing.sm }]}>
+                <TouchableOpacity
+                  onPress={() => setTeamTimeExpanded(v => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colorWithOpacity(colors.info, 0.12), alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="users" size={18} color={colors.info} />
+                    </View>
+                    <View>
+                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
+                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}&middot;{' '}
+                        {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
+                      </Text>
+                    </View>
+                  </View>
+                  <Feather name={teamTimeExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
+                </TouchableOpacity>
+                {teamTimeExpanded && (
+                  <View style={{ marginTop: spacing.md }}>
+                    {teamMemberSummaries.map(member => (
+                      <View
+                        key={member.userId}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm }}
+                      >
+                        <TeamAvatar name={member.name} userId={String(member.userId)} themeColor={member.themeColor} size={32} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
+                            {member.name}{member.isCurrentUser ? ' (You)' : ''}
+                          </Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
+                            Today: {member.todayMinutes > 0 ? formatElapsedTime(Math.round(member.todayMinutes)) : '0m'}
+                          </Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, fontVariant: ['tabular-nums'] }}>
+                            {formatElapsedTime(Math.round(member.totalMinutes))}
+                          </Text>
+                          {member.isActive && (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: member.isPaused || member.isBreak ? colorWithOpacity(colors.warning, 0.12) : colorWithOpacity(colors.success, 0.12), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: spacing.xxs }}>
+                              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: member.isPaused || member.isBreak ? colors.warning : colors.success }} />
+                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: member.isPaused || member.isBreak ? colors.warning : colors.success }}>
+                                {member.isPaused ? 'Paused' : member.isBreak ? 'Break' : 'Active'}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
           </>
         ) : (
           /* ═══════════════════════════════════════════════
@@ -12996,64 +12621,6 @@ export default function JobDetailScreen() {
                 </View>
               </View>
             </View>
-
-            {/* Team Time — collapsible per-member hours summary */}
-            {teamMemberSummaries.length > 0 && (
-              <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
-                <TouchableOpacity
-                  onPress={() => setTeamTimeExpanded(v => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: colorWithOpacity(colors.info, 0.12), alignItems: 'center', justifyContent: 'center' }}>
-                      <Feather name="users" size={18} color={colors.info} />
-                    </View>
-                    <View>
-                      <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Team Time</Text>
-                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                        {teamMemberSummaries.length} member{teamMemberSummaries.length !== 1 ? 's' : ''}{' '}&middot;{' '}
-                        {formatElapsedTime(Math.round(teamMemberSummaries.reduce((s, m) => s + m.totalMinutes, 0)))} total
-                      </Text>
-                    </View>
-                  </View>
-                  <Feather name={teamTimeExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.mutedForeground} />
-                </TouchableOpacity>
-                {teamTimeExpanded && (
-                  <View style={{ marginTop: spacing.md }}>
-                    {teamMemberSummaries.map(member => (
-                      <View
-                        key={member.userId}
-                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm, borderTopWidth: 1, borderTopColor: colors.border, gap: spacing.sm }}
-                      >
-                        <TeamAvatar name={member.name} userId={String(member.userId)} themeColor={member.themeColor} size={32} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium as any, color: colors.foreground }}>
-                            {member.name}{member.isCurrentUser ? ' (You)' : ''}
-                          </Text>
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                            Today: {member.todayMinutes > 0 ? formatElapsedTime(Math.round(member.todayMinutes)) : '0m'}
-                          </Text>
-                        </View>
-                        <View style={{ alignItems: 'flex-end' }}>
-                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.bold, color: colors.foreground, fontVariant: ['tabular-nums'] }}>
-                            {formatElapsedTime(Math.round(member.totalMinutes))}
-                          </Text>
-                          {member.isActive && (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: member.isPaused || member.isBreak ? colorWithOpacity(colors.warning, 0.12) : colorWithOpacity(colors.success, 0.12), paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginTop: spacing.xxs }}>
-                              <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: member.isPaused || member.isBreak ? colors.warning : colors.success }} />
-                              <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: member.isPaused || member.isBreak ? colors.warning : colors.success }}>
-                                {member.isPaused ? 'Paused' : member.isBreak ? 'Break' : 'Active'}
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            )}
 
             {/* Recent time entries — last 3 completed entries for quick history */}
             {(() => {
