@@ -635,7 +635,7 @@ export default function PhaseDetailScreen() {
       >
 
         {/* ── Hero banner — full bleed, status-coloured ─────────────── */}
-        <View style={[styles.heroBanner, { backgroundColor: cfg.bg + 'AA', borderBottomColor: cfg.color + '25' }]}>
+        <View style={[styles.heroBanner, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
 
           {/* Badge row */}
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 14 }}>
