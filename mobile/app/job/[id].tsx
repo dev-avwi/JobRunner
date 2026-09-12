@@ -8536,7 +8536,7 @@ export default function JobDetailScreen() {
             ) : (
               /* No phases yet */
               <Text style={{ fontSize: 13, color: colors.mutedForeground }}>
-                No phases added yet — add phases to track progress.
+                No phases added yet. Add phases to track progress.
               </Text>
             )}
           </TouchableOpacity>
