@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Animated, TextInput, Alert, Platform, Pressable,
+  StyleSheet, Animated, TextInput, Alert, Platform, Pressable, KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
