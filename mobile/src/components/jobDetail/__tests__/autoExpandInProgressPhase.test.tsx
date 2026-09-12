@@ -343,4 +343,150 @@ describe('autoExpandInProgressPhase', () => {
     expect(lastExpandedSet.has('phase-a-1')).toBe(true);
     expect(lastExpandedSet.has('phase-b-1')).toBe(false);
   });
+
+  // ---------------------------------------------------------------------------
+  // Deep-link / push-notification paths
+  // ---------------------------------------------------------------------------
+
+  it('deep-link: auto-expands when the screen mounts directly on the Tasks tab with phases already loaded', () => {
+    // Simulates a push notification that deep-links to job/[id]?tab=tasks.
+    // The screen is constructed with activeTab='tasks' from the start —
+    // no manual tab press occurs. Phases and phasesOwnerJobId are resolved
+    // in the same render cycle as the initial mount (e.g. data was cached).
+    act(() => {
+      create(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[PHASE_A]}
+          phasesOwnerJobId="job-a"
+          activeTab="tasks"
+          isLoadingPhases={false}
+        />,
+      );
+    });
+
+    expect(lastExpandedSet.has('phase-a-1')).toBe(true);
+    expect(lastAutoExpandedForJob).toBe('job-a');
+  });
+
+  it('deep-link: auto-expands after phases finish loading when the screen was already on the Tasks tab at mount', () => {
+    // Simulates a push notification deep-link where the screen opens directly
+    // on the Tasks tab but phases are not yet available (fetch in flight).
+    // The auto-expand guard must fire as soon as both conditions become true:
+    //   - activeTab is already 'tasks' (set at mount)
+    //   - phases arrive and phasesOwnerJobId matches the current job ID
+    let renderer: ReturnType<typeof create>;
+
+    // Step 1 — Screen mounts on the Tasks tab; fetch still in flight.
+    act(() => {
+      renderer = create(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[]}
+          phasesOwnerJobId={null}
+          activeTab="tasks"
+          isLoadingPhases={true}
+        />,
+      );
+    });
+
+    // Nothing to expand yet.
+    expect(lastExpandedSet.size).toBe(0);
+    expect(lastAutoExpandedForJob).toBeNull();
+
+    // Step 2 — Phases resolve; activeTab is unchanged ('tasks').
+    // Both guards now satisfied simultaneously — this is the path that differs
+    // from a manual tab press, where activeTab changes after phases are loaded.
+    act(() => {
+      renderer.update(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[PHASE_A]}
+          phasesOwnerJobId="job-a"
+          activeTab="tasks"
+          isLoadingPhases={false}
+        />,
+      );
+    });
+
+    expect(lastExpandedSet.has('phase-a-1')).toBe(true);
+    expect(lastAutoExpandedForJob).toBe('job-a');
+  });
+
+  it('deep-link: guard ref is consumed only once even when activeTab and phases both flip in the same update', () => {
+    // Edge case: the deep-link delivers activeTab='tasks' AND the phase fetch
+    // completes in the very same React render batch. Verify the ref is set
+    // to the job ID (not null or a repeated value) and the phase is expanded
+    // exactly once.
+    let renderer: ReturnType<typeof create>;
+
+    // Mount in a loading state with Tasks tab already active.
+    act(() => {
+      renderer = create(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[]}
+          phasesOwnerJobId={null}
+          activeTab="tasks"
+          isLoadingPhases={true}
+        />,
+      );
+    });
+
+    expect(lastExpandedSet.size).toBe(0);
+
+    // Single update delivers both phases and the resolved owner.
+    act(() => {
+      renderer.update(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[PHASE_A]}
+          phasesOwnerJobId="job-a"
+          activeTab="tasks"
+          isLoadingPhases={false}
+        />,
+      );
+    });
+
+    expect(lastExpandedSet.has('phase-a-1')).toBe(true);
+    expect(lastAutoExpandedForJob).toBe('job-a');
+
+    // A further re-render (e.g. parent state update) must not change anything.
+    act(() => {
+      renderer.update(
+        <AutoExpandHarness
+          jobId="job-a"
+          phases={[PHASE_A]}
+          phasesOwnerJobId="job-a"
+          activeTab="tasks"
+          isLoadingPhases={false}
+        />,
+      );
+    });
+
+    expect(lastExpandedSet.has('phase-a-1')).toBe(true);
+    expect(lastAutoExpandedForJob).toBe('job-a');
+  });
+
+  it('deep-link: stale phases from a previous job do not expand while waiting for the deep-linked job phases', () => {
+    // Push notification links to job-b while job-a was the last viewed job.
+    // The screen mounts on the Tasks tab, but phases in state still belong to
+    // job-a (e.g. cached) while job-b fetch is in flight.
+    act(() => {
+      create(
+        <AutoExpandHarness
+          jobId="job-b"
+          phases={[PHASE_A]}       // stale — job-a's phase still in state
+          phasesOwnerJobId="job-a" // owner hasn't updated yet
+          activeTab="tasks"        // already on Tasks tab from deep-link
+          isLoadingPhases={true}
+        />,
+      );
+    });
+
+    // Must not expand job-a's phase under job-b's context.
+    expect(lastExpandedSet.size).toBe(0);
+    // Guard must not be consumed for job-b yet.
+    expect(lastAutoExpandedForJob).not.toBe('job-b');
+  });
 });
