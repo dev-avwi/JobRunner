@@ -769,7 +769,11 @@ export function UnifiedWorkSection({
                     {done && <Feather name="check" size={13} color={colors.primaryForeground ?? '#fff'} />}
                   </TouchableOpacity>
 
-                  <View style={styles.taskContent}>
+                  <TouchableOpacity
+                    style={styles.taskContent}
+                    onPress={() => setExpanded((p) => ({ ...p, [task.id]: !p[task.id] }))}
+                    activeOpacity={0.7}
+                  >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                       <Text style={[styles.taskTitle, done && styles.taskTitleDone, { flexShrink: 1 }]}>{task.title}</Text>
                       {showStatusBadge && (() => {
@@ -803,7 +807,7 @@ export function UnifiedWorkSection({
                         )}
                       </View>
                     )}
-                  </View>
+                  </TouchableOpacity>
 
                   <View style={styles.rowActions}>
                     <TouchableOpacity onPress={() => setExpanded((p) => ({ ...p, [task.id]: !p[task.id] }))} hitSlop={8} style={{ padding: 4 }}>
