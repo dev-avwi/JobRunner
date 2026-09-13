@@ -8721,7 +8721,6 @@ export default function JobDetailScreen() {
       )}
 
 
-
       {/* Safety & Compliance Section - Prominent before work starts */}
       {(job.status === 'scheduled' || job.status === 'in_progress') && (availableForms.some(isSafetyForm) || swmsDocuments.length > 0 || hasNoSafetyDocs) && (
         <View style={[
@@ -8764,9 +8763,6 @@ export default function JobDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-
-
 
 
       {/* Address Card */}
@@ -9043,7 +9039,6 @@ export default function JobDetailScreen() {
       )}
 
 
-
       {/* Compact Activity Log — last 4 entries */}
       {activityLog.length > 0 && (
         <View style={{
@@ -9104,13 +9099,62 @@ export default function JobDetailScreen() {
       )}
 
 
-
-
     </>
   );
 
   const renderManageTab = () => (
     <>
+      {/* Invoice-ready prompt: all phases complete, no invoice yet */}
+      {(isOwnerOrManager || isSoloOwner) &&
+        isProject &&
+        phases.length > 0 &&
+        phases.every((p: JobPhase) => p.status === 'complete' || p.status === 'invoiced') &&
+        job.status !== 'invoiced' &&
+        !invoice && (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any)}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              backgroundColor: `${colors.success}18`,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: `${colors.success}35`,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
+              marginBottom: spacing.md,
+              gap: spacing.sm,
+            }}
+          >
+            <Feather name="check-circle" size={18} color={colors.success} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.success }}>
+                All phases complete
+              </Text>
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.success, opacity: 0.8 }}>
+                Ready to raise an invoice
+              </Text>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.xs,
+                backgroundColor: colors.success,
+                paddingVertical: spacing.xs,
+                paddingHorizontal: spacing.sm,
+                borderRadius: radius.md,
+              }}
+            >
+              <Feather name="file-text" size={13} color="#fff" />
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: '#fff' }}>
+                Create Invoice
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
       {/* Client Tools Section Header */}
       {(isOwnerOrManager || isSoloOwner) && (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm }}>
