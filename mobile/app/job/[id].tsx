@@ -72,7 +72,8 @@ import { SignaturePad } from '../../src/components/SignaturePad';
 import { JobForms } from '../../src/components/FormRenderer';
 import { UnifiedWorkSection } from '../../src/components/UnifiedWorkSection';
 import SmartActionsPanel, { SmartAction, getJobSmartActions } from '../../src/components/SmartActionsPanel';
-import { JobProgressBar, LinkedDocumentsCard, NextActionCard, PaymentCollectionCard } from '../../src/components/JobWorkflowComponents';
+import { JobProgressBar, LinkedDocumentsCard, NextActionCard } from '../../src/components/JobWorkflowComponents';
+import { ManageTabPaymentSection } from '../../src/components/jobDetail/ManageTabPaymentSection';
 import { CollapsibleSection } from '../../src/components/ui/CollapsibleSection';
 import { PhotoAnnotationEditor } from '../../src/components/PhotoAnnotationEditor';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
@@ -9528,151 +9529,32 @@ export default function JobDetailScreen() {
           </TouchableOpacity>
         )}
 
-      {/* Payment Collection Section Header */}
-      {!isSubcontractorUser && canCollectPayments && (
-        linkedReceipt !== null ||
-        (invoice !== null && invoice.status !== 'paid') ||
-        ((job.status === 'done' || job.status === 'in_progress') && !invoice && getQuickCollectTotal() > 0)
-      ) && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm }}>
-          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Payment</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-        </View>
-      )}
-
-      {/* Quick Collect Card - job done/in-progress, no invoice yet, collectible amount exists */}
-      {!isSubcontractorUser && canCollectPayments && (job.status === 'done' || job.status === 'in_progress') && !invoice && getQuickCollectTotal() > 0 && (
-        <View style={[styles.quickCollectCard, { borderColor: colors.cardBorder }]}>
-          <View style={styles.quickCollectHeader}>
-            <View style={[styles.quickCollectIconContainer, { backgroundColor: `${colors.success}15` }]}>
-              <Feather name="zap" size={iconSizes.lg} color={colors.success} />
-            </View>
-            <View style={styles.quickCollectTitleContainer}>
-              <Text style={[styles.quickCollectTitle, { color: colors.foreground }]}>Quick Collect</Text>
-              <View style={[styles.quickCollectBadge, { backgroundColor: `${colors.success}20` }]}>
-                <Text style={[styles.quickCollectBadgeText, { color: colors.success }]}>No Invoice Needed</Text>
-              </View>
-            </View>
-          </View>
-          <Text style={[styles.quickCollectDescription, { color: colors.mutedForeground }]}>
-            Collect payment on the spot. Invoice and receipt created automatically.
-          </Text>
-          <View style={[styles.quickCollectAmountBox, { backgroundColor: colors.muted, borderColor: colors.border }]}>
-            <Text style={[styles.quickCollectAmountLabel, { color: colors.mutedForeground }]}>
-              {getQuickCollectSource() === 'quote' ? 'From accepted quote' : 'From materials'}
-            </Text>
-            <Text style={[styles.quickCollectAmountValue, { color: colors.foreground }]}>
-              {new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(getQuickCollectTotal())}
-            </Text>
-          </View>
-          <View style={styles.quickCollectButtons}>
-            <View style={styles.quickCollectButtonRow}>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: `${colors.success}15` }]}
-                onPress={() => handleQuickCollect('cash')}
-                disabled={isQuickCollecting}
-                activeOpacity={0.8}
-              >
-                <Feather name="dollar-sign" size={18} color={colors.success} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Cash</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: `${colors.primary}12` }]}
-                onPress={handleQuickCollectCard}
-                disabled={isQuickCollecting}
-                activeOpacity={0.8}
-              >
-                <Feather name="link" size={18} color={colors.primary} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
-              </TouchableOpacity>
-            </View>
-            <View style={styles.quickCollectButtonRow}>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: `${colors.info}12` }]}
-                onPress={() => handleQuickCollect('bank_transfer')}
-                disabled={isQuickCollecting}
-                activeOpacity={0.8}
-              >
-                <Feather name="repeat" size={18} color={colors.info} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.info }]}>Bank</Text>
-              </TouchableOpacity>
-              {Platform.OS === 'ios' && isTapToPayAvailable() && (
-                <TouchableOpacity
-                  style={[styles.quickCollectButton, { backgroundColor: `${colors.warning}12` }]}
-                  onPress={handleTapToPayQuickCollect}
-                  disabled={isQuickCollecting}
-                  activeOpacity={0.8}
-                >
-                  <Feather name="smartphone" size={18} color={colors.warning} />
-                  <Text style={[styles.quickCollectButtonText, { color: colors.warning }]}>Tap to Pay</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            {isQuickCollecting && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingTop: spacing.xs }}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Processing payment...</Text>
-              </View>
-            )}
-          </View>
-        </View>
-      )}
-
-      {/* Payment Collection Card - invoice exists and not yet fully paid */}
-      {!isSubcontractorUser && (
-        <PaymentCollectionCard
-          invoice={invoice ? {
-            id: invoice.id,
-            number: invoice.number,
-            status: invoice.status,
-            total: invoice.total,
-            paidAmount: invoice.paidAmount,
-          } : null}
-          jobId={job.id}
-          canCollectPayments={canCollectPayments}
-          onTapToPay={handleTapToPay}
-          onQRCode={handleQRCode}
-          onPaymentLink={handlePaymentLink}
-          onRecordCash={handleRecordCash}
-        />
-      )}
-
-      {/* Payment Received card - receipt linked to this job */}
-      {!isSubcontractorUser && linkedReceipt && (
-        <TouchableOpacity
-          style={[styles.quickCollectCard, { borderColor: `${colors.success}30` }]}
-          onPress={() => router.push(`/more/receipt/${linkedReceipt.id}`)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.quickCollectHeader}>
-            <View style={[styles.quickCollectIconContainer, { backgroundColor: `${colors.success}15` }]}>
-              <Feather name="check-circle" size={iconSizes.lg} color={colors.success} />
-            </View>
-            <View style={styles.quickCollectTitleContainer}>
-              <Text style={[styles.quickCollectTitle, { color: colors.foreground }]}>Payment Received</Text>
-              {linkedReceipt.receiptNumber && (
-                <View style={[styles.quickCollectBadge, { backgroundColor: `${colors.success}15` }]}>
-                  <Text style={[styles.quickCollectBadgeText, { color: colors.success }]}>{linkedReceipt.receiptNumber}</Text>
-                </View>
-              )}
-            </View>
-            <Feather name="chevron-right" size={iconSizes.lg} color={colors.mutedForeground} />
-          </View>
-          <View style={[styles.quickCollectAmountBox, { backgroundColor: `${colors.success}08`, borderColor: `${colors.success}25` }]}>
-            <Text style={[styles.quickCollectAmountLabel, { color: colors.mutedForeground }]}>
-              {linkedReceipt.paymentMethod
-                ? linkedReceipt.paymentMethod.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-                : 'Payment'}
-              {linkedReceipt.createdAt
-                ? ` \u2022 ${new Date(linkedReceipt.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`
-                : ''}
-            </Text>
-            <Text style={[styles.quickCollectAmountValue, { color: colors.success }]}>
-              {new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(linkedReceipt.amount)}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      )}
+      <ManageTabPaymentSection
+        isSubcontractorUser={isSubcontractorUser}
+        canCollectPayments={canCollectPayments}
+        jobStatus={job.status}
+        jobId={job.id}
+        invoice={invoice ? {
+          id: invoice.id,
+          number: invoice.number,
+          status: invoice.status,
+          total: invoice.total,
+          paidAmount: invoice.paidAmount,
+        } : null}
+        quickCollectTotal={getQuickCollectTotal()}
+        quickCollectSource={getQuickCollectSource()}
+        linkedReceipt={linkedReceipt}
+        isQuickCollecting={isQuickCollecting}
+        showTapToPay={Platform.OS === 'ios' && isTapToPayAvailable()}
+        onQuickCollectCash={() => handleQuickCollect('cash')}
+        onQuickCollectCard={handleQuickCollectCard}
+        onQuickCollectBank={() => handleQuickCollect('bank_transfer')}
+        onTapToPayQuickCollect={handleTapToPayQuickCollect}
+        onTapToPay={handleTapToPay}
+        onQRCode={handleQRCode}
+        onPaymentLink={handlePaymentLink}
+        onRecordCash={handleRecordCash}
+      />
 
       {/* ═══ More Details ═══ */}
       {(!isSubcontractorUser || linkedJobs.length > 0) && (

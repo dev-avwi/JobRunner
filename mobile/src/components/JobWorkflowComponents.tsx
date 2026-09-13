@@ -1091,7 +1091,7 @@ export function PaymentCollectionCard({
   };
 
   return (
-    <View style={styles.container}>
+    <View testID="payment-collection-card" style={styles.container}>
       <View style={styles.header}>
         <View style={[styles.iconContainer, { backgroundColor: `${colors.success}15` }]}>
           <Feather name="credit-card" size={iconSizes.lg} color={colors.success} />
