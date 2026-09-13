@@ -39,6 +39,7 @@ interface CustomForm {
   description?: string;
   fields: FormField[];
   isActive: boolean;
+  formType?: string;
 }
 
 interface FormSubmission {
@@ -68,13 +69,21 @@ interface JobFormsProps {
   jobId: string;
   readOnly?: boolean;
   jobCardMode?: boolean;
+  /** When set, only forms matching the filter are displayed.
+   *  'safety' = safety/inspection/compliance types (shown on Overview).
+   *  'other'  = all non-safety, non-job-card forms (shown on Files tab). */
+  filter?: 'safety' | 'other';
   onExport?: () => void;
   isExporting?: boolean;
   onSubmissionsChange?: (submissions: FormSubmission[]) => void;
   onFormsChange?: (forms: CustomForm[]) => void;
 }
 
-export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExport, isExporting = false, onSubmissionsChange, onFormsChange }: JobFormsProps) {
+const SAFETY_FORM_TYPES = ['safety', 'inspection', 'compliance'];
+const isSafetyTypeForm = (f: CustomForm) =>
+  SAFETY_FORM_TYPES.includes(String(f.formType || '').toLowerCase());
+
+export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter, onExport, isExporting = false, onSubmissionsChange, onFormsChange }: JobFormsProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   
@@ -724,7 +733,14 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
   }
 
   const isJobCardForm = (f: CustomForm) => !!(f as any).isJobCard;
-  const displayForms = jobCardMode ? forms.filter(isJobCardForm) : forms.filter(f => !isJobCardForm(f));
+  const applyTypeFilter = (f: CustomForm) => {
+    if (filter === 'safety') return isSafetyTypeForm(f);
+    if (filter === 'other') return !isSafetyTypeForm(f);
+    return true;
+  };
+  const displayForms = jobCardMode
+    ? forms.filter(isJobCardForm)
+    : forms.filter(f => !isJobCardForm(f)).filter(applyTypeFilter);
   const displaySubmissions = submissions.filter(s => {
     // Fall back to the form embedded on the submission (covers forms that
     // were deactivated/deleted after the card was filled out).
@@ -733,8 +749,16 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, onExpor
     // Job Card section rather than hiding the worker's completed work.
     if (!form) return jobCardMode;
     const isJC = isJobCardForm(form);
-    return jobCardMode ? isJC : !isJC;
+    if (jobCardMode) return isJC;
+    if (isJC) return false;
+    return applyTypeFilter(form);
   });
+
+  // When a filter is active and there's nothing to show, render nothing so the
+  // host card doesn't flash as an empty section.
+  if (filter && !jobCardMode && displayForms.length === 0 && displaySubmissions.length === 0) {
+    return null;
+  }
 
   if (jobCardMode && displayForms.length === 0 && displaySubmissions.length === 0) {
     // Don't flash anything while loading

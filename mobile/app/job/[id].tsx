@@ -2207,6 +2207,7 @@ export default function JobDetailScreen() {
   const [isLoadingExpenses, setIsLoadingExpenses] = useState(false);
   const [availableForms, setAvailableForms] = useState<any[]>([]);
   const [hasJobCardForms, setHasJobCardForms] = useState(false);
+  const [hasOtherForms, setHasOtherForms] = useState(false);
   const [formSubmissions, setFormSubmissions] = useState<any[]>([]);
   
   // Automation settings for photo gates
@@ -9425,7 +9426,6 @@ export default function JobDetailScreen() {
       )}
 
 
-
       {/* Compact Activity Log — last 4 entries */}
       {activityLog.length > 0 && (
         <View style={{
@@ -12441,8 +12441,8 @@ export default function JobDetailScreen() {
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
               unassignedChecklistOnly={phases.length > 0}
             />
-            <View style={styles.photosCard}>
-              <JobForms jobId={job.id} readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
+            <View style={hasSafetyFormsAvailable ? styles.photosCard : undefined}>
+              <JobForms jobId={job.id} filter="safety" readOnly={job.status === 'invoiced'} onSubmissionsChange={setFormSubmissions} onFormsChange={setAvailableForms} />
             </View>
 
             {/* Team Time — moved to bottom so work content appears first */}
@@ -12669,9 +12669,10 @@ export default function JobDetailScreen() {
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
               showStatusBadge
             />
-            <View style={styles.photosCard}>
+            <View style={hasSafetyFormsAvailable ? styles.photosCard : undefined}>
               <JobForms
                 jobId={job.id}
+                filter="safety"
                 readOnly={job.status === 'invoiced'}
                 onSubmissionsChange={setFormSubmissions}
                 onFormsChange={setAvailableForms}
@@ -12686,6 +12687,17 @@ export default function JobDetailScreen() {
             {renderDocumentsTab()}
             <View style={styles.photosCard}>
               {renderSafetyTab()}
+            </View>
+            {/* Non-safety job forms (inductions stay on Overview; everything else lives here) */}
+            <View style={hasOtherForms ? styles.photosCard : undefined}>
+              <JobForms
+                jobId={job.id}
+                filter="other"
+                readOnly={job.status === 'invoiced'}
+                onFormsChange={(forms) =>
+                  setHasOtherForms(forms.some((f: any) => !f.isJobCard && !['safety', 'inspection', 'compliance'].includes(String(f.formType || '').toLowerCase())))
+                }
+              />
             </View>
             {renderPhotosTab()}
 
