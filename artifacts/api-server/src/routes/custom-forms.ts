@@ -437,6 +437,46 @@ export function registerCustomFormsRoutes(app: Express): void {
     }
   });
 
+  // Update task description — owner OR any worker assigned to the job.
+  // Intentionally separate from the general ownerOnly PATCH so workers can
+  // refine instructions without touching privileged cost/assignment fields.
+  app.patch("/api/tasks/:id/description", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { id } = req.params;
+      const { description } = req.body || {};
+
+      // Fetch task scoped to this business
+      const task = await storage.getTaskByIdForJob(id, userContext.effectiveUserId);
+      if (!task) return res.status(404).json({ error: "Task not found" });
+
+      // Check job is not invoiced
+      if (task.jobId) {
+        const job = await storage.getJob(task.jobId, userContext.effectiveUserId);
+        if (job?.status === 'invoiced') {
+          return res.status(403).json({ error: "Cannot edit an invoiced job" });
+        }
+      }
+
+      // Owners and managers have blanket access; plain workers must be assigned
+      const isOwnerOrManager = userContext.isOwner ||
+        userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM as any);
+      if (!isOwnerOrManager && task.jobId) {
+        const assigned = await isUserAssignedToJob(req.userId, task.jobId, userContext.effectiveUserId, userContext.teamMemberId);
+        if (!assigned) return res.status(403).json({ error: "You are not assigned to this job" });
+      }
+
+      const updated = await storage.updateTask(id, userContext.effectiveUserId, {
+        description: typeof description === 'string' ? description.trim() || null : null,
+      });
+      if (!updated) return res.status(404).json({ error: "Task not found" });
+      res.json(updated);
+    } catch (error: any) {
+      console.error("Error updating task description:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Get work log for a task (hours + materials + totals)
   app.get("/api/tasks/:id/work-log", requireAuth, async (req: any, res) => {
     try {

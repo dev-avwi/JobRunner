@@ -87,6 +87,13 @@ export interface UnifiedWorkSectionProps {
   checklistReadOnly?: boolean;
   /** Team members can log hours/materials even when readOnly (owner actions stay locked) */
   canLogWork?: boolean;
+  /**
+   * When true, shows the pencil edit-instructions button in the expanded panel.
+   * Independent of `readOnly` — assigned workers on active jobs can edit instructions
+   * even though they cannot add/delete tasks.
+   * Set to `job.status !== 'invoiced' && (isOwnerOrManager || isSoloOwner || hasMyActiveAssignment)`.
+   */
+  canEditInstructions?: boolean;
   containerStyle?: any;
   /** Called whenever the combined completion counts change */
   onCountsChange?: (completed: number, total: number) => void;
@@ -329,6 +336,7 @@ export function UnifiedWorkSection({
   readOnly,
   checklistReadOnly,
   canLogWork,
+  canEditInstructions,
   containerStyle,
   onCountsChange,
   showStatusBadge,
@@ -373,6 +381,11 @@ export function UnifiedWorkSection({
   const [matQty, setMatQty] = useState('1');
   const [matUnit, setMatUnit] = useState('');
   const [matUnitCost, setMatUnitCost] = useState('');
+
+  // ── Edit instructions sheet ──
+  const [editInstructionsTask, setEditInstructionsTask] = useState<JobTask | null>(null);
+  const [editInstructionsText, setEditInstructionsText] = useState('');
+  const [savingInstructions, setSavingInstructions] = useState(false);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -578,6 +591,28 @@ export function UnifiedWorkSection({
     if (res.error) { showToast({ type: 'error', message: 'Could not log material' }); return; }
     showToast({ type: 'success', message: `${name} logged` });
     closeLogSheet();
+    load();
+  };
+
+  // ── Edit instructions ───────────────────────────────────────────────────────
+
+  const openEditInstructions = (task: JobTask) => {
+    setEditInstructionsText(task.description ?? '');
+    setEditInstructionsTask(task);
+  };
+
+  const closeEditInstructions = () => setEditInstructionsTask(null);
+
+  const saveEditInstructions = async () => {
+    if (!editInstructionsTask) return;
+    setSavingInstructions(true);
+    const res = await api.patch(`/api/tasks/${editInstructionsTask.id}/description`, {
+      description: editInstructionsText.trim() || null,
+    });
+    setSavingInstructions(false);
+    if (res.error) { showToast({ type: 'error', message: 'Could not save instructions' }); return; }
+    showToast({ type: 'success', message: 'Instructions updated' });
+    closeEditInstructions();
     load();
   };
 
@@ -854,17 +889,30 @@ export function UnifiedWorkSection({
 
                 {isExpanded && (
                   <View style={[styles.expandPanel, { gap: spacing.sm }]}>
-                    {/* Full instructions text */}
-                    {!!task.description && (
-                      <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22 }}>
-                        {task.description}
-                      </Text>
-                    )}
-                    {!task.description && (
-                      <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, fontStyle: 'italic' }}>
-                        No instructions added.
-                      </Text>
-                    )}
+                    {/* Full instructions text + edit icon */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
+                      <View style={{ flex: 1 }}>
+                        {!!task.description && (
+                          <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22 }}>
+                            {task.description}
+                          </Text>
+                        )}
+                        {!task.description && (
+                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, fontStyle: 'italic' }}>
+                            No instructions added.
+                          </Text>
+                        )}
+                      </View>
+                      {canEditInstructions && (
+                        <TouchableOpacity
+                          onPress={() => openEditInstructions(task)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={{ paddingTop: 2 }}
+                        >
+                          <Feather name="edit-2" size={14} color={colors.mutedForeground} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
 
                     {/* Status + estimated hours row */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
@@ -1047,6 +1095,39 @@ export function UnifiedWorkSection({
               </ScrollView>
             </TouchableOpacity>
           </TouchableOpacity>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Edit instructions sheet ── */}
+      <Modal visible={!!editInstructionsTask} transparent animationType="slide" onRequestClose={closeEditInstructions}>
+        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeEditInstructions} />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Edit instructions</Text>
+            <Text style={styles.sheetSubtitle} numberOfLines={1}>{editInstructionsTask?.title}</Text>
+            <TextInput
+              style={[styles.fieldInput, { height: 120, textAlignVertical: 'top' }]}
+              value={editInstructionsText}
+              onChangeText={setEditInstructionsText}
+              placeholder="Add instructions for this task..."
+              placeholderTextColor={colors.mutedForeground}
+              multiline
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[styles.submitBtn, savingInstructions && { opacity: 0.5 }]}
+              onPress={saveEditInstructions}
+              disabled={savingInstructions}
+            >
+              {savingInstructions
+                ? <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                : <Text style={styles.submitBtnText}>Save instructions</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeEditInstructions}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       </Modal>
 

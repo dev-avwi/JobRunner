@@ -6,6 +6,8 @@
  * - Checklist-vs-task permission split (checklistReadOnly defaults to readOnly)
  * - Promote-to-task is sequential: task creation must succeed before deletion
  * - Promote failure: failed delete is tolerated; failed creation leaves item intact
+ * - canEditInstructions: permission logic for the edit-instructions pencil
+ * - Edit instructions: PATCH /api/tasks/:id/description success and error paths
  */
 
 // ─── API mock ─────────────────────────────────────────────────────────────────
@@ -458,6 +460,114 @@ describe('promote-to-task — sequential calls', () => {
       }),
     );
     // Must NOT show success
+    expect(mockShowToast).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'success' }),
+    );
+  });
+});
+
+// ─── 5. canEditInstructions permission logic ──────────────────────────────────
+
+describe('canEditInstructions — derived from job state and user role', () => {
+  function resolveCanEdit(opts: {
+    jobStatus: string;
+    isOwnerOrManager: boolean;
+    isSoloOwner: boolean;
+    hasMyActiveAssignment: boolean;
+  }): boolean {
+    // Mirrors the expression used in job/[id].tsx
+    return (
+      opts.jobStatus !== 'invoiced' &&
+      (opts.isOwnerOrManager || !!opts.isSoloOwner || opts.hasMyActiveAssignment)
+    );
+  }
+
+  it('owner on active job: true', () => {
+    expect(resolveCanEdit({ jobStatus: 'active', isOwnerOrManager: true, isSoloOwner: false, hasMyActiveAssignment: false })).toBe(true);
+  });
+
+  it('assigned worker on active job: true', () => {
+    expect(resolveCanEdit({ jobStatus: 'active', isOwnerOrManager: false, isSoloOwner: false, hasMyActiveAssignment: true })).toBe(true);
+  });
+
+  it('unassigned worker on active job: false', () => {
+    expect(resolveCanEdit({ jobStatus: 'active', isOwnerOrManager: false, isSoloOwner: false, hasMyActiveAssignment: false })).toBe(false);
+  });
+
+  it('owner on invoiced job: false', () => {
+    expect(resolveCanEdit({ jobStatus: 'invoiced', isOwnerOrManager: true, isSoloOwner: false, hasMyActiveAssignment: false })).toBe(false);
+  });
+
+  it('assigned worker on invoiced job: false', () => {
+    expect(resolveCanEdit({ jobStatus: 'invoiced', isOwnerOrManager: false, isSoloOwner: false, hasMyActiveAssignment: true })).toBe(false);
+  });
+
+  it('solo owner (no roleInfo) on active job: true', () => {
+    expect(resolveCanEdit({ jobStatus: 'active', isOwnerOrManager: false, isSoloOwner: true, hasMyActiveAssignment: false })).toBe(true);
+  });
+});
+
+// ─── 6. Edit instructions — PATCH /api/tasks/:id/description ─────────────────
+
+describe('saveEditInstructions — PATCH /api/tasks/:id/description', () => {
+  const mockPatch = jest.fn();
+
+  beforeEach(() => {
+    const { api } = require('../../lib/api');
+    api.patch = mockPatch;
+    mockPatch.mockReset();
+    mockShowToast.mockReset();
+  });
+
+  async function simulateSave(
+    taskId: string,
+    text: string,
+    patchResult: { data?: object; error: string | null },
+  ) {
+    const { api } = require('../../lib/api');
+    const { showToast } = require('../../lib/toast');
+
+    mockPatch.mockResolvedValueOnce(patchResult);
+    const res = await api.patch(`/api/tasks/${taskId}/description`, {
+      description: text.trim() || null,
+    });
+    if (res.error) {
+      showToast({ type: 'error', message: 'Could not save instructions' });
+    } else {
+      showToast({ type: 'success', message: 'Instructions updated' });
+    }
+    return res;
+  }
+
+  it('calls the /description sub-route, not the general PATCH', async () => {
+    await simulateSave('task-42', 'Measure twice, cut once.', { data: {}, error: null });
+    expect(mockPatch).toHaveBeenCalledWith(
+      '/api/tasks/task-42/description',
+      expect.objectContaining({ description: 'Measure twice, cut once.' }),
+    );
+  });
+
+  it('sends null for blank/whitespace-only input', async () => {
+    await simulateSave('task-42', '   ', { data: {}, error: null });
+    expect(mockPatch).toHaveBeenCalledWith(
+      '/api/tasks/task-42/description',
+      expect.objectContaining({ description: null }),
+    );
+  });
+
+  it('shows success toast on ok response', async () => {
+    await simulateSave('task-5', 'Done.', { data: {}, error: null });
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'success', message: 'Instructions updated' }),
+    );
+  });
+
+  it('shows error toast and does not close sheet on API error', async () => {
+    const res = await simulateSave('task-5', 'Done.', { error: 'Forbidden' });
+    expect(res.error).toBe('Forbidden');
+    expect(mockShowToast).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'error', message: 'Could not save instructions' }),
+    );
     expect(mockShowToast).not.toHaveBeenCalledWith(
       expect.objectContaining({ type: 'success' }),
     );

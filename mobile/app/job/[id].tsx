@@ -12472,6 +12472,7 @@ export default function JobDetailScreen() {
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
               checklistReadOnly={job.status === 'invoiced'}
               canLogWork={job.status !== 'invoiced'}
+              canEditInstructions={job.status !== 'invoiced' && (isOwnerOrManager || !!isSoloOwner || hasMyActiveAssignment)}
               containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
               unassignedChecklistOnly={phases.length > 0}
@@ -12699,6 +12700,7 @@ export default function JobDetailScreen() {
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
               checklistReadOnly={job.status === 'invoiced'}
               canLogWork={job.status !== 'invoiced'}
+              canEditInstructions={job.status !== 'invoiced' && (isOwnerOrManager || !!isSoloOwner || hasMyActiveAssignment)}
               containerStyle={[styles.photosCard, { marginBottom: spacing.md }]}
               onCountsChange={(completed, total) => setChecklistCounts({ completed, total })}
               showStatusBadge
