@@ -27,6 +27,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { buildVariationLineItems } from '../../src/utils/claimVariations';
+import { buildPhaseTimerOptions } from '../../src/utils/timerPhaseSelection';
 import LiveActivity from '../../modules/LiveActivity/src';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -6826,21 +6827,22 @@ export default function JobDetailScreen() {
 
   // For project jobs with phases, pick a phase before starting the timer.
   const startTimerWithOptionalPhase = async (callback: (phaseId?: string) => void) => {
-    if (!job || !isProject || phases.length === 0) {
+    const options = buildPhaseTimerOptions({
+      hasJob: !!job,
+      isProject,
+      phases,
+    });
+    if (options.length === 0) {
       callback(undefined);
       return;
     }
-    const phaseActions = [
-      { label: 'No phase', onPress: () => callback(undefined) },
-      ...phases.map(p => ({
-        label: `${p.phaseCode} — ${p.name}`,
-        onPress: () => callback(p.id),
-      })),
-    ];
     showActionSheet({
       title: 'Assign to phase?',
       message: 'Optionally tag this time entry to a phase for exact cost tracking.',
-      actions: phaseActions,
+      actions: options.map(o => ({
+        label: o.label,
+        onPress: () => callback(o.phaseId),
+      })),
     });
   };
 
