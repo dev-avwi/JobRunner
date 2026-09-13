@@ -108,7 +108,121 @@ describe('startTimerWithOptionalPhase pattern — zero-phase project', () => {
   });
 });
 
-// ─── 3. Phase picker actions when phases exist ────────────────────────────────
+// ─── 3. Many-phase ordering, label format, and phaseId mapping ───────────────
+//
+// Regression guard: the picker must include every phase even when the project
+// has many phases (5, 20, etc.) and must preserve input order.
+
+/** Build N synthetic phases numbered 01…N. */
+function makePhases(count: number): PhaseOption[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `phase-${String(i + 1).padStart(3, '0')}`,
+    phaseCode: `P${String(i + 1).padStart(2, '0')}`,
+    name: `Phase ${i + 1}`,
+  }));
+}
+
+describe('buildPhaseTimerOptions — many phases (ordering, labels, phaseIds)', () => {
+  describe('1 phase', () => {
+    const phases = makePhases(1);
+    let actions: ReturnType<typeof buildPhaseTimerOptions>;
+
+    beforeAll(() => {
+      actions = buildPhaseTimerOptions({ hasJob: true, isProject: true, phases });
+    });
+
+    it('returns 2 actions (1 sentinel + 1 phase)', () => {
+      expect(actions).toHaveLength(2);
+    });
+
+    it('"No phase" is first with phaseId=undefined', () => {
+      expect(actions[0].label).toBe('No phase');
+      expect(actions[0].phaseId).toBeUndefined();
+    });
+
+    it('phase entry has correct label and phaseId', () => {
+      expect(actions[1].label).toBe('P01 — Phase 1');
+      expect(actions[1].phaseId).toBe('phase-001');
+    });
+  });
+
+  describe('5 phases', () => {
+    const phases = makePhases(5);
+    let actions: ReturnType<typeof buildPhaseTimerOptions>;
+
+    beforeAll(() => {
+      actions = buildPhaseTimerOptions({ hasJob: true, isProject: true, phases });
+    });
+
+    it('returns 6 actions (1 sentinel + 5 phases)', () => {
+      expect(actions).toHaveLength(6);
+    });
+
+    it('"No phase" sentinel is always first', () => {
+      expect(actions[0].label).toBe('No phase');
+      expect(actions[0].phaseId).toBeUndefined();
+    });
+
+    it('preserves input order across all 5 phases', () => {
+      const returnedIds = actions.slice(1).map((a) => a.phaseId);
+      expect(returnedIds).toEqual(phases.map((p) => p.id));
+    });
+
+    it('formats every phase label as "<phaseCode> — <name>"', () => {
+      const returnedLabels = actions.slice(1).map((a) => a.label);
+      const expectedLabels = phases.map((p) => `${p.phaseCode} — ${p.name}`);
+      expect(returnedLabels).toEqual(expectedLabels);
+    });
+
+    it('maps every phase to the correct phaseId', () => {
+      actions.slice(1).forEach((action, i) => {
+        expect(action.phaseId).toBe(phases[i].id);
+      });
+    });
+  });
+
+  describe('20 phases', () => {
+    const phases = makePhases(20);
+    let actions: ReturnType<typeof buildPhaseTimerOptions>;
+
+    beforeAll(() => {
+      actions = buildPhaseTimerOptions({ hasJob: true, isProject: true, phases });
+    });
+
+    it('returns 21 actions (1 sentinel + 20 phases)', () => {
+      expect(actions).toHaveLength(21);
+    });
+
+    it('"No phase" sentinel is always first', () => {
+      expect(actions[0].label).toBe('No phase');
+      expect(actions[0].phaseId).toBeUndefined();
+    });
+
+    it('preserves input order across all 20 phases', () => {
+      const returnedIds = actions.slice(1).map((a) => a.phaseId);
+      expect(returnedIds).toEqual(phases.map((p) => p.id));
+    });
+
+    it('formats every phase label as "<phaseCode> — <name>"', () => {
+      const returnedLabels = actions.slice(1).map((a) => a.label);
+      const expectedLabels = phases.map((p) => `${p.phaseCode} — ${p.name}`);
+      expect(returnedLabels).toEqual(expectedLabels);
+    });
+
+    it('maps every phase to the correct phaseId', () => {
+      actions.slice(1).forEach((action, i) => {
+        expect(action.phaseId).toBe(phases[i].id);
+      });
+    });
+
+    it('no two phase entries share the same phaseId', () => {
+      const ids = actions.slice(1).map((a) => a.phaseId);
+      expect(new Set(ids).size).toBe(20);
+    });
+  });
+});
+
+// ─── 4. Phase picker actions when phases exist ────────────────────────────────
 
 describe('buildPhaseTimerOptions — phase list returned when phases exist', () => {
   it('includes a "No phase" entry as the first action', () => {
