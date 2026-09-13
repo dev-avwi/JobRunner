@@ -16886,6 +16886,7 @@ export default function JobDetailScreen() {
         showCloseButton
         scrollable={false}
         contentPadding={0}
+        snapPoints={['88%']}
       >
         <View style={{ flex: 1 }}>
         <BottomSheetScrollView
