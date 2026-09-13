@@ -8321,6 +8321,66 @@ export default function JobDetailScreen() {
       )}
 
 
+      {/* Loss warning banner — owners/managers only, when job is at a loss */}
+      {(isOwnerOrManager || isSoloOwner) && profitabilityData?.profit?.isNegative && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.destructiveLight,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: colors.destructive,
+            gap: spacing.sm,
+          }}
+        >
+          <Feather name="trending-down" size={18} color={colors.destructive} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.destructive }}>
+              This job is currently running at a loss
+            </Text>
+            <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginTop: spacing.xxs }}>
+              Margin: {profitabilityData.profit.margin.toFixed(1)}% - tap to view full cost breakdown
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.destructive} />
+        </TouchableOpacity>
+      )}
+
+      {/* Labour overrun banner — amber, while in_progress and hours exceed estimate by >20% */}
+      {(isOwnerOrManager || isSoloOwner) && profitabilityData?.labourOverrun && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: `${colors.warning}18`,
+            borderRadius: radius.md,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: colors.warning,
+            gap: spacing.sm,
+          }}
+        >
+          <Feather name="alert-triangle" size={18} color={colors.warning} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ ...typography.caption, fontWeight: fontWeights.semibold, color: colors.warning }}>
+              Labour hours are tracking over estimate
+            </Text>
+            <Text style={{ ...typography.captionSmall, color: colors.mutedForeground, marginTop: spacing.xxs }}>
+              {profitabilityData.hours.total.toFixed(1)} hrs logged{profitabilityData.hours.estimated ? ` / ${profitabilityData.hours.estimated.toFixed(1)} hrs estimated` : ''} - tap to view breakdown
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={16} color={colors.warning} />
+        </TouchableOpacity>
+      )}
+
       {/* ── About this job ── */}
       {!!job.description && (
         <View style={{
@@ -8721,6 +8781,53 @@ export default function JobDetailScreen() {
       )}
 
 
+      {/* Job Card Section - primary view, leads the Job Card tab.
+          The card container only shows when a job card form actually exists,
+          otherwise JobForms renders nothing and we'd be left with an empty card. */}
+      <View style={hasJobCardForms ? styles.photosCard : undefined}>
+        <JobForms
+          jobId={job.id}
+          jobCardMode
+          readOnly={job.status === 'invoiced'}
+          onExport={handleExportJobCard}
+          isExporting={isExportingJobCard}
+          onFormsChange={(forms) => setHasJobCardForms(forms.some((f: any) => f.isJobCard))}
+        />
+      </View>
+
+      {/* Wrap-Up Banner - appears when next job is approaching */}
+      {showWrapUpBanner && wrapUpNextJob && (
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            backgroundColor: colors.warning + '15',
+            borderWidth: 1,
+            borderColor: colors.warning + '40',
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            marginBottom: spacing.md,
+          }}
+          onPress={() => router.push(`/job/${wrapUpNextJob.id}`)}
+          activeOpacity={0.8}
+        >
+          <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.warning + '25', alignItems: 'center', justifyContent: 'center' }}>
+            <Feather name="clock" size={18} color={colors.warning} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.warning }}>Time to wrap up</Text>
+            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.foreground, marginTop: spacing.xxs }} numberOfLines={1}>
+              {wrapUpNextJob.title} at {new Date(wrapUpNextJob.scheduledAt).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+            </Text>
+            <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: 1 }}>
+              ~{wrapUpDriveMinutes} min drive to next site
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.warning} />
+        </TouchableOpacity>
+      )}
+
       {/* Safety & Compliance Section - Prominent before work starts */}
       {(job.status === 'scheduled' || job.status === 'in_progress') && (availableForms.some(isSafetyForm) || swmsDocuments.length > 0 || hasNoSafetyDocs) && (
         <View style={[
@@ -8764,6 +8871,192 @@ export default function JobDetailScreen() {
         </View>
       )}
 
+
+      {/* Team on Job - shows all workers currently tracked on this job */}
+      {teamTimers.length > 0 && (
+        <View style={[styles.card, { flexDirection: 'column', alignItems: 'stretch', paddingVertical: spacing.md }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <View style={[styles.cardIconContainer, { backgroundColor: colorWithOpacity(colors.info, 0.12) }]}>
+              <Feather name="users" size={iconSizes.xl} color={colors.info} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Team on Job</Text>
+              <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
+                {teamTimers.length} worker{teamTimers.length !== 1 ? 's' : ''} clocked in
+              </Text>
+            </View>
+          </View>
+          {teamTimers.map((timer, idx) => {
+            const hrs = Math.floor(timer.elapsedMinutes / 60);
+            const mins = timer.elapsedMinutes % 60;
+            const timeStr = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+            return (
+              <View
+                key={timer.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: spacing.sm,
+                  borderTopWidth: idx === 0 ? 1 : 0,
+                  borderBottomWidth: idx < teamTimers.length - 1 ? 1 : 0,
+                  borderColor: colors.border,
+                  gap: spacing.sm,
+                }}
+              >
+                <TeamAvatar
+                  name={timer.workerName}
+                  userId={timer.userId ? String(timer.userId) : undefined}
+                  themeColor={(timer as any).themeColor}
+                  size={36}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.md, fontWeight: fontWeights.semibold, color: colors.foreground }}>
+                    {timer.workerName}{timer.isCurrentUser ? ' (You)' : ''}
+                  </Text>
+                  {(isOwnerOrManager || isSoloOwner) ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setEditRateTimer({ id: timer.id, workerName: timer.workerName, hourlyRate: timer.hourlyRate });
+                        setRateInput(String(timer.hourlyRate ?? ''));
+                      }}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+                    >
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold }}>
+                        ${timer.hourlyRate}/hr
+                      </Text>
+                      <Feather name="edit-2" size={12} color={colors.primary} />
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
+                      ${timer.hourlyRate}/hr
+                    </Text>
+                  )}
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{
+                    fontSize: typography.sizes.md,
+                    fontWeight: fontWeights.bold,
+                    color: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
+                    fontVariant: ['tabular-nums'],
+                  }}>
+                    {timeStr}
+                  </Text>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.xs,
+                    backgroundColor: timer.isPaused || timer.isBreak
+                      ? colorWithOpacity(colors.warning, 0.12)
+                      : colorWithOpacity(colors.success, 0.12),
+                    paddingHorizontal: 6,
+                    paddingVertical: spacing.xxs,
+                    borderRadius: 4,
+                    marginTop: spacing.xxs,
+                  }}>
+                    <View style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: 3,
+                      backgroundColor: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
+                    }} />
+                    <Text style={{
+                      fontSize: typography.sizes.xs,
+                      fontWeight: fontWeights.semibold,
+                      color: timer.isPaused || timer.isBreak ? colors.warning : colors.success,
+                    }}>
+                      {timer.isPaused ? 'Paused' : timer.isBreak ? 'On Break' : 'Working'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Site Update Quick Action - visible during in_progress - positioned prominently */}
+      {job.status === 'in_progress' && (
+        <PressableRow
+          style={[styles.card, { borderColor: colors.primary + '40' }]}
+          onPress={() => {
+            setSiteUpdateNote('');
+            setSiteUpdatePhotoUri(null);
+            setShowSiteUpdateModal(true);
+          }}
+        >
+          <View style={[styles.cardIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.15) }]}>
+            <Feather name="send" size={iconSizes.xl} color={colors.primary} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardLabel}>Quick Action</Text>
+            <Text style={[styles.cardValue, { color: colors.primary, fontWeight: fontWeights.semibold }]}>Post Site Update</Text>
+          </View>
+          <Feather name="chevron-right" size={iconSizes.lg} color={colors.primary} style={styles.cardActionIcon} />
+        </PressableRow>
+      )}
+
+      {/* Smart Next Action Card - guides tradie through workflow (hidden for subcontractors) */}
+      {!isSubcontractorUser && (
+      <NextActionCard
+        jobStatus={job.status}
+        hasInvoice={!!invoice}
+        hasQuote={!!quote}
+        quoteStatus={(quote as any)?.status}
+        invoiceStatus={(invoice as any)?.status}
+        scheduledAt={job.scheduledAt}
+        urgencyLabel={undefined}
+        isOverdue={getJobUrgency(job.scheduledAt, job.status, colors.isDark)?.level === 'overdue'}
+        clientPhone={client?.phone}
+        clientName={client?.name?.split(' ')[0]}
+        jobId={job.id}
+        jobAddress={job.address}
+        businessName={businessSettings?.businessName}
+        tradieName={user?.firstName || user?.name?.split(' ')[0]}
+        workerStatus={job.workerStatus}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any) : undefined}
+        onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
+        onSendQuote={async () => {
+          if (quote?.id && client?.email) {
+            try {
+              await api.post(`/api/quotes/${quote.id}/send`, { method: 'email' });
+              showToast({ type: 'success', message: 'Email Sent', description: `Quote sent to ${client.email}` });
+            } catch {
+              showToast({ type: 'error', message: 'Could not send quote. Please try again.' });
+            }
+          } else {
+            showToast({ type: 'info', message: 'Cannot Send', description: client?.email ? 'No quote found' : 'Client has no email address on file.' });
+          }
+        }}
+        onSchedule={handleStatusChange}
+        onStartJob={handleStatusChange}
+        onCompleteJob={handleStatusChange}
+        canCompleteJob={!!isJobManager}
+        onSendInvoice={async () => {
+          if (invoice?.id && client?.email) {
+            try {
+              await api.post(`/api/invoices/${invoice.id}/send`, { method: 'email' });
+              showToast({ type: 'success', message: 'Email Sent', description: `Invoice sent to ${client.email}` });
+            } catch {
+              showToast({ type: 'error', message: 'Could not send invoice. Please try again.' });
+            }
+          } else {
+            showToast({ type: 'info', message: 'Cannot Send', description: client?.email ? 'No invoice found' : 'Client has no email address on file.' });
+          }
+        }}
+        onSendReminder={async () => {
+          if (invoice?.id && client?.email) {
+            try {
+              await api.post(`/api/invoices/${invoice.id}/send`, { method: 'email' });
+              showToast({ type: 'success', message: 'Reminder Sent', description: `Payment reminder sent to ${client.email}` });
+            } catch {
+              showToast({ type: 'error', message: 'Could not send reminder. Please try again.' });
+            }
+          } else {
+            showToast({ type: 'info', message: 'Cannot Send', description: 'Client has no email address on file.' });
+          }
+        }}
+      />
+      )}
 
       {/* Address Card */}
       {job.address && (
@@ -9039,6 +9332,86 @@ export default function JobDetailScreen() {
       )}
 
 
+      {/* Team Availability — read-only, shows leave status per team member for the job's scheduled date */}
+      {(isOwnerOrManager || isSoloOwner) && jobAssignments.length > 0 && job.scheduledAt && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+            <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
+              <Feather name="calendar" size={iconSizes.lg} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.cardLabel}>Team Availability</Text>
+              <Text style={{ ...typography.caption, color: colors.mutedForeground }}>
+                {new Date(job.scheduledAt).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+              </Text>
+            </View>
+          </View>
+          {isLoadingAvailability ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs }}>
+              <ActivityIndicator size="small" color={colors.mutedForeground} />
+              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>Checking availability...</Text>
+            </View>
+          ) : (
+            <>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                {jobAssignments.map((assignment: any) => {
+                  const member = teamMembers.find((m: any) =>
+                    m.userId === assignment.userId || m.memberId === assignment.userId || m.id === assignment.userId
+                  );
+                  const displayName = assignment.workerDisplayNameSnapshot || member?.name || 'Worker';
+                  const memberId = assignment.userId;
+                  const avail = teamAvailability.get(memberId);
+                  const hasLeave = avail?.onLeave === true;
+                  const isApprovedLeave = hasLeave;
+                  const dotColor = !avail ? '#9CA3AF' : !hasLeave ? '#10B981' : '#EF4444';
+                  const leaveStart = avail?.leaveStartDate
+                    ? new Date(avail.leaveStartDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                    : null;
+                  const leaveEnd = avail?.leaveEndDate
+                    ? new Date(avail.leaveEndDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                    : null;
+                  const tooltipText = hasLeave
+                    ? `${avail?.leaveType ?? 'Leave'}${leaveStart ? `: ${leaveStart}${leaveEnd && leaveEnd !== leaveStart ? ` - ${leaveEnd}` : ''}` : ''}`
+                    : 'Available';
+                  return (
+                    <TouchableOpacity
+                      key={assignment.id}
+                      onPress={() => hasLeave ? showToast({ type: 'info', message: tooltipText }) : undefined}
+                      activeOpacity={hasLeave ? 0.7 : 1}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, backgroundColor: colors.muted, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 5 }}
+                    >
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: dotColor }} />
+                      <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground, fontWeight: fontWeights.medium }}>{displayName.split(' ')[0]}</Text>
+                      {hasLeave && <Feather name={isApprovedLeave ? 'alert-circle' : 'alert-triangle'} size={11} color={dotColor} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
+                {[
+                  { color: '#10B981', label: 'Available' },
+                  { color: '#F59E0B', label: 'Leave (check)' },
+                  { color: '#EF4444', label: 'Approved leave' },
+                ].map(({ color, label }) => (
+                  <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 3.5, backgroundColor: color }} />
+                    <Text style={{ fontSize: 10, color: colors.mutedForeground }}>{label}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      )}
+
       {/* Compact Activity Log — last 4 entries */}
       {activityLog.length > 0 && (
         <View style={{
@@ -9299,6 +9672,136 @@ export default function JobDetailScreen() {
             </Text>
           </View>
         </TouchableOpacity>
+      )}
+
+      {/* ═══ More Details ═══ */}
+      {(!isSubcontractorUser || linkedJobs.length > 0) && (
+      <CollapsibleSection
+        summaryItems={[
+          (quote || invoice) ? `${[quote && 'Quote', invoice && 'Invoice'].filter(Boolean).join(' + ')}` : '',
+          linkedReceipt ? `Paid ${formatCurrency(linkedReceipt.amount)}` : '',
+          linkedJobs.length > 0 ? `${linkedJobs.length} prev job${linkedJobs.length !== 1 ? 's' : ''}` : '',
+        ]}
+      >
+
+      {/* Previous Jobs Card */}
+      {linkedJobs.length > 0 && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: radius.md,
+              backgroundColor: `${colors.primary}15`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.sm,
+            }}>
+              <Feather name="briefcase" size={iconSizes.md} color={colors.primary} />
+            </View>
+            <Text style={{
+              fontSize: typography.button.fontSize,
+              fontWeight: fontWeights.semibold,
+              color: colors.foreground,
+              flex: 1,
+            }}>Previous Jobs</Text>
+            <Text style={{
+              fontSize: typography.captionSmall.fontSize,
+              color: colors.mutedForeground,
+            }}>{linkedJobs.length} job{linkedJobs.length !== 1 ? 's' : ''}</Text>
+          </View>
+          {linkedJobs.map((lj) => {
+            const ljDate = lj.scheduledAt || lj.completedAt;
+            const statusColors: Record<string, string> = {
+              pending: colors.pending || colors.warning,
+              scheduled: colors.scheduled || colors.primary,
+              in_progress: colors.inProgress || colors.primary,
+              done: colors.success,
+              invoiced: colors.invoiced || colors.primary,
+            };
+            const ljStatusColor = statusColors[lj.status] || colors.mutedForeground;
+            return (
+              <TouchableOpacity
+                key={lj.id}
+                activeOpacity={0.7}
+                onPress={() => router.push(`/job/${lj.id}`)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: spacing.sm,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.muted,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: typography.button.fontSize,
+                    fontWeight: fontWeights.medium,
+                    color: colors.foreground,
+                  }} numberOfLines={1}>{lj.title}</Text>
+                  {ljDate && (
+                    <Text style={{
+                      fontSize: typography.captionSmall.fontSize,
+                      color: colors.mutedForeground,
+                      marginTop: spacing.xxs,
+                    }}>{new Date(ljDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
+                  )}
+                </View>
+                <View style={{
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: spacing.xxs,
+                  borderRadius: radius.sm,
+                  backgroundColor: `${ljStatusColor}20`,
+                  marginRight: spacing.sm,
+                }}>
+                  <Text style={{
+                    fontSize: typography.sizes.xs,
+                    fontWeight: fontWeights.semibold,
+                    color: ljStatusColor,
+                    textTransform: 'capitalize',
+                  }}>{lj.status.replace('_', ' ')}</Text>
+                </View>
+                <Feather name="chevron-right" size={iconSizes.sm} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
+      {/* Linked Documents Card - hidden for subcontractors */}
+      {!isSubcontractorUser && (
+      <LinkedDocumentsCard
+        linkedQuote={quote ? {
+          id: quote.id,
+          status: quote.status,
+          total: quote.total,
+          quoteNumber: quote.number,
+        } : null}
+        linkedInvoice={invoice ? {
+          id: invoice.id,
+          status: invoice.status,
+          total: invoice.total,
+          invoiceNumber: invoice.number,
+        } : null}
+        linkedReceipt={linkedReceipt}
+        jobStatus={job.status}
+        onViewQuote={handleViewQuote}
+        onViewInvoice={handleViewInvoice}
+        onViewReceipt={(receiptId) => router.push(`/more/receipt/${receiptId}`)}
+        onCreateQuote={() => router.push(`/more/quote/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}`)}
+        onCreateInvoice={canCreateInvoices ? () => router.push(`/more/invoice/new?jobId=${job.id}${client ? `&clientId=${client.id}` : ''}` as any) : undefined}
+      />
+      )}
+
+      </CollapsibleSection>
       )}
 
       {/* Client Tools Section Header */}

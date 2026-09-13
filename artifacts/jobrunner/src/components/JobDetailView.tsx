@@ -2198,6 +2198,8 @@ export default function JobDetailView({
 
   const isProject = job.jobType === 'project';
   const isServiceCall = !isProject;
+  const allPhasesComplete = isProject && jobPhasesForPicker.length > 0 &&
+    jobPhasesForPicker.every(p => p.status === 'complete' || p.status === 'invoiced');
 
   const SERVICE_STEPS = [
     { status: 'scheduled' as const, label: 'Scheduled' },
@@ -3202,6 +3204,25 @@ export default function JobDetailView({
 
             {/* ── FINANCIALS TAB ── */}
             <TabsContent value="financials" className="mt-0 space-y-6">
+              {/* All-phases-complete invoice prompt — projects only, owners/managers only */}
+              {allPhasesComplete && !linkedInvoice && job.status !== 'invoiced' && !isTradie && (
+                <Card className="border-2" style={{ borderColor: 'hsl(142.1 76.2% 36.3% / 0.5)' }} data-testid="card-phases-complete-invoice-prompt">
+                  <CardContent className="py-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }}>
+                        <Receipt className="h-5 w-5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-sm">All Phases Complete: Ready to Invoice</p>
+                        <p className="text-xs text-muted-foreground">All project phases are done. Create an invoice to get paid.</p>
+                      </div>
+                    </div>
+                    <Button className="w-full" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3%)', color: 'white' }} onClick={() => onCreateInvoice?.(jobId)} data-testid="button-phases-complete-create-invoice">
+                      <Receipt className="h-4 w-4 mr-2" />Create Invoice
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
               {/* Time Tracking widget */}
               {job.status === 'in_progress' && (
                 <Card className="border-2" style={{ borderColor: 'hsl(var(--trade) / 0.3)' }} data-testid="card-time-tracking">
