@@ -17287,7 +17287,7 @@ export default function JobDetailScreen() {
             }}
             activeOpacity={0.85}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}35`, paddingHorizontal: spacing.md, paddingVertical: 7, shadowColor: colors.primary, shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1.5, borderColor: `${colors.primary}50`, paddingHorizontal: spacing.md, paddingVertical: 7, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6 }}>
               <Feather name="chevron-down" size={12} color={colors.primary} />
               <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.primary, letterSpacing: 0.1 }}>Scroll for more</Text>
             </View>
