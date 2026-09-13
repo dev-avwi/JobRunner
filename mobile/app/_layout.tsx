@@ -749,7 +749,7 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   // flips isAuthenticated to false. AuthenticatedLayout hides the chrome, but
   // the current route stays in the Stack so the user sees a chromeless page.
   // Redirect to login immediately so the UX stays coherent.
-  const prevAuthenticatedRef = React.useRef(isAuthenticated);
+  const prevAuthenticatedRef = useRef(isAuthenticated);
   useEffect(() => {
     const wasAuthenticated = prevAuthenticatedRef.current;
     prevAuthenticatedRef.current = isAuthenticated;
