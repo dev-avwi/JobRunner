@@ -255,8 +255,10 @@ class ApiClient {
           if (__DEV__) console.log(`[API] 401 on ${method} ${endpoint} — session expired`);
           // Fire the registered auth-expiry handler (wired up in store.ts to avoid circular imports).
           // Guarded so auth-related endpoints (login/verify) don't trigger a recursive logout.
+          // Only force-logout on GET 401s: write-request 401s surface an inline error so the user
+          // isn't kicked out mid-action (e.g. adding a checklist item when the token has just expired).
           const isAuthEndpoint = endpoint.startsWith('/api/auth/');
-          if (!isAuthEndpoint && _authExpiredCallback) {
+          if (!isAuthEndpoint && _authExpiredCallback && method === 'GET') {
             _authExpiredCallback();
           }
           const text = await response.text().catch(() => '');

@@ -2635,6 +2635,7 @@ export default function JobDetailScreen() {
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
   const [showJobCostingSheet, setShowJobCostingSheet] = useState(false);
+  const [costingSheetAtBottom, setCostingSheetAtBottom] = useState(false);
   const [isGeneratingCostReport, setIsGeneratingCostReport] = useState(false);
   const [isReleasingRetention, setIsReleasingRetention] = useState(false);
 
@@ -12136,18 +12137,20 @@ export default function JobDetailScreen() {
                           {phase.name}
                         </Text>
                       </View>
-                      {/* Date + hours */}
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: 4 }}>
-                        {(phase.scheduledStart || phase.scheduledEnd) && (
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
-                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
-                            {phase.scheduledEnd   ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
-                          </Text>
-                        )}
-                        {phase.bookedHours ? (
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
-                        ) : null}
-                      </View>
+                      {/* Date + hours — single line to prevent wrapping */}
+                      {(phase.scheduledStart || phase.scheduledEnd || phase.bookedHours) ? (
+                        <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: 4 }} numberOfLines={1}>
+                          {[
+                            (phase.scheduledStart || phase.scheduledEnd)
+                              ? [
+                                  phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '',
+                                  phase.scheduledEnd ? `– ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : '',
+                                ].filter(Boolean).join(' ')
+                              : null,
+                            phase.bookedHours ? `${phase.bookedHours} hrs` : null,
+                          ].filter(Boolean).join('  ·  ')}
+                        </Text>
+                      ) : null}
                       {/* Assigned members */}
                       {(phase.assignedUsers?.length || phase.assignedUserName) ? (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -16877,11 +16880,18 @@ export default function JobDetailScreen() {
       {/* Job Costing Bottom Sheet — full P&L breakdown */}
       <AppBottomSheet
         visible={showJobCostingSheet}
-        onDismiss={() => setShowJobCostingSheet(false)}
+        onDismiss={() => { setShowJobCostingSheet(false); setCostingSheetAtBottom(false); }}
         title="Job Costing"
         showCloseButton
       >
-        <BottomSheetScrollView>
+        <View style={{ flex: 1 }}>
+        <BottomSheetScrollView
+          onScroll={(e) => {
+            const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
+            setCostingSheetAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
+          }}
+          scrollEventThrottle={16}
+        >
           {(() => {
             const pd = profitabilityData;
             if (!pd) {
@@ -17256,6 +17266,15 @@ export default function JobDetailScreen() {
             );
           })()}
         </BottomSheetScrollView>
+        {!costingSheetAtBottom && (
+          <View style={{ position: 'absolute', bottom: spacing.lg, left: 0, right: 0, alignItems: 'center' }} pointerEvents="box-none">
+            <View style={{ backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
+              <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Scroll for more</Text>
+            </View>
+          </View>
+        )}
+        </View>
       </AppBottomSheet>
 
       {/* In-app document viewer for PDF and Office files */}
