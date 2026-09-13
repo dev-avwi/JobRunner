@@ -42,7 +42,6 @@ import { GlassButton } from '../../src/components/ui/GlassButton';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Camera from 'expo-camera';
-import { LinearGradient } from 'expo-linear-gradient';
 import { getDocumentPicker } from '../../src/lib/document-picker';
 import { getNestedHeaderOptions } from '../../src/lib/nested-header';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -17272,13 +17271,12 @@ export default function JobDetailScreen() {
           })()}
         </BottomSheetScrollView>
         {!costingSheetAtBottom && (
-          <LinearGradient
-            colors={['transparent', colors.card]}
-            style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: spacing.lg }}
-            pointerEvents="none"
-          >
-            <Feather name="chevrons-down" size={18} color={colors.mutedForeground} />
-          </LinearGradient>
+          <View style={{ position: 'absolute', bottom: spacing.xl, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 7, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 }}>
+              <Feather name="chevron-down" size={12} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium, color: colors.mutedForeground, letterSpacing: 0.1 }}>Scroll for more</Text>
+            </View>
+          </View>
         )}
         </View>
       </AppBottomSheet>
