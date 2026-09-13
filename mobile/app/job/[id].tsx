@@ -477,14 +477,14 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   errorPrimaryBtn: {
     backgroundColor: colors.primary,
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    minHeight: 40,
+    minHeight: 50,
   },
   errorPrimaryBtnText: {
     color: colors.primaryForeground,
@@ -492,18 +492,20 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     fontSize: typography.button.fontSize,
   },
   errorSecondaryBtn: {
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: spacing.xl,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.buttonOutline,
+    borderColor: `${colors.primary}25`,
+    backgroundColor: `${colors.primary}12`,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 40,
+    gap: spacing.sm,
+    minHeight: 50,
   },
   errorSecondaryBtnText: {
-    color: colors.foreground,
+    color: colors.primary,
     fontWeight: fontWeights.semibold,
     fontSize: typography.button.fontSize,
   },
@@ -8120,36 +8122,21 @@ export default function JobDetailScreen() {
 
   if (!job) {
     const sessionExpired = isAuthErrorMessage(loadError);
+    const errIconName: any = sessionExpired ? 'log-in' : (loadError ? 'alert-circle' : 'help-circle');
+    const errIconColor = sessionExpired ? colors.primary : (loadError ? colors.destructive : colors.mutedForeground);
+    const errTitle = sessionExpired ? 'Session expired' : (loadError ? 'Failed to load job' : 'Job not found');
+    const errDescription = sessionExpired
+      ? 'Your session has timed out. Please sign in again to continue.'
+      : (loadError || "The job may have been deleted or you don't have access.");
     return (
       <View style={styles.errorContainer}>
-        <Stack.Screen
-          options={{
-            ...getNestedHeaderOptions(),
-            title: '',
-            headerBackVisible: false,
-            headerShadowVisible: false,
-            headerStyle: { backgroundColor: colors.background },
-            headerRight: () => null,
-            headerLeft: () => (
-              <Pressable
-                onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/work')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ flexDirection: 'row', alignItems: 'center' }}
-              >
-                <Feather name="chevron-left" size={17} color={colors.primary} />
-                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
-              </Pressable>
-            ),
-          }}
-        />
-        <Feather name={sessionExpired ? 'log-in' : 'alert-circle'} size={48} color={loadError ? colors.destructive : colors.mutedForeground} />
-        <Text style={styles.errorText}>{sessionExpired ? 'Session expired' : (loadError ? 'Failed to load job' : 'Job not found')}</Text>
-        <Text style={[styles.errorText, { fontSize: typography.button.fontSize, marginTop: spacing.xs }]}>
-          {sessionExpired
-            ? 'Your session has timed out. Please sign in again to continue.'
-            : (loadError || 'The job may have been deleted or you don\'t have access.')}
-        </Text>
-        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: `${errIconColor}15`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg }}>
+          <Feather name={errIconName} size={34} color={errIconColor} />
+        </View>
+        <Text style={{ fontSize: 20, fontWeight: fontWeights.bold, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm }}>{errTitle}</Text>
+        <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22, marginBottom: spacing.xl }}>{errDescription}</Text>
+        <View style={{ width: '100%', gap: spacing.sm }}>
           {sessionExpired ? (
             <TouchableOpacity activeOpacity={0.8} onPress={() => { logout(); }} style={styles.errorPrimaryBtn}>
               <Feather name="log-in" size={16} color={colors.primaryForeground} />
@@ -8158,11 +8145,12 @@ export default function JobDetailScreen() {
           ) : (
             <TouchableOpacity activeOpacity={0.8} onPress={loadJob} style={styles.errorPrimaryBtn}>
               <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
-              <Text style={styles.errorPrimaryBtnText}>Retry</Text>
+              <Text style={styles.errorPrimaryBtnText}>Try again</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/work')} style={styles.errorSecondaryBtn}>
-            <Text style={styles.errorSecondaryBtnText}>Go back</Text>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.replace('/(tabs)/jobs')} style={styles.errorSecondaryBtn}>
+            <Feather name="arrow-left" size={16} color={colors.primary} />
+            <Text style={styles.errorSecondaryBtnText}>Back to Jobs</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -8183,18 +8171,22 @@ export default function JobDetailScreen() {
     const targetBusinessName = (job as any).businessName || "the job's business";
     return (
       <View style={styles.errorContainer}>
-        <Feather name="briefcase" size={48} color={colors.primary} />
-        <Text style={styles.errorText}>Switch workspace to open this job</Text>
-        <Text style={[styles.errorText, { fontSize: typography.button.fontSize, marginTop: spacing.xs }]}>
-          This job belongs to {targetBusinessName}. You're currently in a different workspace, so you can't start a timer or make changes here. Switch to that workspace to work on it.
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg }}>
+          <Feather name="briefcase" size={34} color={colors.primary} />
+        </View>
+        <Text style={{ fontSize: 20, fontWeight: fontWeights.bold, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm }}>Switch workspace</Text>
+        <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22, marginBottom: spacing.xl }}>
+          This job belongs to {targetBusinessName}. Switch to that workspace to start a timer or make changes.
         </Text>
-        <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.lg }}>
+        <View style={{ width: '100%', gap: spacing.sm }}>
           <TouchableOpacity activeOpacity={0.8} onPress={() => setShowWorkspaceSwitcher(true)} style={styles.errorPrimaryBtn}>
             <Feather name="repeat" size={16} color={colors.primaryForeground} />
             <Text style={styles.errorPrimaryBtnText}>Switch workspace</Text>
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
-            <Text style={styles.errorSecondaryBtnText}>Go back</Text>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.replace('/(tabs)/jobs')} style={styles.errorSecondaryBtn}>
+            <Feather name="arrow-left" size={16} color={colors.primary} />
+            <Text style={styles.errorSecondaryBtnText}>Back to Jobs</Text>
           </TouchableOpacity>
         </View>
         <WorkspaceSwitcher
@@ -11947,39 +11939,34 @@ export default function JobDetailScreen() {
              PROJECT VIEW — phases are the primary organiser
           ═══════════════════════════════════════════════ */
           <>
-            {/* Quick Field Actions — at the top so workers can log without scrolling */}
+            {/* Quick Field Actions — 3-column action grid */}
             {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.warning}40`, backgroundColor: `${colors.warning}10`, minWidth: 120 }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.warning}25`, backgroundColor: `${colors.warning}12` }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="alert-circle" size={14} color={colors.warning} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.warning }}>Flag Extra Work</Text>
+                  <Feather name="alert-circle" size={18} color={colors.warning} />
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.warning, textAlign: 'center' }}>Extra Work</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.primary}25`, backgroundColor: `${colors.primary}12` }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                  <Feather name="package" size={18} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.primary, textAlign: 'center' }}>Material</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.success}25`, backgroundColor: `${colors.success}12` }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                  <Feather name="camera" size={18} color={colors.success} />
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.success, textAlign: 'center' }}>Expense</Text>
                 </TouchableOpacity>
-              </ScrollView>
+              </View>
             )}
 
             {/* Phase cards — completed phases collapse to a compact row */}
@@ -12119,6 +12106,20 @@ export default function JobDetailScreen() {
                   {phase.description ? (
                     <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, marginLeft: 8 + spacing.xs }} numberOfLines={4}>{phase.description}</Text>
                   ) : null}
+
+                  {/* Task progress bar */}
+                  {(() => {
+                    const countData = phaseTaskCounts[phase.id];
+                    if (!countData || countData.total === 0) return null;
+                    const pct = countData.total > 0 ? countData.completed / countData.total : 0;
+                    return (
+                      <View style={{ marginBottom: spacing.sm, marginLeft: 8 + spacing.xs, marginRight: 0 }}>
+                        <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.muted, overflow: 'hidden' }}>
+                          <View style={{ height: '100%', width: `${Math.round(pct * 100)}%`, borderRadius: 2, backgroundColor: isComplete ? colors.success : colors.primary }} />
+                        </View>
+                      </View>
+                    );
+                  })()}
 
                   {/* Timer and status controls — hidden for expanded completed phases */}
                   {!isComplete && (
@@ -12410,31 +12411,26 @@ export default function JobDetailScreen() {
              SERVICE CALL VIEW — flat, quick, on-site focus
           ═══════════════════════════════════════════════ */
           <>
-            {/* Quick Field Actions — compact chip row at top for instant access */}
+            {/* Quick Field Actions — action grid */}
             {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
+              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.primary}25`, backgroundColor: `${colors.primary}12` }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                  <Feather name="package" size={18} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.primary, textAlign: 'center' }}>Material</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.success}25`, backgroundColor: `${colors.success}12` }}
                   activeOpacity={0.7}
                 >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                  <Feather name="camera" size={18} color={colors.success} />
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.success, textAlign: 'center' }}>Expense</Text>
                 </TouchableOpacity>
-              </ScrollView>
+              </View>
             )}
 
             {/* ── Time tracking + estimated hours card ── */}
