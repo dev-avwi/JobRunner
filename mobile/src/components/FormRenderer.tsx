@@ -24,6 +24,8 @@ import { useTheme, ThemeColors } from '../lib/theme';
 import { AppBottomSheet } from './ui/AppBottomSheet';
 import { spacing, radius, shadows, iconSizes, typography } from '../lib/design-tokens';
 import { SignaturePad } from './SignaturePad';
+import { matchesFormFilter } from './formRouting';
+export { SAFETY_FORM_TYPES, isSafetyTypeForm, matchesFormFilter } from './formRouting';
 
 interface FormField {
   id: string;
@@ -86,11 +88,6 @@ interface JobFormsProps {
    *  needed, no layout shift on re-entry. */
   wrapperStyle?: StyleProp<ViewStyle>;
 }
-
-const SAFETY_FORM_TYPES = ['safety', 'inspection', 'compliance'];
-const isSafetyTypeForm = (f: CustomForm) =>
-  SAFETY_FORM_TYPES.includes(String(f.formType || '').toLowerCase());
-
 export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter, onExport, isExporting = false, onSubmissionsChange, onFormsChange, wrapperStyle }: JobFormsProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -747,14 +744,9 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter,
   }
 
   const isJobCardForm = (f: CustomForm) => !!(f as any).isJobCard;
-  const applyTypeFilter = (f: CustomForm) => {
-    if (filter === 'safety') return isSafetyTypeForm(f);
-    if (filter === 'other') return !isSafetyTypeForm(f);
-    return true;
-  };
   const displayForms = jobCardMode
     ? forms.filter(isJobCardForm)
-    : forms.filter(f => !isJobCardForm(f)).filter(applyTypeFilter);
+    : forms.filter(f => !isJobCardForm(f)).filter(f => matchesFormFilter(f, filter));
   const displaySubmissions = submissions.filter(s => {
     // Fall back to the form embedded on the submission (covers forms that
     // were deactivated/deleted after the card was filled out).
@@ -765,7 +757,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter,
     const isJC = isJobCardForm(form);
     if (jobCardMode) return isJC;
     if (isJC) return false;
-    return applyTypeFilter(form);
+    return matchesFormFilter(form, filter);
   });
 
   // When a filter is active and there's nothing to show, render nothing so the
