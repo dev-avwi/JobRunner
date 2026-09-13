@@ -8391,58 +8391,25 @@ export default function JobDetailScreen() {
       )}
 
       {/* ── About this job ── */}
-      <View style={{
-        backgroundColor: colors.card,
-        borderRadius: radius.xl,
-        padding: spacing.lg,
-        marginBottom: spacing.md,
-        borderWidth: 1,
-        borderColor: colors.cardBorder,
-        ...shadows.sm,
-      }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-          <Feather name="file-text" size={14} color={colors.mutedForeground} />
-          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
-          <TouchableOpacity
-            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-            activeOpacity={0.7}
-            style={{ marginLeft: 'auto' }}
-          >
-            <Feather name="edit-3" size={14} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
-        {job.description ? (
-          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: (job.notes || jobNotes.length > 0) ? spacing.md : 0 }}>
+      {!!job.description && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Feather name="file-text" size={14} color={colors.mutedForeground} />
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
+          </View>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>
             {job.description}
           </Text>
-        ) : null}
-        {(jobNotes.length > 0 || job.notes) ? (
-          <TouchableOpacity
-            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-            activeOpacity={0.7}
-            style={job.description ? { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md } : {}}
-          >
-            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.xs }}>Notes</Text>
-            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={4}>
-              {jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : job.notes}
-            </Text>
-            {jobNotes.length > 1 && (
-              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, marginTop: spacing.xs }}>
-                +{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}
-              </Text>
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-            activeOpacity={0.7}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
-          >
-            <Feather name="plus" size={14} color={colors.primary} />
-            <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Add notes</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Section anchor: status */}
       <View onLayout={(e) => { sectionOffsets.current['status'] = e.nativeEvent.layout.y; }} />
@@ -8786,23 +8753,19 @@ export default function JobDetailScreen() {
                   </View>
                 </View>
                 {nextPhase.description ? (
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground, lineHeight: 16 }} numberOfLines={2}>
+                  <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20 }} numberOfLines={3}>
                     {nextPhase.description}
                   </Text>
                 ) : null}
-                {nextPhaseBudgetState && phaseActual !== null ? (
+                {(isOwnerOrManager || isSoloOwner) && nextPhaseBudgetState && phaseActual !== null && phaseBudget !== null && (
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm, paddingTop: spacing.xs }}>
                     <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, flex: 1 }}>
-                      {phaseBudget === null ? 'No budget' : `Budget ${formatCurrency(phaseBudget)}`} · Actual {formatCurrency(phaseActual)}
+                      {`Budget ${formatCurrency(phaseBudget)}`} · Actual {formatCurrency(phaseActual)}
                     </Text>
-                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: phaseBudget === null ? colors.mutedForeground : phaseVariance !== null && phaseVariance > 0 ? colors.destructive : colors.success }}>
-                      {phaseBudget === null ? 'Variance unavailable' : `${phaseVariance !== null && phaseVariance >= 0 ? '+' : ''}${formatCurrency(phaseVariance ?? 0)}`}
+                    <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: phaseVariance !== null && phaseVariance > 0 ? colors.destructive : colors.success }}>
+                      {`${phaseVariance !== null && phaseVariance >= 0 ? '+' : ''}${formatCurrency(phaseVariance ?? 0)}`}
                     </Text>
                   </View>
-                ) : (
-                  <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, paddingTop: spacing.xs }}>
-                    Phase cost data unavailable
-                  </Text>
                 )}
               </View>
             ) : totalPhases > 0 ? (
@@ -12217,7 +12180,7 @@ export default function JobDetailScreen() {
                   </View>
 
                   {phase.description ? (
-                    <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm, marginLeft: 8 + spacing.xs }}>{phase.description}</Text>
+                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, marginLeft: 8 + spacing.xs }} numberOfLines={4}>{phase.description}</Text>
                   ) : null}
 
                   {/* Timer and status controls — hidden for expanded completed phases */}
