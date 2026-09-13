@@ -8112,6 +8112,26 @@ export default function JobDetailScreen() {
     const sessionExpired = isAuthErrorMessage(loadError);
     return (
       <View style={styles.errorContainer}>
+        <Stack.Screen
+          options={{
+            ...getNestedHeaderOptions(),
+            title: '',
+            headerBackVisible: false,
+            headerShadowVisible: false,
+            headerStyle: { backgroundColor: colors.background },
+            headerRight: () => null,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/work')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                <Feather name="chevron-left" size={17} color={colors.primary} />
+                <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
+              </Pressable>
+            ),
+          }}
+        />
         <Feather name={sessionExpired ? 'log-in' : 'alert-circle'} size={48} color={loadError ? colors.destructive : colors.mutedForeground} />
         <Text style={styles.errorText}>{sessionExpired ? 'Session expired' : (loadError ? 'Failed to load job' : 'Job not found')}</Text>
         <Text style={[styles.errorText, { fontSize: typography.button.fontSize, marginTop: spacing.xs }]}>
@@ -8131,7 +8151,7 @@ export default function JobDetailScreen() {
               <Text style={styles.errorPrimaryBtnText}>Retry</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
+          <TouchableOpacity activeOpacity={0.8} onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/work')} style={styles.errorSecondaryBtn}>
             <Text style={styles.errorSecondaryBtnText}>Go back</Text>
           </TouchableOpacity>
         </View>

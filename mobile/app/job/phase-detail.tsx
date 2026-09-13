@@ -6,8 +6,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Animated, TextInput, Alert, Platform, Pressable, KeyboardAvoidingView,
+  StyleSheet, Animated, TextInput, Alert, Platform, Pressable, KeyboardAvoidingView, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { getNestedHeaderOptions } from '../../src/lib/nested-header';
@@ -218,6 +219,8 @@ export default function PhaseDetailScreen() {
   const [showLogExpenseSheet, setShowLogExpenseSheet] = useState(false);
   const [expenseAmount, setExpenseAmount] = useState('');
   const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseReceiptUri, setExpenseReceiptUri] = useState<string | null>(null);
+  const [isUploadingExpenseReceipt, setIsUploadingExpenseReceipt] = useState(false);
   const [savingExpense, setSavingExpense] = useState(false);
 
   // ── Edit Phase sheet ──────────────────────────────────────────────────────
@@ -458,24 +461,53 @@ export default function PhaseDetailScreen() {
     }
     setSavingExpense(true);
     try {
-      const res = await api.post(`/api/jobs/${jobId}/expenses`, {
+      const body: Record<string, any> = {
         description: expenseDescription.trim(),
         amount: String(parsed),
         expenseDate: new Date().toISOString().split('T')[0],
         isBillable: true,
         categoryId: '_worker_receipt_',
         phaseId,
-      });
+      };
+      if (expenseReceiptUri) body.receiptUrl = expenseReceiptUri;
+      const res = await api.post(`/api/jobs/${jobId}/expenses`, body);
       if (res.error) throw new Error(res.error);
       setShowLogExpenseSheet(false);
       setExpenseAmount('');
       setExpenseDescription('');
+      setExpenseReceiptUri(null);
       showToast({ type: 'success', message: 'Expense logged', description: 'Sent to owner for approval.' });
     } catch (err: any) {
       showToast({ type: 'error', message: 'Could not log expense', description: err?.message });
     } finally {
       setSavingExpense(false);
     }
+  };
+
+  const pickExpenseReceipt = async (source: 'camera' | 'library') => {
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+    }
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setIsUploadingExpenseReceipt(true);
+    try {
+      const token = await api.getToken();
+      const formData = new FormData();
+      formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+      formData.append('type', 'expense-receipt');
+      const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const json = await uploadRes.json();
+      if (json.url) setExpenseReceiptUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+      else showToast({ type: 'error', message: 'Upload failed' });
+    } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingExpenseReceipt(false); }
   };
 
   // ── Edit Phase actions ────────────────────────────────────────────────────
@@ -536,15 +568,32 @@ export default function PhaseDetailScreen() {
 
   // ── Loading / error states ────────────────────────────────────────────────
 
+  // Shared back-only header options for loading/error states — prevents stale
+  // edit button showing while data hasn't loaded yet.
+  const backOnlyHeader = {
+    ...getNestedHeaderOptions(),
+    title: '',
+    headerBackVisible: false,
+    headerShadowVisible: false,
+    headerStyle: { backgroundColor: colors.background },
+    headerTintColor: colors.primary,
+    headerRight: () => null,
+    headerLeft: () => (
+      <Pressable
+        onPress={() => router.back()}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={{ flexDirection: 'row', alignItems: 'center' }}
+      >
+        <Feather name="chevron-left" size={17} color={colors.primary} />
+        <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
+      </Pressable>
+    ),
+  };
+
   if (loading) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Feather name="chevron-left" size={17} color={colors.primary} />
-            <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
-          </TouchableOpacity>
-        </View>
+        <Stack.Screen options={backOnlyHeader} />
         <View style={styles.center}>
           <ActivityIndicator color={colors.primary} size="large" />
         </View>
@@ -555,12 +604,7 @@ export default function PhaseDetailScreen() {
   if (error || !phase) {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
-        <View style={{ paddingTop: spacing.sm, paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Feather name="chevron-left" size={17} color={colors.primary} />
-            <Text style={{ fontSize: typography.subtitle.fontSize, color: colors.primary, marginLeft: -1 }}>Back</Text>
-          </TouchableOpacity>
-        </View>
+        <Stack.Screen options={backOnlyHeader} />
         <View style={styles.center}>
           <Feather name="alert-circle" size={40} color={colors.destructive} />
           <Text style={{ marginTop: spacing.md, color: colors.destructive, fontSize: typography.body.fontSize, textAlign: 'center' }}>
@@ -1060,14 +1104,14 @@ export default function PhaseDetailScreen() {
       {/* ── Log Expense bottom sheet ──────────────────────────────────── */}
       <AppBottomSheet
         visible={showLogExpenseSheet}
-        onDismiss={() => { if (!savingExpense) { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); } }}
+        onDismiss={() => { if (!savingExpense) { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); setExpenseReceiptUri(null); } }}
         title="Log Expense"
         showCloseButton
-        snapPoints={['60%']}
+        snapPoints={['85%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <TouchableOpacity
-              onPress={() => { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); }}
+              onPress={() => { setShowLogExpenseSheet(false); setExpenseAmount(''); setExpenseDescription(''); setExpenseReceiptUri(null); }}
               disabled={savingExpense}
               style={{ flex: 1, paddingVertical: 13, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
               activeOpacity={0.7}
@@ -1088,31 +1132,75 @@ export default function PhaseDetailScreen() {
         )}
       >
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={{ padding: spacing.md, gap: spacing.xs }}>
-            <FieldLabel>Amount ($) *</FieldLabel>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-              value={expenseAmount}
-              onChangeText={setExpenseAmount}
-              keyboardType="decimal-pad"
-              placeholder="0.00"
-              placeholderTextColor={colors.mutedForeground}
-              editable={!savingExpense}
-            />
+          <View style={{ padding: spacing.md, gap: spacing.md }}>
 
-            <FieldLabel>Description *</FieldLabel>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-              value={expenseDescription}
-              onChangeText={setExpenseDescription}
-              placeholder="e.g. Electrical fittings from Bunnings"
-              placeholderTextColor={colors.mutedForeground}
-              editable={!savingExpense}
-              returnKeyType="done"
-            />
+            {/* Receipt photo */}
+            <View>
+              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, marginBottom: spacing.xs }}>
+                Receipt Photo <Text style={{ fontWeight: fontWeights.regular as any, color: colors.mutedForeground }}>(optional)</Text>
+              </Text>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExpenseReceipt ? 0.6 : 1 }}
+                  activeOpacity={0.7}
+                  disabled={isUploadingExpenseReceipt || savingExpense}
+                  onPress={() => pickExpenseReceipt('camera')}
+                >
+                  {isUploadingExpenseReceipt
+                    ? <ActivityIndicator size="small" color={colors.primary} />
+                    : <><Feather name="camera" size={14} color={colors.primary} /><Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Take Photo</Text></>}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExpenseReceipt ? 0.6 : 1 }}
+                  activeOpacity={0.7}
+                  disabled={isUploadingExpenseReceipt || savingExpense}
+                  onPress={() => pickExpenseReceipt('library')}
+                >
+                  <Feather name="image" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Choose Photo</Text>
+                </TouchableOpacity>
+              </View>
+              {expenseReceiptUri && (
+                <View style={{ marginTop: spacing.sm }}>
+                  <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+                  <TouchableOpacity
+                    onPress={() => setExpenseReceiptUri(null)}
+                    style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <Feather name="x" size={14} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            <View style={{ gap: spacing.xs }}>
+              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Amount ($) *</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                value={expenseAmount}
+                onChangeText={setExpenseAmount}
+                keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={colors.mutedForeground}
+                editable={!savingExpense}
+              />
+            </View>
+
+            <View style={{ gap: spacing.xs }}>
+              <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>Description *</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                value={expenseDescription}
+                onChangeText={setExpenseDescription}
+                placeholder="e.g. Electrical fittings from Bunnings"
+                placeholderTextColor={colors.mutedForeground}
+                editable={!savingExpense}
+                returnKeyType="done"
+              />
+            </View>
 
             {/* Phase context chip */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.primary}10` }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.primary}10` }}>
               <Feather name="layers" size={13} color={colors.primary} />
               <Text style={{ fontSize: 12, color: colors.primary }}>
                 Linked to: {phase.phaseCode ? `${phase.phaseCode} — ` : ''}{phase.name}
@@ -1120,7 +1208,7 @@ export default function PhaseDetailScreen() {
             </View>
 
             {/* Info note */}
-            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.warning}15`, marginTop: spacing.xs }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: `${colors.warning}15` }}>
               <Feather name="info" size={13} color={colors.warning} style={{ marginTop: 1 }} />
               <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground, lineHeight: 18 }}>
                 This expense will be sent to the owner for review and approval.

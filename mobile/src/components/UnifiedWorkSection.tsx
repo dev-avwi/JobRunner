@@ -38,6 +38,7 @@ import { api } from '../lib/api';
 import { showToast } from '../lib/toast';
 import { formatCurrency } from '../lib/format';
 import { fontWeights, spacing, radius, typography } from '../lib/design-tokens';
+import { MarkdownText } from './MarkdownText';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -893,9 +894,9 @@ export function UnifiedWorkSection({
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xs }}>
                       <View style={{ flex: 1 }}>
                         {!!task.description && (
-                          <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22 }}>
+                          <MarkdownText style={{ fontSize: typography.body.fontSize, lineHeight: 22 }}>
                             {task.description}
-                          </Text>
+                          </MarkdownText>
                         )}
                         {!task.description && (
                           <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, fontStyle: 'italic' }}>
