@@ -2635,7 +2635,9 @@ export default function JobDetailScreen() {
   const [profitabilityData, setProfitabilityData] = useState<ProfitabilityData | null>(null);
   const [isLoadingProfitability, setIsLoadingProfitability] = useState(false);
   const [showJobCostingSheet, setShowJobCostingSheet] = useState(false);
-  const [costingSheetAtBottom, setCostingSheetAtBottom] = useState(false);
+  const costingPillAnim = useRef(new Animated.Value(1)).current;
+  const costingScrollRef = useRef<ScrollView>(null);
+  const costingScrollInfo = useRef({ y: 0, h: 0 });
   const [isGeneratingCostReport, setIsGeneratingCostReport] = useState(false);
   const [isReleasingRetention, setIsReleasingRetention] = useState(false);
 
@@ -16880,7 +16882,7 @@ export default function JobDetailScreen() {
       {/* Job Costing Bottom Sheet — full P&L breakdown */}
       <AppBottomSheet
         visible={showJobCostingSheet}
-        onDismiss={() => { setShowJobCostingSheet(false); setCostingSheetAtBottom(false); }}
+        onDismiss={() => { setShowJobCostingSheet(false); costingPillAnim.setValue(1); }}
         title="Job Costing"
         showCloseButton
         scrollable={false}
@@ -16888,11 +16890,15 @@ export default function JobDetailScreen() {
         snapPoints={['88%']}
       >
         <View style={{ flex: 1 }}>
-        <BottomSheetScrollView
+        <ScrollView
+          ref={costingScrollRef}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}
           onScroll={(e) => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
-            setCostingSheetAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
+            costingScrollInfo.current = { y: contentOffset.y, h: layoutMeasurement.height };
+            const distFromBottom = contentSize.height - contentOffset.y - layoutMeasurement.height;
+            costingPillAnim.setValue(Math.min(1, Math.max(0, (distFromBottom - 8) / 100)));
           }}
           scrollEventThrottle={16}
         >
@@ -17269,15 +17275,24 @@ export default function JobDetailScreen() {
               </View>
             );
           })()}
-        </BottomSheetScrollView>
-        {!costingSheetAtBottom && (
-          <View style={{ position: 'absolute', bottom: spacing.xl, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: radius.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: 7, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6 }}>
-              <Feather name="chevron-down" size={12} color={colors.mutedForeground} />
-              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium, color: colors.mutedForeground, letterSpacing: 0.1 }}>Scroll for more</Text>
+        </ScrollView>
+        <Animated.View
+          style={{ position: 'absolute', bottom: spacing.xl, left: 0, right: 0, alignItems: 'center', opacity: costingPillAnim }}
+          pointerEvents="box-none"
+        >
+          <TouchableOpacity
+            onPress={() => {
+              const { y, h } = costingScrollInfo.current;
+              costingScrollRef.current?.scrollTo({ y: y + h * 0.75, animated: true });
+            }}
+            activeOpacity={0.85}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: `${colors.primary}12`, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}35`, paddingHorizontal: spacing.md, paddingVertical: 7, shadowColor: colors.primary, shadowOpacity: 0.18, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 6 }}>
+              <Feather name="chevron-down" size={12} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.primary, letterSpacing: 0.1 }}>Scroll for more</Text>
             </View>
-          </View>
-        )}
+          </TouchableOpacity>
+        </Animated.View>
         </View>
       </AppBottomSheet>
 
