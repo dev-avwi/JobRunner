@@ -39,6 +39,7 @@ import { showToast } from '../lib/toast';
 import { formatCurrency } from '../lib/format';
 import { fontWeights, spacing, radius, typography } from '../lib/design-tokens';
 import { MarkdownText } from './MarkdownText';
+import { MarkdownToolbar } from './MarkdownToolbar';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -387,6 +388,8 @@ export function UnifiedWorkSection({
   const [editInstructionsTask, setEditInstructionsTask] = useState<JobTask | null>(null);
   const [editInstructionsText, setEditInstructionsText] = useState('');
   const [savingInstructions, setSavingInstructions] = useState(false);
+  const [editInstructionsPreview, setEditInstructionsPreview] = useState(false);
+  const [editInstructionsSel, setEditInstructionsSel] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -599,6 +602,8 @@ export function UnifiedWorkSection({
 
   const openEditInstructions = (task: JobTask) => {
     setEditInstructionsText(task.description ?? '');
+    setEditInstructionsPreview(false);
+    setEditInstructionsSel({ start: 0, end: 0 });
     setEditInstructionsTask(task);
   };
 
@@ -1107,15 +1112,58 @@ export function UnifiedWorkSection({
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>Edit instructions</Text>
             <Text style={styles.sheetSubtitle} numberOfLines={1}>{editInstructionsTask?.title}</Text>
-            <TextInput
-              style={[styles.fieldInput, { height: 120, textAlignVertical: 'top' }]}
-              value={editInstructionsText}
-              onChangeText={setEditInstructionsText}
-              placeholder="Add instructions for this task..."
-              placeholderTextColor={colors.mutedForeground}
-              multiline
-              autoFocus
-            />
+
+            {/* Edit / Preview tab toggle */}
+            <View style={{ flexDirection: 'row', borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: spacing.sm }}>
+              {(['Edit', 'Preview'] as const).map((tab) => {
+                const active = (tab === 'Preview') === editInstructionsPreview;
+                return (
+                  <TouchableOpacity
+                    key={tab}
+                    onPress={() => setEditInstructionsPreview(tab === 'Preview')}
+                    style={{ flex: 1, paddingVertical: 7, alignItems: 'center', backgroundColor: active ? colors.primary : colors.card }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: active ? colors.primaryForeground : colors.mutedForeground }}>
+                      {tab}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {editInstructionsPreview ? (
+              <ScrollView style={{ minHeight: 120, maxHeight: 200, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.card, padding: spacing.sm }} keyboardShouldPersistTaps="handled">
+                {editInstructionsText.trim() ? (
+                  <MarkdownText style={{ fontSize: typography.body.fontSize, lineHeight: 22 }}>
+                    {editInstructionsText}
+                  </MarkdownText>
+                ) : (
+                  <Text style={{ color: colors.mutedForeground, fontSize: typography.body.fontSize, lineHeight: 22 }}>
+                    Nothing to preview yet.
+                  </Text>
+                )}
+              </ScrollView>
+            ) : (
+              <>
+                <MarkdownToolbar
+                  value={editInstructionsText}
+                  selection={editInstructionsSel}
+                  onChange={setEditInstructionsText}
+                />
+                <TextInput
+                  style={[styles.fieldInput, { height: 120, textAlignVertical: 'top', borderTopWidth: 0, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+                  value={editInstructionsText}
+                  onChangeText={setEditInstructionsText}
+                  onSelectionChange={(e) => setEditInstructionsSel(e.nativeEvent.selection)}
+                  placeholder="Add instructions for this task..."
+                  placeholderTextColor={colors.mutedForeground}
+                  multiline
+                  autoFocus
+                />
+              </>
+            )}
+
             <TouchableOpacity
               style={[styles.submitBtn, savingInstructions && { opacity: 0.5 }]}
               onPress={saveEditInstructions}
