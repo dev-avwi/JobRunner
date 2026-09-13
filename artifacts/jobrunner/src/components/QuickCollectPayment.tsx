@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { CreditCard, DollarSign, Building2, QrCode, Smartphone, Loader2, CheckCircle2, Receipt, FileText } from "lucide-react";
 import {
@@ -19,16 +19,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
+interface QuickCollectLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 interface QuickCollectPaymentProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   jobId: string;
   jobTitle: string;
-  quoteId: string;
+  quoteId?: string;
   quoteTotal: string;
   quoteGst: string;
   clientName: string;
   clientId: string;
+  /** Whether the amount is derived from a quote or from material sell prices */
+  source?: 'quote' | 'materials';
+  /** Material line items — used when there is no accepted quote */
+  lineItems?: QuickCollectLineItem[];
   onSuccess?: (receiptId: string) => void;
 }
 
@@ -51,6 +62,8 @@ export default function QuickCollectPayment({
   quoteGst,
   clientName,
   clientId,
+  source = 'quote',
+  lineItems,
   onSuccess,
 }: QuickCollectPaymentProps) {
   const { toast } = useToast();
@@ -60,13 +73,23 @@ export default function QuickCollectPayment({
   const [adjustedAmount, setAdjustedAmount] = useState(quoteTotal);
   const [resultData, setResultData] = useState<{ receiptId?: string; invoiceId?: string } | null>(null);
 
+  // Keep the editable amount in sync with the authoritative total from props,
+  // but only while the user hasn't started filling in the confirm step (so we
+  // never clobber a value they are actively editing).
+  useEffect(() => {
+    if (step === 'method') {
+      setAdjustedAmount(quoteTotal);
+    }
+  }, [quoteTotal, step]);
+
   const quickCollectMutation = useMutation({
     mutationFn: async (data: { 
       jobId: string; 
-      quoteId: string; 
+      quoteId?: string; 
       paymentMethod: PaymentMethod; 
       amount: string;
       notes?: string;
+      lineItems?: QuickCollectLineItem[];
     }) => {
       const response = await apiRequest('POST', `/api/jobs/${data.jobId}/quick-collect`, data);
       return response.json();
@@ -103,10 +126,11 @@ export default function QuickCollectPayment({
     if (!selectedMethod) return;
     quickCollectMutation.mutate({
       jobId,
-      quoteId,
+      quoteId: quoteId || undefined,
       paymentMethod: selectedMethod,
       amount: adjustedAmount,
       notes: notes || undefined,
+      lineItems: !quoteId && lineItems?.length ? lineItems : undefined,
     });
   };
 
@@ -152,7 +176,7 @@ export default function QuickCollectPayment({
               <CardContent className="p-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm text-muted-foreground">Amount from quote</p>
+                    <p className="text-sm text-muted-foreground">{source === 'quote' ? 'Amount from quote' : 'Amount from materials'}</p>
                     <p className="text-2xl font-bold" style={{ color: 'hsl(var(--trade))' }}>
                       ${total.toFixed(2)}
                     </p>

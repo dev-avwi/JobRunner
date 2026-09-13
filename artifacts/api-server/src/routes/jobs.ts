@@ -3020,7 +3020,8 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         }
       }
       
-      const linkedInvoice = linkedInvoices.length > 0 ? linkedInvoices[linkedInvoices.length - 1] : null;
+      // getInvoices() returns newest-first; take the first entry (most recent invoice for this job)
+      const linkedInvoice = linkedInvoices.length > 0 ? linkedInvoices[0] : null;
       
       res.json({
         linkedQuote: linkedQuote ? await (async () => {
@@ -3051,6 +3052,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           title: linkedInvoice.title,
           status: linkedInvoice.status,
           total: linkedInvoice.total,
+          amountPaid: (linkedInvoice as any).amountPaid ?? '0',
           dueDate: linkedInvoice.dueDate,
           paidAt: linkedInvoice.paidAt,
           createdAt: linkedInvoice.createdAt,
@@ -6679,9 +6681,10 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
       const receiptCount = existingReceipts.length + 1;
       const receiptNumber = `REC-${String(receiptCount).padStart(6, '0')}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`;
 
-      // Create receipt
+      // Create receipt — jobId is required so getReceiptsForJob can surface it
       const receipt = await storage.createReceipt({
         invoiceId: invoice.id,
+        jobId: job.id,
         clientId: client.id,
         receiptNumber: receiptNumber,
         amount: parsedAmount.toFixed(2),

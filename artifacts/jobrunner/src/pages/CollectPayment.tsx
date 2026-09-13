@@ -85,10 +85,18 @@ interface Invoice {
   number: string;
   title: string;
   total: string | number;
+  amountPaid?: string | number;
   status: string;
   clientId: string;
   jobId?: string | null;
   dueDate?: string | null;
+}
+
+/** Returns the balance still owed on an invoice (total minus any amount already paid). */
+function invoiceOutstanding(invoice: Invoice): number {
+  const total = typeof invoice.total === 'number' ? invoice.total : parseFloat(String(invoice.total || '0'));
+  const paid = typeof invoice.amountPaid === 'number' ? invoice.amountPaid : parseFloat(String(invoice.amountPaid || '0'));
+  return Math.max(0, total - paid);
 }
 
 interface Job {
@@ -361,10 +369,7 @@ export default function CollectPayment() {
     if (selectedInvoiceId && invoices) {
       const invoice = invoices.find(inv => inv.id === selectedInvoiceId);
       if (invoice) {
-        const totalStr = typeof invoice.total === 'number' 
-          ? invoice.total.toFixed(2) 
-          : String(invoice.total || '0.00');
-        setNewAmount(totalStr);
+        setNewAmount(invoiceOutstanding(invoice).toFixed(2));
         setNewDescription(`Payment for ${[invoice.number, invoice.title].filter(Boolean).join(': ') || 'Invoice'}`);
         setNewReference(invoice.number);
         setSelectedClientId(invoice.clientId);
@@ -377,10 +382,7 @@ export default function CollectPayment() {
     if (recordInvoiceId && invoices) {
       const invoice = invoices.find(inv => inv.id === recordInvoiceId);
       if (invoice) {
-        const totalStr = typeof invoice.total === 'number' 
-          ? invoice.total.toFixed(2) 
-          : String(invoice.total || '0.00');
-        setRecordAmount(totalStr);
+        setRecordAmount(invoiceOutstanding(invoice).toFixed(2));
         setRecordReference(invoice.number);
         setRecordClientId(invoice.clientId);
       }
@@ -391,10 +393,7 @@ export default function CollectPayment() {
     if (receiptInvoiceId && invoices) {
       const invoice = invoices.find(inv => inv.id === receiptInvoiceId);
       if (invoice) {
-        const totalStr = typeof invoice.total === 'number' 
-          ? invoice.total.toFixed(2) 
-          : String(invoice.total || '0.00');
-        setReceiptAmount(totalStr);
+        setReceiptAmount(invoiceOutstanding(invoice).toFixed(2));
         setReceiptDescription(`Payment for ${[invoice.number, invoice.title].filter(Boolean).join(': ') || 'Invoice'}`);
         setReceiptReference(invoice.number);
         setReceiptClientId(invoice.clientId);
@@ -408,10 +407,7 @@ export default function CollectPayment() {
     if (tapToPayInvoiceId && invoices) {
       const invoice = invoices.find(inv => inv.id === tapToPayInvoiceId);
       if (invoice) {
-        const totalStr = typeof invoice.total === 'number' 
-          ? invoice.total.toFixed(2) 
-          : String(invoice.total || '0.00');
-        setTapToPayAmount(totalStr);
+        setTapToPayAmount(invoiceOutstanding(invoice).toFixed(2));
         setTapToPayDescription(`Payment for ${[invoice.number, invoice.title].filter(Boolean).join(': ') || 'Invoice'}`);
         setTapToPayClientId(invoice.clientId);
         if (invoice.jobId) setTapToPayJobId(invoice.jobId);
@@ -431,12 +427,10 @@ export default function CollectPayment() {
     if (invoiceId) {
       const invoice = invoices.find(inv => inv.id === invoiceId);
       if (invoice) {
-        const totalStr = typeof invoice.total === 'number' 
-          ? invoice.total.toFixed(2) 
-          : String(invoice.total || '0.00');
+        const outstandingStr = invoiceOutstanding(invoice).toFixed(2);
         
         // Pre-fill data for tap to pay
-        setTapToPayAmount(totalStr);
+        setTapToPayAmount(outstandingStr);
         setTapToPayDescription(`Payment for ${[invoice.number, invoice.title].filter(Boolean).join(': ') || 'Invoice'}`);
         setTapToPayInvoiceId(invoiceId);
         setTapToPayClientId(invoice.clientId);

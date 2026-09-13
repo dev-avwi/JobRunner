@@ -359,7 +359,7 @@ export default function JobDetailView({
   
   interface LinkedDocumentsResponse {
     linkedQuote: LinkedDocument | null;
-    linkedInvoice: LinkedDocument | null;
+    linkedInvoice: (LinkedDocument & { amountPaid?: string }) | null;
     linkedReceipts: LinkedReceipt[];
     quoteCount: number;
     invoiceCount: number;
@@ -389,6 +389,42 @@ export default function JobDetailView({
     queryKey: ['/api/jobs', jobId, 'materials'],
     enabled: !!jobId,
   });
+
+  /**
+   * Authoritative quick-collect data — computed once and shared by both the
+   * trigger card in the Financials tab and the QuickCollectPayment modal.
+   *
+   * Amount hierarchy for materials (sell prices only — never cost):
+   *   1. totalPrice  (stored sell total for the line)
+   *   2. unitPrice × quantity
+   *   3. 0  →  line excluded; Quick Collect hidden if all lines are 0
+   */
+  const quickCollectData = useMemo(() => {
+    const hasAcceptedQuote = !!(linkedQuote && linkedQuote.status === 'accepted');
+    if (hasAcceptedQuote) {
+      return {
+        total: parseFloat(linkedQuote!.total as string || '0'),
+        source: 'quote' as const,
+        lineItems: undefined as undefined,
+      };
+    }
+    const lineItems = jobMaterials
+      .map(m => {
+        const totalPrice = parseFloat(String(m.totalPrice || '0'));
+        const unitPrice  = parseFloat(String(m.unitPrice  || '0'));
+        const qty        = parseFloat(String(m.quantity   || '1'));
+        // Use stored sell total first; fall back to unit sell price × qty; never use cost.
+        const lineTotal  = totalPrice > 0 ? totalPrice : (unitPrice > 0 ? unitPrice * qty : 0);
+        return { description: m.name, quantity: qty, unitPrice, total: lineTotal };
+      })
+      .filter(item => item.total > 0);
+    const total = lineItems.reduce((s, item) => s + item.total, 0);
+    return {
+      total,
+      source: 'materials' as const,
+      lineItems: total > 0 ? lineItems : ([] as typeof lineItems),
+    };
+  }, [linkedQuote, jobMaterials]);
 
   const { data: jobVariations = [] } = useQuery<any[]>({
     queryKey: ['/api/jobs', jobId, 'variations'],
@@ -2198,8 +2234,6 @@ export default function JobDetailView({
 
   const isProject = job.jobType === 'project';
   const isServiceCall = !isProject;
-  const allPhasesComplete = isProject && jobPhasesForPicker.length > 0 &&
-    jobPhasesForPicker.every(p => p.status === 'complete' || p.status === 'invoiced');
 
   const SERVICE_STEPS = [
     { status: 'scheduled' as const, label: 'Scheduled' },
@@ -3204,25 +3238,174 @@ export default function JobDetailView({
 
             {/* ── FINANCIALS TAB ── */}
             <TabsContent value="financials" className="mt-0 space-y-6">
-              {/* All-phases-complete invoice prompt — projects only, owners/managers only */}
-              {allPhasesComplete && !linkedInvoice && job.status !== 'invoiced' && !isTradie && (
-                <Card className="border-2" style={{ borderColor: 'hsl(142.1 76.2% 36.3% / 0.5)' }} data-testid="card-phases-complete-invoice-prompt">
-                  <CardContent className="py-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }}>
-                        <Receipt className="h-5 w-5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">All Phases Complete: Ready to Invoice</p>
-                        <p className="text-xs text-muted-foreground">All project phases are done. Create an invoice to get paid.</p>
-                      </div>
-                    </div>
-                    <Button className="w-full" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3%)', color: 'white' }} onClick={() => onCreateInvoice?.(jobId)} data-testid="button-phases-complete-create-invoice">
-                      <Receipt className="h-4 w-4 mr-2" />Create Invoice
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
+              {/* ── Payment collection cards ── */}
+              {(() => {
+                const { total: quickCollectTotal, source: quickCollectSource } = quickCollectData;
+                const canQuickCollect = !isTradie
+                  && (job.status === 'done' || job.status === 'in_progress')
+                  && !linkedInvoice
+                  && quickCollectTotal > 0;
+                // Only show the collect card for issued/overdue/partial invoices with a positive balance.
+                // Draft and any cancelled/void status are not collectible.
+                const collectableStatuses = new Set(['sent', 'overdue', 'partial']);
+                const invoiceOutstanding = linkedInvoice
+                  ? Math.max(0, parseFloat(linkedInvoice.total as string || '0') - parseFloat((linkedInvoice as any).amountPaid || '0'))
+                  : 0;
+                const hasOutstandingInvoice = !isTradie
+                  && !!linkedInvoice
+                  && collectableStatuses.has(linkedInvoice.status as string)
+                  && invoiceOutstanding > 0;
+                const hasReceipt = !isTradie && linkedReceipts.length > 0;
+
+                if (!canQuickCollect && !hasOutstandingInvoice && !hasReceipt) return null;
+
+                return (
+                  <>
+                    {/* Quick Collect card */}
+                    {canQuickCollect && (
+                      <Card className="border-2" style={{ borderColor: 'hsl(var(--trade) / 0.4)' }} data-testid="card-quick-collect">
+                        <CardContent className="py-4">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(var(--trade) / 0.15)' }}>
+                              <Zap className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-semibold text-sm">Quick Collect</p>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">No Invoice Needed</Badge>
+                              </div>
+                              <p className="text-xs text-muted-foreground">Collect on the spot. Invoice and receipt created automatically.</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border mb-3">
+                            <p className="text-xs text-muted-foreground">{quickCollectSource === 'quote' ? 'From accepted quote' : 'From materials'}</p>
+                            <p className="text-xl font-bold" style={{ color: 'hsl(var(--trade))' }}>${quickCollectTotal.toFixed(2)}</p>
+                          </div>
+                          <Button
+                            className="w-full"
+                            style={{ backgroundColor: 'hsl(var(--trade))', color: 'white' }}
+                            onClick={() => setShowQuickCollect(true)}
+                            data-testid="button-quick-collect"
+                          >
+                            <Zap className="h-4 w-4 mr-2" />Collect Payment
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Payment Collection card — invoice exists but not yet paid */}
+                    {hasOutstandingInvoice && linkedInvoice && (() => {
+                      const invoiceTotal = parseFloat(linkedInvoice.total as string || '0');
+                      const paid = parseFloat((linkedInvoice as any).amountPaid || '0');
+                      const outstanding = Math.max(0, invoiceTotal - paid);
+                      const isPartial = paid > 0;
+                      return (
+                        <Card className="border-2" style={{ borderColor: 'hsl(221.2 83.2% 53.3% / 0.4)' }} data-testid="card-collect-invoice-payment">
+                          <CardContent className="py-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(221.2 83.2% 53.3% / 0.15)' }}>
+                                <CreditCard className="h-5 w-5" style={{ color: 'hsl(221.2 83.2% 53.3%)' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-semibold text-sm">Collect Payment</p>
+                                  {linkedInvoice.number && (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">Invoice #{linkedInvoice.number}</Badge>
+                                  )}
+                                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 capitalize">{linkedInvoice.status}</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {isPartial ? 'Partial payment received — balance outstanding' : 'Outstanding balance on this invoice'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="p-3 rounded-lg bg-muted/50 border mb-3 space-y-1.5">
+                              {isPartial && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Invoice total</span>
+                                  <span>${invoiceTotal.toFixed(2)}</span>
+                                </div>
+                              )}
+                              {isPartial && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="text-muted-foreground">Already received</span>
+                                  <span className="text-green-600 dark:text-green-400">${paid.toFixed(2)}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">{isPartial ? 'Balance due' : 'Amount due'}</span>
+                                <span className="text-xl font-bold" style={{ color: 'hsl(221.2 83.2% 53.3%)' }}>${outstanding.toFixed(2)}</span>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Button
+                                className="w-full"
+                                style={{ backgroundColor: 'hsl(221.2 83.2% 53.3%)', color: 'white' }}
+                                onClick={() => navigate(`/collect-payment?invoiceId=${linkedInvoice.id}`)}
+                                data-testid="button-collect-invoice-payment"
+                              >
+                                <CreditCard className="h-4 w-4 mr-2" />Collect Now
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => navigate(`/invoices/${linkedInvoice.id}`)}
+                                data-testid="button-view-invoice-from-payment-card"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />View Invoice
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })()}
+
+                    {/* Payment Received card — receipt linked */}
+                    {hasReceipt && (() => {
+                      const receipt = linkedReceipts[0];
+                      return (
+                        <Card
+                          className="border-2 cursor-pointer hover:shadow-sm transition-all"
+                          style={{ borderColor: 'hsl(142.1 76.2% 36.3% / 0.4)' }}
+                          data-testid="card-payment-received"
+                          onClick={() => navigate(`/receipts/${receipt.id}`)}
+                        >
+                          <CardContent className="py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }}>
+                                <CheckCircle2 className="h-5 w-5" style={{ color: 'hsl(142.1 76.2% 36.3%)' }} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p className="font-semibold text-sm">Payment Received</p>
+                                  {receipt.receiptNumber && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{receipt.receiptNumber}</Badge>
+                                  )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {receipt.paymentMethod
+                                    ? receipt.paymentMethod.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
+                                    : 'Payment'}
+                                  {receipt.paidAt
+                                    ? ` · ${new Date(receipt.paidAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                    : receipt.createdAt
+                                      ? ` · ${new Date(receipt.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                                      : ''}
+                                </p>
+                              </div>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                <p className="text-lg font-bold" style={{ color: 'hsl(142.1 76.2% 36.3%)' }}>${parseFloat(receipt.amount || '0').toFixed(2)}</p>
+                                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })()}
+                  </>
+                );
+              })()}
+
               {/* Time Tracking widget */}
               {job.status === 'in_progress' && (
                 <Card className="border-2" style={{ borderColor: 'hsl(var(--trade) / 0.3)' }} data-testid="card-time-tracking">
@@ -4603,18 +4786,20 @@ export default function JobDetailView({
         hasSafetyForms={hasSafetyForms && !hasCompletedSafetyForm}
       />
 
-      {/* Quick Collect Payment Modal */}
-      {linkedQuote && linkedQuote.status === 'accepted' && client && (
+      {/* Quick Collect Payment Modal — uses the same data as the trigger card */}
+      {client && quickCollectData.total > 0 && (
         <QuickCollectPayment
           open={showQuickCollect}
           onOpenChange={setShowQuickCollect}
           jobId={jobId}
           jobTitle={job?.title || 'Job'}
-          quoteId={linkedQuote.id}
-          quoteTotal={linkedQuote.total as string || '0'}
-          quoteGst={(parseFloat(linkedQuote.total as string || '0') * 0.0909).toFixed(2)}
+          quoteId={quickCollectData.source === 'quote' ? linkedQuote!.id : undefined}
+          quoteTotal={quickCollectData.total.toFixed(2)}
+          quoteGst={(quickCollectData.total * 0.0909).toFixed(2)}
           clientName={client.name}
           clientId={client.id}
+          source={quickCollectData.source}
+          lineItems={quickCollectData.source === 'materials' ? quickCollectData.lineItems : undefined}
           onSuccess={(receiptId) => {
             navigate(`/receipts/${receiptId}`);
           }}
