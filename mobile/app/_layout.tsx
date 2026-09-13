@@ -745,6 +745,19 @@ function AuthenticatedLayout({ children }: { children: React.ReactNode }) {
   const firstSegment = segments[0] as string || '';
   const isAuthScreen = firstSegment === '(auth)' || (firstSegment === '' && !isAuthenticated);
 
+  // When a 401 fires mid-session (token expired), api.ts calls logout() which
+  // flips isAuthenticated to false. AuthenticatedLayout hides the chrome, but
+  // the current route stays in the Stack so the user sees a chromeless page.
+  // Redirect to login immediately so the UX stays coherent.
+  const prevAuthenticatedRef = React.useRef(isAuthenticated);
+  useEffect(() => {
+    const wasAuthenticated = prevAuthenticatedRef.current;
+    prevAuthenticatedRef.current = isAuthenticated;
+    if (wasAuthenticated && !isAuthenticated && !isAuthScreen) {
+      router.replace('/(auth)/login' as any);
+    }
+  }, [isAuthenticated, isAuthScreen]);
+
   // Global guard: an authenticated user who has already finished (or skipped)
   // onboarding must NEVER end up on the (onboarding) stack via deep-link,
   // cold start, or token refresh. The wizard's own effect handles the same

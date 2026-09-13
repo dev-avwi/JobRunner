@@ -12070,11 +12070,13 @@ export default function JobDetailScreen() {
               };
               const st = statusMap[phase.status] ?? statusMap.not_started;
 
-              // Card style — no left border; in-progress gets a subtle primary tint
+              // Card style — status-tinted background so phases feel distinct without decoration
               const cardStyle: any[] = [
                 styles.photosCard,
                 { marginBottom: spacing.md, overflow: 'hidden' },
-                isInProgress && { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}40` },
+                phase.status === 'in_progress' && { backgroundColor: `${colors.primary}08`, borderColor: `${colors.primary}30` },
+                phase.status === 'complete' && isCompletedExpanded && { backgroundColor: `${colors.success}06`, borderColor: `${colors.success}25` },
+                phase.status === 'on_hold' && { backgroundColor: `${colors.warning}08`, borderColor: `${colors.warning}30` },
               ];
 
               // Collapsed completed phase — minimal flat row, no card box
@@ -12120,11 +12122,8 @@ export default function JobDetailScreen() {
 
               return (
                 <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
-                  {/* Left accent bar — colored by status */}
-                  <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: st.text, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
-
                   {/* Phase header row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm, paddingLeft: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       {/* Phase code badge + name */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2, flexWrap: 'wrap' }}>
@@ -12202,7 +12201,7 @@ export default function JobDetailScreen() {
                   </View>
 
                   {phase.description ? (
-                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, paddingLeft: spacing.sm }} numberOfLines={4}>{phase.description}</Text>
+                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm }} numberOfLines={4}>{phase.description}</Text>
                   ) : null}
 
                   {/* Task progress bar */}
@@ -12211,7 +12210,7 @@ export default function JobDetailScreen() {
                     if (!countData || countData.total === 0) return null;
                     const pct = countData.total > 0 ? countData.completed / countData.total : 0;
                     return (
-                      <View style={{ marginBottom: spacing.sm, paddingLeft: spacing.sm }}>
+                      <View style={{ marginBottom: spacing.sm }}>
                         <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.muted, overflow: 'hidden' }}>
                           <View style={{ height: '100%', width: `${Math.round(pct * 100)}%`, borderRadius: 2, backgroundColor: isComplete ? colors.success : colors.primary }} />
                         </View>
