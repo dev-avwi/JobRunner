@@ -22,7 +22,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -34,7 +36,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { useFocusEffect } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../lib/theme';
-import { api } from '../lib/api';
+import { api, API_URL } from '../lib/api';
 import { showToast } from '../lib/toast';
 import { formatCurrency } from '../lib/format';
 import { fontWeights, spacing, radius, typography } from '../lib/design-tokens';
@@ -107,6 +109,12 @@ export interface UnifiedWorkSectionProps {
    * inline in each phase card, to avoid duplication.
    */
   unassignedChecklistOnly?: boolean;
+  /**
+   * Phase ID to pre-link expenses logged from a work item.
+   * When provided, the "Log expense" button appears in the expanded task panel
+   * and the expense is automatically linked to this phase.
+   */
+  phaseId?: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -343,6 +351,7 @@ export function UnifiedWorkSection({
   onCountsChange,
   showStatusBadge,
   unassignedChecklistOnly,
+  phaseId,
 }: UnifiedWorkSectionProps) {
   const { colors } = useTheme();
   // Checklist items can be edited by any non-read-only user (not owner-gated).
@@ -390,6 +399,14 @@ export function UnifiedWorkSection({
   const [savingInstructions, setSavingInstructions] = useState(false);
   const [editInstructionsPreview, setEditInstructionsPreview] = useState(false);
   const [editInstructionsSel, setEditInstructionsSel] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+
+  // ── Log expense sheet ──
+  const [expenseSheet, setExpenseSheet] = useState<{ taskId: string; taskTitle: string } | null>(null);
+  const [expenseAmount, setExpenseAmount] = useState('');
+  const [expenseDescription, setExpenseDescription] = useState('');
+  const [expenseReceiptUri, setExpenseReceiptUri] = useState<string | null>(null);
+  const [isUploadingReceipt, setIsUploadingReceipt] = useState(false);
+  const [savingExpense, setSavingExpense] = useState(false);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -620,6 +637,71 @@ export function UnifiedWorkSection({
     showToast({ type: 'success', message: 'Instructions updated' });
     closeEditInstructions();
     load();
+  };
+
+  // ── Log expense ──────────────────────────────────────────────────────────────
+
+  const openExpenseSheet = (task: JobTask) => {
+    setExpenseAmount('');
+    setExpenseDescription('');
+    setExpenseReceiptUri(null);
+    setExpenseSheet({ taskId: task.id, taskTitle: task.title });
+  };
+
+  const closeExpenseSheet = () => setExpenseSheet(null);
+
+  const pickExpenseReceipt = async (source: 'camera' | 'library') => {
+    if (source === 'camera') {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+    } else {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+    }
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    setIsUploadingReceipt(true);
+    try {
+      const token = await api.getToken();
+      const formData = new FormData();
+      formData.append('file', { uri: asset.uri, name: asset.fileName || `receipt-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+      formData.append('type', 'expense-receipt');
+      const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const json = await uploadRes.json();
+      if (json.url) setExpenseReceiptUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+      else showToast({ type: 'error', message: 'Upload failed' });
+    } catch { showToast({ type: 'error', message: 'Upload failed' }); }
+    finally { setIsUploadingReceipt(false); }
+  };
+
+  const submitLogExpense = async () => {
+    if (!expenseSheet) return;
+    const parsed = parseFloat(expenseAmount.replace(/[^0-9.]/g, ''));
+    if (!parsed || parsed <= 0) { showToast({ type: 'error', message: 'Enter a valid dollar amount' }); return; }
+    if (!expenseDescription.trim()) { showToast({ type: 'error', message: 'Description is required' }); return; }
+    setSavingExpense(true);
+    try {
+      const body: Record<string, any> = {
+        description: expenseDescription.trim(),
+        amount: String(parsed),
+        expenseDate: new Date().toISOString().split('T')[0],
+        isBillable: true,
+        categoryId: '_worker_receipt_',
+      };
+      if (phaseId) body.phaseId = phaseId;
+      if (expenseReceiptUri) body.receiptUrl = expenseReceiptUri;
+      const res = await api.post(`/api/jobs/${jobId}/expenses`, body);
+      if (res.error) throw new Error(res.error);
+      closeExpenseSheet();
+      showToast({ type: 'success', message: 'Expense logged', description: 'Sent to owner for approval.' });
+    } catch (err: any) {
+      showToast({ type: 'error', message: 'Could not log expense', description: err?.message });
+    } finally {
+      setSavingExpense(false);
+    }
   };
 
   // ── Computed values ─────────────────────────────────────────────────────────
@@ -967,6 +1049,10 @@ export function UnifiedWorkSection({
                             <Feather name="package" size={14} color={colors.foreground} />
                             <Text style={styles.logBtnText}>Log materials</Text>
                           </TouchableOpacity>
+                          <TouchableOpacity style={styles.logBtn} onPress={() => openExpenseSheet(task)}>
+                            <Feather name="file-text" size={14} color={colors.foreground} />
+                            <Text style={styles.logBtnText}>Log expense</Text>
+                          </TouchableOpacity>
                         </>
                       )}
                     </View>
@@ -1177,6 +1263,105 @@ export function UnifiedWorkSection({
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Log expense bottom sheet ── */}
+      <Modal visible={!!expenseSheet} transparent animationType="slide" onRequestClose={closeExpenseSheet}>
+        <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeExpenseSheet} />
+          <ScrollView
+            style={[styles.sheet, { maxHeight: '80%' }]}
+            contentContainerStyle={{ gap: 14, paddingBottom: Platform.OS === 'ios' ? 16 : 0 }}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Log expense</Text>
+            <Text style={styles.sheetSubtitle} numberOfLines={1}>{expenseSheet?.taskTitle}</Text>
+
+            <View>
+              <Text style={styles.fieldLabel}>Amount ($)</Text>
+              <TextInput
+                style={styles.fieldInput}
+                value={expenseAmount}
+                onChangeText={setExpenseAmount}
+                placeholder="0.00"
+                placeholderTextColor={colors.mutedForeground}
+                keyboardType="decimal-pad"
+                returnKeyType="next"
+              />
+            </View>
+
+            <View>
+              <Text style={styles.fieldLabel}>Description</Text>
+              <TextInput
+                style={[styles.fieldInput, { height: 72, textAlignVertical: 'top' }]}
+                value={expenseDescription}
+                onChangeText={setExpenseDescription}
+                placeholder="What was the expense for?"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                returnKeyType="done"
+              />
+            </View>
+
+            {/* Receipt photo */}
+            <View>
+              <Text style={styles.fieldLabel}>Receipt (optional)</Text>
+              {expenseReceiptUri ? (
+                <View style={{ gap: 8 }}>
+                  <Image
+                    source={{ uri: expenseReceiptUri }}
+                    style={{ width: '100%', height: 140, borderRadius: 8, backgroundColor: colors.muted }}
+                    resizeMode="cover"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setExpenseReceiptUri(null)}
+                    style={{ alignItems: 'center', paddingVertical: 4 }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={{ color: colors.destructive, fontSize: 13 }}>Remove photo</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={[styles.logBtn, { flex: 1, justifyContent: 'center', opacity: isUploadingReceipt ? 0.5 : 1 }]}
+                    onPress={() => pickExpenseReceipt('camera')}
+                    disabled={isUploadingReceipt}
+                  >
+                    {isUploadingReceipt
+                      ? <ActivityIndicator size="small" color={colors.foreground} />
+                      : <Feather name="camera" size={14} color={colors.foreground} />}
+                    <Text style={styles.logBtnText}>Take photo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.logBtn, { flex: 1, justifyContent: 'center', opacity: isUploadingReceipt ? 0.5 : 1 }]}
+                    onPress={() => pickExpenseReceipt('library')}
+                    disabled={isUploadingReceipt}
+                  >
+                    {isUploadingReceipt
+                      ? <ActivityIndicator size="small" color={colors.foreground} />
+                      : <Feather name="image" size={14} color={colors.foreground} />}
+                    <Text style={styles.logBtnText}>Choose photo</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.submitBtn, (!expenseAmount.trim() || !expenseDescription.trim() || savingExpense || isUploadingReceipt) && { opacity: 0.5 }]}
+              onPress={submitLogExpense}
+              disabled={!expenseAmount.trim() || !expenseDescription.trim() || savingExpense || isUploadingReceipt}
+            >
+              {savingExpense
+                ? <ActivityIndicator size="small" color={colors.primaryForeground ?? '#fff'} />
+                : <Text style={styles.submitBtnText}>Save expense</Text>}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeExpenseSheet}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
 
