@@ -30,6 +30,8 @@ export default function JobLayout() {
       <Stack.Screen name="chat" options={{ headerShown: false }} />
       {/* Phase detail — uses its own Stack.Screen inside the component (same pattern as [id].tsx) */}
       <Stack.Screen name="phase-detail" />
+      {/* Activity log — full activity history for a job */}
+      <Stack.Screen name="activity" />
     </Stack>
   );
 }

@@ -9451,7 +9451,7 @@ export default function JobDetailScreen() {
             </View>
             <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Recent Activity</Text>
             {(isOwnerOrManager || isSoloOwner) && (
-              <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
+              <TouchableOpacity onPress={() => router.push({ pathname: '/job/activity', params: { jobId: id, jobTitle: job?.title } })} activeOpacity={0.7}>
                 <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>View all</Text>
               </TouchableOpacity>
             )}
