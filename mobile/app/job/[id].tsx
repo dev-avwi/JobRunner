@@ -226,6 +226,17 @@ interface JobChatMessage {
 // TTL for offline snapshots of job sub-resources (materials, team, assignments)
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
+// Pre-defined phase templates — client-side only, no backend required.
+// Each entry pre-fills the phase name, description, and starter tasks.
+const PHASE_TEMPLATES: Array<{ name: string; description: string; tasks: string[] }> = [
+  { name: 'Waterproofing', description: 'Waterproofing and membrane installation', tasks: ['Prepare substrate', 'Apply primer coat', 'Install membrane', 'Test for leaks', 'Final inspection'] },
+  { name: 'Fit-Out', description: 'Interior fit-out and finishing', tasks: ['Frame walls', 'Run electrical & plumbing', 'Insulation', 'Line and set', 'Paint and finish'] },
+  { name: 'Framing', description: 'Structural wall framing', tasks: ['Set out layout', 'Install bottom plate', 'Erect wall frames', 'Install top plate', 'Bracing and check'] },
+  { name: 'Electrical', description: 'Electrical rough-in and fit-off', tasks: ['Cable runs', 'Install switchboard', 'Rough-in outlets', 'Inspection', 'Fit-off fittings'] },
+  { name: 'Plumbing', description: 'Plumbing rough-in and fixtures', tasks: ['Rough-in pipes', 'Pressure test', 'Install fixtures', 'Connect hot water', 'Final inspection'] },
+  { name: 'Demolition', description: 'Site demolition and clearing', tasks: ['Safety check', 'Remove fixtures', 'Strip walls', 'Clear debris', 'Make safe'] },
+];
+
 interface Client {
   id: string;
   name: string;
@@ -2411,6 +2422,15 @@ export default function JobDetailScreen() {
   const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '', assignedUserIds: [] as string[] });
   const [showAddPhaseTeamPicker, setShowAddPhaseTeamPicker] = useState(false);
   const [showEditPhaseTeamPicker, setShowEditPhaseTeamPicker] = useState(false);
+  // Starter tasks typed in the Add Phase modal — created after the phase is saved
+  const [addPhaseStarterTasks, setAddPhaseStarterTasks] = useState<string[]>([]);
+  const [addPhaseStarterTaskInput, setAddPhaseStarterTaskInput] = useState('');
+  // Phases whose task count just hit 100% and should show a "mark complete?" nudge
+  const [phaseCompleteNudge, setPhaseCompleteNudge] = useState<Set<string>>(new Set());
+  // Inline quick-add state per phase card
+  const [phaseQuickAddInput, setPhaseQuickAddInput] = useState<Record<string, string>>({});
+  const [phaseQuickAddActive, setPhaseQuickAddActive] = useState<Set<string>>(new Set());
+  const [isAddingPhaseTask, setIsAddingPhaseTask] = useState<Set<string>>(new Set());
   // Shared date-picker target for phase modals — only one open at a time
   const [phaseDateTarget, setPhaseDateTarget] = useState<{ form: 'add' | 'edit'; field: 'start' | 'end' } | null>(null);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
@@ -3139,7 +3159,9 @@ export default function JobDetailScreen() {
     }));
     setPhaseTaskCounts(prev => {
       const old = prev[phaseId] ?? { completed: 0, total: 0 };
-      return { ...prev, [phaseId]: { ...old, completed: Math.max(0, old.completed + (next ? 1 : -1)) } };
+      const newCompleted = Math.max(0, old.completed + (next ? 1 : -1));
+      // Nudge detection happens in a useEffect watching phaseTaskCounts
+      return { ...prev, [phaseId]: { ...old, completed: newCompleted } };
     });
     setPhaseTaskToggling(prev => new Set(prev).add(item.id));
     try {
@@ -3159,6 +3181,41 @@ export default function JobDetailScreen() {
       setPhaseTaskToggling(prev => { const n = new Set(prev); n.delete(item.id); return n; });
     }
   }, [id]);
+
+  // Detect when all tasks in an in-progress phase are done and show a "mark complete?" nudge.
+  useEffect(() => {
+    if (!phases.length) return;
+    phases.forEach(phase => {
+      if (phase.status === 'complete' || phase.status === 'invoiced') return;
+      const counts = phaseTaskCounts[phase.id];
+      if (!counts || counts.total === 0) return;
+      if (counts.completed >= counts.total) {
+        setPhaseCompleteNudge(prev => prev.has(phase.id) ? prev : (() => { const n = new Set(prev); n.add(phase.id); return n; })());
+      } else {
+        setPhaseCompleteNudge(prev => {
+          if (!prev.has(phase.id)) return prev;
+          const n = new Set(prev); n.delete(phase.id); return n;
+        });
+      }
+    });
+  }, [phaseTaskCounts, phases]);
+
+  // Add a checklist item to a phase inline from the Tasks tab card.
+  const addQuickPhaseTask = useCallback(async (phaseId: string, text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || !id) return;
+    setIsAddingPhaseTask(prev => new Set(prev).add(phaseId));
+    try {
+      await api.post(`/api/jobs/${id}/checklist`, { text: trimmed, phaseId, isCompleted: false });
+      setPhaseQuickAddInput(prev => ({ ...prev, [phaseId]: '' }));
+      setPhaseQuickAddActive(prev => { const n = new Set(prev); n.delete(phaseId); return n; });
+      await loadPhaseTasksForPhase(phaseId);
+    } catch {
+      showToast({ type: 'error', message: 'Could not add task' });
+    } finally {
+      setIsAddingPhaseTask(prev => { const n = new Set(prev); n.delete(phaseId); return n; });
+    }
+  }, [id, loadPhaseTasksForPhase]);
 
   const handleAdvancePhaseStatus = useCallback(async (phaseId: string, currentStatus: string) => {
     if (!id) return;
@@ -3287,7 +3344,7 @@ export default function JobDetailScreen() {
     try {
       const autoCode = `P${String(phases.length + 1).padStart(2, '0')}`;
       const phaseCode = addPhaseForm.phaseCode.trim().toUpperCase() || autoCode;
-      await api.post(`/api/jobs/${id}/phases`, {
+      const res = await api.post<{ id: string }>(`/api/jobs/${id}/phases`, {
         phaseCode,
         name: addPhaseForm.name.trim(),
         description: addPhaseForm.description.trim() || null,
@@ -3296,10 +3353,22 @@ export default function JobDetailScreen() {
         assignedUserId: addPhaseForm.assignedUserId || null,
         assignedUserIds: addPhaseForm.assignedUserIds,
       });
+      // Create any starter tasks that were typed in the modal
+      const tasksToCreate = addPhaseStarterTasks.filter(t => t.trim());
+      if (res.data?.id && tasksToCreate.length > 0) {
+        await Promise.all(
+          tasksToCreate.map((text, i) =>
+            api.post(`/api/jobs/${id}/checklist`, { text: text.trim(), phaseId: res.data!.id, isCompleted: false, sortOrder: i })
+          )
+        );
+      }
       await loadPhases();
       setShowAddPhaseModal(false);
       setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] });
-      showToast({ type: 'success', message: 'Phase added' });
+      setAddPhaseStarterTasks([]);
+      setAddPhaseStarterTaskInput('');
+      const taskCount = tasksToCreate.length;
+      showToast({ type: 'success', message: taskCount > 0 ? `Phase added with ${taskCount} task${taskCount !== 1 ? 's' : ''}` : 'Phase added' });
     } catch (e: any) {
       showToast({ type: 'error', message: e?.response?.data?.error || 'Failed to add phase' });
     } finally {
@@ -12366,6 +12435,66 @@ export default function JobDetailScreen() {
                               </View>
                             )}
 
+                            {/* Mark complete nudge — appears when all tasks are ticked but phase is still open */}
+                            {phaseCompleteNudge.has(phase.id) && (phase.status === 'not_started' || phase.status === 'in_progress') && (
+                              <View style={{ marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, backgroundColor: colorWithOpacity(colors.success, 0.1), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.25), flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                <Feather name="check-circle" size={14} color={colors.success} />
+                                <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground }}>All tasks done. Mark this phase complete?</Text>
+                                <TouchableOpacity
+                                  onPress={() => { setPhaseCompleteNudge(prev => { const n = new Set(prev); n.delete(phase.id); return n; }); handleAdvancePhaseStatus(phase.id, phase.status); }}
+                                  disabled={phaseStatusLoading.has(phase.id)}
+                                  style={{ paddingHorizontal: spacing.sm, paddingVertical: 5, borderRadius: radius.sm, backgroundColor: colors.success }}
+                                  activeOpacity={0.8}
+                                >
+                                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: '#fff' }}>Mark Complete</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+
+                            {/* Inline quick-add task row */}
+                            {job.status !== 'invoiced' && (
+                              phaseQuickAddActive.has(phase.id) ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+                                  <TextInput
+                                    style={{ flex: 1, height: 36, paddingHorizontal: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, fontSize: typography.caption.fontSize, color: colors.foreground }}
+                                    placeholder="Task name..."
+                                    placeholderTextColor={colors.mutedForeground}
+                                    value={phaseQuickAddInput[phase.id] ?? ''}
+                                    onChangeText={t => setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: t }))}
+                                    onSubmitEditing={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '')}
+                                    autoFocus
+                                    returnKeyType="done"
+                                  />
+                                  <TouchableOpacity
+                                    onPress={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '')}
+                                    disabled={isAddingPhaseTask.has(phase.id) || !(phaseQuickAddInput[phase.id] ?? '').trim()}
+                                    style={{ width: 32, height: 32, borderRadius: radius.sm, backgroundColor: (phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primary : colors.muted, alignItems: 'center', justifyContent: 'center' }}
+                                    activeOpacity={0.8}
+                                  >
+                                    {isAddingPhaseTask.has(phase.id)
+                                      ? <ActivityIndicator size="small" color={colors.primaryForeground} style={{ width: 14, height: 14 }} />
+                                      : <Feather name="check" size={13} color={(phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primaryForeground : colors.mutedForeground} />}
+                                  </TouchableOpacity>
+                                  <TouchableOpacity
+                                    onPress={() => { setPhaseQuickAddActive(prev => { const n = new Set(prev); n.delete(phase.id); return n; }); setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: '' })); }}
+                                    hitSlop={8}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Feather name="x" size={14} color={colors.mutedForeground} />
+                                  </TouchableOpacity>
+                                </View>
+                              ) : (
+                                <TouchableOpacity
+                                  onPress={() => setPhaseQuickAddActive(prev => new Set(prev).add(phase.id))}
+                                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingTop: spacing.sm }}
+                                  activeOpacity={0.7}
+                                >
+                                  <Feather name="plus" size={12} color={colors.primary} />
+                                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>Add task</Text>
+                                </TouchableOpacity>
+                              )
+                            )}
+
                             {/* Compact time log for this phase */}
                             {phaseEntries.length > 0 && (
                               <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
@@ -12967,13 +13096,13 @@ export default function JobDetailScreen() {
       {/* Add Phase Modal */}
       <AppBottomSheet
         visible={showAddPhaseModal}
-        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); }}
+        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); setAddPhaseStarterTasks([]); setAddPhaseStarterTaskInput(''); }}
         title="Add Phase"
         showCloseButton
         snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); }} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); setAddPhaseStarterTasks([]); setAddPhaseStarterTaskInput(''); }} style={{ flex: 1 }} />
             <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
           </View>
         )}>
@@ -13059,6 +13188,67 @@ export default function JobDetailScreen() {
             onManageTeam={() => { setShowAddPhaseModal(false); router.push('/more/team-management'); }}
             testID="add-phase-team"
           />
+
+          {/* Quick templates — fills Name, Description, and Starter Tasks with one tap */}
+          <View style={{ marginTop: spacing.lg }}>
+            <Text style={[styles.cardLabel, { marginBottom: spacing.sm }]}>Quick Templates</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: 2 }}>
+              {PHASE_TEMPLATES.map(tmpl => (
+                <TouchableOpacity
+                  key={tmpl.name}
+                  onPress={() => {
+                    setAddPhaseForm(f => ({ ...f, name: f.name || tmpl.name, description: f.description || tmpl.description }));
+                    setAddPhaseStarterTasks(tmpl.tasks);
+                    setAddPhaseStarterTaskInput('');
+                  }}
+                  style={{ paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>{tmpl.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Starter tasks — created after the phase is saved, linked to the new phase */}
+          <View style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
+            <Text style={[styles.cardLabel, { marginBottom: spacing.sm }]}>Starter Tasks</Text>
+            {addPhaseStarterTasks.map((task, idx) => (
+              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs, paddingVertical: 3 }}>
+                <Feather name="check-square" size={13} color={colors.mutedForeground} />
+                <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground }}>{task}</Text>
+                <TouchableOpacity onPress={() => setAddPhaseStarterTasks(prev => prev.filter((_, i) => i !== idx))} hitSlop={8} activeOpacity={0.7}>
+                  <Feather name="x" size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: addPhaseStarterTasks.length > 0 ? spacing.xs : 0 }}>
+              <TextInput
+                style={[styles.singleLineInput, { flex: 1, height: 40 }]}
+                placeholder="Add a task..."
+                placeholderTextColor={colors.mutedForeground}
+                value={addPhaseStarterTaskInput}
+                onChangeText={setAddPhaseStarterTaskInput}
+                onSubmitEditing={() => {
+                  const t = addPhaseStarterTaskInput.trim();
+                  if (t) { setAddPhaseStarterTasks(prev => [...prev, t]); setAddPhaseStarterTaskInput(''); }
+                }}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  const t = addPhaseStarterTaskInput.trim();
+                  if (t) { setAddPhaseStarterTasks(prev => [...prev, t]); setAddPhaseStarterTaskInput(''); }
+                }}
+                disabled={!addPhaseStarterTaskInput.trim()}
+                style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: addPhaseStarterTaskInput.trim() ? colors.primary : colors.muted, alignItems: 'center', justifyContent: 'center' }}
+                activeOpacity={0.7}
+              >
+                <Feather name="plus" size={16} color={addPhaseStarterTaskInput.trim() ? colors.primaryForeground : colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
           <View style={{ display: 'none' }}>
           {/* Legacy single-member selector, retained only while hidden for a safe rollback. */}
           <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
