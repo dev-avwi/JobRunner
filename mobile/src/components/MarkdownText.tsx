@@ -1,9 +1,9 @@
 /**
  * MarkdownText – lightweight markdown renderer for React Native.
- * Supports: ## H2, ### H3, - bullets, 1. numbered, **bold**, *italic*, _italic_
- * Plain text falls through as-is, so legacy task descriptions render correctly.
+ * Supports: ## H2, ### H3, - bullets, 1. numbered, **bold**, *italic*, _italic_,
+ * ![alt](url) images. Plain text falls through as-is.
  */
-import { Text, View, StyleSheet } from 'react-native';
+import { Text, View, StyleSheet, Image } from 'react-native';
 import { useTheme } from '../lib/theme';
 
 type Segment = { text: string; bold?: boolean; italic?: boolean };
@@ -37,7 +37,7 @@ export function MarkdownText({ children, style, numberOfLines }: Props) {
   if (!children) return null;
 
   // If content has no markdown syntax and no newlines, render as-is quickly
-  const hasMarkdown = /^#{1,3} |^\s*[-*] |\d+\. |\*\*|\*|_/.test(children) || children.includes('\n');
+  const hasMarkdown = /^#{1,3} |^\s*[-*] |\d+\. |\*\*|\*|_|!\[/.test(children) || children.includes('\n');
   if (!hasMarkdown) {
     return <Text style={[{ color: colors.foreground }, style]} numberOfLines={numberOfLines}>{children}</Text>;
   }
@@ -105,6 +105,11 @@ export function MarkdownText({ children, style, numberOfLines }: Props) {
         if (h3) {
           numberedCount = 0;
           return <Text key={idx} style={s.h3}>{h3[1]}</Text>;
+        }
+        const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
+        if (img) {
+          numberedCount = 0;
+          return <Image key={idx} source={{ uri: img[2] }} style={{ width: '100%', height: 180, borderRadius: 6, marginVertical: 4, resizeMode: 'cover' }} />;
         }
         const bullet = line.match(/^\s*[-*] (.+)/);
         if (bullet) {

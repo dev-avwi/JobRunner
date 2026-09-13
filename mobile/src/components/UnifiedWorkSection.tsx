@@ -367,6 +367,8 @@ export function UnifiedWorkSection({
   const [addMode, setAddMode] = useState<'item' | 'task'>('item');
   const [newText, setNewText] = useState('');
   const [newTaskInstructions, setNewTaskInstructions] = useState('');
+  const [newTaskInstructionsSel, setNewTaskInstructionsSel] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+  const [addingDescImage, setAddingDescImage] = useState(false);
   const [adding, setAdding] = useState(false);
 
   // Checklist drag state
@@ -540,6 +542,34 @@ export function UnifiedWorkSection({
     setNewText('');
     setNewTaskInstructions('');
     load();
+  };
+
+  // ── Image insert into add-task description ──────────────────────────────────
+
+  const insertDescriptionImage = async (source: 'camera' | 'library') => {
+    const perm = source === 'camera'
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (perm.status !== 'granted') { showToast({ type: 'error', message: 'Permission required' }); return; }
+    const result = source === 'camera'
+      ? await ImagePicker.launchCameraAsync({ quality: 0.8 })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    setAddingDescImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', { uri: asset.uri, name: asset.fileName || `img-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+      const token = await api.getToken();
+      const res = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData });
+      const json = await res.json();
+      if (json.url) {
+        const tag = `\n![image](${json.url})\n`;
+        const cur = newTaskInstructionsSel.start;
+        setNewTaskInstructions((prev) => prev.slice(0, cur) + tag + prev.slice(cur));
+      } else { showToast({ type: 'error', message: 'Upload failed' }); }
+    } catch { showToast({ type: 'error', message: 'Upload failed' }); }
+    finally { setAddingDescImage(false); }
   };
 
   // ── Cost edit ───────────────────────────────────────────────────────────────
@@ -913,7 +943,7 @@ export function UnifiedWorkSection({
                         );
                       })()}
                     </View>
-                    {!!task.description && !isExpanded && <Text style={styles.taskDesc} numberOfLines={2}>{task.description}</Text>}
+                    {!!task.description && !isExpanded && <MarkdownText style={styles.taskDesc} numberOfLines={2}>{task.description}</MarkdownText>}
                     {(hasHours || hasMaterials) && (
                       <View style={styles.taskTotals}>
                         {hasHours && (
@@ -1144,15 +1174,38 @@ export function UnifiedWorkSection({
                 </TouchableOpacity>
               </View>
               {addMode === 'task' && (
-                <TextInput
-                  style={[styles.input, { marginTop: 6, minHeight: 72, textAlignVertical: 'top', paddingTop: 10 }]}
-                  value={newTaskInstructions}
-                  onChangeText={setNewTaskInstructions}
-                  placeholder={'Instructions (optional) — what needs to be done'}
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                  returnKeyType="default"
-                />
+                <View style={{ marginTop: 6 }}>
+                  {/* Toolbar row: markdown formatting + image insert */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: colors.border, borderBottomWidth: 0, borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md, backgroundColor: colors.muted, paddingHorizontal: 4 }}>
+                    <View style={{ flex: 1 }}>
+                      <MarkdownToolbar
+                        value={newTaskInstructions}
+                        selection={newTaskInstructionsSel}
+                        onChange={setNewTaskInstructions}
+                      />
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => insertDescriptionImage('library')}
+                      hitSlop={8}
+                      style={{ padding: 6 }}
+                      disabled={addingDescImage}
+                    >
+                      {addingDescImage
+                        ? <ActivityIndicator size="small" color={colors.mutedForeground} />
+                        : <Feather name="image" size={16} color={colors.mutedForeground} />}
+                    </TouchableOpacity>
+                  </View>
+                  <TextInput
+                    style={[styles.input, { minHeight: 72, textAlignVertical: 'top', paddingTop: 10, borderTopLeftRadius: 0, borderTopRightRadius: 0 }]}
+                    value={newTaskInstructions}
+                    onChangeText={setNewTaskInstructions}
+                    onSelectionChange={(e) => setNewTaskInstructionsSel(e.nativeEvent.selection)}
+                    placeholder={'Instructions — what needs to be done'}
+                    placeholderTextColor={colors.mutedForeground}
+                    multiline
+                    returnKeyType="default"
+                  />
+                </View>
               )}
             </View>
           )}
