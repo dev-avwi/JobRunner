@@ -99,6 +99,7 @@ import { DocumentRegisterSection } from '../../src/components/jobDetail/Document
 import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
 import { PendingProjectUploadsBanner } from '../../src/components/jobDetail/PendingProjectUploadsBanner';
 import { SkeletonJobDetailOverview, SkeletonSection } from '../../src/components/Skeleton';
+import { LoggedWorkLineItems } from '../../src/components/jobDetail/LoggedWorkLineItems';
 
 interface JobNoteItem {
   id: string;
@@ -2793,6 +2794,13 @@ export default function JobDetailScreen() {
       fetchActiveTimer();
       loadTimeEntries();
       loadTeamTimers();
+      // Refresh billing-related data so the Line Items section stays accurate
+      // after returning from invoice/quote creation, material logging, or expense
+      // submission. These are cheap GET calls and prevent stale "Draft Invoice"
+      // buttons when an invoice was just created in a child screen.
+      loadRelatedDocuments();
+      loadMaterials();
+      loadJobExpenses();
       // When returning to the Tasks tab, refresh phase task counts and any
       // already-expanded inline checklists so they reflect changes made in
       // phase-detail (or elsewhere) while this screen was in the background.
@@ -12954,6 +12962,20 @@ export default function JobDetailScreen() {
                   onRefresh={loadJobExpenses}
                 />
               </View>
+            )}
+            {/* ── Logged Work Line Items: billing summary for owners/managers ── */}
+            {(isOwnerOrManager || isSoloOwner) && (
+              <LoggedWorkLineItems
+                jobId={id as string}
+                jobTitle={job?.title}
+                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                invoice={invoice}
+                quote={quote}
+                clientId={client?.id}
+                timeEntries={timeEntries}
+                materials={materials}
+                jobExpenses={jobExpenses}
+              />
             )}
             {renderNotesTab()}
             {renderManageTab()}

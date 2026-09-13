@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DRAFT_LINE_ITEMS_KEY } from '../../../src/components/jobDetail/LoggedWorkLineItems';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import {
   View,
@@ -975,6 +977,29 @@ export default function NewInvoiceScreen() {
             }));
           }
         }
+
+        // Pre-reviewed items from the LoggedWorkLineItems "Draft Invoice" tap take
+        // priority over ALL other prefill sources (quote, time entries, materials).
+        // Consume the key immediately so stale payloads can never bleed into
+        // unrelated drafts — even when the job also has an accepted quote.
+        try {
+          const stored = await AsyncStorage.getItem(DRAFT_LINE_ITEMS_KEY(jId));
+          if (stored) {
+            await AsyncStorage.removeItem(DRAFT_LINE_ITEMS_KEY(jId));
+            const storedItems: Array<{ id?: string; description?: string; quantity?: string; unitPrice?: string }> = JSON.parse(stored);
+            if (Array.isArray(storedItems) && storedItems.length > 0) {
+              setLineItems(
+                storedItems.map((item, idx) => ({
+                  id: item.id || `prefill-${idx}-${Date.now()}`,
+                  description: item.description || '',
+                  quantity: String(item.quantity || '1'),
+                  unitPrice: String(item.unitPrice || '0'),
+                })),
+              );
+              return; // Skip quote / time-entry / material auto-prefill entirely
+            }
+          }
+        } catch {}
 
         let prefilledFromQuote = false;
         try {

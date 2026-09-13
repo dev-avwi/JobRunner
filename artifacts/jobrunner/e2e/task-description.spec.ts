@@ -145,7 +145,7 @@ async function mockJobDetailApis(page: Page, tasks: object[] = []) {
  * where UnifiedWorkSection lives.
  */
 async function gotoActivityTab(page: Page) {
-  await page.goto(`/jobs/${JOB.id}?tab=activity`, { waitUntil: 'networkidle' });
+  await page.goto(`/jobs/${JOB.id}?tab=activity`, { waitUntil: 'load' });
   await expect(page.locator('[data-testid="job-detail-view"]')).toBeVisible({ timeout: 15000 });
   await expect(page.locator('[data-testid="tab-activity"]')).toBeVisible({ timeout: 10000 });
   await page.locator('[data-testid="tab-activity"]').click();

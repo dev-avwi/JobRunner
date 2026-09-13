@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DRAFT_LINE_ITEMS_KEY } from '../../../src/components/jobDetail/LoggedWorkLineItems';
 import {
   View,
   Text,
@@ -718,6 +720,32 @@ export default function NewQuoteScreen() {
     };
     fetchJobAndSetClient();
   }, [params.jobId, params.clientId]);
+
+  // Load pre-computed line items from LoggedWorkLineItems "Draft Quote" tap
+  useEffect(() => {
+    if (!params.jobId || params.editQuoteId) return;
+    const loadPrefilled = async () => {
+      try {
+        const key = DRAFT_LINE_ITEMS_KEY(String(params.jobId));
+        const stored = await AsyncStorage.getItem(key);
+        if (stored) {
+          await AsyncStorage.removeItem(key);
+          const storedItems: Array<{ id?: string; description?: string; quantity?: string; unitPrice?: string }> = JSON.parse(stored);
+          if (Array.isArray(storedItems) && storedItems.length > 0) {
+            setLineItems(
+              storedItems.map((item, idx) => ({
+                id: item.id || `prefill-${idx}-${Date.now()}`,
+                description: item.description || '',
+                quantity: String(item.quantity || '1'),
+                unitPrice: String(item.unitPrice || '0'),
+              })),
+            );
+          }
+        }
+      } catch {}
+    };
+    loadPrefilled();
+  }, [params.jobId, params.editQuoteId]);
 
   useEffect(() => {
     const loadQuoteForEditing = async (quoteId: string) => {
