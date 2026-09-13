@@ -8382,27 +8382,6 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       )}
 
-      {/* ── About this job ── */}
-      {!!job.description && (
-        <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          padding: spacing.lg,
-          marginBottom: spacing.md,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          ...shadows.sm,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
-            <Feather name="file-text" size={14} color={colors.mutedForeground} />
-            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
-          </View>
-          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>
-            {job.description}
-          </Text>
-        </View>
-      )}
-
       {/* Section anchor: status */}
       <View onLayout={(e) => { sectionOffsets.current['status'] = e.nativeEvent.layout.y; }} />
 
@@ -8567,10 +8546,31 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       )}
 
+      {/* ── About this job ── */}
+      {!!job.description && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderRadius: radius.xl,
+          padding: spacing.lg,
+          marginBottom: spacing.md,
+          borderWidth: 1,
+          borderColor: colors.cardBorder,
+          ...shadows.sm,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <Feather name="file-text" size={14} color={colors.mutedForeground} />
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
+          </View>
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>
+            {job.description}
+          </Text>
+        </View>
+      )}
+
       {/* Scheduled Date Card */}
       {(job.scheduledAt || job.status === 'scheduled') && (
-        <PressableRow 
- 
+        <PressableRow
+
           style={styles.card}
           onPress={isSubcontractorUser ? undefined : () => {
             setScheduleDate(job.scheduledAt ? new Date(job.scheduledAt) : new Date());
@@ -11947,6 +11947,41 @@ export default function JobDetailScreen() {
              PROJECT VIEW — phases are the primary organiser
           ═══════════════════════════════════════════════ */
           <>
+            {/* Quick Field Actions — at the top so workers can log without scrolling */}
+            {job.status !== 'invoiced' && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: spacing.md }}
+                contentContainerStyle={{ gap: spacing.sm }}
+              >
+                <TouchableOpacity
+                  onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.warning}40`, backgroundColor: `${colors.warning}10`, minWidth: 120 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="alert-circle" size={14} color={colors.warning} />
+                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.warning }}>Flag Extra Work</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="package" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="camera" size={14} color={colors.success} />
+                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+
             {/* Phase cards — completed phases collapse to a compact row */}
             {isLoadingPhases ? (
               <View style={[styles.photosCard, { marginBottom: spacing.md }]}><SkeletonSection rows={3} /></View>
@@ -12296,41 +12331,6 @@ export default function JobDetailScreen() {
               </View>
             )}
 
-            {/* Quick Field Actions — compact chip row */}
-            {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
-                <TouchableOpacity
-                  onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.warning}40`, backgroundColor: `${colors.warning}10`, minWidth: 120 }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="alert-circle" size={14} color={colors.warning} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.warning }}>Flag Extra Work</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
-
             {/* Job-level work items: shown below phase cards; uses phaseId=null filter when
                 phases exist so phase-linked checklist items only appear in their phase card */}
             <UnifiedWorkSection
@@ -12410,6 +12410,33 @@ export default function JobDetailScreen() {
              SERVICE CALL VIEW — flat, quick, on-site focus
           ═══════════════════════════════════════════════ */
           <>
+            {/* Quick Field Actions — compact chip row at top for instant access */}
+            {job.status !== 'invoiced' && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={{ marginBottom: spacing.md }}
+                contentContainerStyle={{ gap: spacing.sm }}
+              >
+                <TouchableOpacity
+                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="package" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
+                  activeOpacity={0.7}
+                >
+                  <Feather name="camera" size={14} color={colors.success} />
+                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            )}
+
             {/* ── Time tracking + estimated hours card ── */}
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               {/* Quoted vs tracked hours row */}
@@ -12533,33 +12560,6 @@ export default function JobDetailScreen() {
                 </View>
               );
             })()}
-
-            {/* Quick Field Actions — compact chip row */}
-            {job.status !== 'invoiced' && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginBottom: spacing.md }}
-                contentContainerStyle={{ gap: spacing.sm }}
-              >
-                <TouchableOpacity
-                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.primary}40`, backgroundColor: `${colors.primary}10`, minWidth: 120 }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="package" size={14} color={colors.primary} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Material</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.pill, borderWidth: 1, borderColor: `${colors.success}40`, backgroundColor: `${colors.success}10`, minWidth: 120 }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="camera" size={14} color={colors.success} />
-                  <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.success }}>Log Expense</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            )}
 
             <UnifiedWorkSection
               jobId={job.id}
