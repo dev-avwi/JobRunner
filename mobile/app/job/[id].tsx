@@ -11436,10 +11436,11 @@ export default function JobDetailScreen() {
               };
               const st = statusMap[phase.status] ?? statusMap.not_started;
 
-              // Card style — no left border; status conveyed via dot + badge
+              // Card style — no left border; in-progress gets a subtle primary tint
               const cardStyle: any[] = [
                 styles.photosCard,
                 { marginBottom: spacing.md, overflow: 'hidden' },
+                isInProgress && { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}40` },
               ];
 
               // Collapsed completed phase — muted compact row
