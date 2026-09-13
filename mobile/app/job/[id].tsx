@@ -8382,6 +8382,256 @@ export default function JobDetailScreen() {
         </View>
       )}
 
+      {/* ── About this job ── */}
+      <View style={{
+        backgroundColor: colors.card,
+        borderRadius: radius.xl,
+        padding: spacing.lg,
+        marginBottom: spacing.md,
+        borderWidth: 1,
+        borderColor: colors.cardBorder,
+        ...shadows.sm,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+          <Feather name="file-text" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
+          <TouchableOpacity
+            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
+            activeOpacity={0.7}
+            style={{ marginLeft: 'auto' }}
+          >
+            <Feather name="edit-3" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        </View>
+        {job.description ? (
+          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: (job.notes || jobNotes.length > 0) ? spacing.md : 0 }}>
+            {job.description}
+          </Text>
+        ) : null}
+        {(jobNotes.length > 0 || job.notes) ? (
+          <TouchableOpacity
+            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
+            activeOpacity={0.7}
+            style={job.description ? { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: spacing.md } : {}}
+          >
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.xs }}>Notes</Text>
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={4}>
+              {jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : job.notes}
+            </Text>
+            {jobNotes.length > 1 && (
+              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, marginTop: spacing.xs }}>
+                +{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
+          >
+            <Feather name="plus" size={14} color={colors.primary} />
+            <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Add notes</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Section anchor: status */}
+      <View onLayout={(e) => { sectionOffsets.current['status'] = e.nativeEvent.layout.y; }} />
+
+      {/* Main Action Button - Hero zone, prominent near the top */}
+      <View style={styles.actionButtonContainer}>
+        {allWorkersComplete && isJobManager && job.status !== 'done' && job.status !== 'invoiced' && (
+          <View style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.cardBorder,
+            borderLeftWidth: 3,
+            borderLeftColor: colors.success,
+            borderRadius: radius.lg,
+            padding: spacing.md,
+            marginBottom: spacing.sm,
+          }}>
+            <Feather name="check-circle" size={18} color={colors.success} />
+            <Text style={{ ...typography.caption, color: colors.foreground, flex: 1 }}>
+              All {totalWorkerCount} workers have completed their part. You can finish the job.
+            </Text>
+          </View>
+        )}
+        {action ? (
+          job.status === 'scheduled' && job.clientId ? (
+            <View style={{ gap: spacing.sm }}>
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              {job.workerStatus === 'on_my_way' ? (
+                <TouchableOpacity
+                  style={[styles.mainActionButton, {
+                    flex: 1,
+                    flexBasis: 0,
+                    minWidth: 0,
+                    borderWidth: 1.5,
+                    borderColor: colors.info,
+                    backgroundColor: colors.card,
+                  }]}
+                  onPress={() => {
+                    const { openMapsWithPreference } = require('../../src/lib/maps-store');
+                    if (job.latitude && job.longitude) {
+                      openMapsWithPreference(job.latitude, job.longitude, job.address);
+                    } else if (job.address) {
+                      const { openMapsWithAddress } = require('../../src/lib/maps-store');
+                      openMapsWithAddress(job.address);
+                    }
+                  }}
+                  activeOpacity={0.8}
+                  data-testid="button-directions"
+                >
+                  <Feather name="map" size={18} color={colors.info} />
+                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize, marginLeft: spacing.xs }}>
+                    Directions
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.mainActionButton, {
+                    flex: 1,
+                    flexBasis: 0,
+                    minWidth: 0,
+                    borderWidth: 1.5,
+                    borderColor: colors.info,
+                    backgroundColor: colors.card,
+                    opacity: isSendingOnMyWay ? 0.6 : 1,
+                  }]}
+                  onPress={handleOnMyWay}
+                  activeOpacity={0.8}
+                  disabled={isSendingOnMyWay}
+                  data-testid="button-on-my-way"
+                >
+                  <Feather name="navigation" size={18} color={colors.info} />
+                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
+                    On My Way
+                  </Text>
+                  {isSendingOnMyWay && (
+                    <ActivityIndicator size="small" color={colors.info} style={{ marginLeft: spacing.xs }} />
+                  )}
+                </TouchableOpacity>
+              )}
+              
+              <PressableRow
+                style={[styles.mainActionButton, { backgroundColor: colors.primary, flex: 1, flexBasis: 0, minWidth: 0 }]}
+                onPress={handleMainAction}
+
+                data-testid="button-main-action"
+              >
+                <View style={styles.mainActionButtonIcon}>
+                  <Feather name={action.icon} size={action.iconSize} color={colors.primaryForeground} />
+                </View>
+                <Text style={styles.mainActionText}>{action.label}</Text>
+              </PressableRow>
+              </View>
+              {job.workerStatus === 'on_my_way' && (
+                <TouchableOpacity
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    paddingVertical: 6,
+                    opacity: isSendingOnMyWay ? 0.5 : 1,
+                  }}
+                  onPress={handleOnMyWay}
+                  activeOpacity={0.7}
+                  disabled={isSendingOnMyWay}
+                  data-testid="button-resend-on-my-way"
+                >
+                  {isSendingOnMyWay ? (
+                    <ActivityIndicator size="small" color={colors.mutedForeground} />
+                  ) : (
+                    <>
+                      <Feather name="refresh-cw" size={13} color={colors.mutedForeground} />
+                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Resend "On My Way" notification</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <PressableRow
+              style={[styles.mainActionButton, { backgroundColor: colors.primary }]}
+              onPress={handleMainAction}
+
+              data-testid="button-main-action"
+            >
+              <View style={styles.mainActionButtonIcon}>
+                <Feather name={action.icon} size={action.iconSize} color={colors.primaryForeground} />
+              </View>
+              <Text style={styles.mainActionText}>{action.label}</Text>
+            </PressableRow>
+          )
+        ) : job.status === 'invoiced' && !invoice && (
+          <Text style={styles.invoicedMessage}>This job has been invoiced</Text>
+        )}
+      </View>
+
+      {/* Re-open Job button — owner/manager only, on completed jobs */}
+      {job.status === 'done' && (isOwnerOrManager || isSoloOwner) && (
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.sm,
+            paddingVertical: spacing.md,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: colors.buttonOutline,
+            backgroundColor: colors.card,
+            marginTop: spacing.sm,
+          }}
+          onPress={handleReopenJob}
+          activeOpacity={0.8}
+          data-testid="button-reopen-job"
+        >
+          <Feather name="rotate-ccw" size={18} color={colors.foreground} />
+          <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
+            Re-open Job
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Scheduled Date Card */}
+      {(job.scheduledAt || job.status === 'scheduled') && (
+        <PressableRow 
+ 
+          style={styles.card}
+          onPress={isSubcontractorUser ? undefined : () => {
+            setScheduleDate(job.scheduledAt ? new Date(job.scheduledAt) : new Date());
+            setShowScheduleModal(true);
+          }}
+        >
+          <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
+            <Feather name="clock" size={iconSizes.xl} color={colors.primary} />
+          </View>
+          <View style={styles.cardContent}>
+            <Text style={styles.cardLabel}>Scheduled</Text>
+            <Text style={[styles.cardValue, !job.scheduledAt && { color: colors.mutedForeground }]}>
+              {job.scheduledAt
+                ? `${formatDate(job.scheduledAt)} at ${formatTime(job.scheduledAt)}`
+                : 'No time set, tap to schedule'}
+            </Text>
+          </View>
+          {!isSubcontractorUser && (
+            <Feather 
+              name="edit-2" 
+              size={iconSizes.lg} 
+              color={colors.primary} 
+              style={styles.cardActionIcon}
+            />
+          )}
+        </PressableRow>
+      )}
+
       {/* What's Next card — project jobs only */}
       {isProject ? (() => {
         const completedPhases = phases.filter(p => p.status === 'complete' || p.status === 'invoiced').length;
@@ -8614,202 +8864,6 @@ export default function JobDetailScreen() {
           </View>
           <Feather name="chevron-right" size={18} color={colors.warning} />
         </TouchableOpacity>
-      )}
-
-      {/* Section anchor: status */}
-      <View onLayout={(e) => { sectionOffsets.current['status'] = e.nativeEvent.layout.y; }} />
-
-      {/* Main Action Button - Hero zone, first thing after status */}
-      <View style={styles.actionButtonContainer}>
-        {allWorkersComplete && isJobManager && job.status !== 'done' && job.status !== 'invoiced' && (
-          <View style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor: colors.cardBorder,
-            borderLeftWidth: 3,
-            borderLeftColor: colors.success,
-            borderRadius: radius.lg,
-            padding: spacing.md,
-            marginBottom: spacing.sm,
-          }}>
-            <Feather name="check-circle" size={18} color={colors.success} />
-            <Text style={{ ...typography.caption, color: colors.foreground, flex: 1 }}>
-              All {totalWorkerCount} workers have completed their part. You can finish the job.
-            </Text>
-          </View>
-        )}
-        {action ? (
-          job.status === 'scheduled' && job.clientId ? (
-            <View style={{ gap: spacing.sm }}>
-              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              {job.workerStatus === 'on_my_way' ? (
-                <TouchableOpacity
-                  style={[styles.mainActionButton, {
-                    flex: 1,
-                    flexBasis: 0,
-                    minWidth: 0,
-                    borderWidth: 1.5,
-                    borderColor: colors.info,
-                    backgroundColor: colors.card,
-                  }]}
-                  onPress={() => {
-                    const { openMapsWithPreference } = require('../../src/lib/maps-store');
-                    if (job.latitude && job.longitude) {
-                      openMapsWithPreference(job.latitude, job.longitude, job.address);
-                    } else if (job.address) {
-                      const { openMapsWithAddress } = require('../../src/lib/maps-store');
-                      openMapsWithAddress(job.address);
-                    }
-                  }}
-                  activeOpacity={0.8}
-                  data-testid="button-directions"
-                >
-                  <Feather name="map" size={18} color={colors.info} />
-                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize, marginLeft: spacing.xs }}>
-                    Directions
-                  </Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  style={[styles.mainActionButton, {
-                    flex: 1,
-                    flexBasis: 0,
-                    minWidth: 0,
-                    borderWidth: 1.5,
-                    borderColor: colors.info,
-                    backgroundColor: colors.card,
-                    opacity: isSendingOnMyWay ? 0.6 : 1,
-                  }]}
-                  onPress={handleOnMyWay}
-                  activeOpacity={0.8}
-                  disabled={isSendingOnMyWay}
-                  data-testid="button-on-my-way"
-                >
-                  <Feather name="navigation" size={18} color={colors.info} />
-                  <Text style={{ color: colors.info, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
-                    On My Way
-                  </Text>
-                  {isSendingOnMyWay && (
-                    <ActivityIndicator size="small" color={colors.info} style={{ marginLeft: spacing.xs }} />
-                  )}
-                </TouchableOpacity>
-              )}
-              
-              <PressableRow
-                style={[styles.mainActionButton, { backgroundColor: colors.primary, flex: 1, flexBasis: 0, minWidth: 0 }]}
-                onPress={handleMainAction}
-
-                data-testid="button-main-action"
-              >
-                <View style={styles.mainActionButtonIcon}>
-                  <Feather name={action.icon} size={action.iconSize} color={colors.primaryForeground} />
-                </View>
-                <Text style={styles.mainActionText}>{action.label}</Text>
-              </PressableRow>
-              </View>
-              {job.workerStatus === 'on_my_way' && (
-                <TouchableOpacity
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    paddingVertical: 6,
-                    opacity: isSendingOnMyWay ? 0.5 : 1,
-                  }}
-                  onPress={handleOnMyWay}
-                  activeOpacity={0.7}
-                  disabled={isSendingOnMyWay}
-                  data-testid="button-resend-on-my-way"
-                >
-                  {isSendingOnMyWay ? (
-                    <ActivityIndicator size="small" color={colors.mutedForeground} />
-                  ) : (
-                    <>
-                      <Feather name="refresh-cw" size={13} color={colors.mutedForeground} />
-                      <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>Resend "On My Way" notification</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
-          ) : (
-            <PressableRow
-              style={[styles.mainActionButton, { backgroundColor: colors.primary }]}
-              onPress={handleMainAction}
-
-              data-testid="button-main-action"
-            >
-              <View style={styles.mainActionButtonIcon}>
-                <Feather name={action.icon} size={action.iconSize} color={colors.primaryForeground} />
-              </View>
-              <Text style={styles.mainActionText}>{action.label}</Text>
-            </PressableRow>
-          )
-        ) : job.status === 'invoiced' && !invoice && (
-          <Text style={styles.invoicedMessage}>This job has been invoiced</Text>
-        )}
-      </View>
-
-      {/* Re-open Job button — owner/manager only, on completed jobs */}
-      {job.status === 'done' && (isOwnerOrManager || isSoloOwner) && (
-        <TouchableOpacity
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: spacing.sm,
-            paddingVertical: spacing.md,
-            borderRadius: radius.lg,
-            borderWidth: 1,
-            borderColor: colors.buttonOutline,
-            backgroundColor: colors.card,
-            marginTop: spacing.sm,
-          }}
-          onPress={handleReopenJob}
-          activeOpacity={0.8}
-          data-testid="button-reopen-job"
-        >
-          <Feather name="rotate-ccw" size={18} color={colors.foreground} />
-          <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, fontSize: typography.button.fontSize }}>
-            Re-open Job
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Scheduled Date Card - right after action buttons */}
-      {(job.scheduledAt || job.status === 'scheduled') && (
-        <PressableRow 
- 
-          style={styles.card}
-          onPress={isSubcontractorUser ? undefined : () => {
-            setScheduleDate(job.scheduledAt ? new Date(job.scheduledAt) : new Date());
-            setShowScheduleModal(true);
-          }}
-        >
-          <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
-            <Feather name="clock" size={iconSizes.xl} color={colors.primary} />
-          </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Scheduled</Text>
-            <Text style={[styles.cardValue, !job.scheduledAt && { color: colors.mutedForeground }]}>
-              {job.scheduledAt
-                ? `${formatDate(job.scheduledAt)} at ${formatTime(job.scheduledAt)}`
-                : 'No time set, tap to schedule'}
-            </Text>
-          </View>
-          {!isSubcontractorUser && (
-            <Feather 
-              name="edit-2" 
-              size={iconSizes.lg} 
-              color={colors.primary} 
-              style={styles.cardActionIcon}
-            />
-          )}
-        </PressableRow>
       )}
 
       {/* Safety & Compliance Section - Prominent before work starts */}
@@ -9399,8 +9453,10 @@ export default function JobDetailScreen() {
         </View>
       )}
 
-      {/* Description & Notes Card */}
-      {(job.description || job.notes || jobNotes.length > 0) && (
+
+
+      {/* Compact Activity Log — last 4 entries */}
+      {activityLog.length > 0 && (
         <View style={{
           backgroundColor: colors.card,
           borderRadius: radius.xl,
@@ -9410,73 +9466,223 @@ export default function JobDetailScreen() {
           borderColor: colors.cardBorder,
           ...shadows.sm,
         }}>
-          {job.description && (
-            <View style={{ marginBottom: (job.notes || jobNotes.length > 0) ? spacing.md : 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                <Feather name="align-left" size={14} color={colors.mutedForeground} />
-                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Description</Text>
-              </View>
-              <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 20 }}>{job.description}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: radius.md,
+              backgroundColor: `${colors.inProgress}15`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.sm,
+            }}>
+              <Feather name="activity" size={iconSizes.md} color={colors.inProgress} />
             </View>
-          )}
-          {(jobNotes.length > 0 || job.notes) && (
-            <TouchableOpacity
-              onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-              activeOpacity={0.7}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
-                <Feather name="edit-3" size={14} color={colors.mutedForeground} />
-                <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>Notes</Text>
-                <Feather name="plus" size={12} color={colors.primary} style={{ marginLeft: 'auto' }} />
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Recent Activity</Text>
+            {(isOwnerOrManager || isSoloOwner) && (
+              <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
+                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>View all</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {activityLog.slice(0, 4).map((item, index) => (
+            <View key={item.id || index} style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              paddingVertical: spacing.sm,
+              borderTopWidth: index > 0 ? 1 : 0,
+              borderTopColor: colors.muted,
+              gap: spacing.sm,
+            }}>
+              <View style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: colors.inProgress,
+                marginTop: 6,
+              }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>
+                  {item.title || item.description}
+                </Text>
+                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xxs }}>
+                  {new Date(item.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                </Text>
               </View>
-              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, lineHeight: 20 }} numberOfLines={3}>
-                {jobNotes.length > 0 ? jobNotes[jobNotes.length - 1].content : job.notes}
-              </Text>
-              {jobNotes.length > 1 && (
-                <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, marginTop: spacing.xs }}>+{jobNotes.length - 1} more note{jobNotes.length - 1 === 1 ? '' : 's'}</Text>
-              )}
-            </TouchableOpacity>
-          )}
-          {!job.notes && jobNotes.length === 0 && (
-            <TouchableOpacity
-              onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-              activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingTop: job.description ? spacing.md : 0, borderTopWidth: job.description ? 1 : 0, borderTopColor: colors.border }}
-            >
-              <Feather name="plus" size={14} color={colors.primary} />
-              <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>Add private notes</Text>
-            </TouchableOpacity>
-          )}
+            </View>
+          ))}
         </View>
       )}
-      {!job.description && !job.notes && jobNotes.length === 0 && (
-        <PressableRow
-          style={styles.card}
-          onPress={() => { setEditingNote(null); setEditedNotes(''); setShowNotesModal(true); }}
-        >
-          <View style={[styles.cardIconContainer, { backgroundColor: `${colors.primary}15` }]}>
-            <Feather name="edit-3" size={iconSizes.xl} color={colors.primary} />
+
+      {/* Quick Collect Payment — shows when there's a collectible amount but no invoice yet */}
+      {!isSubcontractorUser && (job.status === 'done' || job.status === 'in_progress') && !invoice && canCollectPayments && 
+       ((quote && quote.status === 'accepted') || materials.length > 0) && getQuickCollectTotal() > 0 && (
+        <View style={[styles.quickCollectCard, { borderColor: colors.cardBorder }]}>
+          <View style={styles.quickCollectHeader}>
+            <View style={[styles.quickCollectIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.15) }]}>
+              <Feather name="credit-card" size={iconSizes.lg} color={colors.primary} />
+            </View>
+            <View style={styles.quickCollectTitleContainer}>
+              <Text style={[styles.quickCollectTitle, { color: colors.foreground }]}>Collect Payment Now</Text>
+              <View style={[styles.quickCollectBadge, { backgroundColor: colors.muted }]}>
+                <Text style={[styles.quickCollectBadgeText, { color: colors.mutedForeground }]}>
+                  {getQuickCollectSource() === 'quote' ? 'Based on quote' : `${materials.length} material${materials.length !== 1 ? 's' : ''}`}
+                </Text>
+              </View>
+            </View>
           </View>
-          <View style={styles.cardContent}>
-            <Text style={styles.cardLabel}>Notes</Text>
-            <Text style={[styles.cardValue, { color: colors.primary }]}>Add private notes</Text>
+          <Text style={[styles.quickCollectDescription, { color: colors.mutedForeground }]}>
+            {getQuickCollectSource() === 'quote' 
+              ? 'Collect payment using the accepted quote amount. Invoice and receipt will be created automatically.'
+              : 'Collect payment based on materials total. Invoice and receipt will be created automatically.'}
+          </Text>
+          <View style={[styles.quickCollectAmountBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <Text style={[styles.quickCollectAmountLabel, { color: colors.mutedForeground }]}>
+              {getQuickCollectSource() === 'quote' ? 'Quote total' : 'Materials total'}
+            </Text>
+            <Text style={[styles.quickCollectAmountValue, { color: colors.primary }]}>
+              {formatCurrency(getQuickCollectTotal())}
+            </Text>
           </View>
-          <Feather name="plus" size={iconSizes.lg} color={colors.primary} />
-        </PressableRow>
+          {getQuickCollectSource() === 'materials' && materials.length > 0 && (
+            <View style={{ marginBottom: spacing.sm }}>
+              {materials.slice(0, 4).map((m, i) => (
+                <View key={m.id || i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, paddingHorizontal: spacing.xs }}>
+                  <Text style={{ ...typography.caption, color: colors.mutedForeground, flex: 1 }} numberOfLines={1}>
+                    {m.name} {Number(m.quantity) > 1 ? `× ${m.quantity}` : ''}
+                  </Text>
+                  <Text style={{ ...typography.caption, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                    {formatCurrency(Number(m.unitPrice || 0) > 0 ? Number(m.unitPrice) * Number(m.quantity || 1) : Number(m.totalCost || 0))}
+                  </Text>
+                </View>
+              ))}
+              {materials.length > 4 && (
+                <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs }}>
+                  +{materials.length - 4} more items
+                </Text>
+              )}
+            </View>
+          )}
+          <View style={styles.quickCollectButtons}>
+            <View style={styles.quickCollectButtonRow}>
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={() => handleQuickCollect('cash')}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-cash"
+              >
+                {isQuickCollecting ? (
+                  <ActivityIndicator size="small" color={colors.foreground} />
+                ) : (
+                  <>
+                    <Feather name="dollar-sign" size={iconSizes.md} color={colors.foreground} />
+                    <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Cash</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.primary, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.primary, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={handleQuickCollectCard}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-card"
+              >
+                <Feather name="credit-card" size={iconSizes.md} color={colors.primary} />
+                <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.quickCollectButtonRow}>
+              <TouchableOpacity
+                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
+                onPress={() => handleQuickCollect('bank_transfer')}
+                activeOpacity={0.8}
+                disabled={isQuickCollecting}
+                data-testid="button-quick-collect-bank"
+              >
+                <Feather name="home" size={iconSizes.md} color={colors.foreground} />
+                <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Bank</Text>
+              </TouchableOpacity>
+              {Platform.OS === 'ios' && isTapToPayAvailable() && (
+                <TouchableOpacity
+                  style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.success, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
+                  onPress={handleTapToPayQuickCollect}
+                  activeOpacity={0.8}
+                  disabled={isQuickCollecting}
+                  data-testid="button-quick-collect-tap"
+                >
+                  <Feather name="wifi" size={iconSizes.md} color={colors.success} />
+                  <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Tap to Pay</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
       )}
 
+      {/* Payment Collection Card — invoice exists */}
+      {!isSubcontractorUser && (
+      <PaymentCollectionCard
+        invoice={invoice ? {
+          id: invoice.id,
+          number: invoice.number,
+          status: invoice.status,
+          total: invoice.total,
+          paidAmount: invoice.paidAmount,
+        } : null}
+        jobId={job.id}
+        canCollectPayments={canCollectPayments}
+        onTapToPay={handleTapToPay}
+        onQRCode={handleQRCode}
+        onPaymentLink={handlePaymentLink}
+        onRecordCash={handleRecordCash}
+      />
+      )}
 
-      {/* ═══ More Details — Collapsible Layer 3 ═══ */}
-      {(!isSubcontractorUser || linkedJobs.length > 0 || activityLog.length > 0 || isOwnerOrManager || isSoloOwner) && (
+      {/* Payment Received — linked receipt */}
+      {!isSubcontractorUser && linkedReceipt && (
+        <TouchableOpacity 
+          style={styles.paymentReceivedCard}
+          onPress={() => router.push(`/more/receipt/${linkedReceipt.id}`)}
+          activeOpacity={0.7}
+          data-testid="card-payment-received"
+        >
+          <View style={styles.paymentReceivedHeader}>
+            <View style={[styles.paymentReceivedIcon, { backgroundColor: `${colors.success}15` }]}>
+              <Feather name="check-circle" size={iconSizes.lg} color={colors.success} />
+            </View>
+            <View style={styles.paymentReceivedContent}>
+              <Text style={styles.paymentReceivedTitle}>Payment Received</Text>
+              <Text style={styles.paymentReceivedSubtitle}>
+                {linkedReceipt.receiptNumber || 'Receipt'} • {linkedReceipt.paymentMethod || 'Payment'}
+              </Text>
+            </View>
+            <View style={styles.paymentReceivedAmount}>
+              <Text style={styles.paymentReceivedAmountText}>
+                {formatCurrency(linkedReceipt.amount)}
+              </Text>
+            </View>
+            <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={{ marginLeft: spacing.sm }} />
+          </View>
+          {linkedReceipt.createdAt && (
+            <Text style={styles.paymentReceivedDate}>
+              Received {new Date(linkedReceipt.createdAt).toLocaleDateString('en-AU', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+              })}
+            </Text>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {/* ═══ More Details ═══ */}
+      {(!isSubcontractorUser || linkedJobs.length > 0) && (
       <CollapsibleSection
         summaryItems={[
           (quote || invoice) ? `${[quote && 'Quote', invoice && 'Invoice'].filter(Boolean).join(' + ')}` : '',
           linkedReceipt ? `Paid ${formatCurrency(linkedReceipt.amount)}` : '',
           linkedJobs.length > 0 ? `${linkedJobs.length} prev job${linkedJobs.length !== 1 ? 's' : ''}` : '',
-          activityLog.length > 0 ? `${activityLog.length} activit${activityLog.length !== 1 ? 'ies' : 'y'}` : '',
-          (profitabilityData?.revenue?.invoiced || 0) > 0 ? `${formatCurrency(profitabilityData!.revenue.invoiced)} revenue` : '',
-          materials.length > 0 ? `${materials.length} material${materials.length !== 1 ? 's' : ''}` : '',
-          jobExpenses.length > 0 ? `${jobExpenses.length} expense${jobExpenses.length !== 1 ? 's' : ''}` : '',
         ]}
       >
 
@@ -9597,337 +9803,10 @@ export default function JobDetailScreen() {
       />
       )}
 
-      {/* Quick Collect Payment - Shows when job has collectible amount (quote or materials) and no paid invoice */}
-      {!isSubcontractorUser && (job.status === 'done' || job.status === 'in_progress') && !invoice && canCollectPayments && 
-       ((quote && quote.status === 'accepted') || materials.length > 0) && getQuickCollectTotal() > 0 && (
-        <View style={[styles.quickCollectCard, { borderColor: colors.cardBorder }]}>
-          <View style={styles.quickCollectHeader}>
-            <View style={[styles.quickCollectIconContainer, { backgroundColor: colorWithOpacity(colors.primary, 0.15) }]}>
-              <Feather name="credit-card" size={iconSizes.lg} color={colors.primary} />
-            </View>
-            <View style={styles.quickCollectTitleContainer}>
-              <Text style={[styles.quickCollectTitle, { color: colors.foreground }]}>Collect Payment Now</Text>
-              <View style={[styles.quickCollectBadge, { backgroundColor: colors.muted }]}>
-                <Text style={[styles.quickCollectBadgeText, { color: colors.mutedForeground }]}>
-                  {getQuickCollectSource() === 'quote' ? 'Based on quote' : `${materials.length} material${materials.length !== 1 ? 's' : ''}`}
-                </Text>
-              </View>
-            </View>
-          </View>
-          <Text style={[styles.quickCollectDescription, { color: colors.mutedForeground }]}>
-            {getQuickCollectSource() === 'quote' 
-              ? 'Collect payment using the accepted quote amount. Invoice and receipt will be created automatically.'
-              : 'Collect payment based on materials total. Invoice and receipt will be created automatically.'}
-          </Text>
-          <View style={[styles.quickCollectAmountBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Text style={[styles.quickCollectAmountLabel, { color: colors.mutedForeground }]}>
-              {getQuickCollectSource() === 'quote' ? 'Quote total' : 'Materials total'}
-            </Text>
-            <Text style={[styles.quickCollectAmountValue, { color: colors.primary }]}>
-              {formatCurrency(getQuickCollectTotal())}
-            </Text>
-          </View>
-          {getQuickCollectSource() === 'materials' && materials.length > 0 && (
-            <View style={{ marginBottom: spacing.sm }}>
-              {materials.slice(0, 4).map((m, i) => (
-                <View key={m.id || i} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.xs, paddingHorizontal: spacing.xs }}>
-                  <Text style={{ ...typography.caption, color: colors.mutedForeground, flex: 1 }} numberOfLines={1}>
-                    {m.name} {Number(m.quantity) > 1 ? `× ${m.quantity}` : ''}
-                  </Text>
-                  <Text style={{ ...typography.caption, color: colors.foreground, fontWeight: fontWeights.semibold }}>
-                    {formatCurrency(Number(m.unitPrice || 0) > 0 ? Number(m.unitPrice) * Number(m.quantity || 1) : Number(m.totalCost || 0))}
-                  </Text>
-                </View>
-              ))}
-              {materials.length > 4 && (
-                <Text style={{ ...typography.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs }}>
-                  +{materials.length - 4} more items
-                </Text>
-              )}
-            </View>
-          )}
-          <View style={styles.quickCollectButtons}>
-            {/* Top row: Cash + Card Link */}
-            <View style={styles.quickCollectButtonRow}>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
-                onPress={() => handleQuickCollect('cash')}
-                activeOpacity={0.8}
-                disabled={isQuickCollecting}
-                data-testid="button-quick-collect-cash"
-              >
-                {isQuickCollecting ? (
-                  <ActivityIndicator size="small" color={colors.foreground} />
-                ) : (
-                  <>
-                    <Feather name="dollar-sign" size={iconSizes.md} color={colors.foreground} />
-                    <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Cash</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.primary, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.primary, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
-                onPress={handleQuickCollectCard}
-                activeOpacity={0.8}
-                disabled={isQuickCollecting}
-                data-testid="button-quick-collect-card"
-              >
-                <Feather name="credit-card" size={iconSizes.md} color={colors.primary} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.primary }]}>Card Link</Text>
-              </TouchableOpacity>
-            </View>
-            {/* Bottom row: Bank + Tap to Pay (Tap to Pay iOS-only) */}
-            <View style={styles.quickCollectButtonRow}>
-              <TouchableOpacity
-                style={[styles.quickCollectButton, { backgroundColor: colors.muted }, isQuickCollecting && { opacity: 0.6 }]}
-                onPress={() => handleQuickCollect('bank_transfer')}
-                activeOpacity={0.8}
-                disabled={isQuickCollecting}
-                data-testid="button-quick-collect-bank"
-              >
-                <Feather name="home" size={iconSizes.md} color={colors.foreground} />
-                <Text style={[styles.quickCollectButtonText, { color: colors.foreground }]}>Bank</Text>
-              </TouchableOpacity>
-              {Platform.OS === 'ios' && isTapToPayAvailable() && (
-                <TouchableOpacity
-                  style={[styles.quickCollectButton, { backgroundColor: colorWithOpacity(colors.success, 0.12), borderWidth: 1, borderColor: colorWithOpacity(colors.success, 0.3) }, isQuickCollecting && { opacity: 0.6 }]}
-                  onPress={handleTapToPayQuickCollect}
-                  activeOpacity={0.8}
-                  disabled={isQuickCollecting}
-                  data-testid="button-quick-collect-tap"
-                >
-                  <Feather name="wifi" size={iconSizes.md} color={colors.success} />
-                  <Text style={[styles.quickCollectButtonText, { color: colors.success }]}>Tap to Pay</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Payment Collection Card - for collecting payment on invoiced jobs */}
-      {!isSubcontractorUser && (
-      <PaymentCollectionCard
-        invoice={invoice ? {
-          id: invoice.id,
-          number: invoice.number,
-          status: invoice.status,
-          total: invoice.total,
-          paidAmount: invoice.paidAmount,
-        } : null}
-        jobId={job.id}
-        canCollectPayments={canCollectPayments}
-        onTapToPay={handleTapToPay}
-        onQRCode={handleQRCode}
-        onPaymentLink={handlePaymentLink}
-        onRecordCash={handleRecordCash}
-      />
-      )}
-
-      {/* Payment Received Section - shows when there are linked receipts */}
-      {!isSubcontractorUser && linkedReceipt && (
-        <TouchableOpacity 
-          style={styles.paymentReceivedCard}
-          onPress={() => router.push(`/more/receipt/${linkedReceipt.id}`)}
-          activeOpacity={0.7}
-          data-testid="card-payment-received"
-        >
-          <View style={styles.paymentReceivedHeader}>
-            <View style={[styles.paymentReceivedIcon, { backgroundColor: `${colors.success}15` }]}>
-              <Feather name="check-circle" size={iconSizes.lg} color={colors.success} />
-            </View>
-            <View style={styles.paymentReceivedContent}>
-              <Text style={styles.paymentReceivedTitle}>Payment Received</Text>
-              <Text style={styles.paymentReceivedSubtitle}>
-                {linkedReceipt.receiptNumber || 'Receipt'} • {linkedReceipt.paymentMethod || 'Payment'}
-              </Text>
-            </View>
-            <View style={styles.paymentReceivedAmount}>
-              <Text style={styles.paymentReceivedAmountText}>
-                {formatCurrency(linkedReceipt.amount)}
-              </Text>
-            </View>
-            <Feather name="chevron-right" size={18} color={colors.mutedForeground} style={{ marginLeft: spacing.sm }} />
-          </View>
-          {linkedReceipt.createdAt && (
-            <Text style={styles.paymentReceivedDate}>
-              Received {new Date(linkedReceipt.createdAt).toLocaleDateString('en-AU', { 
-                day: 'numeric', 
-                month: 'short', 
-                year: 'numeric' 
-              })}
-            </Text>
-          )}
-        </TouchableOpacity>
-      )}
-
-      {/* Compact Activity Log - Recent job activity */}
-      {activityLog.length > 0 && (
-        <View style={{
-          backgroundColor: colors.card,
-          borderRadius: radius.xl,
-          padding: spacing.lg,
-          marginBottom: spacing.md,
-          borderWidth: 1,
-          borderColor: colors.cardBorder,
-          ...shadows.sm,
-        }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
-            <View style={{
-              width: 32,
-              height: 32,
-              borderRadius: radius.md,
-              backgroundColor: `${colors.inProgress}15`,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.sm,
-            }}>
-              <Feather name="activity" size={iconSizes.md} color={colors.inProgress} />
-            </View>
-            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Recent Activity</Text>
-            <TouchableOpacity onPress={() => setActiveTab('manage')} activeOpacity={0.7}>
-              <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.primary, fontWeight: fontWeights.medium }}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {activityLog.slice(0, 3).map((item, index) => (
-            <View key={item.id || index} style={{
-              flexDirection: 'row',
-              alignItems: 'flex-start',
-              paddingVertical: spacing.sm,
-              borderTopWidth: index > 0 ? 1 : 0,
-              borderTopColor: colors.muted,
-              gap: spacing.sm,
-            }}>
-              <View style={{
-                width: 6,
-                height: 6,
-                borderRadius: 3,
-                backgroundColor: colors.inProgress,
-                marginTop: 6,
-              }} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: typography.sizes.sm, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>
-                  {item.title || item.description}
-                </Text>
-                <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xxs }}>
-                  {new Date(item.createdAt).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
-                </Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Job Costing Summary - Compact overview with tap to full breakdown bottom sheet */}
-      {(isOwnerOrManager || isSoloOwner) && (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => setShowJobCostingSheet(true)}
-          style={{
-            backgroundColor: colors.card,
-            borderRadius: radius.xl,
-            padding: spacing.lg,
-            marginBottom: spacing.md,
-            borderWidth: 1,
-            borderColor: profitabilityData?.profit?.isNegative ? colors.destructive : colors.cardBorder,
-            ...shadows.sm,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
-            <View style={{
-              width: 32,
-              height: 32,
-              borderRadius: radius.md,
-              backgroundColor: profitabilityData?.profit?.isNegative ? `${colors.destructive}15` : `${colors.success}15`,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.sm,
-            }}>
-              <Feather name="bar-chart-2" size={iconSizes.md} color={profitabilityData?.profit?.isNegative ? colors.destructive : colors.success} />
-            </View>
-            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Job Costing</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              {profitabilityData?.status && (
-                <View style={{
-                  backgroundColor: profitabilityData.status === 'profitable' ? `${colors.success}15` : profitabilityData.status === 'tight' ? `${colors.warning}15` : `${colors.destructive}15`,
-                  paddingHorizontal: spacing.sm,
-                  paddingVertical: 2,
-                  borderRadius: radius.sm,
-                }}>
-                  <Text style={{
-                    fontSize: typography.captionSmall.fontSize,
-                    fontWeight: fontWeights.semibold,
-                    color: profitabilityData.status === 'profitable' ? colors.success : profitabilityData.status === 'tight' ? colors.warning : colors.destructive,
-                    textTransform: 'capitalize',
-                  }}>
-                    {profitabilityData.status}
-                  </Text>
-                </View>
-              )}
-              <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-            </View>
-          </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            {(() => {
-              const pd = profitabilityData;
-              const summaryItems = [];
-              if (pd && pd.revenue.invoiced > 0) {
-                summaryItems.push({ label: 'Revenue', value: formatCurrency(pd.revenue.invoiced), color: colors.foreground });
-              }
-              if (pd && pd.costs.total > 0) {
-                summaryItems.push({ label: 'Costs', value: formatCurrency(pd.costs.total), color: colors.foreground });
-              }
-              if (pd && (pd.revenue.invoiced > 0 || pd.costs.total > 0)) {
-                const profitColor = pd.status === 'profitable' ? colors.success : pd.status === 'tight' ? colors.warning : colors.destructive;
-                summaryItems.push({ label: 'Margin', value: `${pd.profit.margin.toFixed(0)}%`, color: profitColor });
-              }
-              if (pd && pd.profit.amount !== 0) {
-                const profitColor = pd.profit.amount >= 0 ? colors.success : colors.destructive;
-                summaryItems.push({ label: 'Profit', value: formatCurrency(pd.profit.amount), color: profitColor });
-              } else if (materials.length > 0) {
-                summaryItems.push({ label: 'Materials', value: `${materials.length}`, color: colors.foreground });
-              }
-              if (summaryItems.length === 0) {
-                summaryItems.push({ label: 'Revenue', value: '$0', color: colors.mutedForeground });
-                summaryItems.push({ label: 'Costs', value: '$0', color: colors.mutedForeground });
-              }
-              return summaryItems.slice(0, 4).map((item) => (
-                <View
-                  key={item.label}
-                  style={{
-                    flex: 1,
-                    backgroundColor: colors.muted,
-                    borderRadius: radius.lg,
-                    padding: spacing.sm,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: item.color }}>{item.value}</Text>
-                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xxs, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</Text>
-                </View>
-              ));
-            })()}
-          </View>
-        </TouchableOpacity>
-      )}
 
       </CollapsibleSection>
       )}
 
-      {/* My Submitted Expenses — visible to workers (non-owners) only */}
-      {!(isOwnerOrManager || isSoloOwner) && (isLoadingExpenses || jobExpenses.length > 0) && (
-        <ExpensesSection
-          colors={colors}
-          expenses={jobExpenses}
-          isLoading={isLoadingExpenses}
-          jobId={id as string}
-          isOwnerOrManager={false}
-          onRefresh={loadJobExpenses}
-        />
-      )}
-
-      {/* Site Diary — all roles can view and add entries */}
-      <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
 
     </>
   );
@@ -10260,6 +10139,99 @@ export default function JobDetailScreen() {
           <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.bold, color: colors.mutedForeground, letterSpacing: 0.5, textTransform: 'uppercase' }}>Financials</Text>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
         </View>
+      )}
+
+      {/* Job Costing — compact summary, opens detailed costing sheet */}
+      {(isOwnerOrManager || isSoloOwner) && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => setShowJobCostingSheet(true)}
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: radius.xl,
+            padding: spacing.lg,
+            marginBottom: spacing.md,
+            borderWidth: 1,
+            borderColor: profitabilityData?.profit?.isNegative ? colors.destructive : colors.cardBorder,
+            ...shadows.sm,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md }}>
+            <View style={{
+              width: 32,
+              height: 32,
+              borderRadius: radius.md,
+              backgroundColor: profitabilityData?.profit?.isNegative ? `${colors.destructive}15` : `${colors.success}15`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.sm,
+            }}>
+              <Feather name="bar-chart-2" size={iconSizes.md} color={profitabilityData?.profit?.isNegative ? colors.destructive : colors.success} />
+            </View>
+            <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground, flex: 1 }}>Job Costing</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              {profitabilityData?.status && (
+                <View style={{
+                  backgroundColor: profitabilityData.status === 'profitable' ? `${colors.success}15` : profitabilityData.status === 'tight' ? `${colors.warning}15` : `${colors.destructive}15`,
+                  paddingHorizontal: spacing.sm,
+                  paddingVertical: 2,
+                  borderRadius: radius.sm,
+                }}>
+                  <Text style={{
+                    fontSize: typography.captionSmall.fontSize,
+                    fontWeight: fontWeights.semibold,
+                    color: profitabilityData.status === 'profitable' ? colors.success : profitabilityData.status === 'tight' ? colors.warning : colors.destructive,
+                    textTransform: 'capitalize',
+                  }}>
+                    {profitabilityData.status}
+                  </Text>
+                </View>
+              )}
+              <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            {(() => {
+              const pd = profitabilityData;
+              const summaryItems = [];
+              if (pd && pd.revenue.invoiced > 0) {
+                summaryItems.push({ label: 'Revenue', value: formatCurrency(pd.revenue.invoiced), color: colors.foreground });
+              }
+              if (pd && pd.costs.total > 0) {
+                summaryItems.push({ label: 'Costs', value: formatCurrency(pd.costs.total), color: colors.foreground });
+              }
+              if (pd && (pd.revenue.invoiced > 0 || pd.costs.total > 0)) {
+                const profitColor = pd.status === 'profitable' ? colors.success : pd.status === 'tight' ? colors.warning : colors.destructive;
+                summaryItems.push({ label: 'Margin', value: `${pd.profit.margin.toFixed(0)}%`, color: profitColor });
+              }
+              if (pd && pd.profit.amount !== 0) {
+                const profitColor = pd.profit.amount >= 0 ? colors.success : colors.destructive;
+                summaryItems.push({ label: 'Profit', value: formatCurrency(pd.profit.amount), color: profitColor });
+              } else if (materials.length > 0) {
+                summaryItems.push({ label: 'Materials', value: `${materials.length}`, color: colors.foreground });
+              }
+              if (summaryItems.length === 0) {
+                summaryItems.push({ label: 'Revenue', value: '$0', color: colors.mutedForeground });
+                summaryItems.push({ label: 'Costs', value: '$0', color: colors.mutedForeground });
+              }
+              return summaryItems.slice(0, 4).map((item) => (
+                <View
+                  key={item.label}
+                  style={{
+                    flex: 1,
+                    backgroundColor: colors.muted,
+                    borderRadius: radius.lg,
+                    padding: spacing.sm,
+                    alignItems: 'center',
+                  }}
+                >
+                  <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: item.color }}>{item.value}</Text>
+                  <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, marginTop: spacing.xxs, textTransform: 'uppercase', letterSpacing: 0.3 }}>{item.label}</Text>
+                </View>
+              ));
+            })()}
+          </View>
+        </TouchableOpacity>
       )}
 
       {/* Job Profitability Card */}
@@ -11080,6 +11052,7 @@ export default function JobDetailScreen() {
           </TouchableOpacity>
         </View>
       )}
+
     </>
   );
 
@@ -12744,13 +12717,28 @@ export default function JobDetailScreen() {
               {renderSafetyTab()}
             </View>
             {renderPhotosTab()}
+
+            {/* My Submitted Expenses — visible to workers (non-owners) only */}
+            {!(isOwnerOrManager || isSoloOwner) && (isLoadingExpenses || jobExpenses.length > 0) && (
+              <ExpensesSection
+                colors={colors}
+                expenses={jobExpenses}
+                isLoading={isLoadingExpenses}
+                jobId={id as string}
+                isOwnerOrManager={false}
+                onRefresh={loadJobExpenses}
+              />
+            )}
+
+            {/* Site Diary — all roles can view and add entries */}
+            <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
           </>
         )}
 
         {/* ── Comms: chat only ── */}
         {activeTab === 'comms' && renderChatTab()}
 
-        {activeTab === 'manage' && (
+        {activeTab === 'manage' && (isOwnerOrManager || isSoloOwner) && (
           <>
             {/* Pending expenses callout — owners/managers only, worker-submitted expenses only */}
             {(isOwnerOrManager || isSoloOwner) && (() => {
