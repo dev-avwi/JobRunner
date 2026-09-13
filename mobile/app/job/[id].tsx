@@ -12014,17 +12014,19 @@ export default function JobDetailScreen() {
             <View style={styles.photosCard}>
               {renderSafetyTab()}
             </View>
-            {/* Non-safety job forms (inductions stay on Overview; everything else lives here) */}
-            <View style={hasOtherForms ? styles.photosCard : undefined}>
-              <JobForms
-                jobId={job.id}
-                filter="other"
-                readOnly={job.status === 'invoiced'}
-                onFormsChange={(forms) =>
-                  setHasOtherForms(forms.some((f: any) => !f.isJobCard && !['safety', 'inspection', 'compliance'].includes(String(f.formType || '').toLowerCase())))
-                }
-              />
-            </View>
+            {/* Non-safety job forms (inductions stay on Overview; everything else lives here).
+                wrapperStyle is applied inside JobForms so the card is always present while
+                loading (spinner), then removed if no matching forms exist — no layout shift
+                on first entry or when the user returns to this tab. */}
+            <JobForms
+              jobId={job.id}
+              filter="other"
+              readOnly={job.status === 'invoiced'}
+              wrapperStyle={styles.photosCard}
+              onFormsChange={(forms) =>
+                setHasOtherForms(forms.some((f: any) => !f.isJobCard && !['safety', 'inspection', 'compliance'].includes(String(f.formType || '').toLowerCase())))
+              }
+            />
             {renderPhotosTab()}
 
             {/* My Submitted Expenses — visible to workers (non-owners) only */}

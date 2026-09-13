@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,8 @@ import {
   Switch,
   Modal,
   FlatList,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
@@ -77,13 +79,19 @@ interface JobFormsProps {
   isExporting?: boolean;
   onSubmissionsChange?: (submissions: FormSubmission[]) => void;
   onFormsChange?: (forms: CustomForm[]) => void;
+  /** When provided, the component wraps its non-empty output in a View with
+   *  this style. Because wrapping is controlled internally (where isLoading is
+   *  always true on mount), the card appears immediately as a spinner and
+   *  disappears cleanly when there is no content — no parent loading state
+   *  needed, no layout shift on re-entry. */
+  wrapperStyle?: StyleProp<ViewStyle>;
 }
 
 const SAFETY_FORM_TYPES = ['safety', 'inspection', 'compliance'];
 const isSafetyTypeForm = (f: CustomForm) =>
   SAFETY_FORM_TYPES.includes(String(f.formType || '').toLowerCase());
 
-export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter, onExport, isExporting = false, onSubmissionsChange, onFormsChange }: JobFormsProps) {
+export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter, onExport, isExporting = false, onSubmissionsChange, onFormsChange, wrapperStyle }: JobFormsProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   
@@ -724,8 +732,14 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter,
     );
   };
 
+  // Wraps content in wrapperStyle when provided. Only called for non-null
+  // returns so the host card appears iff there is loading activity or real
+  // content — never as an empty shell.
+  const wrap = (node: ReactNode) =>
+    wrapperStyle ? <View style={wrapperStyle}>{node}</View> : <>{node}</>;
+
   if (isLoading) {
-    return (
+    return wrap(
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" color={colors.primary} />
       </View>
@@ -783,7 +797,7 @@ export function JobForms({ jobId, readOnly = false, jobCardMode = false, filter,
     );
   }
 
-  return (
+  return wrap(
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={[styles.headerIcon, { backgroundColor: `${colors.primary}15` }]}>
