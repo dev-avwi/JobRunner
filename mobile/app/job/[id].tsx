@@ -16883,9 +16883,12 @@ export default function JobDetailScreen() {
         onDismiss={() => { setShowJobCostingSheet(false); setCostingSheetAtBottom(false); }}
         title="Job Costing"
         showCloseButton
+        scrollable={false}
+        contentPadding={0}
       >
         <View style={{ flex: 1 }}>
         <BottomSheetScrollView
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}
           onScroll={(e) => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             setCostingSheetAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 24);
@@ -16926,7 +16929,7 @@ export default function JobDetailScreen() {
             );
 
             return (
-              <View style={{ paddingBottom: spacing.xl }}>
+              <View style={{ paddingBottom: 64 }}>
                 {/* Revenue */}
                 <SectionHeader label="Revenue" />
                 {pd.quoted?.amount ? <Row label="Quoted / Contract" value={formatCurrency(pd.quoted.amount)} /> : null}
