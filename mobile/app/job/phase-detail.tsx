@@ -77,6 +77,30 @@ interface PhaseDoc {
   latestRevision?: { fileName: string; mimeType?: string | null; fileUrl?: string | null } | null;
 }
 
+interface TimeEntry {
+  id: string;
+  userId?: string | null;
+  userName?: string | null;
+  workerName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  duration?: number | null;   // stored in MINUTES — divide by 60 for hours
+  date?: string | null;
+  notes?: string | null;
+  isBreak?: boolean | null;
+  phaseId?: string | null;
+}
+
+interface PhaseExpense {
+  id: string;
+  description: string;
+  amount: string | number;
+  expenseDate?: string | null;
+  receiptUrl?: string | null;
+  status?: string | null;
+  submittedByName?: string | null;
+}
+
 // ─── Status config ─────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<PhaseStatus, { label: string; color: string; bg: string; lightBg: string }> = {
@@ -210,6 +234,14 @@ export default function PhaseDetailScreen() {
   const [docsLoading, setDocsLoading] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
 
+  // ── Time entries state ────────────────────────────────────────────────────
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [timeEntriesLoading, setTimeEntriesLoading] = useState(false);
+
+  // ── Phase expenses state ──────────────────────────────────────────────────
+  const [phaseExpenses, setPhaseExpenses] = useState<PhaseExpense[]>([]);
+  const [phaseExpensesLoading, setPhaseExpensesLoading] = useState(false);
+
   // ── Log Time sheet ────────────────────────────────────────────────────────
   const [showLogTimeSheet, setShowLogTimeSheet] = useState(false);
   const [timerLoading, setTimerLoading] = useState(false);
@@ -297,9 +329,44 @@ export default function PhaseDetailScreen() {
     }
   }, []);
 
+  const loadTimeEntries = useCallback(async () => {
+    if (!jobId || !phaseId) return;
+    setTimeEntriesLoading(true);
+    try {
+      // Secure endpoint: scopes results by role — workers see only their own entries,
+      // owners/managers see all. Returns minimal DTO; duration is in minutes.
+      const res = await api.get<TimeEntry[]>(
+        `/api/jobs/${encodeURIComponent(jobId)}/phases/${encodeURIComponent(phaseId)}/time-entries`
+      );
+      setTimeEntries(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setTimeEntries([]);
+    } finally {
+      setTimeEntriesLoading(false);
+    }
+  }, [jobId, phaseId]);
+
+  const loadPhaseExpenses = useCallback(async () => {
+    if (!jobId || !phaseId) return;
+    setPhaseExpensesLoading(true);
+    try {
+      // Server does not filter by phaseId query param — fetch all job expenses
+      // and filter client-side to the relevant phase.
+      const res = await api.get<PhaseExpense[]>(`/api/jobs/${jobId}/expenses`);
+      const all = Array.isArray(res.data) ? res.data : [];
+      setPhaseExpenses(all.filter((e: any) => e.phaseId === phaseId));
+    } catch {
+      setPhaseExpenses([]);
+    } finally {
+      setPhaseExpensesLoading(false);
+    }
+  }, [jobId, phaseId]);
+
   useEffect(() => { loadPhase(); }, [loadPhase]);
   useEffect(() => { loadTasks(); }, [loadTasks]);
   useEffect(() => { loadDocs(); }, [loadDocs]);
+  useEffect(() => { loadTimeEntries(); }, [loadTimeEntries]);
+  useEffect(() => { loadPhaseExpenses(); }, [loadPhaseExpenses]);
   useEffect(() => { if (isOwner || isManager) loadTeamMembers(); }, [loadTeamMembers, isOwner, isManager]);
 
   // ── Timer elapsed ticker ──────────────────────────────────────────────────
@@ -440,6 +507,9 @@ export default function PhaseDetailScreen() {
       await stopTimer();
       setShowLogTimeSheet(false);
       showToast({ type: 'success', message: 'Timer stopped and hours logged' });
+      // Refresh both the phase (actualHours) and the time entry list
+      loadTimeEntries();
+      loadPhase();
     } catch {
       showToast({ type: 'error', message: 'Could not stop timer' });
     } finally {
@@ -477,6 +547,7 @@ export default function PhaseDetailScreen() {
       setExpenseDescription('');
       setExpenseReceiptUri(null);
       showToast({ type: 'success', message: 'Expense logged', description: 'Sent to owner for approval.' });
+      loadPhaseExpenses();
     } catch (err: any) {
       showToast({ type: 'error', message: 'Could not log expense', description: err?.message });
     } finally {
@@ -743,27 +814,40 @@ export default function PhaseDetailScreen() {
             </View>
           )}
 
-          {/* Task + description summary row */}
-          {(tasks.length > 0 || phase.description) && (
+          {/* Task summary row */}
+          {tasks.length > 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, marginTop: 12 }}>
-              {tasks.length > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  <Feather name="check-square" size={12} color={colors.mutedForeground} />
-                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
-                    {tasksDone}/{tasks.length} task{tasks.length !== 1 ? 's' : ''} done
-                  </Text>
-                </View>
-              )}
-              {phase.description ? (
-                <Text style={{ flex: 1, fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic' }} numberOfLines={1}>
-                  {phase.description}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Feather name="check-square" size={12} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+                  {tasksDone}/{tasks.length} task{tasks.length !== 1 ? 's' : ''} done
                 </Text>
-              ) : null}
+              </View>
             </View>
           )}
         </View>
 
         <View style={{ paddingHorizontal: spacing.md }}>
+
+          {/* ── Instructions (phase description + notes) ──────────────── */}
+          {(!!phase.description || !!phase.notes) && (
+            <Card>
+              <SectionTitle icon="file-text" title="Instructions" />
+              {!!phase.description && (
+                <MarkdownText style={{ marginTop: 2 }}>{phase.description}</MarkdownText>
+              )}
+              {!!phase.notes && (
+                <View style={{ marginTop: phase.description ? spacing.sm : 2 }}>
+                  {!!phase.description && (
+                    <View style={{ height: 1, backgroundColor: colors.border, marginBottom: spacing.sm }} />
+                  )}
+                  <Text style={{ fontSize: 13, color: colors.foreground, lineHeight: 20 }}>
+                    {phase.notes}
+                  </Text>
+                </View>
+              )}
+            </Card>
+          )}
 
           {/* ── Team ──────────────────────────────────────────────────── */}
           <Card>
@@ -966,59 +1050,134 @@ export default function PhaseDetailScreen() {
             )}
           </Card>
 
-          {/* ── Notes ─────────────────────────────────────────────────── */}
-          {(phase.notes || phase.description) ? (
-            <Card>
-              <SectionTitle icon="file" title="Notes" />
-              {phase.notes ? (
-                <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 22, marginBottom: phase.description ? spacing.sm : 0 }}>
-                  {phase.notes}
-                </Text>
-              ) : null}
-              {phase.description ? (
-                <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, lineHeight: 20 }}>
-                  {phase.description}
-                </Text>
-              ) : null}
-            </Card>
-          ) : null}
+          {/* ── Time Logged ───────────────────────────────────────────── */}
+          <Card>
+            <SectionTitle
+              icon="clock"
+              title="Time Logged"
+              right={
+                isActivePhaseTimer ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 12, paddingHorizontal: 9, paddingVertical: 4, backgroundColor: '#DC262618' }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#DC2626' }} />
+                    <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: '#DC2626' }}>{timerElapsed}</Text>
+                  </View>
+                ) : null
+              }
+            />
 
-          {/* ── Quick actions — Log Time / Log Expense (inline sheets) ── */}
-          <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs }}>
+            {timeEntriesLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+            ) : timeEntries.length === 0 ? (
+              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>
+                No time logged for this phase yet.
+              </Text>
+            ) : (
+              <View style={{ gap: 1, marginBottom: spacing.sm }}>
+                {timeEntries.map((entry) => {
+                  // duration is stored in minutes; convert to hours for display
+                  const hrs = (entry.duration ?? 0) / 60;
+                  const name = entry.userName ?? entry.workerName ?? 'Worker';
+                  const dateStr = entry.date
+                    ? fmtDate(entry.date)
+                    : entry.startTime
+                      ? fmtDate(entry.startTime)
+                      : null;
+                  return (
+                    <View key={entry.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                      <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }}>{name}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground, marginRight: spacing.md }}>{fmtHours(hrs)}</Text>
+                      {dateStr ? <Text style={{ fontSize: 12, color: colors.mutedForeground, minWidth: 60, textAlign: 'right' }}>{dateStr}</Text> : null}
+                    </View>
+                  );
+                })}
+                {/* Total row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 8 }}>
+                  <Text style={{ flex: 1, fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Total</Text>
+                  <Text style={{ fontSize: 13, fontWeight: fontWeights.bold, color: colors.primary }}>
+                    {fmtHours(timeEntries.reduce((sum, e) => sum + (e.duration ?? 0) / 60, 0))}
+                  </Text>
+                </View>
+              </View>
+            )}
 
-            {/* Log Time */}
+            {/* Log Time CTA */}
             <TouchableOpacity
               onPress={() => setShowLogTimeSheet(true)}
-              style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              activeOpacity={0.8}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: 11, borderRadius: radius.md, borderWidth: 1, borderColor: isActivePhaseTimer ? '#DC2626' : colors.primary, backgroundColor: isActivePhaseTimer ? '#DC262610' : `${colors.primary}10` }}
+              activeOpacity={0.7}
             >
-              <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: isActivePhaseTimer ? '#DC262618' : `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                {isActivePhaseTimer
-                  ? <View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: '#DC2626' }} />
-                  : <Feather name="clock" size={17} color={colors.primary} />}
-              </View>
-              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>
-                {isActivePhaseTimer ? 'Timer Running' : 'Log Time'}
-              </Text>
-              <Text style={{ fontSize: 11, color: isActivePhaseTimer ? '#DC2626' : colors.mutedForeground, textAlign: 'center', marginTop: 2, fontWeight: isActivePhaseTimer ? fontWeights.semibold : fontWeights.regular }}>
-                {isActivePhaseTimer ? timerElapsed : 'Start or stop timer'}
+              {isActivePhaseTimer
+                ? <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: '#DC2626' }} />
+                : <Feather name="play" size={13} color={colors.primary} />}
+              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: isActivePhaseTimer ? '#DC2626' : colors.primary }}>
+                {isActivePhaseTimer ? 'Stop Timer' : 'Log Time'}
               </Text>
             </TouchableOpacity>
+          </Card>
 
-            {/* Log Expense */}
+          {/* ── Expenses ──────────────────────────────────────────────── */}
+          <Card>
+            <SectionTitle icon="dollar-sign" title="Expenses" />
+
+            {phaseExpensesLoading ? (
+              <ActivityIndicator size="small" color={colors.primary} style={{ alignSelf: 'flex-start' }} />
+            ) : phaseExpenses.length === 0 ? (
+              <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground, marginBottom: spacing.sm }}>
+                No expenses logged for this phase yet.
+              </Text>
+            ) : (
+              <View style={{ gap: 1, marginBottom: spacing.sm }}>
+                {phaseExpenses.map((expense) => {
+                  const amt = typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0;
+                  return (
+                    <View key={expense.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.sm }}>
+                      {expense.receiptUrl ? (
+                        <Image source={{ uri: expense.receiptUrl }} style={{ width: 36, height: 36, borderRadius: radius.sm, resizeMode: 'cover' }} />
+                      ) : (
+                        <View style={{ width: 36, height: 36, borderRadius: radius.sm, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
+                          <Feather name="dollar-sign" size={16} color={colors.primary} />
+                        </View>
+                      )}
+                      <Text style={{ flex: 1, fontSize: 13, color: colors.foreground }} numberOfLines={1}>{expense.description}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>${amt.toFixed(2)}</Text>
+                    </View>
+                  );
+                })}
+                {/* Total row */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 8 }}>
+                  <Text style={{ flex: 1, fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Total</Text>
+                  <Text style={{ fontSize: 13, fontWeight: fontWeights.bold, color: colors.foreground }}>
+                    ${phaseExpenses.reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : parseFloat(e.amount) || 0), 0).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Log Expense CTA */}
             <TouchableOpacity
               onPress={() => setShowLogExpenseSheet(true)}
-              style={[styles.quickBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-              activeOpacity={0.8}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, paddingVertical: 11, borderRadius: radius.md, borderWidth: 1, borderColor: colors.primary, backgroundColor: `${colors.primary}10` }}
+              activeOpacity={0.7}
             >
-              <View style={{ width: 38, height: 38, borderRadius: 11, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                <Feather name="dollar-sign" size={17} color={colors.success} />
-              </View>
-              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.foreground }}>Log Expense</Text>
-              <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: 'center', marginTop: 2 }}>Add a cost</Text>
+              <Feather name="plus" size={13} color={colors.primary} />
+              <Text style={{ fontSize: 13, fontWeight: fontWeights.semibold, color: colors.primary }}>Log Expense</Text>
             </TouchableOpacity>
+          </Card>
 
-          </View>
+          {/* ── Footer summary row ────────────────────────────────────── */}
+          {(timeEntries.length > 0 || phaseExpenses.length > 0) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, paddingVertical: spacing.md, paddingHorizontal: spacing.lg, marginBottom: spacing.sm, borderRadius: radius.xl, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+              <Feather name="clock" size={14} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                {fmtHours(timeEntries.reduce((sum, e) => sum + (e.duration ?? 0) / 60, 0))} logged
+              </Text>
+              <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+              <Feather name="dollar-sign" size={14} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: fontWeights.semibold }}>
+                ${phaseExpenses.reduce((sum, e) => sum + (typeof e.amount === 'number' ? e.amount : parseFloat(e.amount) || 0), 0).toFixed(2)} in expenses
+              </Text>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -1553,16 +1712,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     fontSize: typography.body.fontSize,
-  },
-  quickBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    ...shadows.sm,
   },
   formLabel: {
     fontSize: 13,

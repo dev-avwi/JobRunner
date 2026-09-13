@@ -11171,6 +11171,79 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  /**
+   * GET /api/jobs/:jobId/phases/:phaseId/time-entries
+   * Returns completed non-break time entries for the given phase.
+   * Access control:
+   *   - Owners and managers see all team entries for the phase.
+   *   - Workers see only their own entries and must be assigned to the job.
+   * Returns a minimal DTO — no hourly rates, no GPS/location data.
+   */
+  app.get("/api/jobs/:jobId/phases/:phaseId/time-entries", requireAuth, async (req: any, res) => {
+    try {
+      const rawUserId = req.userId!;
+      const { jobId, phaseId } = req.params;
+
+      const userContext = await getUserContext(rawUserId);
+      const { effectiveUserId, isOwner } = userContext;
+      const isManager = !isOwner && hasPermission(userContext, PERMISSIONS.MANAGE_TEAM);
+
+      // Verify job exists and belongs to this business
+      const job = await storage.getJob(jobId, effectiveUserId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found or access denied' });
+      }
+
+      let entries: any[];
+
+      if (isOwner || isManager) {
+        // Privileged users see all team entries for the phase
+        const allEntries = await storage.getTimeEntriesForJob(jobId);
+        entries = allEntries.filter((e: any) => e.phaseId === phaseId && !e.isBreak && e.endTime);
+      } else {
+        // Workers must be assigned to this job
+        const isLegacyAssigned = (job as any).assignedTo === rawUserId;
+        if (!isLegacyAssigned) {
+          const assignment = await storage.getJobAssignmentForUser(jobId, rawUserId);
+          if (!assignment) {
+            return res.status(403).json({ error: 'You are not assigned to this job' });
+          }
+        }
+        // Workers see only their own entries for the phase
+        const myEntries = await storage.getTimeEntries(rawUserId, jobId);
+        entries = myEntries.filter((e: any) => e.phaseId === phaseId && !e.isBreak && e.endTime);
+      }
+
+      // Enrich with display name; strip all sensitive fields before responding
+      const userCache = new Map<string, any>();
+      const safe = await Promise.all(entries.map(async (e: any) => {
+        let userName: string | null = null;
+        const uid = e.userId || e.workerId;
+        if (uid) {
+          if (!userCache.has(uid)) {
+            userCache.set(uid, await storage.getUser(uid));
+          }
+          const u = userCache.get(uid);
+          if (u) userName = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email || null;
+        }
+        // Return only display-safe fields — never expose rates or location
+        return {
+          id: e.id,
+          phaseId: e.phaseId ?? null,
+          userName,
+          startTime: e.startTime ?? null,
+          duration: e.duration ?? null,   // stored in minutes
+          date: e.date ?? null,
+        };
+      }));
+
+      res.json(safe);
+    } catch (error: any) {
+      console.error('Error fetching phase time entries:', error);
+      res.status(500).json({ error: 'Failed to fetch phase time entries' });
+    }
+  });
+
   app.get("/api/jobs/:jobId/documents/:docId/view", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
