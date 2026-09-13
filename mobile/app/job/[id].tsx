@@ -2478,6 +2478,10 @@ export default function JobDetailScreen() {
     hazards: [] as { hazardDescription: string; riskConsequence: string; riskLikelihood: string; controlMeasures: string; responsiblePerson: string }[],
   });
 
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionEditText, setDescriptionEditText] = useState('');
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
+
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
@@ -7510,6 +7514,24 @@ export default function JobDetailScreen() {
     }
   };
 
+  const handleSaveDescription = async () => {
+    if (!job) return;
+    setIsSavingDescription(true);
+    const prev = job.description;
+    setJob({ ...job, description: descriptionEditText.trim() });
+    setEditingDescription(false);
+    try {
+      const response = await api.patch<Job>(`/api/jobs/${job.id}`, { description: descriptionEditText.trim() });
+      if (response.data) setJob(response.data);
+      showToast({ type: 'success', message: 'Description updated' });
+    } catch {
+      setJob({ ...job, description: prev });
+      showToast({ type: 'error', message: 'Failed to update description' });
+    } finally {
+      setIsSavingDescription(false);
+    }
+  };
+
   const handleSaveNotes = async () => {
     if (!job) return;
     const content = editedNotes.trim();
@@ -8542,7 +8564,7 @@ export default function JobDetailScreen() {
       )}
 
       {/* ── About this job ── */}
-      {!!job.description && (
+      {(!!job.description || isOwnerOrManager || isSoloOwner) && (
         <View style={{
           backgroundColor: colors.card,
           borderRadius: radius.xl,
@@ -8554,11 +8576,55 @@ export default function JobDetailScreen() {
         }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
             <Feather name="file-text" size={14} color={colors.mutedForeground} />
-            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3 }}>About this job</Text>
+            <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, flex: 1 }}>About this job</Text>
+            {!editingDescription && (isOwnerOrManager || isSoloOwner) && (
+              <TouchableOpacity
+                onPress={() => { setDescriptionEditText(job.description ?? ''); setEditingDescription(true); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.7}
+              >
+                <Feather name="edit-2" size={14} color={colors.primary} />
+              </TouchableOpacity>
+            )}
           </View>
-          <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>
-            {job.description}
-          </Text>
+          {editingDescription ? (
+            <>
+              <TextInput
+                value={descriptionEditText}
+                onChangeText={setDescriptionEditText}
+                multiline
+                placeholder="Add a job description..."
+                placeholderTextColor={colors.mutedForeground}
+                style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22, minHeight: 80, textAlignVertical: 'top', borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.sm }}
+                autoFocus
+              />
+              <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                <TouchableOpacity
+                  onPress={() => setEditingDescription(false)}
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.primary}25`, backgroundColor: `${colors.primary}12` }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveDescription}
+                  disabled={isSavingDescription}
+                  style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.lg, backgroundColor: colors.primary, opacity: isSavingDescription ? 0.6 : 1 }}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>{isSavingDescription ? 'Saving...' : 'Save'}</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : job.description ? (
+            <Text style={{ fontSize: typography.button.fontSize, color: colors.foreground, lineHeight: 22 }}>
+              {job.description}
+            </Text>
+          ) : (
+            <TouchableOpacity onPress={() => { setDescriptionEditText(''); setEditingDescription(true); }} activeOpacity={0.7}>
+              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground, fontStyle: 'italic' }}>Tap to add a description...</Text>
+            </TouchableOpacity>
+          )}
         </View>
       )}
 
@@ -11972,6 +12038,18 @@ export default function JobDetailScreen() {
               </View>
             )}
 
+            {/* Work Plan section header */}
+            {(phases.length > 0 || isLoadingPhases) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
+                <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, flex: 1 }}>Work Plan</Text>
+                {phases.filter(p => p.status === 'complete').length > 0 && (
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                    {phases.filter(p => p.status === 'complete').length}/{phases.length} complete
+                  </Text>
+                )}
+              </View>
+            )}
+
             {/* Phase cards — completed phases collapse to a compact row */}
             {isLoadingPhases ? (
               <View style={[styles.photosCard, { marginBottom: spacing.md }]}><SkeletonSection rows={3} /></View>
@@ -11999,83 +12077,68 @@ export default function JobDetailScreen() {
                 isInProgress && { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}40` },
               ];
 
-              // Collapsed completed phase — compact success row
+              // Collapsed completed phase — minimal flat row, no card box
               if (isComplete && !isCompletedExpanded) {
                 const countData = phaseTaskCounts[phase.id];
                 return (
                   <View
                     key={phase.id}
-                    style={[styles.photosCard, { marginBottom: spacing.xs, overflow: 'hidden', backgroundColor: `${colors.success}08`, borderColor: `${colors.success}25`, paddingVertical: spacing.sm }]}
+                    style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 2, marginBottom: 2, gap: spacing.sm }}
                     onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Feather name="check" size={14} color={colors.success} />
-                      </View>
-                      <TouchableOpacity
-                        style={{ flex: 1 }}
-                        onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
-                        activeOpacity={0.7}
-                      >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                          {phase.phaseCode ? (
-                            <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>{phase.phaseCode}</Text>
-                          ) : null}
-                          <Text style={{ fontSize: typography.body.fontSize, fontWeight: fontWeights.medium, color: colors.mutedForeground, flexShrink: 1 }} numberOfLines={1}>
-                            {phase.name}
-                          </Text>
-                        </View>
-                        {(phase.scheduledStart || phase.scheduledEnd) && (
-                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 1 }}>
-                            {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
-                            {phase.scheduledEnd ? ` – ${new Date(phase.scheduledEnd).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}` : ''}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                      {countData && countData.total > 0 && (
-                        <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
-                          {countData.completed}/{countData.total}
+                    {/* Small success dot */}
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success, flexShrink: 0 }} />
+                    <TouchableOpacity
+                      style={{ flex: 1 }}
+                      onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
+                      activeOpacity={0.7}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                        {phase.phaseCode ? (
+                          <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>{phase.phaseCode}</Text>
+                        ) : null}
+                        <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, flexShrink: 1, textDecorationLine: 'line-through' }} numberOfLines={1}>
+                          {phase.name}
                         </Text>
-                      )}
-                      <TouchableOpacity
-                        onPress={() => { expandedCompletedPhasesRef.current.add(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        activeOpacity={0.7}
-                      >
-                        <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
-                      </TouchableOpacity>
-                    </View>
+                      </View>
+                    </TouchableOpacity>
+                    {countData && countData.total > 0 && (
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                        {countData.completed}/{countData.total}
+                      </Text>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => { expandedCompletedPhasesRef.current.add(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      activeOpacity={0.7}
+                    >
+                      <Feather name="chevron-down" size={13} color={colors.mutedForeground} />
+                    </TouchableOpacity>
                   </View>
                 );
               }
 
               return (
                 <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
+                  {/* Left accent bar — colored by status */}
+                  <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: st.text, borderTopLeftRadius: radius.xl, borderBottomLeftRadius: radius.xl }} />
+
                   {/* Phase header row */}
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
-                    <View style={{ flex: 1, marginRight: spacing.sm, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
-                      {/* Status icon */}
-                      <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                        <Feather
-                          name={phase.status === 'complete' ? 'check' : phase.status === 'in_progress' ? 'play' : phase.status === 'on_hold' ? 'pause' : 'clock'}
-                          size={14}
-                          color={st.text}
-                        />
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm, paddingLeft: spacing.sm }}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      {/* Phase code badge + name */}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2, flexWrap: 'wrap' }}>
+                        {phase.phaseCode ? (
+                          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, backgroundColor: `${st.text}15`, flexShrink: 0 }}>
+                            <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: st.text }}>{phase.phaseCode}</Text>
+                          </View>
+                        ) : null}
+                        <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
+                          {phase.name}
+                        </Text>
                       </View>
-                      <View style={{ flex: 1 }}>
-                        {/* Phase code badge + name */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2, flexWrap: 'wrap' }}>
-                          {phase.phaseCode ? (
-                            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, backgroundColor: `${st.text}15`, flexShrink: 0 }}>
-                              <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: st.text }}>{phase.phaseCode}</Text>
-                            </View>
-                          ) : null}
-                          <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
-                            {phase.name}
-                          </Text>
-                        </View>
-                        {/* Date + hours */}
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+                      {/* Date + hours */}
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: 4 }}>
                         {(phase.scheduledStart || phase.scheduledEnd) && (
                           <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
                             {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
@@ -12086,9 +12149,33 @@ export default function JobDetailScreen() {
                           <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
                         ) : null}
                       </View>
-                      </View>
+                      {/* Assigned members */}
+                      {(phase.assignedUsers?.length || phase.assignedUserName) ? (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                          {phase.assignedUsers?.length ? (
+                            <>
+                              <View style={{ flexDirection: 'row' }}>
+                                {phase.assignedUsers.slice(0, 3).map((member, idx) => (
+                                  <View key={member.id} style={{ marginLeft: idx === 0 ? 0 : -6 }}>
+                                    <TeamAvatar name={member.name} userId={member.id} size={18} />
+                                  </View>
+                                ))}
+                              </View>
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>
+                                {phase.assignedUsers.slice(0, 2).map(m => m.name.split(' ')[0]).join(', ')}
+                                {phase.assignedUsers.length > 2 ? ` +${phase.assignedUsers.length - 2}` : ''}
+                              </Text>
+                            </>
+                          ) : phase.assignedUserName ? (
+                            <>
+                              <TeamAvatar name={phase.assignedUserName} userId={phase.assignedUserId || phase.assignedUserName} size={18} />
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{phase.assignedUserName.split(' ')[0]}</Text>
+                            </>
+                          ) : null}
+                        </View>
+                      ) : null}
                     </View>
-                    {/* Task count + status label + collapse (complete only) */}
+                    {/* Status badge + task count + collapse (complete only) */}
                     <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: spacing.xs }}>
                       <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
                         <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>{st.label}</Text>
@@ -12115,7 +12202,7 @@ export default function JobDetailScreen() {
                   </View>
 
                   {phase.description ? (
-                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, marginLeft: 34 + spacing.sm }} numberOfLines={4}>{phase.description}</Text>
+                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, paddingLeft: spacing.sm }} numberOfLines={4}>{phase.description}</Text>
                   ) : null}
 
                   {/* Task progress bar */}
@@ -12124,7 +12211,7 @@ export default function JobDetailScreen() {
                     if (!countData || countData.total === 0) return null;
                     const pct = countData.total > 0 ? countData.completed / countData.total : 0;
                     return (
-                      <View style={{ marginBottom: spacing.sm, marginLeft: 34 + spacing.sm, marginRight: 0 }}>
+                      <View style={{ marginBottom: spacing.sm, paddingLeft: spacing.sm }}>
                         <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.muted, overflow: 'hidden' }}>
                           <View style={{ height: '100%', width: `${Math.round(pct * 100)}%`, borderRadius: 2, backgroundColor: isComplete ? colors.success : colors.primary }} />
                         </View>
