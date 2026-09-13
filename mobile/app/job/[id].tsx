@@ -8138,20 +8138,23 @@ export default function JobDetailScreen() {
         <Text style={{ fontSize: typography.body.fontSize, color: colors.mutedForeground, textAlign: 'center', lineHeight: 22, marginBottom: spacing.xl }}>{errDescription}</Text>
         <View style={{ width: '100%', gap: spacing.sm }}>
           {sessionExpired ? (
+            // Session is genuinely expired — signing in is the only useful action
             <TouchableOpacity activeOpacity={0.8} onPress={() => { logout(); }} style={styles.errorPrimaryBtn}>
               <Feather name="log-in" size={16} color={colors.primaryForeground} />
               <Text style={styles.errorPrimaryBtnText}>Sign in</Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity activeOpacity={0.8} onPress={loadJob} style={styles.errorPrimaryBtn}>
-              <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
-              <Text style={styles.errorPrimaryBtnText}>Try again</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity activeOpacity={0.8} onPress={loadJob} style={styles.errorPrimaryBtn}>
+                <Feather name="refresh-cw" size={16} color={colors.primaryForeground} />
+                <Text style={styles.errorPrimaryBtnText}>Try again</Text>
+              </TouchableOpacity>
+              <TouchableOpacity activeOpacity={0.8} onPress={() => router.back()} style={styles.errorSecondaryBtn}>
+                <Feather name="arrow-left" size={16} color={colors.primary} />
+                <Text style={styles.errorSecondaryBtnText}>Go back</Text>
+              </TouchableOpacity>
+            </>
           )}
-          <TouchableOpacity activeOpacity={0.8} onPress={() => router.replace('/(tabs)/jobs')} style={styles.errorSecondaryBtn}>
-            <Feather name="arrow-left" size={16} color={colors.primary} />
-            <Text style={styles.errorSecondaryBtnText}>Back to Jobs</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -11996,18 +11999,19 @@ export default function JobDetailScreen() {
                 isInProgress && { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}40` },
               ];
 
-              // Collapsed completed phase — muted compact row
+              // Collapsed completed phase — compact success row
               if (isComplete && !isCompletedExpanded) {
                 const countData = phaseTaskCounts[phase.id];
                 return (
                   <View
                     key={phase.id}
-                    style={[styles.photosCard, { marginBottom: spacing.xs, overflow: 'hidden', backgroundColor: colors.background, borderColor: colors.border, paddingVertical: spacing.sm }]}
+                    style={[styles.photosCard, { marginBottom: spacing.xs, overflow: 'hidden', backgroundColor: `${colors.success}08`, borderColor: `${colors.success}25`, paddingVertical: spacing.sm }]}
                     onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                      {/* Checkmark */}
-                      <Feather name="check-circle" size={16} color={colors.success} style={{ flexShrink: 0 }} />
+                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Feather name="check" size={14} color={colors.success} />
+                      </View>
                       <TouchableOpacity
                         style={{ flex: 1 }}
                         onPress={() => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
@@ -12047,23 +12051,31 @@ export default function JobDetailScreen() {
 
               return (
                 <View key={phase.id} style={cardStyle} onLayout={(e) => { phaseLayoutYRef.current[phase.id] = e.nativeEvent.layout.y; }}>
-                  {/* Phase header row — info display only, no touch */}
+                  {/* Phase header row */}
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: phase.description ? spacing.xs : spacing.sm }}>
-                    <View style={{ flex: 1, marginRight: spacing.sm }}>
-                      {/* Name row with status dot and phase code badge */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 3 }}>
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: st.text, flexShrink: 0 }} />
-                        {phase.phaseCode ? (
-                          <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, backgroundColor: `${st.text}15`, flexShrink: 0 }}>
-                            <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: st.text }}>{phase.phaseCode}</Text>
-                          </View>
-                        ) : null}
-                        <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
-                          {phase.name}
-                        </Text>
+                    <View style={{ flex: 1, marginRight: spacing.sm, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                      {/* Status icon */}
+                      <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                        <Feather
+                          name={phase.status === 'complete' ? 'check' : phase.status === 'in_progress' ? 'play' : phase.status === 'on_hold' ? 'pause' : 'clock'}
+                          size={14}
+                          color={st.text}
+                        />
                       </View>
-                      {/* Date + hours */}
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginLeft: 8 + spacing.xs }}>
+                      <View style={{ flex: 1 }}>
+                        {/* Phase code badge + name */}
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 2, flexWrap: 'wrap' }}>
+                          {phase.phaseCode ? (
+                            <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.xs, backgroundColor: `${st.text}15`, flexShrink: 0 }}>
+                              <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: st.text }}>{phase.phaseCode}</Text>
+                            </View>
+                          ) : null}
+                          <Text style={{ fontSize: 15, fontWeight: fontWeights.bold, color: colors.foreground, flexShrink: 1 }}>
+                            {phase.name}
+                          </Text>
+                        </View>
+                        {/* Date + hours */}
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
                         {(phase.scheduledStart || phase.scheduledEnd) && (
                           <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>
                             {phase.scheduledStart ? new Date(phase.scheduledStart).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''}
@@ -12074,23 +12086,22 @@ export default function JobDetailScreen() {
                           <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{phase.bookedHours} hrs booked</Text>
                         ) : null}
                       </View>
+                      </View>
                     </View>
-                    {/* Status badge + task count + collapse (complete only) */}
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      {(() => {
-                        const countData = phaseTaskCounts[phase.id];
-                        if (!countData) return null;
-                        return (
-                          <View style={{ paddingHorizontal: 7, paddingVertical: 3, borderRadius: radius.pill, backgroundColor: colors.muted }}>
-                            <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>
-                              {countData.completed}/{countData.total} tasks
-                            </Text>
-                          </View>
-                        );
-                      })()}
+                    {/* Task count + status label + collapse (complete only) */}
+                    <View style={{ flexDirection: 'column', alignItems: 'flex-end', gap: spacing.xs }}>
                       <View style={{ paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: st.bg, borderWidth: 1, borderColor: st.border }}>
                         <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: st.text }}>{st.label}</Text>
                       </View>
+                      {(() => {
+                        const countData = phaseTaskCounts[phase.id];
+                        if (!countData || countData.total === 0) return null;
+                        return (
+                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground }}>
+                            {countData.completed}/{countData.total} tasks
+                          </Text>
+                        );
+                      })()}
                       {isComplete && isCompletedExpanded && (
                         <TouchableOpacity
                           onPress={() => { expandedCompletedPhasesRef.current.delete(phase.id); setExpandedCompletedPhasesVersion(v => v + 1); }}
@@ -12104,7 +12115,7 @@ export default function JobDetailScreen() {
                   </View>
 
                   {phase.description ? (
-                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, marginLeft: 8 + spacing.xs }} numberOfLines={4}>{phase.description}</Text>
+                    <Text style={{ fontSize: typography.body.fontSize, color: colors.foreground, lineHeight: 20, marginBottom: spacing.sm, marginLeft: 34 + spacing.sm }} numberOfLines={4}>{phase.description}</Text>
                   ) : null}
 
                   {/* Task progress bar */}
@@ -12113,7 +12124,7 @@ export default function JobDetailScreen() {
                     if (!countData || countData.total === 0) return null;
                     const pct = countData.total > 0 ? countData.completed / countData.total : 0;
                     return (
-                      <View style={{ marginBottom: spacing.sm, marginLeft: 8 + spacing.xs, marginRight: 0 }}>
+                      <View style={{ marginBottom: spacing.sm, marginLeft: 34 + spacing.sm, marginRight: 0 }}>
                         <View style={{ height: 4, borderRadius: 2, backgroundColor: colors.muted, overflow: 'hidden' }}>
                           <View style={{ height: '100%', width: `${Math.round(pct * 100)}%`, borderRadius: 2, backgroundColor: isComplete ? colors.success : colors.primary }} />
                         </View>
