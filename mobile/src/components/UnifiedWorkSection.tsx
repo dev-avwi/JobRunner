@@ -1002,7 +1002,7 @@ export function UnifiedWorkSection({
                       )}
                     </View>
 
-                    {/* Status + estimated hours row */}
+                    {/* Status + time row */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' }}>
                       {(() => {
                         const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
@@ -1017,12 +1017,20 @@ export function UnifiedWorkSection({
                           </View>
                         );
                       })()}
-                      {estH > 0 && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Feather name="clock" size={12} color={colors.mutedForeground} />
-                          <Text style={{ fontSize: typography.caption.fontSize, color: colors.mutedForeground }}>{estH.toFixed(1)}h estimated</Text>
-                        </View>
-                      )}
+                      {(() => {
+                        const loggedH = task.totalHours ?? 0;
+                        const overBudget = loggedH > 0 && estH > 0 && loggedH >= estH;
+                        const chipColor = overBudget ? colors.destructive : colors.mutedForeground;
+                        if (loggedH <= 0 && estH <= 0) return null;
+                        return (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Feather name="clock" size={12} color={chipColor} />
+                            <Text style={{ fontSize: typography.caption.fontSize, color: chipColor }}>
+                              {loggedH > 0 ? `${loggedH.toFixed(1)}h logged` : ''}{loggedH > 0 && estH > 0 ? ' / ' : ''}{estH > 0 ? `${estH.toFixed(1)}h estimated` : ''}
+                            </Text>
+                          </View>
+                        );
+                      })()}
                     </View>
 
                     {/* Action buttons */}
