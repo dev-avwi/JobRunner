@@ -1986,27 +1986,19 @@ export default function Settings({
                 <CardTitle>Google Reviews</CardTitle>
               </div>
               <p className="text-sm text-muted-foreground">
-                Add your Google review link to automatically request reviews from customers after completing jobs.
-                Enable this in Autopilot to send review requests via SMS or email.
+                Automatically ask clients for a Google review after a job is paid. Configure and enable this in Autopilot.
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="google-review-url">Google Review URL</Label>
-                <Input
-                  id="google-review-url"
-                  placeholder="https://g.page/r/your-business/review"
-                  value={businessData.googleReviewUrl}
-                  onChange={(e) => setBusinessData(prev => ({ ...prev, googleReviewUrl: e.target.value }))}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Find this in your Google Business Profile under "Ask for reviews" or "Get more reviews"
-                </p>
-              </div>
-              {businessData.googleReviewUrl && (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50">
+            <CardContent>
+              {businessData.googleReviewUrl ? (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200">
                   <CheckCircle className="w-4 h-4 text-green-600 shrink-0" />
-                  <span className="text-sm">Review link configured. Enable "Review Request" in Autopilot to auto-send after jobs.</span>
+                  <span className="text-sm text-green-800">Review link configured. Manage in Autopilot.</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-muted/50">
+                  <Star className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <span className="text-sm text-muted-foreground">No review link set. Enable the Review Request automation in Autopilot to set it up.</span>
                 </div>
               )}
             </CardContent>

@@ -384,10 +384,14 @@ function InlineSettings({
   field,
   settings,
   onUpdate,
+  googleReviewUrl,
+  onUpdateGoogleReviewUrl,
 }: {
   field: AutomationField;
   settings: AutomationSettings;
   onUpdate: (changes: Partial<AutomationSettings>) => void;
+  googleReviewUrl?: string;
+  onUpdateGoogleReviewUrl?: (url: string) => void;
 }) {
   if (field === "quoteFollowUpEnabled") {
     const days = settings.quoteFollowUpDays ?? 3;
@@ -573,8 +577,17 @@ function InlineSettings({
     const message = settings.reviewRequestMessage ?? DEFAULT_MESSAGES.reviewRequestMessage;
     return (
       <div className="flex flex-col gap-3 pt-3 border-t border-border/50">
-        <div className="p-2.5 rounded-md bg-muted/50 text-xs text-muted-foreground">
-          Sent automatically when a job is marked as completed. Add your Google Review URL in Settings &gt; Business Details to include a direct review link.
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs text-muted-foreground">Google Review URL</Label>
+          <Input
+            value={googleReviewUrl ?? ""}
+            onChange={(e) => onUpdateGoogleReviewUrl?.(e.target.value)}
+            placeholder="https://g.page/r/your-business/review"
+            className="text-sm h-8"
+          />
+          <p className="text-[11px] text-muted-foreground">
+            Find this in your Google Business Profile under "Ask for reviews". Included as a link in the message.
+          </p>
         </div>
         <div className="flex flex-col gap-1.5">
           <Label className="text-xs text-muted-foreground">Channel</Label>
@@ -608,10 +621,22 @@ const categoryLabels: Record<string, { label: string; icon: typeof Settings }> =
 export default function Autopilot({ onNavigate }: AutopilotProps) {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"all" | "communications" | "fieldwork" | "billing">("all");
+  const [googleReviewUrl, setGoogleReviewUrl] = useState("");
+  const reviewUrlSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: settings, isLoading } = useQuery<AutomationSettings>({
     queryKey: ["/api/automation-settings"],
   });
+
+  const { data: bizSettings } = useQuery<{ googleReviewUrl?: string }>({
+    queryKey: ["/api/business-settings"],
+  });
+
+  useEffect(() => {
+    if (bizSettings?.googleReviewUrl !== undefined) {
+      setGoogleReviewUrl(bizSettings.googleReviewUrl ?? "");
+    }
+  }, [bizSettings?.googleReviewUrl]);
 
   const mutation = useMutation({
     mutationFn: async (updated: AutomationSettings) => {
@@ -641,6 +666,19 @@ export default function Autopilot({ onNavigate }: AutopilotProps) {
   const handleUpdate = (changes: Partial<AutomationSettings>) => {
     const updated = { ...settings, ...changes };
     mutation.mutate(updated);
+  };
+
+  const handleUpdateGoogleReviewUrl = (url: string) => {
+    setGoogleReviewUrl(url);
+    if (reviewUrlSaveTimer.current) clearTimeout(reviewUrlSaveTimer.current);
+    reviewUrlSaveTimer.current = setTimeout(async () => {
+      try {
+        await apiRequest("PATCH", "/api/business-settings", { googleReviewUrl: url.trim() || null });
+        queryClient.invalidateQueries({ queryKey: ["/api/business-settings"] });
+      } catch {
+        toast({ title: "Error", description: "Could not save review URL", variant: "destructive" });
+      }
+    }, 800);
   };
 
   const activeCount = settings
@@ -823,6 +861,8 @@ export default function Autopilot({ onNavigate }: AutopilotProps) {
                         field={item.field}
                         settings={settings || {}}
                         onUpdate={handleUpdate}
+                        googleReviewUrl={googleReviewUrl}
+                        onUpdateGoogleReviewUrl={handleUpdateGoogleReviewUrl}
                       />
                     </div>
                   )}
