@@ -163,6 +163,7 @@ function BusinessSettingsScreenInner() {
     signatureName: (businessSettings as any)?.signatureName || '',
     includeSignatureOnQuotes: (businessSettings as any)?.includeSignatureOnQuotes || false,
     includeSignatureOnInvoices: (businessSettings as any)?.includeSignatureOnInvoices || false,
+    googleReviewUrl: (businessSettings as any)?.googleReviewUrl || '',
   });
   const [showSignaturePad, setShowSignaturePad] = useState(false);
 
@@ -219,6 +220,7 @@ function BusinessSettingsScreenInner() {
         signatureName: (businessSettings as any)?.signatureName || '',
         includeSignatureOnQuotes: (businessSettings as any)?.includeSignatureOnQuotes || false,
         includeSignatureOnInvoices: (businessSettings as any)?.includeSignatureOnInvoices || false,
+        googleReviewUrl: (businessSettings as any)?.googleReviewUrl || '',
       });
     }
   }, [businessSettings]);
@@ -520,6 +522,30 @@ function BusinessSettingsScreenInner() {
                 thumbColor={'#FFFFFF'}
               />
             </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Google Reviews</Text>
+          <Text style={styles.sectionDescription}>
+            Automatically ask clients for a Google review after each job. Enable this in Automations settings on the web app.
+          </Text>
+
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabel}>
+              <Feather name="star" size={18} color={colors.primary} />
+              <Text style={styles.inputLabelText}>Google Review Link</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={form.googleReviewUrl}
+              onChangeText={(text) => setForm({ ...form, googleReviewUrl: text })}
+              placeholder="https://g.page/r/YOUR_PLACE_ID/review"
+              placeholderTextColor={colors.mutedForeground}
+              autoCapitalize="none"
+              keyboardType="url"
+            />
+            <Text style={styles.inputHint}>
+              Paste your Google Business review link. Clients receive this link in the review request message.
+            </Text>
           </View>
 
           <PressableRow style={[styles.saveButton, isLoading && styles.saveButtonDisabled]} onPress={handleSave} disabled={isLoading} >

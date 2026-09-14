@@ -942,6 +942,11 @@ export const handleInvoiceMarkPaid = async (req: any, res: any, storage: any) =>
     processPaymentReceivedAutomation(req.userId, req.params.id)
       .catch(err => console.error('[Automations] Error processing payment received:', err));
 
+    // Queue a Google review request to be sent after the configured delay
+    const { scheduleReviewRequest } = await import('./automationService');
+    scheduleReviewRequest(req.userId, req.params.id)
+      .catch(err => console.error('[ReviewRequest] Error scheduling review request:', err));
+
     // Sync payment status to Xero (async, non-blocking)
     markInvoicePaidInXero(req.userId, req.params.id)
       .catch(err => console.warn('[Xero] Error syncing payment to Xero:', err));

@@ -713,6 +713,10 @@ export async function syncPaymentsFromMyob(userId: string): Promise<{ updated: n
             status: 'paid',
             paidAt: payment.Date ? new Date(payment.Date) : new Date(),
           });
+          // Queue a Google review request for the MYOB-confirmed payment
+          import('./automationService').then(({ scheduleReviewRequest }) =>
+            scheduleReviewRequest(userId, matchingInvoice.id)
+          ).catch(err => console.error('[ReviewRequest] Error scheduling review request (myob):', err));
           updated++;
         }
       } catch (err) {

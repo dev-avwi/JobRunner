@@ -703,6 +703,10 @@ export async function syncPaymentsFromQuickbooks(userId: string): Promise<{ upda
             status: 'paid',
             paidAt: new Date(),
           });
+          // Queue a Google review request for the QuickBooks-confirmed payment
+          import('./automationService').then(({ scheduleReviewRequest }) =>
+            scheduleReviewRequest(userId, invoice.id)
+          ).catch(err => console.error('[ReviewRequest] Error scheduling review request (qb-sync):', err));
           updated++;
         }
       } catch (err) {
@@ -1239,6 +1243,10 @@ export async function processQboWebhookPayload(payload: any): Promise<void> {
               const qbInv = await getQuickbooksInvoice(tokens.accessToken, refreshed.realmId, id);
               if (qbInv && qbInv.Balance === 0 && local.status !== 'paid') {
                 await storage.updateInvoice(local.id, conn.userId, { status: 'paid', paidAt: new Date(), quickbooksSyncedAt: new Date() } as any);
+                // Queue a Google review request for the QuickBooks webhook-confirmed payment
+                import('./automationService').then(({ scheduleReviewRequest }) =>
+                  scheduleReviewRequest(conn.userId, local.id)
+                ).catch(err => console.error('[ReviewRequest] Error scheduling review request (qb-webhook):', err));
               }
             }
           }

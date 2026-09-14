@@ -2506,7 +2506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const safeMessage = escapePortalHtml(trimmedMessage).replace(/\n/g, '<br/>');
           await sendSystemEmail({
             to: owner.email,
-            subject: `Client message: ${subjectLine}`,
+            subject: `Client message: ${subjectLine.replace(/[^\w\s,.:!?'-]/g, '')}`,
             html: `<p><strong>${safeClientName}</strong> (${safePhone}) sent a message via their client portal:</p>
 <blockquote style="border-left:3px solid #ddd;padding-left:12px;color:#555;margin:12px 0">${safeMessage}</blockquote>
 <p>Log in to JobRunner to view this client and follow up.</p>`,
@@ -21607,6 +21607,9 @@ Be specific about materials, colors, and features that would be included.`
       if (isFullyPaid) {
         processPaymentReceivedAutomation(req.userId, invoice.id)
           .catch(err => console.error('[Automations] Error processing payment received:', err));
+        const { scheduleReviewRequest: scheduleReview3 } = await import('./automationService');
+        scheduleReview3(req.userId, invoice.id)
+          .catch(err => console.error('[ReviewRequest] Error scheduling review request:', err));
       }
       
       let receiptId = null;
@@ -25841,6 +25844,9 @@ Be specific about materials, colors, and features that would be included.`
 
             processPaymentReceivedAutomation(termOwnerId, invoice.id)
               .catch(err => console.error('[Automations] Error processing payment received:', err));
+            const { scheduleReviewRequest: scheduleReview4 } = await import('./automationService');
+            scheduleReview4(termOwnerId, invoice.id)
+              .catch(err => console.error('[ReviewRequest] Error scheduling review request (terminal):', err));
           }
 
           // Push notification + real-time broadcast to the business
@@ -27177,6 +27183,10 @@ Be specific about materials, colors, and features that would be included.`
             lockedReason: 'payment_received',
             paymentMethod: 'online',
           });
+          // Queue a Google review request to be sent after the configured delay
+          const { scheduleReviewRequest: scheduleReview6 } = await import('./automationService');
+          scheduleReview6(request.userId, request.invoiceId)
+            .catch(err => console.error('[ReviewRequest] Error scheduling review request (payment-link):', err));
         }
       }
 
@@ -45914,6 +45924,11 @@ Give 3-5 short, specific recommendations. Mention client names. Use Australian E
           lockedAt: new Date(),
           lockedReason: 'payment_received',
         });
+
+        // Queue a Google review request now the final installment is paid
+        const { scheduleReviewRequest: scheduleReview7 } = await import('./automationService');
+        scheduleReview7(userId, schedule.invoiceId)
+          .catch(err => console.error('[ReviewRequest] Error scheduling review request (installment):', err));
         
         // Create notification
         await storage.createNotification({

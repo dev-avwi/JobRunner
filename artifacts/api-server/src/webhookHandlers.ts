@@ -125,6 +125,11 @@ async function handleStripeEvent(event: any, storage: any) {
             processPaymentReceivedAutomation(userId, invoiceId)
               .catch(err => console.error('[Automations] Error processing payment received:', err));
 
+            // Queue a Google review request to be sent after the configured delay
+            const { scheduleReviewRequest: scheduleReview1 } = await import('./automationService');
+            scheduleReview1(userId, invoiceId)
+              .catch(err => console.error('[ReviewRequest] Error scheduling review request:', err));
+
             // Sync payment status to Xero (async, non-blocking)
             markInvoicePaidInXero(userId, invoiceId)
               .catch(err => console.warn('[Xero] Error syncing payment to Xero:', err));
@@ -521,6 +526,10 @@ async function handleStripeEvent(event: any, storage: any) {
                   lockedAt: new Date(),
                   lockedReason: 'payment_received',
                 });
+                // Queue a Google review request to be sent after the configured delay
+                const { scheduleReviewRequest: scheduleReview2 } = await import('./automationService');
+                scheduleReview2(tradieUserId, invoiceId)
+                  .catch(err => console.error('[ReviewRequest] Error scheduling review request (connect):', err));
               } else if (isDepositPayment) {
                 await storage.updateInvoice(invoiceId, tradieUserId, {
                   status: 'deposit_paid',

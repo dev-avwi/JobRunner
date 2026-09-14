@@ -829,6 +829,19 @@ export default function ClientDetailView({
               <span>Referred via: {client.referralSource}</span>
             </div>
           )}
+          {(client as any).reviewRequestSentAt && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Star className="h-3.5 w-3.5 text-yellow-500" />
+              <span>
+                Review request sent{' '}
+                {new Date((client as any).reviewRequestSentAt).toLocaleDateString('en-AU', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                })}
+              </span>
+            </div>
+          )}
         </CardContent>
       </Card>
 

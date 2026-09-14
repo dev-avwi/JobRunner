@@ -22,7 +22,9 @@ let complianceExpiryInterval: NodeJS.Timeout | null = null;
 let sheetSyncInterval: NodeJS.Timeout | null = null;
 let staffLicenceExpiryInterval: NodeJS.Timeout | null = null;
 let retentionDueInterval: NodeJS.Timeout | null = null;
+let reviewRequestQueueInterval: NodeJS.Timeout | null = null;
 
+const REVIEW_REQUEST_QUEUE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const REMINDER_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const RECURRING_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 const TRIAL_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
@@ -1398,6 +1400,29 @@ export function startRetentionDueScheduler(): void {
   console.log(`[Scheduler] Retention-due scheduler running every ${RETENTION_DUE_INTERVAL_MS / 3600000}h`);
 }
 
+export function startReviewRequestQueueScheduler(): void {
+  console.log('[Scheduler] Starting review request queue scheduler...');
+
+  if (reviewRequestQueueInterval) {
+    clearInterval(reviewRequestQueueInterval);
+  }
+
+  async function processQueue() {
+    try {
+      const { processReviewRequestQueue } = await import('./automationService');
+      await processReviewRequestQueue();
+    } catch (err) {
+      console.error('[Scheduler] Error processing review request queue:', err);
+    }
+  }
+
+  // First run after 30 s so the server is fully initialised
+  setTimeout(processQueue, 30000);
+  reviewRequestQueueInterval = setInterval(processQueue, REVIEW_REQUEST_QUEUE_INTERVAL_MS);
+
+  console.log(`[Scheduler] Review request queue scheduler running every ${REVIEW_REQUEST_QUEUE_INTERVAL_MS / 60000} minutes`);
+}
+
 export function startAllSchedulers(): void {
   startReminderScheduler();
   startRecurringScheduler();
@@ -1412,6 +1437,7 @@ export function startAllSchedulers(): void {
   startSheetSyncScheduler();
   startStaffLicenceExpiryScheduler();
   startRetentionDueScheduler();
+  startReviewRequestQueueScheduler();
 }
 
 export function stopAllSchedulers(): void {
@@ -1478,6 +1504,11 @@ export function stopAllSchedulers(): void {
   if (retentionDueInterval) {
     clearInterval(retentionDueInterval);
     retentionDueInterval = null;
+  }
+
+  if (reviewRequestQueueInterval) {
+    clearInterval(reviewRequestQueueInterval);
+    reviewRequestQueueInterval = null;
   }
   
   console.log('[Scheduler] All schedulers stopped');

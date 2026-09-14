@@ -56,7 +56,9 @@ import {
   Eye,
   Send,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Star,
+  Link
 } from "lucide-react";
 
 // ── GSM-7 helpers ────────────────────────────────────────────────────────────
@@ -176,6 +178,11 @@ interface AutomationSettings {
   dailySummaryEnabled: boolean;
   dailySummaryTime: string;
   dailySummaryLastSent?: string;
+  // Review requests
+  autoReviewRequest: boolean;
+  autoReviewRequestType?: 'sms' | 'email' | 'both';
+  reviewRequestMessage?: string;
+  reviewRequestDelayHours?: number;
 }
 
 const TRIGGER_TYPES = [
@@ -388,12 +395,13 @@ export default function Automations() {
     queryKey: ['/api/automation-settings'],
   });
 
-  const { data: bizSettings } = useQuery<{ reminderTone?: string }>({
+  const { data: bizSettings } = useQuery<{ reminderTone?: string; googleReviewUrl?: string }>({
     queryKey: ['/api/business-settings'],
   });
 
   const [settingsForm, setSettingsForm] = useState<Partial<AutomationSettings>>({});
   const [reminderTone, setReminderTone] = useState<ReminderTone>('friendly');
+  const [googleReviewUrl, setGoogleReviewUrl] = useState('');
 
   // Sync settings form when data loads
   useEffect(() => {
@@ -402,10 +410,13 @@ export default function Automations() {
     }
   }, [settings]);
 
-  // Sync reminder tone from business settings
+  // Sync reminder tone and Google review URL from business settings
   useEffect(() => {
     if (bizSettings?.reminderTone) {
       setReminderTone(bizSettings.reminderTone as ReminderTone);
+    }
+    if (bizSettings?.googleReviewUrl !== undefined) {
+      setGoogleReviewUrl(bizSettings.googleReviewUrl ?? '');
     }
   }, [bizSettings]);
 
@@ -1526,6 +1537,147 @@ export default function Automations() {
                 </DialogContent>
               </Dialog>
 
+              {/* Google Review Requests */}
+              <Card data-testid="settings-review-requests">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
+                      <Star className="h-5 w-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Google Review Requests</CardTitle>
+                      <CardDescription>
+                        Automatically ask clients for a Google review after a job is completed or invoiced
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="review-request-enabled">Enable review requests</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Send review requests to clients after each job
+                      </p>
+                    </div>
+                    <Switch
+                      id="review-request-enabled"
+                      checked={settingsForm.autoReviewRequest ?? false}
+                      onCheckedChange={(checked) =>
+                        setSettingsForm(prev => ({ ...prev, autoReviewRequest: checked }))
+                      }
+                      data-testid="switch-review-request-enabled"
+                    />
+                  </div>
+
+                  {settingsForm.autoReviewRequest && (
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="google-review-url" className="flex items-center gap-1.5">
+                          <Link className="h-3.5 w-3.5" />
+                          Google Review Link
+                        </Label>
+                        <Input
+                          id="google-review-url"
+                          value={googleReviewUrl}
+                          onChange={(e) => setGoogleReviewUrl(e.target.value)}
+                          placeholder="https://g.page/r/YOUR_PLACE_ID/review"
+                          className="mt-1.5"
+                          data-testid="input-google-review-url"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Paste your Google Business review link. Find it in Google Business Profile under Get more reviews.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="review-request-delay">Send after</Label>
+                          <Select
+                            value={String(settingsForm.reviewRequestDelayHours ?? 24)}
+                            onValueChange={(v) =>
+                              setSettingsForm(prev => ({ ...prev, reviewRequestDelayHours: parseInt(v) }))
+                            }
+                          >
+                            <SelectTrigger id="review-request-delay" data-testid="select-review-delay">
+                              <SelectValue placeholder="Select delay" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="0">Immediately</SelectItem>
+                              <SelectItem value="1">1 hour</SelectItem>
+                              <SelectItem value="4">4 hours</SelectItem>
+                              <SelectItem value="24">24 hours</SelectItem>
+                              <SelectItem value="48">2 days</SelectItem>
+                              <SelectItem value="72">3 days</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="review-request-type">Send via</Label>
+                          <Select
+                            value={settingsForm.autoReviewRequestType ?? 'email'}
+                            onValueChange={(v) =>
+                              setSettingsForm(prev => ({ ...prev, autoReviewRequestType: v as 'sms' | 'email' | 'both' }))
+                            }
+                          >
+                            <SelectTrigger id="review-request-type" data-testid="select-review-type">
+                              <SelectValue placeholder="Select channel" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="email">
+                                <div className="flex items-center gap-2">
+                                  <Mail className="h-4 w-4" />
+                                  Email only
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="sms">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4" />
+                                  SMS only
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="both">
+                                <div className="flex items-center gap-2">
+                                  <MessageSquare className="h-4 w-4" />
+                                  SMS and Email
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="review-request-message">Message template</Label>
+                        <Textarea
+                          id="review-request-message"
+                          value={settingsForm.reviewRequestMessage ?? ''}
+                          onChange={(e) =>
+                            setSettingsForm(prev => ({ ...prev, reviewRequestMessage: e.target.value }))
+                          }
+                          placeholder="Hi {client_name}, thanks for choosing {business_name}! We'd love to hear how we did. Your feedback helps us improve!"
+                          className="mt-1.5 resize-none"
+                          rows={3}
+                          data-testid="textarea-review-message"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Use {"{client_name}"} and {"{business_name}"} as placeholders. The review link is appended automatically.
+                        </p>
+                      </div>
+
+                      <div className="rounded-md bg-muted p-3 text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground mb-1">How it works</p>
+                        <ul className="space-y-1 text-xs list-disc list-inside">
+                          <li>Triggered when a job is marked as done or invoiced</li>
+                          <li>Sent once per client every 90 days to avoid repeat requests</li>
+                          <li>Delayed by the configured time before sending</li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               {/* Save Button */}
               <div className="flex justify-end">
                 <Button
@@ -1533,6 +1685,10 @@ export default function Automations() {
                     const { id, userId, createdAt, updatedAt, dailySummaryLastSent, ...settingsToSave } = settingsForm as any;
                     updateSettingsMutation.mutate(settingsToSave);
                     updateToneMutation.mutate(reminderTone);
+                    // Save Google review URL to business settings
+                    apiRequest('PATCH', '/api/business-settings', { googleReviewUrl: googleReviewUrl.trim() || null })
+                      .then(() => queryClient.invalidateQueries({ queryKey: ['/api/business-settings'] }))
+                      .catch(() => {});
                   }}
                   disabled={updateSettingsMutation.isPending || updateToneMutation.isPending}
                   data-testid="button-save-settings"

@@ -684,6 +684,8 @@ export const clients = pgTable("clients", {
   // Import traceability: which import created this row (null = created in-app)
   importRunId: varchar("import_run_id"),
   importRowNumber: integer("import_row_number"),
+  // Review request tracking: when a Google review request was last sent to this client (set after successful delivery)
+  reviewRequestSentAt: timestamp("review_request_sent_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -4254,6 +4256,7 @@ export const automationSettings = pgTable("automation_settings", {
   // Auto-review request
   autoReviewRequest: boolean("auto_review_request").default(false),
   autoReviewRequestType: text("auto_review_request_type").default('email'), // sms, email, both
+  reviewRequestDelayHours: integer("review_request_delay_hours").default(24), // delay in hours before sending
   // Photo Requirements
   requirePhotoBeforeStart: boolean("require_photo_before_start").default(false),
   requirePhotoAfterComplete: boolean("require_photo_after_complete").default(false),
@@ -4275,6 +4278,35 @@ export const automationSettings = pgTable("automation_settings", {
 export const insertAutomationSettingsSchema = createInsertSchema(automationSettings).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertAutomationSettings = z.infer<typeof insertAutomationSettingsSchema>;
 export type AutomationSettings = typeof automationSettings.$inferSelect;
+
+// ========================
+// Review Request Queue
+// ========================
+// Durable outbox for Google review request messages triggered after invoice payment.
+// Rows are inserted at payment time with scheduledFor = now + delayHours,
+// and claimed atomically by the scheduler to prevent double-sends.
+export const reviewRequestQueue = pgTable("review_request_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  invoiceId: varchar("invoice_id"),
+  jobId: varchar("job_id"),
+  clientId: varchar("client_id"),
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  // pending → processing (claimed) → sent | skipped | failed
+  // 'skipped' means settings changed or no contact channel — excluded from 90-day dedup
+  // so correcting contact details or re-enabling automation re-enables the request.
+  status: text("status").notNull().default('pending'),
+  claimedAt: timestamp("claimed_at"),  // set on atomic claim; used to detect stuck rows
+  attemptCount: integer("attempt_count").notNull().default(0), // incremented on each failed send attempt
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_review_request_queue_status_scheduled").on(table.status, table.scheduledFor),
+]);
+
+export type ReviewRequestQueue = typeof reviewRequestQueue.$inferSelect;
+export type InsertReviewRequestQueue = typeof reviewRequestQueue.$inferInsert;
 
 // ========================
 // Stripe Terminal - Tap to Pay

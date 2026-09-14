@@ -1665,6 +1665,10 @@ export async function syncPaymentsFromXero(userId: string): Promise<{
             paidAt: xeroInvoice.fullyPaidOnDate ? new Date(xeroInvoice.fullyPaidOnDate) : new Date(),
             xeroSyncedAt: new Date(),
           });
+          // Queue a Google review request for the Xero-confirmed payment
+          import('./automationService').then(({ scheduleReviewRequest }) =>
+            scheduleReviewRequest(userId, invoice.id)
+          ).catch(err => console.error('[ReviewRequest] Error scheduling review request (xero-sync):', err));
           
           updated++;
           details.push({
@@ -2272,6 +2276,10 @@ async function processSingleWebhookEvent(
             paidAt: xeroInvoice.fullyPaidOnDate ? new Date(xeroInvoice.fullyPaidOnDate) : new Date(),
             xeroSyncedAt: new Date(),
           });
+          // Queue a Google review request for the Xero webhook-confirmed payment
+          import('./automationService').then(({ scheduleReviewRequest }) =>
+            scheduleReviewRequest(userId, localInvoice.id)
+          ).catch(err => console.error('[ReviewRequest] Error scheduling review request (xero-webhook):', err));
           xeroLog("webhookInvoicePaid", { userId, invoiceId: localInvoice.id });
         } else if (String(xeroInvoice.status) === "VOIDED" && localInvoice.status !== "cancelled") {
           await storage.updateInvoice(localInvoice.id, userId, {

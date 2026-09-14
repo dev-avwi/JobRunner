@@ -4811,11 +4811,8 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         processStatusChangeAutomation(effectiveUserId, 'job', job.id, existingJob.status, status)
           .catch(err => console.error('[Automations] Error processing job status change:', err));
         
-        if (status === 'done' || status === 'completed') {
-          const { processReviewRequestAutomation } = await import('../automationService');
-          processReviewRequestAutomation(effectiveUserId, job.id)
-            .catch(err => console.error('[Automations] Error processing review request:', err));
-        }
+        // Note: Google review requests are triggered from invoice-paid paths
+        // (emailRoutes, webhookHandlers, quick-collect), not job status changes.
         
         // Send push notification for job status change
         try {
@@ -6702,6 +6699,11 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           invoicedAt: new Date(),
         });
       }
+
+      // Queue a Google review request to be sent after the configured delay
+      const { scheduleReviewRequest: scheduleReview5 } = await import('../automationService');
+      scheduleReview5(userContext.effectiveUserId, invoice.id)
+        .catch(err => console.error('[ReviewRequest] Error scheduling review request (quick-collect):', err));
 
       // Log activity
       await logActivity(

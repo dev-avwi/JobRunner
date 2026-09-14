@@ -427,59 +427,283 @@ async function createNotification(
   });
 }
 
-export async function processReviewRequestAutomation(
+// ─── Review Request Queue (durable outbox) ───────────────────────────────────
+// Requests are inserted at payment time and processed by the scheduler once
+// scheduledFor has passed. Status transitions use optimistic locking (UPDATE …
+// WHERE status = 'pending' RETURNING) to prevent concurrent double-sends.
+
+/**
+ * Called from every invoice-paid path. Validates settings, checks the 90-day
+ * deduplication window, then inserts a pending row into review_request_queue
+ * with scheduledFor = now + delayHours. Safe to call fire-and-forget.
+ */
+export async function scheduleReviewRequest(
   userId: string,
-  jobId: string
+  invoiceId: string,
 ): Promise<void> {
   try {
     const automationSettings = await storage.getAutomationSettings(userId);
     if (!automationSettings?.autoReviewRequest) return;
 
-    const job = await storage.getJob(jobId, userId);
-    if (!job?.clientId) return;
+    const { db: dbConn } = await import('./storage');
+    const { reviewRequestQueue } = await import('@workspace/db');
+    const { eq, and, gte } = await import('drizzle-orm');
 
-    const client = await storage.getClient(job.clientId, userId);
+    // Look up the invoice to find the client
+    const invoice = await storage.getInvoice(invoiceId, userId);
+    if (!invoice?.clientId) return;
+
+    const client = await storage.getClient(invoice.clientId, userId);
     if (!client) return;
 
-    const businessSettings = await storage.getBusinessSettings(userId);
-    const businessName = businessSettings?.businessName || 'Your Tradie';
-    const googleReviewUrl = (businessSettings as any)?.googleReviewUrl;
-
-    if (googleReviewUrl && !/^https?:\/\//i.test(googleReviewUrl)) {
-      console.warn('[Automations] Invalid googleReviewUrl, skipping review link');
-    }
-    const safeReviewUrl = googleReviewUrl && /^https?:\/\//i.test(googleReviewUrl)
-      ? googleReviewUrl.replace(/[<>"']/g, '') : '';
-
-    const defaultMessage = `Hi {client_name}, thanks for choosing {business_name}! We'd love to hear how we did. Your feedback helps us improve!`;
-    let message = automationSettings.reviewRequestMessage || defaultMessage;
-    message = message.replace(/{client_name}/g, client.name || 'there')
-      .replace(/{client}/g, client.name || 'there')
-      .replace(/{business_name}/g, businessName)
-      .replace(/{business}/g, businessName);
-
-    if (safeReviewUrl) {
-      message += `\n\nLeave a review: ${safeReviewUrl}`;
+    // Deduplication: skip if a review request was sent within the last 90 days
+    const sentAt = (client as any).reviewRequestSentAt;
+    if (sentAt) {
+      const daysSinceSent = (Date.now() - new Date(sentAt).getTime()) / (1000 * 60 * 60 * 24);
+      if (daysSinceSent < 90) {
+        console.log(`[ReviewRequest] Skipping: client ${client.id} was sent a request ${Math.round(daysSinceSent)}d ago`);
+        return;
+      }
     }
 
-    const channel = automationSettings.autoReviewRequestType || 'email';
+    // Dedup: skip if a pending/processing/sent row already exists within 90 days.
+    // Exclude 'failed', 'cancelled', 'skipped' — those are terminal and should allow retry.
+    // The INSERT below also uses ON CONFLICT DO NOTHING against the partial unique index
+    // on (user_id, client_id) WHERE status IN ('pending','processing'), providing
+    // atomic protection against concurrent payment webhooks racing here.
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const { inArray } = await import('drizzle-orm');
+    const existing = await dbConn
+      .select({ id: reviewRequestQueue.id })
+      .from(reviewRequestQueue)
+      .where(
+        and(
+          eq(reviewRequestQueue.userId, userId),
+          eq(reviewRequestQueue.clientId, invoice.clientId),
+          gte(reviewRequestQueue.createdAt, ninetyDaysAgo),
+          inArray(reviewRequestQueue.status, ['pending', 'processing', 'sent']),
+        ),
+      )
+      .limit(1);
+    if (existing.length > 0) {
+      console.log(`[ReviewRequest] Skipping: active queue entry already exists for client ${client.id}`);
+      return;
+    }
 
-    const escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    const delayHours = (automationSettings as any).reviewRequestDelayHours ?? 24;
+    const scheduledFor = new Date(Date.now() + Math.max(0, delayHours) * 60 * 60 * 1000);
 
-    if ((channel === 'email' || channel === 'both') && client.email) {
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="background: #f8f9fa; padding: 24px; border-radius: 8px; text-align: center;">
-            <h2 style="color: #1a1a1a; margin-bottom: 16px;">How did we do?</h2>
-            ${message.split('\n').map((line: string) => `<p style="margin: 8px 0;">${escHtml(line)}</p>`).join('')}
-            ${safeReviewUrl ? `<a href="${escHtml(safeReviewUrl)}" style="display: inline-block; margin-top: 16px; padding: 12px 24px; background: #2563EB; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">Leave a Google Review</a>` : ''}
-          </div>
-        </body>
-        </html>
-      `;
+    // ON CONFLICT DO NOTHING handles the race between concurrent webhooks that
+    // both pass the SELECT check before either INSERT completes.
+    await dbConn.insert(reviewRequestQueue).values({
+      userId,
+      invoiceId,
+      jobId: invoice.jobId ?? null,
+      clientId: invoice.clientId,
+      scheduledFor,
+    }).onConflictDoNothing();
 
+    console.log(`[ReviewRequest] Queued for client ${client.id}, send at ${scheduledFor.toISOString()}`);
+  } catch (err) {
+    console.error('[ReviewRequest] Error scheduling review request:', err);
+  }
+}
+
+/**
+ * Processes all due pending rows in review_request_queue.
+ * Called by the scheduler every 15 minutes. Each row is claimed atomically
+ * before sending so concurrent runners cannot double-send.
+ */
+export async function processReviewRequestQueue(): Promise<void> {
+  try {
+    const { db: dbConn } = await import('./storage');
+    const { reviewRequestQueue } = await import('@workspace/db');
+    const { eq, and, lte, lt, isNotNull } = await import('drizzle-orm');
+
+    // Re-queue rows stuck in `processing` for more than 30 minutes.
+    // Uses claimedAt (set at claim time) — not scheduledFor — so the staleness
+    // check correctly identifies rows that were actually claimed and abandoned,
+    // not rows that have been waiting a long time to be processed.
+    const stuckCutoff = new Date(Date.now() - 30 * 60 * 1000);
+    await dbConn
+      .update(reviewRequestQueue)
+      .set({ status: 'pending', claimedAt: null })
+      .where(
+        and(
+          eq(reviewRequestQueue.status, 'processing'),
+          isNotNull(reviewRequestQueue.claimedAt),
+          lt(reviewRequestQueue.claimedAt, stuckCutoff),
+        ),
+      );
+
+    // Find all due pending rows (no limit — delay is long enough that there
+    // will typically be 0–5 rows per run)
+    const due = await dbConn
+      .select()
+      .from(reviewRequestQueue)
+      .where(
+        and(
+          eq(reviewRequestQueue.status, 'pending'),
+          lte(reviewRequestQueue.scheduledFor, new Date()),
+        ),
+      );
+
+    for (const row of due) {
+      // Atomic claim: only proceed if we win the race against another instance.
+      // claimedAt is set here so stuck-row detection uses the actual claim time.
+      const claimed = await dbConn
+        .update(reviewRequestQueue)
+        .set({ status: 'processing', claimedAt: new Date() })
+        .where(
+          and(
+            eq(reviewRequestQueue.id, row.id),
+            eq(reviewRequestQueue.status, 'pending'),
+          ),
+        )
+        .returning({ id: reviewRequestQueue.id });
+
+      if (claimed.length === 0) continue; // another instance claimed it
+
+      const MAX_ATTEMPTS = 3;
+      // Backoff schedule: attempt 1 → retry in 1h, attempt 2 → 4h, attempt 3 → permanent
+      const RETRY_DELAYS_MS = [1 * 60 * 60 * 1000, 4 * 60 * 60 * 1000];
+
+      try {
+        const outcome = await _sendReviewRequest(row);
+
+        if (outcome === 'sent') {
+          await dbConn
+            .update(reviewRequestQueue)
+            .set({ status: 'sent', sentAt: new Date() })
+            .where(eq(reviewRequestQueue.id, row.id));
+        } else {
+          // 'skipped' — settings changed, client recently contacted, or no channel.
+          // Mark as skipped (NOT sent) so the 90-day dedup window is not consumed.
+          await dbConn
+            .update(reviewRequestQueue)
+            .set({ status: 'skipped' })
+            .where(eq(reviewRequestQueue.id, row.id));
+        }
+      } catch (err: any) {
+        const newAttemptCount = ((row as any).attemptCount ?? 0) + 1;
+        const errMsg = String(err?.message ?? err);
+        console.error(`[ReviewRequest] Attempt ${newAttemptCount}/${MAX_ATTEMPTS} failed for row ${row.id}:`, err);
+
+        if (newAttemptCount < MAX_ATTEMPTS) {
+          // Transient failure — re-queue with exponential back-off
+          const delayMs = RETRY_DELAYS_MS[newAttemptCount - 1] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+          const nextScheduledFor = new Date(Date.now() + delayMs);
+          await dbConn
+            .update(reviewRequestQueue)
+            .set({
+              status: 'pending',
+              claimedAt: null,
+              attemptCount: newAttemptCount,
+              scheduledFor: nextScheduledFor,
+              errorMessage: errMsg,
+            })
+            .where(eq(reviewRequestQueue.id, row.id));
+          console.log(`[ReviewRequest] Row ${row.id} re-queued for retry at ${nextScheduledFor.toISOString()}`);
+        } else {
+          // Max attempts reached — mark permanently failed
+          await dbConn
+            .update(reviewRequestQueue)
+            .set({ status: 'failed', attemptCount: newAttemptCount, errorMessage: errMsg })
+            .where(eq(reviewRequestQueue.id, row.id));
+          console.error(`[ReviewRequest] Row ${row.id} permanently failed after ${newAttemptCount} attempts`);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[ReviewRequest] Error processing queue:', err);
+  }
+}
+
+type SendOutcome = 'sent' | 'skipped';
+
+/**
+ * Attempts to send the review request for a single queue row.
+ *
+ * Returns:
+ *   'sent'    — at least one channel (email/SMS) succeeded; reviewRequestSentAt updated
+ *   'skipped' — settings disabled, client recently contacted, or no usable channel;
+ *               reviewRequestSentAt is NOT touched so the 90-day window is not consumed
+ *
+ * Throws only on unexpected errors (e.g. storage failure) — the caller marks the
+ * row 'failed' in that case. Individual channel send errors are caught independently
+ * so a failed SMS does not prevent a successful email from being counted.
+ */
+async function _sendReviewRequest(row: {
+  userId: string;
+  clientId: string | null;
+  jobId: string | null;
+  invoiceId: string | null;
+}): Promise<SendOutcome> {
+  const { userId, clientId } = row;
+  if (!clientId) throw new Error('No clientId on queue row');
+
+  const [automationSettings, client, businessSettings] = await Promise.all([
+    storage.getAutomationSettings(userId),
+    storage.getClient(clientId, userId),
+    storage.getBusinessSettings(userId),
+  ]);
+
+  if (!automationSettings?.autoReviewRequest) {
+    console.log(`[ReviewRequest] Automation disabled for user ${userId} — skipping row`);
+    return 'skipped';
+  }
+  if (!client) throw new Error(`Client ${clientId} not found`);
+
+  // Re-check deduplication: a manual send or another queue row may have fired
+  // during the scheduled delay.
+  const sentAt = (client as any).reviewRequestSentAt;
+  if (sentAt) {
+    const daysSince = (Date.now() - new Date(sentAt).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSince < 90) {
+      console.log(`[ReviewRequest] Client ${clientId} received a request ${Math.round(daysSince)}d ago — skipping`);
+      return 'skipped';
+    }
+  }
+
+  const businessName = businessSettings?.businessName || 'Your Tradie';
+  const googleReviewUrl = (businessSettings as any)?.googleReviewUrl ?? '';
+  const safeReviewUrl = /^https?:\/\//i.test(googleReviewUrl)
+    ? googleReviewUrl.replace(/[<>"']/g, '') : '';
+
+  const defaultMessage = `Hi {client_name}, thanks for choosing {business_name}! We'd love to hear how we did. Your feedback helps us improve!`;
+  let message = (automationSettings.reviewRequestMessage || defaultMessage)
+    .replace(/{client_name}/g, client.name || 'there')
+    .replace(/{client}/g, client.name || 'there')
+    .replace(/{business_name}/g, businessName)
+    .replace(/{business}/g, businessName);
+
+  if (safeReviewUrl) {
+    message += `\n\nLeave a review: ${safeReviewUrl}`;
+  }
+
+  const channel = automationSettings.autoReviewRequestType || 'email';
+  const escHtml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // ── Send each channel independently ──────────────────────────────────────
+  // A failure on one channel must not suppress a success on the other.
+  // We collect per-channel outcomes and surface a combined result.
+
+  let atLeastOneSent = false;
+  const channelErrors: string[] = [];
+
+  if ((channel === 'email' || channel === 'both') && client.email) {
+    try {
+      const emailHtml = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="background:#f8f9fa;padding:24px;border-radius:8px;text-align:center;">
+    <h2 style="color:#1a1a1a;margin-bottom:16px;">How did we do?</h2>
+    ${message.split('\n').map((l: string) => `<p style="margin:8px 0;">${escHtml(l)}</p>`).join('')}
+    ${safeReviewUrl ? `<a href="${escHtml(safeReviewUrl)}" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#2563EB;color:white;text-decoration:none;border-radius:6px;font-weight:600;">Leave a Google Review</a>` : ''}
+  </div>
+</body>
+</html>`;
       const { sendEmail } = await import('./emailService');
       await sendEmail({
         to: client.email,
@@ -487,17 +711,61 @@ export async function processReviewRequestAutomation(
         text: message,
         html: emailHtml,
       });
-      console.log(`[Automations] Sent review request email to ${client.email} for job ${jobId}`);
+      console.log(`[ReviewRequest] Sent email to ${client.email} (client ${clientId})`);
+      atLeastOneSent = true;
+    } catch (emailErr: any) {
+      console.error(`[ReviewRequest] Email send failed for client ${clientId}:`, emailErr);
+      channelErrors.push(`email: ${emailErr?.message ?? emailErr}`);
     }
-
-    if ((channel === 'sms' || channel === 'both') && client.phone) {
-      const { sendCustomerReply } = await import('./services/smsService');
-      await sendCustomerReply(client.phone, message, userId);
-      console.log(`[Automations] Sent review request SMS to ${client.phone} for job ${jobId}`);
-    }
-  } catch (error) {
-    console.error('[Automations] Error processing review request:', error);
   }
+
+  if ((channel === 'sms' || channel === 'both') && client.phone) {
+    try {
+      const { sendCustomerReply } = await import('./services/smsService');
+      const smsResult = await sendCustomerReply(client.phone, message, userId);
+      if (smsResult.success) {
+        console.log(`[ReviewRequest] Sent SMS to ${client.phone} (client ${clientId})`);
+        atLeastOneSent = true;
+      } else {
+        // sendCustomerReply resolves (not throws) when the business has no dedicated
+        // number, settings lookup fails, or Twilio returns a failure — treat this as
+        // a channel error so retry/permanent-failure logic applies correctly.
+        const errMsg = smsResult.error ?? 'SMS delivery failed (success: false)';
+        console.error(`[ReviewRequest] SMS send failed for client ${clientId}: ${errMsg}`);
+        channelErrors.push(`sms: ${errMsg}`);
+      }
+    } catch (smsErr: any) {
+      console.error(`[ReviewRequest] SMS send failed for client ${clientId}:`, smsErr);
+      channelErrors.push(`sms: ${smsErr?.message ?? smsErr}`);
+    }
+  }
+
+  // If every configured channel failed with an error, surface that as a thrown
+  // error so the caller marks the row 'failed' and it can be retried later.
+  if (!atLeastOneSent && channelErrors.length > 0) {
+    throw new Error(`All channels failed: ${channelErrors.join('; ')}`);
+  }
+
+  if (!atLeastOneSent) {
+    // No channel was applicable (no email address / no phone for the configured channel)
+    console.log(`[ReviewRequest] No usable contact channel for client ${clientId} (channel=${channel}, email=${!!client.email}, phone=${!!client.phone})`);
+    return 'skipped';
+  }
+
+  // At least one channel succeeded — record the timestamp
+  await storage.updateClient(clientId, userId, { reviewRequestSentAt: new Date() } as any);
+  return 'sent';
+}
+
+// Keep processReviewRequestAutomation as a no-op shim so existing callers
+// (e.g. job status routes from pre-refactor) don't break at runtime.
+// New review requests are queued via scheduleReviewRequest() from payment paths.
+export async function processReviewRequestAutomation(
+  _userId: string,
+  _jobId: string,
+): Promise<void> {
+  // Intentionally empty — review requests are now triggered from invoice-paid
+  // paths via scheduleReviewRequest() and processed by the queue scheduler.
 }
 
 export async function processStatusChangeAutomation(
