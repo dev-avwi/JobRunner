@@ -2501,8 +2501,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (owner?.email) {
         try {
           const { sendSystemEmail } = await import('./emailService');
+          // Escape all client-controlled values before inserting into HTML to prevent injection
           const safeClientName = escapePortalHtml(clientName);
           const safePhone = escapePortalHtml(session.phone || '');
+          const safeSubjectLine = escapePortalHtml(subjectLine);
           const safeMessage = escapePortalHtml(trimmedMessage).replace(/\n/g, '<br/>');
           await sendSystemEmail({
             to: owner.email,

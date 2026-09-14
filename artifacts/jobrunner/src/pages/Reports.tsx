@@ -190,6 +190,40 @@ interface ComplianceDueReport {
   }>;
 }
 
+interface TopJob {
+  jobId: string;
+  title: string;
+  status: string;
+  jobType: string;
+  clientName: string;
+  completedAt: string | null;
+  revenue: number;
+  labourCost: number;
+  materialCost: number;
+  expenseCost: number;
+  costs: number;
+  profit: number;
+  margin: number;
+  totalHours: number;
+  profitStatus: 'profitable' | 'tight' | 'loss';
+}
+
+interface JobTypeSummary {
+  jobType: string;
+  jobCount: number;
+  totalRevenue: number;
+  totalCosts: number;
+  totalProfit: number;
+  avgJobValue: number;
+  avgMargin: number;
+}
+
+interface TopJobsReport {
+  jobs: TopJob[];
+  jobTypeSummary: JobTypeSummary[];
+  period: { start: string; end: string };
+}
+
 const CHART_COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))'];
 
 const downloadCSV = (data: any[], filename: string): boolean => {
@@ -282,7 +316,7 @@ export default function Reports() {
   const [dateRange, setDateRange] = useState<'ytd' | 'month' | 'quarter' | 'year'>('ytd');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
-  const [activeTab, setActiveTab] = useState<'revenue' | 'payments' | 'jobs' | 'clients' | 'team'>('revenue');
+  const [activeTab, setActiveTab] = useState<'revenue' | 'payments' | 'jobs' | 'clients' | 'team' | 'profitability'>('revenue');
 
   const getDateRange = () => {
     const now = new Date();
@@ -379,6 +413,24 @@ export default function Reports() {
     retry: 1,
   });
 
+  const { data: topJobsData, isLoading: topJobsLoading } = useQuery<TopJobsReport | null>({
+    queryKey: ['/api/reports/top-jobs', dateRange],
+    queryFn: async () => {
+      const range = getDateRange();
+      const res = await fetch(`/api/reports/top-jobs?startDate=${range.startDate}&endDate=${range.endDate}&limit=10`, {
+        credentials: 'include',
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) {
+        // 403 means the current user is not an owner — hide the tab gracefully
+        if (res.status === 403) return null;
+        throw new Error('Failed to fetch top jobs');
+      }
+      return res.json();
+    },
+    retry: 1,
+  });
+
   const { data: complianceDue, isLoading: complianceDueLoading } = useQuery<ComplianceDueReport>({
     queryKey: ['/api/reports/compliance-due'],
     queryFn: async () => {
@@ -407,7 +459,7 @@ export default function Reports() {
       refetchRevenue(),
       refetchClients(),
       refetchStripe(),
-      refetchTeam()
+      refetchTeam(),
     ]);
     setLastRefreshed(new Date());
     toast({
@@ -482,6 +534,9 @@ export default function Reports() {
   const tabs = [
     { id: 'revenue' as const, label: 'Revenue', testId: 'tab-revenue' },
     { id: 'payments' as const, label: 'Payments', testId: 'tab-payments' },
+    // Profitability is owner-only — the endpoint returns 403 for managers, which
+    // sets topJobsData to null so we hide the tab rather than show an empty state.
+    ...(topJobsData !== null ? [{ id: 'profitability' as const, label: 'Profitability', testId: 'tab-profitability' }] : []),
     { id: 'jobs' as const, label: 'Jobs', testId: 'tab-jobs' },
     { id: 'clients' as const, label: 'Clients', testId: 'tab-clients' },
     ...(teamData !== null ? [{ id: 'team' as const, label: 'Team', testId: 'tab-team' }] : []),
@@ -1045,6 +1100,208 @@ export default function Reports() {
                   )}
                 </>
               )}
+            </div>
+          )}
+
+          {activeTab === 'profitability' && (
+            <div className="mt-4 space-y-4 animate-fade-up">
+              {/* Link to full profitability report */}
+              <div
+                className="feed-card card-press flex items-center justify-between gap-3 p-4 cursor-pointer"
+                onClick={() => navigate('/reports/profitability')}
+                data-testid="action-view-profitability-report"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{ backgroundColor: 'hsl(var(--trade) / 0.1)' }}>
+                    <TrendingUp className="h-5 w-5" style={{ color: 'hsl(var(--trade))' }} />
+                  </div>
+                  <div>
+                    <p className="font-medium">Full Profitability Report</p>
+                    <p className="ios-caption">Trends, by job type, by client, by worker</p>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+              </div>
+
+              {/* Avg job value by job type */}
+              <div className="feed-card">
+                <div className="p-4 pb-2">
+                  <h3 className="ios-card-title">Avg Job Value by Type</h3>
+                </div>
+                <div className="p-4 pt-0">
+                  {topJobsLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-14 w-full rounded-xl" />
+                      <Skeleton className="h-14 w-full rounded-xl" />
+                    </div>
+                  ) : !topJobsData?.jobTypeSummary || topJobsData.jobTypeSummary.length === 0 ? (
+                    <p className="ios-caption text-center py-6">No job type data for this period</p>
+                  ) : (
+                    <>
+                      <div className="h-[200px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={topJobsData.jobTypeSummary} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" horizontal={false} />
+                            <XAxis
+                              type="number"
+                              className="text-xs"
+                              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
+                            />
+                            <YAxis
+                              type="category"
+                              dataKey="jobType"
+                              className="text-xs"
+                              tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                              width={90}
+                              tickFormatter={(v) => v === 'project' ? 'Project' : 'Service Call'}
+                            />
+                            <Tooltip
+                              formatter={(value: number, name: string) => [formatCurrency(value), name]}
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '12px'
+                              }}
+                            />
+                            <Bar
+                              dataKey="avgJobValue"
+                              name="Avg Job Value"
+                              fill="hsl(var(--primary))"
+                              radius={[0, 6, 6, 0]}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="mt-2 space-y-2">
+                        {topJobsData.jobTypeSummary.map((jt) => (
+                          <div key={jt.jobType} className="feed-card p-3 flex items-center justify-between gap-3">
+                            <div>
+                              <p className="font-medium text-sm">{jt.jobType === 'project' ? 'Project' : 'Service Call'}</p>
+                              <p className="ios-caption">{jt.jobCount} completed job{jt.jobCount !== 1 ? 's' : ''}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-sm">{formatCurrency(jt.avgJobValue)} avg</p>
+                              <p className="ios-caption">{jt.avgMargin.toFixed(0)}% margin</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Top 10 most profitable jobs */}
+              <div className="feed-card">
+                <div className="flex flex-row items-center justify-between gap-2 p-4 pb-2">
+                  <h3 className="ios-card-title">Top Jobs by Profit</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-export-top-jobs"
+                    disabled={!topJobsData?.jobs || topJobsData.jobs.length === 0}
+                    onClick={() => {
+                      if (topJobsData?.jobs?.length) {
+                        const exportData = topJobsData.jobs.map((j, i) => ({
+                          Rank: i + 1,
+                          Job: j.title,
+                          Client: j.clientName,
+                          Type: j.jobType === 'project' ? 'Project' : 'Service Call',
+                          'Completed': j.completedAt ? format(new Date(j.completedAt), 'dd/MM/yyyy') : '',
+                          'Revenue (AUD)': j.revenue,
+                          'Labour Cost (AUD)': j.labourCost,
+                          'Material Cost (AUD)': j.materialCost,
+                          'Other Expenses (AUD)': j.expenseCost,
+                          'Total Costs (AUD)': j.costs,
+                          'Profit (AUD)': j.profit,
+                          'Margin %': j.margin,
+                          'Hours': j.totalHours,
+                        }));
+                        downloadCSV(exportData, 'top_profitable_jobs');
+                        toast({ title: 'Export complete', description: 'Top profitable jobs downloaded.' });
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-1" />
+                    Export
+                  </Button>
+                </div>
+                <div className="p-4 pt-0">
+                  {topJobsLoading ? (
+                    <div className="space-y-2">
+                      {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}
+                    </div>
+                  ) : !topJobsData?.jobs || topJobsData.jobs.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center"
+                           style={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}>
+                        <TrendingUp className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                      <p className="ios-card-title mb-1">No completed jobs yet</p>
+                      <p className="ios-caption">Complete jobs with invoices to see profitability</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {topJobsData.jobs.map((job, idx) => (
+                        <div
+                          key={job.jobId}
+                          className={`feed-card card-press p-3 cursor-pointer animate-fade-up stagger-delay-${Math.min(idx + 1, 8)}`}
+                          onClick={() => navigate(`/jobs/${job.jobId}?tab=financials`)}
+                          data-testid={`row-top-job-${job.jobId}`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 text-sm font-bold"
+                                   style={{ backgroundColor: 'hsl(var(--trade) / 0.1)', color: 'hsl(var(--trade))' }}>
+                                {idx + 1}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm truncate">{job.title}</p>
+                                <p className="ios-caption truncate">{job.clientName}</p>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="font-semibold text-green-600 text-sm">{formatCurrency(job.profit)}</p>
+                              <Badge
+                                variant="outline"
+                                className={
+                                  job.profitStatus === 'loss'
+                                    ? 'border-red-300 bg-red-50 text-red-700 text-xs'
+                                    : job.profitStatus === 'tight'
+                                    ? 'border-yellow-300 bg-yellow-50 text-yellow-700 text-xs'
+                                    : 'border-green-300 bg-green-50 text-green-700 text-xs'
+                                }
+                              >
+                                {job.margin}% margin
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-4 mt-2 pl-11">
+                            <div>
+                              <p className="ios-label">Revenue</p>
+                              <p className="text-sm font-medium">{formatCurrency(job.revenue)}</p>
+                            </div>
+                            <div>
+                              <p className="ios-label">Labour</p>
+                              <p className="text-sm">{formatCurrency(job.labourCost)}</p>
+                            </div>
+                            <div>
+                              <p className="ios-label">Materials</p>
+                              <p className="text-sm">{formatCurrency(job.materialCost)}</p>
+                            </div>
+                            <div>
+                              <p className="ios-label">Hours</p>
+                              <p className="text-sm">{job.totalHours}h</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
