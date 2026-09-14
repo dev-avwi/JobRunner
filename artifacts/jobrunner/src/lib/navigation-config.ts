@@ -33,6 +33,7 @@ import {
   CalendarDays,
   Columns3,
   HelpCircle,
+  Globe,
   type LucideIcon
 } from "lucide-react";
 
@@ -303,6 +304,20 @@ export const mainMenuItems: NavItem[] = [
     requiresOwnerOrManager: true,
     requiresProPlan: true,
     hideForStaff: true,
+    showInSidebar: true,
+    showInMore: true,
+    allowedRoles: ['owner', 'solo_owner', 'manager'],
+  },
+  {
+    title: "Online Booking",
+    url: "/website",
+    icon: Globe,
+    description: "Let customers book jobs from a public link",
+    color: "text-success",
+    bgColor: "bg-success/10",
+    requiresOwnerOrManager: true,
+    hideForStaff: true,
+    hideInSimpleMode: true,
     showInSidebar: true,
     showInMore: true,
     allowedRoles: ['owner', 'solo_owner', 'manager'],

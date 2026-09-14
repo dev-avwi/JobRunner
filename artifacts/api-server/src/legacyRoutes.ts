@@ -2414,6 +2414,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CLIENT PORTAL: Send a contact message to the business
+  app.post("/api/portal/contact", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing or invalid authorization header' });
+      }
+      const sessionToken = authHeader.substring(7);
+      const session = await storage.getPortalSessionByToken(sessionToken);
+      if (!session) {
+        return res.status(401).json({ error: 'Invalid session token' });
+      }
+      if (new Date() > session.expiresAt) {
+        await storage.deletePortalSession(sessionToken);
+        return res.status(401).json({ error: 'Session has expired' });
+      }
+
+      const { subject, message } = req.body;
+      if (!message || typeof message !== 'string' || !message.trim()) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+      if (message.length > 2000) {
+        return res.status(400).json({ error: 'Message is too long (max 2000 characters)' });
+      }
+
+      const clients = session.userId
+        ? await storage.getClientsByPhoneForUser(session.phone, session.userId)
+        : await storage.getClientsByPhone(session.phone);
+
+      if (clients.length === 0) {
+        return res.status(404).json({ error: 'No client profile found for this session' });
+      }
+
+      const client = clients[0];
+      const ownerId = client.userId;
+      const owner = await storage.getUser(ownerId);
+
+      const subjectLine = subject?.trim() ? subject.trim() : 'Message from client portal';
+      const clientName = client.name || session.phone;
+
+      try {
+        const { createNotification } = await import('./notifications');
+        await createNotification(storage, {
+          userId: ownerId,
+          type: 'message',
+          title: `Portal message from ${clientName}`,
+          message: `${subjectLine}: ${message.trim().slice(0, 120)}${message.trim().length > 120 ? '...' : ''}`,
+          priority: 'normal',
+          actionUrl: `/clients/${client.id}`,
+          actionLabel: 'View client',
+        });
+      } catch (notifErr) {
+        console.error('Failed to create portal contact notification:', notifErr);
+      }
+
+      if (owner?.email) {
+        try {
+          const { sendSystemEmail } = await import('./emailService');
+          await sendSystemEmail({
+            to: owner.email,
+            subject: `Client message: ${subjectLine}`,
+            html: `<p><strong>${clientName}</strong> (${session.phone}) sent a message via their client portal:</p>
+<blockquote style="border-left:3px solid #ddd;padding-left:12px;color:#555;margin:12px 0">${message.trim().replace(/\n/g, '<br/>')}</blockquote>
+<p>Log in to JobRunner to view this client and follow up.</p>`,
+          });
+        } catch (emailErr) {
+          console.error('Failed to email owner about portal contact message:', emailErr);
+        }
+      }
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Error sending portal contact message:', error);
+      res.status(500).json({ error: 'Failed to send message' });
+    }
+  });
+
   // ============================================
   // SUBCONTRACTOR WEB VIEW ROUTES (Public)
   // ============================================

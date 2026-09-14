@@ -236,6 +236,40 @@ export default function ClientPortalHub() {
     referenceJobId: '',
     referenceJobTitle: '',
   });
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+  const [contactSent, setContactSent] = useState(false);
+
+  const handleSendContactMessage = async () => {
+    if (!contactMessage.trim() || !sessionToken) return;
+    setIsSubmittingContact(true);
+    try {
+      const res = await fetch('/api/portal/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${sessionToken}`,
+        },
+        body: JSON.stringify({
+          subject: contactSubject.trim() || undefined,
+          message: contactMessage.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to send message');
+      }
+      setContactSent(true);
+      setContactSubject('');
+      setContactMessage('');
+      toast({ title: 'Message sent', description: "We'll be in touch soon." });
+    } catch (err: any) {
+      toast({ title: 'Could not send message', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setIsSubmittingContact(false);
+    }
+  };
   const [previousJobs, setPreviousJobs] = useState<any[]>([]);
   const [selectedReferenceJob, setSelectedReferenceJob] = useState<any>(null);
 
@@ -1190,7 +1224,7 @@ export default function ClientPortalHub() {
               </div>
             ) : (
               <Tabs defaultValue="quotes" className="w-full">
-                <TabsList className="grid w-full grid-cols-6 mb-6 bg-slate-100">
+                <TabsList className="grid w-full grid-cols-7 mb-6 bg-slate-100">
                   <TabsTrigger value="quotes" className="flex items-center gap-2">
                     <FileText className="w-4 h-4" />
                     <span className="hidden sm:inline">Quotes</span>
@@ -1232,6 +1266,10 @@ export default function ClientPortalHub() {
                     {jobRequests.length ? (
                       <Badge variant="secondary" className="ml-1">{jobRequests.length}</Badge>
                     ) : null}
+                  </TabsTrigger>
+                  <TabsTrigger value="messages" className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    <span className="hidden sm:inline">Messages</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -2100,6 +2138,73 @@ export default function ClientPortalHub() {
                       </div>
                     )}
                   </div>
+                </TabsContent>
+
+                <TabsContent value="messages" className="space-y-4">
+                  {contactSent ? (
+                    <div className="bg-white rounded-md shadow-lg p-10 text-center">
+                      <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle2 className="w-8 h-8 text-green-600" />
+                      </div>
+                      <h3 className="text-lg font-semibold text-slate-900 mb-1">Message Sent</h3>
+                      <p className="text-sm text-slate-500 mb-6">We've received your message and will get back to you shortly.</p>
+                      <Button variant="outline" onClick={() => setContactSent(false)}>
+                        Send Another Message
+                      </Button>
+                    </div>
+                  ) : (
+                    <Card className="bg-white rounded-md shadow-lg">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-brand/10 rounded-full flex items-center justify-center">
+                            <MessageCircle className="w-4 h-4 text-brand" />
+                          </div>
+                          <CardTitle className="text-base text-slate-900">Contact the Business</CardTitle>
+                        </div>
+                        <CardDescription className="text-slate-500">
+                          Send a message and we'll get back to you as soon as possible
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-1">Subject (optional)</label>
+                          <Input
+                            type="text"
+                            placeholder="e.g. Question about my quote"
+                            value={contactSubject}
+                            onChange={(e) => setContactSubject(e.target.value)}
+                            maxLength={200}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-900 mb-1">
+                            Message <span className="text-red-500">*</span>
+                          </label>
+                          <Textarea
+                            placeholder="Type your message here..."
+                            value={contactMessage}
+                            onChange={(e) => setContactMessage(e.target.value)}
+                            rows={5}
+                            maxLength={2000}
+                          />
+                          <p className="text-xs text-slate-400 mt-1 text-right">{contactMessage.length}/2000</p>
+                        </div>
+                        <Button
+                          className="w-full"
+                          size="lg"
+                          disabled={!contactMessage.trim() || isSubmittingContact}
+                          onClick={handleSendContactMessage}
+                        >
+                          {isSubmittingContact ? (
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          ) : (
+                            <Send className="w-4 h-4 mr-2" />
+                          )}
+                          Send Message
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
                 </TabsContent>
               </Tabs>
             )}
