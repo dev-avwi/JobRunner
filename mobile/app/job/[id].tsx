@@ -2431,6 +2431,7 @@ export default function JobDetailScreen() {
   const [phaseCompleteNudge, setPhaseCompleteNudge] = useState<Set<string>>(new Set());
   // Inline quick-add state per phase card
   const [phaseQuickAddInput, setPhaseQuickAddInput] = useState<Record<string, string>>({});
+  const [phaseQuickAddDescription, setPhaseQuickAddDescription] = useState<Record<string, string>>({});
   const [phaseQuickAddActive, setPhaseQuickAddActive] = useState<Set<string>>(new Set());
   const [isAddingPhaseTask, setIsAddingPhaseTask] = useState<Set<string>>(new Set());
   // Shared date-picker target for phase modals — only one open at a time
@@ -3205,13 +3206,17 @@ export default function JobDetailScreen() {
   }, [phaseTaskCounts, phases]);
 
   // Add a checklist item to a phase inline from the Tasks tab card.
-  const addQuickPhaseTask = useCallback(async (phaseId: string, text: string) => {
+  const addQuickPhaseTask = useCallback(async (phaseId: string, text: string, description?: string) => {
     const trimmed = text.trim();
     if (!trimmed || !id) return;
     setIsAddingPhaseTask(prev => new Set(prev).add(phaseId));
     try {
-      await api.post(`/api/jobs/${id}/checklist`, { text: trimmed, phaseId, isCompleted: false });
+      const body: Record<string, unknown> = { text: trimmed, phaseId, isCompleted: false };
+      const trimmedDesc = description?.trim();
+      if (trimmedDesc) body.description = trimmedDesc;
+      await api.post(`/api/jobs/${id}/checklist`, body);
       setPhaseQuickAddInput(prev => ({ ...prev, [phaseId]: '' }));
+      setPhaseQuickAddDescription(prev => ({ ...prev, [phaseId]: '' }));
       setPhaseQuickAddActive(prev => { const n = new Set(prev); n.delete(phaseId); return n; });
       await loadPhaseTasksForPhase(phaseId);
     } catch {
@@ -12481,34 +12486,46 @@ export default function JobDetailScreen() {
                             {/* Inline quick-add task row */}
                             {job.status !== 'invoiced' && (
                               phaseQuickAddActive.has(phase.id) ? (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm }}>
+                                <View style={{ marginTop: spacing.sm, gap: spacing.xs }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                                    <TextInput
+                                      style={{ flex: 1, height: 36, paddingHorizontal: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, fontSize: typography.caption.fontSize, color: colors.foreground }}
+                                      placeholder="Task name..."
+                                      placeholderTextColor={colors.mutedForeground}
+                                      value={phaseQuickAddInput[phase.id] ?? ''}
+                                      onChangeText={t => setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: t }))}
+                                      onSubmitEditing={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '', phaseQuickAddDescription[phase.id])}
+                                      autoFocus
+                                      returnKeyType="next"
+                                    />
+                                    <TouchableOpacity
+                                      onPress={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '', phaseQuickAddDescription[phase.id])}
+                                      disabled={isAddingPhaseTask.has(phase.id) || !(phaseQuickAddInput[phase.id] ?? '').trim()}
+                                      style={{ width: 32, height: 32, borderRadius: radius.sm, backgroundColor: (phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primary : colors.muted, alignItems: 'center', justifyContent: 'center' }}
+                                      activeOpacity={0.8}
+                                    >
+                                      {isAddingPhaseTask.has(phase.id)
+                                        ? <ActivityIndicator size="small" color={colors.primaryForeground} style={{ width: 14, height: 14 }} />
+                                        : <Feather name="check" size={13} color={(phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primaryForeground : colors.mutedForeground} />}
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                      onPress={() => { setPhaseQuickAddActive(prev => { const n = new Set(prev); n.delete(phase.id); return n; }); setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: '' })); setPhaseQuickAddDescription(prev => ({ ...prev, [phase.id]: '' })); }}
+                                      hitSlop={8}
+                                      activeOpacity={0.7}
+                                    >
+                                      <Feather name="x" size={14} color={colors.mutedForeground} />
+                                    </TouchableOpacity>
+                                  </View>
                                   <TextInput
-                                    style={{ flex: 1, height: 36, paddingHorizontal: spacing.sm, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, fontSize: typography.caption.fontSize, color: colors.foreground }}
-                                    placeholder="Task name..."
+                                    style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card, fontSize: typography.caption.fontSize, color: colors.foreground, minHeight: 32 }}
+                                    placeholder="Notes (optional)..."
                                     placeholderTextColor={colors.mutedForeground}
-                                    value={phaseQuickAddInput[phase.id] ?? ''}
-                                    onChangeText={t => setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: t }))}
-                                    onSubmitEditing={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '')}
-                                    autoFocus
+                                    value={phaseQuickAddDescription[phase.id] ?? ''}
+                                    onChangeText={t => setPhaseQuickAddDescription(prev => ({ ...prev, [phase.id]: t }))}
                                     returnKeyType="done"
+                                    onSubmitEditing={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '', phaseQuickAddDescription[phase.id])}
+                                    multiline
                                   />
-                                  <TouchableOpacity
-                                    onPress={() => addQuickPhaseTask(phase.id, phaseQuickAddInput[phase.id] ?? '')}
-                                    disabled={isAddingPhaseTask.has(phase.id) || !(phaseQuickAddInput[phase.id] ?? '').trim()}
-                                    style={{ width: 32, height: 32, borderRadius: radius.sm, backgroundColor: (phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primary : colors.muted, alignItems: 'center', justifyContent: 'center' }}
-                                    activeOpacity={0.8}
-                                  >
-                                    {isAddingPhaseTask.has(phase.id)
-                                      ? <ActivityIndicator size="small" color={colors.primaryForeground} style={{ width: 14, height: 14 }} />
-                                      : <Feather name="check" size={13} color={(phaseQuickAddInput[phase.id] ?? '').trim() ? colors.primaryForeground : colors.mutedForeground} />}
-                                  </TouchableOpacity>
-                                  <TouchableOpacity
-                                    onPress={() => { setPhaseQuickAddActive(prev => { const n = new Set(prev); n.delete(phase.id); return n; }); setPhaseQuickAddInput(prev => ({ ...prev, [phase.id]: '' })); }}
-                                    hitSlop={8}
-                                    activeOpacity={0.7}
-                                  >
-                                    <Feather name="x" size={14} color={colors.mutedForeground} />
-                                  </TouchableOpacity>
                                 </View>
                               ) : (
                                 <TouchableOpacity
