@@ -17084,6 +17084,9 @@ export default function JobDetailScreen() {
           ref={costingScrollRef}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm }}
+          onLayout={(e) => {
+            costingScrollInfo.current.h = e.nativeEvent.layout.height;
+          }}
           onScroll={(e) => {
             const { layoutMeasurement, contentOffset, contentSize } = e.nativeEvent;
             costingScrollInfo.current = { y: contentOffset.y, h: layoutMeasurement.height };
