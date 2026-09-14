@@ -12097,27 +12097,27 @@ export default function JobDetailScreen() {
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.warning}25`, backgroundColor: `${colors.warning}12` }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
                   activeOpacity={0.7}
                 >
                   <Feather name="alert-circle" size={18} color={colors.warning} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.warning, textAlign: 'center' }}>Extra Work</Text>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Extra Work</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.primary}25`, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
                   activeOpacity={0.7}
                 >
                   <Feather name="package" size={18} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.primary, textAlign: 'center' }}>Material</Text>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Material</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.success}25`, backgroundColor: `${colors.success}12` }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
                   activeOpacity={0.7}
                 >
                   <Feather name="camera" size={18} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.success, textAlign: 'center' }}>Expense</Text>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Expense</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -12430,12 +12430,9 @@ export default function JobDetailScreen() {
                                         alignItems: 'flex-start',
                                         gap: spacing.sm,
                                         paddingVertical: spacing.sm,
-                                        paddingHorizontal: spacing.sm,
-                                        borderRadius: radius.sm,
-                                        marginBottom: 3,
-                                        backgroundColor: item.isCompleted ? 'transparent' : `${colors.primary}06`,
-                                        borderWidth: 1,
-                                        borderColor: item.isCompleted ? 'transparent' : `${colors.primary}12`,
+                                        paddingHorizontal: 2,
+                                        borderBottomWidth: StyleSheet.hairlineWidth,
+                                        borderBottomColor: colors.border,
                                       }}
                                     >
                                       <View
@@ -12691,19 +12688,19 @@ export default function JobDetailScreen() {
               <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
                 <TouchableOpacity
                   onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.primary}25`, backgroundColor: `${colors.primary}12` }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
                   activeOpacity={0.7}
                 >
                   <Feather name="package" size={18} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.primary, textAlign: 'center' }}>Material</Text>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Material</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: `${colors.success}25`, backgroundColor: `${colors.success}12` }}
+                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
                   activeOpacity={0.7}
                 >
                   <Feather name="camera" size={18} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.success, textAlign: 'center' }}>Expense</Text>
+                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Expense</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -17270,7 +17267,7 @@ export default function JobDetailScreen() {
       {/* Job Costing Bottom Sheet — full P&L breakdown */}
       <AppBottomSheet
         visible={showJobCostingSheet}
-        onDismiss={() => { setShowJobCostingSheet(false); costingPillAnim.setValue(1); }}
+        onDismiss={() => { setShowJobCostingSheet(false); costingPillAnim.setValue(0); }}
         title="Job Costing"
         showCloseButton
         scrollable={false}
