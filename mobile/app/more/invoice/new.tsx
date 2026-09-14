@@ -722,8 +722,6 @@ export default function NewInvoiceScreen() {
   const [quickAddForm, setQuickAddForm] = useState({ name: '', email: '', phone: '' });
   const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
-  const [isDraftingDescription, setIsDraftingDescription] = useState(false);
-  const [isDraftingNotes, setIsDraftingNotes] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [jobId, setJobId] = useState<string | null>(params.jobId || null);
@@ -1155,53 +1153,6 @@ export default function NewInvoiceScreen() {
     setLineItems([...lineItems, ...newItems]);
     setJobExpenses([]);
     Alert.alert('Expenses Added', `${newItems.length} expense(s) added as line items`);
-  };
-
-  const handleDraftDescription = async () => {
-    setIsDraftingDescription(true);
-    try {
-      type DraftResp = { description: string };
-      const response = await api.post<DraftResp>('/api/ai/draft-description', {
-        docType: 'invoice',
-        jobId: jobId || undefined,
-        clientName: form.clientName || undefined,
-        docTitle: form.title || undefined,
-        lineItemDescriptions: lineItems.map(i => i.description).filter(Boolean),
-      });
-      if (response.data?.description) {
-        setForm(prev => ({ ...prev, description: response.data!.description }));
-      } else {
-        showToast({ type: 'error', message: 'Could not generate description. Try again.' });
-      }
-    } catch (error) {
-      showToast({ type: 'error', message: 'Failed to generate description. Check your connection.' });
-    } finally {
-      setIsDraftingDescription(false);
-    }
-  };
-
-  const handleDraftNotes = async () => {
-    setIsDraftingNotes(true);
-    try {
-      type DraftResp = { notes: string };
-      const response = await api.post<DraftResp>('/api/ai/draft-description', {
-        docType: 'invoice',
-        fieldType: 'notes',
-        jobId: jobId || undefined,
-        clientName: form.clientName || undefined,
-        docTitle: form.title || undefined,
-        lineItemDescriptions: lineItems.map(i => i.description).filter(Boolean),
-      });
-      if (response.data?.notes) {
-        setForm(prev => ({ ...prev, notes: response.data!.notes }));
-      } else {
-        showToast({ type: 'error', message: 'Could not generate payment terms. Try again.' });
-      }
-    } catch (error) {
-      showToast({ type: 'error', message: 'Failed to generate payment terms. Check your connection.' });
-    } finally {
-      setIsDraftingNotes(false);
-    }
   };
 
   const handleGenerateFromTasks = async () => {
@@ -1742,37 +1693,7 @@ export default function NewInvoiceScreen() {
                 </View>
 
                 <View style={styles.inputGroup}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <Text style={styles.inputLabel}>Description (optional)</Text>
-                    {canUseAIFeatures ? (
-                      <TouchableOpacity
-                        onPress={handleDraftDescription}
-                        disabled={isDraftingDescription}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight, opacity: isDraftingDescription ? 0.6 : 1 }}
-                        accessibilityLabel="Generate description with AI"
-                      >
-                        {isDraftingDescription ? (
-                          <ActivityIndicator size="small" color={colors.primary} style={{ width: 12, height: 12 }} />
-                        ) : (
-                          <Feather name="zap" size={12} color={colors.primary} />
-                        )}
-                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.primary }}>
-                          {isDraftingDescription ? 'Drafting...' : 'Generate with AI'}
-                        </Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={() => router.push('/more/subscription')}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.muted }}
-                        accessibilityLabel="Upgrade to use Generate with AI"
-                      >
-                        <Feather name="lock" size={12} color={colors.mutedForeground} />
-                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
-                          Generate with AI
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
+                  <Text style={styles.inputLabel}>Description (optional)</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     value={form.description}
@@ -2150,18 +2071,6 @@ export default function NewInvoiceScreen() {
                     <Feather name="file-text" size={16} color={colors.primary} />
                     <Text style={styles.cardHeaderText}>Payment Terms & Notes</Text>
                   </View>
-                  {canUseAIFeatures && (
-                    <TouchableOpacity
-                      onPress={handleDraftNotes}
-                      disabled={isDraftingNotes}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight, opacity: isDraftingNotes ? 0.6 : 1 }}
-                    >
-                      <Feather name="zap" size={12} color={colors.primary} />
-                      <Text style={{ fontSize: 12, color: colors.primary, fontWeight: fontWeights.medium }}>
-                        {isDraftingNotes ? 'Drafting...' : 'Generate with AI'}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
                 </View>
                 <TextInput
                   style={[styles.input, styles.textArea]}
