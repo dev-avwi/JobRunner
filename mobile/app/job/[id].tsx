@@ -2434,6 +2434,10 @@ export default function JobDetailScreen() {
   const [phaseQuickAddDescription, setPhaseQuickAddDescription] = useState<Record<string, string>>({});
   const [phaseQuickAddActive, setPhaseQuickAddActive] = useState<Set<string>>(new Set());
   const [isAddingPhaseTask, setIsAddingPhaseTask] = useState<Set<string>>(new Set());
+  // Edit phase task (notes)
+  const [editingPhaseTask, setEditingPhaseTask] = useState<{ item: PhaseTaskItem; phaseId: string } | null>(null);
+  const [editPhaseTaskForm, setEditPhaseTaskForm] = useState({ text: '', description: '' });
+  const [isSavingPhaseTaskEdit, setIsSavingPhaseTaskEdit] = useState(false);
   // Shared date-picker target for phase modals — only one open at a time
   const [phaseDateTarget, setPhaseDateTarget] = useState<{ form: 'add' | 'edit'; field: 'start' | 'end' } | null>(null);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
@@ -3186,6 +3190,37 @@ export default function JobDetailScreen() {
       setPhaseTaskToggling(prev => { const n = new Set(prev); n.delete(item.id); return n; });
     }
   }, [id]);
+
+  const handleUpdatePhaseTask = useCallback(async () => {
+    if (!editingPhaseTask || !id) return;
+    const { item, phaseId } = editingPhaseTask;
+    const trimmedText = editPhaseTaskForm.text.trim();
+    if (!trimmedText) return;
+    setIsSavingPhaseTaskEdit(true);
+    try {
+      const res = await api.patch(`/api/jobs/${id}/checklist/${item.id}`, {
+        text: trimmedText,
+        description: editPhaseTaskForm.description.trim() || null,
+      });
+      if (res.error) {
+        showToast({ type: 'error', message: 'Could not update task' });
+        return;
+      }
+      setPhaseTasksData(prev => ({
+        ...prev,
+        [phaseId]: (prev[phaseId] ?? []).map(t =>
+          t.id === item.id
+            ? { ...t, text: trimmedText, description: editPhaseTaskForm.description.trim() || null }
+            : t
+        ),
+      }));
+      setEditingPhaseTask(null);
+    } catch {
+      showToast({ type: 'error', message: 'Could not update task' });
+    } finally {
+      setIsSavingPhaseTaskEdit(false);
+    }
+  }, [editingPhaseTask, editPhaseTaskForm, id]);
 
   // Detect when all tasks in an in-progress phase are done and show a "mark complete?" nudge.
   useEffect(() => {
@@ -12423,6 +12458,12 @@ export default function JobDetailScreen() {
                                     <TouchableOpacity
                                       key={item.id}
                                       onPress={() => !invoicedOrReadOnly && !isToggling && togglePhaseTask(phase.id, item)}
+                                      onLongPress={() => {
+                                        if (invoicedOrReadOnly) return;
+                                        setEditPhaseTaskForm({ text: item.text, description: item.description ?? '' });
+                                        setEditingPhaseTask({ item, phaseId: phase.id });
+                                      }}
+                                      delayLongPress={400}
                                       disabled={invoicedOrReadOnly || isToggling}
                                       activeOpacity={0.75}
                                       style={{
@@ -13564,6 +13605,42 @@ export default function JobDetailScreen() {
             </View>
           )}
           </View>
+        </View>
+      </AppBottomSheet>
+
+      {/* Edit Phase Task Modal */}
+      <AppBottomSheet
+        visible={!!editingPhaseTask}
+        onDismiss={() => setEditingPhaseTask(null)}
+        title="Edit Task"
+        showCloseButton
+        snapPoints={['45%']}
+        footer={(
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <SheetButton variant="outline" label="Cancel" onPress={() => setEditingPhaseTask(null)} style={{ flex: 1 }} />
+            <SheetButton onPress={handleUpdatePhaseTask} loading={isSavingPhaseTaskEdit} disabled={isSavingPhaseTaskEdit || !editPhaseTaskForm.text.trim()} label="Save" style={{ flex: 1 }} />
+          </View>
+        )}>
+        <View>
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Task Name *</Text>
+          <TextInput
+            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
+            placeholder="Task name"
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseTaskForm.text}
+            onChangeText={(t) => setEditPhaseTaskForm(f => ({ ...f, text: t }))}
+            returnKeyType="next"
+          />
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Notes</Text>
+          <TextInput
+            style={[styles.singleLineInput, { height: 80, textAlignVertical: 'top' as any, paddingTop: spacing.sm, marginBottom: spacing.lg }]}
+            placeholder="Optional notes or description..."
+            placeholderTextColor={colors.mutedForeground}
+            value={editPhaseTaskForm.description}
+            onChangeText={(t) => setEditPhaseTaskForm(f => ({ ...f, description: t }))}
+            multiline
+            returnKeyType="done"
+          />
         </View>
       </AppBottomSheet>
 
