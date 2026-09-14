@@ -439,7 +439,10 @@ export function useUserRole() {
   const hasBetaUnlock = !!(user?.isBeta || user?.betaLifetimeAccess);
   const hasTeamSubscription = !isSubscriptionRestricted && (hasBetaUnlock || subscriptionTier === 'team' || subscriptionTier === 'business' || (subscriptionTier as string) === 'beta');
   const hasProSubscription = !isSubscriptionRestricted && (hasBetaUnlock || subscriptionTier === 'pro' || subscriptionTier === 'team' || subscriptionTier === 'business' || (subscriptionTier as string) === 'beta');
-  const canUseAIFeatures = hasProSubscription;
+  // Team members inherit AI entitlement from the business owner's subscription.
+  // ownerSubscriptionValid is set server-side when the owner has an active paid plan.
+  const hasOwnerProSubscription = !isSubscriptionRestricted && !!(user as any)?.ownerSubscriptionValid;
+  const canUseAIFeatures = hasProSubscription || hasOwnerProSubscription;
   
   // Team access requires both role permission AND team subscription
   // Pro users can see team features but should get upgrade prompts

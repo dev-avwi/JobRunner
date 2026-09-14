@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useClients } from "@/hooks/use-clients";
 import { useCreateInvoice } from "@/hooks/use-invoices";
 import { useBusinessSettings } from "@/hooks/use-business-settings";
+import { useFeatureAccess } from "@/hooks/use-subscription";
 import { useDocumentTemplates, type DocumentTemplate } from "@/hooks/use-templates";
 import { useQuery } from "@tanstack/react-query";
 import { queryClient, getSessionToken } from "@/lib/queryClient";
@@ -57,6 +58,7 @@ import {
   ShoppingCart,
   GitMerge,
   ClipboardList,
+  Sparkles,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -91,6 +93,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   const [, navigate] = useLocation();
   const { data: clients = [] } = useClients();
   const { data: businessSettings } = useBusinessSettings();
+  const { canUseAIFeatures } = useFeatureAccess();
   const createInvoiceMutation = useCreateInvoice();
   const isEditMode = !!editInvoiceId;
   
@@ -107,6 +110,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   const [priceListOpen, setPriceListOpen] = useState(false);
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
+  const [isDraftingDescription, setIsDraftingDescription] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [sourceQuoteId, setSourceQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(urlJobId || undefined);
@@ -499,6 +503,46 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
     name: "lineItems",
     defaultValue: []
   });
+
+  const handleDraftDescription = async () => {
+    setIsDraftingDescription(true);
+    try {
+      const token = getSessionToken();
+      const currentValues = form.getValues();
+      const currentLineItems = form.getValues('lineItems') || [];
+      const res = await fetch('/api/ai/draft-description', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          docType: 'invoice',
+          jobId: selectedJobId || urlJobId || undefined,
+          clientName: selectedClient?.name,
+          docTitle: currentValues.title,
+          lineItemDescriptions: currentLineItems.map((i: any) => i.description).filter(Boolean),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to generate description');
+      }
+      const data = await res.json();
+      if (data.description) {
+        form.setValue('description', data.description, { shouldDirty: true });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Could not generate description',
+        description: error?.message || 'Check your connection and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDraftingDescription(false);
+    }
+  };
 
   // Prefill form from accepted quote - the natural workflow for invoice creation
   const handleSelectQuote = (quote: any) => {
@@ -1181,12 +1225,35 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
                 </div>
 
                 <div>
-                  <Label htmlFor="description" className="text-xs text-muted-foreground">Description (optional)</Label>
+                  <div className="flex items-center justify-between mb-1">
+                    <Label htmlFor="description" className="text-xs text-muted-foreground">Description (optional)</Label>
+                    {canUseAIFeatures && (
+                      <button
+                        type="button"
+                        onClick={handleDraftDescription}
+                        disabled={isDraftingDescription}
+                        className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                        data-testid="button-ai-draft-description"
+                      >
+                        {isDraftingDescription ? (
+                          <>
+                            <span className="h-3 w-3 border border-primary border-t-transparent rounded-full animate-spin inline-block" />
+                            Drafting...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="h-3 w-3" />
+                            Generate with AI
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <Textarea
                     id="description"
                     {...form.register("description")}
                     placeholder="Brief description of the work..."
-                    className="rounded-xl mt-1 min-h-[80px]"
+                    className="rounded-xl min-h-[80px]"
                     data-testid="input-description"
                   />
                 </div>

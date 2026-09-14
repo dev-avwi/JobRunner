@@ -2415,7 +2415,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CLIENT PORTAL: Send a contact message to the business
-  app.post("/api/portal/contact", async (req, res) => {
+  const portalContactLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many messages sent. Please try again later.' },
+  });
+
+  function escapePortalHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  app.post("/api/portal/contact", portalContactLimiter, async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -2431,52 +2448,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Session has expired' });
       }
 
-      const { subject, message } = req.body;
+      const { subject, message, clientId } = req.body;
       if (!message || typeof message !== 'string' || !message.trim()) {
         return res.status(400).json({ error: 'Message is required' });
       }
       if (message.length > 2000) {
         return res.status(400).json({ error: 'Message is too long (max 2000 characters)' });
       }
+      if (subject !== undefined && (typeof subject !== 'string' || subject.length > 200)) {
+        return res.status(400).json({ error: 'Subject must be a string under 200 characters' });
+      }
+      if (!clientId || typeof clientId !== 'string') {
+        return res.status(400).json({ error: 'clientId is required' });
+      }
 
-      const clients = session.userId
-        ? await storage.getClientsByPhoneForUser(session.phone, session.userId)
-        : await storage.getClientsByPhone(session.phone);
+      const clients = await resolvePortalClients(session);
 
       if (clients.length === 0) {
         return res.status(404).json({ error: 'No client profile found for this session' });
       }
 
-      const client = clients[0];
+      // Verify the requested client is one this session is authorized for
+      const client = clients.find((c: any) => c.id === clientId);
+      if (!client) {
+        return res.status(403).json({ error: 'Not authorized to contact this business' });
+      }
       const ownerId = client.userId;
       const owner = await storage.getUser(ownerId);
 
       const subjectLine = subject?.trim() ? subject.trim() : 'Message from client portal';
       const clientName = client.name || session.phone;
+      const trimmedMessage = message.trim();
 
-      try {
-        const { createNotification } = await import('./notifications');
-        await createNotification(storage, {
-          userId: ownerId,
-          type: 'message',
-          title: `Portal message from ${clientName}`,
-          message: `${subjectLine}: ${message.trim().slice(0, 120)}${message.trim().length > 120 ? '...' : ''}`,
-          priority: 'normal',
-          actionUrl: `/clients/${client.id}`,
-          actionLabel: 'View client',
-        });
-      } catch (notifErr) {
-        console.error('Failed to create portal contact notification:', notifErr);
-      }
+      // Persist the full message via a direct storage insert — this is the durable delivery path.
+      // We call storage directly (not the notifications wrapper) so any database failure propagates
+      // and is not silently swallowed. If this throws, the outer catch returns 500.
+      await storage.createNotification({
+        userId: ownerId,
+        type: 'message',
+        title: `Portal message from ${clientName}`,
+        message: `${subjectLine}: ${trimmedMessage}`,
+        relatedType: null,
+        relatedId: null,
+        priority: 'normal',
+        actionUrl: `/clients/${client.id}`,
+        actionLabel: 'View client',
+        read: false,
+        dismissed: false,
+      });
 
+      // Email is best-effort on top of the persisted notification.
       if (owner?.email) {
         try {
           const { sendSystemEmail } = await import('./emailService');
+          const safeClientName = escapePortalHtml(clientName);
+          const safePhone = escapePortalHtml(session.phone || '');
+          const safeMessage = escapePortalHtml(trimmedMessage).replace(/\n/g, '<br/>');
           await sendSystemEmail({
             to: owner.email,
             subject: `Client message: ${subjectLine}`,
-            html: `<p><strong>${clientName}</strong> (${session.phone}) sent a message via their client portal:</p>
-<blockquote style="border-left:3px solid #ddd;padding-left:12px;color:#555;margin:12px 0">${message.trim().replace(/\n/g, '<br/>')}</blockquote>
+            html: `<p><strong>${safeClientName}</strong> (${safePhone}) sent a message via their client portal:</p>
+<blockquote style="border-left:3px solid #ddd;padding-left:12px;color:#555;margin:12px 0">${safeMessage}</blockquote>
 <p>Log in to JobRunner to view this client and follow up.</p>`,
           });
         } catch (emailErr) {
@@ -8445,6 +8477,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isBackpressure(error)) return send429(res, error);
       console.error("Error generating email suggestion:", error);
       res.status(500).json({ error: "Failed to generate email suggestion" });
+    }
+  });
+
+  // AI Draft Description endpoint - generates a professional 2-3 sentence description for a quote or invoice
+  app.post("/api/ai/draft-description", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { docType, jobId, clientName, docTitle, lineItemDescriptions } = req.body;
+
+      if (!docType || !['quote', 'invoice'].includes(docType)) {
+        return res.status(400).json({ error: "docType must be 'quote' or 'invoice'" });
+      }
+
+      const tradeType = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'Trade';
+
+      let jobTitle: string | undefined;
+      let jobNotes: string | undefined;
+      let phaseNames: string[] = [];
+      let materialNames: string[] = [];
+
+      if (jobId) {
+        const job = await storage.getJob(jobId, userContext.effectiveUserId);
+        if (job) {
+          jobTitle = job.title;
+          jobNotes = (job as any).description || (job as any).notes || undefined;
+
+          try {
+            const phases = await storage.getJobPhases(jobId, userContext.effectiveUserId);
+            phaseNames = (phases as any[]).filter(p => p.name).map(p => p.name).slice(0, 6);
+          } catch (_) {}
+
+          try {
+            const materials = await storage.getJobMaterials(jobId, userContext.effectiveUserId);
+            materialNames = (materials as any[]).filter(m => m.name).map(m => m.name).slice(0, 8);
+          } catch (_) {}
+        }
+      }
+
+      const { draftDocumentDescription } = await import('./ai');
+
+      const description = await draftDocumentDescription({
+        docType,
+        clientName,
+        docTitle,
+        jobTitle,
+        jobNotes,
+        phaseNames,
+        materialNames,
+        lineItemDescriptions: Array.isArray(lineItemDescriptions) ? lineItemDescriptions : [],
+        tradeType,
+      });
+
+      res.json({ description });
+    } catch (error: any) {
+      if (isBackpressure(error)) return send429(res, error);
+      console.error("Error drafting document description:", error);
+      res.status(500).json({ error: "Failed to generate description. Please try again." });
     }
   });
 

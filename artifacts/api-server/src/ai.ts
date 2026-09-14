@@ -2778,3 +2778,56 @@ export async function extractFormFromText(documentText: string): Promise<Extract
   const content = response.choices[0]?.message?.content || '{}';
   return sanitizeExtractedFormDraft(JSON.parse(content));
 }
+
+// Draft a professional 2-3 sentence description for a quote or invoice from job context
+export async function draftDocumentDescription(params: {
+  docType: 'quote' | 'invoice';
+  clientName?: string;
+  docTitle?: string;
+  jobTitle?: string;
+  jobNotes?: string;
+  phaseNames?: string[];
+  materialNames?: string[];
+  lineItemDescriptions?: string[];
+  tradeType?: string;
+}): Promise<string> {
+  const {
+    docType,
+    clientName,
+    docTitle,
+    jobTitle,
+    jobNotes,
+    phaseNames = [],
+    materialNames = [],
+    lineItemDescriptions = [],
+    tradeType = 'Trade',
+  } = params;
+
+  const contextParts: string[] = [];
+  if (clientName) contextParts.push(`Client: ${clientName}`);
+  if (docTitle) contextParts.push(`${docType === 'quote' ? 'Quote' : 'Invoice'} title: ${docTitle}`);
+  if (jobTitle && jobTitle !== docTitle) contextParts.push(`Job: ${jobTitle}`);
+  if (jobNotes) contextParts.push(`Notes: ${jobNotes.slice(0, 500)}`);
+  if (phaseNames.length) contextParts.push(`Phases: ${phaseNames.join(', ')}`);
+  if (materialNames.length) contextParts.push(`Materials: ${materialNames.slice(0, 8).join(', ')}`);
+  if (lineItemDescriptions.length) contextParts.push(`Line items: ${lineItemDescriptions.slice(0, 8).join('; ')}`);
+
+  if (contextParts.length === 0) {
+    return '';
+  }
+
+  const systemPrompt = `You are an Australian ${tradeType.toLowerCase()} writing a concise, professional ${docType} description. Write exactly 2-3 sentences in plain Australian English that summarise the work being covered. No bullet points, no emojis, no headings — clean flowing sentences only. Sound like a skilled tradie who knows their craft, not a corporate copywriter. Do not start with "I" — vary the sentence structure.`;
+
+  const userPrompt = `Write a ${docType} description based on this job information:\n\n${contextParts.join('\n')}\n\nReturn only the description text, nothing else.`;
+
+  const completion = await aiQueue.run(() => openai.chat.completions.create({
+    model: "gpt-5-mini",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    max_completion_tokens: 300,
+  }));
+
+  return completion.choices[0]?.message?.content?.trim() || '';
+}

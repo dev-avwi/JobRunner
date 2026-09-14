@@ -243,6 +243,10 @@ export default function ClientPortalHub() {
 
   const handleSendContactMessage = async () => {
     if (!contactMessage.trim() || !sessionToken) return;
+    if (!selectedClientId) {
+      toast({ title: 'No client selected', description: 'Please select your profile before sending a message.', variant: 'destructive' });
+      return;
+    }
     setIsSubmittingContact(true);
     try {
       const res = await fetch('/api/portal/contact', {
@@ -252,6 +256,7 @@ export default function ClientPortalHub() {
           'Authorization': `Bearer ${sessionToken}`,
         },
         body: JSON.stringify({
+          clientId: selectedClientId,
           subject: contactSubject.trim() || undefined,
           message: contactMessage.trim(),
         }),
