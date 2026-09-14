@@ -1744,7 +1744,7 @@ export default function NewInvoiceScreen() {
                 <View style={styles.inputGroup}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <Text style={styles.inputLabel}>Description (optional)</Text>
-                    {canUseAIFeatures && (
+                    {canUseAIFeatures ? (
                       <TouchableOpacity
                         onPress={handleDraftDescription}
                         disabled={isDraftingDescription}
@@ -1758,6 +1758,17 @@ export default function NewInvoiceScreen() {
                         )}
                         <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.primary }}>
                           {isDraftingDescription ? 'Drafting...' : 'Generate with AI'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => router.push('/more/subscription')}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.muted }}
+                        accessibilityLabel="Upgrade to use Generate with AI"
+                      >
+                        <Feather name="lock" size={12} color={colors.mutedForeground} />
+                        <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground }}>
+                          Generate with AI
                         </Text>
                       </TouchableOpacity>
                     )}
