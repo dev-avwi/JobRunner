@@ -2414,6 +2414,8 @@ export default function JobDetailScreen() {
   const [flagExtraWorkTitle, setFlagExtraWorkTitle] = useState('');
   const [flagExtraWorkDesc, setFlagExtraWorkDesc] = useState('');
   const [flagExtraWorkLoading, setFlagExtraWorkLoading] = useState(false);
+  const [flagExtraWorkPhotoUri, setFlagExtraWorkPhotoUri] = useState<string | null>(null);
+  const [isUploadingExtraWorkPhoto, setIsUploadingExtraWorkPhoto] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
   const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] as string[] });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
@@ -2455,13 +2457,15 @@ export default function JobDetailScreen() {
   const [editingMaterial, setEditingMaterial] = useState<JobMaterial | null>(null);
   const [materialForm, setMaterialForm] = useState({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' });
   const [isSavingMaterial, setIsSavingMaterial] = useState(false);
+  const [materialPhotoUri, setMaterialPhotoUri] = useState<string | null>(null);
+  const [isUploadingMaterialPhoto, setIsUploadingMaterialPhoto] = useState(false);
   const [costPromptMaterial, setCostPromptMaterial] = useState<{ id: string; name: string; status: string } | null>(null);
   const [costPromptValue, setCostPromptValue] = useState('');
   const [showCostPromptModal, setShowCostPromptModal] = useState(false);
 
   // Log Expense / Receipt modal
   const [showLogExpenseModal, setShowLogExpenseModal] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', phaseId: '' });
+  const [expenseForm, setExpenseForm] = useState({ amount: '', description: '', phaseId: '', materialId: '' });
   const [expenseReceiptUri, setExpenseReceiptUri] = useState<string | null>(null);
   const [isUploadingExpenseReceipt, setIsUploadingExpenseReceipt] = useState(false);
   const [isSavingExpense, setIsSavingExpense] = useState(false);
@@ -2943,7 +2947,7 @@ export default function JobDetailScreen() {
       }
       if (navLogExpensePhaseId && navLogExpenseFiredRef.current !== navLogExpensePhaseId) {
         navLogExpenseFiredRef.current = navLogExpensePhaseId;
-        setExpenseForm({ amount: '', description: '', phaseId: navLogExpensePhaseId });
+        setExpenseForm({ amount: '', description: '', phaseId: navLogExpensePhaseId, materialId: '' });
         setExpenseReceiptUri(null);
         setLockedExpensePhaseId(navLogExpensePhaseId);
         setShowLogExpenseModal(true);
@@ -4491,6 +4495,7 @@ export default function JobDetailScreen() {
       if (editingMaterial || materialForm.phaseId) {
         payload.phaseId = materialForm.phaseId || null;
       }
+      if (materialPhotoUri) payload.photoUrl = materialPhotoUri;
       if (editingMaterial) {
         await api.patch(`/api/materials/${editingMaterial.id}`, payload);
       } else {
@@ -4499,6 +4504,7 @@ export default function JobDetailScreen() {
       await loadMaterials();
       setShowAddMaterialModal(false);
       setEditingMaterial(null);
+      setMaterialPhotoUri(null);
       setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' });
     } catch (e) {
       showToast({ type: 'error', message: 'Failed to save material' });
@@ -4529,13 +4535,14 @@ export default function JobDetailScreen() {
         categoryId: '_worker_receipt_',
       };
       if (expenseForm.phaseId) body.phaseId = expenseForm.phaseId;
+      if (expenseForm.materialId) body.materialId = expenseForm.materialId;
       if (expenseReceiptUri) body.receiptUrl = expenseReceiptUri;
 
       const res = await api.post(`/api/jobs/${id}/expenses`, body);
       if (res.error) throw new Error(res.error);
 
       setShowLogExpenseModal(false);
-      setExpenseForm({ amount: '', description: '', phaseId: '' });
+      setExpenseForm({ amount: '', description: '', phaseId: '', materialId: '' });
       setExpenseReceiptUri(null);
       setLockedExpensePhaseId(null);
       showToast({ type: 'success', message: 'Expense logged', description: 'The owner has been notified for approval.' });
@@ -12408,28 +12415,48 @@ export default function JobDetailScreen() {
                                   const isToggling = phaseTaskToggling.has(item.id);
                                   const invoicedOrReadOnly = job.status === 'invoiced';
                                   return (
-                                    <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 7 }}>
-                                      <TouchableOpacity
-                                        onPress={() => !invoicedOrReadOnly && !isToggling && togglePhaseTask(phase.id, item)}
-                                        disabled={invoicedOrReadOnly || isToggling}
-                                        style={{ width: 20, height: 20, borderRadius: 5, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+                                    <TouchableOpacity
+                                      key={item.id}
+                                      onPress={() => !invoicedOrReadOnly && !isToggling && togglePhaseTask(phase.id, item)}
+                                      disabled={invoicedOrReadOnly || isToggling}
+                                      activeOpacity={0.75}
+                                      style={{
+                                        flexDirection: 'row',
+                                        alignItems: 'flex-start',
+                                        gap: spacing.sm,
+                                        paddingVertical: spacing.sm,
+                                        paddingHorizontal: spacing.sm,
+                                        borderRadius: radius.sm,
+                                        marginBottom: 3,
+                                        backgroundColor: item.isCompleted ? 'transparent' : `${colors.primary}06`,
+                                        borderWidth: 1,
+                                        borderColor: item.isCompleted ? 'transparent' : `${colors.primary}12`,
+                                      }}
+                                    >
+                                      <View
+                                        style={{ marginTop: 2, width: 20, height: 20, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center',
                                           borderColor: item.isCompleted ? colors.success : colors.border,
                                           backgroundColor: item.isCompleted ? colors.success : 'transparent',
                                         }}
-                                        hitSlop={8}
-                                        activeOpacity={0.7}
                                       >
                                         {isToggling
                                           ? <ActivityIndicator size="small" color={item.isCompleted ? colors.primaryForeground : colors.success} style={{ width: 12, height: 12 }} />
                                           : item.isCompleted
                                             ? <Feather name="check" size={11} color={colors.primaryForeground} />
                                             : null}
-                                      </TouchableOpacity>
-                                      <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: item.isCompleted ? colors.mutedForeground : colors.foreground,
-                                        textDecorationLine: item.isCompleted ? 'line-through' : 'none' }} numberOfLines={2}>
-                                        {item.text}
-                                      </Text>
-                                    </View>
+                                      </View>
+                                      <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: typography.caption.fontSize, color: item.isCompleted ? colors.mutedForeground : colors.foreground,
+                                          textDecorationLine: item.isCompleted ? 'line-through' : 'none', fontWeight: item.isCompleted ? fontWeights.regular : fontWeights.medium }} numberOfLines={2}>
+                                          {item.text}
+                                        </Text>
+                                        {!!item.description && (
+                                          <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, marginTop: 2, lineHeight: 16 }} numberOfLines={2}>
+                                            {item.description}
+                                          </Text>
+                                        )}
+                                      </View>
+                                    </TouchableOpacity>
                                   );
                                 })}
                               </View>
@@ -12946,7 +12973,7 @@ export default function JobDetailScreen() {
                     } : undefined}
                     onViewPhase={(phase) => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
                     onLogExpense={(phase) => {
-                      setExpenseForm({ amount: '', description: '', phaseId: phase.id });
+                      setExpenseForm({ amount: '', description: '', phaseId: phase.id, materialId: '' });
                       setExpenseReceiptUri(null);
                       setLockedExpensePhaseId(phase.id);
                       setShowLogExpenseModal(true);
@@ -14020,13 +14047,13 @@ export default function JobDetailScreen() {
       {/* Flag Extra Work Modal */}
       <AppBottomSheet
         visible={showFlagExtraWorkModal}
-        onDismiss={() => setShowFlagExtraWorkModal(false)}
+        onDismiss={() => { setShowFlagExtraWorkModal(false); setFlagExtraWorkPhotoUri(null); }}
         title="Flag Extra Work"
         showCloseButton
-        snapPoints={['55%']}
+        snapPoints={['80%']}
         footer={(
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => setShowFlagExtraWorkModal(false)} style={{ flex: 1 }} />
+            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowFlagExtraWorkModal(false); setFlagExtraWorkPhotoUri(null); }} style={{ flex: 1 }} />
             <SheetButton
               onPress={async () => {
                 if (!flagExtraWorkTitle.trim() || !job?.id) return;
@@ -14037,8 +14064,10 @@ export default function JobDetailScreen() {
                     description: flagExtraWorkDesc.trim() || undefined,
                     additionalAmount: '0',
                     reason: 'Extra work flagged by worker from field',
+                    photoUrl: flagExtraWorkPhotoUri || undefined,
                   });
                   setShowFlagExtraWorkModal(false);
+                  setFlagExtraWorkPhotoUri(null);
                   Alert.alert('Flagged', 'Extra work has been reported. The owner will be notified to review and quote the variation.');
                 } catch {
                   Alert.alert('Error', 'Could not flag extra work. Please try again.');
@@ -14073,6 +14102,69 @@ export default function JobDetailScreen() {
             multiline
             numberOfLines={3}
           />
+          {/* Photo proof */}
+          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Photo proof <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(optional)</Text></Text>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExtraWorkPhoto ? 0.6 : 1 }}
+              activeOpacity={0.7}
+              disabled={isUploadingExtraWorkPhoto}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+                const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingExtraWorkPhoto(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `extra-work-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'job-photo');
+                  const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await uploadRes.json();
+                  if (json.url) setFlagExtraWorkPhotoUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingExtraWorkPhoto(false); }
+              }}
+            >
+              {isUploadingExtraWorkPhoto ? <ActivityIndicator size="small" color={colors.primary} /> : <><Feather name="camera" size={14} color={colors.primary} /><Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Take Photo</Text></>}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingExtraWorkPhoto ? 0.6 : 1 }}
+              activeOpacity={0.7}
+              disabled={isUploadingExtraWorkPhoto}
+              onPress={async () => {
+                const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+                const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                if (result.canceled || !result.assets?.[0]) return;
+                const asset = result.assets[0];
+                setIsUploadingExtraWorkPhoto(true);
+                try {
+                  const token = await api.getToken();
+                  const formData = new FormData();
+                  formData.append('file', { uri: asset.uri, name: asset.fileName || `extra-work-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                  formData.append('type', 'job-photo');
+                  const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                  const json = await uploadRes.json();
+                  if (json.url) setFlagExtraWorkPhotoUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                  else showToast({ type: 'error', message: 'Upload failed' });
+                } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingExtraWorkPhoto(false); }
+              }}
+            >
+              <Feather name="image" size={14} color={colors.primary} />
+              <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+          {flagExtraWorkPhotoUri ? (
+            <View style={{ marginBottom: spacing.md }}>
+              <Image source={{ uri: flagExtraWorkPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+              <TouchableOpacity onPress={() => setFlagExtraWorkPhotoUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                <Feather name="x" size={14} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          ) : <View style={{ marginBottom: spacing.md }} />}
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, backgroundColor: `${colors.warning}10`, borderRadius: radius.md, padding: spacing.sm }}>
             <Feather name="info" size={14} color={colors.warning} style={{ marginTop: 1 }} />
             <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, flex: 1, lineHeight: 18 }}>
@@ -14085,7 +14177,7 @@ export default function JobDetailScreen() {
       {/* Add/Edit Material Modal */}
       <AppBottomSheet
         visible={showAddMaterialModal}
-        onDismiss={() => { setShowAddMaterialModal(false); setEditingMaterial(null); }}
+        onDismiss={() => { setShowAddMaterialModal(false); setEditingMaterial(null); setMaterialPhotoUri(null); }}
         title={editingMaterial ? 'Edit Material' : 'Add Material'}
         showCloseButton
         snapPoints={['85%']}
@@ -14225,6 +14317,71 @@ export default function JobDetailScreen() {
                   multiline
                   numberOfLines={2}
                 />
+
+                {/* Receipt / delivery photo */}
+                <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Photo <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(receipt or delivery docket)</Text></Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingMaterialPhoto ? 0.6 : 1 }}
+                    activeOpacity={0.7}
+                    disabled={isUploadingMaterialPhoto}
+                    onPress={async () => {
+                      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+                      if (status !== 'granted') { showToast({ type: 'error', message: 'Camera permission required' }); return; }
+                      const result = await ImagePicker.launchCameraAsync({ quality: 0.8 });
+                      if (result.canceled || !result.assets?.[0]) return;
+                      const asset = result.assets[0];
+                      setIsUploadingMaterialPhoto(true);
+                      try {
+                        const token = await api.getToken();
+                        const formData = new FormData();
+                        formData.append('file', { uri: asset.uri, name: asset.fileName || `material-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                        formData.append('type', 'job-photo');
+                        const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                        const json = await uploadRes.json();
+                        if (json.url) setMaterialPhotoUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                        else showToast({ type: 'error', message: 'Upload failed' });
+                      } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingMaterialPhoto(false); }
+                    }}
+                  >
+                    {isUploadingMaterialPhoto ? <ActivityIndicator size="small" color={colors.primary} /> : <><Feather name="camera" size={14} color={colors.primary} /><Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Take Photo</Text></>}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderColor: colors.cardBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.card, opacity: isUploadingMaterialPhoto ? 0.6 : 1 }}
+                    activeOpacity={0.7}
+                    disabled={isUploadingMaterialPhoto}
+                    onPress={async () => {
+                      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+                      if (status !== 'granted') { showToast({ type: 'error', message: 'Photo library permission required' }); return; }
+                      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.8 });
+                      if (result.canceled || !result.assets?.[0]) return;
+                      const asset = result.assets[0];
+                      setIsUploadingMaterialPhoto(true);
+                      try {
+                        const token = await api.getToken();
+                        const formData = new FormData();
+                        formData.append('file', { uri: asset.uri, name: asset.fileName || `material-${Date.now()}.jpg`, type: asset.mimeType || 'image/jpeg' } as any);
+                        formData.append('type', 'job-photo');
+                        const uploadRes = await fetch(`${API_URL}/api/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+                        const json = await uploadRes.json();
+                        if (json.url) setMaterialPhotoUri(json.url.startsWith('/') ? `${API_URL}${json.url}` : json.url);
+                        else showToast({ type: 'error', message: 'Upload failed' });
+                      } catch { showToast({ type: 'error', message: 'Upload failed' }); } finally { setIsUploadingMaterialPhoto(false); }
+                    }}
+                  >
+                    <Feather name="image" size={14} color={colors.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: fontWeights.medium as any, color: colors.primary }}>Choose Photo</Text>
+                  </TouchableOpacity>
+                </View>
+                {materialPhotoUri ? (
+                  <View style={{ marginBottom: spacing.md }}>
+                    <Image source={{ uri: materialPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+                    <TouchableOpacity onPress={() => setMaterialPhotoUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="x" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ) : <View style={{ marginBottom: spacing.md }} />}
+
                 {materialForm.quantity && materialForm.unitCost && (
                   <View style={{ backgroundColor: `${colors.primary}10`, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.md }}>
@@ -14361,6 +14518,30 @@ export default function JobDetailScreen() {
             placeholder="e.g. Electrical fittings from Bunnings"
             placeholderTextColor={colors.mutedForeground}
           />
+
+          {/* Link to Material */}
+          {materials.length > 0 && (
+            <View style={{ marginBottom: spacing.md }}>
+              <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Link to Material <Text style={{ fontWeight: '400', color: colors.mutedForeground }}>(optional)</Text></Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.xs, paddingBottom: 2 }}>
+                <TouchableOpacity
+                  onPress={() => setExpenseForm(f => ({ ...f, materialId: '' }))}
+                  style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: !expenseForm.materialId ? colors.primary : colors.border, backgroundColor: !expenseForm.materialId ? `${colors.primary}15` : 'transparent' }}
+                >
+                  <Text style={{ fontSize: typography.sizes.sm, color: !expenseForm.materialId ? colors.primary : colors.mutedForeground }}>None</Text>
+                </TouchableOpacity>
+                {materials.map(m => (
+                  <TouchableOpacity
+                    key={m.id}
+                    onPress={() => setExpenseForm(f => ({ ...f, materialId: m.id }))}
+                    style={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, borderRadius: radius.full, borderWidth: 1, borderColor: expenseForm.materialId === m.id ? colors.primary : colors.border, backgroundColor: expenseForm.materialId === m.id ? `${colors.primary}15` : 'transparent' }}
+                  >
+                    <Text style={{ fontSize: typography.sizes.sm, color: expenseForm.materialId === m.id ? colors.primary : colors.mutedForeground }} numberOfLines={1}>{m.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Phase picker (projects only) */}
           {job.jobType === 'project' && phases.length > 0 && (
