@@ -723,6 +723,7 @@ export default function NewInvoiceScreen() {
   const [isCreatingClient, setIsCreatingClient] = useState(false);
   const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
   const [isDraftingDescription, setIsDraftingDescription] = useState(false);
+  const [isDraftingNotes, setIsDraftingNotes] = useState(false);
   
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [jobId, setJobId] = useState<string | null>(params.jobId || null);
@@ -1176,6 +1177,30 @@ export default function NewInvoiceScreen() {
       showToast({ type: 'error', message: 'Failed to generate description. Check your connection.' });
     } finally {
       setIsDraftingDescription(false);
+    }
+  };
+
+  const handleDraftNotes = async () => {
+    setIsDraftingNotes(true);
+    try {
+      type DraftResp = { notes: string };
+      const response = await api.post<DraftResp>('/api/ai/draft-description', {
+        docType: 'invoice',
+        fieldType: 'notes',
+        jobId: jobId || undefined,
+        clientName: form.clientName || undefined,
+        docTitle: form.title || undefined,
+        lineItemDescriptions: lineItems.map(i => i.description).filter(Boolean),
+      });
+      if (response.data?.notes) {
+        setForm(prev => ({ ...prev, notes: response.data!.notes }));
+      } else {
+        showToast({ type: 'error', message: 'Could not generate payment terms. Try again.' });
+      }
+    } catch (error) {
+      showToast({ type: 'error', message: 'Failed to generate payment terms. Check your connection.' });
+    } finally {
+      setIsDraftingNotes(false);
     }
   };
 
@@ -2109,9 +2134,23 @@ export default function NewInvoiceScreen() {
 
               {/* Payment Terms Card */}
               <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Feather name="file-text" size={16} color={colors.primary} />
-                  <Text style={styles.cardHeaderText}>Payment Terms & Notes</Text>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardHeader}>
+                    <Feather name="file-text" size={16} color={colors.primary} />
+                    <Text style={styles.cardHeaderText}>Payment Terms & Notes</Text>
+                  </View>
+                  {canUseAIFeatures && (
+                    <TouchableOpacity
+                      onPress={handleDraftNotes}
+                      disabled={isDraftingNotes}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors.primaryLight, opacity: isDraftingNotes ? 0.6 : 1 }}
+                    >
+                      <Feather name="zap" size={12} color={colors.primary} />
+                      <Text style={{ fontSize: 12, color: colors.primary, fontWeight: fontWeights.medium }}>
+                        {isDraftingNotes ? 'Drafting...' : 'Generate with AI'}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
                 <TextInput
                   style={[styles.input, styles.textArea]}

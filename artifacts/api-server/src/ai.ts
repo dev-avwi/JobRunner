@@ -2782,6 +2782,7 @@ export async function extractFormFromText(documentText: string): Promise<Extract
 // Draft a professional 2-3 sentence description for a quote or invoice from job context
 export async function draftDocumentDescription(params: {
   docType: 'quote' | 'invoice';
+  fieldType?: 'description' | 'notes';
   clientName?: string;
   docTitle?: string;
   jobTitle?: string;
@@ -2793,6 +2794,7 @@ export async function draftDocumentDescription(params: {
 }): Promise<string> {
   const {
     docType,
+    fieldType = 'description',
     clientName,
     docTitle,
     jobTitle,
@@ -2816,9 +2818,17 @@ export async function draftDocumentDescription(params: {
     return '';
   }
 
-  const systemPrompt = `You are an Australian ${tradeType.toLowerCase()} writing a concise, professional ${docType} description. Write exactly 2-3 sentences in plain Australian English that summarise the work being covered. No bullet points, no emojis, no headings — clean flowing sentences only. Sound like a skilled tradie who knows their craft, not a corporate copywriter. Do not start with "I" — vary the sentence structure.`;
+  let systemPrompt: string;
+  let userPrompt: string;
 
-  const userPrompt = `Write a ${docType} description based on this job information:\n\n${contextParts.join('\n')}\n\nReturn only the description text, nothing else.`;
+  if (fieldType === 'notes') {
+    const docLabel = docType === 'quote' ? 'quote' : 'invoice';
+    systemPrompt = `You are an Australian ${tradeType.toLowerCase()} writing professional payment terms and scope notes for a ${docLabel}. Write clear, plain Australian English covering relevant payment terms, what is included/excluded, and any scope clarifications appropriate to the job. Use short paragraphs or a brief list where helpful — but no fluff. Sound practical and professional, like a tradesperson who runs a tidy business.`;
+    userPrompt = `Write payment terms and notes for a ${docLabel} based on this job information:\n\n${contextParts.join('\n')}\n\nReturn only the notes text, nothing else.`;
+  } else {
+    systemPrompt = `You are an Australian ${tradeType.toLowerCase()} writing a concise, professional ${docType} description. Write exactly 2-3 sentences in plain Australian English that summarise the work being covered. No bullet points, no emojis, no headings — clean flowing sentences only. Sound like a skilled tradie who knows their craft, not a corporate copywriter. Do not start with "I" — vary the sentence structure.`;
+    userPrompt = `Write a ${docType} description based on this job information:\n\n${contextParts.join('\n')}\n\nReturn only the description text, nothing else.`;
+  }
 
   const completion = await aiQueue.run(() => openai.chat.completions.create({
     model: "gpt-5-mini",
@@ -2826,7 +2836,7 @@ export async function draftDocumentDescription(params: {
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
     ],
-    max_completion_tokens: 300,
+    max_completion_tokens: 400,
   }));
 
   return completion.choices[0]?.message?.content?.trim() || '';

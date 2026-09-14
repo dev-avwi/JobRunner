@@ -8486,10 +8486,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai/draft-description", requireAuth, aiPerUserLimiter, requireProSubscription, async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
-      const { docType, jobId, clientName, docTitle, lineItemDescriptions } = req.body;
+      const { docType, fieldType, jobId, clientName, docTitle, lineItemDescriptions } = req.body;
 
       if (!docType || !['quote', 'invoice'].includes(docType)) {
         return res.status(400).json({ error: "docType must be 'quote' or 'invoice'" });
+      }
+
+      if (fieldType && !['description', 'notes'].includes(fieldType)) {
+        return res.status(400).json({ error: "fieldType must be 'description' or 'notes'" });
       }
 
       const tradeType = (await storage.getUser(userContext.effectiveUserId))?.tradeType || 'Trade';
@@ -8519,8 +8523,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { draftDocumentDescription } = await import('./ai');
 
-      const description = await draftDocumentDescription({
+      const text = await draftDocumentDescription({
         docType,
+        fieldType: fieldType || 'description',
         clientName,
         docTitle,
         jobTitle,
@@ -8531,7 +8536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tradeType,
       });
 
-      res.json({ description });
+      // Return both keys so callers can use whichever is appropriate
+      res.json({ description: text, notes: text });
     } catch (error: any) {
       if (isBackpressure(error)) return send429(res, error);
       console.error("Error drafting document description:", error);

@@ -111,6 +111,7 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
   const [templateSheetOpen, setTemplateSheetOpen] = useState(false);
   const [isGeneratingFromTasks, setIsGeneratingFromTasks] = useState(false);
   const [isDraftingDescription, setIsDraftingDescription] = useState(false);
+  const [isDraftingNotes, setIsDraftingNotes] = useState(false);
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [sourceQuoteId, setSourceQuoteId] = useState<string | undefined>(urlQuoteId || undefined);
   const [selectedJobId, setSelectedJobId] = useState<string | undefined>(urlJobId || undefined);
@@ -541,6 +542,47 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
       });
     } finally {
       setIsDraftingDescription(false);
+    }
+  };
+
+  const handleDraftNotes = async () => {
+    setIsDraftingNotes(true);
+    try {
+      const token = getSessionToken();
+      const currentValues = form.getValues();
+      const currentLineItems = form.getValues('lineItems') || [];
+      const res = await fetch('/api/ai/draft-description', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          docType: 'invoice',
+          fieldType: 'notes',
+          jobId: selectedJobId || urlJobId || undefined,
+          clientName: selectedClient?.name,
+          docTitle: currentValues.title,
+          lineItemDescriptions: currentLineItems.map((i: any) => i.description).filter(Boolean),
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to generate notes');
+      }
+      const data = await res.json();
+      if (data.notes) {
+        form.setValue('notes', data.notes, { shouldDirty: true });
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Could not generate notes',
+        description: error?.message || 'Check your connection and try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDraftingNotes(false);
     }
   };
 
@@ -1550,9 +1592,32 @@ export default function LiveInvoiceEditor({ invoiceId: editInvoiceId, onSave, on
             {/* Notes */}
             <Card className="rounded-2xl overflow-hidden">
               <CardContent className="p-4 space-y-4">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <FileText className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
-                  Payment Terms & Notes
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <FileText className="h-4 w-4" style={{ color: 'hsl(var(--trade))' }} />
+                    Payment Terms & Notes
+                  </div>
+                  {canUseAIFeatures && (
+                    <button
+                      type="button"
+                      onClick={handleDraftNotes}
+                      disabled={isDraftingNotes}
+                      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-lg text-primary hover:bg-primary/10 transition-colors disabled:opacity-50"
+                      data-testid="button-ai-draft-notes"
+                    >
+                      {isDraftingNotes ? (
+                        <>
+                          <span className="h-3 w-3 border border-primary border-t-transparent rounded-full animate-spin inline-block" />
+                          Drafting...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3 w-3" />
+                          Generate with AI
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
                 <Textarea
                   {...form.register("notes")}
