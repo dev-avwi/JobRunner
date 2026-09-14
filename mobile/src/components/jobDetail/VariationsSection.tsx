@@ -503,6 +503,23 @@ export function VariationsSection({
                   <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: fontWeights.semibold }}>{fmt(v.totalAmount)}</Text>
                 </View>
               </View>
+              {/* Photo proof */}
+              {v.photos && v.photos.length > 0 && (
+                <View style={{ marginBottom: spacing.md }}>
+                  <Text style={{ fontSize: 12, fontWeight: fontWeights.semibold, color: colors.mutedForeground, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Photo Proof</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                    {v.photos.map((url: string, i: number) => (
+                      <Image
+                        key={i}
+                        source={{ uri: url }}
+                        style={{ width: 120, height: 120, borderRadius: 8, backgroundColor: colors.muted }}
+                        resizeMode="cover"
+                      />
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
               {/* Dates / approver */}
               {v.createdAt && (
                 <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 4 }}>Created {fmtDate(v.createdAt)}{v.createdByName ? ` by ${v.createdByName}` : ''}</Text>

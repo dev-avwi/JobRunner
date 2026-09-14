@@ -10016,7 +10016,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         gstAmount: String(gstAmount.toFixed(2)),
         totalAmount: String(totalAmount.toFixed(2)),
         status: 'draft',
-        photos: req.body.photos || [],
+        photos: req.body.photos || (req.body.photoUrl ? [req.body.photoUrl] : []),
         createdBy: userId,
         createdByName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : undefined,
       });

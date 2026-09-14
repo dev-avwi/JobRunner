@@ -628,6 +628,20 @@ export function JobVariations({ jobId, canEdit = true }: JobVariationsProps) {
                   </div>
                 )}
 
+                {variation.photos && variation.photos.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {variation.photos.map((url, i) => (
+                      <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={url}
+                          alt={`Photo ${i + 1}`}
+                          className="h-20 w-20 object-cover rounded-md border cursor-pointer hover:opacity-90 transition-opacity"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
                   <span>
                     {format(new Date(variation.createdAt), 'dd MMM yyyy')}
