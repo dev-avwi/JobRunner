@@ -1638,19 +1638,6 @@ export default function TimeTrackingScreen() {
         </View>
       </View>
 
-      {/* Category hint row — shown when timer is idle, tapping it opens the sheet */}
-      {!isTimerRunning && (
-        <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.xs }}
-          onPress={() => { setSheetCategory('work'); setSheetJobId(null); setShowStartTimerSheet(true); }}
-          activeOpacity={0.7}
-        >
-          <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
-            Select job or category before starting
-          </Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 
