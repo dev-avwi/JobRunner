@@ -12195,6 +12195,12 @@ export default function JobDetailScreen() {
               </View>
             )}
 
+            {/* ── Daily Log — site diary moved here from Files ── */}
+            <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
+              <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Daily Log</Text>
+              <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+            </View>
+
             {/* Work Plan section header */}
             {(phases.length > 0 || isLoadingPhases) && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -12911,6 +12917,12 @@ export default function JobDetailScreen() {
               );
             })()}
 
+            {/* ── Daily Log — site diary for service calls ── */}
+            <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
+              <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Daily Log</Text>
+              <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+            </View>
+
             <UnifiedWorkSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
@@ -12967,8 +12979,7 @@ export default function JobDetailScreen() {
               />
             )}
 
-            {/* Site Diary — all roles can view and add entries */}
-            <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+
           </>
         )}
 
