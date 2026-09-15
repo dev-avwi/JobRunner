@@ -11495,6 +11495,49 @@ export default function JobDetailScreen() {
       />
     );
   
+
+  const renderReceiptsSection = () => {
+    const matPhotos: { id: string; url: string; label: string; source: 'material' }[] = (jobMaterials || [])
+      .filter((m: any) => m.photoUrl && (m.photoUrl.startsWith('http') || m.photoUrl.startsWith('/objects/')))
+      .map((m: any) => ({ id: m.id, url: m.photoUrl, label: m.name || 'Material', source: 'material' as const }));
+    const expensePhotos: { id: string; url: string; label: string; source: 'expense' }[] = (jobExpenses || [])
+      .filter((e: any) => e.receiptUrl && (e.receiptUrl.startsWith('http') || e.receiptUrl.startsWith('/objects/')))
+      .map((e: any) => ({ id: e.id, url: e.receiptUrl, label: e.description || `$${e.amount}`, source: 'expense' as const }));
+    if (matPhotos.length === 0 && expensePhotos.length === 0) return null;
+    const all = [...matPhotos, ...expensePhotos];
+    return (
+      <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
+          <Feather name="paperclip" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, flex: 1 }}>Receipts & Evidence</Text>
+          <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{all.length} item{all.length !== 1 ? 's' : ''}</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+          {all.map((item) => (
+            <TouchableOpacity
+              key={`${item.source}-${item.id}`}
+              onPress={() => Linking.openURL(item.url).catch(() => {})}
+              style={{ alignItems: 'center', gap: spacing.xs }}
+              activeOpacity={0.8}
+            >
+              <Image
+                source={{ uri: item.url }}
+                style={{ width: 78, height: 78, borderRadius: radius.md, backgroundColor: colors.muted }}
+                resizeMode="cover"
+              />
+              <View style={{ backgroundColor: item.source === 'material' ? `${colors.primary}18` : `${colors.success}18`, paddingHorizontal: 5, paddingVertical: 2, borderRadius: radius.sm }}>
+                <Text style={{ fontSize: 9, fontWeight: fontWeights.semibold, color: item.source === 'material' ? colors.primary : colors.success }}>
+                  {item.source === 'material' ? 'Material' : 'Expense'}
+                </Text>
+              </View>
+              <Text numberOfLines={1} style={{ fontSize: 10, color: colors.mutedForeground, maxWidth: 78 }}>{item.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
   const renderNotesTab = () => (
     <>
       {/* Notes Section */}
@@ -13045,17 +13088,31 @@ export default function JobDetailScreen() {
           </>
         ))}
 
-        {/* ── Files: linked docs, SWMS/safety, photos, voice notes ── */}
+        {/* ── Files: notes, media, docs, safety, forms ── */}
         {activeTab === 'files' && (
           <>
+            {/* 1. Job Notes — team reference notepad, first for quick access */}
+            <JobNotesSection
+              jobId={job.id}
+              colors={colors}
+              styles={styles}
+              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+              currentUserId={user?.id}
+            />
+
+            {/* 2. Photos + voice notes, then any field-record receipts */}
+            {renderPhotosTab()}
+            {renderReceiptsSection()}
+
+            {/* 3. Formal documents, doc register, signatures */}
             {renderDocumentsTab()}
+
+            {/* 4. Safety — SWMS */}
             <View style={styles.photosCard}>
               {renderSafetyTab()}
             </View>
-            {/* Non-safety job forms (inductions stay on Overview; everything else lives here).
-                wrapperStyle is applied inside JobForms so the card is always present while
-                loading (spinner), then removed if no matching forms exist — no layout shift
-                on first entry or when the user returns to this tab. */}
+
+            {/* 5. Job forms (non-safety) */}
             <JobForms
               jobId={job.id}
               filter="other"
@@ -13065,18 +13122,8 @@ export default function JobDetailScreen() {
                 setHasOtherForms(forms.some((f: any) => !f.isJobCard && !['safety', 'inspection', 'compliance'].includes(String(f.formType || '').toLowerCase())))
               }
             />
-            {renderPhotosTab()}
 
-            {/* Shared Job Notes — persistent team notepad */}
-            <JobNotesSection
-              jobId={job.id}
-              colors={colors}
-              styles={styles}
-              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-              currentUserId={user?.id}
-            />
-
-            {/* My Submitted Expenses — visible to workers (non-owners) only */}
+            {/* 6. My Submitted Expenses — workers only */}
             {!(isOwnerOrManager || isSoloOwner) && (isLoadingExpenses || jobExpenses.length > 0) && (
               <ExpensesSection
                 colors={colors}
@@ -13087,8 +13134,6 @@ export default function JobDetailScreen() {
                 onRefresh={loadJobExpenses}
               />
             )}
-
-
           </>
         )}
 
@@ -13326,7 +13371,6 @@ export default function JobDetailScreen() {
                 jobExpenses={jobExpenses}
               />
             )}
-            {renderNotesTab()}
             {renderManageTab()}
           </>
         )}
