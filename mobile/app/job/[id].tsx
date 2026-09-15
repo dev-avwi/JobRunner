@@ -3191,6 +3191,41 @@ export default function JobDetailScreen() {
     }
   }, [id]);
 
+  const handleDeletePhaseTask = useCallback(() => {
+    if (!editingPhaseTask || !id) return;
+    const { item, phaseId } = editingPhaseTask;
+    confirm({
+      title: 'Delete Task',
+      message: `Delete "${item.text}"? This cannot be undone.`,
+      confirmText: 'Delete',
+      destructive: true,
+    }).then(async (ok) => {
+      if (!ok) return;
+      try {
+        const res = await api.delete(`/api/jobs/${id}/checklist/${item.id}`);
+        if (res.error) {
+          showToast({ type: 'error', message: 'Error', description: res.error || 'Failed to delete task' });
+          return;
+        }
+        setPhaseTasksData(prev => ({
+          ...prev,
+          [phaseId]: (prev[phaseId] ?? []).filter(t => t.id !== item.id),
+        }));
+        setPhaseTaskCounts(prev => {
+          const current = prev[phaseId] ?? { completed: 0, total: 0 };
+          const wasCompleted = item.isCompleted ? 1 : 0;
+          return {
+            ...prev,
+            [phaseId]: { completed: current.completed - wasCompleted, total: Math.max(0, current.total - 1) },
+          };
+        });
+        setEditingPhaseTask(null);
+      } catch (e) {
+        showToast({ type: 'error', message: 'Error', description: 'Failed to delete task' });
+      }
+    });
+  }, [editingPhaseTask, id, confirm]);
+
   const handleUpdatePhaseTask = useCallback(async () => {
     if (!editingPhaseTask || !id) return;
     const { item, phaseId } = editingPhaseTask;
@@ -13614,11 +13649,14 @@ export default function JobDetailScreen() {
         onDismiss={() => setEditingPhaseTask(null)}
         title="Edit Task"
         showCloseButton
-        snapPoints={['45%']}
+        snapPoints={['50%']}
         footer={(
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => setEditingPhaseTask(null)} style={{ flex: 1 }} />
-            <SheetButton onPress={handleUpdatePhaseTask} loading={isSavingPhaseTaskEdit} disabled={isSavingPhaseTaskEdit || !editPhaseTaskForm.text.trim()} label="Save" style={{ flex: 1 }} />
+          <View style={{ gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <SheetButton variant="outline" label="Cancel" onPress={() => setEditingPhaseTask(null)} style={{ flex: 1 }} />
+              <SheetButton onPress={handleUpdatePhaseTask} loading={isSavingPhaseTaskEdit} disabled={isSavingPhaseTaskEdit || !editPhaseTaskForm.text.trim()} label="Save" style={{ flex: 1 }} />
+            </View>
+            <SheetButton variant="destructive" label="Delete Task" onPress={handleDeletePhaseTask} disabled={isSavingPhaseTaskEdit} />
           </View>
         )}>
         <View>

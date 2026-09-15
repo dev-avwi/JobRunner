@@ -9,7 +9,7 @@ interface SheetButtonProps {
   onPress?: () => void;
   loading?: boolean;
   disabled?: boolean;
-  variant?: 'primary' | 'outline';
+  variant?: 'primary' | 'outline' | 'destructive';
   icon?: ReactNode;
   trailingIcon?: ReactNode;
   fullWidth?: boolean;
@@ -34,8 +34,9 @@ export function SheetButton({
 }: SheetButtonProps) {
   const { colors } = useTheme();
   const isOutline = variant === 'outline';
+  const isDestructive = variant === 'destructive';
   const isDisabled = disabled || loading;
-  const textColor = isOutline ? colors.foreground : colors.primaryForeground;
+  const textColor = isOutline ? colors.foreground : isDestructive ? colors.destructiveForeground : colors.primaryForeground;
 
   return (
     <TouchableOpacity
@@ -48,7 +49,7 @@ export function SheetButton({
           alignItems: 'center',
           justifyContent: 'center',
           gap: spacing.sm,
-          backgroundColor: isOutline ? 'transparent' : colors.primary,
+          backgroundColor: isOutline ? 'transparent' : isDestructive ? colors.destructive : colors.primary,
           borderWidth: isOutline ? 1 : 0,
           borderColor: isOutline ? colors.buttonOutline : 'transparent',
           paddingVertical: spacing.md,

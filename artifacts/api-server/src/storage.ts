@@ -625,7 +625,7 @@ export interface IStorage {
   getChecklistItems(jobId: string, userId: string): Promise<ChecklistItem[]>;
   createChecklistItem(item: InsertChecklistItem, userId: string): Promise<ChecklistItem>;
   updateChecklistItem(id: string, userId: string, item: Partial<Omit<InsertChecklistItem, 'jobId'>>): Promise<ChecklistItem | undefined>;
-  deleteChecklistItem(id: string, userId: string): Promise<boolean>;
+  deleteChecklistItem(id: string, userId: string, jobId?: string): Promise<boolean>;
   cloneChecklistItems(sourceJobId: string, targetJobId: string, userId: string): Promise<ChecklistItem[]>;
 
   // Job Check-ins (Location Tracking)
@@ -3473,7 +3473,7 @@ export class PostgresStorage implements IStorage {
     return result[0];
   }
 
-  async deleteChecklistItem(id: string, userId: string): Promise<boolean> {
+  async deleteChecklistItem(id: string, userId: string, jobId?: string): Promise<boolean> {
     // First get the checklist item to find its job
     const existingItem = await db
       .select()
@@ -3482,6 +3482,9 @@ export class PostgresStorage implements IStorage {
       .limit(1);
     
     if (!existingItem[0]) return false;
+
+    // If a jobId was supplied, verify the item actually belongs to that job.
+    if (jobId && existingItem[0].jobId !== jobId) return false;
     
     // Verify the job belongs to the user
     const job = await this.getJob(existingItem[0].jobId, userId);

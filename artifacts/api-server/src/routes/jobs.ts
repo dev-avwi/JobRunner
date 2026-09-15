@@ -7490,6 +7490,19 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
+  app.delete("/api/jobs/:jobId/checklist/:itemId", requireAuth, async (req: any, res) => {
+    try {
+      const userContext = await getUserContext(req.userId);
+      const { jobId, itemId } = req.params;
+      const deleted = await storage.deleteChecklistItem(itemId, userContext.effectiveUserId, jobId);
+      if (!deleted) return res.status(404).json({ error: "Checklist item not found" });
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error("Error deleting checklist item:", error);
+      res.status(500).json({ error: error.message || "Failed to delete checklist item" });
+    }
+  });
+
   app.post("/api/jobs/:id/generate-quote", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_QUOTES), async (req: any, res) => {
     try {
       const userContext = await getUserContext(req.userId);
