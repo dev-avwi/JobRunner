@@ -1093,16 +1093,21 @@ function useMarkdownEditor(initial = '') {
     setTimeout(() => ref.current?.focus(), 0);
   };
 
+  const applyAndPreview = (fn: (v: string, sel: { start: number; end: number }) => string) => {
+    apply(fn);
+    setPreview(true);
+  };
+
   const toolbar = (
     <div className="flex items-center justify-between border border-border rounded-t-md bg-muted/50 px-1.5 py-1">
       <div className="flex items-center gap-0.5">
         {!preview && (
           <>
-            <MdBtn icon={Heading2} title="Heading 2" onClick={() => apply((v, s) => applyLinePrefix(v, s, '## '))} />
-            <MdBtn icon={Heading3} title="Heading 3" onClick={() => apply((v, s) => applyLinePrefix(v, s, '### '))} />
+            <MdBtn icon={Heading2} title="Heading (large)" onClick={() => applyAndPreview((v, s) => applyLinePrefix(v, s, '## '))} />
+            <MdBtn icon={Heading3} title="Heading (small)" onClick={() => applyAndPreview((v, s) => applyLinePrefix(v, s, '### '))} />
             <span className="w-px h-4 bg-border mx-0.5" />
-            <MdBtn icon={List} title="Bullet list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '- '))} />
-            <MdBtn icon={ListOrdered} title="Numbered list" onClick={() => apply((v, s) => applyLinePrefix(v, s, '1. '))} />
+            <MdBtn icon={List} title="Bullet list" onClick={() => applyAndPreview((v, s) => applyLinePrefix(v, s, '- '))} />
+            <MdBtn icon={ListOrdered} title="Numbered list" onClick={() => applyAndPreview((v, s) => applyLinePrefix(v, s, '1. '))} />
             <span className="w-px h-4 bg-border mx-0.5" />
             <MdBtn icon={Bold} title="Bold" onClick={() => apply((v, s) => applyInline(v, s, '**'))} />
             <MdBtn icon={Italic} title="Italic" onClick={() => apply((v, s) => applyInline(v, s, '*'))} />
@@ -1338,7 +1343,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
                 value={createDesc.value}
                 onChange={(e) => createDesc.setValue(e.target.value)}
                 placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
-                className="min-h-[140px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+                className="min-h-[140px] rounded-t-none border-t-0 text-sm resize-none"
                 data-testid="textarea-create-task-desc"
               />
             )}
@@ -1385,7 +1390,7 @@ export function JobTasksSection({ jobId }: { jobId: string }) {
               value={editDesc.value}
               onChange={(e) => editDesc.setValue(e.target.value)}
               placeholder={"## Heading\n- Bullet item\n1. Numbered step\n\nOr write plain instructions..."}
-              className="min-h-[180px] rounded-t-none border-t-0 font-mono text-xs resize-none"
+              className="min-h-[180px] rounded-t-none border-t-0 text-sm resize-none"
               data-testid="textarea-edit-task-desc"
             />
           )}

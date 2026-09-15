@@ -12164,31 +12164,34 @@ export default function JobDetailScreen() {
           <>
             {/* Quick Field Actions — 3-column action grid */}
             {job.status !== 'invoiced' && (
-              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
-                <TouchableOpacity
-                  onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="alert-circle" size={18} color={colors.warning} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Extra Work</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="package" size={18} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Material</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="camera" size={18} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Expense</Text>
-                </TouchableOpacity>
+              <View style={{ marginBottom: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Field Actions</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <TouchableOpacity
+                    onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="alert-circle" size={18} color={colors.warning} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Extra Work</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="package" size={18} color={colors.primary} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Material</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="camera" size={18} color={colors.success} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
@@ -12761,23 +12764,26 @@ export default function JobDetailScreen() {
           <>
             {/* Quick Field Actions — action grid */}
             {job.status !== 'invoiced' && (
-              <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.md }}>
-                <TouchableOpacity
-                  onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="package" size={18} color={colors.primary} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Material</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                  style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: spacing.md, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Feather name="camera" size={18} color={colors.success} />
-                  <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center' }}>Expense</Text>
-                </TouchableOpacity>
+              <View style={{ marginBottom: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Field Actions</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <TouchableOpacity
+                    onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="package" size={18} color={colors.primary} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Material</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="camera" size={18} color={colors.success} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
 
