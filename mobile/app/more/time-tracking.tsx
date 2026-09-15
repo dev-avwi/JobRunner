@@ -2441,7 +2441,20 @@ export default function TimeTrackingScreen() {
               <>
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Duration</Text>
-                  {/* Stepper */}
+                  {/* Native iOS countdown picker / Android stepper fallback */}
+                  {Platform.OS === 'ios' ? (
+                    <DateTimePicker
+                      mode="countdown"
+                      display="spinner"
+                      value={(() => { const d = new Date(); d.setHours(entryHours, entryMinutes, 0, 0); return d; })()}
+                      onChange={(_, date) => {
+                        if (!date) return;
+                        setEntryHours(date.getHours());
+                        setEntryMinutes(date.getMinutes());
+                      }}
+                      style={{ width: '100%', height: 160 }}
+                    />
+                  ) : (
                   <View style={{
                     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
                     gap: spacing.lg, backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.lg,
@@ -2513,6 +2526,7 @@ export default function TimeTrackingScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
+                  )}
 
                   {/* Quick-set chips */}
                   <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' }}>
@@ -2819,7 +2833,10 @@ export default function TimeTrackingScreen() {
                             <Feather name="briefcase" size={14} color={colors.mutedForeground} />
                             <View style={{ flex: 1 }}>
                               <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: colors.foreground }} numberOfLines={1}>{job.title}</Text>
-                              <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground, textTransform: 'capitalize' }}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: job.status === 'in_progress' ? colors.success : job.status === 'scheduled' ? colors.primary : colors.mutedForeground }} />
+                                <Text style={{ fontSize: typography.sizes.xs, color: job.status === 'in_progress' ? colors.success : job.status === 'scheduled' ? colors.primary : colors.mutedForeground, textTransform: 'capitalize' }}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                              </View>
                             </View>
                             <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
                           </TouchableOpacity>
