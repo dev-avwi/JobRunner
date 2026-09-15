@@ -2505,6 +2505,7 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
   },
   jobCard: {
     flex: 1,
+    minHeight: 185,
     backgroundColor: colors.card,
     borderRadius: radius.xl,
     borderWidth: 1,
@@ -2515,7 +2516,9 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     display: 'none',
   },
   jobCardContent: {
+    flex: 1,
     padding: spacing.md,
+    justifyContent: 'space-between',
   },
   jobCardStatusRow: {
     flexDirection: 'row',
