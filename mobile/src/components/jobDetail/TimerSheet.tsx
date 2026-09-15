@@ -19,6 +19,7 @@ import {
   Platform,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { AppBottomSheet, AppBottomSheetRef } from '../ui/AppBottomSheet';
 import { spacing, radius, typography, fontWeights, iconSizes } from '../../lib/design-tokens';
 import { ThemeColors } from '../../lib/theme';
@@ -86,7 +87,9 @@ export function TimerSheet({
   // Manual-entry state
   const [hours, setHours] = useState(1);
   const [minutes, setMinutes] = useState(0);
-  const [dateOffset, setDateOffset] = useState(0); // 0 = today
+  const [dateOffset, setDateOffset] = useState(0); // 0 = today, -1 = custom
+  const [customDate, setCustomDate] = useState<Date>(new Date());
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [note, setNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -98,6 +101,8 @@ export function TimerSheet({
       setHours(1);
       setMinutes(0);
       setDateOffset(0);
+      setCustomDate(new Date());
+      setShowCustomDatePicker(false);
       setNote('');
       setIsSaving(false);
     }
@@ -125,9 +130,10 @@ export function TimerSheet({
     }
     setIsSaving(true);
     try {
-      // Compute end time (end of the working window = now, shifted back by dateOffset days)
-      const endTime = new Date();
-      endTime.setDate(endTime.getDate() - dateOffset);
+      // Compute end time (end of the working window = now, shifted back by dateOffset days,
+      // or the custom date picked by the user when dateOffset === -1).
+      const endTime = dateOffset === -1 ? new Date(customDate) : new Date();
+      if (dateOffset !== -1) endTime.setDate(endTime.getDate() - dateOffset);
       // Start time = end time minus duration
       const startTime = new Date(endTime.getTime() - totalMinutes * 60 * 1000);
 
@@ -373,13 +379,13 @@ export function TimerSheet({
             <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: spacing.sm }}>
               Date
             </Text>
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
               {DATE_OFFSETS.map((d) => {
                 const active = dateOffset === d.days;
                 return (
                   <TouchableOpacity
                     key={d.days}
-                    onPress={() => setDateOffset(d.days)}
+                    onPress={() => { setDateOffset(d.days); setShowCustomDatePicker(false); }}
                     style={{
                       flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                       backgroundColor: active ? colors.primary : colors.card,
@@ -393,7 +399,35 @@ export function TimerSheet({
                   </TouchableOpacity>
                 );
               })}
+              {/* Custom date chip */}
+              <TouchableOpacity
+                onPress={() => { setDateOffset(-1); setShowCustomDatePicker(true); }}
+                style={{
+                  flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
+                  backgroundColor: dateOffset === -1 ? colors.primary : colors.card,
+                  borderWidth: 1, borderColor: dateOffset === -1 ? colors.primary : colors.cardBorder,
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: dateOffset === -1 ? colors.primaryForeground : colors.foreground }}>
+                  {dateOffset === -1
+                    ? customDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                    : 'Pick date'}
+                </Text>
+              </TouchableOpacity>
             </View>
+            {showCustomDatePicker && (
+              <DateTimePicker
+                value={customDate}
+                mode="date"
+                maximumDate={new Date()}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, date) => {
+                  setShowCustomDatePicker(Platform.OS === 'ios');
+                  if (date) setCustomDate(date);
+                }}
+              />
+            )}
           </View>
         )}
 

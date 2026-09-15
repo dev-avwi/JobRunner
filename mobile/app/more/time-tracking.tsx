@@ -896,7 +896,9 @@ export default function TimeTrackingScreen() {
   // Chip-based duration state for the Add Entry flow
   const [entryHours, setEntryHours] = useState(1);
   const [entryMinutes, setEntryMinutes] = useState(0);
-  const [entryDateOffset, setEntryDateOffset] = useState(0); // 0 = today
+  const [entryDateOffset, setEntryDateOffset] = useState(0); // 0 = today, -1 = custom
+  const [entryCustomDate, setEntryCustomDate] = useState<Date>(new Date());
+  const [showEntryCustomDatePicker, setShowEntryCustomDatePicker] = useState(false);
 
   const userDefaultRate = user?.defaultHourlyRate != null ? Number(user.defaultHourlyRate) : 100;
 
@@ -1285,6 +1287,8 @@ export default function TimeTrackingScreen() {
     setEntryHours(1);
     setEntryMinutes(0);
     setEntryDateOffset(0);
+    setEntryCustomDate(new Date());
+    setShowEntryCustomDatePicker(false);
     setShowAddEntryModal(true);
   };
 
@@ -1299,9 +1303,9 @@ export default function TimeTrackingScreen() {
       Alert.alert('Set Duration', 'Please set a duration greater than 0 minutes.');
       return;
     }
-    // Compute start/end from duration chips + date offset
-    const endTime = new Date();
-    endTime.setDate(endTime.getDate() - entryDateOffset);
+    // Compute start/end from duration chips + date offset (or custom date when offset === -1)
+    const endTime = entryDateOffset === -1 ? new Date(entryCustomDate) : new Date();
+    if (entryDateOffset !== -1) endTime.setDate(endTime.getDate() - entryDateOffset);
     const startTime = new Date(endTime.getTime() - totalMinutes * 60 * 1000);
     const distanceKmVal = entryCategory === 'travel' && entryDistanceKm.trim() ? parseFloat(entryDistanceKm) : null;
     setIsAddingEntry(true);
@@ -2580,13 +2584,13 @@ export default function TimeTrackingScreen() {
 
                 <View style={styles.formGroup}>
                   <Text style={styles.formLabel}>Date</Text>
-                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
                     {ENTRY_DATE_OFFSETS.map(d => {
                       const active = entryDateOffset === d.days;
                       return (
                         <TouchableOpacity
                           key={d.days}
-                          onPress={() => setEntryDateOffset(d.days)}
+                          onPress={() => { setEntryDateOffset(d.days); setShowEntryCustomDatePicker(false); }}
                           style={{
                             flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                             backgroundColor: active ? colors.primary : colors.card,
@@ -2600,7 +2604,35 @@ export default function TimeTrackingScreen() {
                         </TouchableOpacity>
                       );
                     })}
+                    {/* Custom date chip */}
+                    <TouchableOpacity
+                      onPress={() => { setEntryDateOffset(-1); setShowEntryCustomDatePicker(true); }}
+                      style={{
+                        flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
+                        backgroundColor: entryDateOffset === -1 ? colors.primary : colors.card,
+                        borderWidth: 1, borderColor: entryDateOffset === -1 ? colors.primary : colors.cardBorder,
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: entryDateOffset === -1 ? colors.primaryForeground : colors.foreground }}>
+                        {entryDateOffset === -1
+                          ? entryCustomDate.toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })
+                          : 'Pick date'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
+                  {showEntryCustomDatePicker && (
+                    <DateTimePicker
+                      value={entryCustomDate}
+                      mode="date"
+                      maximumDate={new Date()}
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, date) => {
+                        setShowEntryCustomDatePicker(Platform.OS === 'ios');
+                        if (date) setEntryCustomDate(date);
+                      }}
+                    />
+                  )}
                 </View>
               </>
             )}
