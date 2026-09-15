@@ -1089,16 +1089,16 @@ export default function TimeTrackingScreen() {
     setShowStartTimerSheet(false);
     try {
       const jobData = sheetJobId ? jobs.find(j => j.id === sheetJobId) : null;
-      const catMeta = getCategoryMeta(sheetJobId ? 'work' : sheetCategory);
-      const description = sheetJobId
-        ? (jobData ? `Working on: ${jobData.title}` : 'Working on job')
+      const catMeta = getCategoryMeta(sheetCategory);
+      const description = sheetJobId && jobData
+        ? `${catMeta.label}: ${jobData.title}`
         : catMeta.label;
       const success = await startTimer(
         sheetJobId || null,
         description,
         false,
         undefined,
-        sheetJobId ? 'work' : sheetCategory,
+        sheetCategory,
       );
       if (!success) {
         Alert.alert('Error', 'Failed to start timer. Please try again.');
@@ -2877,11 +2877,11 @@ export default function TimeTrackingScreen() {
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
             {TIME_CATEGORIES.map(cat => {
               const chipColor = CATEGORY_COLORS[cat.value] || '#6B7280';
-              const isSelected = sheetCategory === cat.value && !sheetJobId;
+              const isSelected = sheetCategory === cat.value;
               return (
                 <TouchableOpacity
                   key={cat.value}
-                  onPress={() => { setSheetCategory(cat.value as TimeCategory); setSheetJobId(null); }}
+                  onPress={() => setSheetCategory(cat.value as TimeCategory)}
                   activeOpacity={0.7}
                   style={{
                     width: '47%',
@@ -2908,48 +2908,74 @@ export default function TimeTrackingScreen() {
             })}
           </View>
 
-          {/* Job list */}
-          {inProgressJobs.length > 0 && (
-            <>
-              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: spacing.sm }}>OR SELECT A JOB</Text>
-              {inProgressJobs.slice(0, 8).map(job => {
-                const isSelected = sheetJobId === job.id;
-                return (
-                  <TouchableOpacity
-                    key={job.id}
-                    style={[
-                      {
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: spacing.md,
-                        paddingVertical: spacing.md,
-                        paddingHorizontal: spacing.md,
-                        borderRadius: radius.lg,
-                        borderWidth: 1.5,
-                        borderColor: isSelected ? colors.primary : colors.border,
-                        backgroundColor: isSelected ? colors.primary + '10' : colors.card,
-                        marginBottom: spacing.sm,
-                      }
-                    ]}
-                    onPress={() => { setSheetJobId(job.id); }}
-                    activeOpacity={0.7}
-                  >
-                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? colors.primary + '20' : colors.muted, alignItems: 'center', justifyContent: 'center' }}>
-                      <Feather name="briefcase" size={16} color={isSelected ? colors.primary : colors.mutedForeground} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: isSelected ? colors.primary : colors.foreground }} numberOfLines={1}>{job.title}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: job.status === 'in_progress' ? colors.success : colors.primary }} />
-                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{(job.status || '').replace(/_/g, ' ')}</Text>
-                      </View>
-                    </View>
-                    {isSelected && <Feather name="check-circle" size={16} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              })}
-            </>
-          )}
+          {/* Job picker — "for which job?" */}
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: spacing.sm }}>FOR WHICH JOB?</Text>
+
+          {/* No specific job option */}
+          {(() => {
+            const isNone = sheetJobId === null;
+            return (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.md,
+                  borderRadius: radius.lg,
+                  borderWidth: 1.5,
+                  borderColor: isNone ? colors.border : colors.border,
+                  backgroundColor: isNone ? colors.muted : colors.card,
+                  marginBottom: spacing.sm,
+                }}
+                onPress={() => setSheetJobId(null)}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isNone ? colors.foreground + '15' : colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="slash" size={16} color={isNone ? colors.foreground : colors.mutedForeground} />
+                </View>
+                <Text style={{ fontSize: typography.sizes.sm, fontWeight: isNone ? fontWeights.semibold : fontWeights.regular, color: isNone ? colors.foreground : colors.mutedForeground, flex: 1 }}>
+                  No specific job
+                </Text>
+                {isNone && <Feather name="check-circle" size={16} color={colors.foreground} />}
+              </TouchableOpacity>
+            );
+          })()}
+
+          {inProgressJobs.slice(0, 8).map(job => {
+            const isSelected = sheetJobId === job.id;
+            return (
+              <TouchableOpacity
+                key={job.id}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.md,
+                  paddingVertical: spacing.md,
+                  paddingHorizontal: spacing.md,
+                  borderRadius: radius.lg,
+                  borderWidth: 1.5,
+                  borderColor: isSelected ? colors.primary : colors.border,
+                  backgroundColor: isSelected ? colors.primary + '10' : colors.card,
+                  marginBottom: spacing.sm,
+                }}
+                onPress={() => setSheetJobId(job.id)}
+                activeOpacity={0.7}
+              >
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? colors.primary + '20' : colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                  <Feather name="briefcase" size={16} color={isSelected ? colors.primary : colors.mutedForeground} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: isSelected ? colors.primary : colors.foreground }} numberOfLines={1}>{job.title}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: job.status === 'in_progress' ? colors.success : colors.primary }} />
+                    <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                  </View>
+                </View>
+                {isSelected && <Feather name="check-circle" size={16} color={colors.primary} />}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </AppBottomSheet>
 
