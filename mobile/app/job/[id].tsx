@@ -189,6 +189,7 @@ interface JobMaterial {
   category?: string;
   status?: string;
   phaseId?: string | null;
+  createdAt?: string;
 }
 
 const MATERIAL_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -4604,7 +4605,7 @@ export default function JobDetailScreen() {
       const body: Record<string, any> = {
         description: expenseForm.description.trim(),
         amount: String(parsedAmount),
-        expenseDate: new Date().toISOString().split('T')[0],
+        expenseDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })(),
         isBillable: true,
         // Use a generic fallback category id — the server will use the first available if missing
         categoryId: '_worker_receipt_',
@@ -4616,6 +4617,7 @@ export default function JobDetailScreen() {
       const res = await api.post(`/api/jobs/${id}/expenses`, body);
       if (res.error) throw new Error(res.error);
 
+      await loadJobExpenses();
       setShowLogExpenseModal(false);
       setExpenseForm({ amount: '', description: '', phaseId: '', materialId: '' });
       setExpenseReceiptUri(null);
@@ -12205,6 +12207,37 @@ export default function JobDetailScreen() {
                     <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
                   </TouchableOpacity>
                 </View>
+                {(() => {
+                  const localDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const todayStr = localDateStr(new Date());
+                  const todayMaterials = materials.filter(m => m.createdAt ? localDateStr(new Date(m.createdAt)) === todayStr : false);
+                  const todayExpenses = jobExpenses.filter(e => e.expenseDate ? e.expenseDate.slice(0, 10) === todayStr : false);
+                  if (todayMaterials.length === 0 && todayExpenses.length === 0) return null;
+                  return (
+                    <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                      <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.xs }}>Logged Today</Text>
+                      {todayMaterials.map(m => (
+                        <View key={`m-${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="package" size={12} color={colors.primary} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{m.name}</Text>
+                          {m.totalCost != null && m.totalCost > 0 ? <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(m.totalCost)}</Text> : null}
+                          {m.createdAt ? <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, minWidth: 42, textAlign: 'right' }}>{formatTime(m.createdAt)}</Text> : null}
+                        </View>
+                      ))}
+                      {todayExpenses.map(e => (
+                        <View key={`e-${e.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="credit-card" size={12} color={colors.success} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{e.description || e.categoryName || 'Expense'}</Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(parseFloat(e.amount) || 0)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
               </View>
             )}
 
@@ -12812,6 +12845,37 @@ export default function JobDetailScreen() {
                     <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
                   </TouchableOpacity>
                 </View>
+                {(() => {
+                  const localDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const todayStr = localDateStr(new Date());
+                  const todayMaterials = materials.filter(m => m.createdAt ? localDateStr(new Date(m.createdAt)) === todayStr : false);
+                  const todayExpenses = jobExpenses.filter(e => e.expenseDate ? e.expenseDate.slice(0, 10) === todayStr : false);
+                  if (todayMaterials.length === 0 && todayExpenses.length === 0) return null;
+                  return (
+                    <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                      <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.xs }}>Logged Today</Text>
+                      {todayMaterials.map(m => (
+                        <View key={`m-${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="package" size={12} color={colors.primary} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{m.name}</Text>
+                          {m.totalCost != null && m.totalCost > 0 ? <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(m.totalCost)}</Text> : null}
+                          {m.createdAt ? <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, minWidth: 42, textAlign: 'right' }}>{formatTime(m.createdAt)}</Text> : null}
+                        </View>
+                      ))}
+                      {todayExpenses.map(e => (
+                        <View key={`e-${e.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="credit-card" size={12} color={colors.success} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{e.description || e.categoryName || 'Expense'}</Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(parseFloat(e.amount) || 0)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
               </View>
             )}
 
