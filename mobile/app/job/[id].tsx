@@ -7075,6 +7075,19 @@ export default function JobDetailScreen() {
     });
   };
 
+  // Stops the timer silently (no confirm dialog) for the "Stop & Save" Daily Log flow.
+  // Returns true on success so the caller can immediately open the diary form.
+  const handleStopTimerForDiary = async (): Promise<boolean> => {
+    const success = await stopTimer();
+    if (success) {
+      loadTimeEntries();
+      loadTeamTimers();
+    } else {
+      showToast({ type: 'error', message: 'Error', description: 'Failed to stop timer. Please try again.' });
+    }
+    return success;
+  };
+
   const handleCompleteMyPart = async () => {
     if (!job) return;
     setIsCompletingJob(true);
@@ -12197,8 +12210,17 @@ export default function JobDetailScreen() {
 
             {/* ── Daily Log — site diary moved here from Files ── */}
             <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
-              <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Daily Log</Text>
-              <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+              <SiteDiarySection
+                jobId={job.id}
+                colors={colors}
+                styles={styles}
+                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                currentUserId={user?.id}
+                isTimerRunning={isTimerForThisJob}
+                timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                onStartTimer={handleStartTimer}
+                onStopTimerForDiary={handleStopTimerForDiary}
+              />
             </View>
 
             {/* Work Plan section header */}
@@ -12919,8 +12941,17 @@ export default function JobDetailScreen() {
 
             {/* ── Daily Log — site diary for service calls ── */}
             <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
-              <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Daily Log</Text>
-              <SiteDiarySection jobId={job.id} colors={colors} styles={styles} isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)} currentUserId={user?.id} />
+              <SiteDiarySection
+                jobId={job.id}
+                colors={colors}
+                styles={styles}
+                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                currentUserId={user?.id}
+                isTimerRunning={isTimerForThisJob}
+                timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                onStartTimer={handleStartTimer}
+                onStopTimerForDiary={handleStopTimerForDiary}
+              />
             </View>
 
             <UnifiedWorkSection

@@ -71,6 +71,18 @@ interface SiteDiarySectionProps {
   isOwnerOrManager: boolean;
   /** The authenticated user's own ID — used to gate edit/delete to the entry author. */
   currentUserId?: string;
+  /** True when a timer is actively running for this job. */
+  isTimerRunning?: boolean;
+  /** Formatted elapsed time string, e.g. "2h 14m". Shown in the header when timer is running. */
+  timerDisplayText?: string;
+  /** Called when the user taps "Start Timer" in the Daily Log header. */
+  onStartTimer?: () => void;
+  /**
+   * Called when the user taps "Stop & Save". Should stop the timer and return
+   * whether it succeeded. The section will then auto-open the diary form
+   * pre-filled with the session duration.
+   */
+  onStopTimerForDiary?: () => Promise<boolean>;
 }
 
 interface FormState {
@@ -115,6 +127,10 @@ export function SiteDiarySection({
   styles: parentStyles,
   isOwnerOrManager,
   currentUserId,
+  isTimerRunning,
+  timerDisplayText,
+  onStartTimer,
+  onStopTimerForDiary,
 }: SiteDiarySectionProps) {
   const [entries, setEntries] = useState<SiteDiaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -196,6 +212,19 @@ export function SiteDiarySection({
     setForm({ ...EMPTY_FORM, entryDate: todayISO() });
     setNewPhotos([]);
     setShowForm(true);
+  }
+
+  async function handleStopAndSave() {
+    if (!onStopTimerForDiary) return;
+    const success = await onStopTimerForDiary();
+    if (success) {
+      handleSectionOpen();
+      setEditingEntry(null);
+      const prefill = timerDisplayText ? `Worked ${timerDisplayText}` : '';
+      setForm({ ...EMPTY_FORM, entryDate: todayISO(), workDone: prefill });
+      setNewPhotos([]);
+      setShowForm(true);
+    }
   }
 
   function openEdit(entry: SiteDiaryEntry) {
@@ -322,17 +351,51 @@ export function SiteDiarySection({
           <View style={[s.iconWrap, { backgroundColor: `${colors.primary}15` }]}>
             <Feather name="book-open" size={iconSizes.lg} color={colors.primary} />
           </View>
-          <Text style={s.headerTitle}>Site Diary</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 }}>
+            <Text style={s.headerTitle}>Daily Log</Text>
+            {isTimerRunning && timerDisplayText ? (
+              <Text style={{ fontSize: typography.caption.fontSize, color: colors.success, fontWeight: fontWeights.semibold, fontVariant: ['tabular-nums'] }}>
+                {'\u00b7'} {timerDisplayText} running
+              </Text>
+            ) : null}
+          </View>
           {entries.length > 0 && (
             <View style={s.countBadge}>
               <Text style={s.countText}>{entries.length}</Text>
             </View>
           )}
         </View>
-        <TouchableOpacity style={s.addBtn} onPress={openNew}>
-          <Feather name="plus" size={14} color={colors.primary} />
-          <Text style={[s.addBtnText, { color: colors.primary }]}>Add Entry</Text>
-        </TouchableOpacity>
+        {/* Timer action or Add Entry button */}
+        {isTimerRunning && onStopTimerForDiary ? (
+          <TouchableOpacity
+            style={[s.addBtn, { backgroundColor: `${colors.success}15`, borderColor: colors.success, borderWidth: 1 }]}
+            onPress={handleStopAndSave}
+            activeOpacity={0.7}
+          >
+            <Feather name="square" size={12} color={colors.success} />
+            <Text style={[s.addBtnText, { color: colors.success }]}>Stop & Save</Text>
+          </TouchableOpacity>
+        ) : !isTimerRunning && onStartTimer ? (
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <TouchableOpacity
+              style={[s.addBtn, { borderColor: colors.border, borderWidth: 1 }]}
+              onPress={onStartTimer}
+              activeOpacity={0.7}
+            >
+              <Feather name="play" size={12} color={colors.mutedForeground} />
+              <Text style={[s.addBtnText, { color: colors.mutedForeground }]}>Start Timer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={s.addBtn} onPress={openNew}>
+              <Feather name="plus" size={14} color={colors.primary} />
+              <Text style={[s.addBtnText, { color: colors.primary }]}>Add Entry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity style={s.addBtn} onPress={openNew}>
+            <Feather name="plus" size={14} color={colors.primary} />
+            <Text style={[s.addBtnText, { color: colors.primary }]}>Add Entry</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Month chip filter — shown when there are multiple months, or while a month is actively selected
