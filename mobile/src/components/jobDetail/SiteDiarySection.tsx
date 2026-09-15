@@ -542,6 +542,18 @@ export function SiteDiarySection({
                     )}
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                    {entry.phaseId && (() => {
+                      const phase = phases?.find((p) => p.id === entry.phaseId);
+                      if (!phase) return null;
+                      const badge = phase.phaseCode ?? phase.name;
+                      return (
+                        <View style={[s.phaseBadge, { backgroundColor: `${colors.primary}15`, borderColor: `${colors.primary}30` }]}>
+                          <Text style={[s.phaseBadgeText, { color: colors.primary }]} numberOfLines={1}>
+                            {badge}
+                          </Text>
+                        </View>
+                      );
+                    })()}
                     {entry.workersOnSite.length > 0 && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Feather name="users" size={11} color={colors.mutedForeground} />
@@ -586,6 +598,19 @@ export function SiteDiarySection({
                 {/* Expanded body */}
                 {isExpanded && (
                   <View style={s.entryBody}>
+                    {entry.phaseId && (() => {
+                      const phase = phases?.find((p) => p.id === entry.phaseId);
+                      if (!phase) return null;
+                      const label = phase.phaseCode ? `${phase.phaseCode} — ${phase.name}` : phase.name;
+                      return (
+                        <View style={s.field}>
+                          <Text style={s.fieldLabel}>
+                            <Feather name="layers" size={11} /> Phase
+                          </Text>
+                          <Text style={s.fieldValue}>{label}</Text>
+                        </View>
+                      );
+                    })()}
                     {entry.workersOnSite.length > 0 && (
                       <View style={s.field}>
                         <Text style={s.fieldLabel}>
@@ -1261,6 +1286,19 @@ function localStyles(colors: any) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
       borderRadius: radius.md,
+    },
+    phaseBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radius.sm,
+      borderWidth: 1,
+      maxWidth: 120,
+    },
+    phaseBadgeText: {
+      fontSize: typography.captionSmall.fontSize,
+      fontWeight: fontWeights.medium,
     },
     // Viewer
     viewerContainer: {
