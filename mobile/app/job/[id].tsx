@@ -98,6 +98,7 @@ import { ClaimsSection, type Claim as ProgressClaim } from '../../src/components
 import { VariationsSection } from '../../src/components/jobDetail/VariationsSection';
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
 import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
+import { JobNotesSection } from '../../src/components/jobDetail/JobNotesSection';
 import { PendingProjectUploadsBanner } from '../../src/components/jobDetail/PendingProjectUploadsBanner';
 import { SkeletonJobDetailOverview, SkeletonSection } from '../../src/components/Skeleton';
 import { LoggedWorkLineItems } from '../../src/components/jobDetail/LoggedWorkLineItems';
@@ -13061,6 +13062,15 @@ export default function JobDetailScreen() {
               }
             />
             {renderPhotosTab()}
+
+            {/* Shared Job Notes — persistent team notepad */}
+            <JobNotesSection
+              jobId={job.id}
+              colors={colors}
+              styles={styles}
+              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+              currentUserId={user?.id}
+            />
 
             {/* My Submitted Expenses — visible to workers (non-owners) only */}
             {!(isOwnerOrManager || isSoloOwner) && (isLoadingExpenses || jobExpenses.length > 0) && (

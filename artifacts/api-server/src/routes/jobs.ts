@@ -60,7 +60,7 @@ import { loginSchema, insertUserSchema, type SafeUser, requestLoginCodeSchema, v
 import { sendEmailVerificationEmail, sendLoginCodeEmail, sendJobConfirmationEmail, sendPasswordResetEmail, sendTeamInviteEmail, sendJobAssignmentEmail, sendJobCompletionNotificationEmail, sendWelcomeEmail } from "../emailService";
 import { FreemiumService } from "../freemiumService";
 import { DEMO_USER, VISITOR_USER } from "../demoData";
-import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, canAccessJobMedia, requireJobMediaAccess } from "../permissions";
+import { ownerOnly, ownerOrManagerOnly, requirePermission, createPermissionMiddleware, PERMISSIONS, getUserContext, hasPermission, canAssignJobTo, getWorkerPermissionContext, sanitizeClientData, requireTeamPlan, ownerHasTeamCapability, checkTeamSeatLimit, canAccessJobMedia, requireJobMediaAccess, type UserContext } from "../permissions";
 import { logTeamActivity, type TeamActivityType } from "../activityService";
 import {
   insertBusinessSettingsSchema,
@@ -9819,50 +9819,105 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
-  app.get("/api/jobs/:jobId/notes", requireAuth, async (req: any, res) => {
+  // Multer for optional note photo attachments (same limits as diary photos).
+  const notePhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+    fileFilter: (_req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Only image files are accepted for note photos (got: ${file.mimetype})`));
+      }
+    },
+  });
+
+  app.get("/api/jobs/:jobId/notes", requireAuth, createPermissionMiddleware(PERMISSIONS.READ_JOBS), requireJobMediaAccess, async (req: any, res) => {
     try {
-      const userId = req.userId!;
       const { jobId } = req.params;
-      
-      const userContext = await getUserContext(userId);
+      const userContext: UserContext = req.userContext || await getUserContext(req.userId);
       const notes = await storage.getJobNotes(jobId, userContext.effectiveUserId);
-      
-      res.json(notes);
+
+      // Attach fresh signed URLs for notes that have a photo object key.
+      const enriched = await Promise.all(
+        (notes as any[]).map(async (note) => {
+          if (!note.photoObjectKey) return note;
+          try {
+            const { bucketName, objectName } = parseObjectPath(note.photoObjectKey);
+            const [url] = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+              action: 'read',
+              expires: Date.now() + 60 * 60 * 1000, // 1 h
+            });
+            return { ...note, photoUrl: url };
+          } catch {
+            return note;
+          }
+        }),
+      );
+
+      res.json(enriched);
     } catch (error: any) {
       console.error('Error fetching job notes:', error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.post("/api/jobs/:jobId/notes", requireAuth, async (req: any, res) => {
+  app.post("/api/jobs/:jobId/notes", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES), requireJobMediaAccess, notePhotoUpload.single('photo'), async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId } = req.params;
-      
-      // Validate request body with Zod schema - enforce non-empty trimmed content
+
+      // Validate content — works for both JSON body and multipart FormData.
       const contentSchema = z.object({ content: z.string().trim().min(1, 'Note content cannot be empty') });
       const parseResult = contentSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json({ error: 'Note content is required', details: parseResult.error.errors });
       }
       const { content } = parseResult.data;
-      
-      const userContext = await getUserContext(userId);
+
+      const userContext: UserContext = req.userContext || await getUserContext(userId);
       const job = await storage.getJob(jobId, userContext.effectiveUserId);
       if (!job) {
         return res.status(404).json({ error: 'Job not found' });
       }
-      
+
+      // Upload optional photo to object storage; store the key (not a signed URL).
+      let photoObjectKey: string | undefined;
+      const photoFile = req.file as Express.Multer.File | undefined;
+      if (photoFile) {
+        const ext = (photoFile.originalname.split('.').pop() ?? 'jpg').toLowerCase();
+        const privateDir = process.env.PRIVATE_OBJECT_DIR ?? '.private';
+        const key = `${privateDir}/job-notes/${userContext.effectiveUserId}/${jobId}/${Date.now()}-${randomBytes(4).toString('hex')}.${ext}`;
+        const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID!;
+        await objectStorageClient.bucket(bucketId).file(key).save(photoFile.buffer, {
+          metadata: { contentType: photoFile.mimetype },
+        });
+        photoObjectKey = `${bucketId}/${key}`;
+      }
+
       const user = await storage.getUser(userId);
-      
       const note = await storage.createJobNote({
         userId: userContext.effectiveUserId,
         jobId,
         content,
         createdBy: userId,
         createdByName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : undefined,
+        photoObjectKey,
       });
-      
+
+      // Attach a fresh signed URL if there's a photo.
+      let photoUrl: string | undefined;
+      if (photoObjectKey) {
+        try {
+          const { bucketName, objectName } = parseObjectPath(photoObjectKey);
+          const [url] = await objectStorageClient.bucket(bucketName).file(objectName).getSignedUrl({
+            action: 'read',
+            expires: Date.now() + 60 * 60 * 1000,
+          });
+          photoUrl = url;
+        } catch { /* skip if signing fails */ }
+      }
+
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_added',
@@ -9871,49 +9926,49 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         entityId: jobId,
         description: 'Added a note to job',
       });
-      
-      res.json(note);
+
+      res.json({ ...(note as any), photoUrl });
     } catch (error: any) {
       console.error('Error creating job note:', error);
       res.status(500).json({ error: error.message });
     }
   });
 
-  app.patch("/api/jobs/:jobId/notes/:noteId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+  app.patch("/api/jobs/:jobId/notes/:noteId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId, noteId } = req.params;
-      
-      // Validate request body with Zod schema - enforce non-empty trimmed content
+
       const contentSchema = z.object({ content: z.string().trim().min(1, 'Note content cannot be empty') });
       const parseResult = contentSchema.safeParse(req.body);
       if (!parseResult.success) {
         return res.status(400).json({ error: 'Note content is required', details: parseResult.error.errors });
       }
       const { content } = parseResult.data;
-      
-      const userContext = await getUserContext(userId);
-      
-      // Verify job access
-      const job = await storage.getJob(jobId, userContext.effectiveUserId);
-      if (!job) {
-        return res.status(404).json({ error: 'Job not found' });
-      }
-      
-      // Verify note exists and belongs to this job BEFORE updating
+
+      const userContext: UserContext = req.userContext || await getUserContext(userId);
+
+      // Verify note exists and belongs to this job before updating.
       const existingNotes = await storage.getJobNotes(jobId, userContext.effectiveUserId);
       const noteToUpdate = existingNotes.find(n => n.id === noteId);
       if (!noteToUpdate) {
         return res.status(404).json({ error: 'Note not found or does not belong to this job' });
       }
-      
+
+      // Owners and true admins (VIEW_ALL + MANAGE_TEAM) can edit any note.
+      // Workers may only edit their own; createdBy is the authenticated user ID.
+      const isTrueAdmin = userContext.isOwner ||
+        (userContext.permissions.includes(PERMISSIONS.VIEW_ALL) &&
+          userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM));
+      if (!isTrueAdmin && (noteToUpdate as any).createdBy !== userContext.userId) {
+        return res.status(403).json({ error: 'You can only edit your own notes' });
+      }
+
       const note = await storage.updateJobNote(noteId, userContext.effectiveUserId, { content });
-      
       if (!note) {
         return res.status(404).json({ error: 'Failed to update note' });
       }
-      
-      // Log activity for note update
+
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_edited',
@@ -9922,7 +9977,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         entityId: jobId,
         description: 'Edited a note on job',
       });
-      
+
       res.json(note);
     } catch (error: any) {
       console.error('Error updating job note:', error);
@@ -9930,33 +9985,47 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
     }
   });
 
-  app.delete("/api/jobs/:jobId/notes/:noteId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOBS), async (req: any, res) => {
+  app.delete("/api/jobs/:jobId/notes/:noteId", requireAuth, createPermissionMiddleware(PERMISSIONS.WRITE_JOB_NOTES), requireJobMediaAccess, async (req: any, res) => {
     try {
       const userId = req.userId!;
       const { jobId, noteId } = req.params;
-      
-      const userContext = await getUserContext(userId);
-      
-      // Verify job access first
-      const job = await storage.getJob(jobId, userContext.effectiveUserId);
-      if (!job) {
-        return res.status(404).json({ error: 'Job not found' });
-      }
-      
-      // Get the note before deleting to verify it belongs to this job
+
+      const userContext: UserContext = req.userContext || await getUserContext(userId);
+
+      // Get the note before deleting to verify it belongs to this job.
       const existingNotes = await storage.getJobNotes(jobId, userContext.effectiveUserId);
       const noteToDelete = existingNotes.find(n => n.id === noteId);
       if (!noteToDelete) {
         return res.status(404).json({ error: 'Note not found or does not belong to this job' });
       }
+
+      // Owners and true admins (VIEW_ALL + MANAGE_TEAM) can delete any note.
+      // Workers may only delete their own; createdBy is the authenticated user ID.
+      const isTrueAdmin = userContext.isOwner ||
+        (userContext.permissions.includes(PERMISSIONS.VIEW_ALL) &&
+          userContext.permissions.includes(PERMISSIONS.MANAGE_TEAM));
+      if (!isTrueAdmin && (noteToDelete as any).createdBy !== userContext.userId) {
+        return res.status(403).json({ error: 'You can only delete your own notes' });
+      }
       
       const deleted = await storage.deleteJobNote(noteId, userContext.effectiveUserId);
-      
+
       if (!deleted) {
         return res.status(404).json({ error: 'Note not found' });
       }
-      
-      // Log activity for note deletion
+
+      // Clean up the photo from object storage if the note had one.
+      const photoKey = (noteToDelete as any).photoObjectKey;
+      if (photoKey) {
+        try {
+          const { bucketName, objectName } = parseObjectPath(photoKey);
+          await objectStorageClient.bucket(bucketName).file(objectName).delete();
+        } catch {
+          // Non-fatal: log but don't fail the delete response.
+          console.warn(`[JobNotes] Could not delete photo object for note ${noteId}: ${photoKey}`);
+        }
+      }
+
       await storage.createActivityLog({
         userId: userContext.effectiveUserId,
         type: 'note_deleted',
@@ -9965,7 +10034,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         entityId: jobId,
         description: 'Removed a note from job',
       });
-      
+
       res.json({ success: true });
     } catch (error: any) {
       console.error('Error deleting job note:', error);

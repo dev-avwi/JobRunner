@@ -3283,6 +3283,7 @@ export const jobNotes = pgTable("job_notes", {
   content: text("content").notNull(),
   createdBy: varchar("created_by").references(() => users.id), // Team member who created the note
   createdByName: text("created_by_name"), // Denormalized for quick display
+  photoObjectKey: text("photo_object_key"), // Object storage key for optional photo attachment
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("idx_job_notes_user_id").on(table.userId),
