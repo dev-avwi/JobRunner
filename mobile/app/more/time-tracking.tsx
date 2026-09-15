@@ -18,6 +18,7 @@ import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useFocusEffect, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useJobsStore, useTimeTrackingStore, useAuthStore } from '../../src/lib/store';
@@ -1276,7 +1277,7 @@ export default function TimeTrackingScreen() {
     }
   };
 
-  const handleOpenAddEntry = () => {
+  const handleOpenAddEntry = async () => {
     setEditingEntry(null);
     setEntryDescription('');
     setEntryJobId(null);
@@ -1286,9 +1287,29 @@ export default function TimeTrackingScreen() {
     setEntryDistanceKm('');
     setEntryHours(1);
     setEntryMinutes(0);
-    setEntryDateOffset(0);
-    setEntryCustomDate(new Date());
     setShowEntryCustomDatePicker(false);
+    // Restore the last-used date selection from storage.
+    try {
+      const raw = await AsyncStorage.getItem('time_entry_last_date_offset');
+      const offset = raw !== null ? parseInt(raw, 10) : 0;
+      const safeOffset = isNaN(offset) ? 0 : offset;
+      setEntryDateOffset(safeOffset);
+      if (safeOffset === -1) {
+        const iso = await AsyncStorage.getItem('time_entry_last_custom_date');
+        if (iso) {
+          const d = new Date(iso);
+          if (!isNaN(d.getTime())) setEntryCustomDate(d);
+          else setEntryCustomDate(new Date());
+        } else {
+          setEntryCustomDate(new Date());
+        }
+      } else {
+        setEntryCustomDate(new Date());
+      }
+    } catch {
+      setEntryDateOffset(0);
+      setEntryCustomDate(new Date());
+    }
     setShowAddEntryModal(true);
   };
 
@@ -2590,7 +2611,7 @@ export default function TimeTrackingScreen() {
                       return (
                         <TouchableOpacity
                           key={d.days}
-                          onPress={() => { setEntryDateOffset(d.days); setShowEntryCustomDatePicker(false); }}
+                          onPress={() => { setEntryDateOffset(d.days); setShowEntryCustomDatePicker(false); AsyncStorage.setItem('time_entry_last_date_offset', String(d.days)).catch(() => {}); }}
                           style={{
                             flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                             backgroundColor: active ? colors.primary : colors.card,
@@ -2606,7 +2627,7 @@ export default function TimeTrackingScreen() {
                     })}
                     {/* Custom date chip */}
                     <TouchableOpacity
-                      onPress={() => { setEntryDateOffset(-1); setShowEntryCustomDatePicker(true); }}
+                      onPress={() => { setEntryDateOffset(-1); setShowEntryCustomDatePicker(true); AsyncStorage.setItem('time_entry_last_date_offset', '-1').catch(() => {}); }}
                       style={{
                         flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                         backgroundColor: entryDateOffset === -1 ? colors.primary : colors.card,
@@ -2629,7 +2650,10 @@ export default function TimeTrackingScreen() {
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={(event, date) => {
                         setShowEntryCustomDatePicker(Platform.OS === 'ios');
-                        if (date) setEntryCustomDate(date);
+                        if (date) {
+                          setEntryCustomDate(date);
+                          AsyncStorage.setItem('time_entry_last_custom_date', date.toISOString()).catch(() => {});
+                        }
                       }}
                     />
                   )}

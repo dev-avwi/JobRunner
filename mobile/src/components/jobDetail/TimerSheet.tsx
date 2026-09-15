@@ -20,6 +20,7 @@ import {
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppBottomSheet, AppBottomSheetRef } from '../ui/AppBottomSheet';
 import { spacing, radius, typography, fontWeights, iconSizes } from '../../lib/design-tokens';
 import { ThemeColors } from '../../lib/theme';
@@ -100,11 +101,27 @@ export function TimerSheet({
       setMode('live');
       setHours(1);
       setMinutes(0);
-      setDateOffset(0);
-      setCustomDate(new Date());
       setShowCustomDatePicker(false);
       setNote('');
       setIsSaving(false);
+      // Restore the last-used date selection from storage.
+      AsyncStorage.getItem('time_entry_last_date_offset').then((raw) => {
+        const offset = raw !== null ? parseInt(raw, 10) : 0;
+        setDateOffset(isNaN(offset) ? 0 : offset);
+        if (offset === -1) {
+          AsyncStorage.getItem('time_entry_last_custom_date').then((iso) => {
+            if (iso) {
+              const d = new Date(iso);
+              if (!isNaN(d.getTime())) setCustomDate(d);
+            }
+          }).catch(() => {});
+        } else {
+          setCustomDate(new Date());
+        }
+      }).catch(() => {
+        setDateOffset(0);
+        setCustomDate(new Date());
+      });
     }
   }, [visible, initialPhaseId]);
 
@@ -385,7 +402,7 @@ export function TimerSheet({
                 return (
                   <TouchableOpacity
                     key={d.days}
-                    onPress={() => { setDateOffset(d.days); setShowCustomDatePicker(false); }}
+                    onPress={() => { setDateOffset(d.days); setShowCustomDatePicker(false); AsyncStorage.setItem('time_entry_last_date_offset', String(d.days)).catch(() => {}); }}
                     style={{
                       flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                       backgroundColor: active ? colors.primary : colors.card,
@@ -401,7 +418,7 @@ export function TimerSheet({
               })}
               {/* Custom date chip */}
               <TouchableOpacity
-                onPress={() => { setDateOffset(-1); setShowCustomDatePicker(true); }}
+                onPress={() => { setDateOffset(-1); setShowCustomDatePicker(true); AsyncStorage.setItem('time_entry_last_date_offset', '-1').catch(() => {}); }}
                 style={{
                   flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
                   backgroundColor: dateOffset === -1 ? colors.primary : colors.card,
@@ -424,7 +441,10 @@ export function TimerSheet({
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={(event, date) => {
                   setShowCustomDatePicker(Platform.OS === 'ios');
-                  if (date) setCustomDate(date);
+                  if (date) {
+                    setCustomDate(date);
+                    AsyncStorage.setItem('time_entry_last_custom_date', date.toISOString()).catch(() => {});
+                  }
                 }}
               />
             )}
