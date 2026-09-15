@@ -4526,6 +4526,7 @@ class OfflineStorageService {
         id: r.id,
         userId: r.user_id,
         jobId: r.job_id,
+        phaseId: r.phase_id || undefined,
         description: r.description,
         startTime: r.start_time,
         endTime: r.end_time,

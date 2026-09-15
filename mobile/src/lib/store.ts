@@ -201,6 +201,7 @@ interface TimeEntry {
   id: string;
   userId: string;
   jobId?: string;
+  phaseId?: string | null;
   timeCategory?: string;
   description?: string;
   startTime: string;
@@ -2334,6 +2335,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
       const localTimer: TimeEntry = {
         id: localPending.id,
         jobId: localPending.jobId,
+        phaseId: localPending.phaseId || null,
         userId: localPending.userId,
         description: localPending.description,
         startTime: localPending.startTime,
@@ -2392,6 +2394,7 @@ export const useTimeTrackingStore = create<TimeTrackingState>((set, get) => ({
         const localTimer: TimeEntry = {
           id: offlineEntry.id,
           jobId: offlineEntry.jobId,
+          phaseId: offlineEntry.phaseId || null,
           userId: offlineEntry.userId,
           description: offlineEntry.description || desc,
           startTime: offlineEntry.startTime,

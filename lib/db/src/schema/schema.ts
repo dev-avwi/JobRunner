@@ -5909,6 +5909,8 @@ export const siteDiaryEntries = pgTable("site_diary_entries", {
   // userId is the actual author (req.userId), NOT the business owner effectiveUserId.
   // Business-level access is scoped separately via jobId → jobs.userId.
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  // Optional link to the job phase being worked on when this entry was created.
+  phaseId: varchar("phase_id").references(() => jobPhases.id, { onDelete: 'set null' }),
   // Calendar date of the diary entry (stored as date, not timestamp)
   entryDate: date("entry_date").notNull(),
   weather: text("weather"), // WeatherCondition or null

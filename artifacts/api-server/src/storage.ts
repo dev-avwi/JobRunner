@@ -1967,12 +1967,14 @@ pool
 // Task #484: Site Diary — daily log of who was on site, what was done, and issues.
 // userId stores the actual author (req.userId), NOT the business effectiveUserId.
 // Unique constraint uq_site_diary_job_date prevents duplicate entries per job per day.
+// Task #1435: phase_id included from the start so fresh installs get the column.
 pool
   .query(`
     CREATE TABLE IF NOT EXISTS site_diary_entries (
       id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
       job_id varchar NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
       user_id varchar NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      phase_id varchar REFERENCES job_phases(id) ON DELETE SET NULL,
       entry_date date NOT NULL,
       weather text,
       workers_on_site jsonb DEFAULT '[]'::jsonb,
@@ -1997,6 +1999,17 @@ pool
   `)
   .catch((err) => {
     console.error('[Schema] Failed to ensure site_diary_entries table:', err.message);
+  });
+
+// Task #1435: Add phase_id to pre-existing site_diary_entries installations.
+// Separated from the CREATE TABLE block above so a constraint name conflict
+// on legacy databases does not roll back the whole table-creation statement.
+// The column is defined without FK here (safe on all hosted PG flavours);
+// the FK is enforced at the Drizzle schema layer on the primary database.
+pool
+  .query(`ALTER TABLE site_diary_entries ADD COLUMN IF NOT EXISTS phase_id varchar;`)
+  .catch((err) => {
+    console.error('[Schema] Failed to add phase_id to site_diary_entries:', err.message);
   });
 
 // Add FK from inventory_items.supplier_id → suppliers.id ON DELETE RESTRICT.

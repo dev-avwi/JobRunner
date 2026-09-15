@@ -12252,6 +12252,8 @@ export default function JobDetailScreen() {
                 currentUserId={user?.id}
                 isTimerRunning={isTimerForThisJob}
                 timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+                phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
                 onStartTimer={handleStartTimer}
                 onStopTimerForDiary={handleStopTimerForDiary}
               />
@@ -13014,6 +13016,8 @@ export default function JobDetailScreen() {
                 currentUserId={user?.id}
                 isTimerRunning={isTimerForThisJob}
                 timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+                phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
                 onStartTimer={handleStartTimer}
                 onStopTimerForDiary={handleStopTimerForDiary}
               />

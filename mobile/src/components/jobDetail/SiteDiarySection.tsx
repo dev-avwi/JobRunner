@@ -52,6 +52,7 @@ interface SiteDiaryEntry {
   id: string;
   jobId: string;
   userId: string;
+  phaseId?: string | null;
   entryDate: string;
   weather: string | null;
   workersOnSite: string[];
@@ -62,6 +63,13 @@ interface SiteDiaryEntry {
   authorName?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Minimal phase shape needed for the diary phase picker. */
+interface DiaryPhase {
+  id: string;
+  name: string;
+  phaseCode?: string | null;
 }
 
 interface SiteDiarySectionProps {
@@ -75,6 +83,13 @@ interface SiteDiarySectionProps {
   isTimerRunning?: boolean;
   /** Formatted elapsed time string, e.g. "2h 14m". Shown in the header when timer is running. */
   timerDisplayText?: string;
+  /**
+   * The phase ID from the active timer, if any. Pre-fills the phase field when
+   * the diary form is opened via "Stop & Save".
+   */
+  timerPhaseId?: string | null;
+  /** Job phases to show in the phase picker. */
+  phases?: DiaryPhase[];
   /** Called when the user taps "Start Timer" in the Daily Log header. */
   onStartTimer?: () => void;
   /**
@@ -91,6 +106,7 @@ interface FormState {
   workersOnSite: string;
   workDone: string;
   issuesDelays: string;
+  phaseId: string;
 }
 
 function todayISO(): string {
@@ -117,6 +133,7 @@ const EMPTY_FORM: FormState = {
   workersOnSite: '',
   workDone: '',
   issuesDelays: '',
+  phaseId: '',
 };
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
@@ -129,6 +146,8 @@ export function SiteDiarySection({
   currentUserId,
   isTimerRunning,
   timerDisplayText,
+  timerPhaseId,
+  phases,
   onStartTimer,
   onStopTimerForDiary,
 }: SiteDiarySectionProps) {
@@ -141,6 +160,7 @@ export function SiteDiarySection({
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [showWeatherPicker, setShowWeatherPicker] = useState(false);
+  const [showPhasePicker, setShowPhasePicker] = useState(false);
   const [newPhotos, setNewPhotos] = useState<{ uri: string; name: string; mimeType: string }[]>([]);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -221,8 +241,9 @@ export function SiteDiarySection({
       handleSectionOpen();
       setEditingEntry(null);
       const prefill = timerDisplayText ? `Worked ${timerDisplayText}` : '';
-      setForm({ ...EMPTY_FORM, entryDate: todayISO(), workDone: prefill });
+      setForm({ ...EMPTY_FORM, entryDate: todayISO(), workDone: prefill, phaseId: timerPhaseId ?? '' });
       setNewPhotos([]);
+      setShowPhasePicker(false);
       setShowForm(true);
     }
   }
@@ -235,8 +256,10 @@ export function SiteDiarySection({
       workersOnSite: entry.workersOnSite.join(', '),
       workDone: entry.workDone ?? '',
       issuesDelays: entry.issuesDelays ?? '',
+      phaseId: entry.phaseId ?? '',
     });
     setNewPhotos([]);
+    setShowPhasePicker(false);
     setShowForm(true);
   }
 
@@ -245,6 +268,7 @@ export function SiteDiarySection({
     setEditingEntry(null);
     setForm(EMPTY_FORM);
     setNewPhotos([]);
+    setShowPhasePicker(false);
   }
 
   async function pickPhoto() {
@@ -278,6 +302,9 @@ export function SiteDiarySection({
       formData.append('workersOnSite', JSON.stringify(workers));
       if (form.workDone) formData.append('workDone', form.workDone);
       if (form.issuesDelays) formData.append('issuesDelays', form.issuesDelays);
+      // Always send phaseId when editing so clearing the field explicitly sets null
+      // on the server (omitting it would leave the old value unchanged).
+      if (editingEntry || form.phaseId) formData.append('phaseId', form.phaseId);
       for (const photo of newPhotos) {
         formData.append('photos', { uri: photo.uri, name: photo.name, type: photo.mimeType } as any);
       }
@@ -727,6 +754,59 @@ export function SiteDiarySection({
               </View>
             )}
           </View>
+
+          {/* Phase link — shown only when phases are available */}
+          {phases && phases.length > 0 && (
+            <View style={s.field}>
+              <Text style={[s.label, { color: colors.foreground }]}>Phase (optional)</Text>
+              <TouchableOpacity
+                style={[s.textInput, { borderColor: showPhasePicker ? colors.primary : colors.border, backgroundColor: colors.muted, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                onPress={() => setShowPhasePicker((v) => !v)}
+                activeOpacity={0.7}
+              >
+                {form.phaseId ? (
+                  <Text style={{ color: colors.foreground, flex: 1 }} numberOfLines={1}>
+                    {(() => { const p = phases.find((ph) => ph.id === form.phaseId); return p ? (p.phaseCode ? `${p.phaseCode} — ${p.name}` : p.name) : 'Unknown phase'; })()}
+                  </Text>
+                ) : (
+                  <Text style={{ color: colors.mutedForeground }}>No phase selected</Text>
+                )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  {form.phaseId ? (
+                    <TouchableOpacity
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      onPress={(e) => { e.stopPropagation(); setForm((f) => ({ ...f, phaseId: '' })); setShowPhasePicker(false); }}
+                    >
+                      <Feather name="x" size={14} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                  ) : null}
+                  <Feather name={showPhasePicker ? 'chevron-up' : 'chevron-down'} size={14} color={colors.mutedForeground} />
+                </View>
+              </TouchableOpacity>
+              {showPhasePicker && (
+                <View style={{ marginTop: spacing.xs, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+                  {phases.map((ph, idx) => (
+                    <TouchableOpacity
+                      key={ph.id}
+                      style={[
+                        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, backgroundColor: form.phaseId === ph.id ? `${colors.primary}15` : colors.muted },
+                        idx < phases.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+                      ]}
+                      onPress={() => { setForm((f) => ({ ...f, phaseId: ph.id })); setShowPhasePicker(false); }}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={{ flex: 1, fontSize: typography.sizes.sm, color: form.phaseId === ph.id ? colors.primary : colors.foreground, fontWeight: form.phaseId === ph.id ? '600' : '400' }}>
+                        {ph.phaseCode ? `${ph.phaseCode} — ${ph.name}` : ph.name}
+                      </Text>
+                      {form.phaseId === ph.id && (
+                        <Feather name="check" size={14} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
 
           {/* Workers */}
           <View style={s.field}>

@@ -13323,7 +13323,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           return res.status(403).json({ error: 'You are not assigned to this job.' });
         }
 
-        const { entryDate, weather, workersOnSite, workDone, issuesDelays } = req.body;
+        const { entryDate, weather, workersOnSite, workDone, issuesDelays, phaseId } = req.body;
         if (!entryDate) return res.status(400).json({ error: 'entryDate is required' });
 
         let workers: string[] = [];
@@ -13347,6 +13347,18 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           photoKeys.push(`${bucketId}/${key}`);
         }
 
+        // Validate phaseId — it must belong to the same job to prevent cross-job attribution.
+        let resolvedPhaseId: string | null = null;
+        if (phaseId) {
+          const [phase] = await db
+            .select({ id: jobPhases.id })
+            .from(jobPhases)
+            .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId)))
+            .limit(1);
+          if (!phase) return res.status(400).json({ error: 'Phase not found for this job' });
+          resolvedPhaseId = phase.id;
+        }
+
         // Enforce one entry per job per date at the DB level (unique constraint).
         // Return a clear error if the date is already taken.
         // userId = req.userId (the actual author), NOT effectiveUserId (the business owner).
@@ -13354,6 +13366,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         const entry = await storage.createSiteDiaryEntry({
           jobId,
           userId: req.userId,
+          phaseId: resolvedPhaseId,
           entryDate,
           weather: weather || null,
           workersOnSite: workers,
@@ -13427,7 +13440,7 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
           }
         }
 
-        const { weather, workersOnSite, workDone, issuesDelays } = req.body;
+        const { weather, workersOnSite, workDone, issuesDelays, phaseId } = req.body;
 
         let workers: string[] | undefined;
         if (workersOnSite !== undefined) {
@@ -13454,6 +13467,20 @@ import { allocateExpensesByPhase } from "../phaseExpenseAttribution";
         if (workers !== undefined) updates.workersOnSite = workers;
         if (workDone !== undefined) updates.workDone = workDone || null;
         if (issuesDelays !== undefined) updates.issuesDelays = issuesDelays || null;
+        if (phaseId !== undefined) {
+          if (phaseId) {
+            // Validate that the phase belongs to this job / tenant before accepting it.
+            const [phase] = await db
+              .select({ id: jobPhases.id })
+              .from(jobPhases)
+              .where(and(eq(jobPhases.id, phaseId), eq(jobPhases.jobId, jobId)))
+              .limit(1);
+            if (!phase) return res.status(400).json({ error: 'Phase not found for this job' });
+            updates.phaseId = phase.id;
+          } else {
+            updates.phaseId = null;
+          }
+        }
 
         // Merge new photo keys with existing list (re-use the already-fetched entry)
         if (newKeys.length > 0) {
