@@ -96,6 +96,26 @@ interface WeeklyStats {
 }
 
 const NON_JOB_CATEGORIES: TimeCategory[] = ['travel', 'admin', 'training', 'other'];
+
+/** Date offset options for the chip-based Add Entry form. */
+const ENTRY_DATE_OFFSETS = [
+  { label: 'Today', days: 0 },
+  { label: 'Yesterday', days: 1 },
+  { label: '2 days ago', days: 2 },
+];
+
+/** Quick-set duration chips for the Add Entry form. */
+const DURATION_CHIPS = [
+  { label: '30m', h: 0, m: 30 },
+  { label: '1h', h: 1, m: 0 },
+  { label: '1.5h', h: 1, m: 30 },
+  { label: '2h', h: 2, m: 0 },
+  { label: '4h', h: 4, m: 0 },
+  { label: '8h', h: 8, m: 0 },
+];
+
+function clampNum(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
+function pad2Dig(n: number) { return String(n).padStart(2, '0'); }
 const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => StyleSheet.create({
   container: {
     flex: 1,
@@ -873,6 +893,10 @@ export default function TimeTrackingScreen() {
   const [entryDistanceKm, setEntryDistanceKm] = useState('');
   const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  // Chip-based duration state for the Add Entry flow
+  const [entryHours, setEntryHours] = useState(1);
+  const [entryMinutes, setEntryMinutes] = useState(0);
+  const [entryDateOffset, setEntryDateOffset] = useState(0); // 0 = today
 
   const userDefaultRate = user?.defaultHourlyRate != null ? Number(user.defaultHourlyRate) : 100;
 
@@ -1251,19 +1275,16 @@ export default function TimeTrackingScreen() {
   };
 
   const handleOpenAddEntry = () => {
-    const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 17, 0, 0);
     setEditingEntry(null);
-    setEntryDate(now);
-    setEntryStartTime(startOfToday);
-    setEntryEndTime(endOfToday);
     setEntryDescription('');
     setEntryJobId(null);
     setJobEntrySearch('');
     setEntryIsBillable(true);
     setEntryCategory('work');
     setEntryDistanceKm('');
+    setEntryHours(1);
+    setEntryMinutes(0);
+    setEntryDateOffset(0);
     setShowAddEntryModal(true);
   };
 
@@ -1273,23 +1294,23 @@ export default function TimeTrackingScreen() {
       Alert.alert('Select a Job', 'Please select a job for this time entry, or choose a non-job category like Travel or Admin.');
       return;
     }
-    const startDateTime = new Date(entryDate);
-    startDateTime.setHours(entryStartTime.getHours(), entryStartTime.getMinutes(), 0, 0);
-    const endDateTime = new Date(entryDate);
-    endDateTime.setHours(entryEndTime.getHours(), entryEndTime.getMinutes(), 0, 0);
-    if (endDateTime <= startDateTime) {
-      Alert.alert('Invalid Time', 'End time must be after start time.');
+    const totalMinutes = entryHours * 60 + entryMinutes;
+    if (totalMinutes === 0) {
+      Alert.alert('Set Duration', 'Please set a duration greater than 0 minutes.');
       return;
     }
-    const durationMinutes = Math.round((endDateTime.getTime() - startDateTime.getTime()) / 60000);
+    // Compute start/end from duration chips + date offset
+    const endTime = new Date();
+    endTime.setDate(endTime.getDate() - entryDateOffset);
+    const startTime = new Date(endTime.getTime() - totalMinutes * 60 * 1000);
     const distanceKmVal = entryCategory === 'travel' && entryDistanceKm.trim() ? parseFloat(entryDistanceKm) : null;
     setIsAddingEntry(true);
     try {
       await api.post('/api/time-entries', {
         jobId: entryJobId,
-        startTime: startDateTime.toISOString(),
-        endTime: endDateTime.toISOString(),
-        duration: durationMinutes,
+        startTime: startTime.toISOString(),
+        endTime: endTime.toISOString(),
+        duration: totalMinutes,
         description: entryDescription || undefined,
         isBillable: entryIsBillable,
         timeCategory: entryCategory,
@@ -2435,8 +2456,9 @@ export default function TimeTrackingScreen() {
             </Text>
             {(() => {
               const needsJob = !entryJobId && !NON_JOB_CATEGORIES.includes(entryCategory);
+              const noAddDuration = !editingEntry && entryHours === 0 && entryMinutes === 0;
               const isBusy = editingEntry ? isSavingEdit : isAddingEntry;
-              const isDisabled = isBusy || needsJob;
+              const isDisabled = isBusy || needsJob || noAddDuration;
               return (
               <TouchableOpacity 
                 onPress={editingEntry ? handleSaveEditEntry : handleAddEntry}
@@ -2454,90 +2476,224 @@ export default function TimeTrackingScreen() {
           </View>
           
           <ScrollView style={styles.modalContent} contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}>
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Date</Text>
-              <TouchableOpacity 
-                style={styles.formInput}
-                onPress={() => setShowEntryDatePicker(true)}
-              >
-                <Feather name="calendar" size={18} color={colors.mutedForeground} />
-                <Text style={styles.formInputText}>
-                  {entryDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-                </Text>
-              </TouchableOpacity>
-              {showEntryDatePicker && (
-                <DateTimePicker
-                  value={entryDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, date) => {
-                    setShowEntryDatePicker(Platform.OS === 'ios');
-                    if (date) setEntryDate(date);
-                  }}
-                />
-              )}
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Start Time</Text>
-              <TouchableOpacity 
-                style={styles.formInput}
-                onPress={() => setShowEntryStartPicker(true)}
-              >
-                <Feather name="clock" size={18} color={colors.mutedForeground} />
-                <Text style={styles.formInputText}>
-                  {entryStartTime.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                </Text>
-              </TouchableOpacity>
-              {showEntryStartPicker && (
-                <DateTimePicker
-                  value={entryStartTime}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, time) => {
-                    setShowEntryStartPicker(Platform.OS === 'ios');
-                    if (time) setEntryStartTime(time);
-                  }}
-                />
-              )}
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>End Time</Text>
-              <TouchableOpacity 
-                style={styles.formInput}
-                onPress={() => setShowEntryEndPicker(true)}
-              >
-                <Feather name="clock" size={18} color={colors.mutedForeground} />
-                <Text style={styles.formInputText}>
-                  {entryEndTime.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                </Text>
-              </TouchableOpacity>
-              {showEntryEndPicker && (
-                <DateTimePicker
-                  value={entryEndTime}
-                  mode="time"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(event, time) => {
-                    setShowEntryEndPicker(Platform.OS === 'ios');
-                    if (time) setEntryEndTime(time);
-                  }}
-                />
-              )}
-            </View>
-            
-            <View style={styles.durationPreview}>
-              <Feather name="trending-up" size={16} color={colors.primary} />
-              <Text style={styles.durationPreviewText}>
-                Duration: {(() => {
-                  const diffMs = entryEndTime.getTime() - entryStartTime.getTime();
-                  if (diffMs <= 0) return '--:--';
-                  const hours = Math.floor(diffMs / 3600000);
-                  const mins = Math.floor((diffMs % 3600000) / 60000);
-                  return `${hours}h ${mins}m`;
-                })()}
-              </Text>
-            </View>
+            {/* ── Add flow: duration chips + date offset ── */}
+            {!editingEntry && (
+              <>
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Duration</Text>
+                  {/* Stepper */}
+                  <View style={{
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+                    gap: spacing.lg, backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.lg,
+                  }}>
+                    {/* Hours */}
+                    <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                      <TouchableOpacity
+                        onPress={() => setEntryHours(h => clampNum(h + 1, 0, 23))}
+                        style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="chevron-up" size={18} color={colors.foreground} />
+                      </TouchableOpacity>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 36, fontWeight: fontWeights.bold, color: colors.foreground, lineHeight: 40 }}>
+                          {pad2Dig(entryHours)}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>hours</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => setEntryHours(h => clampNum(h - 1, 0, 23))}
+                        style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                        disabled={entryHours === 0}
+                      >
+                        <Feather name="chevron-down" size={18} color={entryHours === 0 ? colors.border : colors.foreground} />
+                      </TouchableOpacity>
+                    </View>
+
+                    <Text style={{ fontSize: 28, fontWeight: fontWeights.bold, color: colors.mutedForeground, marginBottom: 20 }}>:</Text>
+
+                    {/* Minutes */}
+                    <View style={{ alignItems: 'center', gap: spacing.sm }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEntryMinutes(m => {
+                            const next = m + 15;
+                            if (next >= 60) { setEntryHours(h => clampNum(h + 1, 0, 23)); return 0; }
+                            return next;
+                          });
+                        }}
+                        style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                      >
+                        <Feather name="chevron-up" size={18} color={colors.foreground} />
+                      </TouchableOpacity>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{ fontSize: 36, fontWeight: fontWeights.bold, color: colors.foreground, lineHeight: 40 }}>
+                          {pad2Dig(entryMinutes)}
+                        </Text>
+                        <Text style={{ fontSize: 11, color: colors.mutedForeground, fontWeight: fontWeights.medium }}>minutes</Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setEntryMinutes(m => {
+                            const next = m - 15;
+                            if (next < 0) {
+                              if (entryHours > 0) { setEntryHours(h => h - 1); return 45; }
+                              return 0;
+                            }
+                            return next;
+                          });
+                        }}
+                        style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.cardBorder, alignItems: 'center', justifyContent: 'center' }}
+                        activeOpacity={0.7}
+                        disabled={entryMinutes === 0 && entryHours === 0}
+                      >
+                        <Feather name="chevron-down" size={18} color={entryMinutes === 0 && entryHours === 0 ? colors.border : colors.foreground} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Quick-set chips */}
+                  <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' }}>
+                    {DURATION_CHIPS.map(q => {
+                      const active = entryHours === q.h && entryMinutes === q.m;
+                      return (
+                        <TouchableOpacity
+                          key={q.label}
+                          onPress={() => { setEntryHours(q.h); setEntryMinutes(q.m); }}
+                          style={{
+                            paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.full,
+                            backgroundColor: active ? colors.primary : colors.card,
+                            borderWidth: 1, borderColor: active ? colors.primary : colors.cardBorder,
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.medium, color: active ? colors.primaryForeground : colors.foreground }}>
+                            {q.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Date</Text>
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    {ENTRY_DATE_OFFSETS.map(d => {
+                      const active = entryDateOffset === d.days;
+                      return (
+                        <TouchableOpacity
+                          key={d.days}
+                          onPress={() => setEntryDateOffset(d.days)}
+                          style={{
+                            flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.md,
+                            backgroundColor: active ? colors.primary : colors.card,
+                            borderWidth: 1, borderColor: active ? colors.primary : colors.cardBorder,
+                          }}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: active ? colors.primaryForeground : colors.foreground }}>
+                            {d.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              </>
+            )}
+
+            {/* ── Edit flow: start/end date/time pickers ── */}
+            {editingEntry && (
+              <>
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Date</Text>
+                  <TouchableOpacity 
+                    style={styles.formInput}
+                    onPress={() => setShowEntryDatePicker(true)}
+                  >
+                    <Feather name="calendar" size={18} color={colors.mutedForeground} />
+                    <Text style={styles.formInputText}>
+                      {entryDate.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                    </Text>
+                  </TouchableOpacity>
+                  {showEntryDatePicker && (
+                    <DateTimePicker
+                      value={entryDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, date) => {
+                        setShowEntryDatePicker(Platform.OS === 'ios');
+                        if (date) setEntryDate(date);
+                      }}
+                    />
+                  )}
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>Start Time</Text>
+                  <TouchableOpacity 
+                    style={styles.formInput}
+                    onPress={() => setShowEntryStartPicker(true)}
+                  >
+                    <Feather name="clock" size={18} color={colors.mutedForeground} />
+                    <Text style={styles.formInputText}>
+                      {entryStartTime.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </Text>
+                  </TouchableOpacity>
+                  {showEntryStartPicker && (
+                    <DateTimePicker
+                      value={entryStartTime}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, time) => {
+                        setShowEntryStartPicker(Platform.OS === 'ios');
+                        if (time) setEntryStartTime(time);
+                      }}
+                    />
+                  )}
+                </View>
+
+                <View style={styles.formGroup}>
+                  <Text style={styles.formLabel}>End Time</Text>
+                  <TouchableOpacity 
+                    style={styles.formInput}
+                    onPress={() => setShowEntryEndPicker(true)}
+                  >
+                    <Feather name="clock" size={18} color={colors.mutedForeground} />
+                    <Text style={styles.formInputText}>
+                      {entryEndTime.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </Text>
+                  </TouchableOpacity>
+                  {showEntryEndPicker && (
+                    <DateTimePicker
+                      value={entryEndTime}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, time) => {
+                        setShowEntryEndPicker(Platform.OS === 'ios');
+                        if (time) setEntryEndTime(time);
+                      }}
+                    />
+                  )}
+                </View>
+
+                <View style={styles.durationPreview}>
+                  <Feather name="trending-up" size={16} color={colors.primary} />
+                  <Text style={styles.durationPreviewText}>
+                    Duration: {(() => {
+                      const diffMs = entryEndTime.getTime() - entryStartTime.getTime();
+                      if (diffMs <= 0) return '--:--';
+                      const hrs = Math.floor(diffMs / 3600000);
+                      const mins = Math.floor((diffMs % 3600000) / 60000);
+                      return `${hrs}h ${mins}m`;
+                    })()}
+                  </Text>
+                </View>
+              </>
+            )}
 
             <View style={styles.formGroup}>
               <TouchableOpacity 
