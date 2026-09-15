@@ -62,15 +62,15 @@ interface TimeEntry {
   userEmail?: string;
 }
 
-// Category definitions
+// Category definitions — icon is a Feather icon name
 const TIME_CATEGORIES = [
-  { value: 'work',      label: 'Site Work',       emoji: '🔨' },
-  { value: 'travel',    label: 'Driving / Travel', emoji: '🚗' },
-  { value: 'materials', label: 'Supplies Run',     emoji: '🛒' },
-  { value: 'admin',     label: 'Admin / Office',   emoji: '🖥️' },
-  { value: 'meeting',   label: 'Meeting',          emoji: '📋' },
-  { value: 'training',  label: 'Training',         emoji: '🎓' },
-  { value: 'other',     label: 'Other',            emoji: '⚙️' },
+  { value: 'work',      label: 'Site Work',       icon: 'tool'          as const },
+  { value: 'travel',    label: 'Driving / Travel', icon: 'navigation'    as const },
+  { value: 'materials', label: 'Supplies Run',     icon: 'shopping-cart' as const },
+  { value: 'admin',     label: 'Admin / Office',   icon: 'monitor'       as const },
+  { value: 'meeting',   label: 'Meeting',          icon: 'users'         as const },
+  { value: 'training',  label: 'Training',         icon: 'book-open'     as const },
+  { value: 'other',     label: 'Other',            icon: 'grid'          as const },
 ] as const;
 
 type TimeCategory = typeof TIME_CATEGORIES[number]['value'];
@@ -853,6 +853,10 @@ export default function TimeTrackingScreen() {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [selectedJob, setSelectedJob] = useState<string | null>(null);
   const [selectedTimerCategory, setSelectedTimerCategory] = useState<TimeCategory | null>(null);
+  // Start Timer sheet state
+  const [showStartTimerSheet, setShowStartTimerSheet] = useState(false);
+  const [sheetCategory, setSheetCategory] = useState<TimeCategory>('work');
+  const [sheetJobId, setSheetJobId] = useState<string | null>(null);
   const [timeStats, setTimeStats] = useState<TimeStats>({ todayHours: 0, weekHours: 0, totalEntries: 0, billableHours: 0, breakHours: 0, weeklyEarnings: 0, todayEarnings: 0, nonJobHours: 0 });
   const [isStarting, setIsStarting] = useState(false);
   const [isStopping, setIsStopping] = useState(false);
@@ -1072,24 +1076,29 @@ export default function TimeTrackingScreen() {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleStartTimer = async () => {
-    if (!selectedJob && !selectedTimerCategory) {
-      Alert.alert('Select a Job or Category', 'Please select a job or a category to track time.');
-      return;
-    }
+  // Opens the "What are you tracking?" sheet before starting
+  const handleStartTimer = () => {
+    setSheetCategory('work');
+    setSheetJobId(null);
+    setShowStartTimerSheet(true);
+  };
+
+  // Called from inside the sheet after the user confirms
+  const handleConfirmStartTimer = async () => {
     setIsStarting(true);
+    setShowStartTimerSheet(false);
     try {
-      const selectedJobData = selectedJob ? jobs.find(j => j.id === selectedJob) : null;
-      const catMeta = getCategoryMeta(selectedTimerCategory || 'work');
-      const description = selectedJob
-        ? (selectedJobData ? `Working on: ${selectedJobData.title}` : 'Working on job')
+      const jobData = sheetJobId ? jobs.find(j => j.id === sheetJobId) : null;
+      const catMeta = getCategoryMeta(sheetJobId ? 'work' : sheetCategory);
+      const description = sheetJobId
+        ? (jobData ? `Working on: ${jobData.title}` : 'Working on job')
         : catMeta.label;
       const success = await startTimer(
-        selectedJob || null,
+        sheetJobId || null,
         description,
         false,
         undefined,
-        selectedTimerCategory || 'work',
+        sheetJobId ? 'work' : sheetCategory,
       );
       if (!success) {
         Alert.alert('Error', 'Failed to start timer. Please try again.');
@@ -1629,79 +1638,18 @@ export default function TimeTrackingScreen() {
         </View>
       </View>
 
+      {/* Category hint row — shown when timer is idle, tapping it opens the sheet */}
       {!isTimerRunning && (
-        <View style={styles.jobSelectSection}>
-          <Text style={styles.sectionTitle}>SELECT JOB OR CATEGORY</Text>
-
-          {/* Non-job category tiles */}
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md }}>
-            {NON_JOB_CATEGORIES.map(cat => {
-              const meta = getCategoryMeta(cat);
-              const chipColor = CATEGORY_COLORS[cat] || '#6B7280';
-              const isSelected = selectedTimerCategory === cat && !selectedJob;
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  onPress={() => { setSelectedTimerCategory(cat); setSelectedJob(null); }}
-                  activeOpacity={0.7}
-                  style={{
-                    flex: 1,
-                    minWidth: '44%',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: spacing.sm,
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
-                    borderRadius: radius.lg,
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? chipColor : colors.border,
-                    backgroundColor: isSelected ? chipColor + '18' : colors.card,
-                  }}
-                >
-                  <Text style={{ fontSize: 18 }}>{meta.emoji}</Text>
-                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.foreground, flex: 1 }}>
-                    {meta.label}
-                  </Text>
-                  {isSelected && <Feather name="check-circle" size={14} color={chipColor} />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Job list */}
-          {inProgressJobs.length > 0 && (
-            <Text style={[styles.sectionTitle, { fontSize: typography.sizes.xs, marginBottom: spacing.xs }]}>OR SELECT A JOB</Text>
-          )}
-          {inProgressJobs.length === 0 ? (
-            <View style={[styles.emptyState, { marginTop: 0 }]}>
-              <Text style={styles.emptyStateText}>No active or scheduled jobs to track</Text>
-            </View>
-          ) : (
-            inProgressJobs.slice(0, 6).map(job => (
-              <TouchableOpacity
-                key={job.id}
-                style={[
-                  styles.jobSelectCard,
-                  selectedJob === job.id && styles.jobSelectCardActive
-                ]}
-                onPress={() => { setSelectedJob(job.id); setSelectedTimerCategory(null); }}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.jobSelectRadio, selectedJob === job.id && { borderColor: colors.primary }]}>
-                  {selectedJob === job.id && <View style={styles.jobSelectRadioInner} />}
-                </View>
-                <View style={styles.jobSelectContent}>
-                  <Text style={styles.jobSelectTitle} numberOfLines={1}>{job.title}</Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: job.status === 'in_progress' ? colors.success : job.status === 'scheduled' ? colors.primary : colors.mutedForeground }} />
-                    <Text style={styles.jobSelectStatus}>{(job.status || '').replace(/_/g, ' ')}</Text>
-                  </View>
-                </View>
-                <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
-              </TouchableOpacity>
-            ))
-          )}
-        </View>
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm, paddingHorizontal: spacing.xs }}
+          onPress={() => { setSheetCategory('work'); setSheetJobId(null); setShowStartTimerSheet(true); }}
+          activeOpacity={0.7}
+        >
+          <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
+          <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>
+            Select job or category before starting
+          </Text>
+        </TouchableOpacity>
       )}
     </View>
   );
@@ -1825,7 +1773,7 @@ export default function TimeTrackingScreen() {
                 const chipColor = CATEGORY_COLORS[cat] || '#6B7280';
                 return (
                   <View key={cat} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: chipColor + '14', paddingHorizontal: 8, paddingVertical: 4, borderRadius: radius.md }}>
-                    <Text style={{ fontSize: 11 }}>{meta.emoji}</Text>
+                    <Feather name={meta.icon} size={11} color={chipColor} />
                     <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>
                       {meta.label} {formatDurationHM(mins)}
                     </Text>
@@ -2019,7 +1967,7 @@ export default function TimeTrackingScreen() {
                 const catMeta = !entry.jobId ? getCategoryMeta(entry.timeCategory) : null;
                 const group: GroupedJob = {
                   jobId: entry.jobId,
-                  jobTitle: jobData?.title || (catMeta ? `${catMeta.emoji} ${catMeta.label}` : 'Other'),
+                  jobTitle: jobData?.title || (catMeta ? catMeta.label : 'Other'),
                   workEntries: [],
                   breakEntries: [],
                   totalWorkMinutes: 0,
@@ -2060,7 +2008,7 @@ export default function TimeTrackingScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.md, gap: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border + '40' }}>
                     <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: groupAccentColor + '18', alignItems: 'center', justifyContent: 'center' }}>
                       {isNonJobGroup
-                        ? <Text style={{ fontSize: 18 }}>{groupCatMeta?.emoji ?? '⚙️'}</Text>
+                        ? <Feather name={(groupCatMeta?.icon ?? 'grid') as any} size={16} color={groupAccentColor} />
                         : <Feather name="briefcase" size={16} color={colors.primary} />}
                     </View>
                     <View style={{ flex: 1 }}>
@@ -2108,7 +2056,7 @@ export default function TimeTrackingScreen() {
                                 const chipColor = CATEGORY_COLORS[entry.timeCategory] || '#6B7280';
                                 return (
                                   <View style={{ backgroundColor: chipColor + '18', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                                    <Text style={{ fontSize: 9 }}>{catMeta.emoji}</Text>
+                                    <Feather name={catMeta.icon as any} size={9} color={chipColor} />
                                     <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>{catMeta.label}</Text>
                                   </View>
                                 );
@@ -2316,7 +2264,7 @@ export default function TimeTrackingScreen() {
                   <View key={cat} style={{ marginBottom: spacing.sm }}>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                        <Text style={{ fontSize: 13 }}>{meta.emoji}</Text>
+                        <Feather name={meta.icon as any} size={13} color={chipColor} />
                         <Text style={{ fontSize: typography.sizes.xs, color: colors.foreground }}>{meta.label}</Text>
                       </View>
                       <Text style={{ fontSize: typography.sizes.xs, color: chipColor, fontWeight: fontWeights.semibold }}>{formatDurationHM(mins)}</Text>
@@ -2910,6 +2858,112 @@ export default function TimeTrackingScreen() {
             </View>
           </ScrollView>
         </View>
+      </AppBottomSheet>
+
+      {/* ── Start Timer sheet ── */}
+      <AppBottomSheet
+        visible={showStartTimerSheet}
+        onDismiss={() => setShowStartTimerSheet(false)}
+        title="What are you tracking?"
+        showCloseButton
+        snapPoints={['75%']}
+        scrollable={false}
+        contentPadding={0}
+        footer={
+          <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md, paddingTop: spacing.sm }}>
+            <TouchableOpacity
+              style={{ backgroundColor: colors.primary, borderRadius: radius.xl, paddingVertical: spacing.md, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: spacing.sm }}
+              onPress={handleConfirmStartTimer}
+              activeOpacity={0.8}
+            >
+              <Feather name="play" size={16} color={colors.primaryForeground} />
+              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>
+                Start Timer
+              </Text>
+            </TouchableOpacity>
+          </View>
+        }
+      >
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xl }} showsVerticalScrollIndicator={false}>
+          {/* Category grid */}
+          <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: spacing.sm }}>CATEGORY</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
+            {TIME_CATEGORIES.map(cat => {
+              const chipColor = CATEGORY_COLORS[cat.value] || '#6B7280';
+              const isSelected = sheetCategory === cat.value && !sheetJobId;
+              return (
+                <TouchableOpacity
+                  key={cat.value}
+                  onPress={() => { setSheetCategory(cat.value as TimeCategory); setSheetJobId(null); }}
+                  activeOpacity={0.7}
+                  style={{
+                    width: '47%',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    paddingHorizontal: spacing.md,
+                    paddingVertical: spacing.md,
+                    borderRadius: radius.lg,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? chipColor : colors.border,
+                    backgroundColor: isSelected ? chipColor + '15' : colors.card,
+                  }}
+                >
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? chipColor + '25' : colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                    <Feather name={cat.icon as any} size={16} color={isSelected ? chipColor : colors.mutedForeground} />
+                  </View>
+                  <Text style={{ fontSize: typography.sizes.sm, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? chipColor : colors.foreground, flex: 1 }} numberOfLines={2}>
+                    {cat.label}
+                  </Text>
+                  {isSelected && <Feather name="check-circle" size={14} color={chipColor} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          {/* Job list */}
+          {inProgressJobs.length > 0 && (
+            <>
+              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold, color: colors.mutedForeground, letterSpacing: 0.5, marginBottom: spacing.sm }}>OR SELECT A JOB</Text>
+              {inProgressJobs.slice(0, 8).map(job => {
+                const isSelected = sheetJobId === job.id;
+                return (
+                  <TouchableOpacity
+                    key={job.id}
+                    style={[
+                      {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: spacing.md,
+                        paddingVertical: spacing.md,
+                        paddingHorizontal: spacing.md,
+                        borderRadius: radius.lg,
+                        borderWidth: 1.5,
+                        borderColor: isSelected ? colors.primary : colors.border,
+                        backgroundColor: isSelected ? colors.primary + '10' : colors.card,
+                        marginBottom: spacing.sm,
+                      }
+                    ]}
+                    onPress={() => { setSheetJobId(job.id); }}
+                    activeOpacity={0.7}
+                  >
+                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isSelected ? colors.primary + '20' : colors.muted, alignItems: 'center', justifyContent: 'center' }}>
+                      <Feather name="briefcase" size={16} color={isSelected ? colors.primary : colors.mutedForeground} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: isSelected ? colors.primary : colors.foreground }} numberOfLines={1}>{job.title}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: job.status === 'in_progress' ? colors.success : colors.primary }} />
+                        <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{(job.status || '').replace(/_/g, ' ')}</Text>
+                      </View>
+                    </View>
+                    {isSelected && <Feather name="check-circle" size={16} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </>
+          )}
+        </ScrollView>
       </AppBottomSheet>
 
       <AppBottomSheet
