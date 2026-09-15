@@ -99,6 +99,7 @@ import { VariationsSection } from '../../src/components/jobDetail/VariationsSect
 import { DocumentRegisterSection } from '../../src/components/jobDetail/DocumentRegisterSection';
 import { SiteDiarySection } from '../../src/components/jobDetail/SiteDiarySection';
 import { JobNotesSection } from '../../src/components/jobDetail/JobNotesSection';
+import { TimerSheet } from '../../src/components/jobDetail/TimerSheet';
 import { PendingProjectUploadsBanner } from '../../src/components/jobDetail/PendingProjectUploadsBanner';
 import { SkeletonJobDetailOverview, SkeletonSection } from '../../src/components/Skeleton';
 import { LoggedWorkLineItems } from '../../src/components/jobDetail/LoggedWorkLineItems';
@@ -2193,6 +2194,9 @@ export default function JobDetailScreen() {
   const [voiceNotes, setVoiceNotes] = useState<VoiceNote[]>([]);
   const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [isUploadingVoiceNote, setIsUploadingVoiceNote] = useState(false);
+  // Timer sheet — phase picker + mode toggle (live / manual)
+  const [showTimerSheet, setShowTimerSheet] = useState(false);
+  const [timerSheetInitialPhaseId, setTimerSheetInitialPhaseId] = useState<string | undefined>(undefined);
   const [showFABVoiceModal, setShowFABVoiceModal] = useState(false);
   const [isFABRecording, setIsFABRecording] = useState(false);
   const [isUploadingFABVoice, setIsUploadingFABVoice] = useState(false);
@@ -6998,25 +7002,27 @@ export default function JobDetailScreen() {
     }
   }, [roleInfo, user, isLoadingSwms, swmsLoadError, swmsDataReady, loadSwmsDocuments, getUnsignedSwmsForCurrentUser]);
 
-  // For project jobs with phases, pick a phase before starting the timer.
-  const startTimerWithOptionalPhase = async (callback: (phaseId?: string) => void) => {
-    const options = buildPhaseTimerOptions({
-      hasJob: !!job,
-      isProject,
-      phases,
-    });
+  // Opens the TimerSheet so the user can pick a phase and choose live vs manual.
+  // If the job has no phases (service call or phase-less project), skip the sheet
+  // and start the timer directly.
+  const openTimerSheetOrStartDirect = (initialPhaseId?: string) => {
+    const options = buildPhaseTimerOptions({ hasJob: !!job, isProject, phases });
     if (options.length === 0) {
-      callback(undefined);
+      // No phases — start immediately without showing the sheet.
+      proceedWithTimerStart(false, undefined);
       return;
     }
-    showActionSheet({
-      title: 'Assign to phase?',
-      message: 'Optionally tag this time entry to a phase for exact cost tracking.',
-      actions: options.map(o => ({
-        label: o.label,
-        onPress: () => callback(o.phaseId),
-      })),
-    });
+    setTimerSheetInitialPhaseId(initialPhaseId);
+    setShowTimerSheet(true);
+  };
+
+  // Legacy shim kept so the existing call-sites that pass a callback still work.
+  // All call-sites now call openTimerSheetOrStartDirect instead.
+  const startTimerWithOptionalPhase = async (callback: (phaseId?: string) => void) => {
+    const options = buildPhaseTimerOptions({ hasJob: !!job, isProject, phases });
+    if (options.length === 0) { callback(undefined); return; }
+    setTimerSheetInitialPhaseId(undefined);
+    setShowTimerSheet(true);
   };
 
   const handleStartTimer = async () => {
@@ -7037,7 +7043,7 @@ export default function JobDetailScreen() {
             showToast({ type: 'error', message: 'Error', description: 'Failed to stop the existing timer. Please try again.' });
             return;
           }
-          startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId));
+          openTimerSheetOrStartDirect();
         });
       });
       return;
@@ -7049,7 +7055,7 @@ export default function JobDetailScreen() {
         'Safety documentation is incomplete. Starting the timer will transition this job to "In Progress". Complete safety docs first?',
         [
           { text: 'Complete Safety Docs', style: 'default', onPress: () => setActiveTab('files') },
-          { text: 'Start Anyway', style: 'secondary', onPress: () => checkSwmsGateThenStart(() => startTimerWithOptionalPhase((phaseId) => proceedWithTimerStart(false, phaseId))) },
+          { text: 'Start Anyway', style: 'secondary', onPress: () => checkSwmsGateThenStart(() => openTimerSheetOrStartDirect()) },
           { text: 'Cancel', style: 'plain' },
         ],
       );
@@ -11497,7 +11503,7 @@ export default function JobDetailScreen() {
   
 
   const renderReceiptsSection = () => {
-    const matPhotos: { id: string; url: string; label: string; source: 'material' }[] = (jobMaterials || [])
+    const matPhotos: { id: string; url: string; label: string; source: 'material' }[] = (materials || [])
       .filter((m: any) => m.photoUrl && (m.photoUrl.startsWith('http') || m.photoUrl.startsWith('/objects/')))
       .map((m: any) => ({ id: m.id, url: m.photoUrl, label: m.name || 'Material', source: 'material' as const }));
     const expensePhotos: { id: string; url: string; label: string; source: 'expense' }[] = (jobExpenses || [])
@@ -12511,7 +12517,10 @@ export default function JobDetailScreen() {
                       ) : (
                         <TouchableOpacity
                           onPress={() => {
-                            checkSwmsGateThenStart(() => proceedWithTimerStart(false, phase.id));
+                            checkSwmsGateThenStart(() => {
+                              setTimerSheetInitialPhaseId(phase.id);
+                              setShowTimerSheet(true);
+                            });
                           }}
                           disabled={timerLoading || otherJobTimer}
                           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 11, paddingHorizontal: spacing.md, borderRadius: radius.md, backgroundColor: phaseOtherActive ? colors.muted : colors.primary, opacity: otherJobTimer ? 0.4 : 1, marginBottom: spacing.sm }}
@@ -13254,13 +13263,19 @@ export default function JobDetailScreen() {
                               showToast({ type: 'error', message: 'Failed to stop existing timer' });
                               return;
                             }
-                            proceedWithTimerStart(false, phase.id);
+                            setTimerSheetInitialPhaseId(phase.id);
+                            setShowTimerSheet(true);
                           });
                         });
                       } else if (activeTimer && isTimerForThisJob) {
-                        showToast({ type: 'info', message: 'Timer is already running for this job' });
+                        // Already timing this job — open the sheet in manual-entry mode
+                        setTimerSheetInitialPhaseId(phase.id);
+                        setShowTimerSheet(true);
                       } else {
-                        checkSwmsGateThenStart(() => proceedWithTimerStart(false, phase.id));
+                        checkSwmsGateThenStart(() => {
+                          setTimerSheetInitialPhaseId(phase.id);
+                          setShowTimerSheet(true);
+                        });
                       }
                     }}
                   />
@@ -18186,6 +18201,24 @@ export default function JobDetailScreen() {
           )}
         </View>
       </Modal>
+
+      {/* Timer sheet — phase picker + live/manual toggle */}
+      <TimerSheet
+        visible={showTimerSheet}
+        onDismiss={() => setShowTimerSheet(false)}
+        colors={colors}
+        jobId={String(id)}
+        phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode ?? null }))}
+        initialPhaseId={timerSheetInitialPhaseId}
+        hasActiveTimer={!!activeTimer}
+        onStartLiveTimer={(phaseId) => {
+          proceedWithTimerStart(false, phaseId);
+        }}
+        onManualEntrySaved={() => {
+          loadTimeEntries();
+          loadTeamTimers();
+        }}
+      />
 
       {/* Manage Team bottom sheet — project jobs, owners/managers only */}
       {isProject && (isOwnerOrManager || isSoloOwner) && (

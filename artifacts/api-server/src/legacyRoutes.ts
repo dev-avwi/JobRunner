@@ -29507,6 +29507,77 @@ Respond with JSON in this format:
     }
   });
 
+  // ── Manual time entry — completed record, bypasses active-timer guard ──────
+  app.post("/api/time-entries/manual", requireAuth, async (req: any, res) => {
+    try {
+      const userId = req.userId!;
+      const { jobId, phaseId, startTime, endTime, duration, description } = req.body;
+
+      if (!jobId) return res.status(400).json({ error: 'jobId is required' });
+      if (!startTime || !endTime) return res.status(400).json({ error: 'startTime and endTime are required for manual entries' });
+
+      const startMs = new Date(startTime).getTime();
+      const endMs   = new Date(endTime).getTime();
+      if (isNaN(startMs) || isNaN(endMs)) return res.status(400).json({ error: 'Invalid time values' });
+      if (endMs <= startMs) return res.status(400).json({ error: 'End time must be after start time' });
+      if (endMs - startMs > 24 * 60 * 60 * 1000) return res.status(400).json({ error: 'Entry cannot exceed 24 hours' });
+      // Disallow future end times
+      if (endMs > Date.now() + 60_000) return res.status(400).json({ error: 'End time cannot be in the future' });
+
+      const ctx = await getUserContext(userId);
+      const ownedJob = await storage.getJob(jobId, ctx.effectiveUserId);
+      if (!ownedJob) return res.status(404).json({ error: 'Job not found' });
+
+      if (phaseId) {
+        const phases = await storage.getJobPhases(jobId, ctx.effectiveUserId);
+        if (!phases.some((p: any) => p.id === phaseId)) {
+          return res.status(400).json({ error: 'Phase not found or does not belong to this job' });
+        }
+      }
+
+      // Resolve hourly rate (same logic as live timer)
+      const hasUsableRate = (v: any) =>
+        v !== null && v !== undefined && String(v).trim() !== '' &&
+        !isNaN(parseFloat(String(v))) && parseFloat(String(v)) > 0;
+      let resolvedHourlyRate: string | null = null;
+      const assignments = await storage.getJobAssignments(jobId);
+      const myAssignment = assignments.find((a: any) => a.userId === userId && a.isActive !== false);
+      if (myAssignment && hasUsableRate(myAssignment.hourlyRateOverride)) {
+        resolvedHourlyRate = String(myAssignment.hourlyRateOverride);
+      }
+      if (!resolvedHourlyRate) {
+        const memberRow = await storage.getTeamMemberByOwnerAndMemberId(ctx.effectiveUserId, userId);
+        if (memberRow && hasUsableRate(memberRow.hourlyRate)) {
+          resolvedHourlyRate = String(memberRow.hourlyRate);
+        }
+      }
+      if (!resolvedHourlyRate) {
+        const biz = await storage.getBusinessSettings(ctx.effectiveUserId);
+        if (biz && hasUsableRate((biz as any).defaultHourlyRate)) {
+          resolvedHourlyRate = String((biz as any).defaultHourlyRate);
+        }
+      }
+
+      const entry = await storage.createTimeEntry({
+        userId,
+        jobId,
+        phaseId: phaseId ?? null,
+        startTime: new Date(startTime),
+        endTime: new Date(endTime),
+        duration: duration ?? Math.round((endMs - startMs) / 60000),
+        description: description || 'Manual entry',
+        isBreak: false,
+        isOvertime: false,
+        hourlyRate: resolvedHourlyRate || '85.00',
+      } as any);
+
+      res.status(201).json(entry);
+    } catch (error) {
+      console.error('Error creating manual time entry:', error);
+      res.status(500).json({ error: 'Failed to save time entry' });
+    }
+  });
+
   app.put("/api/time-entries/:id", requireAuth, async (req: any, res) => {
     try {
       const userId = req.userId!;
