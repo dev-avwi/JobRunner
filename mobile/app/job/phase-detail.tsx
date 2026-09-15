@@ -1443,27 +1443,18 @@ export default function PhaseDetailScreen() {
                     <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
                   </TouchableOpacity>
                   {isActive && (
-                    <View style={{ marginTop: 4 }}>
-                      <DateTimePicker
-                        value={iso ? new Date(iso) : new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event, date) => {
-                          if (Platform.OS !== 'ios') setPhaseDateTarget(null);
-                          if (event.type !== 'dismissed' && date) {
-                            setEditPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
-                          }
-                        }}
-                      />
-                      {Platform.OS === 'ios' && (
-                        <TouchableOpacity
-                          style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
-                          onPress={() => setPhaseDateTarget(null)}
-                        >
-                          <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
+                    <DateTimePicker
+                      value={iso ? new Date(iso) : new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'compact' : 'default'}
+                      onChange={(event, date) => {
+                        if (Platform.OS !== 'ios') setPhaseDateTarget(null);
+                        if (event.type !== 'dismissed' && date) {
+                          setEditPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
+                        }
+                      }}
+                      style={{ alignSelf: 'flex-start', marginTop: 4 }}
+                    />
                   )}
                 </View>
               );

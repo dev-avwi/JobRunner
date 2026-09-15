@@ -723,6 +723,10 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
 
   const activeTimerRef = useRef(activeTimer);
   activeTimerRef.current = activeTimer;
+  // Keep the last non-null activeTimer in a ref so the UI doesn't flash idle
+  // during the brief moment between stopTimer (break→null) and startTimer (null→work).
+  const lastActiveTimerRef = useRef(activeTimer);
+  if (activeTimer) lastActiveTimerRef.current = activeTimer;
 
   useEffect(() => {
     if (timerIntervalRef.current) {
@@ -945,7 +949,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
   // Today's entries list component - shows active timer first if running
   const renderTodayEntries = () => {
     // Show section if there's an active timer or completed entries
-    if (!activeTimer && todayEntries.length === 0) return null;
+    if (!activeTimer && !isPausing && todayEntries.length === 0) return null;
     
     return (
       <View style={styles.todayEntriesContainer}>
@@ -1113,6 +1117,11 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
     );
   }
 
+  // Use the last known active timer as a fallback so the UI doesn't flash idle
+  // during the brief gap between stopping the break and starting the work entry.
+  const displayTimer = activeTimer ?? lastActiveTimerRef.current;
+  if (!displayTimer) return null;
+
   return (
     <View style={[styles.timerActiveContainer]}>
       <View style={[styles.timeTrackingWidget, styles.timeTrackingWidgetActive, isOnBreak && styles.timeTrackingWidgetBreak]}>
@@ -1140,11 +1149,11 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
             </View>
             <TouchableOpacity 
               onPress={handleViewJob}
-              disabled={!activeTimer.jobId}
+              disabled={!displayTimer.jobId}
               activeOpacity={0.7}
             >
-              <Text style={[styles.timerJobTitle, activeTimer.jobId && styles.timerJobTitleLink]} numberOfLines={1}>
-                {isOnBreak ? 'On Break' : (activeTimer.description || activeTimer.jobTitle || 'General time')}
+              <Text style={[styles.timerJobTitle, displayTimer.jobId && styles.timerJobTitleLink]} numberOfLines={1}>
+                {isOnBreak ? 'On Break' : (displayTimer.description || displayTimer.jobTitle || 'General time')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -4724,119 +4733,8 @@ function OwnerDashboardScreen() {
         <ComplianceAlerts isOwner={isOwnerUser} />
       )}
 
-      {/* Unassigned Phases - Owner and Manager */}
-      {(isOwnerUser || isManager) && (unassignedPhases.length > 0 || isUnassignedPhasesLoading) && (() => {
-        const now = new Date();
-        const in48h = new Date(now.getTime() + 48 * 60 * 60 * 1000);
-        const urgentCount = unassignedPhases.filter((p: any) => {
-          if (!p.scheduledStart) return false;
-          const start = new Date(p.scheduledStart);
-          return start >= now && start <= in48h;
-        }).length;
-        const preview = unassignedPhases.slice(0, 5);
 
-        const formatPhaseDate = (dateStr?: string | null) => {
-          if (!dateStr) return 'No date set';
-          const d = new Date(dateStr);
-          const today = new Date();
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          if (d.toDateString() === today.toDateString()) return 'Today';
-          if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-          return d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' });
-        };
-
-        return (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleRow}>
-                <View style={[styles.sectionTitleIcon, { backgroundColor: colorWithOpacity(colors.warning, 0.12) }]}>
-                  <Feather name="user-x" size={iconSizes.md} color={colors.warning} />
-                </View>
-                <Text style={styles.sectionTitle}>Unassigned Phases</Text>
-                {urgentCount > 0 && (
-                  <View style={{ marginLeft: spacing.sm, backgroundColor: colors.warning, borderRadius: radius.full, paddingHorizontal: 7, paddingVertical: 2, minWidth: 20, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: '#fff' }}>{urgentCount}</Text>
-                  </View>
-                )}
-              </View>
-              {unassignedPhases.length > 5 && (
-                <TouchableOpacity
-                  style={styles.viewAllButton}
-                  onPress={() => router.push(asHref('/more/unassigned-phases'))}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.viewAllText}>See all</Text>
-                  <Feather name="chevron-right" size={iconSizes.sm} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {isUnassignedPhasesLoading ? (
-              <View style={{ paddingVertical: spacing.lg, alignItems: 'center' }}>
-                <ActivityIndicator size="small" color={colors.warning} />
-              </View>
-            ) : (
-              <View style={{ gap: spacing.sm }}>
-                {preview.map((phase: any) => {
-                  const isUrgent = phase.scheduledStart && new Date(phase.scheduledStart) <= in48h && new Date(phase.scheduledStart) >= now;
-                  return (
-                    <TouchableOpacity
-                      key={phase.id}
-                      style={[
-                        {
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: spacing.md,
-                          paddingVertical: spacing.md,
-                          paddingHorizontal: spacing.md,
-                          borderRadius: radius.lg,
-                          backgroundColor: colors.card,
-                          borderWidth: 1,
-                          borderColor: isUrgent ? colorWithOpacity(colors.warning, 0.3) : colors.cardBorder,
-                        }
-                      ]}
-                      activeOpacity={0.75}
-                      onPress={() => router.push(asHref('/more/unassigned-phases'))}
-                    >
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={{ fontSize: typography.sizes.sm, fontWeight: fontWeights.semibold, color: colors.foreground }} numberOfLines={1}>
-                          {phase.name}
-                        </Text>
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }} numberOfLines={1}>
-                          {phase.jobTitle || 'Untitled Job'}
-                        </Text>
-                      </View>
-                      <View style={{ alignItems: 'flex-end', gap: 3 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <Feather name="calendar" size={11} color={isUrgent ? colors.warning : colors.mutedForeground} />
-                          <Text style={{ fontSize: 11, color: isUrgent ? colors.warning : colors.mutedForeground, fontWeight: isUrgent ? fontWeights.semibold : fontWeights.regular }}>
-                            {formatPhaseDate(phase.scheduledStart)}
-                          </Text>
-                        </View>
-                      </View>
-                      <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
-                    </TouchableOpacity>
-                  );
-                })}
-                {unassignedPhases.length > 5 && (
-                  <TouchableOpacity
-                    style={{ alignItems: 'center', paddingVertical: spacing.sm }}
-                    onPress={() => router.push(asHref('/more/unassigned-phases'))}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.medium }}>
-                      View all {unassignedPhases.length} unassigned phases
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </View>
-        );
-      })()}
-
-      {/* Job Scheduler - Team Owners Only (show loading state or content) */}
+            {/* Job Scheduler - Team Owners Only (show loading state or content) */}
       {isOwnerUser && (hasActiveTeam || isTeamDataLoading) && (
         <View 
           style={styles.section}

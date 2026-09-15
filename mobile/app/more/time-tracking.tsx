@@ -2731,7 +2731,6 @@ export default function TimeTrackingScreen() {
               keyboardType="decimal-pad"
               value={travelDistanceInput}
               onChangeText={setTravelDistanceInput}
-              autoFocus
             />
             <Text style={{ ...typography.body, color: colors.mutedForeground }}>km</Text>
           </View>
