@@ -16,6 +16,7 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import { spacing, radius, typography, fontWeights, shadows } from '../../src/lib/design-tokens';
 import { TeamAvatar } from '../../src/components/TeamAvatar';
+import { SkeletonPhaseDetail } from '../../src/components/Skeleton';
 import { useUserRole } from '../../src/hooks/use-user-role';
 import { useTimeTrackingStore } from '../../src/lib/store';
 import api, { API_URL } from '../../src/lib/api';
@@ -687,9 +688,7 @@ export default function PhaseDetailScreen() {
     return (
       <View style={[styles.flex, { backgroundColor: colors.background }]}>
         <Stack.Screen options={backOnlyHeader} />
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
+        <SkeletonPhaseDetail />
       </View>
     );
   }

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
+import { SkeletonSection } from '@/components/Skeleton';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
@@ -3277,7 +3278,7 @@ function TeamManagementScreenInner() {
               
               <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
                 {isLoadingDetail ? (
-                  <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />
+                  <SkeletonSection rows={4} />
                 ) : selectedMember && (
                   <>
                     {/* Header with avatar and name */}
@@ -3946,7 +3947,7 @@ function TeamManagementScreenInner() {
               
               <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
                 {isLoadingJobs ? (
-                  <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xl }} />
+                  <SkeletonSection rows={4} />
                 ) : availableJobs.length === 0 ? (
                   <View style={styles.emptyDetail}>
                     <Feather name="briefcase" size={48} color={colors.mutedForeground} />

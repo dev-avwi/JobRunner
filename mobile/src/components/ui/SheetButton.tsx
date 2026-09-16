@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, ActivityIndicator, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, ActivityIndicator, View, StyleSheet, ViewStyle } from 'react-native';
 import { ReactNode } from 'react';
 import { useTheme } from '../../lib/theme';
 import { spacing, radius } from '../../lib/design-tokens';
@@ -62,18 +62,24 @@ export function SheetButton({
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={textColor} />
-      ) : children ? (
-        children
-      ) : (
-        <>
-          {icon}
-          {label ? (
-            <Text style={{ color: textColor, fontSize: 16, fontWeight: '600' }}>{label}</Text>
-          ) : null}
-          {trailingIcon}
-        </>
+      {/* While loading, the normal content stays mounted invisibly so the
+          button keeps its exact width/height — the spinner overlays it
+          instead of replacing it, so buttons never resize mid-action. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, opacity: loading ? 0 : 1 }}>
+        {children ?? (
+          <>
+            {icon}
+            {label ? (
+              <Text style={{ color: textColor, fontSize: 16, fontWeight: '600' }}>{label}</Text>
+            ) : null}
+            {trailingIcon}
+          </>
+        )}
+      </View>
+      {loading && (
+        <View style={[StyleSheet.absoluteFill, { alignItems: 'center', justifyContent: 'center' }]}>
+          <ActivityIndicator size="small" color={textColor} />
+        </View>
       )}
     </TouchableOpacity>
   );

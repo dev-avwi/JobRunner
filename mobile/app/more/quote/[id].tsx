@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
+import { SkeletonDocumentCard, SkeletonSection, SkeletonText } from '@/components/Skeleton';
 import * as Clipboard from 'expo-clipboard';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -1106,8 +1107,10 @@ ${businessName}`;
     return (
       <>
         <Stack.Screen options={{ title: 'Quote' }} />
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={{ flex: 1, backgroundColor: colors.background, padding: spacing.lg, gap: spacing.md }}>
+          <SkeletonDocumentCard />
+          <SkeletonSection rows={3} />
+          <SkeletonText lines={2} lastLineWidth="45%" />
         </View>
       </>
     );

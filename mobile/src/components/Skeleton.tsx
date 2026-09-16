@@ -367,6 +367,51 @@ export function SkeletonJobDetailOverview() {
   );
 }
 
+/** Phase-detail skeleton — mirrors the hero banner + section cards so the
+    screen paints its final shape immediately instead of a centered spinner. */
+export function SkeletonPhaseDetail() {
+  const { colors } = useTheme();
+  const sectionCard = (
+    <View style={{
+      backgroundColor: colors.card,
+      borderRadius: radius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.sm,
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+        <Skeleton width={32} height={32} borderRadius={radius.md} />
+        <Skeleton width="35%" height={15} />
+      </View>
+      <SkeletonText lines={2} lastLineWidth="70%" />
+    </View>
+  );
+  return (
+    <View>
+      {/* Hero banner: badge row, title, dates, progress bar */}
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.lg, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+        <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: 14 }}>
+          <Skeleton width={72} height={24} borderRadius={7} />
+          <Skeleton width={96} height={24} borderRadius={14} />
+        </View>
+        <Skeleton width="80%" height={28} borderRadius={6} style={{ marginBottom: 12 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+          <Skeleton width={13} height={13} borderRadius={4} />
+          <Skeleton width="45%" height={13} />
+        </View>
+        <Skeleton width="100%" height={6} borderRadius={3} />
+      </View>
+      {/* Section cards: instructions, team, tasks */}
+      <View style={{ padding: spacing.lg, gap: spacing.md }}>
+        {sectionCard}
+        {sectionCard}
+        {sectionCard}
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   card: {
     padding: spacing.md,

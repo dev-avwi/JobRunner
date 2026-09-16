@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
+import { SkeletonSection } from '@/components/Skeleton';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -1772,10 +1773,7 @@ export default function TimeTrackingScreen() {
         })()}
 
         {isLoadingEntries ? (
-          <View style={[styles.emptyState, { paddingVertical: spacing['2xl'] }]}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={[styles.emptyStateText, { marginTop: spacing.md }]}>Loading entries...</Text>
-          </View>
+          <SkeletonSection rows={4} />
         ) : timeEntries.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={[styles.emptyStateIcon, { backgroundColor: colors.primary + '12' }]}>
