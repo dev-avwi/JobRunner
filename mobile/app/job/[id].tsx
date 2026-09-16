@@ -5146,8 +5146,28 @@ export default function JobDetailScreen() {
       return;
     }
     
-    setIsLoading(true);
     setLoadError(null);
+    // Cache-first paint: if we've seen this job before, show the cached copy
+    // immediately and let the network refresh update it in the background.
+    // Only jobs never cached locally get the loading skeleton.
+    let paintedFromCache = false;
+    if (!id.startsWith('local_')) {
+      try {
+        const cached = await offlineStorage.getCachedJob(id);
+        if (cached) {
+          setJob(cached as unknown as Job);
+          setSliderRadius(cached.geofenceRadius || 100);
+          if (cached.clientId) {
+            offlineStorage.getCachedClient(cached.clientId)
+              .then((c) => { if (c) setClient(c as unknown as Client); })
+              .catch(() => {});
+          }
+          setIsLoading(false);
+          paintedFromCache = true;
+        }
+      } catch {}
+    }
+    if (!paintedFromCache) setIsLoading(true);
     try {
       // Jobs created offline have a "local_" id the server doesn't know about
       // (it gets swapped for a real id when the sync queue runs). Load them
@@ -5182,11 +5202,11 @@ export default function JobDetailScreen() {
 
       const response = await api.get<Job>(`/api/jobs/${id}`);
       if (response.error) {
-        // Offline fallback ONLY: when the device has no connection, the job
-        // may be in the local SQLite cache (job lists cache every job they
-        // load). Never fall back on real server errors (401/403/404) — that
-        // would show cached data the server just denied.
+        // Offline: the cache-first paint above already shows the cached copy;
+        // if we hadn't painted yet, try the cache now (job lists cache every
+        // job they load).
         if (response.isOffline) {
+          if (paintedFromCache) return;
           try {
             const cached = await offlineStorage.getCachedJob(id);
             if (cached) {
@@ -5202,6 +5222,13 @@ export default function JobDetailScreen() {
             }
           } catch {}
         }
+        // Real server errors: never keep showing cached data the server just
+        // denied (401/403/404) — clear the cache-first paint and surface the
+        // error. Transient failures (timeout/network flake) keep the cached
+        // view instead of yanking a working screen away.
+        const denied = isAuthErrorMessage(response.error) || /not found|forbidden|denied|403|404/i.test(response.error);
+        if (paintedFromCache && !denied && !response.isOffline) return;
+        if (paintedFromCache && denied) setJob(null);
         setLoadError(response.error);
         setIsLoading(false);
         return;
@@ -5211,10 +5238,11 @@ export default function JobDetailScreen() {
         setSliderRadius(response.data.geofenceRadius || 100);
         setPortalEnabled(!!response.data.portalEnabled);
         if (response.data.clientId) {
-          const clientResponse = await api.get<Client>(`/api/clients/${response.data.clientId}`);
-          if (clientResponse.data) {
-            setClient(clientResponse.data);
-          }
+          // Client details hydrate in the background — the job screen never
+          // blocks on this fetch.
+          api.get<Client>(`/api/clients/${response.data.clientId}`)
+            .then((clientResponse) => { if (clientResponse.data) setClient(clientResponse.data); })
+            .catch(() => {});
           loadLinkedJobs(response.data.clientId);
         }
         api.getJobConflicts().then(conflictRes => {
@@ -5237,7 +5265,10 @@ export default function JobDetailScreen() {
       }
     } catch (error) {
       console.error('Failed to load job:', error);
-      setLoadError(error instanceof Error ? error.message : 'Failed to load job. Please try again.');
+      // A cached paint stays up through unexpected refresh failures.
+      if (!paintedFromCache) {
+        setLoadError(error instanceof Error ? error.message : 'Failed to load job. Please try again.');
+      }
     }
     setIsLoading(false);
   };
