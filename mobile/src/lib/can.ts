@@ -1,4 +1,5 @@
 import { useUserRole } from "../hooks/use-user-role";
+import { useAuthStore } from "./store";
 
 export type Action =
   | "job.create"
@@ -43,7 +44,7 @@ function isAssigned(record: RecordContext | undefined, userId?: string | null): 
  */
 export function useCan() {
   const r = useUserRole();
-  const userId: string | undefined = undefined;
+  const userId = useAuthStore((s) => s.user?.id);
 
   const can = (action: Action, record?: RecordContext): boolean => {
     const isOwnerLike = r.isOwner;
