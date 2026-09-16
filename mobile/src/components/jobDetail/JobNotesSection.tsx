@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
+import { SheetButton } from '../ui/SheetButton';
 import { Feather } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { showToast } from '../../lib/toast';
@@ -286,66 +287,67 @@ export function JobNotesSection({
         title="Add Job Note"
         footer={
           <View style={s.footerRow}>
-            <TouchableOpacity
-              style={[s.cancelBtn, { borderColor: colors.border }]}
-              onPress={closeForm}
-            >
-              <Text style={[s.cancelBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[s.saveBtn, { backgroundColor: colors.primary, opacity: noteText.trim() ? 1 : 0.5 }]}
+            <SheetButton variant="outline" label="Cancel" onPress={closeForm} style={{ flex: 1 }} />
+            <SheetButton
+              label="Save Note"
               onPress={handleSave}
+              loading={saving}
               disabled={!noteText.trim() || saving}
-            >
-              {saving ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text style={s.saveBtnText}>Save Note</Text>
-              )}
-            </TouchableOpacity>
+              style={{ flex: 1 }}
+            />
           </View>
         }
       >
-        <View style={{ padding: spacing.md, gap: spacing.md }}>
-          <TextInput
-            style={[
-              s.textInput,
-              {
-                color: colors.foreground,
-                borderColor: colors.border,
-                backgroundColor: colors.input ?? colors.card,
-              },
-            ]}
-            placeholder="Write a note for the team..."
-            placeholderTextColor={colors.mutedForeground}
-            value={noteText}
-            onChangeText={setNoteText}
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-            autoFocus
-          />
+        <View style={{ gap: spacing.lg, paddingTop: spacing.xs }}>
+          <View>
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground }]}>Note</Text>
+            <TextInput
+              style={[
+                s.textInput,
+                {
+                  color: colors.foreground,
+                  borderColor: colors.cardBorder,
+                  backgroundColor: colors.card,
+                },
+              ]}
+              placeholder="Access codes, site quirks, client preferences..."
+              placeholderTextColor={colors.mutedForeground}
+              value={noteText}
+              onChangeText={setNoteText}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+              autoFocus
+            />
+          </View>
           {/* Photo attachment */}
-          {photoUri ? (
-            <View style={s.photoPreviewRow}>
-              <Image source={{ uri: photoUri }} style={s.photoPreview} resizeMode="cover" />
+          <View>
+            <Text style={[s.fieldLabel, { color: colors.mutedForeground }]}>Photo (optional)</Text>
+            {photoUri ? (
+              <View style={s.photoPreviewRow}>
+                <Image source={{ uri: photoUri }} style={s.photoPreview} resizeMode="cover" />
+                <TouchableOpacity
+                  style={[s.removePhotoBtn, { backgroundColor: colors.destructive }]}
+                  onPress={() => setPhotoUri(null)}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Feather name="x" size={12} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
               <TouchableOpacity
-                style={[s.removePhotoBtn, { backgroundColor: colors.destructive }]}
-                onPress={() => setPhotoUri(null)}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                style={[s.attachPhotoBtn, { borderColor: colors.cardBorder, backgroundColor: colors.card }]}
+                onPress={pickPhoto}
+                activeOpacity={0.7}
               >
-                <Feather name="x" size={12} color="#fff" />
+                <View style={[s.attachPhotoIconWrap, { backgroundColor: `${colors.primary}12` }]}>
+                  <Feather name="camera" size={16} color={colors.primary} />
+                </View>
+                <Text style={[s.attachPhotoBtnText, { color: colors.foreground }]}>Attach a photo</Text>
+                <Text style={[s.attachPhotoHint, { color: colors.mutedForeground }]}>From your photo library</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={[s.attachPhotoBtn, { borderColor: colors.border }]}
-              onPress={pickPhoto}
-            >
-              <Feather name="camera" size={14} color={colors.mutedForeground} />
-              <Text style={[s.attachPhotoBtnText, { color: colors.mutedForeground }]}>Attach photo</Text>
-            </TouchableOpacity>
-          )}
+            )}
+          </View>
         </View>
       </AppBottomSheet>
     </View>
@@ -464,70 +466,68 @@ function localStyles(colors: any) {
       height: 180,
       borderRadius: radius.sm,
     },
+    fieldLabel: {
+      fontSize: 11,
+      fontWeight: fontWeights.bold,
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+      marginBottom: spacing.sm,
+    },
     textInput: {
       borderWidth: 1,
-      borderRadius: radius.md,
-      padding: spacing.md,
-      fontSize: typography.sizes.sm,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.md,
+      fontSize: typography.body.fontSize,
+      lineHeight: 21,
       minHeight: 120,
     },
     attachPhotoBtn: {
-      flexDirection: 'row',
       alignItems: 'center',
       gap: spacing.xs,
-      paddingVertical: spacing.sm,
+      paddingVertical: spacing.lg,
       paddingHorizontal: spacing.md,
       borderWidth: 1,
-      borderRadius: radius.md,
+      borderRadius: radius.lg,
       borderStyle: 'dashed',
+    },
+    attachPhotoIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 2,
     },
     attachPhotoBtnText: {
       fontSize: typography.sizes.sm,
+      fontWeight: fontWeights.semibold,
+    },
+    attachPhotoHint: {
+      fontSize: typography.sizes.xs,
     },
     photoPreviewRow: {
       position: 'relative',
     },
     photoPreview: {
       width: '100%',
-      height: 140,
-      borderRadius: radius.md,
+      height: 160,
+      borderRadius: radius.lg,
     },
     removePhotoBtn: {
       position: 'absolute',
-      top: 6,
-      right: 6,
-      width: 22,
-      height: 22,
-      borderRadius: 11,
+      top: 8,
+      right: 8,
+      width: 24,
+      height: 24,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
     footerRow: {
       flexDirection: 'row',
       gap: spacing.sm,
-      padding: spacing.md,
-    },
-    cancelBtn: {
-      flex: 1,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-      borderRadius: radius.md,
-      borderWidth: 1,
-    },
-    cancelBtnText: {
-      fontSize: typography.sizes.sm,
-      fontWeight: fontWeights.medium,
-    },
-    saveBtn: {
-      flex: 2,
-      paddingVertical: spacing.md,
-      alignItems: 'center',
-      borderRadius: radius.md,
-    },
-    saveBtnText: {
-      fontSize: typography.sizes.sm,
-      fontWeight: fontWeights.semibold,
-      color: '#fff',
     },
   });
 }

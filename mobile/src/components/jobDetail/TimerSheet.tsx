@@ -319,6 +319,21 @@ export function TimerSheet({
             <Text style={{ fontSize: 11, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: spacing.sm }}>
               Duration
             </Text>
+            {/* Native iOS countdown picker / Android stepper fallback — mirrors
+                the Add Time Entry sheet in more/time-tracking. */}
+            {Platform.OS === 'ios' ? (
+              <DateTimePicker
+                mode="countdown"
+                display="spinner"
+                value={(() => { const d = new Date(); d.setHours(hours, minutes, 0, 0); return d; })()}
+                onChange={(_, date) => {
+                  if (!date) return;
+                  setHours(date.getHours());
+                  setMinutes(date.getMinutes());
+                }}
+                style={{ width: '100%', height: 160 }}
+              />
+            ) : (
             <View style={{
               flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               gap: spacing.lg, backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.lg,
@@ -357,6 +372,7 @@ export function TimerSheet({
                 </TouchableOpacity>
               </View>
             </View>
+            )}
 
             {/* Quick-set chips */}
             <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' }}>
