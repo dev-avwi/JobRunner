@@ -10,9 +10,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Image,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
@@ -773,7 +773,7 @@ function ChatView({
                       <Image
                         source={{ uri: resolveAttachmentUrl(message.attachmentUrl) || '' }}
                         style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                     </PressableRow>
                   )}

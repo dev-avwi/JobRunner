@@ -10,9 +10,9 @@ import {
   ActivityIndicator,
   Modal,
   Platform,
-  Image,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';

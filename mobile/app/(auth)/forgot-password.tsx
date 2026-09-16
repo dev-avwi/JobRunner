@@ -8,9 +8,9 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { Link, router } from 'expo-router';
 import api from '../../src/lib/api';
@@ -72,7 +72,7 @@ export default function ForgotPasswordScreen() {
               <Image 
                 source={require('../../assets/jobrunner-logo.png')}
                 style={styles.logo}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </View>
             <Text style={styles.appName}>JobRunner</Text>

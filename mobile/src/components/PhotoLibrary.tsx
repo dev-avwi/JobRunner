@@ -10,10 +10,10 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
-  Image,
   Dimensions,
   FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -1118,7 +1118,13 @@ export default function PhotoLibrary() {
         onLongPress={() => handleLongPress(photo.id)}
         activeOpacity={0.8}
       >
-        <Image source={{ uri: photo.url }} style={styles.thumbImage} resizeMode="cover" />
+        <Image
+          source={{ uri: photo.url, cacheKey: photo.id ? `job-photo-${photo.id}` : undefined }}
+          style={styles.thumbImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={150}
+        />
         {photo.category && (
           <View style={[styles.thumbCategoryBadge, { backgroundColor: catStyle.color }]}>
             <Text style={styles.thumbCategoryText}>{getCategoryLabel(photo.category)}</Text>
@@ -1335,7 +1341,7 @@ export default function PhotoLibrary() {
             </View>
           </View>
 
-          <Image source={{ uri: lightboxPhoto.url }} style={styles.lightboxImage} resizeMode="contain" />
+          <Image source={{ uri: lightboxPhoto.url }} style={styles.lightboxImage} contentFit="contain" />
 
           {idx > 0 && (
             <TouchableOpacity style={[styles.lightboxNav, styles.lightboxNavLeft]} onPress={() => navigateLightbox(-1)}>

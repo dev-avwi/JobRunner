@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, TextInput, Image } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { SignaturePad } from '../SignaturePad';
@@ -332,7 +333,7 @@ export function SignatureSection(props: SignatureSectionProps) {
                       height: 120,
                       borderRadius: 4,
                     }}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 ) : (
                   <>

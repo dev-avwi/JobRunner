@@ -5,9 +5,9 @@ import {
   StyleSheet,
   Animated,
   Easing,
-  Image,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme, ThemeColors } from '../../lib/theme';
@@ -424,13 +424,13 @@ function PulsingLogo({
           <Image 
             source={{ uri: businessLogoUrl }} 
             style={styles.businessLogo}
-            resizeMode="cover"
+            contentFit="cover"
           />
         ) : (
           <Image 
             source={JOBRUNNER_LOGO} 
             style={styles.jobrunnerLogo}
-            resizeMode="contain"
+            contentFit="contain"
           />
         )}
       </Animated.View>
@@ -490,13 +490,13 @@ export function LoadingScreen({ message = 'Loading JobRunner...', showProgress =
             <Image 
               source={{ uri: businessLogoUrl }} 
               style={styles.businessLogo}
-              resizeMode="cover"
+              contentFit="cover"
             />
           ) : (
             <Image 
               source={JOBRUNNER_LOGO} 
               style={styles.jobrunnerLogo}
-              resizeMode="contain"
+              contentFit="contain"
             />
           )}
         </View>
@@ -579,7 +579,7 @@ export function LoadingOverlay({
           <Image 
             source={JOBRUNNER_LOGO} 
             style={{ width: 56, height: 56 }}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
         <Text

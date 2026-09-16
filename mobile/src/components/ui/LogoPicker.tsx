@@ -5,9 +5,9 @@ import {
   TouchableOpacity,
   Modal,
   StyleSheet,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from './PressableRow';
 import { useConfirmDialog } from './ConfirmDialog';

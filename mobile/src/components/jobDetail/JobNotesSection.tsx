@@ -14,9 +14,9 @@ import {
   TextInput,
   StyleSheet,
   ActivityIndicator,
-  Image,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { SheetButton } from '../ui/SheetButton';
@@ -285,7 +285,7 @@ export function JobNotesSection({
                   <Image
                     source={{ uri: note.photoUrl }}
                     style={s.notePhoto}
-                    resizeMode="cover"
+                    contentFit="cover"
                   />
                 )}
               </View>
@@ -339,7 +339,7 @@ export function JobNotesSection({
             <Text style={[s.fieldLabel, { color: colors.mutedForeground }]}>Photo (optional)</Text>
             {photoUri ? (
               <View style={s.photoPreviewRow}>
-                <Image source={{ uri: photoUri }} style={s.photoPreview} resizeMode="cover" />
+                <Image source={{ uri: photoUri }} style={s.photoPreview} contentFit="cover" />
                 <TouchableOpacity
                   style={[s.removePhotoBtn, { backgroundColor: colors.destructive }]}
                   onPress={() => setPhotoUri(null)}

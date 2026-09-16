@@ -8,10 +8,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Linking,
-  Image,
   ActionSheetIOS,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
 import { Stack, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -476,7 +476,7 @@ export default function ClientDetailScreen() {
                   <Image 
                     source={{ uri: savedSignature.signatureData }} 
                     style={styles.signatureImage} 
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                   <View style={styles.signatureFooter}>
                     <Text style={styles.signatureDate}>

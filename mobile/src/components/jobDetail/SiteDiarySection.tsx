@@ -19,10 +19,10 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
-  Image,
   Dimensions,
   StatusBar,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { AppBottomSheet } from '../ui/AppBottomSheet';
 import { Feather } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -942,7 +942,7 @@ export function SiteDiarySection({
                 <Image
                   source={{ uri: url }}
                   style={{ width: SCREEN_W, height: SCREEN_H }}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </View>
             ))}

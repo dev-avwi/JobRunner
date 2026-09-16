@@ -5,7 +5,8 @@ initSentry();
 installGlobalErrorHandler();
 
 import { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Image, Animated, Easing, Platform, LogBox } from 'react-native';
+import { View, Text, StyleSheet, InteractionManager, ActivityIndicator, AppState, AppStateStatus, Animated, Easing, Platform, LogBox } from 'react-native';
+import { Image } from 'expo-image';
 
 // The Stripe Terminal SDK logs its own console.error internally when the
 // connection-token fetch fails (e.g. transient server backpressure). Those
@@ -667,7 +668,7 @@ function OwnerSubscriptionLapsedScreen({ businessName, onSignOut }: { businessNa
           <Image
             source={require('../assets/icon.png')}
             style={{ width: 32, height: 32, opacity: 0.4 }}
-            resizeMode="contain"
+            contentFit="contain"
           />
         </View>
         <View style={{ alignItems: 'center', marginBottom: 24 }}>
@@ -1005,10 +1006,10 @@ function LoadingScreen({ colors }: { colors: any }) {
         >
           <Image 
             source={require('../assets/jobrunner-logo.png')} 
+            contentFit="contain"
             style={{ 
               width: 120, 
               height: 120, 
-              resizeMode: 'contain',
             }} 
           />
         </Animated.View>

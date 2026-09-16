@@ -7,9 +7,9 @@ import {
   ScrollView,
   StyleSheet,
   Modal,
-  Image,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -286,7 +286,7 @@ export function AIPhotoAnalysisModal({
                       <Image
                         source={{ uri: photo.signedUrl || photo.thumbnailUrl || photo.url || '' }}
                         style={styles.photoImage}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                       <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                         {isSelected && <Feather name="check" size={14} color={colors.white} />}

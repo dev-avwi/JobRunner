@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -167,7 +168,7 @@ export function SidebarNav() {
           {/* Logo or Initials */}
           <View style={themedStyles.logoContainer}>
             {logoUrl ? (
-              <Image source={{ uri: logoUrl }} style={themedStyles.logo} resizeMode="cover" />
+              <Image source={{ uri: logoUrl }} style={themedStyles.logo} contentFit="cover" />
             ) : (
               <Text style={themedStyles.logoText}>
                 {initials || businessName.charAt(0).toUpperCase()}

@@ -22,8 +22,8 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, {
   useSharedValue,
@@ -1374,7 +1374,7 @@ export function UnifiedWorkSection({
                   <Image
                     source={{ uri: expenseReceiptUri }}
                     style={{ width: '100%', height: 140, borderRadius: 8, backgroundColor: colors.muted }}
-                    resizeMode="cover"
+                    contentFit="cover"
                   />
                   <TouchableOpacity
                     onPress={() => setExpenseReceiptUri(null)}

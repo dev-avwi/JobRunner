@@ -8,10 +8,10 @@ import {
   TextInput,
   ActivityIndicator,
   Switch,
-  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, router } from 'expo-router';
@@ -446,7 +446,8 @@ function BusinessSettingsScreenInner() {
               <View style={{ backgroundColor: '#fff', borderRadius: radius.md, padding: spacing.sm, marginBottom: spacing.md }}>
                 <Image 
                   source={{ uri: form.defaultSignature }} 
-                  style={{ width: '100%', height: 80, resizeMode: 'contain' }}
+                  contentFit="contain"
+                  style={{ width: '100%', height: 80 }}
                 />
               </View>
               <View style={{ flexDirection: 'row', gap: spacing.sm }}>

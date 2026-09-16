@@ -3,7 +3,8 @@
  * Supports: ## H2, ### H3, - bullets, 1. numbered, **bold**, *italic*, _italic_,
  * ![alt](url) images. Plain text falls through as-is.
  */
-import { Text, View, StyleSheet, Image } from 'react-native';
+import { Text, View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '../lib/theme';
 
 type Segment = { text: string; bold?: boolean; italic?: boolean };
@@ -109,7 +110,7 @@ export function MarkdownText({ children, style, numberOfLines }: Props) {
         const img = line.match(/^!\[([^\]]*)\]\(([^)]+)\)/);
         if (img) {
           numberedCount = 0;
-          return <Image key={idx} source={{ uri: img[2] }} style={{ width: '100%', height: 180, borderRadius: 6, marginVertical: 4, resizeMode: 'cover' }} />;
+          return <Image key={idx} source={{ uri: img[2] }} style={{ width: '100%', height: 180, borderRadius: 6, marginVertical: 4 }} />;
         }
         const bullet = line.match(/^\s*[-*] (.+)/);
         if (bullet) {

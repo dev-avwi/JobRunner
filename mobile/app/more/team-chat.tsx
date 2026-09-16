@@ -10,9 +10,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
-  Image,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
@@ -598,7 +598,7 @@ export default function TeamChatScreen() {
                           <Image
                             source={{ uri: resolveAttachmentUrl(msg.attachmentUrl) || '' }}
                             style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
-                            resizeMode="cover"
+                            contentFit="cover"
                           />
                         </PressableRow>
                       )}

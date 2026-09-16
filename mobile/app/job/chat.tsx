@@ -13,8 +13,8 @@ import {
   RefreshControl,
   Modal,
   Linking,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -1274,7 +1274,7 @@ export default function JobChatScreen() {
                       <Image
                         source={{ uri: url }}
                         style={{ width: 200, height: 200, borderRadius: 8, marginBottom: i < (msg.mediaUrls?.length ?? 0) - 1 ? 4 : 0 }}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                     </PressableRow>
                   ))}

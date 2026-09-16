@@ -16,9 +16,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   TextInput,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { spacing, radius, typography, fontWeights } from '../../lib/design-tokens';
@@ -513,7 +513,7 @@ export function VariationsSection({
                         key={i}
                         source={{ uri: url }}
                         style={{ width: 120, height: 120, borderRadius: 8, backgroundColor: colors.muted }}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                     ))}
                   </ScrollView>

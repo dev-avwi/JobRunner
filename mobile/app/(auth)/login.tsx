@@ -8,9 +8,9 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router, useLocalSearchParams } from 'expo-router';
@@ -316,7 +316,7 @@ export default function LoginScreen() {
                 <Image
                   source={require('../../assets/jobrunner-logo-header.png')}
                   style={styles.logo}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </View>
             </View>

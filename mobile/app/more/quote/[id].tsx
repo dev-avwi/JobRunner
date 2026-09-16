@@ -9,8 +9,8 @@ import {
   Modal,
   TextInput,
   Linking,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { SkeletonDocumentCard, SkeletonSection, SkeletonText } from '@/components/Skeleton';
@@ -1654,7 +1654,7 @@ ${businessName}`;
                       <Image 
                         source={{ uri: sig.signatureData }} 
                         style={styles.signatureImage}
-                        resizeMode="contain"
+                        contentFit="contain"
                       />
                     )}
                   </View>

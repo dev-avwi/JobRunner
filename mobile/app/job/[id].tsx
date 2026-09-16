@@ -12,7 +12,6 @@ import {
   Platform,
   Modal,
   TextInput,
-  Image,
   FlatList,
   Switch,
   KeyboardAvoidingView,
@@ -25,6 +24,7 @@ import {
   InteractionManager,
   LayoutAnimation,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { buildVariationLineItems } from '../../src/utils/claimVariations';
 import { buildPhaseTimerOptions } from '../../src/utils/timerPhaseSelection';
@@ -11543,7 +11543,7 @@ export default function JobDetailScreen() {
               <Image
                 source={{ uri: item.url }}
                 style={{ width: 78, height: 78, borderRadius: radius.md, backgroundColor: colors.muted }}
-                resizeMode="cover"
+                contentFit="cover"
               />
               <View style={{ backgroundColor: item.source === 'material' ? `${colors.primary}18` : `${colors.success}18`, paddingHorizontal: 5, paddingVertical: 2, borderRadius: radius.sm }}>
                 <Text style={{ fontSize: 9, fontWeight: fontWeights.semibold, color: item.source === 'material' ? colors.primary : colors.success }}>
@@ -14054,7 +14054,7 @@ export default function JobDetailScreen() {
           </View>
           {flagExtraWorkPhotoUri ? (
             <View style={{ marginBottom: spacing.md }}>
-              <Image source={{ uri: flagExtraWorkPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+              <Image source={{ uri: flagExtraWorkPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md }} />
               <TouchableOpacity onPress={() => setFlagExtraWorkPhotoUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
                 <Feather name="x" size={14} color="#fff" />
               </TouchableOpacity>
@@ -14270,7 +14270,7 @@ export default function JobDetailScreen() {
                 </View>
                 {materialPhotoUri ? (
                   <View style={{ marginBottom: spacing.md }}>
-                    <Image source={{ uri: materialPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+                    <Image source={{ uri: materialPhotoUri }} style={{ width: '100%', height: 130, borderRadius: radius.md }} />
                     <TouchableOpacity onPress={() => setMaterialPhotoUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
                       <Feather name="x" size={14} color="#fff" />
                     </TouchableOpacity>
@@ -14386,7 +14386,7 @@ export default function JobDetailScreen() {
           </View>
           {expenseReceiptUri && (
             <View style={{ marginBottom: spacing.md }}>
-              <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 140, borderRadius: radius.md, resizeMode: 'cover' }} />
+              <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 140, borderRadius: radius.md }} />
               <TouchableOpacity onPress={() => setExpenseReceiptUri(null)} style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
                 <Feather name="x" size={14} color="#fff" />
               </TouchableOpacity>
@@ -15001,7 +15001,7 @@ export default function JobDetailScreen() {
                       <Image
                         source={{ uri: siteUpdatePhotoUri }}
                         style={{ width: '100%', height: 200, borderRadius: radius.lg }}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                       <TouchableOpacity
                         onPress={() => setSiteUpdatePhotoUri(null)}
@@ -15123,7 +15123,7 @@ export default function JobDetailScreen() {
                       <Image 
                         source={{ uri: photo.signedUrl || photo.url || photo.thumbnailUrl || '' }} 
                         style={styles.photoImage}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                       {isVideo(photo) && (
                         <View style={styles.videoOverlay}>
@@ -15174,7 +15174,7 @@ export default function JobDetailScreen() {
               <Image 
                 source={{ uri: selectedPhoto.signedUrl || selectedPhoto.url || '' }} 
                 style={styles.fullPhoto}
-                resizeMode="contain"
+                contentFit="contain"
               />
               
               {/* Close button - top right */}
@@ -17724,7 +17724,7 @@ export default function JobDetailScreen() {
               <Image
                 source={{ uri: previewImageDoc.fileUrl ?? '' }}
                 style={styles.fullPhoto}
-                resizeMode="contain"
+                contentFit="contain"
               />
 
               {/* Title bar at the top */}

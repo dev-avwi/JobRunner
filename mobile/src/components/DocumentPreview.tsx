@@ -8,8 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Share,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { PressableRow } from './ui/PressableRow';
 import { Feather } from '@expo/vector-icons';
 import { colors } from '../lib/colors';
@@ -150,7 +150,7 @@ export function DocumentPreview({
                       <Image 
                         source={{ uri: businessSettings.logoUrl }} 
                         style={styles.logo}
-                        resizeMode="contain"
+                        contentFit="contain"
                       />
                     )}
                     <View style={styles.businessDetails}>

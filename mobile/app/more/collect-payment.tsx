@@ -10,7 +10,6 @@ import {
   StyleSheet,
   RefreshControl,
   Share,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
@@ -18,6 +17,7 @@ import {
   Animated,
   Easing,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import * as Clipboard from 'expo-clipboard';
@@ -2605,7 +2605,7 @@ function CollectScreenInner() {
                       uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrPaymentUrl)}&margin=10` 
                     }}
                     style={styles.qrCodeImage}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 </View>
               </View>

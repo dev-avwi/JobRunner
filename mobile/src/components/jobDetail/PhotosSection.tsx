@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { ThemeColors } from '../../lib/theme';
 import { PressableRow } from '../ui/PressableRow';
@@ -135,9 +136,11 @@ export function PhotosSection(props: PhotosSectionProps) {
                   onLongPress={() => handleChangePhotoCategory(photo)}
                 >
                   <Image
-                    source={{ uri: photo.signedUrl || photo.thumbnailUrl || photo.url || '' }}
+                    source={{ uri: photo.signedUrl || photo.thumbnailUrl || photo.url || '', cacheKey: photo.id ? `job-photo-${photo.id}` : undefined }}
                     style={styles.inlinePhotoImage}
-                    resizeMode="cover"
+                    contentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={150}
                   />
                   {isVideo(photo) && (
                     <View style={styles.videoOverlay}>

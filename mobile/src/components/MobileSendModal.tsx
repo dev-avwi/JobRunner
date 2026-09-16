@@ -8,8 +8,8 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from './ui/PressableRow';
 import AppBottomSheet from './ui/AppBottomSheet';

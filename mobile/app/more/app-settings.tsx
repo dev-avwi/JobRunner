@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, StyleSheet, Pressable, Switch, ActivityIndicator, TouchableOpacity, Platform, Image } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable, Switch, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { Stack, router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -886,7 +887,7 @@ export default function AppSettingsScreen() {
               <Image
                 source={require('../../assets/jobrunner-logo.png')}
                 style={styles.footerLogoImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </View>
             <Text style={styles.footerTitle}>JobRunner</Text>

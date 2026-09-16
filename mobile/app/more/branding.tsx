@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack } from 'expo-router';

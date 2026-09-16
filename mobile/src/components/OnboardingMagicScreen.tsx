@@ -3,10 +3,10 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
   Animated,
   Easing,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 import { useTheme } from '../lib/theme';
@@ -147,7 +147,7 @@ export function OnboardingMagicScreen({ firstName, businessName, onDone }: Onboa
               <Image
                 source={require('../../assets/jobrunner-logo-header.png')}
                 style={styles.logo}
-                resizeMode="contain"
+                contentFit="contain"
               />
             </View>
           </View>

@@ -6,10 +6,10 @@ import {
   FlatList,
   TouchableOpacity,
   useWindowDimensions,
-  Image,
   StatusBar,
   ListRenderItemInfo,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/lib/theme';
@@ -67,7 +67,7 @@ export default function WelcomeScreen() {
         {/* ── Phone area — fills the colour space, phone hangs below ── */}
         <View style={styles.phoneArea}>
           <View style={[styles.phoneWrap, { width: phoneW, height: phoneH }]}>
-            <Image source={item.image} style={styles.phone} resizeMode="contain" />
+            <Image source={item.image} style={styles.phone} contentFit="contain" />
           </View>
         </View>
 

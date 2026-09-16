@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, Image, Animated, Easing, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Animated, Easing, Platform, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { router, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -288,7 +289,7 @@ export function Header({
               <Image 
                 source={require('../../assets/jobrunner-logo-header.png')}
                 style={styles.logo}
-                resizeMode="contain"
+                contentFit="contain"
               />
               <View style={{ flex: 1, minWidth: 0 }}>
                 {!isNarrowPhone && (

@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMemo } from 'react';
@@ -799,7 +800,7 @@ export default function LiveDocumentPreview({
                 <Image 
                   source={{ uri: business.logoUrl }} 
                   style={styles.logo}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               )}
               <Text style={styles.businessName}>
@@ -1015,7 +1016,7 @@ export default function LiveDocumentPreview({
                       <Image
                         source={{ uri: photo.signedUrl }}
                         style={styles.photoImage}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                       {photo.caption ? (
                         <Text style={styles.photoCaption}>{photo.caption}</Text>
@@ -1038,7 +1039,7 @@ export default function LiveDocumentPreview({
                       <Image
                         source={{ uri: photo.signedUrl }}
                         style={styles.photoImage}
-                        resizeMode="cover"
+                        contentFit="cover"
                       />
                       {photo.caption ? (
                         <Text style={styles.photoCaption}>{photo.caption}</Text>
@@ -1091,7 +1092,7 @@ export default function LiveDocumentPreview({
                   <Image 
                     source={{ uri: clientSignatureData.startsWith('data:') ? clientSignatureData : `data:image/png;base64,${clientSignatureData}` }}
                     style={styles.acceptedSignatureImage}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 </View>
               )}
@@ -1130,7 +1131,7 @@ export default function LiveDocumentPreview({
                         <Image 
                           source={{ uri: sigDataUrl }} 
                           style={styles.jobSignatureImage}
-                          resizeMode="contain"
+                          contentFit="contain"
                         />
                       </View>
                       <Text style={styles.jobSignatureName}>{sig.signerName || 'Client'}</Text>
@@ -1152,7 +1153,7 @@ export default function LiveDocumentPreview({
               <Image 
                 source={{ uri: signature.dataUrl }} 
                 style={styles.signatureImage}
-                resizeMode="contain"
+                contentFit="contain"
               />
               {(signature.signedBy || signature.signedAt) && (
                 <View style={styles.signatureMetaRow}>

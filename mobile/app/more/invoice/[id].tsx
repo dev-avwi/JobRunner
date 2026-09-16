@@ -7,12 +7,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   Switch,
-  Image,
   Modal,
   Share,
   Linking,
   TextInput,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -2157,7 +2157,7 @@ ${businessName}`;
                   <Image 
                     source={{ uri: businessSettings.logoUrl }} 
                     style={styles.documentLogo}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 )}
                 <Text style={styles.documentBusinessName}>
@@ -2977,7 +2977,7 @@ ${businessName}`;
                     <Image 
                       source={{ uri: signature.signatureData }} 
                       style={styles.signatureImage}
-                      resizeMode="contain"
+                      contentFit="contain"
                     />
                     <View style={styles.signatureDetails}>
                       {signature.signerName && (

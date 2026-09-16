@@ -8,8 +8,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { Stack, useLocalSearchParams } from 'expo-router';

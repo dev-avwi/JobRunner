@@ -6,8 +6,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
-  StyleSheet, Animated, TextInput, Alert, Platform, Pressable, KeyboardAvoidingView, Image,
-} from 'react-native';
+  StyleSheet, Animated, TextInput, Alert, Platform, Pressable, KeyboardAvoidingView, } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
@@ -1153,7 +1153,7 @@ export default function PhaseDetailScreen() {
                   return (
                     <View key={expense.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.border, gap: spacing.sm }}>
                       {expense.receiptUrl ? (
-                        <Image source={{ uri: expense.receiptUrl }} style={{ width: 36, height: 36, borderRadius: radius.sm, resizeMode: 'cover' }} />
+                        <Image source={{ uri: expense.receiptUrl }} style={{ width: 36, height: 36, borderRadius: radius.sm }} />
                       ) : (
                         <View style={{ width: 36, height: 36, borderRadius: radius.sm, backgroundColor: `${colors.primary}12`, alignItems: 'center', justifyContent: 'center' }}>
                           <Feather name="dollar-sign" size={16} color={colors.primary} />
@@ -1311,7 +1311,7 @@ export default function PhaseDetailScreen() {
               </View>
               {expenseReceiptUri && (
                 <View style={{ marginTop: spacing.sm }}>
-                  <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 130, borderRadius: radius.md, resizeMode: 'cover' }} />
+                  <Image source={{ uri: expenseReceiptUri }} style={{ width: '100%', height: 130, borderRadius: radius.md }} />
                   <TouchableOpacity
                     onPress={() => setExpenseReceiptUri(null)}
                     style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}

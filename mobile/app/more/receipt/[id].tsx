@@ -6,10 +6,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Image,
   Share,
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../../src/components/ui/AppBottomSheet';
@@ -752,7 +752,7 @@ ${businessName}`;
                 <Image 
                   source={{ uri: businessSettings.logoUrl }} 
                   style={styles.logo}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               )}
               <Text style={styles.businessName}>
@@ -911,7 +911,7 @@ ${businessName}`;
                         <Image 
                           source={{ uri: businessSettings.logoUrl }} 
                           style={styles.logo}
-                          resizeMode="contain"
+                          contentFit="contain"
                         />
                       )}
                       <Text style={styles.businessName}>

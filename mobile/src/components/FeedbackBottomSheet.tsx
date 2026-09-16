@@ -7,9 +7,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   ScrollView,
-  Image,
   Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { AppBottomSheet, AppBottomSheetRef } from './ui/AppBottomSheet';

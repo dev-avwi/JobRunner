@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import { getAvatarColor, getAvatarColorByHex } from '../lib/avatar-colors';
 import { colors as staticColors } from '../lib/colors';
 
@@ -64,9 +65,11 @@ export function TeamAvatar({ name, firstName, lastName, email, userId, profileIm
     return (
       <View style={containerStyle}>
         <Image
-          source={{ uri: profileImageUrl.trim() }}
+          source={{ uri: profileImageUrl.trim(), cacheKey: userId ? `avatar-${userId}` : undefined }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
-          resizeMode="cover"
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          transition={100}
           onError={() => setImageFailed(true)}
         />
       </View>
