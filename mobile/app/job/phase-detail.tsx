@@ -21,6 +21,7 @@ import { useTimeTrackingStore } from '../../src/lib/store';
 import api, { API_URL } from '../../src/lib/api';
 import { getDocumentPicker } from '../../src/lib/document-picker';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
+import { TimerSheet } from '../../src/components/jobDetail/TimerSheet';
 import { SheetButton } from '../../src/components/ui/SheetButton';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
 import { showToast } from '../../src/lib/toast';
@@ -208,6 +209,8 @@ export default function PhaseDetailScreen() {
 
   // ── Phase state ───────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<JobPhase | null>(null);
+  // Full phase list for the job — feeds the TimerSheet phase selector.
+  const [allPhases, setAllPhases] = useState<JobPhase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -284,7 +287,9 @@ export default function PhaseDetailScreen() {
     setError(null);
     try {
       const res = await api.get<JobPhase[]>(`/api/jobs/${jobId}/phases`);
-      const found = (Array.isArray(res.data) ? res.data : []).find(p => p.id === phaseId);
+      const list = Array.isArray(res.data) ? res.data : [];
+      setAllPhases(list);
+      const found = list.find(p => p.id === phaseId);
       setPhase(found ?? null);
       if (!found) setError('Phase not found.');
     } catch {
@@ -483,11 +488,28 @@ export default function PhaseDetailScreen() {
 
   // ── Timer actions ─────────────────────────────────────────────────────────
 
-  const handleStartTimer = async () => {
-    if (!jobId || !phaseId || !phase) return;
+  const handleStartTimer = async (selectedPhaseId?: string) => {
+    if (!jobId) return;
+    const targetPhaseId = selectedPhaseId ?? phaseId;
+    const targetPhase = allPhases.find(p => p.id === targetPhaseId) ?? phase;
+    // Another timer is running elsewhere — get explicit consent before switching,
+    // matching the old sheet's "Switch to this phase" flow.
+    if (activeTimer && !isActivePhaseTimer) {
+      const proceed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'Switch timer?',
+          'You have a timer running for another job or phase. Starting this one will stop it.',
+          [
+            { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+            { text: 'Switch', onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!proceed) return;
+    }
     setTimerLoading(true);
     try {
-      const ok = await startTimer(jobId, `Phase: ${phase.name}`, false, phaseId);
+      const ok = await startTimer(jobId, targetPhase ? `Phase: ${targetPhase.name}` : 'Timer', false, targetPhaseId);
       if (ok) {
         setShowLogTimeSheet(false);
         showToast({ type: 'success', message: 'Timer started' });
@@ -1181,84 +1203,53 @@ export default function PhaseDetailScreen() {
         </View>
       </ScrollView>
 
-      {/* ── Log Time bottom sheet ─────────────────────────────────────── */}
-      <AppBottomSheet
-        visible={showLogTimeSheet}
-        onDismiss={() => { if (!timerLoading) setShowLogTimeSheet(false); }}
-        title="Log Time"
-        showCloseButton
-        snapPoints={['40%']}
-      >
-        <View style={{ padding: spacing.md, gap: spacing.md }}>
-          {isActivePhaseTimer ? (
-            <>
-              {/* Active timer for this phase */}
-              <View style={{ alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm }}>
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#DC262618', alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: '#DC2626' }} />
-                </View>
-                <Text style={{ fontSize: 32, fontWeight: fontWeights.bold, color: '#DC2626', fontVariant: ['tabular-nums'] as any }}>
-                  {timerElapsed}
-                </Text>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Timer running for {phase.name}</Text>
+      {/* ── Log Time ──────────────────────────────────────────────────────
+          Active phase timer → compact stop sheet. Otherwise → the shared
+          TimerSheet (live timer + manual entry), same as the job screen. */}
+      {isActivePhaseTimer ? (
+        <AppBottomSheet
+          visible={showLogTimeSheet}
+          onDismiss={() => { if (!timerLoading) setShowLogTimeSheet(false); }}
+          title="Log Time"
+          showCloseButton
+          snapPoints={['40%']}
+        >
+          <View style={{ padding: spacing.md, gap: spacing.md }}>
+            <View style={{ alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm }}>
+              <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#DC262618', alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 14, height: 14, borderRadius: 4, backgroundColor: '#DC2626' }} />
               </View>
-              <TouchableOpacity
-                onPress={handleStopTimer}
-                disabled={timerLoading}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: '#DC2626', opacity: timerLoading ? 0.6 : 1 }}
-                activeOpacity={0.8}
-              >
-                {timerLoading
-                  ? <ActivityIndicator size="small" color="#fff" />
-                  : <Feather name="square" size={15} color="#fff" />}
-                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: '#fff' }}>Stop Timer</Text>
-              </TouchableOpacity>
-            </>
-          ) : activeTimer ? (
-            <>
-              {/* Different timer active */}
-              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm, padding: spacing.md, borderRadius: radius.md, backgroundColor: `${colors.warning}15` }}>
-                <Feather name="alert-triangle" size={16} color={colors.warning} style={{ marginTop: 1 }} />
-                <Text style={{ flex: 1, fontSize: 13, color: colors.mutedForeground, lineHeight: 19 }}>
-                  You have a timer running for another job or phase. Stop it first to start a new one.
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleStartTimer}
-                disabled={timerLoading}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: colors.primary, opacity: timerLoading ? 0.6 : 1 }}
-                activeOpacity={0.8}
-              >
-                {timerLoading
-                  ? <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  : <Feather name="play" size={15} color={colors.primaryForeground} />}
-                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Switch to this phase</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              {/* No active timer */}
-              <View style={{ alignItems: 'center', paddingVertical: spacing.md, gap: spacing.xs }}>
-                <Feather name="clock" size={32} color={colors.primary} />
-                <Text style={{ fontSize: 14, color: colors.mutedForeground, textAlign: 'center' }}>
-                  Start a timer to track hours for {phase.name}.
-                </Text>
-              </View>
-              <TouchableOpacity
-                onPress={handleStartTimer}
-                disabled={timerLoading}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: colors.primary, opacity: timerLoading ? 0.6 : 1 }}
-                activeOpacity={0.8}
-              >
-                {timerLoading
-                  ? <ActivityIndicator size="small" color={colors.primaryForeground} />
-                  : <Feather name="play" size={15} color={colors.primaryForeground} />}
-                <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: colors.primaryForeground }}>Start Timer</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </AppBottomSheet>
+              <Text style={{ fontSize: 32, fontWeight: fontWeights.bold, color: '#DC2626', fontVariant: ['tabular-nums'] as any }}>
+                {timerElapsed}
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Timer running for {phase.name}</Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleStopTimer}
+              disabled={timerLoading}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, paddingVertical: 14, borderRadius: radius.lg, backgroundColor: '#DC2626', opacity: timerLoading ? 0.6 : 1 }}
+              activeOpacity={0.8}
+            >
+              {timerLoading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Feather name="square" size={15} color="#fff" />}
+              <Text style={{ fontSize: 15, fontWeight: fontWeights.semibold, color: '#fff' }}>Stop Timer</Text>
+            </TouchableOpacity>
+          </View>
+        </AppBottomSheet>
+      ) : (
+        <TimerSheet
+          visible={showLogTimeSheet}
+          onDismiss={() => setShowLogTimeSheet(false)}
+          colors={colors}
+          jobId={jobId!}
+          phases={allPhases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode ?? null }))}
+          initialPhaseId={phaseId}
+          hasActiveTimer={!!activeTimer}
+          onStartLiveTimer={(selectedPhaseId) => { handleStartTimer(selectedPhaseId); }}
+          onManualEntrySaved={() => { loadTimeEntries(); loadPhase(); }}
+        />
+      )}
 
       {/* ── Log Expense bottom sheet ──────────────────────────────────── */}
       <AppBottomSheet
