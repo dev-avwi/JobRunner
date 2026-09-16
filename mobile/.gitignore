@@ -8,3 +8,6 @@ expo-env.d.ts
 # iOS credentials — never commit; place files in credentials/ios/ locally
 credentials/ios/*.p12
 credentials/ios/*.mobileprovision
+# credentials.json holds the .p12 password — never commit. If it ever lands in
+# git, treat the password as burned and rotate the certificate.
+credentials.json

@@ -2,6 +2,13 @@
 
 These files are required for local EAS builds and are excluded from version control.
 
+> **Never commit `mobile/credentials.json` or anything in this directory.**
+> `credentials.json` contains the `.p12` password in plaintext. If any of these
+> files (or the password) ever land in git, treat the certificate as compromised:
+> revoke it in the Apple Developer portal, regenerate via `eas credentials`,
+> and pick a new export password. History note: the cert, profiles, and password
+> were committed prior to Sep 2026 — that certificate must be rotated.
+
 ## Files needed
 
 | File | Description |
