@@ -49,6 +49,8 @@ interface JobNotesSectionProps {
   styles: any;
   isOwnerOrManager: boolean;
   currentUserId?: string;
+  /** Start collapsed with a tappable header (used on the Overview tab). */
+  collapsible?: boolean;
 }
 
 export function JobNotesSection({
@@ -57,6 +59,7 @@ export function JobNotesSection({
   styles: parentStyles,
   isOwnerOrManager,
   currentUserId,
+  collapsible = false,
 }: JobNotesSectionProps) {
   const [notes, setNotes] = useState<JobNote[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,6 +73,7 @@ export function JobNotesSection({
 
   const loadingRef = useRef(false);
   const confirm = useConfirmDialog();
+  const [expanded, setExpanded] = useState(!collapsible);
 
   const loadNotes = useCallback(async () => {
     if (loadingRef.current) return;
@@ -102,6 +106,8 @@ export function JobNotesSection({
     setNoteText('');
     setPhotoUri(null);
     setShowForm(true);
+    // Expand so the new note is visible once saved.
+    setExpanded(true);
   }
 
   function closeForm() {
@@ -188,9 +194,14 @@ export function JobNotesSection({
 
   return (
     <View style={[parentStyles.photosCard]}>
-      {/* Section header */}
+      {/* Section header — tappable toggle when collapsible */}
       <View style={s.header}>
-        <View style={s.headerLeft}>
+        <TouchableOpacity
+          style={s.headerLeft}
+          onPress={collapsible ? () => setExpanded((v) => !v) : undefined}
+          disabled={!collapsible}
+          activeOpacity={0.7}
+        >
           <View style={[s.iconWrap, { backgroundColor: `${colors.warning}18` }]}>
             <Feather name="file-text" size={iconSizes.lg} color={colors.warning} />
           </View>
@@ -200,7 +211,10 @@ export function JobNotesSection({
               <Text style={s.countText}>{notes.length}</Text>
             </View>
           )}
-        </View>
+          {collapsible && (
+            <Feather name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          )}
+        </TouchableOpacity>
         <TouchableOpacity style={s.addBtn} onPress={openForm}>
           <Feather name="plus" size={14} color={colors.primary} />
           <Text style={[s.addBtnText, { color: colors.primary }]}>Add Note</Text>
@@ -208,7 +222,7 @@ export function JobNotesSection({
       </View>
 
       {/* Body */}
-      {loadError && (
+      {expanded && loadError && (
         <View style={s.errorState}>
           <Feather name="alert-circle" size={20} color={colors.destructive} />
           <Text style={[s.errorText, { color: colors.destructive }]}>Couldn't load notes</Text>
@@ -218,9 +232,9 @@ export function JobNotesSection({
         </View>
       )}
 
-      {loading && <SkeletonSection rows={2} />}
+      {expanded && loading && <SkeletonSection rows={2} />}
 
-      {loaded && notes.length === 0 && (
+      {expanded && loaded && notes.length === 0 && (
         <View style={s.emptyState}>
           <Feather name="file-text" size={28} color={colors.mutedForeground} style={{ opacity: 0.4 }} />
           <Text style={[s.emptyTitle, { color: colors.foreground }]}>No notes yet</Text>
@@ -234,7 +248,7 @@ export function JobNotesSection({
         </View>
       )}
 
-      {loaded && notes.length > 0 && (
+      {expanded && loaded && notes.length > 0 && (
         <View style={{ gap: spacing.sm, marginTop: spacing.sm }}>
           {notes.map((note) => {
             // createdBy is the authenticated user ID; userId is the tenant owner.

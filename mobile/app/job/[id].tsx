@@ -11252,6 +11252,17 @@ export default function JobDetailScreen() {
 
       {/* Section anchor: docs */}
 
+      {/* Job Notes — team reference notepad (access codes, site quirks),
+          collapsed by default so Overview stays scannable */}
+      <JobNotesSection
+        jobId={job.id}
+        colors={colors}
+        styles={styles}
+        isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+        currentUserId={user?.id}
+        collapsible
+      />
+
       {/* Project Document Register — drawings, specs, RFIs (project jobs only) */}
       {isProject && (
         <DocumentRegisterSection
@@ -13097,19 +13108,10 @@ export default function JobDetailScreen() {
           </>
         ))}
 
-        {/* ── Files: notes, media, docs, safety, forms ── */}
+        {/* ── Files: media, docs, safety, forms ── */}
         {activeTab === 'files' && (
           <>
-            {/* 1. Job Notes — team reference notepad, first for quick access */}
-            <JobNotesSection
-              jobId={job.id}
-              colors={colors}
-              styles={styles}
-              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-              currentUserId={user?.id}
-            />
-
-            {/* 2. Photos + voice notes, then any field-record receipts */}
+            {/* 1. Photos + voice notes, then any field-record receipts */}
             {renderPhotosTab()}
             {renderReceiptsSection()}
 
