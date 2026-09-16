@@ -90,6 +90,7 @@ import ExpensesSection from '../../src/components/jobDetail/ExpensesSection';
 import { PurchaseOrdersSection } from '../../src/components/jobDetail/PurchaseOrdersSection';
 import { PhotosSection } from '../../src/components/jobDetail/PhotosSection';
 import { PhasesSection, type JobPhase, type PhaseStatus } from '../../src/components/jobDetail/PhasesSection';
+import { PhaseFormSheet, type PhaseFormValues } from '../../src/components/jobDetail/PhaseFormSheet';
 import { FinancialsSection } from '../../src/components/jobDetail/FinancialsSection';
 import { ManageTeamSheet } from '../../src/components/jobDetail/ManageTeamSheet';
 import { PhaseTeamPicker } from '../../src/components/PhaseTeamPicker';
@@ -231,15 +232,6 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Pre-defined phase templates — client-side only, no backend required.
 // Each entry pre-fills the phase name, description, and starter tasks.
-const PHASE_TEMPLATES: Array<{ name: string; description: string; tasks: string[] }> = [
-  { name: 'Waterproofing', description: 'Waterproofing and membrane installation', tasks: ['Prepare substrate', 'Apply primer coat', 'Install membrane', 'Test for leaks', 'Final inspection'] },
-  { name: 'Fit-Out', description: 'Interior fit-out and finishing', tasks: ['Frame walls', 'Run electrical & plumbing', 'Insulation', 'Line and set', 'Paint and finish'] },
-  { name: 'Framing', description: 'Structural wall framing', tasks: ['Set out layout', 'Install bottom plate', 'Erect wall frames', 'Install top plate', 'Bracing and check'] },
-  { name: 'Electrical', description: 'Electrical rough-in and fit-off', tasks: ['Cable runs', 'Install switchboard', 'Rough-in outlets', 'Inspection', 'Fit-off fittings'] },
-  { name: 'Plumbing', description: 'Plumbing rough-in and fixtures', tasks: ['Rough-in pipes', 'Pressure test', 'Install fixtures', 'Connect hot water', 'Final inspection'] },
-  { name: 'Demolition', description: 'Site demolition and clearing', tasks: ['Safety check', 'Remove fixtures', 'Strip walls', 'Clear debris', 'Make safe'] },
-];
-
 interface Client {
   id: string;
   name: string;
@@ -2349,7 +2341,7 @@ export default function JobDetailScreen() {
   // Forms data is loaded by JobForms component and passed via onFormsChange/onSubmissionsChange callbacks
   // This eliminates duplicate API calls
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'financials' | 'manage'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'files' | 'comms' | 'manage'>('overview');
   const [checklistCounts, setChecklistCounts] = useState<{ completed: number; total: number }>({ completed: 0, total: 0 });
   const [activeChip, setActiveChip] = useState<string>('status');
 
@@ -2423,16 +2415,9 @@ export default function JobDetailScreen() {
   const [flagExtraWorkPhotoUri, setFlagExtraWorkPhotoUri] = useState<string | null>(null);
   const [isUploadingExtraWorkPhoto, setIsUploadingExtraWorkPhoto] = useState(false);
   const [showAddPhaseModal, setShowAddPhaseModal] = useState(false);
-  const [addPhaseForm, setAddPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] as string[] });
   const [isSavingPhase, setIsSavingPhase] = useState(false);
   const [showEditPhaseModal, setShowEditPhaseModal] = useState(false);
   const [editingPhase, setEditingPhase] = useState<JobPhase | null>(null);
-  const [editPhaseForm, setEditPhaseForm] = useState({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', bookedHours: '', status: 'not_started' as PhaseStatus, assignedUserId: '', assignedUserIds: [] as string[] });
-  const [showAddPhaseTeamPicker, setShowAddPhaseTeamPicker] = useState(false);
-  const [showEditPhaseTeamPicker, setShowEditPhaseTeamPicker] = useState(false);
-  // Starter tasks typed in the Add Phase modal — created after the phase is saved
-  const [addPhaseStarterTasks, setAddPhaseStarterTasks] = useState<string[]>([]);
-  const [addPhaseStarterTaskInput, setAddPhaseStarterTaskInput] = useState('');
   // Phases whose task count just hit 100% and should show a "mark complete?" nudge
   const [phaseCompleteNudge, setPhaseCompleteNudge] = useState<Set<string>>(new Set());
   // Inline quick-add state per phase card
@@ -2444,8 +2429,6 @@ export default function JobDetailScreen() {
   const [editingPhaseTask, setEditingPhaseTask] = useState<{ item: PhaseTaskItem; phaseId: string } | null>(null);
   const [editPhaseTaskForm, setEditPhaseTaskForm] = useState({ text: '', description: '' });
   const [isSavingPhaseTaskEdit, setIsSavingPhaseTaskEdit] = useState(false);
-  // Shared date-picker target for phase modals — only one open at a time
-  const [phaseDateTarget, setPhaseDateTarget] = useState<{ form: 'add' | 'edit'; field: 'start' | 'end' } | null>(null);
   const [isSavingEditPhase, setIsSavingEditPhase] = useState(false);
   const [showAddClaimModal, setShowAddClaimModal] = useState(false);
   const [isSavingClaim, setIsSavingClaim] = useState(false);
@@ -2908,11 +2891,14 @@ export default function JobDetailScreen() {
     navTabFiredRef.current = navTab;
     const validTabs = ['overview', 'tasks', 'files', 'comms', 'financials', 'manage'];
     if (validTabs.includes(navTab)) {
-      // Financials tab is owner/manager-only; non-privileged deep-links fall back to overview.
-      const isPrivilegedTab = navTab === 'financials' || navTab === 'manage';
       const hasAccess = isOwnerOrManager || isSoloOwner;
-      const resolvedTab = (isPrivilegedTab && !hasAccess) ? 'overview' : navTab;
-      setActiveTab(resolvedTab as 'overview' | 'tasks' | 'files' | 'comms' | 'financials' | 'manage');
+      // 'financials' has no tab of its own — the pay/financial cards live on
+      // Overview — so legacy financials deep-links resolve there. Manage is
+      // owner/manager-only; non-privileged deep-links fall back to overview.
+      const resolvedTab = navTab === 'financials' || (navTab === 'manage' && !hasAccess)
+        ? 'overview'
+        : navTab;
+      setActiveTab(resolvedTab as 'overview' | 'tasks' | 'files' | 'comms' | 'manage');
     }
   }, [job, isLoading, navTab]);
 
@@ -3420,26 +3406,26 @@ export default function JobDetailScreen() {
     loadApprovedClaimVariations();
   }, [showAddClaimModal, loadApprovedClaimVariations]);
 
-  const handleSavePhase = async () => {
-    if (!addPhaseForm.name.trim()) {
+  const handleSavePhase = async (form: PhaseFormValues, starterTasks: string[]) => {
+    if (!form.name.trim()) {
       showToast({ type: 'error', message: 'Phase name is required' });
       return;
     }
     setIsSavingPhase(true);
     try {
       const autoCode = `P${String(phases.length + 1).padStart(2, '0')}`;
-      const phaseCode = addPhaseForm.phaseCode.trim().toUpperCase() || autoCode;
+      const phaseCode = form.phaseCode.trim().toUpperCase() || autoCode;
       const res = await api.post<{ id: string }>(`/api/jobs/${id}/phases`, {
         phaseCode,
-        name: addPhaseForm.name.trim(),
-        description: addPhaseForm.description.trim() || null,
-        scheduledStart: addPhaseForm.scheduledStart || null,
-        scheduledEnd: addPhaseForm.scheduledEnd || null,
-        assignedUserId: addPhaseForm.assignedUserId || null,
-        assignedUserIds: addPhaseForm.assignedUserIds,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        scheduledStart: form.scheduledStart || null,
+        scheduledEnd: form.scheduledEnd || null,
+        assignedUserId: form.assignedUserId || null,
+        assignedUserIds: form.assignedUserIds,
       });
       // Create any starter tasks that were typed in the modal
-      const tasksToCreate = addPhaseStarterTasks.filter(t => t.trim());
+      const tasksToCreate = starterTasks.filter(t => t.trim());
       if (res.data?.id && tasksToCreate.length > 0) {
         await Promise.all(
           tasksToCreate.map((text, i) =>
@@ -3449,9 +3435,6 @@ export default function JobDetailScreen() {
       }
       await loadPhases();
       setShowAddPhaseModal(false);
-      setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] });
-      setAddPhaseStarterTasks([]);
-      setAddPhaseStarterTaskInput('');
       const taskCount = tasksToCreate.length;
       showToast({ type: 'success', message: taskCount > 0 ? `Phase added with ${taskCount} task${taskCount !== 1 ? 's' : ''}` : 'Phase added' });
     } catch (e: any) {
@@ -3461,27 +3444,27 @@ export default function JobDetailScreen() {
     }
   };
 
-  const handleUpdatePhase = async () => {
-    if (!editingPhase || !editPhaseForm.name.trim()) {
+  const handleUpdatePhase = async (form: PhaseFormValues) => {
+    if (!editingPhase || !form.name.trim()) {
       showToast({ type: 'error', message: 'Phase name is required' });
       return;
     }
     setIsSavingEditPhase(true);
     try {
       const payload: Record<string, any> = {
-        phaseCode: editPhaseForm.phaseCode.trim().toUpperCase() || editingPhase.phaseCode,
-        name: editPhaseForm.name.trim(),
-        description: editPhaseForm.description.trim() || null,
-        scheduledStart: editPhaseForm.scheduledStart.trim() || null,
-        scheduledEnd: editPhaseForm.scheduledEnd.trim() || null,
-        bookedHours: editPhaseForm.bookedHours.trim() ? editPhaseForm.bookedHours.trim() : null,
-        status: editPhaseForm.status,
-        assignedUserId: editPhaseForm.assignedUserId || null,
-        assignedUserIds: editPhaseForm.assignedUserIds,
+        phaseCode: form.phaseCode.trim().toUpperCase() || editingPhase.phaseCode,
+        name: form.name.trim(),
+        description: form.description.trim() || null,
+        scheduledStart: form.scheduledStart.trim() || null,
+        scheduledEnd: form.scheduledEnd.trim() || null,
+        bookedHours: form.bookedHours.trim() ? form.bookedHours.trim() : null,
+        status: form.status,
+        assignedUserId: form.assignedUserId || null,
+        assignedUserIds: form.assignedUserIds,
       };
       await api.patch(`/api/jobs/${id}/phases/${editingPhase.id}`, payload);
       await loadPhases();
-      const savedStatus = editPhaseForm.status;
+      const savedStatus = form.status;
       const savedPhase = editingPhase;
       setShowEditPhaseModal(false);
       setEditingPhase(null);
@@ -8879,17 +8862,6 @@ export default function JobDetailScreen() {
         const handleWhatsNextPress = () => {
           if (canOpenPhase) {
             setEditingPhase(nextPhase!);
-            setEditPhaseForm({
-              phaseCode: nextPhase!.phaseCode,
-              name: nextPhase!.name,
-              description: nextPhase!.description ?? '',
-              scheduledStart: nextPhase!.scheduledStart ?? '',
-              scheduledEnd: nextPhase!.scheduledEnd ?? '',
-              bookedHours: nextPhase!.bookedHours ?? '',
-              status: nextPhase!.status,
-              assignedUserId: nextPhase!.assignedUserId ?? '',
-              assignedUserIds: nextPhase!.assignedUserIds?.length ? nextPhase!.assignedUserIds : nextPhase!.assignedUserId ? [nextPhase!.assignedUserId] : [],
-            });
             setShowEditPhaseModal(true);
           } else if (!nextPhase && (isOwnerOrManager || isSoloOwner)) {
             setShowAddPhaseModal(true);
@@ -13230,17 +13202,6 @@ export default function JobDetailScreen() {
                     onAddPhase={(isOwnerOrManager || isSoloOwner) ? () => setShowAddPhaseModal(true) : undefined}
                     onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
                       setEditingPhase(phase);
-                      setEditPhaseForm({
-                        phaseCode: phase.phaseCode,
-                        name: phase.name,
-                        description: phase.description ?? '',
-                        scheduledStart: phase.scheduledStart ?? '',
-                        scheduledEnd: phase.scheduledEnd ?? '',
-                        bookedHours: phase.bookedHours ?? '',
-                        status: phase.status,
-                        assignedUserId: phase.assignedUserId ?? '',
-                        assignedUserIds: phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : [],
-                      });
                       setShowEditPhaseModal(true);
                     } : undefined}
                     onViewPhase={(phase) => router.push({ pathname: '/job/phase-detail' as any, params: { jobId: String(id), phaseId: phase.id } })}
@@ -13290,17 +13251,6 @@ export default function JobDetailScreen() {
                     isTradie={false}
                     onEditPhase={(isOwnerOrManager || isSoloOwner) ? (phase) => {
                       setEditingPhase(phase);
-                      setEditPhaseForm({
-                        phaseCode: phase.phaseCode,
-                        name: phase.name,
-                        description: phase.description ?? '',
-                        scheduledStart: phase.scheduledStart ?? '',
-                        scheduledEnd: phase.scheduledEnd ?? '',
-                        bookedHours: phase.bookedHours ?? '',
-                        status: phase.status,
-                        assignedUserId: phase.assignedUserId ?? '',
-                        assignedUserIds: phase.assignedUserIds?.length ? phase.assignedUserIds : phase.assignedUserId ? [phase.assignedUserId] : [],
-                      });
                       setShowEditPhaseModal(true);
                     } : undefined}
                   />
@@ -13398,452 +13348,35 @@ export default function JobDetailScreen() {
       </View>
 
       {/* Add Phase Modal */}
-      <AppBottomSheet
+      <PhaseFormSheet
         visible={showAddPhaseModal}
-        onDismiss={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); setAddPhaseStarterTasks([]); setAddPhaseStarterTaskInput(''); }}
-        title="Add Phase"
-        showCloseButton
-        snapPoints={['80%']}
-        footer={(
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowAddPhaseModal(false); setShowAddPhaseTeamPicker(false); setPhaseDateTarget(null); setAddPhaseForm({ phaseCode: '', name: '', description: '', scheduledStart: '', scheduledEnd: '', assignedUserId: '', assignedUserIds: [] }); setAddPhaseStarterTasks([]); setAddPhaseStarterTaskInput(''); }} style={{ flex: 1 }} />
-            <SheetButton onPress={handleSavePhase} loading={isSavingPhase} disabled={isSavingPhase || !addPhaseForm.name.trim()} label="Add Phase" style={{ flex: 1 }} />
-          </View>
-        )}>
-        <View>
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase Code</Text>
-          <TextInput
-            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
-            placeholder={`P${String(phases.length + 1).padStart(2, '0')}`}
-            placeholderTextColor={colors.mutedForeground}
-            value={addPhaseForm.phaseCode}
-            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, phaseCode: t.toUpperCase() }))}
-            maxLength={20}
-            autoCapitalize="characters"
-          />
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Name *</Text>
-          <TextInput
-            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
-            placeholder="e.g. Foundation, Framing, Fit-out"
-            placeholderTextColor={colors.mutedForeground}
-            value={addPhaseForm.name}
-            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, name: t }))}
-          />
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
-          <TextInput
-            style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
-            placeholder="Optional notes about this phase"
-            placeholderTextColor={colors.mutedForeground}
-            value={addPhaseForm.description}
-            onChangeText={(t) => setAddPhaseForm(f => ({ ...f, description: t }))}
-            multiline
-            numberOfLines={3}
-          />
-          {/* Date row — the picker renders full-width BELOW the row so the iOS
-              spinner never overflows the half-width End Date column. */}
-          <View style={{ marginBottom: spacing.lg }}>
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              {(['start', 'end'] as const).map((field) => {
-                const iso = field === 'start' ? addPhaseForm.scheduledStart : addPhaseForm.scheduledEnd;
-                const isActive = phaseDateTarget?.form === 'add' && phaseDateTarget?.field === field;
-                return (
-                  <View key={field} style={{ flex: 1 }}>
-                    <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>{field === 'start' ? 'Start Date' : 'End Date'}</Text>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => setPhaseDateTarget(isActive ? null : { form: 'add', field })}
-                      style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderColor: isActive ? colors.primary : colors.cardBorder }]}
-                    >
-                      <Text style={{ fontSize: 14, color: iso ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
-                        {iso ? new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Set date'}
-                      </Text>
-                      <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-            {phaseDateTarget?.form === 'add' && (() => {
-              const field = phaseDateTarget.field;
-              const iso = field === 'start' ? addPhaseForm.scheduledStart : addPhaseForm.scheduledEnd;
-              return (
-                <View style={{ marginTop: spacing.sm }}>
-                  <DateTimePicker
-                    value={iso ? new Date(iso) : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => {
-                      if (Platform.OS !== 'ios') setPhaseDateTarget(null);
-                      if (event.type !== 'dismissed' && date) {
-                        setAddPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
-                      }
-                    }}
-                    style={Platform.OS === 'ios' ? { alignSelf: 'center' } : undefined}
-                    themeVariant={isDark ? 'dark' : 'light'}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity
-                      style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
-                      onPress={() => setPhaseDateTarget(null)}
-                    >
-                      <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })()}
-          </View>
-          <PhaseTeamPicker
-            selectedIds={addPhaseForm.assignedUserIds}
-            teamMembers={teamMembers}
-            onChange={(assignedUserIds) => setAddPhaseForm((value) => ({ ...value, assignedUserIds, assignedUserId: assignedUserIds[0] || '' }))}
-            onManageTeam={() => { setShowAddPhaseModal(false); router.push('/more/team-management'); }}
-            testID="add-phase-team"
-          />
-
-          {/* Quick templates — fills Name, Description, and Starter Tasks with one tap */}
-          <View style={{ marginTop: spacing.lg }}>
-            <Text style={[styles.cardLabel, { marginBottom: spacing.sm }]}>Quick Templates</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingBottom: 2 }}>
-              {PHASE_TEMPLATES.map(tmpl => (
-                <TouchableOpacity
-                  key={tmpl.name}
-                  onPress={() => {
-                    setAddPhaseForm(f => ({ ...f, name: f.name || tmpl.name, description: f.description || tmpl.description }));
-                    setAddPhaseStarterTasks(tmpl.tasks);
-                    setAddPhaseStarterTaskInput('');
-                  }}
-                  style={{ paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={{ fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }}>{tmpl.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Starter tasks — created after the phase is saved, linked to the new phase */}
-          <View style={{ marginTop: spacing.lg, marginBottom: spacing.sm }}>
-            <Text style={[styles.cardLabel, { marginBottom: spacing.sm }]}>Starter Tasks</Text>
-            {addPhaseStarterTasks.map((task, idx) => (
-              <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs, paddingVertical: 3 }}>
-                <Feather name="check-square" size={13} color={colors.mutedForeground} />
-                <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground }}>{task}</Text>
-                <TouchableOpacity onPress={() => setAddPhaseStarterTasks(prev => prev.filter((_, i) => i !== idx))} hitSlop={8} activeOpacity={0.7}>
-                  <Feather name="x" size={14} color={colors.mutedForeground} />
-                </TouchableOpacity>
-              </View>
-            ))}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: addPhaseStarterTasks.length > 0 ? spacing.xs : 0 }}>
-              <TextInput
-                style={[styles.singleLineInput, { flex: 1, height: 40 }]}
-                placeholder="Add a task..."
-                placeholderTextColor={colors.mutedForeground}
-                value={addPhaseStarterTaskInput}
-                onChangeText={setAddPhaseStarterTaskInput}
-                onSubmitEditing={() => {
-                  const t = addPhaseStarterTaskInput.trim();
-                  if (t) { setAddPhaseStarterTasks(prev => [...prev, t]); setAddPhaseStarterTaskInput(''); }
-                }}
-                returnKeyType="done"
-              />
-              <TouchableOpacity
-                onPress={() => {
-                  const t = addPhaseStarterTaskInput.trim();
-                  if (t) { setAddPhaseStarterTasks(prev => [...prev, t]); setAddPhaseStarterTaskInput(''); }
-                }}
-                disabled={!addPhaseStarterTaskInput.trim()}
-                style={{ width: 36, height: 36, borderRadius: radius.md, backgroundColor: addPhaseStarterTaskInput.trim() ? colors.primary : colors.muted, alignItems: 'center', justifyContent: 'center' }}
-                activeOpacity={0.7}
-              >
-                <Feather name="plus" size={16} color={addPhaseStarterTaskInput.trim() ? colors.primaryForeground : colors.mutedForeground} />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={{ display: 'none' }}>
-          {/* Legacy single-member selector, retained only while hidden for a safe rollback. */}
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
-          <TouchableOpacity
-            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showAddPhaseTeamPicker ? spacing.xs : spacing.lg }]}
-            onPress={() => setShowAddPhaseTeamPicker(v => !v)}
-            activeOpacity={0.7}
-          >
-            {addPhaseForm.assignedUserId ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
-                <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
-                    {(teamMembers.find(m => (m.memberId || m.userId || m.id) === addPhaseForm.assignedUserId)?.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
-                  {teamMembers.find(m => (m.memberId || m.userId || m.id) === addPhaseForm.assignedUserId)?.name ?? 'Unknown'}
-                </Text>
-              </View>
-            ) : (
-              <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground }}>Not assigned</Text>
-            )}
-            <Feather name={showAddPhaseTeamPicker ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-          </TouchableOpacity>
-          {showAddPhaseTeamPicker && (
-            <View style={{ marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card }}>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
-                onPress={() => { setAddPhaseForm(f => ({ ...f, assignedUserId: '' })); setShowAddPhaseTeamPicker(false); }}
-                activeOpacity={0.6}
-              >
-                <Feather name="user-x" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
-                <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.mutedForeground, fontStyle: 'italic' }}>No assignment</Text>
-                {!addPhaseForm.assignedUserId && <Feather name="check" size={14} color={colors.primary} />}
-              </TouchableOpacity>
-              {teamMembers.length === 0 ? (
-                <View style={{ padding: spacing.md, alignItems: 'center' }}>
-                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No team members yet</Text>
-                </View>
-              ) : teamMembers.map(m => {
-                const uid = m.memberId || m.userId || m.id;
-                return (
-                  <TouchableOpacity
-                    key={m.id}
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-                    onPress={() => { setAddPhaseForm(f => ({ ...f, assignedUserId: uid })); setShowAddPhaseTeamPicker(false); }}
-                    activeOpacity={0.6}
-                  >
-                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{(m.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.sizes.md, color: colors.foreground }}>{m.name}</Text>
-                      {m.role && <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{m.role}</Text>}
-                    </View>
-                    {addPhaseForm.assignedUserId === uid && <Feather name="check" size={14} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              })}
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-                onPress={() => { setShowAddPhaseTeamPicker(false); router.push('/more/team-management'); }}
-                activeOpacity={0.7}
-              >
-                <Feather name="user-plus" size={14} color={colors.primary} style={{ marginRight: spacing.sm }} />
-                <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold as any }}>
-                  Invite or manage team members
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          </View>
-        </View>
-      </AppBottomSheet>
+        mode="add"
+        colors={colors}
+        styles={styles}
+        isDark={isDark}
+        teamMembers={teamMembers}
+        phaseCount={phases.length}
+        isSaving={isSavingPhase}
+        onSubmit={handleSavePhase}
+        onDismiss={() => setShowAddPhaseModal(false)}
+        onManageTeam={() => { setShowAddPhaseModal(false); router.push('/more/team-management'); }}
+      />
 
       {/* Edit Phase Modal */}
-      <AppBottomSheet
+      <PhaseFormSheet
         visible={showEditPhaseModal}
-        onDismiss={() => { setShowEditPhaseModal(false); setShowEditPhaseTeamPicker(false); setEditingPhase(null); }}
-        title="Edit Phase"
-        showCloseButton
-        snapPoints={['80%']}
-        footer={(
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <SheetButton variant="outline" label="Cancel" onPress={() => { setShowEditPhaseModal(false); setShowEditPhaseTeamPicker(false); setEditingPhase(null); }} style={{ flex: 1 }} />
-            <SheetButton onPress={handleUpdatePhase} loading={isSavingEditPhase} disabled={isSavingEditPhase || !editPhaseForm.name.trim()} label="Save Changes" style={{ flex: 1 }} />
-          </View>
-        )}>
-        <View>
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Phase Code</Text>
-          <TextInput
-            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
-            placeholderTextColor={colors.mutedForeground}
-            value={editPhaseForm.phaseCode}
-            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, phaseCode: t.toUpperCase() }))}
-            maxLength={20}
-            autoCapitalize="characters"
-          />
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Name *</Text>
-          <TextInput
-            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
-            placeholder="e.g. Foundation, Framing, Fit-out"
-            placeholderTextColor={colors.mutedForeground}
-            value={editPhaseForm.name}
-            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, name: t }))}
-          />
-          <View style={{ marginBottom: spacing.lg }}>
-            <View style={{ flexDirection: 'row', gap: spacing.md }}>
-              {(['start', 'end'] as const).map((field) => {
-                const iso = field === 'start' ? editPhaseForm.scheduledStart : editPhaseForm.scheduledEnd;
-                const isActive = phaseDateTarget?.form === 'edit' && phaseDateTarget?.field === field;
-                return (
-                  <View key={field} style={{ flex: 1 }}>
-                    <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>{field === 'start' ? 'Start Date' : 'End Date'}</Text>
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => setPhaseDateTarget(isActive ? null : { form: 'edit', field })}
-                      style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, borderColor: isActive ? colors.primary : colors.cardBorder }]}
-                    >
-                      <Text style={{ fontSize: 14, color: iso ? colors.foreground : colors.mutedForeground }} numberOfLines={1}>
-                        {iso ? new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Set date'}
-                      </Text>
-                      <Feather name="calendar" size={14} color={isActive ? colors.primary : colors.mutedForeground} />
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-            {phaseDateTarget?.form === 'edit' && (() => {
-              const field = phaseDateTarget.field;
-              const iso = field === 'start' ? editPhaseForm.scheduledStart : editPhaseForm.scheduledEnd;
-              return (
-                <View style={{ marginTop: spacing.sm }}>
-                  <DateTimePicker
-                    value={iso ? new Date(iso) : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => {
-                      if (Platform.OS !== 'ios') setPhaseDateTarget(null);
-                      if (event.type !== 'dismissed' && date) {
-                        setEditPhaseForm(f => ({ ...f, [field === 'start' ? 'scheduledStart' : 'scheduledEnd']: date.toISOString() }));
-                      }
-                    }}
-                    style={Platform.OS === 'ios' ? { alignSelf: 'center' } : undefined}
-                    themeVariant={isDark ? 'dark' : 'light'}
-                  />
-                  {Platform.OS === 'ios' && (
-                    <TouchableOpacity
-                      style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: 4, alignItems: 'center' }}
-                      onPress={() => setPhaseDateTarget(null)}
-                    >
-                      <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold, fontSize: 14 }}>Done</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })()}
-          </View>
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Booked Hours</Text>
-          <TextInput
-            style={[styles.singleLineInput, { marginBottom: spacing.lg }]}
-            placeholder="e.g. 40"
-            placeholderTextColor={colors.mutedForeground}
-            value={editPhaseForm.bookedHours}
-            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, bookedHours: t }))}
-            keyboardType="decimal-pad"
-          />
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Status</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.lg }}>
-            {(['not_started', 'in_progress', 'complete', 'invoiced'] as PhaseStatus[]).map((s) => {
-              const labels: Record<PhaseStatus, string> = { not_started: 'Not Started', in_progress: 'In Progress', complete: 'Complete', invoiced: 'Invoiced' };
-              const isSelected = editPhaseForm.status === s;
-              return (
-                <TouchableOpacity
-                  key={s}
-                  onPress={() => setEditPhaseForm(f => ({ ...f, status: s }))}
-                  style={{
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: radius.pill,
-                    borderWidth: 1.5,
-                    borderColor: isSelected ? colors.primary : colors.cardBorder,
-                    backgroundColor: isSelected ? colors.primary : colors.card,
-                  }}
-                >
-                  <Text style={{ fontSize: 13, fontWeight: isSelected ? fontWeights.semibold : fontWeights.regular, color: isSelected ? colors.primaryForeground : colors.foreground }}>
-                    {labels[s]}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Description</Text>
-          <TextInput
-            style={[styles.singleLineInput, { height: 72, textAlignVertical: 'top' as any, paddingTop: 10, marginBottom: spacing.lg }]}
-            placeholder="Optional notes about this phase"
-            placeholderTextColor={colors.mutedForeground}
-            value={editPhaseForm.description}
-            onChangeText={(t) => setEditPhaseForm(f => ({ ...f, description: t }))}
-            multiline
-            numberOfLines={3}
-          />
-          <PhaseTeamPicker
-            selectedIds={editPhaseForm.assignedUserIds}
-            teamMembers={teamMembers}
-            onChange={(assignedUserIds) => setEditPhaseForm((value) => ({ ...value, assignedUserIds, assignedUserId: assignedUserIds[0] || '' }))}
-            onManageTeam={() => { setShowEditPhaseModal(false); router.push('/more/team-management'); }}
-            testID="edit-phase-team"
-          />
-          <View style={{ display: 'none' }}>
-          {/* Legacy single-member selector, retained only while hidden for a safe rollback. */}
-          <Text style={[styles.cardLabel, { marginBottom: spacing.xs }]}>Assign Team Member</Text>
-          <TouchableOpacity
-            style={[styles.singleLineInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', height: 48, marginBottom: showEditPhaseTeamPicker ? spacing.xs : spacing.lg }]}
-            onPress={() => setShowEditPhaseTeamPicker(v => !v)}
-            activeOpacity={0.7}
-          >
-            {editPhaseForm.assignedUserId ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1 }}>
-                <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>
-                    {(teamMembers.find(m => (m.memberId || m.userId || m.id) === editPhaseForm.assignedUserId)?.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={{ fontSize: typography.sizes.md, color: colors.foreground, flex: 1 }} numberOfLines={1}>
-                  {teamMembers.find(m => (m.memberId || m.userId || m.id) === editPhaseForm.assignedUserId)?.name ?? 'Unknown'}
-                </Text>
-              </View>
-            ) : (
-              <Text style={{ fontSize: typography.sizes.md, color: colors.mutedForeground }}>Not assigned</Text>
-            )}
-            <Feather name={showEditPhaseTeamPicker ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
-          </TouchableOpacity>
-          {showEditPhaseTeamPicker && (
-            <View style={{ marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.card }}>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}
-                onPress={() => { setEditPhaseForm(f => ({ ...f, assignedUserId: '' })); setShowEditPhaseTeamPicker(false); }}
-                activeOpacity={0.6}
-              >
-                <Feather name="user-x" size={14} color={colors.mutedForeground} style={{ marginRight: spacing.sm }} />
-                <Text style={{ flex: 1, fontSize: typography.sizes.md, color: colors.mutedForeground, fontStyle: 'italic' }}>No assignment</Text>
-                {!editPhaseForm.assignedUserId && <Feather name="check" size={14} color={colors.primary} />}
-              </TouchableOpacity>
-              {teamMembers.length === 0 ? (
-                <View style={{ padding: spacing.md, alignItems: 'center' }}>
-                  <Text style={{ fontSize: typography.sizes.sm, color: colors.mutedForeground }}>No team members yet</Text>
-                </View>
-              ) : teamMembers.map(m => {
-                const uid = m.memberId || m.userId || m.id;
-                return (
-                  <TouchableOpacity
-                    key={m.id}
-                    style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-                    onPress={() => { setEditPhaseForm(f => ({ ...f, assignedUserId: uid })); setShowEditPhaseTeamPicker(false); }}
-                    activeOpacity={0.6}
-                  >
-                    <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: spacing.sm }}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: '#fff' }}>{(m.name ?? '?').split(' ').map((p: string) => p[0]).slice(0, 2).join('').toUpperCase()}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: typography.sizes.md, color: colors.foreground }}>{m.name}</Text>
-                      {m.role && <Text style={{ fontSize: typography.sizes.xs, color: colors.mutedForeground }}>{m.role}</Text>}
-                    </View>
-                    {editPhaseForm.assignedUserId === uid && <Feather name="check" size={14} color={colors.primary} />}
-                  </TouchableOpacity>
-                );
-              })}
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}
-                onPress={() => { setShowEditPhaseTeamPicker(false); router.push('/more/team-management'); }}
-                activeOpacity={0.7}
-              >
-                <Feather name="user-plus" size={14} color={colors.primary} style={{ marginRight: spacing.sm }} />
-                <Text style={{ fontSize: typography.sizes.sm, color: colors.primary, fontWeight: fontWeights.semibold as any }}>
-                  Invite or manage team members
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-          </View>
-        </View>
-      </AppBottomSheet>
+        mode="edit"
+        colors={colors}
+        styles={styles}
+        isDark={isDark}
+        teamMembers={teamMembers}
+        phaseCount={phases.length}
+        phase={editingPhase}
+        isSaving={isSavingEditPhase}
+        onSubmit={(form) => handleUpdatePhase(form)}
+        onDismiss={() => { setShowEditPhaseModal(false); setEditingPhase(null); }}
+        onManageTeam={() => { setShowEditPhaseModal(false); router.push('/more/team-management'); }}
+      />
 
       {/* Edit Phase Task Modal */}
       <AppBottomSheet
@@ -16309,55 +15842,38 @@ export default function JobDetailScreen() {
                 <Feather name="chevron-right" size={20} color={colors.mutedForeground} />
               </TouchableOpacity>
               
-              {/* Custom Date Picker */}
+              {/* Date Picker — native, same pattern as the time picker below:
+                  iOS shows an inline spinner with a Done button; Android shows
+                  a modal dialog that must clear showDatePicker in onChange. */}
               {showDatePicker && (
-                <View style={{ backgroundColor: colors.muted, borderRadius: radius.lg, padding: spacing.md, marginBottom: spacing.md }}>
-                  <Text style={{ color: colors.foreground, fontWeight: fontWeights.semibold, marginBottom: spacing.sm, textAlign: 'center' }}>Select Date</Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 180 }}>
-                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                      {Array.from({ length: 30 }, (_, i) => {
-                        const date = new Date();
-                        date.setDate(date.getDate() + i);
-                        const isSelected = scheduleDate.toDateString() === date.toDateString();
-                        return (
-                          <TouchableOpacity
-                            key={i}
-                            onPress={() => {
-                              const newDate = new Date(scheduleDate);
-                              newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
-                              setScheduleDate(newDate);
-                            }}
-                            style={{
-                              padding: spacing.md,
-                              backgroundColor: isSelected ? colors.primary : colors.background,
-                              borderRadius: radius.md,
-                              minWidth: 70,
-                              alignItems: 'center',
-                            }}
-                          >
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: typography.captionSmall.fontSize }}>
-                              {date.toLocaleDateString('en-AU', { weekday: 'short' })}
-                            </Text>
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.foreground, fontSize: typography.sizes.lg, fontWeight: fontWeights.bold }}>
-                              {date.getDate()}
-                            </Text>
-                            <Text style={{ color: isSelected ? colors.primaryForeground : colors.mutedForeground, fontSize: typography.captionSmall.fontSize }}>
-                              {date.toLocaleDateString('en-AU', { month: 'short' })}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </ScrollView>
-                  <TouchableOpacity
-                    style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, marginTop: spacing.md, alignItems: 'center' }}
-                    onPress={() => {
-                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                      setShowDatePicker(false);
+                <View style={{ marginBottom: spacing.md }}>
+                  <DateTimePicker
+                    value={scheduleDate}
+                    mode="date"
+                    minimumDate={new Date()}
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={(event, selectedDate) => {
+                      setShowDatePicker(Platform.OS === 'ios');
+                      if (event.type !== 'dismissed' && selectedDate) {
+                        const newDate = new Date(scheduleDate);
+                        newDate.setFullYear(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                        setScheduleDate(newDate);
+                      }
                     }}
-                  >
-                    <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Done</Text>
-                  </TouchableOpacity>
+                    style={Platform.OS === 'ios' ? { alignSelf: 'center' } : undefined}
+                    themeVariant={isDark ? 'dark' : 'light'}
+                  />
+                  {Platform.OS === 'ios' && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: colors.primary, borderRadius: radius.md, padding: spacing.sm, alignItems: 'center' }}
+                      onPress={() => {
+                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                        setShowDatePicker(false);
+                      }}
+                    >
+                      <Text style={{ color: colors.primaryForeground, fontWeight: fontWeights.semibold }}>Done</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
               
