@@ -172,10 +172,18 @@ function DeepLinkHandler() {
     try {
       const parsed = Linking.parse(url);
       const { hostname, path, queryParams } = parsed;
-      
+
+      // Auth tokens (verify-email, accept-invite, reset-password) are only
+      // honored from https universal links. Any app can register the
+      // jobrunner:// custom scheme and intercept links, so a token arriving
+      // via that scheme could be a hijack attempt — ignore it. Emails always
+      // link via https://jobrunner.com.au, which iOS routes to us through the
+      // associated-domains entitlement.
+      const isTrustedTokenSource = url.startsWith('https://');
+
       // Handle different deep link paths
       if (hostname === 'verify-email' || path === '/verify-email') {
-        const token = queryParams?.token as string;
+        const token = isTrustedTokenSource ? (queryParams?.token as string) : undefined;
         if (token) {
           try {
             const response = await api.post<{ success?: boolean; sessionToken?: string; isNewUser?: boolean }>('/api/auth/verify-email', { token });
@@ -199,14 +207,14 @@ function DeepLinkHandler() {
           }
         }
       } else if (hostname === 'accept-invite' || path === '/accept-invite') {
-        const token = queryParams?.token as string;
+        const token = isTrustedTokenSource ? (queryParams?.token as string) : undefined;
         if (token) {
           InteractionManager.runAfterInteractions(() => {
             router.push(`/(auth)/accept-invite?token=${token}`);
           });
         }
       } else if (hostname === 'reset-password' || path === '/reset-password') {
-        const token = queryParams?.token as string;
+        const token = isTrustedTokenSource ? (queryParams?.token as string) : undefined;
         if (token) {
           // Defer navigation until interactions complete for safety
           InteractionManager.runAfterInteractions(() => {
