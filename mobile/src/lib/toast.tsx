@@ -6,6 +6,22 @@ import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react-native';
 import { useTheme } from './theme';
 import { radius, spacing, typography, shadows } from './design-tokens';
 
+/**
+ * Error/feedback UX policy for this app:
+ *
+ * - showToast: the default for async outcomes — a save/load/delete
+ *   succeeded or failed. Non-blocking, self-dismissing, doesn't demand a tap.
+ * - useConfirmDialog (src/components/ui/ConfirmDialog): the default for
+ *   confirmations and destructive actions — anything where the user must
+ *   make a choice before something happens ("Delete this note?").
+ * - Alert.alert (src/lib/alert): reserved for cases that genuinely need a
+ *   blocking decision with custom buttons Confirm/ConfirmDialog can't
+ *   express (e.g. a 3-way choice, or an OS-level interruption). It is not
+ *   a substitute for showToast on a plain success/failure message — a
+ *   single-button Alert.alert for "Saved" or "Failed to save" forces a tap
+ *   the user doesn't need to make, and looks inconsistent next to every
+ *   other screen's toast for the same class of outcome.
+ */
 export type ToastType = 'success' | 'error' | 'info';
 
 export interface ShowToastOptions {

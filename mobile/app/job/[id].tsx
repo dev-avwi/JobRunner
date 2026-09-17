@@ -3297,21 +3297,21 @@ export default function JobDetailScreen() {
         const data = res.data as any;
         const code = data?.code;
         if (code === 'PHASE_NOT_FOUND') {
-          Alert.alert('Phase Not Found', 'This phase no longer exists. Pull down to refresh.');
+          showToast({ type: 'error', message: 'Phase not found', description: 'This phase no longer exists. Pull down to refresh.' });
           loadPhases();
         } else {
           const msg = data?.error || res.error || 'Failed to update phase status';
-          Alert.alert('Error', msg);
+          showToast({ type: 'error', message: msg });
         }
       }
     } catch (e: any) {
       const code = e?.response?.data?.code;
       if (code === 'PHASE_NOT_FOUND') {
-        Alert.alert('Phase Not Found', 'This phase no longer exists. Pull down to refresh.');
+        showToast({ type: 'error', message: 'Phase not found', description: 'This phase no longer exists. Pull down to refresh.' });
         loadPhases();
       } else {
         const msg = e?.response?.data?.error || 'Failed to update phase status';
-        Alert.alert('Error', msg);
+        showToast({ type: 'error', message: msg });
       }
     } finally {
       setPhaseStatusLoading(prev => { const next = new Set(prev); next.delete(phaseId); return next; });
@@ -3850,10 +3850,7 @@ export default function JobDetailScreen() {
   const pickDocumentFile = useCallback(async () => {
     const DocumentPicker = getDocumentPicker();
     if (!DocumentPicker) {
-      Alert.alert(
-        'Update required',
-        'Attaching PDFs needs the latest app build. Please update the app, then try again. You can still attach photos in the meantime.'
-      );
+      showToast({ type: 'error', message: 'Update required', description: 'Attaching PDFs needs the latest app build. You can still attach photos in the meantime.' });
       return;
     }
     try {
@@ -5710,7 +5707,7 @@ export default function JobDetailScreen() {
     if (!editRateTimer) return;
     const parsed = parseFloat(rateInput);
     if (isNaN(parsed) || parsed < 0) {
-      Alert.alert('Invalid Rate', 'Enter a valid hourly rate.');
+      showToast({ type: 'error', message: 'Invalid rate', description: 'Enter a valid hourly rate.' });
       return;
     }
     setIsSavingRate(true);
@@ -5720,14 +5717,14 @@ export default function JobDetailScreen() {
         editReason: 'Hourly rate corrected by manager',
       });
       if (res.error) {
-        Alert.alert('Could not update', res.error);
+        showToast({ type: 'error', message: 'Could not update', description: res.error });
         return;
       }
       setEditRateTimer(null);
       await loadTeamTimers();
-      Alert.alert('Updated', 'Hourly rate updated for this job.');
+      showToast({ type: 'success', message: 'Hourly rate updated for this job' });
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to update rate.');
+      showToast({ type: 'error', message: 'Error', description: error?.message || 'Failed to update rate.' });
     } finally {
       setIsSavingRate(false);
     }
@@ -7604,7 +7601,7 @@ export default function JobDetailScreen() {
     // Validate that the selected time is not in the past
     const now = new Date();
     if (scheduleDate < now) {
-      Alert.alert('Invalid Time', 'Please select a future date and time for scheduling.');
+      showToast({ type: 'error', message: 'Invalid time', description: 'Please select a future date and time for scheduling.' });
       return;
     }
     
@@ -7748,7 +7745,7 @@ export default function JobDetailScreen() {
   const handleSiteUpdateTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera access is needed to take photos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Camera access is needed to take photos.' });
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -7764,7 +7761,7 @@ export default function JobDetailScreen() {
   const handleSiteUpdatePickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Media library access is needed to select photos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Media library access is needed to select photos.' });
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -7839,7 +7836,7 @@ export default function JobDetailScreen() {
   const handleTakePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera access is needed to take photos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Camera access is needed to take photos.' });
       return;
     }
 
@@ -7857,13 +7854,13 @@ export default function JobDetailScreen() {
   const handleRecordVideo = async () => {
     const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
     if (cameraPermission.status !== 'granted') {
-      Alert.alert('Permission Required', 'Camera access is needed to record videos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Camera access is needed to record videos.' });
       return;
     }
 
     const microphonePermission = await Camera.Camera.requestMicrophonePermissionsAsync();
     if (microphonePermission.status !== 'granted') {
-      Alert.alert('Permission Required', 'Microphone access is needed to record video with sound.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Microphone access is needed to record video with sound.' });
       return;
     }
     
@@ -7915,7 +7912,7 @@ export default function JobDetailScreen() {
   const handlePickMedia = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Media library access is needed to select photos and videos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Media library access is needed to select photos and videos.' });
       return;
     }
 
@@ -7937,7 +7934,7 @@ export default function JobDetailScreen() {
   const handlePickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'Photo library access is needed to select photos.');
+      showToast({ type: 'error', message: 'Permission required', description: 'Photo library access is needed to select photos.' });
       return;
     }
 
@@ -13846,7 +13843,7 @@ export default function JobDetailScreen() {
               disabled={isUploadingPOReceipt}
               onPress={async () => {
                 const DocumentPicker = getDocumentPicker();
-                if (!DocumentPicker) { Alert.alert('Update required', 'Attaching PDFs needs the latest app build. Please update the app.'); return; }
+                if (!DocumentPicker) { showToast({ type: 'error', message: 'Update required', description: 'Attaching PDFs needs the latest app build.' }); return; }
                 try {
                   const result = await DocumentPicker.getDocumentAsync({ type: ['application/pdf', 'image/*'], copyToCacheDirectory: true });
                   if (result.canceled || !result.assets?.[0]) return;
@@ -13940,9 +13937,9 @@ export default function JobDetailScreen() {
                   });
                   setShowFlagExtraWorkModal(false);
                   setFlagExtraWorkPhotoUri(null);
-                  Alert.alert('Flagged', 'Extra work has been reported. The owner will be notified to review and quote the variation.');
+                  showToast({ type: 'success', message: 'Flagged', description: 'Extra work has been reported. The owner will be notified to review and quote the variation.' });
                 } catch {
-                  Alert.alert('Error', 'Could not flag extra work. Please try again.');
+                  showToast({ type: 'error', message: 'Could not flag extra work', description: 'Please try again.' });
                 } finally {
                   setFlagExtraWorkLoading(false);
                 }
