@@ -10321,165 +10321,6 @@ export default function JobDetailScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Job Profitability Card */}
-      {(() => {
-        const pd = profitabilityData;
-        const hasFinancialData = pd && (pd.revenue.invoiced > 0 || pd.revenue.pending > 0 || pd.costs.total > 0);
-        
-        if (isLoadingProfitability) {
-          return (
-            <View style={styles.costingCard}>
-              <View style={styles.costingHeader}>
-                <View style={[styles.costingIconContainer, { backgroundColor: `${colors.success}15` }]}>
-                  <Feather name="dollar-sign" size={iconSizes.lg} color={colors.success} />
-                </View>
-                <Text style={styles.costingTitle}>Profitability</Text>
-              </View>
-              <SkeletonSection rows={2} />
-            </View>
-          );
-        }
-
-        if (!hasFinancialData) {
-          return (
-            <View style={styles.costingCard}>
-              <View style={styles.costingHeader}>
-                <View style={[styles.costingIconContainer, { backgroundColor: `${colors.success}15` }]}>
-                  <Feather name="trending-up" size={iconSizes.lg} color={colors.success} />
-                </View>
-                <Text style={styles.costingTitle}>Profitability</Text>
-              </View>
-              <View style={{ alignItems: 'center', paddingVertical: spacing.lg }}>
-                <Text style={{ ...typography.body, color: colors.mutedForeground, textAlign: 'center' }}>
-                  No financial data yet
-                </Text>
-                <Text style={{ ...typography.caption, color: colors.mutedForeground, marginTop: spacing.xs, textAlign: 'center' }}>
-                  Create invoices and track expenses to see profitability
-                </Text>
-              </View>
-            </View>
-          );
-        }
-
-        const profitColor = pd.status === 'profitable' ? colors.success : pd.status === 'tight' ? colors.warning : colors.destructive;
-        const marginCapped = Math.min(Math.max(pd.profit.margin, 0), 100);
-
-        return (
-          <View style={styles.costingCard}>
-            <View style={styles.costingHeader}>
-              <View style={[styles.costingIconContainer, { backgroundColor: `${profitColor}15` }]}>
-                <Feather name="dollar-sign" size={iconSizes.lg} color={profitColor} />
-              </View>
-              <Text style={styles.costingTitle}>Profitability</Text>
-              <View style={{ marginLeft: 'auto', backgroundColor: `${profitColor}15`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xxs, borderRadius: radius.md }}>
-                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.bold, color: profitColor, textTransform: 'capitalize' }}>
-                  {pd.status}
-                </Text>
-              </View>
-            </View>
-
-            {pd.quoted?.amount ? (
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Quoted</Text>
-                <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(pd.quoted.amount)}</Text>
-              </View>
-            ) : null}
-
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-              <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Revenue</Text>
-              <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(pd.revenue.invoiced)}</Text>
-            </View>
-
-            <View style={{ paddingTop: spacing.sm }}>
-              <Text style={{ fontSize: typography.sizes.xs, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.3, marginBottom: spacing.sm }}>Costs</Text>
-              <View style={{ gap: spacing.xs }}>
-                <View style={[
-                  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderRadius: radius.sm },
-                  pd.labourOverrun ? { backgroundColor: `${colors.warning}18`, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs } : {},
-                ]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flex: 1 }}>
-                    {pd.labourOverrun && (
-                      <Feather name="alert-triangle" size={13} color={colors.warning} />
-                    )}
-                    <Text style={{ fontSize: typography.button.fontSize, color: pd.labourOverrun ? colors.warning : colors.mutedForeground, fontWeight: pd.labourOverrun ? fontWeights.semibold : fontWeights.regular }}>
-                      Labour{pd.hours.total > 0 ? ` (${Number(pd.hours.total).toFixed(1)}hrs)` : ''}{pd.labourOverrun && pd.hours.estimated ? ` / ${pd.hours.estimated.toFixed(1)} est` : ''}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: pd.labourOverrun ? fontWeights.semibold : fontWeights.medium, color: pd.labourOverrun ? colors.warning : colors.foreground }}>{formatCurrency(pd.costs.labour)}</Text>
-                </View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Materials</Text>
-                  <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.materials)}</Text>
-                </View>
-                {(pd.costs.expenses ?? 0) > 0 && (() => {
-                  const pendingExpenses = jobExpenses.filter(e => e.status === 'pending');
-                  const pendingTotal = pendingExpenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0);
-                  return (
-                    <>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={{ fontSize: typography.button.fontSize, color: colors.mutedForeground }}>Expenses</Text>
-                        <Text style={{ fontSize: typography.button.fontSize, fontWeight: fontWeights.medium, color: colors.foreground }}>{formatCurrency(pd.costs.expenses ?? 0)}</Text>
-                      </View>
-                      {pendingExpenses.length > 0 && (
-                        <View style={{
-                          flexDirection: 'row', alignItems: 'center', gap: 5,
-                          backgroundColor: '#fef3c7', borderRadius: 6,
-                          paddingHorizontal: spacing.sm, paddingVertical: spacing.xs,
-                          marginTop: 2,
-                        }}>
-                          <Feather name="clock" size={11} color="#92400e" />
-                          <Text style={{ fontSize: 11, color: '#92400e', flex: 1 }}>
-                            {pendingExpenses.length} pending approval
-                          </Text>
-                          <Text style={{ fontSize: 11, fontWeight: fontWeights.semibold as any, color: '#92400e' }}>
-                            {formatCurrency(pendingTotal)}
-                          </Text>
-                        </View>
-                      )}
-                    </>
-                  );
-                })()}
-              </View>
-            </View>
-
-            <View style={{ 
-              flexDirection: 'row', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              paddingTop: spacing.md,
-              marginTop: spacing.md,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-            }}>
-              <Text style={{ fontSize: typography.subtitle.fontSize, fontWeight: fontWeights.bold, color: colors.foreground }}>Profit</Text>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: typography.sizes.lg, fontWeight: fontWeights.bold, color: profitColor }}>
-                  {formatCurrency(pd.profit.amount)}
-                </Text>
-                <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: profitColor }}>
-                  {pd.profit.margin.toFixed(1)}% margin
-                </Text>
-              </View>
-            </View>
-
-            <View style={{ 
-              marginTop: spacing.md, 
-              height: 6, 
-              backgroundColor: colors.muted, 
-              borderRadius: 3, 
-              overflow: 'hidden' 
-            }}>
-              <View style={{ 
-                width: `${marginCapped}%`, 
-                height: '100%', 
-                backgroundColor: profitColor, 
-                borderRadius: 3 
-              }} />
-            </View>
-          </View>
-        );
-      })()}
-
       {/* Retention held summary for project jobs */}
       {(isOwnerOrManager || isSoloOwner) && job.jobType === 'project' && (() => {
         const rs = profitabilityData ? (profitabilityData as any).retentionSummary : null;
@@ -10622,54 +10463,6 @@ export default function JobDetailScreen() {
           </View>
         );
       })()}
-
-      {/* Job Costing Section - hidden for subcontractors */}
-      {!isSubcontractorUser && (estimatedHours > 0 || estimatedCost > 0 || actualHours > 0) && (
-        <View style={styles.costingCard}>
-          <View style={styles.costingHeader}>
-            <View style={[styles.costingIconContainer, { backgroundColor: `${colors.warning}15` }]}>
-              <Feather name="dollar-sign" size={iconSizes.lg} color={colors.warning} />
-            </View>
-            <Text style={styles.costingTitle}>Job Costing</Text>
-          </View>
-          <View style={styles.costingGrid}>
-            {estimatedHours > 0 && (
-              <View style={styles.costingItem}>
-                <Text style={styles.costingLabel}>Estimated Hours</Text>
-                <Text style={styles.costingValue}>{estimatedHours.toFixed(1)}h</Text>
-              </View>
-            )}
-            {actualHours > 0 && (
-              <View style={styles.costingItem}>
-                <Text style={styles.costingLabel}>Actual Hours</Text>
-                <Text style={[
-                  styles.costingValue,
-                  hoursVariance > 0 && { color: colors.destructive },
-                  hoursVariance < 0 && { color: colors.success }
-                ]}>{formatTrackedHours(actualHours)}</Text>
-              </View>
-            )}
-            {estimatedCost > 0 && (
-              <View style={styles.costingItem}>
-                <Text style={styles.costingLabel}>Estimated Cost</Text>
-                <Text style={styles.costingValue}>{formatCurrency(estimatedCost)}</Text>
-              </View>
-            )}
-            {estimatedHours > 0 && actualHours > 0 && (
-              <View style={styles.costingItem}>
-                <Text style={styles.costingLabel}>Hours Variance</Text>
-                <Text style={[
-                  styles.costingValue,
-                  hoursVariance > 0 && { color: colors.destructive },
-                  hoursVariance < 0 && { color: colors.success }
-                ]}>
-                  {hoursVariance > 0 ? '+' : ''}{hoursVariance.toFixed(1)}h
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-      )}
 
       {/* Job Expenses Section - service calls only (projects use ExpensesSection in More tab) */}
       {!isSubcontractorUser && isServiceCall && <View style={styles.costingCard}>
@@ -17181,6 +16974,17 @@ export default function JobDetailScreen() {
                   value={formatCurrency(pd.costs.labour)}
                 />
                 {pd.costs.subcontractor > 0 && <Row label="Subcontractor labour" value={formatCurrency(pd.costs.subcontractor)} />}
+                {/* Budget (quoted estimate) vs actual — separate from the tracked-hours figure
+                    above, which comes from time entries rather than the original estimate. */}
+                {estimatedHours > 0 && <Row label="Estimated hours" value={`${estimatedHours.toFixed(1)}h`} />}
+                {estimatedHours > 0 && actualHours > 0 && (
+                  <Row
+                    label="Hours variance"
+                    value={`${hoursVariance > 0 ? '+' : ''}${hoursVariance.toFixed(1)}h`}
+                    color={hoursVariance > 0 ? colors.destructive : hoursVariance < 0 ? colors.success : undefined}
+                  />
+                )}
+                {estimatedCost > 0 && <Row label="Estimated cost" value={formatCurrency(estimatedCost)} />}
 
                 {/* Materials */}
                 <SectionHeader label="Materials" />
