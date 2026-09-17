@@ -32,10 +32,16 @@ export const queryKeys = {
   jobs: ['jobs'] as const,
 };
 
+// These three back a live dashboard widget (running timer, today's jobs,
+// who's-clocked-in). A short staleTime — well under the global 5 min default
+// — keeps them eligible for react-query's refetch-on-refocus, so returning
+// to the app foreground refreshes them immediately rather than waiting out
+// the global staleTime.
 export function useDashboardQuery(options?: { enabled?: boolean; refetchInterval?: number | false }) {
   return useQuery({
     queryKey: queryKeys.dashboard,
     queryFn: () => apiQueryFn<any>('/api/time-tracking/dashboard'),
+    staleTime: 10_000,
     ...options,
   });
 }
@@ -44,6 +50,7 @@ export function useTodaysJobsQuery(options?: { enabled?: boolean; refetchInterva
   return useQuery({
     queryKey: queryKeys.todaysJobs,
     queryFn: () => apiQueryFn<any[]>('/api/jobs/today'),
+    staleTime: 10_000,
     ...options,
   });
 }
@@ -52,6 +59,7 @@ export function useTeamTimersQuery(options?: { enabled?: boolean; refetchInterva
   return useQuery({
     queryKey: queryKeys.teamTimers,
     queryFn: () => apiQueryFn<any[]>('/api/time-entries/active/team'),
+    staleTime: 20_000,
     ...options,
   });
 }

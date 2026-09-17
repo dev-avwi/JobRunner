@@ -9,8 +9,6 @@ import {
   Linking,
   ActivityIndicator,
   Platform,
-  AppState,
-  AppStateStatus,
   TextInput,
   Modal,
 } from 'react-native';
@@ -26,6 +24,7 @@ import * as Location from 'expo-location';
 import { locationTracking } from '../../src/lib/location-tracking';
 import { useAuthStore, useJobsStore, useDashboardStore, useClientsStore, useTimeTrackingStore } from '../../src/lib/store';
 import offlineStorage, { useOfflineStore } from '../../src/lib/offline-storage';
+import { useDashboardQuery, useTodaysJobsQuery, useTeamTimersQuery } from '../../src/hooks/queries';
 import { api } from '../../src/lib/api';
 import { handleDedicatedNumberError, showSmsLockedAlert, useSmsLocked } from '../../src/lib/smsGate';
 import { formatCurrency as formatCurrencyUtil } from '../../src/lib/format';
@@ -526,105 +525,81 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const confirm = useConfirmDialog();
-  const [teamTimers, setTeamTimers] = useState<any[]>([]);
-  
+
   // Use global store for activeTimer - synced with Time Tracking page
-  const { 
-    activeTimer, 
-    fetchActiveTimer, 
-    startTimer: storeStartTimer, 
+  const {
+    activeTimer,
+    fetchActiveTimer,
+    startTimer: storeStartTimer,
     stopTimer: storeStopTimer,
     pauseTimer: storePauseTimer,
     resumeTimer: storeResumeTimer,
   } = useTimeTrackingStore();
-  
+
   // Local state only for UI concerns
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [totalMinutesToday, setTotalMinutesToday] = useState(0);
-  const [todayEntries, setTodayEntries] = useState<any[]>([]);
-  const [todaysJobs, setTodaysJobs] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isStopping, setIsStopping] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isStartingTimer, setIsStartingTimer] = useState<string | null>(null);
-  const appStateRef = useRef(AppState.currentState);
 
-  // Fetch active timer when screen gains focus - keeps dashboard and time tracking page in sync
+  // Polling only runs while this tab is focused — refetchInterval also
+  // auto-pauses while the app is backgrounded (focusManager wired in
+  // app/_layout.tsx), so together these replace the old manual
+  // setInterval + AppState listener.
+  const [isTabFocused, setIsTabFocused] = useState(true);
+
+  const dashboardQuery = useDashboardQuery({ refetchInterval: isTabFocused ? 12000 : false });
+  const todaysJobsQuery = useTodaysJobsQuery({ refetchInterval: isTabFocused ? 12000 : false });
+  const teamTimersQuery = useTeamTimersQuery({ enabled: showTeam, refetchInterval: isTabFocused && showTeam ? 30000 : false });
+
+  const isLoading = dashboardQuery.isLoading || todaysJobsQuery.isLoading;
+
+  const todaysJobs = useMemo(() => {
+    const raw = todaysJobsQuery.data ?? [];
+    return raw.filter(
+      (job: any) => job.status === 'scheduled' || job.status === 'in_progress' || job.status === 'pending'
+    );
+  }, [todaysJobsQuery.data]);
+
+  const { todayEntries, totalMinutesToday } = useMemo(() => {
+    const entries: any[] = (dashboardQuery.data as any)?.recentEntries || [];
+    const completedEntries = entries.filter((e: any) => e.endTime);
+    const total = entries.reduce((sum: number, e: any) => {
+      if (e.duration) return sum + e.duration;
+      if (e.endTime) {
+        const start = new Date(e.startTime).getTime();
+        const end = new Date(e.endTime).getTime();
+        return sum + Math.floor((end - start) / 60000);
+      }
+      return sum;
+    }, 0);
+    return { todayEntries: completedEntries.slice(0, 5), totalMinutesToday: total };
+  }, [dashboardQuery.data]);
+
+  const teamTimers = teamTimersQuery.data ?? [];
+
+  // Fetch active timer + refetch the two dashboard queries when this screen
+  // gains focus - keeps dashboard and time tracking page in sync, and
+  // resumes polling (isTabFocused) for as long as the tab stays visible.
   useFocusEffect(
     useCallback(() => {
       fetchActiveTimer();
-      loadDashboardData();
-      loadTodaysJobs();
+      dashboardQuery.refetch();
+      todaysJobsQuery.refetch();
+      setIsTabFocused(true);
+      return () => setIsTabFocused(false);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
 
-  // Who's clocked in across the whole business (owners/managers only).
-  const loadTeamTimers = useCallback(async () => {
-    if (!showTeam) return;
-    try {
-      const res = await api.get('/api/time-entries/active/team');
-      if (Array.isArray(res.data)) setTeamTimers(res.data);
-    } catch {
-      // Non-critical — leave the last known list in place.
-    }
-  }, [showTeam]);
-
   useFocusEffect(
     useCallback(() => {
-      if (!showTeam) return;
-      loadTeamTimers();
-      const iv = setInterval(loadTeamTimers, 30000);
-      return () => clearInterval(iv);
-    }, [showTeam, loadTeamTimers])
+      if (showTeam) teamTimersQuery.refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showTeam])
   );
-
-  useEffect(() => {
-    loadDashboardData();
-    loadTodaysJobs();
-    // Refresh dashboard data every 12 seconds so newly-assigned jobs appear on
-    // the worker's phone within seconds of the owner assigning them — push
-    // notifications can't be relied on in dev builds. On-focus refresh and
-    // foreground AppState refresh below cover the rest.
-    const interval = setInterval(() => {
-      loadDashboardData();
-      loadTodaysJobs();
-    }, 12000);
-
-    // Auto-refresh when app comes to foreground
-    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
-      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App has come to the foreground - refresh data
-        fetchActiveTimer();
-        loadDashboardData();
-        loadTodaysJobs();
-      }
-      appStateRef.current = nextAppState;
-    });
-
-    return () => {
-      clearInterval(interval);
-      subscription.remove();
-    };
-  }, []);
-
-  const loadTodaysJobs = async () => {
-    try {
-      const { default: api } = await import('../../src/lib/api');
-      const response = await api.get('/api/jobs/today');
-      if (response.data) {
-        // Filter to scheduled and in_progress jobs only
-        const activeJobs = (response.data as any[]).filter(
-          (job: any) => job.status === 'scheduled' || job.status === 'in_progress' || job.status === 'pending'
-        );
-        setTodaysJobs(activeJobs);
-      }
-    } catch (error) {
-      if (__DEV__) console.log('Error loading todays jobs for timer:', error);
-      setTodaysJobs([]);
-    }
-  };
 
   const proceedWithStartJob = async (job: any) => {
     try {
@@ -635,8 +610,8 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
       const success = await storeStartTimer(job.id, job.title);
       if (success) {
         showToast({ type: 'info', message: 'Job Started', description: `Now tracking time for "${job.title}"` });
-        loadDashboardData();
-        loadTodaysJobs();
+        dashboardQuery.refetch();
+        todaysJobsQuery.refetch();
       } else {
         showToast({ type: 'error', message: 'Failed to start timer' });
       }
@@ -657,7 +632,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         const success = await storeStartTimer(job.id, job.title);
         if (success) {
           showToast({ type: 'info', message: 'Timer Started Offline', description: `Tracking time for "${job.title}". Will sync when back online.` });
-          loadDashboardData();
+          dashboardQuery.refetch();
         } else {
           showToast({ type: 'error', message: 'Failed to start timer' });
         }
@@ -669,7 +644,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         const success = await storeStartTimer(job.id, job.title);
         if (success) {
           showToast({ type: 'info', message: 'Timer Started', description: `Tracking time for "${job.title}"` });
-          loadDashboardData();
+          dashboardQuery.refetch();
         } else {
           showToast({ type: 'error', message: 'Failed to start timer' });
         }
@@ -769,36 +744,6 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
     };
   }, [activeTimer?.id, activeTimer?.isPaused, activeTimer?.startTime]);
 
-  // Load dashboard data (today's entries and stats) - activeTimer comes from the store
-  const loadDashboardData = async () => {
-    try {
-      const { default: api } = await import('../../src/lib/api');
-      const dashboardResponse = await api.get('/api/time-tracking/dashboard');
-      
-      if (dashboardResponse.data) {
-        const entries = (dashboardResponse.data as any).recentEntries || [];
-        // Store completed entries for display
-        const completedEntries = entries.filter((e: any) => e.endTime);
-        setTodayEntries(completedEntries.slice(0, 5)); // Show last 5 entries
-        
-        const total = entries.reduce((sum: number, e: any) => {
-          if (e.duration) return sum + e.duration;
-          if (e.endTime) {
-            const start = new Date(e.startTime).getTime();
-            const end = new Date(e.endTime).getTime();
-            return sum + Math.floor((end - start) / 60000);
-          }
-          return sum;
-        }, 0);
-        setTotalMinutesToday(total);
-      }
-    } catch (error) {
-      if (__DEV__) console.log('Error loading dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const handleTakeBreak = async () => {
     if (!activeTimer) return;
     setIsPausing(true);
@@ -846,7 +791,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
           fetchActiveTimer();
           LiveActivity.end().catch(() => {});
           showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
-          loadDashboardData();
+          dashboardQuery.refetch();
           setIsCancelling(false);
           return;
         }
@@ -864,7 +809,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         fetchActiveTimer();
         LiveActivity.end().catch(() => {});
         showToast({ type: 'success', message: 'Timer Cancelled', description: 'Time was not recorded' });
-        loadDashboardData();
+        dashboardQuery.refetch();
       } catch (error: any) {
         showToast({ type: 'error', message: 'Error', description: 'Failed to cancel timer' });
       } finally {
@@ -884,7 +829,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         // Refresh from store to update state
         fetchActiveTimer();
         showToast({ type: 'info', message: 'Saved Offline', description: 'Time entry will sync when online' });
-        loadDashboardData();
+        dashboardQuery.refetch();
         return;
       }
       
@@ -893,7 +838,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
       
       if (success) {
         showToast({ type: 'info', message: 'Timer Stopped', description: 'Time has been recorded' });
-        loadDashboardData();
+        dashboardQuery.refetch();
       } else {
         showToast({ type: 'error', message: 'Failed to stop timer' });
       }
@@ -902,7 +847,7 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
         await offlineStorage.stopTimeEntryOffline(activeTimer.id);
         fetchActiveTimer();
         showToast({ type: 'info', message: 'Saved Offline', description: 'Changes will sync when connection restored' });
-        loadDashboardData();
+        dashboardQuery.refetch();
       } else {
         showToast({ type: 'error', message: 'Failed to stop timer' });
       }

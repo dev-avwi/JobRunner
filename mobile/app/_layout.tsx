@@ -20,7 +20,7 @@ import { Alert } from '@/lib/alert';
 
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, focusManager, onlineManager } from '@tanstack/react-query';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Linking from 'expo-linking';
 import * as Updates from 'expo-updates';
@@ -82,6 +82,18 @@ const queryClient = new QueryClient({
       retry: 1,
     },
   },
+});
+
+// React-query RN wiring: pause refetch-on-focus/interval while the app is
+// backgrounded, and let the existing NetInfo-backed offline store drive
+// react-query's online state so queries pause offline and resume on reconnect.
+focusManager.setFocused(AppState.currentState === 'active');
+AppState.addEventListener('change', (state) => {
+  focusManager.setFocused(state === 'active');
+});
+onlineManager.setEventListener((setOnline) => {
+  setOnline(useOfflineStore.getState().isOnline);
+  return useOfflineStore.subscribe((s) => setOnline(s.isOnline));
 });
 
 async function checkForOTAUpdate() {
