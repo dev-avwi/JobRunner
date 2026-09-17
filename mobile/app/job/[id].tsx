@@ -8240,36 +8240,60 @@ export default function JobDetailScreen() {
     const chips: Array<{ id: string; label: string }> = [
       { id: 'status', label: 'Status' },
     ];
-    if (isOwnerOrManager || isSoloOwner) chips.push({ id: 'pay', label: 'Pay' });
-    chips.push({ id: 'team', label: 'Team' });
-    chips.push({ id: 'activity', label: 'Activity' });
-    if (isOwnerOrManager || isSoloOwner) chips.push({ id: 'docs', label: 'Docs' });
+    // Pay/Team/Activity/Docs all jump into the Manage or Files tab (see
+    // SECTION_TAB_MAP below) — Team/Activity's anchors live inside
+    // renderManageTab, which itself only renders for owner/manager/solo-owner,
+    // so those chips must be gated the same way Pay/Docs already are or a
+    // worker tapping them would land on a blank Manage tab.
+    if (isOwnerOrManager || isSoloOwner) {
+      chips.push({ id: 'pay', label: 'Pay' });
+      chips.push({ id: 'team', label: 'Team' });
+      chips.push({ id: 'activity', label: 'Activity' });
+      chips.push({ id: 'docs', label: 'Docs' });
+    }
     return chips;
   }, [isOwnerOrManager, isSoloOwner]);
 
+  // Which tab each chip's anchor actually lives in — 'status' is the only
+  // anchor inside Overview's own render; the rest live inside renderManageTab
+  // or renderDocumentsTab, so jumping to them means switching tabs first.
+  const SECTION_TAB_MAP: Record<string, typeof activeTab> = {
+    status: 'overview',
+    pay: 'manage',
+    team: 'manage',
+    activity: 'manage',
+    docs: 'files',
+  };
+
   const scrollToSection = useCallback((sectionId: string) => {
-    const offset = sectionOffsets.current[sectionId];
-    if (offset !== undefined && scrollRef.current) {
-      scrollRef.current.scrollTo({ y: Math.max(0, offset - 8), animated: true });
-      setActiveChip(sectionId);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const targetTab = SECTION_TAB_MAP[sectionId] ?? 'overview';
+    setActiveChip(sectionId);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const jumping = targetTab !== activeTab;
+    if (jumping) {
+      setActiveTab(targetTab);
     }
-  }, []);
+    // When jumping tabs, the target tab's content (and its onLayout anchor)
+    // only mounts after this render pass — give it a beat before scrolling,
+    // same delay already used elsewhere in this file for the identical
+    // costing-sheet -> Manage tab jump.
+    setTimeout(() => {
+      const offset = sectionOffsets.current[sectionId];
+      if (offset !== undefined && scrollRef.current) {
+        scrollRef.current.scrollTo({ y: Math.max(0, offset - 8), animated: true });
+      }
+    }, jumping ? 350 : 0);
+  }, [activeTab]);
 
   const handleScrollWithChips = useCallback((e: any) => {
     preserveOnScroll(e);
-    if (activeTab !== 'overview') return;
-    const y = e.nativeEvent.contentOffset.y;
-    const offsets = sectionOffsets.current;
-    const sections = ['docs', 'activity', 'team', 'pay', 'status'];
-    let newChip = 'status';
-    for (const id of sections) {
-      if (offsets[id] !== undefined && y >= offsets[id] - 100) {
-        newChip = id;
-        break;
-      }
+    // 'status' is the only chip whose anchor lives inside Overview's own
+    // scroll — Pay/Team/Activity/Docs jump to other tabs (see
+    // SECTION_TAB_MAP), so there's nothing else to auto-detect while
+    // scrolling here. Keep activeChip pinned to 'status' on this tab.
+    if (activeTab === 'overview') {
+      setActiveChip(prev => prev === 'status' ? prev : 'status');
     }
-    setActiveChip(prev => prev === newChip ? prev : newChip);
   }, [preserveOnScroll, activeTab]);
 
   // FAB: compute action + permission inline so we're not ordering-dependent on
@@ -11880,7 +11904,33 @@ export default function JobDetailScreen() {
         })}
       </View>
 
-      {/* Section-jump chip bar removed per user preference */}
+      {/* Section-jump chip bar — pinned between tab bar and scroll content */}
+      {activeTab === 'overview' && (
+        <ScrollView
+          ref={chipScrollRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.chipBar}
+          contentContainerStyle={styles.chipBarContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          {overviewChips.map((chip) => (
+            <TouchableOpacity
+              key={chip.id}
+              style={[styles.chip, activeChip === chip.id && styles.chipActive]}
+              onPress={() => scrollToSection(chip.id)}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel={`Jump to ${chip.label}`}
+              accessibilityState={{ selected: activeChip === chip.id }}
+            >
+              <Text style={[styles.chipText, activeChip === chip.id && styles.chipTextActive]}>
+                {chip.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Active phase timer banner — sticky above the scroll area, only while a project timer is running */}
       {activeTab === 'tasks' && isProject && isTimerForThisJob && (
