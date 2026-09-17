@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -304,7 +304,7 @@ export default function TeamChatScreen() {
   const [isSending, setIsSending] = useState(false);
   const [messageText, setMessageText] = useState('');
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<FlatList>(null);
 
   const fetchMessages = useCallback(async (showLoader = true) => {
     if (showLoader) setIsLoading(true);
@@ -514,7 +514,7 @@ export default function TeamChatScreen() {
           )}
         </View>
 
-        <ScrollView 
+        <FlatList
           ref={scrollViewRef}
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
@@ -522,164 +522,165 @@ export default function TeamChatScreen() {
             <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />
           }
           onScrollBeginDrag={() => setSelectedMessageId(null)}
-        >
-          {isLoading ? (
-            <View style={styles.emptyState}>
-              <ActivityIndicator size="large" color={colors.primary} />
-            </View>
-          ) : displayMessages.length === 0 ? (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyIconContainer}>
-                <Feather name="users" size={48} color={colors.mutedForeground} />
+          data={displayMessages}
+          keyExtractor={(msg) => msg.id}
+          ListEmptyComponent={
+            isLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={colors.primary} />
               </View>
-              <Text style={styles.emptyTitle}>
-                {showPinnedOnly ? 'No pinned messages' : 'No messages yet'}
-              </Text>
-              <Text style={styles.emptySubtitle}>
-                {showPinnedOnly 
-                  ? 'Pin important messages to see them here' 
-                  : 'Start chatting with your team'}
-              </Text>
-            </View>
-          ) : (
-            displayMessages.map((msg) => {
-              const isCurrentUser = user ? msg.senderId === user.id : false;
-              const canDelete = isCurrentUser || isBusinessOwner;
-              const canPin = isBusinessOwner;
-              const showActions = selectedMessageId === msg.id;
+            ) : (
+              <View style={styles.emptyState}>
+                <View style={styles.emptyIconContainer}>
+                  <Feather name="users" size={48} color={colors.mutedForeground} />
+                </View>
+                <Text style={styles.emptyTitle}>
+                  {showPinnedOnly ? 'No pinned messages' : 'No messages yet'}
+                </Text>
+                <Text style={styles.emptySubtitle}>
+                  {showPinnedOnly
+                    ? 'Pin important messages to see them here'
+                    : 'Start chatting with your team'}
+                </Text>
+              </View>
+            )
+          }
+          renderItem={({ item: msg }) => {
+            const isCurrentUser = user ? msg.senderId === user.id : false;
+            const canDelete = isCurrentUser || isBusinessOwner;
+            const canPin = isBusinessOwner;
+            const showActions = selectedMessageId === msg.id;
 
-              const handleLongPress = () => {
-                if (canDelete || canPin) {
-                  setSelectedMessageId(showActions ? null : msg.id);
-                }
-              };
+            const handleLongPress = () => {
+              if (canDelete || canPin) {
+                setSelectedMessageId(showActions ? null : msg.id);
+              }
+            };
 
-              const confirmDelete = async () => {
-                setSelectedMessageId(null);
-                const ok = await confirm({ title: 'Delete Message', message: 'Are you sure you want to delete this message?', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
-                if (ok) {
-                  handleDeleteMessage(msg.id);
-                }
-              };
+            const confirmDelete = async () => {
+              setSelectedMessageId(null);
+              const ok = await confirm({ title: 'Delete Message', message: 'Are you sure you want to delete this message?', confirmText: 'Delete', cancelText: 'Cancel', destructive: true });
+              if (ok) {
+                handleDeleteMessage(msg.id);
+              }
+            };
 
-              return (
-                <View 
-                  key={msg.id}
-                  style={[
-                    styles.messageBubbleContainer,
-                    isCurrentUser && styles.messageBubbleContainerRight
-                  ]}
-                >
-                  {!isCurrentUser && (
-                    <TeamAvatar
-                      name={msg.senderName}
-                      userId={String(msg.senderId)}
-                      size={28}
-                    />
-                  )}
-                  
-                  <View style={{ maxWidth: '75%', flexShrink: 1 }}>
-                    <PressableRow onLongPress={handleLongPress} delayLongPress={400} style={[
-                      styles.messageBubble,
-                      isCurrentUser ? styles.messageBubbleUser : styles.messageBubbleOther,
-                      msg.isPinned && styles.messageBubblePinned,
-                      msg.isAnnouncement && styles.messageBubbleAnnouncement
-                    ]}>
-                      {!isCurrentUser && (
-                        <Text style={styles.senderName}>{msg.senderName}</Text>
-                      )}
-                      
-                      {msg.isPinned && (
-                        <View style={styles.pinnedBadge}>
-                          <Feather name="bookmark" size={10} color={colors.warning} />
-                          <Text style={styles.pinnedBadgeText}>Pinned</Text>
-                        </View>
-                      )}
+            return (
+              <View
+                style={[
+                  styles.messageBubbleContainer,
+                  isCurrentUser && styles.messageBubbleContainerRight
+                ]}
+              >
+                {!isCurrentUser && (
+                  <TeamAvatar
+                    name={msg.senderName}
+                    userId={String(msg.senderId)}
+                    size={28}
+                  />
+                )}
 
-                      {msg.attachmentUrl && msg.messageType === 'image' && (
-                        <PressableRow onPress={() => { const u = resolveAttachmentUrl(msg.attachmentUrl); if (u) Linking.openURL(u); }} style={{ marginBottom: msg.message ? 6 : 0 }} >
-                          <Image
-                            source={{ uri: resolveAttachmentUrl(msg.attachmentUrl) || '' }}
-                            style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
-                            contentFit="cover"
-                          />
-                        </PressableRow>
-                      )}
+                <View style={{ maxWidth: '75%', flexShrink: 1 }}>
+                  <PressableRow onLongPress={handleLongPress} delayLongPress={400} style={[
+                    styles.messageBubble,
+                    isCurrentUser ? styles.messageBubbleUser : styles.messageBubbleOther,
+                    msg.isPinned && styles.messageBubblePinned,
+                    msg.isAnnouncement && styles.messageBubbleAnnouncement
+                  ]}>
+                    {!isCurrentUser && (
+                      <Text style={styles.senderName}>{msg.senderName}</Text>
+                    )}
 
-                      {msg.attachmentUrl && msg.messageType !== 'image' && (
-                        <PressableRow onPress={() => { const u = resolveAttachmentUrl(msg.attachmentUrl); if (u) Linking.openURL(u); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.15)' : colors.cardBorder, marginBottom: msg.message ? 6 : 0, }} >
-                          <Feather name="file" size={16} color={isCurrentUser ? colors.primaryForeground : colors.foreground} />
-                          <Text
-                            numberOfLines={1}
-                            style={{
-                              flex: 1,
-                              fontSize: typography.sizes.sm,
-                              fontWeight: fontWeights.semibold,
-                              color: isCurrentUser ? colors.primaryForeground : colors.foreground,
-                            }}
-                          >
-                            {msg.attachmentName || 'Attachment'}
-                          </Text>
-                        </PressableRow>
-                      )}
-
-                      {!!msg.message && msg.message !== msg.attachmentName && (
-                        <Text style={[
-                          styles.messageText,
-                          isCurrentUser && styles.messageTextUser
-                        ]}>
-                          {msg.message}
-                        </Text>
-                      )}
-                      
-                      <Text style={[
-                        styles.messageTime,
-                        isCurrentUser && styles.messageTimeUser
-                      ]}>
-                        {formatTime(msg.createdAt)}
-                      </Text>
-                      {(msg as any).sendStatus === 'failed' && (
-                        <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((msg as any).localId || msg.id); if (ok) fetchMessages(false); }} style={{ marginTop: 4 }} >
-                          <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
-                            Failed to send · tap to retry
-                          </Text>
-                        </PressableRow>
-                      )}
-                    </PressableRow>
-
-                    {showActions && (
-                      <View style={[
-                        styles.actionsMenu,
-                        { position: 'relative', bottom: 'auto', right: 'auto', marginTop: 4 }
-                      ]}>
-                        {canPin && (
-                          <PressableRow style={styles.actionItem} onPress={() => { setSelectedMessageId(null); handlePinMessage(msg.id, !msg.isPinned); }} >
-                            <Feather 
-                              name={msg.isPinned ? "bookmark" : "bookmark"} 
-                              size={16} 
-                              color={msg.isPinned ? colors.warning : colors.foreground} 
-                            />
-                            <Text style={styles.actionText}>
-                              {msg.isPinned ? 'Unpin' : 'Pin'}
-                            </Text>
-                          </PressableRow>
-                        )}
-                        {canDelete && (
-                          <PressableRow style={styles.actionItem} onPress={confirmDelete} >
-                            <Feather name="trash-2" size={16} color={colors.destructive} />
-                            <Text style={[styles.actionText, { color: colors.destructive }]}>
-                              Delete
-                            </Text>
-                          </PressableRow>
-                        )}
+                    {msg.isPinned && (
+                      <View style={styles.pinnedBadge}>
+                        <Feather name="bookmark" size={10} color={colors.warning} />
+                        <Text style={styles.pinnedBadgeText}>Pinned</Text>
                       </View>
                     )}
-                  </View>
+
+                    {msg.attachmentUrl && msg.messageType === 'image' && (
+                      <PressableRow onPress={() => { const u = resolveAttachmentUrl(msg.attachmentUrl); if (u) Linking.openURL(u); }} style={{ marginBottom: msg.message ? 6 : 0 }} >
+                        <Image
+                          source={{ uri: resolveAttachmentUrl(msg.attachmentUrl) || '' }}
+                          style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
+                          contentFit="cover"
+                        />
+                      </PressableRow>
+                    )}
+
+                    {msg.attachmentUrl && msg.messageType !== 'image' && (
+                      <PressableRow onPress={() => { const u = resolveAttachmentUrl(msg.attachmentUrl); if (u) Linking.openURL(u); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: isCurrentUser ? 'rgba(255,255,255,0.15)' : colors.cardBorder, marginBottom: msg.message ? 6 : 0, }} >
+                        <Feather name="file" size={16} color={isCurrentUser ? colors.primaryForeground : colors.foreground} />
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            flex: 1,
+                            fontSize: typography.sizes.sm,
+                            fontWeight: fontWeights.semibold,
+                            color: isCurrentUser ? colors.primaryForeground : colors.foreground,
+                          }}
+                        >
+                          {msg.attachmentName || 'Attachment'}
+                        </Text>
+                      </PressableRow>
+                    )}
+
+                    {!!msg.message && msg.message !== msg.attachmentName && (
+                      <Text style={[
+                        styles.messageText,
+                        isCurrentUser && styles.messageTextUser
+                      ]}>
+                        {msg.message}
+                      </Text>
+                    )}
+
+                    <Text style={[
+                      styles.messageTime,
+                      isCurrentUser && styles.messageTimeUser
+                    ]}>
+                      {formatTime(msg.createdAt)}
+                    </Text>
+                    {(msg as any).sendStatus === 'failed' && (
+                      <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((msg as any).localId || msg.id); if (ok) fetchMessages(false); }} style={{ marginTop: 4 }} >
+                        <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
+                          Failed to send · tap to retry
+                        </Text>
+                      </PressableRow>
+                    )}
+                  </PressableRow>
+
+                  {showActions && (
+                    <View style={[
+                      styles.actionsMenu,
+                      { position: 'relative', bottom: 'auto', right: 'auto', marginTop: 4 }
+                    ]}>
+                      {canPin && (
+                        <PressableRow style={styles.actionItem} onPress={() => { setSelectedMessageId(null); handlePinMessage(msg.id, !msg.isPinned); }} >
+                          <Feather
+                            name={msg.isPinned ? "bookmark" : "bookmark"}
+                            size={16}
+                            color={msg.isPinned ? colors.warning : colors.foreground}
+                          />
+                          <Text style={styles.actionText}>
+                            {msg.isPinned ? 'Unpin' : 'Pin'}
+                          </Text>
+                        </PressableRow>
+                      )}
+                      {canDelete && (
+                        <PressableRow style={styles.actionItem} onPress={confirmDelete} >
+                          <Feather name="trash-2" size={16} color={colors.destructive} />
+                          <Text style={[styles.actionText, { color: colors.destructive }]}>
+                            Delete
+                          </Text>
+                        </PressableRow>
+                      )}
+                    </View>
+                  )}
                 </View>
-              );
-            })
-          )}
-        </ScrollView>
+              </View>
+            );
+          }}
+        />
 
         <View style={[styles.inputContainer, { paddingBottom: 12 + bottomInset }]}>
           <PressableRow onPress={handleAttachment} disabled={isSending} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', opacity: isSending ? 0.5 : 1, }} accessibilityLabel="Attach photo" >

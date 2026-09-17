@@ -3,6 +3,7 @@ import {
   View,
   Text,
   ScrollView,
+  FlatList,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -570,7 +571,7 @@ function ChatView({
   const [newMessage, setNewMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<FlatList>(null);
 
   // Single overlap guard — covers the polling loop AND every other caller (send, reconnect, etc).
   // Stable across renders via ref.
@@ -736,102 +737,103 @@ function ChatView({
         </View>
       </View>
 
-      <ScrollView 
+      <FlatList
         ref={scrollViewRef}
         style={styles.messagesContainer}
         contentContainerStyle={styles.messagesContent}
-      >
-        {isLoading ? (
-          <View style={styles.emptyState}>
-            <ActivityIndicator size="large" color={colors.primary} />
-          </View>
-        ) : messages.length === 0 ? (
-          <View style={styles.emptyState}>
-            <View style={styles.emptyIconContainer}>
-              <Feather name="message-square" size={48} color={colors.mutedForeground} />
+        data={messages}
+        keyExtractor={(message) => message.id}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator size="large" color={colors.primary} />
             </View>
-            <Text style={styles.emptyTitle}>No messages yet</Text>
-            <Text style={styles.emptySubtitle}>Start the conversation!</Text>
-          </View>
-        ) : (
-          messages.map((message) => {
-            const isOwn = message.senderId !== selectedUser.id;
-            return (
-              <View 
-                key={message.id}
-                style={[
-                  styles.messageBubbleWrapper,
-                  isOwn ? styles.messageBubbleWrapperRight : styles.messageBubbleWrapperLeft
-                ]}
-              >
-                <View style={[
-                  styles.messageBubble,
-                  isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther
-                ]}>
-                  {message.attachmentUrl && message.attachmentType === 'image' && (
-                    <PressableRow onPress={() => { const u = resolveAttachmentUrl(message.attachmentUrl); if (u) Linking.openURL(u); }} style={{ marginBottom: message.content && message.content !== (message as any).attachmentName ? 6 : 0 }} >
-                      <Image
-                        source={{ uri: resolveAttachmentUrl(message.attachmentUrl) || '' }}
-                        style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
-                        contentFit="cover"
-                      />
-                    </PressableRow>
-                  )}
-                  {message.attachmentUrl && message.attachmentType !== 'image' && (
-                    <PressableRow onPress={() => { const u = resolveAttachmentUrl(message.attachmentUrl); if (u) Linking.openURL(u); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: isOwn ? 'rgba(255,255,255,0.15)' : colors.cardBorder, marginBottom: 6, }} >
-                      <Feather name="file" size={16} color={isOwn ? colors.primaryForeground : colors.foreground} />
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          flex: 1,
-                          fontSize: typography.sizes.sm,
-                          fontWeight: fontWeights.semibold,
-                          color: isOwn ? colors.primaryForeground : colors.foreground,
-                        }}
-                      >
-                        {message.content || 'Attachment'}
-                      </Text>
-                    </PressableRow>
-                  )}
-                  {!!message.content && !(message.attachmentUrl && message.attachmentType !== 'image') && (
-                    <Text style={[
-                      styles.messageText,
-                      isOwn && styles.messageTextOwn
-                    ]}>
-                      {message.content}
-                    </Text>
-                  )}
-                  <Text style={[
-                    styles.messageTime,
-                    isOwn && styles.messageTimeOwn
-                  ]}>
-                    {formatTime(message.createdAt)}
-                  </Text>
-                  {isOwn && (message as any).sendStatus !== 'failed' && (
-                    <View style={styles.readReceipt}>
-                      <Feather 
-                        name={message.isRead ? "check-circle" : "check"} 
-                        size={12} 
-                        color={message.isRead ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)'} 
-                      />
-                      <Text style={styles.readReceiptText}>
-                        {message.isRead ? 'Read' : 'Sent'}
-                      </Text>
-                    </View>
-                  )}
-                  {(message as any).sendStatus === 'failed' && (
-                    <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((message as any).localId || message.id); if (ok) fetchMessages(); }} style={{ marginTop: 4 }} >
-                      <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
-                        Failed to send · tap to retry
-                      </Text>
-                    </PressableRow>
-                  )}
-                </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyIconContainer}>
+                <Feather name="message-square" size={48} color={colors.mutedForeground} />
               </View>
-            );
-          })
-        )}
-      </ScrollView>
+              <Text style={styles.emptyTitle}>No messages yet</Text>
+              <Text style={styles.emptySubtitle}>Start the conversation!</Text>
+            </View>
+          )
+        }
+        renderItem={({ item: message }) => {
+          const isOwn = message.senderId !== selectedUser.id;
+          return (
+            <View
+              style={[
+                styles.messageBubbleWrapper,
+                isOwn ? styles.messageBubbleWrapperRight : styles.messageBubbleWrapperLeft
+              ]}
+            >
+              <View style={[
+                styles.messageBubble,
+                isOwn ? styles.messageBubbleOwn : styles.messageBubbleOther
+              ]}>
+                {message.attachmentUrl && message.attachmentType === 'image' && (
+                  <PressableRow onPress={() => { const u = resolveAttachmentUrl(message.attachmentUrl); if (u) Linking.openURL(u); }} style={{ marginBottom: message.content && message.content !== (message as any).attachmentName ? 6 : 0 }} >
+                    <Image
+                      source={{ uri: resolveAttachmentUrl(message.attachmentUrl) || '' }}
+                      style={{ width: 220, height: 220, borderRadius: 8, backgroundColor: colors.cardBorder }}
+                      contentFit="cover"
+                    />
+                  </PressableRow>
+                )}
+                {message.attachmentUrl && message.attachmentType !== 'image' && (
+                  <PressableRow onPress={() => { const u = resolveAttachmentUrl(message.attachmentUrl); if (u) Linking.openURL(u); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 8, backgroundColor: isOwn ? 'rgba(255,255,255,0.15)' : colors.cardBorder, marginBottom: 6, }} >
+                    <Feather name="file" size={16} color={isOwn ? colors.primaryForeground : colors.foreground} />
+                    <Text
+                      numberOfLines={1}
+                      style={{
+                        flex: 1,
+                        fontSize: typography.sizes.sm,
+                        fontWeight: fontWeights.semibold,
+                        color: isOwn ? colors.primaryForeground : colors.foreground,
+                      }}
+                    >
+                      {message.content || 'Attachment'}
+                    </Text>
+                  </PressableRow>
+                )}
+                {!!message.content && !(message.attachmentUrl && message.attachmentType !== 'image') && (
+                  <Text style={[
+                    styles.messageText,
+                    isOwn && styles.messageTextOwn
+                  ]}>
+                    {message.content}
+                  </Text>
+                )}
+                <Text style={[
+                  styles.messageTime,
+                  isOwn && styles.messageTimeOwn
+                ]}>
+                  {formatTime(message.createdAt)}
+                </Text>
+                {isOwn && (message as any).sendStatus !== 'failed' && (
+                  <View style={styles.readReceipt}>
+                    <Feather
+                      name={message.isRead ? "check-circle" : "check"}
+                      size={12}
+                      color={message.isRead ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.6)'}
+                    />
+                    <Text style={styles.readReceiptText}>
+                      {message.isRead ? 'Read' : 'Sent'}
+                    </Text>
+                  </View>
+                )}
+                {(message as any).sendStatus === 'failed' && (
+                  <PressableRow onPress={async () => { const { offlineStorage } = await import('@/lib/offline-storage'); const ok = await offlineStorage.retryFailedChatMessage((message as any).localId || message.id); if (ok) fetchMessages(); }} style={{ marginTop: 4 }} >
+                    <Text style={{ color: colors.destructive, fontSize: typography.sizes.xs, fontWeight: fontWeights.semibold }}>
+                      Failed to send · tap to retry
+                    </Text>
+                  </PressableRow>
+                )}
+              </View>
+            </View>
+          );
+        }}
+      />
 
       <View style={styles.inputContainer}>
         <PressableRow onPress={handleAttachment} disabled={isSending} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', opacity: isSending ? 0.5 : 1, }} accessibilityLabel="Attach photo" >
