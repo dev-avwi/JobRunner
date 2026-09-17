@@ -21,9 +21,11 @@ interface CollapsibleSectionProps {
   summaryItems: string[];
   children: React.ReactNode;
   defaultExpanded?: boolean;
+  title?: string;
+  icon?: keyof typeof Feather.glyphMap;
 }
 
-export function CollapsibleSection({ summaryItems, children, defaultExpanded = false }: CollapsibleSectionProps) {
+export function CollapsibleSection({ summaryItems, children, defaultExpanded = false, title = 'More Details', icon = 'layers' }: CollapsibleSectionProps) {
   const { colors } = useTheme();
   const [expanded, setExpanded] = useState(defaultExpanded);
   const rotateAnim = useRef(new Animated.Value(defaultExpanded ? 1 : 0)).current;
@@ -57,7 +59,7 @@ export function CollapsibleSection({ summaryItems, children, defaultExpanded = f
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-          <Feather name="layers" size={iconSizes.md} color={colors.primary} />
+          <Feather name={icon} size={iconSizes.md} color={colors.primary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{
@@ -65,7 +67,7 @@ export function CollapsibleSection({ summaryItems, children, defaultExpanded = f
             fontWeight: '600',
             color: colors.foreground,
           }}>
-            More Details
+            {title}
           </Text>
           {!expanded && summaryText.length > 0 && (
             <Text

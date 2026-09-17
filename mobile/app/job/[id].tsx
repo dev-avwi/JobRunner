@@ -12215,87 +12215,6 @@ export default function JobDetailScreen() {
              PROJECT VIEW — phases are the primary organiser
           ═══════════════════════════════════════════════ */
           <>
-            {/* Quick Field Actions — 3-column action grid */}
-            {job.status !== 'invoiced' && (
-              <View style={{ marginBottom: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
-                <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Field Actions</Text>
-                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-                  <TouchableOpacity
-                    onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
-                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="alert-circle" size={18} color={colors.warning} />
-                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Extra Work</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
-                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="package" size={18} color={colors.primary} />
-                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Material</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
-                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
-                    activeOpacity={0.7}
-                  >
-                    <Feather name="camera" size={18} color={colors.success} />
-                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
-                  </TouchableOpacity>
-                </View>
-                {(() => {
-                  const localDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                  const todayStr = localDateStr(new Date());
-                  const todayMaterials = materials.filter(m => m.createdAt ? localDateStr(new Date(m.createdAt)) === todayStr : false);
-                  const todayExpenses = jobExpenses.filter(e => e.expenseDate ? e.expenseDate.slice(0, 10) === todayStr : false);
-                  if (todayMaterials.length === 0 && todayExpenses.length === 0) return null;
-                  return (
-                    <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
-                      <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.xs }}>Logged Today</Text>
-                      {todayMaterials.map(m => (
-                        <View key={`m-${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
-                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Feather name="package" size={12} color={colors.primary} />
-                          </View>
-                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{m.name}</Text>
-                          {m.totalCost != null && m.totalCost > 0 ? <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(m.totalCost)}</Text> : null}
-                          {m.createdAt ? <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, minWidth: 42, textAlign: 'right' }}>{formatTime(m.createdAt)}</Text> : null}
-                        </View>
-                      ))}
-                      {todayExpenses.map(e => (
-                        <View key={`e-${e.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
-                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <Feather name="credit-card" size={12} color={colors.success} />
-                          </View>
-                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{e.description || e.categoryName || 'Expense'}</Text>
-                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(parseFloat(e.amount) || 0)}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  );
-                })()}
-              </View>
-            )}
-
-            {/* ── Daily Log — site diary moved here from Files ── */}
-            <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
-              <SiteDiarySection
-                jobId={job.id}
-                colors={colors}
-                styles={styles}
-                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                currentUserId={user?.id}
-                isTimerRunning={isTimerForThisJob}
-                timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
-                timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
-                phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
-                onStartTimer={handleStartTimer}
-                onStopTimerForDiary={handleStopTimerForDiary}
-              />
-            </View>
-
             {/* Work Plan section header */}
             {(phases.length > 0 || isLoadingPhases) && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>
@@ -12860,17 +12779,20 @@ export default function JobDetailScreen() {
                 )}
               </View>
             )}
-          </>
-        ) : (
-          /* ═══════════════════════════════════════════════
-             SERVICE CALL VIEW — flat, quick, on-site focus
-          ═══════════════════════════════════════════════ */
-          <>
-            {/* Quick Field Actions — action grid */}
+
+            {/* Quick Field Actions — 3-column action grid */}
             {job.status !== 'invoiced' && (
               <View style={{ marginBottom: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
                 <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Field Actions</Text>
                 <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <TouchableOpacity
+                    onPress={() => { setFlagExtraWorkTitle(''); setFlagExtraWorkDesc(''); setShowFlagExtraWorkModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="alert-circle" size={18} color={colors.warning} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Extra Work</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
                     style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
@@ -12922,6 +12844,28 @@ export default function JobDetailScreen() {
               </View>
             )}
 
+            {/* ── Daily Log — site diary, collapsed by default so the checklist above stays the first thing you see ── */}
+            <CollapsibleSection title="Daily Log" icon="book-open" summaryItems={[]}>
+                <SiteDiarySection
+                  jobId={job.id}
+                  colors={colors}
+                  styles={styles}
+                  isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                  currentUserId={user?.id}
+                  isTimerRunning={isTimerForThisJob}
+                  timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                  timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+                  phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
+                  onStartTimer={handleStartTimer}
+                  onStopTimerForDiary={handleStopTimerForDiary}
+                />
+            </CollapsibleSection>
+          </>
+        ) : (
+          /* ═══════════════════════════════════════════════
+             SERVICE CALL VIEW — flat, quick, on-site focus
+          ═══════════════════════════════════════════════ */
+          <>
             {/* ── Time tracking + estimated hours card ── */}
             <View style={[styles.photosCard, { marginBottom: spacing.md }]}>
               {/* Quoted vs tracked hours row */}
@@ -13046,23 +12990,6 @@ export default function JobDetailScreen() {
               );
             })()}
 
-            {/* ── Daily Log — site diary for service calls ── */}
-            <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm, marginBottom: spacing.md }}>
-              <SiteDiarySection
-                jobId={job.id}
-                colors={colors}
-                styles={styles}
-                isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                currentUserId={user?.id}
-                isTimerRunning={isTimerForThisJob}
-                timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
-                timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
-                phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
-                onStartTimer={handleStartTimer}
-                onStopTimerForDiary={handleStopTimerForDiary}
-              />
-            </View>
-
             <UnifiedWorkSection
               jobId={job.id}
               readOnly={job.status === 'invoiced' || !(roleInfo?.isOwner || isSoloOwner)}
@@ -13082,6 +13009,79 @@ export default function JobDetailScreen() {
                 onFormsChange={setAvailableForms}
               />
             </View>
+
+            {/* Quick Field Actions — action grid */}
+            {job.status !== 'invoiced' && (
+              <View style={{ marginBottom: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.sm }}>Field Actions</Text>
+                <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                  <TouchableOpacity
+                    onPress={() => { setEditingMaterial(null); setMaterialForm({ name: '', quantity: '1', unitCost: '', unitPrice: '', markupPercent: '', supplier: '', description: '', phaseId: '' }); setShowAddMaterialModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="package" size={18} color={colors.primary} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Material</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { setExpenseForm({ amount: '', description: '', phaseId: '' }); setExpenseReceiptUri(null); setShowLogExpenseModal(true); }}
+                    style={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 12, borderRadius: radius.md, borderWidth: 1, borderColor: colors.cardBorder, backgroundColor: colors.card, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                    activeOpacity={0.7}
+                  >
+                    <Feather name="camera" size={18} color={colors.success} />
+                    <Text style={{ fontSize: 10, fontWeight: fontWeights.semibold, color: colors.foreground, textAlign: 'center', marginTop: 1 }}>Expense</Text>
+                  </TouchableOpacity>
+                </View>
+                {(() => {
+                  const localDateStr = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  const todayStr = localDateStr(new Date());
+                  const todayMaterials = materials.filter(m => m.createdAt ? localDateStr(new Date(m.createdAt)) === todayStr : false);
+                  const todayExpenses = jobExpenses.filter(e => e.expenseDate ? e.expenseDate.slice(0, 10) === todayStr : false);
+                  if (todayMaterials.length === 0 && todayExpenses.length === 0) return null;
+                  return (
+                    <View style={{ marginTop: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm }}>
+                      <Text style={{ fontSize: 9, fontWeight: fontWeights.bold, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: spacing.xs }}>Logged Today</Text>
+                      {todayMaterials.map(m => (
+                        <View key={`m-${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.primary}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="package" size={12} color={colors.primary} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{m.name}</Text>
+                          {m.totalCost != null && m.totalCost > 0 ? <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(m.totalCost)}</Text> : null}
+                          {m.createdAt ? <Text style={{ fontSize: typography.captionSmall.fontSize, color: colors.mutedForeground, minWidth: 42, textAlign: 'right' }}>{formatTime(m.createdAt)}</Text> : null}
+                        </View>
+                      ))}
+                      {todayExpenses.map(e => (
+                        <View key={`e-${e.id}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 }}>
+                          <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: `${colors.success}15`, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Feather name="credit-card" size={12} color={colors.success} />
+                          </View>
+                          <Text style={{ flex: 1, fontSize: typography.caption.fontSize, color: colors.foreground, fontWeight: fontWeights.medium }} numberOfLines={1}>{e.description || e.categoryName || 'Expense'}</Text>
+                          <Text style={{ fontSize: typography.caption.fontSize, fontWeight: fontWeights.semibold, color: colors.foreground }}>{formatCurrency(parseFloat(e.amount) || 0)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+
+            {/* ── Daily Log — site diary for service calls, collapsed by default ── */}
+            <CollapsibleSection title="Daily Log" icon="book-open" summaryItems={[]}>
+                <SiteDiarySection
+                  jobId={job.id}
+                  colors={colors}
+                  styles={styles}
+                  isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+                  currentUserId={user?.id}
+                  isTimerRunning={isTimerForThisJob}
+                  timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+                  timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+                  phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
+                  onStartTimer={handleStartTimer}
+                  onStopTimerForDiary={handleStopTimerForDiary}
+                />
+            </CollapsibleSection>
           </>
         ))}
 
