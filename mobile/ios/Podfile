@@ -59,5 +59,22 @@ target 'JobRunner' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => ccache_enabled?(podfile_properties),
     )
+
+    # react_native_post_install normalizes deployment targets for pods' main
+    # targets, but not their resource-bundle sub-targets (e.g.
+    # SDWebImage-SDWebImage, RNSVG-RNSVGFilters, Sentry-Sentry) — those
+    # inherit old floors from their podspecs (9.0, 11.0, 12.x) that current
+    # Xcode's Simulator SDK no longer supports building for. Force every
+    # target up to the project's own floor.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |build_configuration|
+        deployment_target_key = 'IPHONEOS_DEPLOYMENT_TARGET'
+        project_floor = Gem::Version.new(podfile_properties['ios.deploymentTarget'] || '15.1')
+        current = build_configuration.build_settings[deployment_target_key]
+        if current && Gem::Version.new(current) < project_floor
+          build_configuration.build_settings[deployment_target_key] = project_floor.to_s
+        end
+      end
+    end
   end
 end
