@@ -51,6 +51,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
+import { useJobTasksQuery } from '../../src/hooks/queries';
 import { handleDedicatedNumberError, showSmsLockedAlert, useSmsLocked } from '../../src/lib/smsGate';
 import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
@@ -2394,7 +2395,8 @@ export default function JobDetailScreen() {
 
   // Job task cost data — pre-loaded at job scope so the profitability card can link to the Tasks tab
   type JobTaskCost = { id: string; status: string; estimatedHours?: string | null; actualHours?: string | null; estimatedMaterialCost?: string | null; actualMaterialCost?: string | null };
-  const [jobTasks, setJobTasks] = useState<JobTaskCost[]>([]);
+  const jobTasksQuery = useJobTasksQuery<JobTaskCost>(id);
+  const jobTasks = jobTasksQuery.data ?? [];
 
   // Progress Claims
   const [progressClaims, setProgressClaims] = useState<ProgressClaim[]>([]);
@@ -2772,7 +2774,6 @@ export default function JobDetailScreen() {
     loadAutomationSettings();
     loadSubcontractorTokens();
     loadProfitability();
-    loadJobTasks();
     loadPortalLinks();
     loadSwmsDocuments();
     loadUploadedDocuments();
@@ -3317,18 +3318,6 @@ export default function JobDetailScreen() {
       }
     } finally {
       setPhaseStatusLoading(prev => { const next = new Set(prev); next.delete(phaseId); return next; });
-    }
-  }, [id]);
-
-  const loadJobTasks = useCallback(async () => {
-    if (!id) return;
-    try {
-      const res = await api.get<JobTaskCost[]>(`/api/jobs/${id}/tasks`);
-      if (!res.error && Array.isArray(res.data)) {
-        setJobTasks(res.data);
-      }
-    } catch {
-      // non-fatal — Tasks tab will load its own copy
     }
   }, [id]);
 

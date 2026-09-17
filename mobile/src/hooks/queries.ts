@@ -71,3 +71,12 @@ export function useJobsQuery(options?: { enabled?: boolean }) {
     ...options,
   });
 }
+
+/** Per-job task-cost rollup (estimated/actual hours + material cost per task). */
+export function useJobTasksQuery<T = any>(jobId: string | undefined, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['jobs', jobId, 'tasks'],
+    queryFn: () => apiQueryFn<T[]>(`/api/jobs/${jobId}/tasks`),
+    enabled: !!jobId && (options?.enabled ?? true),
+  });
+}
