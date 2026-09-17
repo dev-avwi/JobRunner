@@ -17,6 +17,7 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '@/components/ui/PressableRow';
 import { SkeletonSection } from '@/components/Skeleton';
+import { calculateEarnings } from '@/utils/earnings';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -805,10 +806,6 @@ function getEffectiveRate(entry: TimeEntry, jobs: any[], userDefaultRate: number
   const job = jobs.find((j: any) => j.id === entry.jobId);
   if (job && (job as any).hourlyRate != null && (job as any).hourlyRate !== '') return Number((job as any).hourlyRate);
   return userDefaultRate;
-}
-
-function calculateEarnings(minutes: number, hourlyRate: number): number {
-  return (minutes / 60) * hourlyRate;
 }
 
 function formatTimeShort(dateStr: string): string {
