@@ -52,6 +52,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import api, { API_URL, isAuthErrorMessage } from '../../src/lib/api';
 import { useJobTasksQuery } from '../../src/hooks/queries';
+import { usePolling } from '../../src/hooks/usePolling';
 import { handleDedicatedNumberError, showSmsLockedAlert, useSmsLocked } from '../../src/lib/smsGate';
 import { maybeRequestReview } from '../../src/lib/store-review';
 import { locationTracking } from '../../src/lib/location-tracking';
@@ -2994,14 +2995,10 @@ export default function JobDetailScreen() {
     };
   }, [isTimerForThisJob, activeTimer?.id, activeTimer?.startTime]);
 
-  useEffect(() => {
-    if (job?.status === 'in_progress') {
-      const teamTimerInterval = setInterval(() => {
-        loadTeamTimers();
-      }, 30000);
-      return () => clearInterval(teamTimerInterval);
-    }
-  }, [job?.status, id]);
+  // Paused while this screen or the app itself isn't in the foreground.
+  // Wrapped in an arrow fn since loadTeamTimers is declared later in this
+  // component — usePolling only calls it after render, once assigned.
+  usePolling(() => loadTeamTimers(), 30000, { enabled: job?.status === 'in_progress', immediate: false });
 
   // Generate smart actions when job/client/quote/invoice change
   useEffect(() => {
@@ -7334,81 +7331,72 @@ export default function JobDetailScreen() {
   useEffect(() => {
     if (!job || job.status !== 'in_progress') {
       setShowWrapUpBanner(false);
-      return;
     }
+  }, [job?.id, job?.status]);
 
-    let cancelled = false;
+  const checkWrapUp = useCallback(async () => {
+    if (!job || job.status !== 'in_progress') return;
+    try {
+      const res = await api.get('/api/jobs');
+      if (!res.data || !Array.isArray(res.data)) return;
 
-    const checkWrapUp = async () => {
-      try {
-        const res = await api.get('/api/jobs');
-        if (cancelled || !res.data || !Array.isArray(res.data)) return;
+      const now = new Date();
+      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-        const now = new Date();
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+      const upcoming = res.data
+        .filter((j: any) =>
+          j.id !== job.id &&
+          ['scheduled'].includes(j.status) &&
+          j.scheduledAt
+        )
+        .filter((j: any) => {
+          const d = new Date(j.scheduledAt);
+          return d >= now && d < todayEnd;
+        })
+        .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
 
-        const upcoming = res.data
-          .filter((j: any) =>
-            j.id !== job.id &&
-            ['scheduled'].includes(j.status) &&
-            j.scheduledAt
-          )
-          .filter((j: any) => {
-            const d = new Date(j.scheduledAt);
-            return d >= now && d < todayEnd;
-          })
-          .sort((a: any, b: any) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime());
-
-        if (upcoming.length === 0) {
-          if (!cancelled) setShowWrapUpBanner(false);
-          return;
-        }
-
-        const nextScheduled = upcoming[0];
-        const nextStartTime = new Date(nextScheduled.scheduledAt).getTime();
-        let driveMinutes = 20;
-
-        try {
-          const { status } = await Location.getForegroundPermissionsAsync();
-          if (status === 'granted') {
-            const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            if (nextScheduled.latitude && nextScheduled.longitude) {
-              const dist = calcHaversineDistance(
-                loc.coords.latitude, loc.coords.longitude,
-                parseFloat(nextScheduled.latitude), parseFloat(nextScheduled.longitude)
-              );
-              driveMinutes = calcDriveMinutes(dist);
-            }
-          }
-        } catch (e) {}
-
-        const bufferMinutes = 15;
-        const shouldLeaveBy = nextStartTime - (driveMinutes + bufferMinutes) * 60 * 1000;
-        const minutesUntilLeave = (shouldLeaveBy - now.getTime()) / (1000 * 60);
-
-        if (minutesUntilLeave <= 20 && minutesUntilLeave > -30) {
-          if (!cancelled) {
-            setWrapUpNextJob(nextScheduled);
-            setWrapUpDriveMinutes(driveMinutes);
-            setShowWrapUpBanner(true);
-          }
-        } else {
-          if (!cancelled) setShowWrapUpBanner(false);
-        }
-      } catch (e) {
-        if (__DEV__) console.log('[WrapUp] Check failed:', e);
+      if (upcoming.length === 0) {
+        setShowWrapUpBanner(false);
+        return;
       }
-    };
 
-    checkWrapUp();
-    const interval = setInterval(checkWrapUp, 2 * 60 * 1000);
+      const nextScheduled = upcoming[0];
+      const nextStartTime = new Date(nextScheduled.scheduledAt).getTime();
+      let driveMinutes = 20;
 
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+      try {
+        const { status } = await Location.getForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+          if (nextScheduled.latitude && nextScheduled.longitude) {
+            const dist = calcHaversineDistance(
+              loc.coords.latitude, loc.coords.longitude,
+              parseFloat(nextScheduled.latitude), parseFloat(nextScheduled.longitude)
+            );
+            driveMinutes = calcDriveMinutes(dist);
+          }
+        }
+      } catch (e) {}
+
+      const bufferMinutes = 15;
+      const shouldLeaveBy = nextStartTime - (driveMinutes + bufferMinutes) * 60 * 1000;
+      const minutesUntilLeave = (shouldLeaveBy - now.getTime()) / (1000 * 60);
+
+      if (minutesUntilLeave <= 20 && minutesUntilLeave > -30) {
+        setWrapUpNextJob(nextScheduled);
+        setWrapUpDriveMinutes(driveMinutes);
+        setShowWrapUpBanner(true);
+      } else {
+        setShowWrapUpBanner(false);
+      }
+    } catch (e) {
+      if (__DEV__) console.log('[WrapUp] Check failed:', e);
+    }
   }, [job?.id, job?.status, calcHaversineDistance, calcDriveMinutes]);
+
+  // Paused while this screen or the app itself isn't in the foreground.
+  usePolling(checkWrapUp, 2 * 60 * 1000, { enabled: !!job && job.status === 'in_progress' });
 
   const handleHeadToNextJob = async () => {
     if (!nextJob) return;

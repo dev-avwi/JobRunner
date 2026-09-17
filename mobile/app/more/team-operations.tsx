@@ -11,7 +11,8 @@ import {
 import { Alert } from '@/lib/alert';
 import { PressableRow } from '../../src/components/ui/PressableRow';
 import { AppBottomSheet } from '../../src/components/ui/AppBottomSheet';
-import { router, Stack, useFocusEffect } from 'expo-router';
+import { router, Stack } from 'expo-router';
+import { usePolling } from '../../src/hooks/usePolling';
 import { OwnerOnlyGuard } from '../../src/components/ui/OwnerOnlyGuard';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -268,15 +269,10 @@ function TeamOperationsScreenInner() {
   }, []);
 
   // Keep the Live Ops board current: refetch on screen focus and poll while
-  // open, so worker availability/status changes (e.g. a subbie going Busy)
-  // appear without the owner manually pulling to refresh.
-  useFocusEffect(
-    useCallback(() => {
-      fetchData();
-      const poll = setInterval(() => { fetchData(); }, 20000);
-      return () => clearInterval(poll);
-    }, [fetchData])
-  );
+  // open (and the app is foregrounded), so worker availability/status
+  // changes (e.g. a subbie going Busy) appear without the owner manually
+  // pulling to refresh.
+  usePolling(fetchData, 20000);
 
   useEffect(() => {
     if (selectedMemberId) fetchAvailability(selectedMemberId);

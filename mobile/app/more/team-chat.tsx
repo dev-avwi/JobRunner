@@ -18,6 +18,7 @@ import { PressableRow } from '../../src/components/ui/PressableRow';
 import { useConfirmDialog } from '../../src/components/ui/ConfirmDialog';
 import { useBottomInset } from '../../src/components/ui/BottomInsetSpacer';
 import { Stack } from 'expo-router';
+import { usePolling } from '../../src/hooks/usePolling';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../../src/lib/theme';
 import api from '../../src/lib/api';
@@ -339,9 +340,11 @@ export default function TeamChatScreen() {
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(() => fetchMessages(false), 5000);
-    return () => clearInterval(interval);
   }, [fetchMessages]);
+
+  // Poll for new messages only while this screen is focused and the app is
+  // foregrounded — previously ran unconditionally, even on another tab.
+  usePolling(() => fetchMessages(false), 5000, { immediate: false });
 
   // Reconnect-replay: when the device comes back online, fire an immediate fetch
   // so the user doesn't wait up to 5s for the next poll tick.

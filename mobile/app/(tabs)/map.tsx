@@ -49,6 +49,7 @@ class MapErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState>
 }
 import { Feather } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { usePolling } from '../../src/hooks/usePolling';
 import * as Location from 'expo-location';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../src/lib/store';
@@ -792,7 +793,6 @@ export default function MapScreen() {
   // Real-time location tracking state
   const [isLive, setIsLive] = useState(true);
   const [lastLocationUpdate, setLastLocationUpdate] = useState<Date | null>(null);
-  const locationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   // Map ready state - prevents rendering markers until MapView is ready
   const [isMapReady, setIsMapReady] = useState(false);
@@ -1141,12 +1141,6 @@ export default function MapScreen() {
 
   // Real-time team location polling - Life360 style live updates
   useEffect(() => {
-    // Always clean up existing interval first to prevent overlap
-    if (locationPollRef.current) {
-      clearInterval(locationPollRef.current);
-      locationPollRef.current = null;
-    }
-    
     // Reset markers ready state when turning off team view
     if (!showTeamMembers || !canViewTeamMode) {
       setTeamMarkersReady(false);
@@ -1174,25 +1168,25 @@ export default function MapScreen() {
       }).catch(err => {
         if (__DEV__) console.log('[Map] Initial location fetch failed:', err);
       });
-      
-      // Set up frequent polling for live tracking (every 10 seconds)
-      locationPollRef.current = setInterval(() => {
-        fetchTeamLocations().then(() => {
-          setLastLocationUpdate(new Date());
-          if (__DEV__) console.log('[Map] Live location update received');
-        }).catch(err => {
-          if (__DEV__) console.log('[Map] Live location poll failed:', err);
-        });
-      }, LOCATION_POLL_INTERVAL);
     }
-    
-    return () => {
-      if (locationPollRef.current) {
-        clearInterval(locationPollRef.current);
-        locationPollRef.current = null;
-      }
-    };
   }, [showTeamMembers, fetchTeamLocations, canViewTeamMode, isLive]);
+
+  // Frequent polling for live tracking (every 10 seconds) — paused while
+  // this tab or the app itself isn't in the foreground. The initial fetch
+  // above (with its marker-ready delay) already covers the first load, so
+  // this only drives the recurring tick.
+  usePolling(
+    () => {
+      fetchTeamLocations().then(() => {
+        setLastLocationUpdate(new Date());
+        if (__DEV__) console.log('[Map] Live location update received');
+      }).catch(err => {
+        if (__DEV__) console.log('[Map] Live location poll failed:', err);
+      });
+    },
+    LOCATION_POLL_INTERVAL,
+    { enabled: showTeamMembers && canViewTeamMode && isLive, immediate: false }
+  );
 
   // Android only: re-enable marker view tracking briefly whenever the team data
   // or selection changes so the custom marker views actually render, then turn it
@@ -1260,14 +1254,9 @@ export default function MapScreen() {
     };
   }, [showTeamMembers, canViewTeamMode, isLive, user?.id, fetchTeamLocations]);
 
-  // Fetch geofence alerts for owners/managers
-  useEffect(() => {
-    if (canViewTeamMode) {
-      fetchGeofenceAlerts();
-      const interval = setInterval(fetchGeofenceAlerts, 60000);
-      return () => clearInterval(interval);
-    }
-  }, [canViewTeamMode, fetchGeofenceAlerts]);
+  // Fetch geofence alerts for owners/managers — paused while this tab or the
+  // app itself isn't in the foreground.
+  usePolling(fetchGeofenceAlerts, 60000, { enabled: canViewTeamMode });
 
   // Auto-fit map to markers ONLY when user explicitly toggles filters (not on polling)
   // The effect is gated by filter changes, not data changes
