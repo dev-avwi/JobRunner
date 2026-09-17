@@ -31,6 +31,7 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
     borderless = false,
     onPress,
     disabled,
+    accessibilityRole = 'button',
     ...rest
   },
   ref,
@@ -133,6 +134,7 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
         onPress={handlePress}
         disabled={disabled}
         android_ripple={androidRipple}
+        accessibilityRole={accessibilityRole}
         style={style}
         {...rest}
       >
@@ -148,6 +150,7 @@ const PressableRow = forwardRef<View, PressableRowProps>(function PressableRow(
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      accessibilityRole={accessibilityRole}
       style={outerLayoutStyle}
       {...rest}
     >

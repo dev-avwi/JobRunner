@@ -63,7 +63,7 @@ export function TeamAvatar({ name, firstName, lastName, email, userId, profileIm
 
   if (validImageUrl) {
     return (
-      <View style={containerStyle}>
+      <View style={containerStyle} accessible={false}>
         <Image
           source={{ uri: profileImageUrl.trim(), cacheKey: userId ? `avatar-${userId}` : undefined }}
           style={{ width: size, height: size, borderRadius: size / 2 }}
@@ -77,7 +77,7 @@ export function TeamAvatar({ name, firstName, lastName, email, userId, profileIm
   }
 
   return (
-    <View style={containerStyle}>
+    <View style={containerStyle} accessible={false}>
       <Text style={{ color: staticColors.white, fontSize, fontWeight: '600', letterSpacing: 0.3 }}>
         {initials}
       </Text>

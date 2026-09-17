@@ -14,6 +14,8 @@ interface SheetButtonProps {
   trailingIcon?: ReactNode;
   fullWidth?: boolean;
   style?: ViewStyle;
+  /** Falls back to `label` — required when using `children` for icon-only content. */
+  accessibilityLabel?: string;
 }
 
 // Reliable bottom-sheet / modal action button. Uses a plain TouchableOpacity with
@@ -31,6 +33,7 @@ export function SheetButton({
   trailingIcon,
   fullWidth = false,
   style,
+  accessibilityLabel,
 }: SheetButtonProps) {
   const { colors } = useTheme();
   const isOutline = variant === 'outline';
@@ -43,6 +46,9 @@ export function SheetButton({
       activeOpacity={0.85}
       disabled={isDisabled}
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? label}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       style={[
         {
           flexDirection: 'row',

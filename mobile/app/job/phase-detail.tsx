@@ -1315,6 +1315,8 @@ export default function PhaseDetailScreen() {
                   <TouchableOpacity
                     onPress={() => setExpenseReceiptUri(null)}
                     style={{ position: 'absolute', top: 6, right: 6, backgroundColor: colors.destructive, borderRadius: 12, width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove receipt photo"
                   >
                     <Feather name="x" size={14} color="#fff" />
                   </TouchableOpacity>

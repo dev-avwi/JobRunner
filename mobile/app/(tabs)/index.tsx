@@ -1165,6 +1165,9 @@ function TimeTrackingWidget({ showTeam = false }: { showTeam?: boolean }) {
           disabled={isCancelling}
           activeOpacity={0.8}
           data-testid="button-cancel-timer"
+          accessibilityRole="button"
+          accessibilityLabel="Cancel timer"
+          accessibilityState={{ disabled: isCancelling, busy: isCancelling }}
         >
           {isCancelling ? (
             <ActivityIndicator size="small" color={colors.destructive} />
@@ -1731,7 +1734,7 @@ function OperationalAlertsCard() {
             <View style={{ backgroundColor: colorWithOpacity(colors.primary, 0.1), paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.full }}>
               <Text style={{ fontSize: typography.captionSmall.fontSize, fontWeight: fontWeights.semibold, color: colors.primary }}>{visibleAlerts.length}</Text>
             </View>
-            <TouchableOpacity onPress={dismissAll} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity onPress={dismissAll} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} accessibilityRole="button" accessibilityLabel="Dismiss all alerts">
               <Feather name="x" size={16} color={colors.mutedForeground} />
             </TouchableOpacity>
           </View>
@@ -1810,6 +1813,8 @@ function OperationalAlertsCard() {
                 onPress={() => dismissAlert(alert.id)}
                 hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
                 style={{ paddingLeft: 2 }}
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss alert"
               >
                 <Feather name="x" size={14} color={colors.mutedForeground} />
               </TouchableOpacity>
@@ -2550,7 +2555,7 @@ function GettingStartedChecklist() {
               {completedCount === 0 ? 'Complete these steps to get started' : `${checklistSteps.length - completedCount} step${checklistSteps.length - completedCount > 1 ? 's' : ''} left`}
             </Text>
           </View>
-          <TouchableOpacity onPress={handleDismiss} style={{ padding: spacing.xs }} activeOpacity={0.7}>
+          <TouchableOpacity onPress={handleDismiss} style={{ padding: spacing.xs }} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Dismiss Get Set Up card">
             <Feather name="x" size={18} color={colors.mutedForeground} />
           </TouchableOpacity>
         </View>
@@ -2760,6 +2765,8 @@ function PendingInvitesBanner() {
             onPress={() => handleDismiss(invite)}
             style={{ padding: 6 }}
             testID={`button-dismiss-invite-${invite.id}`}
+            accessibilityRole="button"
+            accessibilityLabel="Dismiss invite"
           >
             <Feather name="x" size={18} color={colors.mutedForeground} />
           </TouchableOpacity>
@@ -4193,6 +4200,8 @@ function OwnerDashboardScreen() {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={{ padding: spacing.xs }}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss demo banner"
             >
               <Feather name="x" size={14} color={colors.mutedForeground} />
             </TouchableOpacity>
@@ -4730,6 +4739,8 @@ function OwnerDashboardScreen() {
                 style={styles.cancelSelectionButton}
                 onPress={() => setSelectedJob(null)}
                 disabled={isAssigning}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel job assignment"
               >
                 <Feather name="x" size={16} color={colors.mutedForeground} />
               </TouchableOpacity>

@@ -40,6 +40,8 @@ interface GlassButtonProps {
   tint?: string;
   disabled?: boolean;
   testID?: string;
+  /** Required for icon-only content — this button has no text VoiceOver can read. */
+  accessibilityLabel?: string;
 }
 
 export function GlassButton({
@@ -49,6 +51,7 @@ export function GlassButton({
   tint,
   disabled = false,
   testID,
+  accessibilityLabel,
 }: GlassButtonProps) {
   const { isDark, colors } = useTheme();
   const scale = useSharedValue(1);
@@ -133,6 +136,11 @@ export function GlassButton({
             }),
         ]}
         testID={testID}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={{ disabled }}
+        onAccessibilityTap={firePress}
       >
         {isLiquidGlassSupported && LiquidGlassView ? (
           <LiquidGlassView

@@ -1027,6 +1027,8 @@ export default function JobsScreen() {
               style={[styles.headerIconBtn, batchMode && styles.headerIconBtnActive]}
               onPress={toggleBatchMode}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={batchMode ? 'Exit multi-select' : 'Select multiple jobs'}
             >
               <Feather name="check-square" size={20} color={batchMode ? colors.primaryForeground : colors.foreground} />
             </TouchableOpacity>
@@ -1036,6 +1038,9 @@ export default function JobsScreen() {
               style={[styles.headerViewToggleBtn, viewMode === 'grid' && styles.headerViewToggleBtnActive]}
               onPress={() => setViewMode('grid')}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Grid view"
+              accessibilityState={{ selected: viewMode === 'grid' }}
             >
               <Feather name="grid" size={18} color={viewMode === 'grid' ? colors.primary : colors.foreground} />
             </TouchableOpacity>
@@ -1043,12 +1048,15 @@ export default function JobsScreen() {
               style={[styles.headerViewToggleBtn, viewMode === 'list' && styles.headerViewToggleBtnActive]}
               onPress={() => setViewMode('list')}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="List view"
+              accessibilityState={{ selected: viewMode === 'list' }}
             >
               <Feather name="list" size={18} color={viewMode === 'list' ? colors.primary : colors.foreground} />
             </TouchableOpacity>
           </View>
           {canWriteJobs && (
-            <TouchableOpacity style={styles.headerAddIcon} onPress={navigateToCreateJob} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.headerAddIcon} onPress={navigateToCreateJob} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Add job">
               <Feather name="plus" size={22} color={colors.primaryForeground} />
             </TouchableOpacity>
           )}
@@ -1093,7 +1101,7 @@ export default function JobsScreen() {
             onChangeText={setSearchQuery}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={{ padding: 4 }}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} activeOpacity={0.7} style={{ padding: 4 }} accessibilityRole="button" accessibilityLabel="Clear search">
               <Feather name="x" size={16} color={colors.mutedForeground} />
             </TouchableOpacity>
           )}
@@ -1190,7 +1198,7 @@ export default function JobsScreen() {
                 {advancedFilters.dateFrom || 'From'}
               </Text>
               {advancedFilters.dateFrom ? (
-                <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateFrom: '' }))}>
+                <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateFrom: '' }))} accessibilityRole="button" accessibilityLabel="Clear from date">
                   <Feather name="x" size={12} color={colors.mutedForeground} />
                 </TouchableOpacity>
               ) : null}
@@ -1210,7 +1218,7 @@ export default function JobsScreen() {
                 {advancedFilters.dateTo || 'To'}
               </Text>
               {advancedFilters.dateTo ? (
-                <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateTo: '' }))}>
+                <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateTo: '' }))} accessibilityRole="button" accessibilityLabel="Clear to date">
                   <Feather name="x" size={12} color={colors.mutedForeground} />
                 </TouchableOpacity>
               ) : null}
@@ -1277,7 +1285,7 @@ export default function JobsScreen() {
               onChangeText={(text) => setAdvancedFilters(prev => ({ ...prev, suburb: text }))}
             />
             {advancedFilters.suburb ? (
-              <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, suburb: '' }))}>
+              <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, suburb: '' }))} accessibilityRole="button" accessibilityLabel="Clear suburb filter">
                 <Feather name="x" size={14} color={colors.mutedForeground} />
               </TouchableOpacity>
             ) : null}
@@ -1290,7 +1298,7 @@ export default function JobsScreen() {
                 return (
                   <View key={s} style={styles.activeFilterTag}>
                     <Text style={styles.activeFilterTagText}>{labels[s] || s}</Text>
-                    <TouchableOpacity onPress={() => toggleStatus(s)}>
+                    <TouchableOpacity onPress={() => toggleStatus(s)} accessibilityRole="button" accessibilityLabel={`Remove ${labels[s] || s} filter`}>
                       <Feather name="x" size={10} color={colors.mutedForeground} />
                     </TouchableOpacity>
                   </View>
@@ -1299,7 +1307,7 @@ export default function JobsScreen() {
               {advancedFilters.dateFrom ? (
                 <View style={styles.activeFilterTag}>
                   <Text style={styles.activeFilterTagText}>From: {advancedFilters.dateFrom}</Text>
-                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateFrom: '' }))}>
+                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateFrom: '' }))} accessibilityRole="button" accessibilityLabel="Remove from-date filter">
                     <Feather name="x" size={10} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
@@ -1307,7 +1315,7 @@ export default function JobsScreen() {
               {advancedFilters.dateTo ? (
                 <View style={styles.activeFilterTag}>
                   <Text style={styles.activeFilterTagText}>To: {advancedFilters.dateTo}</Text>
-                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateTo: '' }))}>
+                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, dateTo: '' }))} accessibilityRole="button" accessibilityLabel="Remove to-date filter">
                     <Feather name="x" size={10} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
@@ -1317,7 +1325,7 @@ export default function JobsScreen() {
                   <Text style={styles.activeFilterTagText}>
                     Assigned: {teamMembers.find(m => m.id === advancedFilters.assignedTo)?.name || 'Team member'}
                   </Text>
-                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, assignedTo: '' }))}>
+                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, assignedTo: '' }))} accessibilityRole="button" accessibilityLabel="Remove assigned-to filter">
                     <Feather name="x" size={10} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
@@ -1327,7 +1335,7 @@ export default function JobsScreen() {
                   <Text style={styles.activeFilterTagText}>
                     Client: {clients.find((c: any) => c.id === advancedFilters.clientId)?.name || 'Client'}
                   </Text>
-                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, clientId: '' }))}>
+                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, clientId: '' }))} accessibilityRole="button" accessibilityLabel="Remove client filter">
                     <Feather name="x" size={10} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
@@ -1335,7 +1343,7 @@ export default function JobsScreen() {
               {advancedFilters.suburb ? (
                 <View style={styles.activeFilterTag}>
                   <Text style={styles.activeFilterTagText}>Suburb: {advancedFilters.suburb}</Text>
-                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, suburb: '' }))}>
+                  <TouchableOpacity onPress={() => setAdvancedFilters(prev => ({ ...prev, suburb: '' }))} accessibilityRole="button" accessibilityLabel="Remove suburb filter">
                     <Feather name="x" size={10} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
