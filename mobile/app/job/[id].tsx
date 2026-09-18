@@ -767,17 +767,18 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     flexDirection: 'row' as const,
     paddingHorizontal: spacing.lg,
     gap: 0,
-    alignItems: 'flex-end' as const,
+    alignItems: 'center' as const,
   },
   sectionChip: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm - 2,
     // Generous floor — this exact layout (Text inside a TouchableOpacity inside
     // a horizontal ScrollView) doesn't reliably grow to text's lineHeight, so
     // minHeight needs slack or descenders (the "y" in "Pay") clip.
     minHeight: 36,
     alignItems: 'center' as const,
-    justifyContent: 'flex-end' as const,
+    justifyContent: 'center' as const,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
@@ -11950,7 +11951,7 @@ export default function JobDetailScreen() {
                 accessibilityLabel={`Jump to ${chip.label}`}
                 accessibilityState={{ selected: isActive }}
               >
-                <Text style={[styles.sectionChipText, { color: isActive ? colors.primaryForeground : colors.mutedForeground }]}>
+                <Text style={[styles.sectionChipText, { color: isActive ? colors.primary : colors.mutedForeground }]}>
                   {chip.label}
                 </Text>
               </TouchableOpacity>
