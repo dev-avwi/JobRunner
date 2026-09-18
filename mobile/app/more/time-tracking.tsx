@@ -2083,7 +2083,10 @@ export default function TimeTrackingScreen() {
                         </View>
                         {entry.timeCategory === 'travel' && entry.distanceKm && !isBreakEntry && (
                           <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.xs }}>
-                            <Text style={{ fontSize: typography.sizes.xs, color: CATEGORY_COLORS.travel }}>🚗 {entry.distanceKm} km</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                              <Feather name="navigation" size={10} color={CATEGORY_COLORS.travel} />
+                              <Text style={{ fontSize: typography.sizes.xs, color: CATEGORY_COLORS.travel }}>{entry.distanceKm} km</Text>
+                            </View>
                           </View>
                         )}
                         {entry.isDisputed && entry.disputeReason && !entry.disputeResolvedAt && (
@@ -3003,7 +3006,7 @@ export default function TimeTrackingScreen() {
         <View style={{ gap: spacing.lg, paddingBottom: insets.bottom + spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
             <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: CATEGORY_COLORS.travel + '18', alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: 20 }}>🚗</Text>
+              <Feather name="navigation" size={20} color={CATEGORY_COLORS.travel} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ ...typography.cardTitle, color: colors.foreground }}>How far did you travel?</Text>
