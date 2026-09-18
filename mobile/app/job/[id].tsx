@@ -759,37 +759,35 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   // one connected nav cluster rather than a tab bar with a stray flat bar
   // stuck underneath it.
   sectionChipBar: {
-    marginBottom: spacing.xs,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    marginBottom: spacing.sm,
   },
   sectionChipBarContent: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
   },
   sectionChip: {
     flex: 1,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm - 2,
-    minHeight: 36,
+    paddingVertical: 6,
+    minHeight: 30,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
   },
   sectionChipActive: {
-    borderBottomColor: colors.primary,
+    // No filled/selected state — these are action jump buttons, not tabs.
+    // Keep appearance identical to unselected so the row reads as shortcuts.
   },
   sectionChipText: {
-    fontSize: 13,
-    // Explicit lineHeight — without it this label was measuring 0pt tall in
-    // this exact TouchableOpacity-in-horizontal-ScrollView layout (verified
-    // live: pill frame height == padding+border only, no room for the glyph).
-    lineHeight: 18,
-    fontWeight: fontWeights.semibold,
-    letterSpacing: 0.2,
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: fontWeights.medium,
     textAlign: 'center' as const,
+    color: colors.mutedForeground,
   },
   // Quick-action FAB — positioned above the persistent bottom nav
   quickFAB: {
@@ -11940,7 +11938,7 @@ export default function JobDetailScreen() {
                 accessibilityLabel={`Jump to ${chip.label}`}
                 accessibilityState={{ selected: isActive }}
               >
-                <Text style={[styles.sectionChipText, { color: isActive ? colors.primary : colors.mutedForeground }]}>
+                <Text style={styles.sectionChipText}>
                   {chip.label}
                 </Text>
               </TouchableOpacity>
