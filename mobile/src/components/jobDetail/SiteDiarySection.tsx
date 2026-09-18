@@ -98,6 +98,8 @@ interface SiteDiarySectionProps {
    * pre-filled with the session duration.
    */
   onStopTimerForDiary?: () => Promise<boolean>;
+  /** Start collapsed with a tappable header (same pattern as JobNotesSection). */
+  collapsible?: boolean;
 }
 
 interface FormState {
@@ -150,10 +152,12 @@ export function SiteDiarySection({
   phases,
   onStartTimer,
   onStopTimerForDiary,
+  collapsible = false,
 }: SiteDiarySectionProps) {
   const [entries, setEntries] = useState<SiteDiaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [sectionExpanded, setSectionExpanded] = useState(!collapsible);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<SiteDiaryEntry | null>(null);
@@ -228,6 +232,7 @@ export function SiteDiarySection({
 
   function openNew() {
     handleSectionOpen();
+    setSectionExpanded(true);
     setEditingEntry(null);
     setForm({ ...EMPTY_FORM, entryDate: todayISO() });
     setNewPhotos([]);
@@ -239,6 +244,7 @@ export function SiteDiarySection({
     const success = await onStopTimerForDiary();
     if (success) {
       handleSectionOpen();
+    setSectionExpanded(true);
       setEditingEntry(null);
       const prefill = timerDisplayText ? `Worked ${timerDisplayText}` : '';
       setForm({ ...EMPTY_FORM, entryDate: todayISO(), workDone: prefill, phaseId: timerPhaseId ?? '' });
@@ -374,7 +380,12 @@ export function SiteDiarySection({
     <View style={[parentStyles.photosCard]}>
       {/* Section header */}
       <View style={s.header}>
-        <View style={s.headerLeft}>
+        <TouchableOpacity
+          style={s.headerLeft}
+          onPress={collapsible ? () => setSectionExpanded((v) => !v) : undefined}
+          disabled={!collapsible}
+          activeOpacity={0.7}
+        >
           <View style={[s.iconWrap, { backgroundColor: `${colors.primary}15` }]}>
             <Feather name="book-open" size={iconSizes.lg} color={colors.primary} />
           </View>
@@ -391,7 +402,10 @@ export function SiteDiarySection({
               <Text style={s.countText}>{entries.length}</Text>
             </View>
           )}
-        </View>
+          {collapsible && (
+            <Feather name={sectionExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.mutedForeground} />
+          )}
+        </TouchableOpacity>
         {/* Timer action or Add Entry button */}
         {isTimerRunning && onStopTimerForDiary ? (
           <TouchableOpacity
@@ -425,6 +439,8 @@ export function SiteDiarySection({
         )}
       </View>
 
+      {sectionExpanded && (
+      <>
       {/* Month chip filter — shown when there are multiple months, or while a month is actively selected
           (keeping the bar visible lets the user always tap "All" to escape a now-empty filter) */}
       {loaded && (availableMonths.length > 1 || selectedMonth !== '') && (
@@ -695,6 +711,8 @@ export function SiteDiarySection({
             );
           })}
         </View>
+      )}
+      </>
       )}
 
       {/* Add / Edit Sheet */}

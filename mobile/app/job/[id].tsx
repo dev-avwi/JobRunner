@@ -753,39 +753,55 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   quickActionsSection: {
     marginBottom: spacing.xl,
   },
-  // Section-jump chip bar
-  chipBar: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.cardBorder,
-    backgroundColor: colors.background,
+  // Section-jump chip bar — styled as a floating card matching the tab bar
+  // directly above it (same colors.card/border/radius treatment), instead of
+  // the old edge-to-edge strip with a hairline divider, so the two read as
+  // one connected nav cluster rather than a tab bar with a stray flat bar
+  // stuck underneath it.
+  sectionChipBar: {
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
-  chipBarContent: {
+  sectionChipBarContent: {
     flexDirection: 'row' as const,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     gap: spacing.sm,
     alignItems: 'center' as const,
   },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs + 2,
+  sectionChip: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    // Generous floor, not a tight fit — this exact layout (Text inside a
+    // TouchableOpacity inside a horizontal ScrollView row) doesn't reliably
+    // grow the box to the text's full lineHeight, so minHeight needs slack
+    // above the bare-minimum math or descenders (e.g. the "y" in "Pay") clip.
+    minHeight: 40,
     borderRadius: radius.pill,
     backgroundColor: colors.muted,
     borderWidth: 1,
     borderColor: colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
-  chipActive: {
+  sectionChipActive: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
+    ...shadows.xs,
   },
-  chipText: {
+  sectionChipText: {
     fontSize: typography.captionSmall.fontSize + 1,
+    // Explicit lineHeight — without it this label was measuring 0pt tall in
+    // this exact TouchableOpacity-in-horizontal-ScrollView layout (verified
+    // live: pill frame height == padding+border only, no room for the glyph).
+    lineHeight: typography.captionSmall.fontSize + 6,
     fontWeight: fontWeights.semibold,
-    color: colors.mutedForeground,
     letterSpacing: 0.2,
-  },
-  chipTextActive: {
-    color: colors.primaryForeground,
+    textAlign: 'center' as const,
   },
   // Quick-action FAB — positioned above the persistent bottom nav
   quickFAB: {
@@ -8273,16 +8289,33 @@ export default function JobDetailScreen() {
     if (jumping) {
       setActiveTab(targetTab);
     }
+
     // When jumping tabs, the target tab's content (and its onLayout anchor)
-    // only mounts after this render pass — give it a beat before scrolling,
-    // same delay already used elsewhere in this file for the identical
-    // costing-sheet -> Manage tab jump.
-    setTimeout(() => {
+    // only mounts after this render pass, and on a first-ever visit to that
+    // tab its cards may still be loading data — a single fixed-delay read of
+    // sectionOffsets could fire before the anchor exists at all, landing
+    // nowhere. Poll for the offset instead of guessing a delay.
+    //
+    // Deliberately NOT re-reading the offset again later to "correct" for
+    // async content shifting it — tried that, and it overshot: on Manage,
+    // content above the `pay` anchor (ManageTabPaymentSection) keeps loading
+    // and growing for a while after mount, so a later re-read lands well past
+    // the intended section. One scroll to the first available offset is the
+    // right behaviour even if a card above later grows a bit further.
+    let attempts = 0;
+    const maxAttempts = jumping ? 8 : 1;
+    const tryScroll = () => {
       const offset = sectionOffsets.current[sectionId];
       if (offset !== undefined && scrollRef.current) {
         scrollRef.current.scrollTo({ y: Math.max(0, offset - 8), animated: true });
+        return;
       }
-    }, jumping ? 350 : 0);
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        setTimeout(tryScroll, 120);
+      }
+    };
+    setTimeout(tryScroll, jumping ? 80 : 0);
   }, [activeTab]);
 
   const handleScrollWithChips = useCallback((e: any) => {
@@ -11910,25 +11943,28 @@ export default function JobDetailScreen() {
           ref={chipScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.chipBar}
-          contentContainerStyle={styles.chipBarContent}
+          style={styles.sectionChipBar}
+          contentContainerStyle={styles.sectionChipBarContent}
           keyboardShouldPersistTaps="handled"
         >
-          {overviewChips.map((chip) => (
-            <TouchableOpacity
-              key={chip.id}
-              style={[styles.chip, activeChip === chip.id && styles.chipActive]}
-              onPress={() => scrollToSection(chip.id)}
-              activeOpacity={0.75}
-              accessibilityRole="button"
-              accessibilityLabel={`Jump to ${chip.label}`}
-              accessibilityState={{ selected: activeChip === chip.id }}
-            >
-              <Text style={[styles.chipText, activeChip === chip.id && styles.chipTextActive]}>
-                {chip.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {overviewChips.map((chip) => {
+            const isActive = activeChip === chip.id;
+            return (
+              <TouchableOpacity
+                key={chip.id}
+                style={[styles.sectionChip, isActive && styles.sectionChipActive]}
+                onPress={() => scrollToSection(chip.id)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={`Jump to ${chip.label}`}
+                accessibilityState={{ selected: isActive }}
+              >
+                <Text style={[styles.sectionChipText, { color: isActive ? colors.primaryForeground : colors.mutedForeground }]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       )}
 
@@ -12688,21 +12724,20 @@ export default function JobDetailScreen() {
             )}
 
             {/* ── Daily Log — site diary, collapsed by default so the checklist above stays the first thing you see ── */}
-            <CollapsibleSection title="Daily Log" icon="book-open" summaryItems={[]}>
-                <SiteDiarySection
-                  jobId={job.id}
-                  colors={colors}
-                  styles={styles}
-                  isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                  currentUserId={user?.id}
-                  isTimerRunning={isTimerForThisJob}
-                  timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
-                  timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
-                  phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
-                  onStartTimer={handleStartTimer}
-                  onStopTimerForDiary={handleStopTimerForDiary}
-                />
-            </CollapsibleSection>
+            <SiteDiarySection
+              jobId={job.id}
+              colors={colors}
+              styles={styles}
+              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+              currentUserId={user?.id}
+              isTimerRunning={isTimerForThisJob}
+              timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+              timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+              phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
+              onStartTimer={handleStartTimer}
+              onStopTimerForDiary={handleStopTimerForDiary}
+              collapsible
+            />
           </>
         ) : (
           /* ═══════════════════════════════════════════════
@@ -12910,21 +12945,20 @@ export default function JobDetailScreen() {
             )}
 
             {/* ── Daily Log — site diary for service calls, collapsed by default ── */}
-            <CollapsibleSection title="Daily Log" icon="book-open" summaryItems={[]}>
-                <SiteDiarySection
-                  jobId={job.id}
-                  colors={colors}
-                  styles={styles}
-                  isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
-                  currentUserId={user?.id}
-                  isTimerRunning={isTimerForThisJob}
-                  timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
-                  timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
-                  phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
-                  onStartTimer={handleStartTimer}
-                  onStopTimerForDiary={handleStopTimerForDiary}
-                />
-            </CollapsibleSection>
+            <SiteDiarySection
+              jobId={job.id}
+              colors={colors}
+              styles={styles}
+              isOwnerOrManager={!!(isOwnerOrManager || isSoloOwner)}
+              currentUserId={user?.id}
+              isTimerRunning={isTimerForThisJob}
+              timerDisplayText={isTimerForThisJob ? formatElapsedTime(elapsedTime) : undefined}
+              timerPhaseId={isTimerForThisJob ? (activeTimer as any)?.phaseId : undefined}
+              phases={phases.map((p) => ({ id: p.id, name: p.name, phaseCode: p.phaseCode }))}
+              onStartTimer={handleStartTimer}
+              onStopTimerForDiary={handleStopTimerForDiary}
+              collapsible
+            />
           </>
         ))}
 

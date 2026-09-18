@@ -21,18 +21,42 @@ public class AppDelegate: ExpoAppDelegate {
     reactNativeFactory = factory
     bindReactNativeFactory(factory)
 
-#if os(iOS) || os(tvOS)
-    window = UIWindow(frame: UIScreen.main.bounds)
-    factory.startReactNative(
-      withModuleName: "main",
-      in: window,
-      launchOptions: launchOptions)
-#endif
+    // Window is created here (not only in SceneDelegate) because
+    // expo-dev-launcher's app-delegate subscriber runs synchronously during
+    // didFinishLaunching — before any scene connects — and fatal-errors if
+    // `UIApplication.shared.delegate?.window` isn't already set. SceneDelegate
+    // reuses this same window (assigns it to the connecting scene) instead of
+    // creating a second one, which is what satisfies the iOS 27 scene-adoption
+    // check.
+    let window = UIWindow(frame: UIScreen.main.bounds)
+    self.window = window
+    window.makeKeyAndVisible()
+    factory.startReactNative(withModuleName: "main", in: window, launchOptions: launchOptions)
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
-  // Linking API
+#if os(iOS) || os(tvOS)
+  // Required once UIApplicationSceneManifest is declared — tells UIKit which
+  // scene delegate to instantiate for a new window scene. This satisfies an
+  // optional UIApplicationDelegate protocol requirement (via ExpoAppDelegate's
+  // conformance), not a superclass method, so no `override`.
+  public func application(
+    _ application: UIApplication,
+    configurationForConnecting connectingSceneSession: UISceneSession,
+    options: UIScene.ConnectionOptions
+  ) -> UISceneConfiguration {
+    let configuration = UISceneConfiguration(
+      name: "Default Configuration",
+      sessionRole: connectingSceneSession.role
+    )
+    configuration.delegateClass = SceneDelegate.self
+    return configuration
+  }
+#endif
+
+  // Linking API — still handled here for app-delegate-level callers; the
+  // scene-based equivalents in SceneDelegate cover the normal foreground path.
   public override func application(
     _ app: UIApplication,
     open url: URL,
@@ -51,6 +75,55 @@ public class AppDelegate: ExpoAppDelegate {
     return super.application(application, continue: userActivity, restorationHandler: restorationHandler) || result
   }
 }
+
+#if os(iOS) || os(tvOS)
+/**
+ Minimal scene delegate adopting the UIScene lifecycle iOS 27 requires.
+ Creates the window and starts React Native here instead of in
+ AppDelegate.didFinishLaunchingWithOptions — that's what a scene-based app
+ expects, and skipping it is what caused the hard launch crash on iOS 27.
+ */
+class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  var window: UIWindow?
+
+  func scene(
+    _ scene: UIScene,
+    willConnectTo session: UISceneSession,
+    options connectionOptions: UIScene.ConnectionOptions
+  ) {
+    // Reuse the window AppDelegate already created (and started React
+    // Native in) during didFinishLaunching — don't allocate a second one.
+    guard let windowScene = scene as? UIWindowScene,
+          let appDelegate = UIApplication.shared.delegate as? AppDelegate,
+          let window = appDelegate.window else {
+      return
+    }
+
+    window.windowScene = windowScene
+    self.window = window
+
+    // Cold-start deep link (app not running yet, opened via a URL).
+    if let url = connectionOptions.urlContexts.first?.url {
+      RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
+    }
+    // Cold-start universal link (app not running yet, opened via Handoff/Siri/Spotlight).
+    if let userActivity = connectionOptions.userActivities.first {
+      RCTLinkingManager.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+    }
+  }
+
+  // Foreground deep link — app already running, user tapped a link.
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let url = URLContexts.first?.url else { return }
+    RCTLinkingManager.application(UIApplication.shared, open: url, options: [:])
+  }
+
+  // Foreground universal link.
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    RCTLinkingManager.application(UIApplication.shared, continue: userActivity, restorationHandler: { _ in })
+  }
+}
+#endif
 
 class ReactNativeDelegate: ExpoReactNativeFactoryDelegate {
   // Extension point for config-plugins
