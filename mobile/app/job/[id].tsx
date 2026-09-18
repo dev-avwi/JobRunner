@@ -766,6 +766,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   sectionChipBarContent: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
+    paddingHorizontal: spacing.lg,
   },
   sectionChip: {
     flex: 1,
