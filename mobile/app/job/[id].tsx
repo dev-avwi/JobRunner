@@ -760,47 +760,42 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   // stuck underneath it.
   sectionChipBar: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    marginHorizontal: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.cardBorder,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
   },
   sectionChipBarContent: {
     flexDirection: 'row' as const,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 10,
+    gap: 6,
     alignItems: 'center' as const,
   },
   sectionChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     // Generous floor, not a tight fit — this exact layout (Text inside a
     // TouchableOpacity inside a horizontal ScrollView row) doesn't reliably
     // grow the box to the text's full lineHeight, so minHeight needs slack
     // above the bare-minimum math or descenders (e.g. the "y" in "Pay") clip.
-    minHeight: 40,
+    minHeight: 32,
     borderRadius: radius.pill,
     backgroundColor: colors.muted,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   sectionChipActive: {
     backgroundColor: colors.primary,
-    borderColor: colors.primary,
     ...shadows.xs,
   },
   sectionChipText: {
-    fontSize: typography.captionSmall.fontSize + 1,
+    fontSize: 13,
     // Explicit lineHeight — without it this label was measuring 0pt tall in
     // this exact TouchableOpacity-in-horizontal-ScrollView layout (verified
     // live: pill frame height == padding+border only, no room for the glyph).
-    lineHeight: typography.captionSmall.fontSize + 6,
+    lineHeight: 18,
     fontWeight: fontWeights.semibold,
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
     textAlign: 'center' as const,
   },
   // Quick-action FAB — positioned above the persistent bottom nav
