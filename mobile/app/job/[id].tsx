@@ -765,17 +765,12 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   },
   sectionChipBarContent: {
     flexDirection: 'row' as const,
-    paddingHorizontal: spacing.lg,
-    gap: 0,
     alignItems: 'center' as const,
   },
   sectionChip: {
-    paddingHorizontal: spacing.md,
+    flex: 1,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm - 2,
-    // Generous floor — this exact layout (Text inside a TouchableOpacity inside
-    // a horizontal ScrollView) doesn't reliably grow to text's lineHeight, so
-    // minHeight needs slack or descenders (the "y" in "Pay") clip.
     minHeight: 36,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
@@ -11931,14 +11926,7 @@ export default function JobDetailScreen() {
 
       {/* Section-jump chip bar — pinned between tab bar and scroll content */}
       {activeTab === 'overview' && (
-        <ScrollView
-          ref={chipScrollRef}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.sectionChipBar}
-          contentContainerStyle={styles.sectionChipBarContent}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={[styles.sectionChipBar, styles.sectionChipBarContent]}>
           {overviewChips.map((chip) => {
             const isActive = activeChip === chip.id;
             return (
@@ -11957,7 +11945,7 @@ export default function JobDetailScreen() {
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
       )}
 
       {/* Active phase timer banner — sticky above the scroll area, only while a project timer is running */}
