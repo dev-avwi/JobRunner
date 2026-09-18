@@ -11923,29 +11923,6 @@ export default function JobDetailScreen() {
         })}
       </View>
 
-      {/* Section-jump chip bar — pinned between tab bar and scroll content */}
-      {activeTab === 'overview' && (
-        <View style={[styles.sectionChipBar, styles.sectionChipBarContent]}>
-          {overviewChips.map((chip) => {
-            const isActive = activeChip === chip.id;
-            return (
-              <TouchableOpacity
-                key={chip.id}
-                style={[styles.sectionChip, isActive && styles.sectionChipActive]}
-                onPress={() => scrollToSection(chip.id)}
-                activeOpacity={0.75}
-                accessibilityRole="button"
-                accessibilityLabel={`Jump to ${chip.label}`}
-                accessibilityState={{ selected: isActive }}
-              >
-                <Text style={styles.sectionChipText}>
-                  {chip.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
 
       {/* Active phase timer banner — sticky above the scroll area, only while a project timer is running */}
       {activeTab === 'tasks' && isProject && isTimerForThisJob && (
