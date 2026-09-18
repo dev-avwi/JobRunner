@@ -759,34 +759,30 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   // one connected nav cluster rather than a tab bar with a stray flat bar
   // stuck underneath it.
   sectionChipBar: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
   sectionChipBarContent: {
     flexDirection: 'row' as const,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-    alignItems: 'center' as const,
+    gap: 0,
+    alignItems: 'flex-end' as const,
   },
   sectionChip: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
     // Generous floor — this exact layout (Text inside a TouchableOpacity inside
     // a horizontal ScrollView) doesn't reliably grow to text's lineHeight, so
     // minHeight needs slack or descenders (the "y" in "Pay") clip.
-    minHeight: 34,
-    borderRadius: radius.pill,
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.border,
+    minHeight: 36,
     alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    ...shadows.xs,
+    justifyContent: 'flex-end' as const,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
   sectionChipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-    ...shadows.sm,
+    borderBottomColor: colors.primary,
   },
   sectionChipText: {
     fontSize: 13,
