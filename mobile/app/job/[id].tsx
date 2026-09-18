@@ -759,34 +759,34 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
   // one connected nav cluster rather than a tab bar with a stray flat bar
   // stuck underneath it.
   sectionChipBar: {
-    backgroundColor: colors.card,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.cardBorder,
     marginBottom: spacing.md,
   },
   sectionChipBarContent: {
     flexDirection: 'row' as const,
     paddingHorizontal: spacing.lg,
-    paddingVertical: 10,
-    gap: 6,
+    paddingVertical: spacing.sm,
+    gap: spacing.sm,
     alignItems: 'center' as const,
   },
   sectionChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    // Generous floor, not a tight fit — this exact layout (Text inside a
-    // TouchableOpacity inside a horizontal ScrollView row) doesn't reliably
-    // grow the box to the text's full lineHeight, so minHeight needs slack
-    // above the bare-minimum math or descenders (e.g. the "y" in "Pay") clip.
-    minHeight: 32,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 8,
+    // Generous floor — this exact layout (Text inside a TouchableOpacity inside
+    // a horizontal ScrollView) doesn't reliably grow to text's lineHeight, so
+    // minHeight needs slack or descenders (the "y" in "Pay") clip.
+    minHeight: 34,
     borderRadius: radius.pill,
-    backgroundColor: colors.muted,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
+    ...shadows.xs,
   },
   sectionChipActive: {
     backgroundColor: colors.primary,
-    ...shadows.xs,
+    borderColor: colors.primary,
+    ...shadows.sm,
   },
   sectionChipText: {
     fontSize: 13,
@@ -795,7 +795,7 @@ const createStyles = (colors: ThemeColors, bottomNavHeight: number = 0) => Style
     // live: pill frame height == padding+border only, no room for the glyph).
     lineHeight: 18,
     fontWeight: fontWeights.semibold,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     textAlign: 'center' as const,
   },
   // Quick-action FAB — positioned above the persistent bottom nav
