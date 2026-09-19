@@ -4490,10 +4490,10 @@ function OwnerDashboardScreen() {
           </View>
           {myPhasesThisWeek.map((phase: any) => {
             const statusColors: Record<string, { bg: string; text: string }> = {
-              not_started: { bg: '#F3F4F6', text: '#374151' },
-              in_progress:  { bg: '#DBEAFE', text: '#1E40AF' },
-              complete:     { bg: '#D1FAE5', text: '#065F46' },
-              invoiced:     { bg: '#EDE9FE', text: '#6D28D9' },
+              not_started: { bg: colors.muted,                              text: colors.mutedForeground },
+              in_progress:  { bg: colorWithOpacity(colors.primary, 0.15),   text: colors.primary },
+              complete:     { bg: colorWithOpacity(colors.success, 0.15),   text: colors.success },
+              invoiced:     { bg: colorWithOpacity(colors.info, 0.15),      text: colors.info },
             };
             const sc = statusColors[phase.status] ?? statusColors.not_started;
             return (
