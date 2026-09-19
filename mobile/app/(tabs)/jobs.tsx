@@ -85,7 +85,7 @@ const STATUS_FILTERS: { key: string; label: string; icon: string }[] = [
   { key: 'invoiced', label: 'Invoiced', icon: 'file-text' },
 ];
 
-function JobListRow({ 
+export function JobListRow({ 
   job, 
   onPress,
   onDelete,
