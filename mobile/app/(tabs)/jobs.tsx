@@ -91,12 +91,14 @@ function JobListRow({
   onDelete,
   onQuickAction,
   onShowActionSheet,
+  canCreateInvoices = true,
 }: { 
   job: any;
   onPress: () => void;
   onDelete: (jobId: string) => void;
   onQuickAction?: (action: string, jobId: string) => void;
   onShowActionSheet?: (job: any) => void;
+  canCreateInvoices?: boolean;
 }) {
   const { colors } = useTheme();
   const contentWidth = useContentWidth();
@@ -105,14 +107,30 @@ function JobListRow({
   const confirm = useConfirmDialog();
   
   const urgency = getJobUrgency(job.scheduledAt, job.status, colors.isDark);
-  
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '-';
+
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-AU', { 
-      day: 'numeric', 
+    return date.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return 'Not scheduled';
+    const date = new Date(dateStr);
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (date.toDateString() === today.toDateString()) {
+      return `Today, ${formatTime(dateStr)}`;
+    }
+    if (date.toDateString() === tomorrow.toDateString()) {
+      return `Tomorrow, ${formatTime(dateStr)}`;
+    }
+    return date.toLocaleDateString('en-AU', {
+      weekday: 'short',
+      day: 'numeric',
       month: 'short',
-    });
+    }) + ', ' + formatTime(dateStr);
   };
 
   const handleDelete = async () => {
@@ -129,28 +147,100 @@ function JobListRow({
   return (
     <AnimatedCardPressable
       onPress={onPress}
-      style={styles.jobListRow}
+      style={job.isXeroImport ? { ...styles.jobListRow, overflow: 'visible' as const } : styles.jobListRow}
     >
+      {job.isXeroImport && <XeroBadge size="sm" />}
       <View style={styles.jobListRowContent}>
-        <View style={styles.jobListRowLeft}>
-          {job.jobNumber && (
-            <Text style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: '700', color: colors.mutedForeground, marginBottom: 2 }}>{job.jobNumber}</Text>
+        {/* Top row: badges left, more button right */}
+        <View style={styles.jobListRowBadgeRow}>
+          <View style={styles.jobListRowBadges}>
+            <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
+            {job.jobType === 'project' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.muted, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4 }}>
+                <Feather name="layers" size={9} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 10, fontWeight: '500', color: colors.mutedForeground }}>Project</Text>
+              </View>
+            )}
+            {job.isRecurring && (
+              <View style={styles.recurringBadge}>
+                <Feather name="repeat" size={10} color={colors.primary} />
+                <Text style={styles.recurringBadgeText}>Recurring</Text>
+              </View>
+            )}
+            {urgency && urgency.level !== 'overdue' && (
+              <View style={[styles.urgencyBadge, { backgroundColor: urgency.bgColor }]}>
+                {urgency.animate && (
+                  <View style={[styles.urgencyDot, { backgroundColor: urgency.color }]} />
+                )}
+                <Text style={[styles.urgencyBadgeText, { color: urgency.color }]} numberOfLines={1}>
+                  {urgency.shortLabel}
+                </Text>
+              </View>
+            )}
+          </View>
+          <Button
+            size="icon"
+            variant="ghost"
+            onPress={handleMorePress}
+            icon={<Feather name="more-horizontal" size={16} color={colors.mutedForeground} />}
+            style={{ marginTop: -4, marginRight: -8, flexShrink: 0 }}
+          >{null}</Button>
+        </View>
+
+        {/* Job number */}
+        {job.jobNumber && (
+          <Text style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: '700', color: colors.mutedForeground, marginBottom: 2 }}>{job.jobNumber}</Text>
+        )}
+
+        {/* Title */}
+        <Text style={styles.jobListRowTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
+
+        {/* Next recurrence label */}
+        {job.isRecurring && job.nextRecurrenceDate && (
+          <Text style={{ fontSize: typography.sizes.xs, color: colors.primary, fontWeight: fontWeights.medium }}>
+            Next: {new Date(job.nextRecurrenceDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}
+          </Text>
+        )}
+
+        {/* Detail rows: client, address, schedule — matching grid card */}
+        <View style={styles.jobCardDetails}>
+          {job.clientName && (
+            <View style={styles.jobDetailRow}>
+              <Feather name="user" size={iconSizes.sm} color={colors.mutedForeground} />
+              <Text style={styles.jobDetailText} numberOfLines={1}>{job.clientName}</Text>
+            </View>
           )}
-          <Text style={styles.jobListRowTitle} numberOfLines={1}>{job.title || 'Untitled Job'}</Text>
-          <Text style={styles.jobListRowAddress} numberOfLines={1}>{job.address?.split(',')[0] || 'No address'}</Text>
+          {job.address && (
+            <View style={styles.jobDetailRow}>
+              <Feather name="map-pin" size={iconSizes.sm} color={colors.mutedForeground} />
+              <Text style={styles.jobDetailText} numberOfLines={1}>{job.address.split(',')[0]}</Text>
+            </View>
+          )}
+          <View style={styles.jobDetailRow}>
+            <Feather name="calendar" size={iconSizes.sm} color={colors.mutedForeground} />
+            <Text style={styles.jobDetailText} numberOfLines={1}>{formatDate(job.scheduledAt)}</Text>
+          </View>
         </View>
-        <View style={styles.jobListRowCenter}>
-          <StatusBadge status={urgency?.level === 'overdue' ? 'overdue' : job.status} size="sm" />
-        </View>
-        <Text style={styles.jobListRowDate}>
-          {formatDate(job.scheduledAt)}
-        </Text>
-        <Button
-          size="icon"
-          variant="ghost"
-          onPress={handleMorePress}
-          icon={<Feather name="more-vertical" size={iconSizes.md} color={colors.mutedForeground} />}
-        >{null}</Button>
+
+        {/* Project health for project-type jobs */}
+        {job.jobType === 'project' && (
+          <MobileProjectHealthRow jobId={job.id} colors={colors} />
+        )}
+
+        {/* Invoice CTA when job is done */}
+        {job.status === 'done' && canCreateInvoices && (
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={(e) => {
+              e.stopPropagation();
+              router.push(`/more/invoice/new?jobId=${job.id}`);
+            }}
+            style={styles.invoiceBtn}
+          >
+            <Feather name="file-text" size={iconSizes.sm} color={colors.primaryForeground} />
+            <Text style={styles.invoiceBtnText}>Invoice</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </AnimatedCardPressable>
   );
@@ -1620,6 +1710,7 @@ export default function JobsScreen() {
             onDelete={handleDeleteJob}
             onQuickAction={handleQuickAction}
             onShowActionSheet={setActionSheetJob}
+            canCreateInvoices={canCreateInvoices}
           />
         </View>
       </View>
@@ -2477,11 +2568,24 @@ const createStyles = (colors: ThemeColors, contentWidth: number, horizontalPaddi
     borderColor: colors.cardBorder,
   },
   jobListRowContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    gap: spacing.md,
+    gap: spacing.xs,
+  },
+  jobListRowBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  jobListRowBadges: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+    paddingTop: 2,
   },
   jobListRowLeft: {
     flex: 1,
