@@ -48,6 +48,7 @@ import {
   replayPendingProjectCreation,
   type PendingProjectCreation,
 } from '../../src/lib/pending-project-creation';
+import { parseDuration, parseRecurrenceEndDate } from '../../src/lib/create-job-validation';
 
 type JobStatus = 'pending' | 'scheduled' | 'in_progress' | 'done' | 'invoiced';
 
@@ -902,6 +903,34 @@ export default function CreateJobScreen() {
       Alert.alert('Missing Title', 'Please enter a job title');
       return false;
     }
+
+    // Duration must be a valid positive number when provided
+    const durationResult = parseDuration(estimatedDuration);
+    if (!durationResult.ok) {
+      Alert.alert('Invalid Duration', durationResult.error);
+      return false;
+    }
+
+    // Scheduled status requires an explicit date
+    if (status === 'scheduled' && !scheduledAt) {
+      Alert.alert('Schedule Required', 'A scheduled date must be set when the status is Scheduled. Set a date or change the status to Pending.');
+      return false;
+    }
+
+    // Recurrence end date validation
+    if (isRecurring && recurrenceEndDate.trim()) {
+      const endDateResult = parseRecurrenceEndDate(recurrenceEndDate, scheduledAt);
+      if (!endDateResult.ok) {
+        const title = endDateResult.error.includes('past')
+          ? 'End Date in the Past'
+          : endDateResult.error.includes('after')
+          ? 'End Date Too Early'
+          : 'Invalid End Date';
+        Alert.alert(title, endDateResult.error);
+        return false;
+      }
+    }
+
     return true;
   };
 
@@ -1062,11 +1091,9 @@ export default function CreateJobScreen() {
       }
     }
 
-    if (estimatedDuration) {
-      const hours = parseFloat(estimatedDuration);
-      if (!isNaN(hours) && hours > 0) {
-        jobData.estimatedDuration = Math.round(hours * 60);
-      }
+    const durationPayload = parseDuration(estimatedDuration);
+    if (durationPayload.ok && durationPayload.minutes > 0) {
+      jobData.estimatedDuration = durationPayload.minutes;
     }
 
     // Add recurring job fields
@@ -1076,8 +1103,11 @@ export default function CreateJobScreen() {
       jobData.recurrencePattern = recurrencePattern;
       jobData.recurrenceInterval = 1;
       jobData.nextRecurrenceDate = calculateNextRecurrenceDate(baseDate, recurrencePattern);
-      if (recurrenceEndDate) {
-        jobData.recurrenceEndDate = new Date(recurrenceEndDate).toISOString();
+      if (recurrenceEndDate.trim()) {
+        const endDateResult = parseRecurrenceEndDate(recurrenceEndDate, scheduledAt);
+        if (endDateResult.ok && endDateResult.date) {
+          jobData.recurrenceEndDate = endDateResult.date.toISOString();
+        }
       }
     }
     
@@ -1722,25 +1752,34 @@ export default function CreateJobScreen() {
             {/* Schedule Date/Time */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Schedule (Optional)</Text>
-              <View style={styles.scheduleRow}>
-                <View style={{ flex: 1 }}>
-                  <DatePicker
-                    value={scheduledAt || new Date()}
-                    onChange={handleDateChange}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <TimePicker
-                    value={scheduledAt || new Date()}
-                    onChange={handleTimeChange}
-                  />
-                </View>
-              </View>
-
-              {scheduledAt && (
-                <PressableRow style={styles.clearSchedule} onPress={() => setScheduledAt(null)} >
-                  <Feather name="x" size={14} color={colors.destructive} />
-                  <Text style={styles.clearScheduleText}>Clear schedule</Text>
+              {scheduledAt ? (
+                <>
+                  <View style={styles.scheduleRow}>
+                    <View style={{ flex: 1 }}>
+                      <DatePicker
+                        value={scheduledAt}
+                        onChange={handleDateChange}
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <TimePicker
+                        value={scheduledAt}
+                        onChange={handleTimeChange}
+                      />
+                    </View>
+                  </View>
+                  <PressableRow style={styles.clearSchedule} onPress={() => setScheduledAt(null)} >
+                    <Feather name="x" size={14} color={colors.destructive} />
+                    <Text style={styles.clearScheduleText}>Clear schedule</Text>
+                  </PressableRow>
+                </>
+              ) : (
+                <PressableRow
+                  style={[styles.selector, { justifyContent: 'flex-start', gap: spacing.md }]}
+                  onPress={() => setScheduledAt(new Date())}
+                >
+                  <Feather name="calendar" size={18} color={colors.mutedForeground} />
+                  <Text style={styles.selectorPlaceholder}>Tap to set a date and time</Text>
                 </PressableRow>
               )}
             </View>
